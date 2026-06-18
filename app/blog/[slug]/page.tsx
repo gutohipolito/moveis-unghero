@@ -69,11 +69,42 @@ export default async function BlogPostPage({ params }: Params) {
     ]
   };
 
+  const blogPostSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": data.title,
+    "description": data.description,
+    "image": data.image ? `https://moveisunghero.com.br${data.image}` : undefined,
+    "datePublished": data.date,
+    "dateModified": data.date,
+    "author": {
+      "@type": "Person",
+      "name": "Família Unghero",
+      "url": "https://moveisunghero.com.br/nossos-especialistas"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Móveis Unghero",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://moveisunghero.com.br/wp-content/uploads/2025/09/logo-moveis-unghero-2025.png"
+      }
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "Móveis Unghero"
+    }
+  };
+
   return (
     <article className={styles.wrapper}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostSchema) }}
       />
       <div className="container">
         <Link href="/blog" className={styles.backLink}>

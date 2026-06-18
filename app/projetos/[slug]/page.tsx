@@ -69,11 +69,40 @@ export default async function ProjetoDetailPage({ params }: Params) {
     ]
   };
 
+  const creativeWorkSchema = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": data.title,
+    "description": data.description,
+    "image": data.image ? `https://moveisunghero.com.br${data.image}` : undefined,
+    "author": {
+      "@type": "Organization",
+      "name": "Móveis Unghero",
+      "url": "https://moveisunghero.com.br"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Móveis Unghero",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://moveisunghero.com.br/wp-content/uploads/2025/09/logo-moveis-unghero-2025.png"
+      }
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "Móveis Unghero"
+    }
+  };
+
   return (
     <article className={styles.wrapper}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkSchema) }}
       />
       <div className="container">
         <Link href="/projetos" className={styles.backLink}>

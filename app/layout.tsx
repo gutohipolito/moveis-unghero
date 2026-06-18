@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Móveis Unghero | Móveis Sob Medida em Farroupilha e Serra Gaúcha",
   description: "A Móveis Unghero fabrica cozinhas, closets, dormitórios e ambientes corporativos sob medida em Farroupilha-RS. Atendemos toda a Serra Gaúcha, incluindo Caxias do Sul, Bento Gonçalves e Garibaldi.",
   metadataBase: new URL("https://moveisunghero.com.br"),
+  authors: [{ name: "Móveis Unghero", url: "https://moveisunghero.com.br/nossos-especialistas" }],
+  creator: "Móveis Unghero",
+  publisher: "Móveis Unghero",
   alternates: {
     canonical: "/",
   },
