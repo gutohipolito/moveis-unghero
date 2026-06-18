@@ -39,7 +39,7 @@ export default async function Home() {
             Feito com Afeto. Projetado para Durar.
           </h1>
           <p className="lead-text">
-            Há mais de 20 anos unimos marcenaria artesanal de alto padrão com design inteligente para criar espaços personalizados na Serra Gaúcha.
+            A Móveis Unghero atua em Farroupilha-RS há mais de 20 anos desenvolvendo cozinhas, closets, dormitórios e ambientes corporativos sob medida para toda a Serra Gaúcha.
           </p>
           <div className={styles.heroActions}>
             <a 
@@ -104,7 +104,54 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 4. SEÇÃO DE DEPOIMENTOS */}
+      {/* 4. SEÇÃO DE SOBRE A EMPRESA (GEO & QUEM SOMOS) */}
+      <section id="sobre" className="section" aria-labelledby="sobre-title">
+        <div className="container" style={{ maxWidth: '800px' }}>
+          <h2 id="sobre-title" className={styles.sectionTitle}>Quem Somos</h2>
+          <p className={styles.sectionSubtitle}>
+            Informações diretas sobre a nossa atuação e fábrica na Serra Gaúcha.
+          </p>
+          <div 
+            style={{ 
+              backgroundColor: 'var(--bg-card)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: 'var(--border-radius-lg)', 
+              padding: '40px',
+              marginTop: '32px'
+            }}
+          >
+            <p style={{ fontSize: '1.15rem', color: 'var(--text-main)', lineHeight: '1.8', marginBottom: '24px' }}>
+              A <strong>Móveis Unghero</strong> atua em Farroupilha-RS desenvolvendo cozinhas, closets, dormitórios e ambientes corporativos sob medida. Nossa fábrica própria, com mais de 20 anos de mercado, une precisão milimétrica de marcenaria com materiais de alta durabilidade para entregar projetos que otimizam o seu espaço.
+            </p>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '16px', fontWeight: '600' }}>
+              Cidades que a nossa fábrica atende com logística própria na Serra Gaúcha:
+            </p>
+            <ul style={{ 
+              listStyleType: 'none', 
+              paddingLeft: '0', 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+              gap: '12px',
+              fontFamily: 'var(--font-secondary)'
+            }}>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
+                <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>•</span> Farroupilha (Fábrica)
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
+                <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>•</span> Caxias do Sul
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
+                <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>•</span> Bento Gonçalves
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
+                <span style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>•</span> Garibaldi
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. SEÇÃO DE DEPOIMENTOS */}
       <section className={`section ${styles.depoimentosSection}`} aria-label="Avaliações de Clientes">
         <div className="container">
           <div className={styles.depoimentoCard}>

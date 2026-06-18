@@ -14,7 +14,7 @@ export default function Footer() {
               Móveis <span className={styles.brandTitleAccent}>Unghero</span>
             </div>
             <p className={styles.description}>
-              Há mais de 20 anos transformando residências e ambientes de trabalho com móveis planejados sob medida de alta qualidade na Serra Gaúcha. Feito com afeto e precisão artesanal.
+              A Móveis Unghero atua em Farroupilha-RS há mais de 20 anos desenvolvendo cozinhas, closets, dormitórios e ambientes corporativos sob medida para toda a Serra Gaúcha.
             </p>
           </div>
 
