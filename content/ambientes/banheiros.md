@@ -3,7 +3,7 @@ title: "Banheiros sob Medida"
 description: "Móveis para banheiros e lavabos projetados para resistir à umidade e organizar itens de higiene com facilidade."
 category: "ambientes"
 slug: "banheiros"
-image: "https://moveisunghero.com.br/wp-content/uploads/2015/07/pic_1.jpg"
+image: "/images/banheiros.jpg"
 ---
 
 # Banheiros Planejados: Resistência e Organização

@@ -3,7 +3,7 @@ title: "Cozinhas Sob Medida"
 description: "Cozinhas planejadas com foco em ergonomia, durabilidade e aproveitamento inteligente de espaços."
 category: "ambientes"
 slug: "cozinhas"
-image: "https://moveisunghero.com.br/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-01-at-14.33.13-1-750x499.jpeg"
+image: "/images/cozinhas.jpeg"
 ---
 
 # Cozinhas Planejadas: Onde a Vida Acontece
