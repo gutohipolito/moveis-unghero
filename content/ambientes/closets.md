@@ -3,7 +3,7 @@ title: "Closets e Roupeiros"
 description: "Projetos de closets e roupeiros planejados focados em organização inteligente e proteção das roupas."
 category: "ambientes"
 slug: "closets"
-image: "/images/closet-planejado.jpg"
+image: "https://moveisunghero.com.br/wp-content/uploads/2015/07/ap.201-jmassolini_pizzi-fotograffia-051223-VA-18-min-750x499.jpg"
 ---
 
 # Closets e Roupeiros: Organização Personalizada

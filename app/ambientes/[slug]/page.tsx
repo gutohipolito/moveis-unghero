@@ -61,6 +61,14 @@ export default async function AmbientePage({ params }: Params) {
           <p className={styles.description}>{data.description}</p>
         </header>
 
+        {data.image && (
+          <img 
+            src={data.image} 
+            alt={`Foto de destaque do projeto de ${data.title.toLowerCase()}`}
+            className={styles.heroImage}
+          />
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '48px' }}>
           {/* Conteúdo Renderizado do Markdown */}
           <div 

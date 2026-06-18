@@ -3,7 +3,7 @@ title: "Dormitórios Planejados"
 description: "Dormitórios de casal, solteiro e infantis sob medida criados para proporcionar conforto, organização e relaxamento."
 category: "ambientes"
 slug: "dormitorios"
-image: "/images/dormitorio-planejado.jpg"
+image: "https://moveisunghero.com.br/wp-content/uploads/2015/07/ap.201-jmassolini_pizzi-fotograffia-051223-VA-41-min-scaled.jpg"
 ---
 
 # Dormitórios Planejados: Seu Espaço de Descanso
