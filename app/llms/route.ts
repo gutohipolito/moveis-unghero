@@ -7,6 +7,8 @@ export async function GET() {
   try {
     const categorias = getAmbienteCategories();
     const cidades = getAllMarkdownData('cidades');
+    const blog = getAllMarkdownData('blog');
+    const projetos = getAllMarkdownData('projetos');
 
     let responseText = `# Manifesto Móveis Unghero para LLMs\n\n`;
     responseText += `Este endpoint compila as principais informações de conteúdo técnico e local do site moveisunghero.com.br.\n\n`;
@@ -43,6 +45,22 @@ export async function GET() {
       responseText += `\n---\n\n`;
     });
 
+    responseText += `## 3. Portfólio de Projetos Realizados\n\n`;
+    projetos.forEach((proj) => {
+      responseText += `### Projeto: ${proj.title}\n`;
+      responseText += `**Descrição**: ${proj.description}\n\n`;
+      responseText += `${proj.content}\n`;
+      responseText += `\n---\n\n`;
+    });
+
+    responseText += `## 4. Blog de Conteúdo Técnico\n\n`;
+    blog.forEach((post) => {
+      responseText += `### Artigo: ${post.title}\n`;
+      responseText += `**Descrição**: ${post.description}\n\n`;
+      responseText += `${post.content}\n`;
+      responseText += `\n---\n\n`;
+    });
+
     return new NextResponse(responseText, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -54,3 +72,4 @@ export async function GET() {
     return new NextResponse('Erro interno ao processar o manifesto de LLM.', { status: 500 });
   }
 }
+

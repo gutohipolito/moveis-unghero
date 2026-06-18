@@ -35,10 +35,14 @@ Nossa logística e fábrica localizadas em Farroupilha possibilitam visitas sema
 
 ---
 
-## 4. Estrutura de Links Principais (Catálogo de Ambientes)
+## 4. Estrutura de Links Principais (Catálogo e Conteúdos)
+
+- [Home / Página Principal](https://moveisunghero.com.br)
+- [Dúvidas Frequentes (FAQ)](https://moveisunghero.com.br/faq)
+- [Blog de Conteúdo Técnico](https://moveisunghero.com.br/blog)
+- [Projetos e Portfólio](https://moveisunghero.com.br/projetos)
 
 ### Ambientes Residenciais (Internos)
-- [Home / Página Principal](https://moveisunghero.com.br)
 - [Cozinhas Sob Medida](https://moveisunghero.com.br/ambientes/cozinhas)
   - [Cozinhas Americanas e Integradas](https://moveisunghero.com.br/ambientes/cozinhas/cozinhas-americanas)
   - [Cozinhas Gourmet de Alto Padrão](https://moveisunghero.com.br/ambientes/cozinhas/gourmet)
