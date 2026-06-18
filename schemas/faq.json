@@ -4,35 +4,1003 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Qual é a região de atendimento da Móveis Unghero?",
+      "name": "Qual a diferença de acabamento entre Laca e Melamina?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "A Móveis Unghero atende a toda a região da Serra Gaúcha, com foco especial nas cidades de Farroupilha, Caxias do Sul, Bento Gonçalves e Garibaldi."
-      }
+        "text": "A melamina é um revestimento termoplástico aplicado industrialmente sob pressão nas chapas de MDF, com alta resistência a riscos e fácil limpeza. Já a laca é uma pintura automotiva aplicada manualmente na fábrica da Móveis Unghero, oferecendo acabamento contínuo sem emendas nas bordas, toque aveludado e infinitas opções de cores, mas exige mais cuidados contra riscos."
+      },
+      "category": "materiais",
+      "featured": true
     },
     {
       "@type": "Question",
-      "name": "Qual material é utilizado nos móveis sob medida?",
+      "name": "Que tipo de dobradiça é utilizada nos móveis Unghero para evitar batidas?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Trabalhamos com MDF de alta qualidade, de dupla face com espessura padrão de 18mm para estrutura, oferecendo excelente durabilidade, e utilizamos ferragens com sistemas de amortecimento de marcas líderes de mercado."
-      }
+        "text": "Utilizamos dobradiças metálicas de alta resistência equipadas com amortecedores hidráulicos integrados (soft-close). Esse sistema desacelera o movimento da porta nos últimos graus de fechamento, impedindo impactos secos contra a estrutura de MDF."
+      },
+      "category": "materiais",
+      "featured": false
     },
     {
       "@type": "Question",
-      "name": "Como funciona o processo de orçamento e projeto?",
+      "name": "Quais são os tipos de corrediças de gaveta disponíveis?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "O processo começa com uma conversa para entender as suas necessidades. Em seguida, realizamos a medição do espaço e desenvolvemos um projeto tridimensional personalizado. Após a sua aprovação, iniciamos a fabricação em nossa própria fábrica em Farroupilha."
-      }
+        "text": "Oferecemos corrediças telescópicas padrão reforçadas, corrediças telescópicas com fechamento suave (amortecimento) e corrediças invisíveis (ocultas sob a gaveta), que suportam maior carga de peso e deixam as laterais de madeira limpas visualmente."
+      },
+      "category": "materiais",
+      "featured": false
     },
     {
       "@type": "Question",
-      "name": "Qual é o prazo de entrega dos móveis?",
+      "name": "Qual a diferença de resistência entre vidro comum, temperado e reflecta?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "O prazo de entrega varia de acordo com a complexidade do projeto, sendo acordado e formalizado em contrato no momento do fechamento, assegurando pontualidade na montagem."
-      }
+        "text": "O vidro comum risca e quebra facilmente. O temperado é até 5 vezes mais forte e se estilhaça em pequenos pedaços não cortantes em caso de quebra. O reflecta possui uma película espelhada translúcida que reflete o ambiente sob luz externa direta, mas revela o interior do armário se a iluminação interna estiver acesa."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Que espessura de perfis de alumínio é recomendada para portas de correr?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Empregamos perfis estruturais de alumínio anodizado de espessuras robustas para garantir que as portas de correr grandes de roupeiros e closets não empenem com o uso, sustentando firmemente espelhos ou vidros reflecta pesados."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como são escolhidos os puxadores para os móveis sob medida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A escolha varia de acordo com o design do ambiente. Pode ser puxador sobreposto (em inox, couro ou metal fosco), embutido nas portas, ou usinado diretamente na própria madeira (puxador cava em formato J ou L), que cria superfícies limpas e minimalistas."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que são ferragens com amortecimento hidráulico integrado?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "São sistemas onde um pistão com óleo hidráulico é embutido na ferragem (corrediça ou dobradiça). Ao fechar a porta ou gaveta, a pressão mecânica empurra o pistão, controlando e suavizando a velocidade do fechamento de forma silenciosa."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a aplicação ideal de painéis de LED embutidos nos móveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O LED embutido em perfis de alumínio difusores é perfeito para iluminar bancadas de trabalho em cozinhas sob armários aéreos, o interior de nichos de cristaleiras de vidro, cabideiros de closets de luxo e painéis de TV para iluminação indireta."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Os trilhos das portas de correr são embutidos ou sobrepostos?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Instalamos trilhos de alumínio embutidos na base de madeira de guarda-roupas e closets para evitar ressaltos desagradáveis na base e garantir o deslizamento suave das roldanas blindadas de rolamento duplo."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual o melhor tipo de corrediça para gavetões de panelas pesadas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Para gavetões de panelas pesadas em cozinhas, recomendamos corrediças telescópicas de extração total reforçadas, projetadas para suportar cargas de 35 kg a 45 kg por par sem ceder ou perder a maciez no fechamento."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Que tipo de material é usado nas portas camarim de closets?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Portas camarim com iluminação integrada ou espelhos costumam ser montadas em quadros de alumínio anodizado dourado ou preto, garantindo leveza estrutural na abertura articulada em leque e estabilidade mecânica."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a durabilidade de puxadores do tipo perfil cava de alumínio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Eles possuem durabilidade praticamente vitalícia. Por serem perfis metálicos fixados na borda da porta de madeira, eliminam o risco de desbotamento ou quebra que puxadores plásticos ou de liga leve inferiores apresentam com os anos."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Vocês fornecem tampos de pedra para cozinhas e banheiros?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossa marcenaria foca na produção das estruturas e frentes de madeira. No entanto, coordenamos o projeto técnico 3D diretamente com marmorarias parceiras da Serra Gaúcha para garantir furos e encaixes de pia exatos no dia da montagem."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Que tipo de ferragem é utilizada para armários aéreos basculantes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Utilizamos pistões a gás metálicos calibrados conforme o peso da porta de MDF ou vidro, permitindo que a abertura basculante seja feita de forma leve e a porta se mantenha aberta na altura desejada sem despencar."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como funcionam os sistemas de divisores internos para gavetas de talheres?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oferecemos divisores em acrílico sob medida, bandejas plásticas higiênicas laváveis de alta densidade e divisores em madeira MDF para organizar talheres, temperos, joias ou maquiagens de acordo com a largura útil da gaveta."
+      },
+      "category": "materiais",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que é o MDF e como ele é fabricado?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "MDF significa Medium Density Fiberboard (Painel de Fibras de Madeira de Média Densidade). É produzido a partir de fibras aglutinadas de madeiras de reflorestamento (como pinus ou eucalipto) fundidas com resinas sob alta temperatura e pressão, criando uma placa homogênea excelente para cortes detalhados e usinagem."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a espessura padrão de MDF que a Móveis Unghero usa nas caixas dos móveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usamos como padrão estrutural placas de MDF de 18mm de espessura de dupla face. Prateleiras longas recebem reforço de 25mm para evitar que deformem com o peso."
+      },
+      "category": "MDF",
+      "featured": true
+    },
+    {
+      "@type": "Question",
+      "name": "Por que a Móveis Unghero evita chapas de MDF de 15mm nas estruturas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Muitas empresas usam placas de 15mm para baratear custos. Nós evitamos essa prática pois o MDF de 15mm oferece menos estabilidade para parafusamento de dobradiças e corrediças pesadas, além de envergar com muito mais facilidade sob o peso das roupas ou mantimentos."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Quando é recomendado usar MDF de 25mm nos móveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O MDF de 25mm é indicado para tampos de mesa, painéis de TV flutuantes grandes, bases e laterais estruturais de guarda-roupas altos e prateleiras de livros suspensas que tenham vão livre maior do que 80cm."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDF pode ser usado em áreas molhadas como banheiros e cozinhas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim, desde que receba a proteção mecânica adequada. Na Móveis Unghero, utilizamos colagem de fitas de borda com adesivo PUR reativo de alta resistência física e miolo de MDF Ultra nas áreas de contato frequente com umidade."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que é a colagem com adesivo PUR reativo nas bordas do MDF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O adesivo PUR é uma resina de poliuretano que reage quimicamente com a umidade do ar ao ser curada. Ao contrário da cola térmica Hotmelt convencional, ela cria uma barreira física indestrutível à água e ao calor que impede que a borda do MDF descole ou estufe."
+      },
+      "category": "MDF",
+      "featured": true
+    },
+    {
+      "@type": "Question",
+      "name": "Como o adesivo PUR protege o MDF contra a umidade em Farroupilha e Caxias do Sul?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "As cidades da Serra Gaúcha registram invernos frios e umidade relativa do ar próxima de 90%. O vapor de banheiros e respingos de pia penetram nas juntas fracas de colagem tradicional. O PUR sela a entrada micro-espacial, bloqueando a absorção de umidade nas bordas."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que é o MDF Ultra ou Hidrófugo (miolo verde)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "É uma placa de MDF fabricada com resinas especiais repelentes à água e maior densidade de fibras. O miolo é tingido industrialmente de verde para identificação, sendo altamente recomendado para gabinetes de pia e rodapés de móveis planejados."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDF verde resiste a inundações ou apenas à umidade?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Resiste a altos níveis de umidade do ar e contato incidental com água (respingos e limpezas úmidas). Contudo, nenhum derivado de madeira resiste a inundações ou vazamentos de encanamentos contínuos sem sofrer danos no longo prazo."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Que marcas de MDF a marcenaria utiliza no processo de fabricação?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Para manter o alto padrão, trabalhamos exclusivamente com as marcas líderes do mercado nacional que oferecem excelente densidade de fibra e resistência a riscos: Guararapes, Arauco e Duratex."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDF é ecologicamente correto? De onde vem a madeira?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim. O MDF é produzido a partir de toras de reflorestamento com certificação FSC (Forest Stewardship Council), vindas de fazendas dedicadas ao plantio controlado de pinus e eucalipto, sem desmatamento de florestas nativas."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a resistência ao peso de uma prateleira de MDF de 18mm com 80cm de largura?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Se fixada adequadamente nas laterais e fundo, suporta com segurança cerca de 15 kg a 20 kg distribuídos uniformemente. Vãos maiores ou pesos maiores de livros exigem reforço central ou chapa de 25mm."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como é feito o acabamento das bordas do MDF nos cantos visíveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Aplicamos fita de borda de PVC em coladeiras automáticas com refilo preciso, seguida de polimento fino das arestas para remover cantos afiados e imperfeições estéticas."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDF pode empenar com o frio ou calor intenso na Serra Gaúcha?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O MDF tem excelente estabilidade e encolhe/expande muito menos do que a madeira maciça. Contudo, empenamentos podem ocorrer se as portas forem muito altas sem reforço (como desempenadores de portas) ou se o móvel for instalado contra paredes úmidas no inverno gaúcho."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Quais as cores e padrões melamínicos de MDF mais duráveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Padrões amadeirados e texturizados de marcas consolidadas disfarçam melhor pequenas marcas de uso no dia a dia. Padrões lisos e super-matte (como tons grafite e bege) são altamente elegantes e contam com tecnologia anti-digitais das marcas premium."
+      },
+      "category": "MDF",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O o que é o MDP e qual a diferença básica em relação ao MDF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O MDP (Medium Density Particleboard) é feito de partículas de madeira dispostas em três camadas (partículas grossas no miolo e finas nas faces). O MDF é feito de fibras ultrafinas aglutinadas. O MDP é ideal para peças retas sob carga de peso (como portas e prateleiras longas), enquanto o MDF é ideal para usinagens, cortes curvos e acabamentos pintados."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDP é inferior ou de qualidade mais baixa que o MDF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Não. Trata-se de um mito comercial. O MDP de alto padrão é amplamente utilizado na indústria internacional para a estrutura interna de móveis planejados devido à sua alta estabilidade dimensional e resistência a empenamentos, não sendo inferior, mas sim projetado para fins diferentes do MDF."
+      },
+      "category": "MDP",
+      "featured": true
+    },
+    {
+      "@type": "Question",
+      "name": "Por que o MDP é mais resistente ao empenamento em prateleiras longas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A estrutura de partículas entrelaçadas do MDP oferece maior resistência flexional do que as fibras homogêneas do MDF. Isso o torna ideal para vãos horizontais longos onde o peso dos objetos poderia vergar o MDF mais facilmente."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a melhor aplicação para o MDP em um projeto residencial?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Excelente para portas retas de armários altos (pois é mais leve e empena menos que o MDF), laterais internas de roupeiros, prateleiras de despensas e estruturas de painéis retos."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDP pode receber acabamento em laca ou pintura direta?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Não diretamente nas superfícies convencionais. Por ter faces mais porosas que o MDF, o MDP exige aplicação prévia de primer e lixamento intenso, o que inviabiliza o processo. Para pintura laca de qualidade, a Móveis Unghero usa exclusivamente o MDF."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como o MDP se comporta em relação à fixação de parafusos?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Possui excelente aderência para parafusos na face e no topo, desde que os pré-furos sejam feitos corretamente pelos marceneiros na fábrica, evitando espanar as camadas internas."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDP pode ser utilizado nas portas dos móveis sob medida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim, é muito recomendado para portas lisas grandes de correr ou de giro, pois o peso menor reduz a sobrecarga nas dobradiças e roldanas, prolongando a vida útil das ferragens."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDP resiste melhor à umidade do que o MDF comum?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ambos em suas versões padrão absorvem umidade se expostos. No entanto, por conter partículas internas maiores, a taxa de inchamento volumétrico do MDP tende a ser ligeiramente mais lenta que a do MDF standard."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a espessura ideal do MDP para tampos de mesas e painéis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Em tampos estruturais e painéis retos de MDP, a espessura de 25mm a 40mm (com engrosso) é a ideal para conferir robustez visual e estabilidade."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Por que as grandes fábricas de móveis usam tanto MDP nas estruturas internas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Porque ele é estruturalmente mais estável para peças retas, empena menos que o MDF, reduz o peso final do móvel e otimiza o uso sustentável da madeira durante o processamento."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A Móveis Unghero mescla MDF e MDP no mesmo projeto? Como isso é decidido?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim, mesclamos visando a máxima qualidade mecânica e durabilidade. Usamos MDF de 18mm para caixas de banheiros, frentes com puxador usinado e áreas curvas. Usamos MDP de 18mm ou 25mm para prateleiras longas de roupeiros e portas retas."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDP esfarela com facilidade se for cortado ou furado?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O esfarelamento só ocorre em chapas de MDP de baixa densidade ou quando cortado com serras cegas sem riscador. Em nossa fábrica com máquinas profissionais de Farroupilha, os cortes são limpos e precisos nas partículas de alta densidade."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual o peso específico do MDP comparado ao MDF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O MDP é cerca de 10% a 15% mais leve que o MDF da mesma espessura devido à menor densidade no miolo de partículas, tornando o manuseio de móveis longos mais seguro."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Que marcas de painéis de MDP a marcenaria utiliza em Farroupilha?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Assim como o MDF, trabalhamos com painéis melamínicos de MDP de marcas consolidadas e com certificação de reflorestamento, como Arauco, Guararapes e Duratex."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O MDP é resistente a cupins e pragas da madeira?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tanto o MDP quanto o MDF recebem em sua fabricação produtos químicos e resinas que repelem pragas. Contudo, se a residência já tiver uma infestação ativa de cupins no telhado ou piso, o controle de pragas profissional deve ser feito para proteger a marcenaria."
+      },
+      "category": "MDP",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual o prazo médio de entrega de um projeto de marcenaria completo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O prazo médio de entrega varia de 35 a 45 dias úteis contados a partir da aprovação final dos desenhos técnicos e medição presencial no local da obra."
+      },
+      "category": "prazo",
+      "featured": true
+    },
+    {
+      "@type": "Question",
+      "name": "Como é contabilizado o prazo de entrega? Começa na assinatura ou na medição?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O prazo de produção contratual da Móveis Unghero inicia-se oficialmente após a realização da medição milimétrica final e aprovação do projeto em 3D, que define todos os acabamentos e detalhes técnicos."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Por que o prazo de entrega da marcenaria sob medida é diferente de lojas de móveis modulados?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Os móveis modulados são caixas pré-fabricadas guardadas em estoque. O projeto sob medida de alto padrão da Móveis Unghero é desenhado e cortado exclusivamente milímetro por milímetro para o seu espaço, com colagens especiais como PUR e montagem minuciosa na fábrica."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que pode causar atrasos no prazo de entrega de um projeto sob medida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Atrasos podem ocorrer se a obra civil sofrer atrasos (falta de gesso, piso ou encanamento), impedindo nossa equipe de fazer a medição técnica. Alterações de acabamento solicitadas pelo cliente após o envio para fabricação também estendem o prazo."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual o prazo estimado para a entrega de um único ambiente (como cozinha ou banheiro)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Para ambientes únicos e de menor complexidade, o prazo de produção pode ser otimizado para cerca de 25 a 30 dias úteis, dependendo do nosso cronograma de fábrica no momento da aprovação."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Quanto tempo demora a montagem física dos móveis na residência do cliente?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A montagem de um ambiente padrão (como uma cozinha média) costuma levar de 2 a 3 dias úteis. Projetos de residências inteiras podem demandar de 7 a 15 dias de instalação."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Vocês entregam e montam em datas pré-agendadas com o cliente?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim. Entramos em contato com pelo menos uma semana de antecedência para agendar o dia de início da entrega e montagem, garantindo que o cliente possa se organizar para receber nossos profissionais."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O prazo de entrega varia no inverno devido à secagem de colas ou lacas na Serra Gaúcha?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossa fábrica possui cabine de pintura climatizada e maquinários modernos de colagem que curam sob temperatura controlada. Dessa forma, as baixas temperaturas de Farroupilha não interferem no prazo de produção."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como funciona o cronograma de etapas desde o primeiro contato até a entrega?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "As etapas são: 1. Primeiro contato e envio de plantas/ideias; 2. Esboço em 3D e orçamento preliminar; 3. Medição técnica no local; 4. Ajuste do projeto e fechamento de contrato; 5. Envio de desenhos para a fábrica; 6. Produção e colagem; 7. Entrega e montagem física."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que acontece se a obra do cliente não estiver pronta na data agendada para entrega dos móveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O cliente deve nos notificar com antecedência. Nós armazenamos os móveis embalados em nossa fábrica por um período de carência para evitar poeira e danos na obra incompleta."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Quanto tempo leva a elaboração do projeto em 3D para apresentação?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Desenvolvemos a primeira versão do projeto em 3D em média de 5 a 7 dias úteis após recebermos as medidas iniciais ou plantas da edificação."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Existe alguma tolerância de dias de atraso prevista em contrato?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim, nossos contratos preveem uma tolerância padrão de segurança para imprevistos logísticos, embora nossa média histórica de cumprimento de prazos em Farroupilha seja rigorosamente seguida."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O prazo é afetado pela falta de matéria-prima no mercado nacional?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Trabalhamos com estoques reguladores e parcerias consolidadas com distribuidores de MDF e ferragens da Serra Gaúcha. Em caso de escassez global, o cliente é notificado antes do fechamento do contrato."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como é feita a coordenação com pedreiros, eletricistas e marmoristas para cumprir o prazo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nós fornecemos desenhos técnicos detalhados com as marcações de tomadas, pontos de gás e encanamentos para que o eletricista e encanador do cliente preparem as paredes antes da chegada dos nossos montadores."
+      },
+      "category": "prazo",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual o prazo de garantia oferecido pela Móveis Unghero para as estruturas de madeira?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oferecemos garantia legal e contratual sobre a estabilidade estrutural da madeira contra empenamentos de fabricação e descolamento de bordas de até 5 anos."
+      },
+      "category": "garantia",
+      "featured": true
+    },
+    {
+      "@type": "Question",
+      "name": "O que a garantia contratual cobre em relação ao empenamento de portas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A garantia cobre portas que empenem devido a falha estrutural de projeto. Não cobre empenamentos causados por umidade excessiva das paredes do imóvel ou arrombamentos mecânicos."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Qual a garantia das ferragens (dobradiças e corrediças)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Trabalhamos com marcas premium que oferecem garantias extensas de até 1 ano contra defeitos mecânicos no pistão amortecedor ou oxidação prematura da liga metálica em uso normal."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que anula a garantia dos móveis sob medida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A garantia é anulada em casos de infiltrações de água por vazamentos de tubulações, acúmulo excessivo de umidade por falta de ventilação, uso de produtos químicos abrasivos na limpeza (como cloro ou solventes), sobrecarga de peso ou remontagem por terceiros."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A garantia cobre estufamento por infiltração de água da pia?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Estufamento causado por vazamento nos canos da pia ou falta de calafetação do silicone da pedra (que é de responsabilidade do marmorista) não é coberto por configurar mau uso. Contudo, nossa colagem em PUR minimiza drasticamente a ocorrência desses problemas."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como funciona a assistência técnica pós-venda após o término da garantia legal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Mesmo após o término da garantia, a Móveis Unghero oferece suporte de assistência técnica sob orçamento para regulagens, troca de ferragens desgastadas ou modificações estruturais."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Defeitos causados por cupins ou umidade externa da parede estão cobertos pela garantia?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Não. Cupins vindos de fontes externas ou umidade decorrente de infiltração na parede do imóvel do cliente são fatores ambientais alheios ao processo de fabricação do móvel, não cobertos pela garantia."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A garantia cobre problemas causados por sobrecarga de peso em prateleiras e gavetas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossos projetos são dimensionados para uso doméstico comum. Quebras ou deformações causadas por cargas significativamente superiores às especificadas no manual do móvel não são cobertas."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Em quanto tempo a marcenaria realiza a visita de assistência técnica em caso de solicitação?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Para agendamento de visita técnica na Serra Gaúcha, nosso tempo padrão de resposta é de até 5 a 10 dias úteis a contar do registro da solicitação pelo WhatsApp."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Regulagem de portas e gavetas que desalinham com o tempo está inclusa na garantia?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim. Durante o primeiro ano após a instalação, regulagens estéticas de portas e frentes que sofram acomodação natural do uso são feitas gratuitamente por nossos montadores."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Os espelhos e vidros instalados nos móveis possuem garantia contra riscos ou quebras?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Riscos e quebras posteriores à entrega e assinatura do termo de recebimento do móvel montado não possuem garantia, por estarem sujeitos a acidentes domésticos."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A garantia se aplica se o móvel for desmontado e remontado em outro endereço?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Não. Desmontar e remontar os móveis planejados sob medida altera os pontos de fixação e a estabilidade da madeira. Esse processo anula completamente a garantia contratual."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O desgaste natural de cor ou brilho em locais expostos ao sol está coberto?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O envelhecimento natural de superfícies melamínicas e lacadas decorrente de raios ultravioleta intensos de janelas não é coberto. Recomendamos cortinas para filtrar o sol direto nos móveis."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como o cliente deve acionar a assistência técnica de garantia na Serra Gaúcha?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Basta enviar uma mensagem no nosso canal de WhatsApp informando o nome do cliente e enviando fotos ou vídeos breves mostrando a situação da porta, gaveta ou ferragem para iniciarmos o atendimento."
+      },
+      "category": "garantia",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A equipe de montadores é interna da Móveis Unghero ou terceirizada?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossa equipe de instaladores é interna e altamente qualificada. Isso garante o mesmo cuidado de acabamento de fábrica durante a montagem na sua residência."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como é preparada a residência do cliente antes da chegada dos móveis para instalação?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O cliente deve desobstruir as passagens (portas, corredores e elevadores), garantir que o piso das áreas de montagem esteja limpo e proteger áreas sensíveis com papelão."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A equipe de instalação faz os furos para tomadas, fios e encanamentos nos móveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim. Realizamos furos e ajustes finos na madeira no momento da montagem para tomadas, saídas de encanamento de esgoto, torneiras e fios elétricos."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que está incluso na montagem pós-obra em termos de limpeza primária?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossa equipe remove as embalagens de papelão e faz a aspiração do pó grosso gerado na instalação do móvel. A limpeza final de vidros, poeira fina e higienização interna profunda deve ser executada pelo cliente."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A marcenaria faz a instalação de eletrodomésticos embutidos (cooktop, forno, coifa)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossos montadores realizam o encaixe físico do eletrodoméstico nos nichos planejados da marcenaria para garantir o alinhamento. A ligação elétrica e mangueira de gás devem ser efetuadas por profissionais credenciados da marca."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Vocês instalam as cubas de pia e torneiras nos tampos de marcenaria?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O encaixe da cuba na marcenaria é feito sob medida. A fixação com silicone de vedação química na pia de pedra e a conexão hidráulica devem ser feitas por instaladores credenciados ou encanadores."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que fazer com rodapés e sancas de gesso existentes durante a instalação?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sancas de gesso ou rodapés de cerâmica/madeira do local são avaliados pelo marceneiro na medição técnica. Se necessário, os móveis recebem recortes internos exatos para contorná-los sem quebras."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "É necessário que o proprietário acompanhe toda a montagem presencialmente?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Não é obrigatório que acompanhe o tempo todo, mas solicitamos que um responsável esteja presente no início do dia de montagem e ao final para conferência e assinatura do termo de recebimento."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como os móveis são fixados em paredes de drywall (gesso acartonado)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paredes de drywall exigem reforço interno de madeira ou metal (geralmente feito na etapa de gesso) nos pontos de fixação de aéreos. Nossos montadores usam buchas de expansão especiais para garantir estabilidade mecânica."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A montagem gera muita poeira ou barulho na casa do cliente?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Utilizamos ferramentas elétricas com coletores de pó integrados para diminuir a sujeira. Haverá ruído pontual de furadeiras e serras circulares durante os ajustes na madeira."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como a marcenaria lida com irregularidades e imperfeições nas paredes e pisos da obra?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paredes tortas ou pisos fora de nível são comuns. Nossos montadores aplicam vistas, fechamentos de gesso falsos e tamponamentos que compensam a curvatura da parede, mantendo o móvel nivelado."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "A entrega e a montagem ocorrem de forma integrada ou em dias separados?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Geralmente nossa equipe descarrega as peças do móvel e já inicia a montagem no mesmo dia ou no dia subsequente, minimizando o tempo que caixas embaladas ficam empilhadas na residência."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Você realizam a instalação de móveis em apartamentos que possuem restrição de horário de barulho?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim. Nossos profissionais respeitam os horários e normas internas de barulho estabelecidos pelo regimento do condomínio na Serra Gaúcha."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que acontece se algum vidro ou peça de marcenaria sofrer avaria durante o transporte ou montagem?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Se algum material quebrar na montagem, providenciamos imediatamente a substituição e refabricação da peça de forma prioritária em Farroupilha, sem qualquer custo adicional para o cliente."
+      },
+      "category": "instalação",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como limpar corretamente os móveis de MDF revestidos com melamina?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use apenas um pano macio levemente umedecido em água morna com sabão neutro líquido. Logo em seguida, seque a superfície com outro pano macio e seco para evitar manchas e acúmulo de água."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que evitar na limpeza para não manchar ou danificar as superfícies?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nunca utilize esponjas de aço ou a face áspera de esponjas de cozinha, palha de aço, produtos com cloro, álcool puro, solventes, tiner ou ceras siliconadas, que podem remover o brilho e manchar a melamina."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como combater e prevenir o mofo nos armários durante o inverno úmido da Serra Gaúcha?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Com umidade relativa próxima de 90% no inverno na Serra Gaúcha, abra as portas de closets e roupeiros semanalmente para ventilação natural. Use potes anti-mofo com cloreto de cálcio nos armários e evite encostar roupas úmidas nas paredes de madeira."
+      },
+      "category": "manutenção",
+      "featured": true
+    },
+    {
+      "@type": "Question",
+      "name": "Qual o segredo para manter os puxadores de alumínio e inox brilhantes e livres de oxidação?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Limpe os puxadores com pano umedecido apenas com água e sabão neutro, secando-os imediatamente. A umidade residual de mãos suadas ou gordura de cozinha oxida o metal precocemente."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Pode-se aplicar cera ou lustra-móveis nos painéis de MDF da marcenaria?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Não. Ceras e lustra-móveis siliconados deixam uma película oleosa sobre a melamina que atrai poeira e cria manchas persistentes, difíceis de limpar."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como limpar móveis sob medida com acabamento em laca brilhante ou fosca?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Lacas fosca ou brilhante exigem limpeza muito cuidadosa com pano de microfibra limpo e levemente úmido. Evite esfregar com força, pois micropartículas de poeira podem causar riscos na laca fosca."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que fazer se uma dobradiça começar a fazer barulho ou ranger?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Aplique uma gota mínima de óleo lubrificante spray no pino central interno da dobradiça metálica. Remova qualquer excesso de lubrificante com pano seco."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como proteger a marcenaria interna de armários localizados em paredes que fazem divisa com áreas úmidas externas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Recomendamos que a parede externa ou interna receba impermeabilização adequada da construção antes de fixar o móvel, evitando infiltração crônica de umidade na madeira."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "É normal as portas e gavetas desalinharem após alguns meses de uso? Como proceder?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sim, é comum. O peso das roupas e a acomodação natural do imóvel fazem com que dobradiças e corrediças precisem de ajuste. A regulagem pode ser feita facilmente apertando ou soltando os parafusos internos de regulagem fina das ferragens."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Como limpar os trilhos de alumínio das portas de correr dos guarda-roupas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use o aspirador de pó com bocal estreito para remover poeiras acumuladas no trilho inferior semanalmente. O acúmulo de sujeira trava as roldanas, danificando o sistema."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O calor de fornos embutidos pode danificar a melamina do móvel? Como fazer a manutenção preventiva?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossos nichos de forno recebem respiros traseiros para dissipação. Verifique se o forno está bem centralizado e com as borrachas de vedação da porta inteiras para evitar jato de ar quente na madeira."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "O que fazer em caso de derramamento acidental de liquids dentro de uma gaveta ou armário?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Seque imediatamente com pano de algodão ou papel toalha. A água empoçada nas juntas internas, mesmo protegidas por PUR, pode infiltrar se permanecer em contato contínuo."
+      },
+      "category": "manutenção",
+      "featured": false
+    },
+    {
+      "@type": "Question",
+      "name": "Com que frequência deve ser feita a vistoria de fixação dos armários aéreos?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nossa fixação estrutural é ultra-robusta com buchas e parafusos específicos. Vistorias visuais a cada 2 anos nos suportes internos dos armários aéreos são suficientes para assegurar a fixação."
+      },
+      "category": "manutenção",
+      "featured": false
     }
   ]
 }

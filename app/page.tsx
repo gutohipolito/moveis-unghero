@@ -166,7 +166,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 5. SEÇÃO DE FAQ ACCORDION */}
+      {/* 6. SEÇÃO DE FAQ ACCORDION */}
       <section id="faq" className="section" aria-labelledby="faq-title">
         <div className="container">
           <h2 id="faq-title" className={styles.sectionTitle}>Dúvidas Frequentes</h2>
@@ -175,7 +175,7 @@ export default async function Home() {
           </p>
 
           <div className={styles.faqContainer}>
-            {faqSchema.mainEntity.map((item, index) => (
+            {faqSchema.mainEntity.filter((item: any) => item.featured).map((item, index) => (
               <details key={index} className={styles.faqItem}>
                 <summary className={styles.faqSummary}>
                   {item.name}
@@ -185,6 +185,12 @@ export default async function Home() {
                 </div>
               </details>
             ))}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '40px' }}>
+            <Link href="/faq" className="btn btn-secondary">
+              Ver FAQ Completo com as 100 Dúvidas Frequentes
+            </Link>
           </div>
         </div>
       </section>

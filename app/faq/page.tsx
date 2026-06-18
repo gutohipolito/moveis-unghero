@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronLeft, MessageSquare, HelpCircle } from 'lucide-react';
+import { ChevronLeft, MessageSquare, HelpCircle, Bookmark } from 'lucide-react';
 import faqSchema from '@/schemas/faq.json';
 import styles from '../internas.module.css';
 import type { Metadata } from 'next';
@@ -7,21 +7,30 @@ import type { Metadata } from 'next';
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
-  title: 'Dúvidas Frequentes | Móveis Unghero',
-  description: 'Respostas completas para as principais dúvidas sobre o processo de orçamento, fabricação de móveis sob medida, materiais e garantia na Serra Gaúcha.',
+  title: 'FAQ Completo: 100 Dúvidas de Móveis Sob Medida | Móveis Unghero',
+  description: 'O maior guia de dúvidas sobre móveis sob medida na Serra Gaúcha. Informações técnicas sobre materiais, MDF, MDP, prazos, garantias, instalação e manutenção.',
   alternates: {
     canonical: '/faq',
   },
   openGraph: {
-    title: 'Dúvidas Frequentes | Móveis Unghero',
-    description: 'Respostas para as principais dúvidas sobre móveis planejados e sob medida na Serra Gaúcha.',
+    title: 'FAQ Completo: 100 Dúvidas de Móveis Sob Medida | Móveis Unghero',
+    description: 'Guia completo com 100 perguntas e respostas sobre materiais, MDF, MDP, prazos, garantias, instalação e manutenção de móveis planejados.',
     url: 'https://moveisunghero.com.br/faq',
     type: 'website',
   }
 };
 
+const CATEGORIES_LABELS: { [key: string]: string } = {
+  materiais: "Materiais & Ferragens",
+  MDF: "Painéis de MDF",
+  MDP: "Painéis de MDP",
+  prazo: "Prazos & Etapas",
+  garantia: "Garantia & Assistência",
+  instalacao: "Entrega & Instalação",
+  manutencao: "Limpeza & Manutenção"
+};
+
 export default function FaqPage() {
-  // Gera os dados estruturados do FAQ para o Google
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -34,6 +43,31 @@ export default function FaqPage() {
       }
     }))
   };
+
+  // Agrupa os itens do FAQ por categoria
+  const groupedFaq: { [key: string]: any[] } = {
+    materiais: [],
+    MDF: [],
+    MDP: [],
+    prazo: [],
+    garantia: [],
+    instalacao: [],
+    manutencao: []
+  };
+
+  faqSchema.mainEntity.forEach((item: any) => {
+    let catKey = item.category;
+    if (catKey === 'instalação') catKey = 'instalacao';
+    if (catKey === 'manutenção') catKey = 'manutencao';
+    
+    if (groupedFaq[catKey]) {
+      groupedFaq[catKey].push(item);
+    } else {
+      groupedFaq[catKey] = [item];
+    }
+  });
+
+  const categoriasKeys = Object.keys(CATEGORIES_LABELS);
 
   return (
     <div className={styles.wrapper}>
@@ -48,68 +82,137 @@ export default function FaqPage() {
           Voltar para Início
         </Link>
 
-        <header className={styles.header}>
-          <h1 className={`${styles.title} text-gradient`}>Dúvidas Frequentes</h1>
+        <header className={styles.header} style={{ marginBottom: '32px' }}>
+          <h1 className={`${styles.title} text-gradient`}>FAQ Gigante de Móveis Sob Medida</h1>
           <p className={styles.description}>
-            Encontre respostas rápidas e claras sobre nossos prazos, garantias, materiais e como funciona o desenvolvimento do seu projeto 3D gratuito.
+            Nosso banco de dados completo com exatamente 100 perguntas e respostas sobre materiais, MDF, MDP, prazos de entrega, coberturas de garantia, processo de montagem e dicas de conservação na Serra Gaúcha.
           </p>
         </header>
 
+        {/* Menu rápido de navegação por categorias */}
+        <nav 
+          aria-label="Categorias do FAQ" 
+          style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '10px', 
+            marginBottom: '48px', 
+            padding: '20px', 
+            backgroundColor: 'var(--bg-card)', 
+            borderRadius: 'var(--border-radius-lg)', 
+            border: '1px solid var(--border-color)'
+          }}
+        >
+          {categoriasKeys.map((key) => (
+            <a 
+              key={key} 
+              href={`#${key}`}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 'var(--border-radius-md)',
+                backgroundColor: 'rgba(250, 178, 7, 0.08)',
+                color: 'var(--accent)',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                fontFamily: 'var(--font-secondary)',
+                border: '1px solid rgba(250, 178, 7, 0.2)',
+                transition: 'all 0.3s ease'
+              }}
+              className="hover-lift"
+            >
+              {CATEGORIES_LABELS[key]} ({groupedFaq[key]?.length || 0})
+            </a>
+          ))}
+        </nav>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '48px' }}>
-          {/* FAQ Accordion */}
-          <div style={{ maxWidth: '800px', width: '100%' }}>
-            {faqSchema.mainEntity.map((item, index) => (
-              <details 
-                key={index} 
-                style={{ 
-                  backgroundColor: 'var(--bg-card)', 
-                  border: '1px solid var(--border-color)', 
-                  borderRadius: 'var(--border-radius-lg)', 
-                  padding: '20px 24px', 
-                  marginBottom: '16px',
-                  cursor: 'pointer'
-                }}
-              >
-                <summary 
+          {/* Corpo do FAQ agrupado */}
+          <div style={{ width: '100%' }}>
+            {categoriasKeys.map((key) => {
+              const items = groupedFaq[key] || [];
+              if (items.length === 0) return null;
+
+              return (
+                <section 
+                  key={key} 
+                  id={key} 
                   style={{ 
-                    fontSize: '1.15rem', 
-                    fontWeight: '600', 
-                    color: 'var(--text-main)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '12px',
-                    listStyle: 'none',
-                    outline: 'none'
+                    marginBottom: '56px', 
+                    scrollMarginTop: '120px'
                   }}
                 >
-                  <HelpCircle size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                  <span>{item.name}</span>
-                </summary>
-                <div 
-                  style={{ 
-                    marginTop: '16px', 
-                    paddingTop: '16px', 
-                    borderTop: '1px solid var(--border-color)', 
-                    color: 'var(--text-muted)', 
-                    lineHeight: '1.7', 
-                    fontFamily: 'var(--font-secondary)',
-                    fontSize: '1rem' 
-                  }}
-                >
-                  <p>{item.acceptedAnswer.text}</p>
-                </div>
-              </details>
-            ))}
+                  <h2 
+                    style={{ 
+                      fontSize: '1.6rem', 
+                      color: 'var(--accent)', 
+                      borderBottom: '1px solid var(--border-color)', 
+                      paddingBottom: '12px',
+                      marginBottom: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    <Bookmark size={20} />
+                    {CATEGORIES_LABELS[key]}
+                  </h2>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+                    {items.map((item, idx) => (
+                      <details 
+                        key={idx} 
+                        style={{ 
+                          backgroundColor: 'var(--bg-card)', 
+                          border: '1px solid var(--border-color)', 
+                          borderRadius: 'var(--border-radius-lg)', 
+                          padding: '18px 24px', 
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <summary 
+                          style={{ 
+                            fontSize: '1.05rem', 
+                            fontWeight: '600', 
+                            color: 'var(--text-main)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '12px',
+                            listStyle: 'none',
+                            outline: 'none'
+                          }}
+                        >
+                          <HelpCircle size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                          <span>{item.name}</span>
+                        </summary>
+                        <div 
+                          style={{ 
+                            marginTop: '14px', 
+                            paddingTop: '14px', 
+                            borderTop: '1px solid var(--border-color)', 
+                            color: 'var(--text-muted)', 
+                            lineHeight: '1.7', 
+                            fontFamily: 'var(--font-secondary)',
+                            fontSize: '0.98rem' 
+                          }}
+                        >
+                          <p>{item.acceptedAnswer.text}</p>
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
 
           {/* Sidebar CTA */}
           <aside className={styles.sidebar}>
-            <h3 className={styles.sidebarTitle}>Ficou com alguma outra dúvida?</h3>
+            <h3 className={styles.sidebarTitle}>Ainda tem alguma dúvida específica sobre o seu projeto?</h3>
             <p style={{ fontSize: '0.95rem', marginBottom: '24px', lineHeight: '1.6' }}>
-              Fale diretamente com nossa fábrica. Atendemos no WhatsApp de forma rápida e humanizada para tirar todas as suas dúvidas.
+              Nosso canal no WhatsApp está sempre aberto para responder dúvidas de design, layouts ou materiais. Fale conosco diretamente.
             </p>
             <a 
-              href="https://wa.me/5554999971050?text=Olá! Estava lendo o FAQ e gostaria de tirar uma dúvida sobre móveis sob medida."
+              href="https://wa.me/5554999971050?text=Olá! Estava consultando as 100 dúvidas frequentes do site e gostaria de tirar uma dúvida sobre meu projeto."
               target="_blank" 
               rel="noopener noreferrer" 
               className="btn btn-primary"
