@@ -44,8 +44,37 @@ export default async function ProjetoDetailPage({ params }: Params) {
     notFound();
   }
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Início",
+        "item": "https://moveisunghero.com.br"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Projetos",
+        "item": "https://moveisunghero.com.br/projetos"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": data.title,
+        "item": `https://moveisunghero.com.br/projetos/${slug}`
+      }
+    ]
+  };
+
   return (
     <article className={styles.wrapper}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="container">
         <Link href="/projetos" className={styles.backLink}>
           <ChevronLeft size={16} />

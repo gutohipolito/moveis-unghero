@@ -47,8 +47,37 @@ export default async function CategoriaPage({ params }: Params) {
   // Busca as subcategorias específicas desta categoria de ambiente
   const subcategorias = getSubcategories(category);
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Início",
+        "item": "https://moveisunghero.com.br"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Ambientes",
+        "item": "https://moveisunghero.com.br/#ambientes"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": data.title,
+        "item": `https://moveisunghero.com.br/ambientes/${category}`
+      }
+    ]
+  };
+
   return (
     <article className={styles.wrapper}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="container">
         <Link href="/#ambientes" className={styles.backLink}>
           <ChevronLeft size={16} />

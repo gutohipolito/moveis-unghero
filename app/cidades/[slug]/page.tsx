@@ -52,8 +52,37 @@ export default async function CidadePage({ params }: Params) {
   const todasCidades = getAllMarkdownData('cidades');
   const outrasCidades = todasCidades.filter(c => c.slug !== slug);
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Início",
+        "item": "https://moveisunghero.com.br"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Cidades",
+        "item": "https://moveisunghero.com.br/#cidades"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": data.city || data.title,
+        "item": `https://moveisunghero.com.br/cidades/${slug}`
+      }
+    ]
+  };
+
   return (
     <article className={styles.wrapper}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="container">
         <Link href="/#cidades" className={styles.backLink}>
           <ChevronLeft size={16} />

@@ -44,8 +44,37 @@ export default async function BlogPostPage({ params }: Params) {
     notFound();
   }
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Início",
+        "item": "https://moveisunghero.com.br"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://moveisunghero.com.br/blog"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": data.title,
+        "item": `https://moveisunghero.com.br/blog/${slug}`
+      }
+    ]
+  };
+
   return (
     <article className={styles.wrapper}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="container">
         <Link href="/blog" className={styles.backLink}>
           <ChevronLeft size={16} />

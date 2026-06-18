@@ -1,12 +1,25 @@
 {
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
+  "@type": [
+    "LocalBusiness",
+    "HomeAndConstructionBusiness",
+    "FurnitureStore"
+  ],
+  "@id": "https://moveisunghero.com.br/#localbusiness",
   "name": "Móveis Unghero",
-  "image": "https://moveisunghero.com.br/wp-content/uploads/2025/09/logo-moveis-unghero-2025.png",
-  "@id": "https://moveisunghero.com.br/#organization",
+  "legalName": "Móveis Unghero Ltda.",
   "url": "https://moveisunghero.com.br",
+  "logo": "https://moveisunghero.com.br/wp-content/uploads/2025/09/logo-moveis-unghero-2025.png",
+  "image": "https://moveisunghero.com.br/images/cozinha-apartamento.jpg",
   "telephone": "+55-54-99997-1050",
+  "email": "moveisunghero@gmail.com",
   "priceRange": "$$$",
+  "cnpj": "13.415.510/0001-71",
+  "foundingDate": "2006",
+  "founder": {
+    "@type": "Person",
+    "name": "Família Unghero"
+  },
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Rua Cenira Cambruzzi, 155 - Planalto",
@@ -20,6 +33,7 @@
     "latitude": -29.2211024,
     "longitude": -51.3423502
   },
+  "hasMap": "https://www.google.com/maps/place/M%C3%B3veis+Unghero/@-29.2211024,-51.3449251,17z/data=!3m1!4b1!4m6!3m5!1s0x951ea0815ba7ee79:0xea502375cd2567d9!8m2!3d-29.2211024!4d-51.3423502!16s%2Fg%2F11cp78dtph?entry=tts",
   "openingHoursSpecification": {
     "@type": "OpeningHoursSpecification",
     "dayOfWeek": [
@@ -36,5 +50,95 @@
     "https://www.facebook.com/mvunghero",
     "https://www.instagram.com/moveisunghero/",
     "https://br.linkedin.com/company/mvunghero"
+  ],
+  "areaServed": [
+    {
+      "@type": "AdministrativeArea",
+      "name": "Farroupilha",
+      "sameAs": "https://pt.wikipedia.org/wiki/Farroupilha"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Caxias do Sul",
+      "sameAs": "https://pt.wikipedia.org/wiki/Caxias_do_Sul"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Bento Gonçalves",
+      "sameAs": "https://pt.wikipedia.org/wiki/Bento_Gon%C3%A7alves"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Garibaldi",
+      "sameAs": "https://pt.wikipedia.org/wiki/Garibaldi_(Rio_Grande_do_Sul)"
+    }
+  ],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Catálogo de Móveis Planejados sob Medida",
+    "itemListElement": [
+      {
+        "@type": "OfferCatalogItem",
+        "item": {
+          "@type": "Service",
+          "name": "Cozinhas sob Medida",
+          "description": "Cozinhas planejadas sob medida com MDF de 18mm e vedação contra umidade com adesivo de Poliuretano (PUR)."
+        }
+      },
+      {
+        "@type": "OfferCatalogItem",
+        "item": {
+          "@type": "Service",
+          "name": "Closets sob Medida",
+          "description": "Closets inteligentes com gaveteiros suspensos, cabideiros iluminados e portas de correr em vidro."
+        }
+      },
+      {
+        "@type": "OfferCatalogItem",
+        "item": {
+          "@type": "Service",
+          "name": "Dormitórios sob Medida",
+          "description": "Dormitórios de casal, juvenis e infantis planejados de forma modular e evolutiva."
+        }
+      },
+      {
+        "@type": "OfferCatalogItem",
+        "item": {
+          "@type": "Service",
+          "name": "Salas de Estar sob Medida",
+          "description": "Home theaters, painéis de TV integrados com iluminação indireta de LED e adegas."
+        }
+      },
+      {
+        "@type": "OfferCatalogItem",
+        "item": {
+          "@type": "Service",
+          "name": "Ambientes Corporativos sob Medida",
+          "description": "Marcenaria para escritórios, clínicas de saúde adequadas à ANVISA, lojas e recepções."
+        }
+      }
+    ]
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "5.0",
+    "bestRating": "5",
+    "worstRating": "1",
+    "ratingCount": "38"
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Juliana Silveira"
+      },
+      "datePublished": "2025-11-20",
+      "reviewBody": "Fizemos toda a nossa casa com a Móveis Unghero, desde as cozinhas até os quartos. O acabamento em laca e o capricho da montagem foram excelentes. Recomendo muito pela qualidade e transparência.",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      }
+    }
   ]
 }
