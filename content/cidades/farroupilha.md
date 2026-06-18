@@ -7,11 +7,11 @@ slug: "farroupilha"
 
 # Móveis Sob Medida em Farroupilha, RS
 
-A Móveis Unghero tem orgulho de ter sua fábrica localizada no bairro Cinquentenário, em **Farroupilha**. Como moradores e fabricantes locais há mais de 18 anos, entendemos a arquitetura e as preferências da nossa cidade.
+A Móveis Unghero tem orgulho de ter sua fábrica localizada no bairro Planalto, em **Farroupilha**. Como moradores e fabricantes locais há mais de 20 anos, entendemos a arquitetura e as preferências da nossa cidade.
 
 ## Por que fazer seus móveis com um fabricante de Farroupilha?
 
-- **Fábrica Própria Local**: Nossa produção ocorre na Rua Raineri Petrini, 882. Isso permite que você visite a fábrica para conferir o andamento do seu projeto e a qualidade dos materiais antes da montagem.
+- **Fábrica Própria Local**: Nossa produção ocorre na Rua Cenira Cambruzzi, 155. Isso permite que você visite a fábrica para conferir o andamento do seu projeto e a qualidade dos materiais antes da montagem.
 - **Logística Rápida**: Estando na mesma cidade, o transporte dos móveis é imediato, o que reduz custos de frete e riscos de avarias durante o trajeto.
 - **Assistência Pós-Venda Imediata**: Se você precisar de qualquer regulagem de portas, gavetas ou ajustes adicionais anos após a instalação, nossa equipe está a poucos minutos de distância para atendê-lo.
 - **Desenvolvimento da Economia Local**: Ao escolher a Móveis Unghero, você apoia profissionais da região e fortalece a indústria moveleira de Farroupilha.

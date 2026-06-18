@@ -7,14 +7,14 @@ import localBusinessSchema from "@/schemas/localbusiness.json";
 
 export const metadata: Metadata = {
   title: "Móveis Unghero | Móveis Sob Medida em Farroupilha e Serra Gaúcha",
-  description: "Há 18 anos fabricando móveis sob medida e planejados de alto padrão em Farroupilha, Caxias do Sul, Bento Gonçalves e Garibaldi. Projetos feitos com afeto.",
+  description: "Há mais de 20 anos fabricando móveis sob medida e planejados de alto padrão em Farroupilha, Caxias do Sul, Bento Gonçalves e Garibaldi. Projetos feitos com afeto.",
   metadataBase: new URL("https://moveisunghero.com.br"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "Móveis Unghero | Móveis Sob Medida e Planejados",
-    description: "Há 18 anos fabricando móveis sob medida e planejados de alto padrão na Serra Gaúcha. Feito com afeto e precisão.",
+    description: "Há mais de 20 anos fabricando móveis sob medida e planejados de alto padrão na Serra Gaúcha. Feito com afeto e precisão.",
     url: "https://moveisunghero.com.br",
     siteName: "Móveis Unghero",
     locale: "pt_BR",

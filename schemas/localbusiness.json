@@ -9,16 +9,16 @@
   "priceRange": "$$$",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Rua Raineri Petrini, 882 - Cinquentenário",
+    "streetAddress": "Rua Cenira Cambruzzi, 155 - Planalto",
     "addressLocality": "Farroupilha",
     "addressRegion": "RS",
-    "postalCode": "95175-016",
+    "postalCode": "95170-308",
     "addressCountry": "BR"
   },
   "geo": {
     "@type": "GeoCoordinates",
-    "latitude": -29.218585,
-    "longitude": -51.341147
+    "latitude": -29.2211024,
+    "longitude": -51.3423502
   },
   "openingHoursSpecification": {
     "@type": "OpeningHoursSpecification",

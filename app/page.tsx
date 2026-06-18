@@ -39,7 +39,7 @@ export default async function Home() {
             Feito com Afeto. Projetado para Durar.
           </h1>
           <p className="lead-text">
-            Há 18 anos unimos marcenaria artesanal de alto padrão com design inteligente para criar espaços personalizados na Serra Gaúcha.
+            Há mais de 20 anos unimos marcenaria artesanal de alto padrão com design inteligente para criar espaços personalizados na Serra Gaúcha.
           </p>
           <div className={styles.heroActions}>
             <a 

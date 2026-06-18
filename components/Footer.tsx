@@ -14,7 +14,7 @@ export default function Footer() {
               Móveis <span className={styles.brandTitleAccent}>Unghero</span>
             </div>
             <p className={styles.description}>
-              Há mais de 18 anos transformando residências e ambientes de trabalho com móveis planejados sob medida de alta qualidade na Serra Gaúcha. Feito com afeto e precisão artesanal.
+              Há mais de 20 anos transformando residências e ambientes de trabalho com móveis planejados sob medida de alta qualidade na Serra Gaúcha. Feito com afeto e precisão artesanal.
             </p>
           </div>
 
@@ -44,7 +44,7 @@ export default function Footer() {
               <address className={styles.contactInfo} style={{ fontStyle: 'normal' }}>
                 <div className={styles.contactItem}>
                   <MapPin size={18} className={styles.contactIcon} aria-hidden="true" />
-                  <span>Rua Raineri Petrini, 882<br />Cinquentenário, Farroupilha - RS<br />CEP 95175-016</span>
+                  <span>Rua Cenira Cambruzzi, 155<br />Planalto, Farroupilha - RS<br />CEP 95170-308</span>
                 </div>
                 <div className={styles.contactItem}>
                   <Phone size={18} className={styles.contactIcon} aria-hidden="true" />
@@ -61,7 +61,7 @@ export default function Footer() {
 
         <div className={styles.bottom}>
           <div>
-            &copy; {currentYear} Móveis Unghero. CNPJ: 08.411.082/0001-72. Todos os direitos reservados.
+            &copy; {currentYear} Móveis Unghero. CNPJ: 13.415.510/0001-71. Todos os direitos reservados.
           </div>
           <div className={styles.socials} aria-label="Redes sociais da Móveis Unghero">
             <a href="https://www.facebook.com/mvunghero" target="_blank" rel="noopener noreferrer" className={styles.socialIcon} aria-label="Facebook">
