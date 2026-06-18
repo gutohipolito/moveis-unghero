@@ -1,0 +1,29 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "serviceType": "Fabricação de Móveis Sob Medida",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "Móveis Unghero",
+    "url": "https://moveisunghero.com.br"
+  },
+  "areaServed": [
+    {
+      "@type": "AdministrativeArea",
+      "name": "Farroupilha"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Caxias do Sul"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Bento Gonçalves"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Garibaldi"
+    }
+  ],
+  "description": "Projetos e fabricação de móveis sob medida de alto padrão para residências e empresas (B2B), abrangendo cozinhas, dormitórios, banheiros, closets e ambientes corporativos."
+}

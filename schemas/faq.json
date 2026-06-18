@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Qual é a região de atendimento da Móveis Unghero?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A Móveis Unghero atende a toda a região da Serra Gaúcha, com foco especial nas cidades de Farroupilha, Caxias do Sul, Bento Gonçalves e Garibaldi."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Qual material é utilizado nos móveis sob medida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Trabalhamos com MDF de alta qualidade, de dupla face com espessura padrão de 18mm para estrutura, oferecendo excelente durabilidade, e utilizamos ferragens com sistemas de amortecimento de marcas líderes de mercado."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Como funciona o processo de orçamento e projeto?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O processo começa com uma conversa para entender as suas necessidades. Em seguida, realizamos a medição do espaço e desenvolvemos um projeto tridimensional personalizado. Após a sua aprovação, iniciamos a fabricação em nossa própria fábrica em Farroupilha."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Qual é o prazo de entrega dos móveis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "O prazo de entrega varia de acordo com a complexidade do projeto, sendo acordado e formalizado em contrato no momento do fechamento, assegurando pontualidade na montagem."
+      }
+    }
+  ]
+}

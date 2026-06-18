@@ -1,0 +1,29 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Review",
+  "itemReviewed": {
+    "@type": "LocalBusiness",
+    "name": "Móveis Unghero",
+    "image": "https://moveisunghero.com.br/wp-content/uploads/2025/09/logo-moveis-unghero-2025.png",
+    "telephone": "+55-54-99997-1050",
+    "priceRange": "$$$",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Rua Raineri Petrini, 882 - Cinquentenário",
+      "addressLocality": "Farroupilha",
+      "addressRegion": "RS",
+      "postalCode": "95175-016",
+      "addressCountry": "BR"
+    }
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Juliana Santos"
+  },
+  "reviewRating": {
+    "@type": "Rating",
+    "ratingValue": "5",
+    "bestRating": "5"
+  },
+  "reviewBody": "Os móveis da cozinha e da sala ficaram incríveis. A qualidade do MDF e o acabamento são impecáveis. A equipe de montagem foi super profissional e entregou exatamente no prazo acordado."
+}

@@ -1,0 +1,262 @@
+.hero {
+  position: relative;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  padding: 120px 0 80px 0;
+  background: radial-gradient(circle at top right, rgba(var(--accent-rgb), 0.08), transparent 45%),
+              radial-gradient(circle at bottom left, rgba(255,255,255,0.02), transparent 40%);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.heroContent {
+  max-width: 650px;
+}
+
+.heroTagline {
+  font-family: var(--font-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+
+.heroTitle {
+  font-size: 4rem;
+  line-height: 1.1;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.8rem;
+  }
+}
+
+.heroActions {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+@media (max-width: 480px) {
+  .heroActions {
+    flex-direction: column;
+  }
+}
+
+/* Sections */
+.sectionTitle {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.sectionSubtitle {
+  text-align: center;
+  font-family: var(--font-secondary);
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto 60px auto;
+  font-size: 1.1rem;
+}
+
+/* Grid de Ambientes */
+.ambientesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 32px;
+}
+
+.ambienteCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 320px;
+}
+
+.ambienteCard:hover {
+  border-color: var(--accent);
+}
+
+.ambienteIcon {
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+
+.ambienteTitle {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.ambienteDesc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+  font-family: var(--font-secondary);
+  flex-grow: 1;
+}
+
+.ambienteLink {
+  color: var(--accent);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-secondary);
+}
+
+.ambienteLink:hover {
+  gap: 12px;
+}
+
+/* Grid de Cidades */
+.cidadesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.cidadeCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.cidadeCard:hover {
+  background-color: var(--bg-card-hover);
+  border-color: var(--text-muted);
+}
+
+.cidadeName {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.cidadeLabel {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-family: var(--font-secondary);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Depoimentos */
+.depoimentosSection {
+  background-color: #090a0c;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.depoimentoCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.quote {
+  font-size: 1.2rem;
+  font-style: italic;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.author {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.authorName {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.authorMeta {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-family: var(--font-secondary);
+}
+
+/* Accordion FAQ */
+.faqContainer {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faqItem {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.faqItem[open] {
+  border-color: var(--accent);
+}
+
+.faqSummary {
+  padding: 24px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.faqSummary::-webkit-details-marker {
+  display: none;
+}
+
+.faqSummary::after {
+  content: '+';
+  font-size: 1.5rem;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+
+.faqItem[open] .faqSummary::after {
+  content: '−';
+}
+
+.faqContent {
+  padding: 0 24px 24px 24px;
+  color: var(--text-muted);
+  font-family: var(--font-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Call to Action */
+.ctaSection {
+  background: linear-gradient(135deg, #15171b 0%, #0c0d0f 100%);
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.ctaContent {
+  max-width: 600px;
+  margin: 0 auto;
+}

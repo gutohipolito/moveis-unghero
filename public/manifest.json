@@ -1,0 +1,16 @@
+{
+  "name": "Móveis Unghero | Feito com Afeto",
+  "short_name": "Unghero",
+  "description": "Móveis sob medida e planejados de alto padrão em Farroupilha e Serra Gaúcha.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0d0f",
+  "theme_color": "#FAB207",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

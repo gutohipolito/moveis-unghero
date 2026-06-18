@@ -1,0 +1,134 @@
+.footer {
+  background-color: #07080a;
+  border-top: 1px solid var(--border-color);
+  padding: 80px 0 30px 0;
+  color: var(--text-muted);
+  font-family: var(--font-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 60px;
+  margin-bottom: 60px;
+}
+
+@media (max-width: 992px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 576px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.brandCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.brandTitle {
+  font-family: var(--font-primary);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.03em;
+}
+
+.brandTitleAccent {
+  color: var(--accent);
+}
+
+.description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.colTitle {
+  font-family: var(--font-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 20px;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.link:hover {
+  color: var(--accent);
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 0.95rem;
+}
+
+.contactItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.contactIcon {
+  color: var(--accent);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.bottom {
+  border-top: 1px solid var(--border-color);
+  padding-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}
+
+.socials {
+  display: flex;
+  gap: 16px;
+}
+
+.socialIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.socialIcon:hover {
+  background-color: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}

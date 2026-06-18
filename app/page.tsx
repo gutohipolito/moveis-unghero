@@ -1,65 +1,154 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { ArrowRight, ChefHat, LayoutGrid, ShowerHead, BedDouble } from 'lucide-react';
+import styles from './page.module.css';
+import { getAllMarkdownData } from '@/lib/markdown';
+import faqSchema from '@/schemas/faq.json';
+import reviewSchema from '@/schemas/review.json';
 
-export default function Home() {
+// Ícones correspondentes a cada tipo de ambiente
+const iconMap: { [key: string]: any } = {
+  cozinhas: <ChefHat size={32} className={styles.ambienteIcon} />,
+  closets: <LayoutGrid size={32} className={styles.ambienteIcon} />,
+  banheiros: <ShowerHead size={32} className={styles.ambienteIcon} />,
+  dormitorios: <BedDouble size={32} className={styles.ambienteIcon} />,
+};
+
+export default async function Home() {
+  // Lê dinamicamente os ambientes e cidades a partir dos arquivos Markdown
+  const ambientes = getAllMarkdownData('ambientes');
+  const cidades = getAllMarkdownData('cidades');
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div>
+      {/* 1. HERO SECTION */}
+      <section className={styles.hero} aria-label="Introdução">
+        <div className={`container ${styles.heroContent}`}>
+          <div className={styles.heroTagline}>Móveis Sob Medida</div>
+          <h1 className={`${styles.heroTitle} text-gradient`}>
+            Feito com Afeto. Projetado para Durar.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="lead-text">
+            Há 18 anos unimos marcenaria artesanal de alto padrão com design inteligente para criar espaços personalizados na Serra Gaúcha.
           </p>
+          <div className={styles.heroActions}>
+            <a 
+              href="https://wa.me/5554999971050" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn btn-primary glow-hover"
+            >
+              Fazer Orçamento Gratuito
+            </a>
+            <a href="#ambientes" className="btn btn-secondary">
+              Conhecer Ambientes
+            </a>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </section>
+
+      {/* 2. SEÇÃO DE AMBIENTES */}
+      <section id="ambientes" className="section" aria-labelledby="ambientes-title">
+        <div className="container">
+          <h2 id="ambientes-title" className={styles.sectionTitle}>Ambientes Planejados</h2>
+          <p className={styles.sectionSubtitle}>
+            Aproveitamento milimétrico e escolha cuidadosa de ferragens e materiais para cada espaço da sua casa.
+          </p>
+
+          <div className={styles.ambientesGrid}>
+            {ambientes.map((ambiente) => (
+              <article key={ambiente.slug} className={`${styles.ambienteCard} hover-lift`}>
+                <div>
+                  {iconMap[ambiente.slug] || <LayoutGrid size={32} className={styles.ambienteIcon} />}
+                  <h3 className={styles.ambienteTitle}>{ambiente.title}</h3>
+                  <p className={styles.ambienteDesc}>{ambiente.description}</p>
+                </div>
+                <Link href={`/ambientes/${ambiente.slug}`} className={styles.ambienteLink}>
+                  Ver detalhes técnicos
+                  <ArrowRight size={16} />
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. SEÇÃO DE SEO LOCAL (CIDADES) */}
+      <section id="cidades" className="section" aria-labelledby="cidades-title" style={{ backgroundColor: 'rgba(255,255,255,0.01)' }}>
+        <div className="container">
+          <h2 id="cidades-title" className={styles.sectionTitle}>Cidades Atendidas</h2>
+          <p className={styles.sectionSubtitle}>
+            Nossa fábrica local em Farroupilha nos permite atender de forma ágil e próxima as principais cidades da região.
+          </p>
+
+          <div className={styles.cidadesGrid}>
+            {cidades.map((cidade) => (
+              <Link href={`/cidades/${cidade.slug}`} key={cidade.slug}>
+                <div className={`${styles.cidadeCard} hover-lift`}>
+                  <h3 className={styles.cidadeName}>{cidade.city || cidade.title}</h3>
+                  <div className={styles.cidadeLabel}>Atendimento Local</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. SEÇÃO DE DEPOIMENTOS */}
+      <section className={`section ${styles.depoimentosSection}`} aria-label="Avaliações de Clientes">
+        <div className="container">
+          <div className={styles.depoimentoCard}>
+            <p className={styles.quote}>
+              &ldquo;{reviewSchema.reviewBody}&rdquo;
+            </p>
+            <div className={styles.author}>
+              <span className={styles.authorName}>{reviewSchema.author.name}</span>
+              <span className={styles.authorMeta}>Avaliação 5/5 no Google - Farroupilha/RS</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. SEÇÃO DE FAQ ACCORDION */}
+      <section id="faq" className="section" aria-labelledby="faq-title">
+        <div className="container">
+          <h2 id="faq-title" className={styles.sectionTitle}>Dúvidas Frequentes</h2>
+          <p className={styles.sectionSubtitle}>
+            Respostas diretas sobre o nosso processo de design, materiais e garantias.
+          </p>
+
+          <div className={styles.faqContainer}>
+            {faqSchema.mainEntity.map((item, index) => (
+              <details key={index} className={styles.faqItem}>
+                <summary className={styles.faqSummary}>
+                  {item.name}
+                </summary>
+                <div className={styles.faqContent}>
+                  <p>{item.acceptedAnswer.text}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. CALL TO ACTION (CONVERSÃO) */}
+      <section className={`section ${styles.ctaSection}`} aria-label="Chamada para Ação">
+        <div className={`container ${styles.ctaContent}`}>
+          <h2 style={{ fontSize: '2.5rem', marginBottom: '16px' }}>Pronto para tirar o seu projeto do papel?</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '1.1rem', fontFamily: 'var(--font-secondary)' }}>
+            Fale diretamente com nossa fábrica. Realizamos a medição no local e apresentamos um projeto em 3D sem custos.
+          </p>
+          <a 
+            href="https://wa.me/5554999971050" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="btn btn-primary btn-large glow-hover"
+            style={{ padding: '16px 40px', fontSize: '1.1rem' }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+            Falar com a Marcenaria no WhatsApp
           </a>
         </div>
-      </main>
+      </section>
     </div>
   );
 }

@@ -1,0 +1,40 @@
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "Móveis Unghero",
+  "image": "https://moveisunghero.com.br/wp-content/uploads/2025/09/logo-moveis-unghero-2025.png",
+  "@id": "https://moveisunghero.com.br/#organization",
+  "url": "https://moveisunghero.com.br",
+  "telephone": "+55-54-99997-1050",
+  "priceRange": "$$$",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Rua Raineri Petrini, 882 - Cinquentenário",
+    "addressLocality": "Farroupilha",
+    "addressRegion": "RS",
+    "postalCode": "95175-016",
+    "addressCountry": "BR"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": -29.218585,
+    "longitude": -51.341147
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ],
+    "opens": "07:30",
+    "closes": "18:00"
+  },
+  "sameAs": [
+    "https://www.facebook.com/mvunghero",
+    "https://www.instagram.com/moveisunghero/",
+    "https://br.linkedin.com/company/mvunghero"
+  ]
+}

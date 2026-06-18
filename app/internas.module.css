@@ -1,0 +1,118 @@
+.wrapper {
+  padding: 80px 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-family: var(--font-secondary);
+  font-weight: 500;
+  margin-bottom: 32px;
+}
+
+.backLink:hover {
+  transform: translateX(-4px);
+}
+
+.header {
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 40px;
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 2.2rem;
+  }
+}
+
+.description {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  max-width: 800px;
+  font-family: var(--font-secondary);
+  line-height: 1.6;
+}
+
+.content {
+  max-width: 800px;
+  font-family: var(--font-secondary);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text-main);
+}
+
+/* Estilização interna de Markdowns (tabelas, títulos, blocos) */
+.content h2 {
+  font-family: var(--font-primary);
+  font-size: 1.8rem;
+  margin: 48px 0 24px 0;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.content p {
+  margin-bottom: 24px;
+}
+
+.content ul, .content ol {
+  margin-bottom: 24px;
+  padding-left: 24px;
+}
+
+.content li {
+  margin-bottom: 8px;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 32px 0;
+  font-size: 0.95rem;
+}
+
+.content th, .content td {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.content th {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.content blockquote {
+  border-left: 4px solid var(--accent);
+  background-color: var(--bg-card);
+  padding: 24px;
+  border-radius: var(--border-radius-md);
+  margin: 40px 0;
+}
+
+.content blockquote p {
+  margin-bottom: 0;
+  font-style: italic;
+}
+
+.sidebar {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 32px;
+  margin-top: 48px;
+}
+
+.sidebarTitle {
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+}
