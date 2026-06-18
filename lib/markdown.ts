@@ -26,7 +26,6 @@ export function getMarkdownData(folder: string, slug: string): MarkdownData | nu
     const { data, content } = matter(fileContents);
 
     // Convert markdown string to HTML
-    // Marked returns a string or promise. By default synchronous is supported
     const htmlContent = marked.parse(content) as string;
 
     return {
@@ -62,6 +61,65 @@ export function getAllMarkdownData(folder: string): MarkdownData[] {
     return allData;
   } catch (error) {
     console.error(`Erro ao ler todos os markdowns da pasta ${folder}:`, error);
+    return [];
+  }
+}
+
+// Retorna todas as subpastas em content/ambientes/ (que representam as grandes categorias de ambientes)
+export function getAmbienteCategories(): string[] {
+  try {
+    const dirPath = path.join(contentDirectory, 'ambientes');
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
+    return fs.readdirSync(dirPath).filter((file) => {
+      return fs.statSync(path.join(dirPath, file)).isDirectory();
+    });
+  } catch (error) {
+    console.error('Erro ao ler categorias de ambientes:', error);
+    return [];
+  }
+}
+
+// Retorna todas as subcategorias (arquivos .md que não index.md) de uma categoria de ambiente
+export function getSubcategories(category: string): MarkdownData[] {
+  try {
+    const dirPath = path.join(contentDirectory, 'ambientes', category);
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
+    const fileNames = fs.readdirSync(dirPath);
+
+    const subData = fileNames
+      .filter((fileName) => fileName.endsWith('.md') && fileName !== 'index.md')
+      .map((fileName) => {
+        const slug = fileName.replace(/\.md$/, '');
+        return getMarkdownData(`ambientes/${category}`, slug);
+      })
+      .filter((data): data is MarkdownData => data !== null);
+
+    return subData;
+  } catch (error) {
+    console.error(`Erro ao ler subcategorias de ambientes/${category}:`, error);
+    return [];
+  }
+}
+
+// Retorna o frontmatter e dados de index.md para cada categoria de ambiente
+export function getAllCategoriesPillarData(): MarkdownData[] {
+  try {
+    const categories = getAmbienteCategories();
+    return categories
+      .map((cat) => {
+        const data = getMarkdownData(`ambientes/${cat}`, 'index');
+        if (data) {
+          data.slug = cat; // Define o slug como o nome da pasta para links dinâmicos
+        }
+        return data;
+      })
+      .filter((data): data is MarkdownData => data !== null);
+  } catch (error) {
+    console.error('Erro ao ler dados de categorias pilares:', error);
     return [];
   }
 }

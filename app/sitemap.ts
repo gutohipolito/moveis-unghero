@@ -1,12 +1,12 @@
 import { MetadataRoute } from 'next';
-import { getAllMarkdownData } from '@/lib/markdown';
+import { getAmbienteCategories, getSubcategories, getAllMarkdownData } from '@/lib/markdown';
 
 export const dynamic = 'force-static';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://moveisunghero.com.br';
 
-  // Páginas estáticas principais
+  // 1. Rota Home
   const rotasEstaticas = [
     {
       url: baseUrl,
@@ -16,16 +16,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Gera rotas para os ambientes
-  const ambientes = getAllMarkdownData('ambientes');
-  const rotasAmbientes = ambientes.map((amb) => ({
-    url: `${baseUrl}/ambientes/${amb.slug}`,
+  // 2. Rotas para Categorias de Ambientes Pilares
+  const categorias = getAmbienteCategories();
+  const rotasCategorias = categorias.map((cat) => ({
+    url: `${baseUrl}/ambientes/${cat}`,
     lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.8,
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
   }));
 
-  // Gera rotas para as cidades (SEO Local)
+  // 3. Rotas para Subcategorias de Ambientes Satélites (Fan-Out)
+  const rotasSubcategorias: any[] = [];
+  categorias.forEach((cat) => {
+    const subs = getSubcategories(cat);
+    subs.forEach((sub) => {
+      rotasSubcategorias.push({
+        url: `${baseUrl}/ambientes/${cat}/${sub.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.8,
+      });
+    });
+  });
+
+  // 4. Rotas para Cidades (SEO Local)
   const cidades = getAllMarkdownData('cidades');
   const rotasCidades = cidades.map((cid) => ({
     url: `${baseUrl}/cidades/${cid.slug}`,
@@ -34,5 +48,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...rotasEstaticas, ...rotasAmbientes, ...rotasCidades];
+  return [...rotasEstaticas, ...rotasCategorias, ...rotasSubcategorias, ...rotasCidades];
 }

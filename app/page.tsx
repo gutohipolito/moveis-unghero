@@ -1,7 +1,11 @@
 import Link from 'next/link';
-import { ArrowRight, ChefHat, LayoutGrid, ShowerHead, BedDouble } from 'lucide-react';
+import { 
+  ArrowRight, ChefHat, LayoutGrid, ShowerHead, BedDouble, 
+  Tv, Briefcase, WashingMachine, Flame, ShoppingBag, 
+  Stethoscope, Building2 
+} from 'lucide-react';
 import styles from './page.module.css';
-import { getAllMarkdownData } from '@/lib/markdown';
+import { getAllMarkdownData, getAllCategoriesPillarData } from '@/lib/markdown';
 import faqSchema from '@/schemas/faq.json';
 import reviewSchema from '@/schemas/review.json';
 
@@ -11,11 +15,18 @@ const iconMap: { [key: string]: any } = {
   closets: <LayoutGrid size={32} className={styles.ambienteIcon} />,
   banheiros: <ShowerHead size={32} className={styles.ambienteIcon} />,
   dormitorios: <BedDouble size={32} className={styles.ambienteIcon} />,
+  salas: <Tv size={32} className={styles.ambienteIcon} />,
+  'home-office': <Briefcase size={32} className={styles.ambienteIcon} />,
+  lavanderias: <WashingMachine size={32} className={styles.ambienteIcon} />,
+  'gourmet-churrasqueiras': <Flame size={32} className={styles.ambienteIcon} />,
+  'lojas-retail': <ShoppingBag size={32} className={styles.ambienteIcon} />,
+  'consultorios-clinicas': <Stethoscope size={32} className={styles.ambienteIcon} />,
+  'escritorios-coworkings': <Building2 size={32} className={styles.ambienteIcon} />,
 };
 
 export default async function Home() {
   // Lê dinamicamente os ambientes e cidades a partir dos arquivos Markdown
-  const ambientes = getAllMarkdownData('ambientes');
+  const ambientes = getAllCategoriesPillarData();
   const cidades = getAllMarkdownData('cidades');
 
   return (
