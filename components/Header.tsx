@@ -50,16 +50,15 @@ export default function Header() {
           </a>
         </nav>
 
-        <button 
+        <a 
           className={styles.mobileToggle} 
-          aria-label="Abrir menu de navegação"
-          onClick={() => {
-            // Em uma implementação mais robusta, abriria o drawer mobile
-            window.location.href = "https://wa.me/5554999971050";
-          }}
+          aria-label="Falar com a marcenaria no WhatsApp"
+          href="https://wa.me/5554999971050"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <Menu size={24} />
-        </button>
+          <Phone size={24} />
+        </a>
       </div>
     </header>
   );
