@@ -58,3 +58,29 @@ Se você notar que o tráfego de busca ou as respostas dos chats de IA pararam d
 2. Filtre por **Service** (Serviço) igual a **WAF** ou **Super Bot Fight Mode**.
 3. Procure por requisições bloqueadas que tenham no campo **User-Agent** algum dos robôs permitidos listados na seção 2 deste guia.
 4. Se encontrar algum bloqueio, ajuste a sua regra de Bypass para cobrir o agente que foi barrado.
+
+---
+
+## 4. Configuração de Edge Cache de 24h para Bots de IA (Fase 9)
+Para reduzir custos de processamento no servidor original do site e acelerar as requisições recorrentes de crawlers de busca inteligente, criaremos uma **Cache Rule** (Regra de Cache) no Cloudflare.
+
+Isso garante que requisições idênticas vindas dessas IAs sejam respondidas diretamente na borda (Edge) do Cloudflare em poucos milissegundos, sem onerar sua hospedagem original.
+
+### Passo a Passo no Painel do Cloudflare:
+1. No menu lateral do Cloudflare, navegue até **Caching** > **Cache Rules** (Regras de Cache).
+2. Clique no botão **Create rule** (Criar regra).
+3. Preencha os campos da regra:
+   * **Rule name:** `Edge Cache de 24h para Bots de IA`
+   * **If incoming requests match...** (Se as requisições corresponderem a...):
+     * Em **Field**, selecione **User Agent**.
+     * Em **Operator**, selecione **contains** (contém).
+     * Em **Value**, digite `GPTBot`.
+     * Clique no botão **Or** (Ou) à direita.
+     * Crie outra linha com **Field** = `User Agent`, **Operator** = `contains`, **Value** = `ClaudeBot`.
+     * Clique no botão **Or** (Ou) à direita.
+     * Crie mais uma linha com **Field** = `User Agent`, **Operator** = `contains`, **Value** = `PerplexityBot`.
+     * *(Opcional: Você pode adicionar outros robôs de IA listados na seção 2 deste guia usando a mesma lógica).*
+4. Em **Cache settings** (Configurações de Cache) logo abaixo:
+   * Localize a opção **Edge cache TTL** (Tempo de vida do cache na borda).
+   * Selecione **Eligible for cache** (Qualificado para cache) e configure a opção **Override origin** (Substituir origem) com o valor de **24 hours** (24 horas) ou **1 day**.
+5. Clique em **Deploy** (Implantar) no canto inferior direito.
