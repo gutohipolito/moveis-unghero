@@ -139,11 +139,48 @@ export default async function BlogPostPage({ params }: Params) {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '48px' }}>
-          {/* Conteúdo do Blog */}
-          <div 
-            className={styles.content}
-            dangerouslySetInnerHTML={{ __html: data.htmlContent }}
-          />
+          <div>
+            <div 
+              className={styles.content}
+              dangerouslySetInnerHTML={{ __html: data.htmlContent }}
+            />
+
+            {/* Caixa de Autoria E-E-A-T */}
+            <div style={{
+              marginTop: '48px',
+              padding: '24px',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-lg)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                color: '#000',
+                fontSize: '1.2rem',
+                flexShrink: 0
+              }}>
+                FU
+              </div>
+              <div>
+                <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '1rem' }}>
+                  Escrito por <Link href="/nossos-especialistas" className="hover-underline" style={{ color: 'var(--accent)' }}>Família Unghero</Link>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontFamily: 'var(--font-secondary)', marginTop: '4px', lineHeight: '1.5' }}>
+                  Mestres marceneiros e designers especialistas na fabricação própria de móveis sob medida na Serra Gaúcha há mais de 20 anos.
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Sidebar CTA */}
           <aside className={styles.sidebar}>

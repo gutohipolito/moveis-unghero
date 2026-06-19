@@ -8,7 +8,7 @@ image: "/images/cozinha-apartamento.jpg"
 
 A cozinha é o ambiente mais exigido de uma residência. Além do uso diário constante de gavetas e portas, ela está sujeita a calor, vapor e umidade frequentes. Por isso, a escolha do tipo de painel de madeira reconstituída (MDF) e a técnica de montagem são determinantes para a durabilidade do móvel.
 
-Na **Móveis Unghero**, aplicamos mais de 20 anos de experiência em marcenaria artesanal de alto padrão para estruturar projetos de cozinha com foco em resistência estrutural e proteção contra água. 
+Na **Móveis Unghero**, aplicamos mais de 20 anos de experiência em marcenaria artesanal de alto padrão para estruturar [projetos de cozinhas sob medida](/ambientes/cozinhas) com foco em resistência estrutural e proteção contra água. 
 
 Neste artigo, apresentamos os três principais fatores técnicos que você deve analisar ao projetar a sua cozinha planejada.
 
@@ -53,4 +53,4 @@ Nas áreas que sofrem contato direto com umidade ou no rodapé do móvel (que to
 | **Prateleiras Longas** | 25mm | MDF Standard | Fita de Borda Padrão |
 | **Portas e Frentes** | 18mm | MDF Standard ou Laca | Fita de Borda com Acabamento Premium |
 
-Se você deseja projetar uma cozinha que combine o melhor design sob medida com especificações estruturais de marcenaria pensadas para durar gerações na Serra Gaúcha, fale conosco. Visite nossa fábrica ou agende um orçamento gratuito pelo WhatsApp.
+Se você deseja projetar uma [cozinha planejada](/ambientes/cozinhas) que combine o melhor design sob medida com especificações estruturais de marcenaria pensadas para durar gerações na Serra Gaúcha, fale conosco. Visite a [nossa fábrica em Farroupilha](/cidades/farroupilha) ou agende um orçamento gratuito pelo WhatsApp.

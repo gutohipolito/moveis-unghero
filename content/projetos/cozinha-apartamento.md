@@ -8,9 +8,9 @@ image: "/images/cozinhas.jpeg"
 
 # Cozinha de Apartamento sob Medida
 
-O desafio deste projeto em apartamento foi otimizar o espaço compacto disponível. Criamos armários aéreos inteiros até o teto para armazenagem máxima e integramos a lavanderia de forma fluida à cozinha.
+O desafio deste projeto em apartamento localizado em [Farroupilha-RS](/cidades/farroupilha) foi otimizar o espaço compacto disponível. Criamos [armários aéreos de cozinhas](/ambientes/cozinhas) inteiros até o teto para armazenagem máxima e integramos a [lavanderia](/ambientes/lavanderias) de forma fluida à [cozinha americana](/ambientes/cozinhas/cozinhas-americanas).
 
 ## Pontos Fortes
 - **Armários Aéreos Verticais**: Aproveitamento do pé-direito total para guardar itens sazonais.
 - **Portas Basculantes com Pistão a Gás**: Abertura leve que se mantém suspensa para fácil acesso.
-- **Divisória de Vidro Temperado**: Separação sutil entre a cozinha e a máquina de lavar.
+- **Divisória de Vidro Temperado**: Separação sutil entre a cozinha e a [máquina de lavar na área de serviço](/ambientes/lavanderias).
