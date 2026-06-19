@@ -1,9 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import localBusinessSchema from "@/schemas/localbusiness.json";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-primary",
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-secondary",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Móveis Unghero | Móveis Sob Medida em Farroupilha e Serra Gaúcha",
@@ -42,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" style={{ scrollBehavior: 'smooth' }}>
+    <html lang="pt-BR" className={`${outfit.variable} ${plusJakartaSans.variable}`} style={{ scrollBehavior: 'smooth' }}>
       <head>
         {/* Injeção de Dados Estruturados JSON-LD do Negócio Local para SEO/IAs */}
         <script
