@@ -3,7 +3,7 @@ title: "Gastronomia: Restaurantes, Cafés e Bares"
 description: "Balcões de atendimento reforçados, buffets de servir integrados, painéis de menu e mesas sob medida para alta circulação."
 category: "ambientes"
 slug: "index"
-image: "/images/corporativos.jpg"
+image: "/images/gastronomia.png"
 ---
 
 # Marcenaria para Gastronomia: Restaurantes, Cafés e Bares

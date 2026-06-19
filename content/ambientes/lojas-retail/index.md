@@ -3,7 +3,7 @@ title: "Lojas e Ambientes Comerciais"
 description: "Vitrines sob medida, expositores modulares, balcões de caixa reforçados e provadores funcionais para comércio."
 category: "ambientes"
 slug: "index"
-image: "/images/corporativos.jpg"
+image: "/images/lojas-retail.png"
 ---
 
 # Lojas e Ambientes Comerciais (Retail)

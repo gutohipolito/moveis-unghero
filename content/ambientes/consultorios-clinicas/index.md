@@ -3,7 +3,7 @@ title: "Consultórios e Clínicas"
 description: "Mobiliário para clínicas médicas e odontológicas. Bancadas assépticas, armários de esterilização e nichos para prontuários em conformidade com normas sanitárias."
 category: "ambientes"
 slug: "index"
-image: "/images/corporativos.jpg"
+image: "/images/consultorios-clinicas.png"
 ---
 
 # Consultórios e Clínicas de Saúde e Estética

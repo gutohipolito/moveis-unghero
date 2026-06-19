@@ -3,7 +3,7 @@ title: "Hotéis e Pousadas"
 description: "Mobiliário completo sob medida para quartos de hotelaria, camas reforçadas, criados-mudos acoplados e armários otimizados."
 category: "ambientes"
 slug: "index"
-image: "/images/corporativos.jpg"
+image: "/images/hoteis-pousadas.png"
 ---
 
 # Projetos de Marcenaria para Hotéis e Pousadas

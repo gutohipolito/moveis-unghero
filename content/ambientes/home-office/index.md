@@ -3,7 +3,7 @@ title: "Home Office e Estudos"
 description: "Bancadas de trabalho ergonômicas, estantes de livros estruturadas, gaveteiros organizadores e gerenciamento de cabos."
 category: "ambientes"
 slug: "index"
-image: "/images/salas.jpg"
+image: "/images/home-office.png"
 ---
 
 # Home Office e Espaços de Estudo
