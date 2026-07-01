@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft, Printer, Sparkles } from "lucide-react";
