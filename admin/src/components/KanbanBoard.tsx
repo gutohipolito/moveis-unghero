@@ -164,34 +164,34 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
   return (
     <div className="space-y-6">
       {/* Topbar de Ações e Métricas Rápidas */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 rounded-xl border border-border/40 bg-card/40 backdrop-blur-md gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 rounded-xl border border-[#2d241f] bg-black/45 backdrop-blur-md gap-6 shadow-xl">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center">
-            <div className="p-2 rounded-lg bg-primary/15 border border-primary/20 mr-3">
+            <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 mr-3">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">Total em Negociação</span>
-              <span className="text-xl font-bold tracking-tight text-gradient-gold">
+              <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Total em Negociação</span>
+              <span className="text-xl font-black tracking-tight text-gradient-gold">
                 {formatCurrency(totalPipeline)}
               </span>
             </div>
           </div>
-          <div className="flex items-center border-l border-border/40 pl-6">
-            <div className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/20 mr-3">
+          <div className="flex items-center border-l border-[#2d241f] pl-6">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mr-3">
               <UserCheck className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">Projetos Ativos</span>
-              <span className="text-xl font-bold tracking-tight text-emerald-400">
+              <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Projetos Ativos</span>
+              <span className="text-xl font-black tracking-tight text-emerald-400">
                 {activeProjectsCount}
               </span>
             </div>
           </div>
         </div>
 
-        <Button onClick={() => setIsNewLeadOpen(true)} className="w-full lg:w-auto font-semibold">
-          <Plus className="mr-2 h-4 w-4" /> Novo Lead / Cliente
+        <Button onClick={() => setIsNewLeadOpen(true)} className="w-full lg:w-auto font-bold btn-metallic">
+          <Plus className="mr-2 h-4.5 w-4.5" /> Novo Lead / Cliente
         </Button>
       </div>
 
@@ -207,19 +207,19 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`flex-shrink-0 w-80 rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs flex flex-col transition-all duration-300 ${
-                isOver ? "bg-accent/40 border-primary/40 scale-102 shadow-lg" : ""
+              className={`flex-shrink-0 w-80 rounded-xl border border-[#2d241f] bg-black/25 flex flex-col transition-all duration-300 ${
+                isOver ? "bg-[#2d241f]/30 border-primary/20 scale-[1.01] shadow-lg" : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
-              <div className={`p-4 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-border/40 bg-black/10`}>
+              <div className={`p-4 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-[#2d241f]/50 bg-black/15`}>
                 <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-sm tracking-wide">{col.title}</span>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-black/20 text-muted-foreground">
+                  <span className="font-extrabold text-xs uppercase tracking-wider">{col.title}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/30 text-[#b8a090]">
                     {colProjects.length}
                   </span>
                 </div>
-                <span className="text-xs font-semibold">{formatCurrency(colSum)}</span>
+                <span className="text-xs font-black text-foreground">{formatCurrency(colSum)}</span>
               </div>
 
               {/* Lista de Cards */}
@@ -228,7 +228,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                 onDragLeave={() => setDragOverColumn(null)}
               >
                 {colProjects.length === 0 ? (
-                  <div className="h-full flex items-center justify-center border border-dashed border-border/30 rounded-lg p-6 text-center text-xs text-muted-foreground/60">
+                  <div className="h-full flex items-center justify-center border border-dashed border-[#2d241f]/80 rounded-xl p-6 text-center text-xs text-muted-foreground/60">
                     Nenhum projeto nesta etapa
                   </div>
                 ) : (
@@ -240,50 +240,50 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                         draggable
                         onDragStart={(e) => handleDragStart(e, project.id)}
                         onDragEnd={handleDragEnd}
-                        className={`group p-4 rounded-lg border border-border/40 bg-card/85 text-card-foreground shadow-xs transition-all duration-200 cursor-grab active:cursor-grabbing hover:border-primary/45 hover:shadow-md ${
+                        className={`group glass-card p-4 rounded-xl text-card-foreground shadow-lg transition-all duration-300 cursor-grab active:cursor-grabbing hover:border-primary/30 hover:scale-[1.01] ${
                           isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
                         }`}
                       >
                         {/* Origem Badge */}
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[9px] font-bold bg-secondary px-1.5 py-0.5 rounded text-muted-foreground uppercase tracking-widest">
+                          <span className="text-[8px] font-bold bg-[#2d241f] px-1.5 py-0.5 rounded text-[#b8a090] uppercase tracking-widest border border-[#3d302a]/55">
                             {project.client.origem}
                           </span>
-                          <span className="text-[10px] text-muted-foreground flex items-center">
-                            <MapPin className="h-3 w-3 mr-0.5" />
+                          <span className="text-[9px] text-[#b8a090] flex items-center font-medium">
+                            <MapPin className="h-3 w-3 mr-0.5 text-primary" />
                             {project.client.cidade}
                           </span>
                         </div>
 
                         {/* Nome do Cliente */}
-                        <h4 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                        <h4 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
                           {project.client.nome}
                         </h4>
 
                         {/* Detalhes de Contato */}
-                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <div className="mt-2 space-y-1 text-xs text-[#b8a090]">
                           <p className="flex items-center">
-                            <Phone className="h-3 w-3 mr-1 opacity-70" />
+                            <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
                             {project.client.telefone}
                           </p>
                         </div>
 
                         {/* Separador */}
-                        <div className="my-3 border-t border-border/30" />
+                        <div className="my-3 border-t border-[#2d241f]/50" />
 
                         {/* Rodapé do Card */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center text-primary font-bold text-sm">
-                            <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80" />
+                          <div className="flex items-center text-foreground font-black text-sm">
+                            <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary" />
                             {formatCurrency(project.valor_previsto).replace("R$", "")}
                           </div>
                           
                           <Link 
                             href={`/projects/${project.id}`}
-                            className="inline-flex items-center justify-center p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-[#2d241f] hover:bg-primary/20 text-[#b8a090] hover:text-primary border border-[#3c3029] transition-all cursor-pointer group/link"
                             title="Ver Detalhes do Projeto"
                           >
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
                           </Link>
                         </div>
                       </div>

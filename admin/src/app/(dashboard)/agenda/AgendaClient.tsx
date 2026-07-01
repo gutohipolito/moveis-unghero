@@ -180,7 +180,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
       <div className="lg:col-span-8 space-y-6">
         
         {/* Painel de Filtros e Controles */}
-        <Card className="p-4 bg-card/35 backdrop-blur-xs border-border/40 flex flex-wrap items-center justify-between gap-4">
+        <Card className="p-4 glass-card border-[#2d241f] flex flex-wrap items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Filter className="h-3.5 w-3.5" />
@@ -211,15 +211,15 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             </Select>
           </div>
 
-          <Button onClick={() => setIsAddEventOpen(true)} size="sm">
+          <Button onClick={() => setIsAddEventOpen(true)} size="sm" className="btn-metallic">
             <Plus className="h-4 w-4 mr-1.5" /> Agendar
           </Button>
         </Card>
 
         {/* Grade do Calendário */}
-        <Card className="bg-card/25 border-border/40 overflow-hidden">
+        <Card className="glass-card border-[#2d241f] overflow-hidden">
           {/* Cabeçalho do Calendário */}
-          <div className="p-4 border-b border-border/40 flex items-center justify-between bg-black/10">
+          <div className="p-4 border-b border-[#2d241f]/50 flex items-center justify-between bg-black/15">
             <div className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-primary" />
               <h2 className="font-bold text-lg text-foreground">
@@ -240,7 +240,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
           </div>
 
           {/* Dias da Semana */}
-          <div className="grid grid-cols-7 text-center py-2 bg-black/20 border-b border-border/30 text-xs font-bold text-muted-foreground">
+          <div className="grid grid-cols-7 text-center py-2 bg-black/15 border-b border-[#2d241f]/40 text-xs font-bold text-[#b8a090]">
             <div>DOM</div>
             <div>SEG</div>
             <div>TER</div>
@@ -251,7 +251,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
           </div>
 
           {/* Dias do Calendário */}
-          <div className="grid grid-cols-7 grid-rows-5 border-collapse divide-x divide-y divide-border/20">
+          <div className="grid grid-cols-7 grid-rows-5 border-collapse divide-x divide-y divide-[#2d241f]/35">
             {calendarCells.map((day, idx) => {
               if (day === null) {
                 return (
@@ -550,7 +550,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
               {loading ? "Agendando..." : "Confirmar Agendamento"}
             </Button>
           </div>

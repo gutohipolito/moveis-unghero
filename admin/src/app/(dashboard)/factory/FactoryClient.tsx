@@ -98,7 +98,7 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
       
       {/* Cards de Métricas Operacionais */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-4 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-purple-500/10 text-purple-400 rounded-lg">
             <ClipboardList className="h-5 w-5" />
           </div>
@@ -108,7 +108,7 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
           </div>
         </Card>
 
-        <Card className="p-4 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-4 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-lg">
             <Layers className="h-5 w-5" />
           </div>
@@ -118,7 +118,7 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
           </div>
         </Card>
 
-        <Card className="p-4 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-4 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-orange-500/10 text-orange-400 rounded-lg">
             <Wrench className="h-5 w-5" />
           </div>
@@ -128,7 +128,7 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
           </div>
         </Card>
 
-        <Card className="p-4 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-4 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
             <Package className="h-5 w-5" />
           </div>
@@ -150,15 +150,15 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="flex flex-col bg-card/15 border border-border/30 rounded-xl overflow-hidden min-h-[480px]"
+              className="flex flex-col bg-black/25 border border-[#2d241f] rounded-xl overflow-hidden min-h-[480px]"
             >
               {/* Cabeçalho da Coluna */}
-              <div className={`p-3.5 flex items-center justify-between border-b border-border/30 ${col.bg} font-bold text-xs uppercase tracking-wider`}>
+              <div className={`p-3.5 flex items-center justify-between border-b border-[#2d241f]/50 bg-black/15 ${col.bg} font-bold text-xs uppercase tracking-wider`}>
                 <span className="flex items-center gap-1.5">
                   <Icon className="h-4 w-4" />
                   {col.name}
                 </span>
-                <span className="bg-secondary/40 text-[10px] px-2 py-0.5 rounded-full font-extrabold text-foreground">
+                <span className="bg-[#2d241f] text-[10px] px-2 py-0.5 rounded-full font-extrabold text-[#b8a090]">
                   {colItems.length}
                 </span>
               </div>
@@ -175,7 +175,7 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
                       key={item.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, item.id)}
-                      className={`p-3 bg-card/45 border-border/40 hover:border-primary/40 active:scale-[0.97] transition-all duration-200 cursor-grab active:cursor-grabbing space-y-2.5 relative group ${
+                      className={`p-3 glass-card hover:border-primary/30 active:scale-[0.97] transition-all duration-200 cursor-grab active:cursor-grabbing space-y-2.5 relative group ${
                         draggedId === item.id ? "opacity-30" : ""
                       }`}
                     >

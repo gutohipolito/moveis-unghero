@@ -475,7 +475,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
       </div>
 
       {/* Card Principal - Cabeçalho e Informações Básicas */}
-      <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-md p-6">
+      <div className="rounded-xl border border-[#2d241f] bg-black/45 backdrop-blur-md p-6 shadow-xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="space-y-4 col-span-2">
             <div>
@@ -515,7 +515,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
           </div>
 
           {/* Painel Comercial Rápido */}
-          <div className="p-5 rounded-xl border border-border/60 bg-black/15 flex flex-col justify-between h-full gap-4">
+          <div className="p-5 rounded-xl border border-[#2d241f] bg-black/25 flex flex-col justify-between h-full gap-4">
             <div>
               <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
               <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
@@ -577,7 +577,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 Monitore e atualize as etapas de fabricação de cada cômodo de forma individual.
               </p>
             </div>
-            <Button onClick={() => setIsAddEnvOpen(true)} size="sm">
+            <Button onClick={() => setIsAddEnvOpen(true)} size="sm" className="btn-metallic">
               <Plus className="h-4 w-4 mr-1.5" /> Novo Cômodo
             </Button>
           </div>
@@ -641,7 +641,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 Faça upload de projetos em DWG, SketchUp, PDFs de medição e renders em alta definição.
               </p>
             </div>
-            <Button onClick={() => setIsUploadOpen(true)} size="sm">
+            <Button onClick={() => setIsUploadOpen(true)} size="sm" className="btn-metallic">
               <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
             </Button>
           </div>
@@ -853,7 +853,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                     Gere orçamentos e envie propostas em PDF de 5 páginas.
                   </p>
                 </div>
-                <Button onClick={() => setIsCreatingQuote(true)} size="sm">
+                <Button onClick={() => setIsCreatingQuote(true)} size="sm" className="btn-metallic">
                   <Plus className="h-4 w-4 mr-1.5" /> Nova Proposta
                 </Button>
               </div>
@@ -953,7 +953,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 Controle o recebimento de entradas, parcelas e saldo devedor do contrato.
               </p>
             </div>
-            <Button onClick={() => setIsAddInstallmentOpen(true)} size="sm">
+            <Button onClick={() => setIsAddInstallmentOpen(true)} size="sm" className="btn-metallic">
               <Plus className="h-4 w-4 mr-1.5" /> Lançar Parcela
             </Button>
           </div>
@@ -1075,7 +1075,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 Organize e agende medições técnicas, vistorias e etapas de montagem para este projeto.
               </p>
             </div>
-            <Button onClick={() => setIsAddTaskOpen(true)} size="sm">
+            <Button onClick={() => setIsAddTaskOpen(true)} size="sm" className="btn-metallic">
               <Plus className="h-4 w-4 mr-1.5" /> Agendar
             </Button>
           </div>
@@ -1186,7 +1186,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
               {loading ? "Adicionando..." : "Adicionar Cômodo"}
             </Button>
           </div>
@@ -1236,7 +1236,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
               {loading ? "Enviando..." : "Salvar Arquivo"}
             </Button>
           </div>
@@ -1299,7 +1299,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
               {loading ? "Lançando..." : "Confirmar Parcela"}
             </Button>
           </div>
@@ -1399,7 +1399,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
               {loading ? "Agendando..." : "Confirmar Agendamento"}
             </Button>
           </div>

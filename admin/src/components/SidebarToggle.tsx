@@ -63,42 +63,42 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 bottom-0 left-0 w-64 bg-card/95 border-r border-border backdrop-blur-md z-50 transform ${
+        className={`fixed top-0 bottom-0 left-0 w-64 bg-black/45 border-r border-[#2d241f] backdrop-blur-xl z-50 transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-300 ease-in-out md:hidden flex flex-col`}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border/40">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-[#2d241f]/50">
           <div className="flex flex-col">
-            <span className="text-base font-bold tracking-wider text-gradient-gold">
+            <span className="text-sm font-black tracking-widest text-gradient-gold leading-none">
               UNGHERO
             </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest -mt-1">
+            <span className="text-[9px] text-[#b8a090] uppercase tracking-widest mt-1 block font-bold">
               SaaS Admin
             </span>
           </div>
           <button
             onClick={toggleMenu}
-            className="p-1 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
+            className="p-1 rounded-lg hover:bg-[#2d241f]/40 text-[#b8a090] hover:text-foreground cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Links */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.name}
               href={item.href}
               onClick={toggleMenu}
-              className="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all group"
+              className="flex items-center justify-between px-3.5 py-2.5 text-xs font-bold rounded-xl text-[#b8a090] hover:text-foreground hover:bg-[#211915]/50 border border-transparent hover:border-primary/10 hover:gold-glow transition-all duration-300 group"
             >
               <div className="flex items-center">
-                <item.icon className="mr-3 h-4 w-4" />
+                <item.icon className="mr-3 h-4.5 w-4.5 text-[#b8a090] group-hover:text-primary transition-colors" />
                 {item.name}
               </div>
               {item.badge && (
-                <span className="text-[9px] font-semibold bg-accent px-1.5 py-0.5 rounded text-muted-foreground">
+                <span className="text-[9px] font-bold bg-primary/15 border border-primary/25 px-1.5 py-0.5 rounded text-primary">
                   {item.badge}
                 </span>
               )}
@@ -107,9 +107,9 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
         </nav>
 
         {/* User Perfil */}
-        <div className="flex flex-col p-4 border-t border-border/40 bg-black/10">
+        <div className="flex flex-col p-4 border-t border-[#2d241f] bg-black/25">
           <div className="flex items-center px-2 py-1.5 mb-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 border border-primary/30">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
               {user.image ? (
                 <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full" />
               ) : (
@@ -120,7 +120,7 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
               <p className="text-sm font-semibold truncate leading-none text-foreground">
                 {user.name}
               </p>
-              <span className="text-[10px] font-medium text-primary uppercase tracking-widest mt-1 inline-block">
+              <span className="text-[9px] font-bold text-primary uppercase tracking-widest mt-1.5 inline-block">
                 {user.cargo || "COMERCIAL"}
               </span>
             </div>
@@ -128,7 +128,7 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
           <form action="/api/auth/sign-out" method="POST" className="w-full">
             <button
               type="submit"
-              className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+              className="flex items-center w-full px-3 py-2 text-xs font-semibold rounded-lg text-[#b8a090] hover:text-destructive hover:bg-destructive/5 border border-transparent hover:border-destructive/10 transition-all cursor-pointer"
             >
               <LogOut className="mr-3 h-4 w-4" />
               Sair do Painel

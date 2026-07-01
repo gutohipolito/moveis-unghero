@@ -84,7 +84,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
       
       {/* Cards de Indicadores Financeiros */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
             <TrendingUp className="h-5 w-5" />
           </div>
@@ -94,7 +94,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
         </Card>
 
-        <Card className="p-5 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
             <CheckCircle2 className="h-5 w-5" />
           </div>
@@ -104,7 +104,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
         </Card>
 
-        <Card className="p-5 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
             <Clock className="h-5 w-5" />
           </div>
@@ -114,7 +114,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
         </Card>
 
-        <Card className="p-5 bg-card/30 backdrop-blur-xs border-border/40 flex items-center gap-4">
+        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
           <div className="p-3 bg-destructive/10 text-destructive/80 rounded-xl">
             <AlertTriangle className="h-5 w-5" />
           </div>
@@ -126,7 +126,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <Card className="p-4 bg-card/35 backdrop-blur-xs border-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-4 glass-card border-[#2d241f] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -153,11 +153,11 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
       </Card>
 
       {/* Tabela de Contas a Receber */}
-      <Card className="bg-card/25 border-border/40 overflow-hidden">
+      <Card className="glass-card border-[#2d241f] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead>
-              <tr className="border-b border-border/30 text-muted-foreground text-xs uppercase font-bold bg-black/20">
+              <tr className="border-b border-[#2d241f]/50 text-muted-foreground text-xs uppercase font-bold bg-black/15">
                 <th className="p-4">Cliente / Contratante</th>
                 <th className="p-4 text-center">Tipo</th>
                 <th className="p-4 text-right">Valor Parcela</th>
