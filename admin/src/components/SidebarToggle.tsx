@@ -6,15 +6,12 @@ import {
   Menu, 
   X, 
   User as UserIcon,
-  LogOut
+  LogOut,
+  Kanban,
+  FolderOpen,
+  Calendar,
+  DollarSign
 } from "lucide-react";
-
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<any>;
-  badge?: string;
-}
 
 interface SidebarToggleProps {
   user: {
@@ -23,10 +20,16 @@ interface SidebarToggleProps {
     image?: string | null;
     cargo?: string;
   };
-  navItems: NavItem[];
 }
 
-export default function SidebarToggle({ user, navItems }: SidebarToggleProps) {
+const NAV_ITEMS = [
+  { name: "CRM Kanban", href: "/crm", icon: Kanban },
+  { name: "Clientes & Projetos", href: "/crm", icon: FolderOpen },
+  { name: "Agenda", href: "#", icon: Calendar, badge: "Em Breve" },
+  { name: "Financeiro", href: "#", icon: DollarSign, badge: "Em Breve" },
+];
+
+export default function SidebarToggle({ user }: SidebarToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -74,7 +77,7 @@ export default function SidebarToggle({ user, navItems }: SidebarToggleProps) {
 
         {/* Links */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <Link
               key={item.name}
               href={item.href}

@@ -119,7 +119,7 @@ export default async function DashboardLayout({
               UNGHERO
             </span>
           </Link>
-          <SidebarToggle user={user} navItems={navItems} />
+          <SidebarToggle user={user} />
         </header>
 
         {/* Corpo da Página */}
