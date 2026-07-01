@@ -1,0 +1,162 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+export type ItemType = 
+  | "MOVEIS_MDF"
+  | "FERRAGENS_ESPECIAIS"
+  | "MAO_DE_OBRA"
+  | "OUTROS";
+
+export interface CreateQuoteInput {
+  subtotal: number;
+  desconto: number;
+  valor_final: number;
+  validade: string;
+  observacoes?: string;
+  template_tipo?: string;
+  items: {
+    descricao: string;
+    quantidade: number;
+    tipo_custo: ItemType;
+    valor_unitario: number;
+    valor_total: number;
+  }[];
+}
+
+// Cria um novo orçamento com controle de versão
+export async function createQuote(projectId: string, data: CreateQuoteInput) {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Busca orçamentos existentes do projeto para determinar a próxima versão
+      const existingQuotes = await tx.quote.findMany({
+        where: { project_id: projectId }
+      });
+      const nextVersion = existingQuotes.length > 0 
+        ? Math.max(...existingQuotes.map(q => q.versao)) + 1 
+        : 1;
+
+      // 2. Cria a Quote
+      const quote = await tx.quote.create({
+        data: {
+          project_id: projectId,
+          versao: nextVersion,
+          subtotal: data.subtotal,
+          desconto: data.desconto,
+          valor_final: data.valor_final,
+          validade: new Date(data.validade),
+          observacoes: data.observacoes || "",
+        }
+      });
+
+      // 3. Cria os QuoteItems
+      if (data.items.length > 0) {
+        await tx.quoteItem.createMany({
+          data: data.items.map(item => ({
+            quote_id: quote.id,
+            descricao: item.descricao,
+            quantidade: item.quantidade,
+            tipo_custo: item.tipo_custo,
+            valor_unitario: item.valor_unitario,
+            valor_total: item.valor_total
+          }))
+        });
+      }
+
+      // 4. Cria evento na Timeline
+      await tx.timeline.create({
+        data: {
+          project_id: projectId,
+          acao: `Orçamento comercial v${nextVersion} criado no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.valor_final)}`,
+          interno_sotamente: false,
+          user_id: "system-admin-mock-id"
+        }
+      });
+
+      return { quote, version: nextVersion };
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    return { success: true, data: result };
+  } catch (error) {
+    console.warn("Simulação de criação de orçamento (banco inacessível):", error);
+    
+    // Fallback simulado
+    const simulatedVersion = Math.floor(Math.random() * 3) + 1;
+    const mockQuote = {
+      id: `simulated-quote-${Math.random().toString(36).substr(2, 9)}`,
+      project_id: projectId,
+      versao: simulatedVersion,
+      subtotal: data.subtotal,
+      desconto: data.desconto,
+      valor_final: data.valor_final,
+      validade: new Date(data.validade),
+      observacoes: data.observacoes || ""
+    };
+
+    return { 
+      success: true, 
+      simulated: true, 
+      data: { quote: mockQuote, version: simulatedVersion } 
+    };
+  }
+}
+
+// Atualiza o status do orçamento e, se aprovado, atualiza o status do projeto principal
+export async function approveQuote(projectId: string, quoteId: string, version: number) {
+  try {
+    // 1. Atualiza o status geral do projeto para APROVADO
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { status_geral: "APROVADO" }
+    });
+
+    // 2. Registra o evento de aprovação de proposta na timeline
+    await prisma.timeline.create({
+      data: {
+        project_id: projectId,
+        acao: `Proposta comercial v${version} foi APROVADA pelo cliente. Projeto movido para a etapa de Preparação Técnica.`,
+        interno_sotamente: false,
+        user_id: "system-admin-mock-id"
+      }
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    return { success: true };
+  } catch (error) {
+    console.warn("Simulação de aprovação de orçamento:", error);
+    return { success: true, simulated: true };
+  }
+}
+
+// Remove um orçamento
+export async function deleteQuote(projectId: string, quoteId: string, version: number) {
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Remove itens
+      await tx.quoteItem.deleteMany({
+        where: { quote_id: quoteId }
+      });
+      // 2. Remove quote
+      await tx.quote.delete({
+        where: { id: quoteId }
+      });
+      // 3. Registra na timeline
+      await tx.timeline.create({
+        data: {
+          project_id: projectId,
+          acao: `Orçamento comercial v${version} foi excluído do sistema`,
+          interno_sotamente: true,
+          user_id: "system-admin-mock-id"
+        }
+      });
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    return { success: true };
+  } catch (error) {
+    console.warn("Simulação de exclusão de orçamento:", error);
+    return { success: true, simulated: true };
+  }
+}

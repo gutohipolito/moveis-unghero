@@ -13,6 +13,8 @@ import {
   type EnvironmentStatus,
   type FileType
 } from "@/app/actions/project";
+import { approveQuote, deleteQuote } from "@/app/actions/quotes";
+import QuoteBuilder from "@/components/QuoteBuilder";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +39,9 @@ import {
   ArrowRight,
   ShieldCheck,
   Send,
-  Building
+  Building,
+  DollarSign,
+  Trash2
 } from "lucide-react";
 
 interface Environment {
@@ -66,6 +70,16 @@ interface TimelineEvent {
   };
 }
 
+interface Quote {
+  id: string;
+  versao: number;
+  subtotal: number;
+  desconto: number;
+  valor_final: number;
+  validade: string;
+  observacoes: string;
+}
+
 interface Project {
   id: string;
   valor_previsto: number;
@@ -82,6 +96,7 @@ interface Project {
   environments: Environment[];
   files: ProjectFile[];
   timeline: TimelineEvent[];
+  quotes: Quote[];
 }
 
 interface ProjectDetailsProps {
@@ -113,6 +128,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
   const [project, setProject] = useState<Project>(initialProject);
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isCreatingQuote, setIsCreatingQuote] = useState(false);
 
   // Estados dos formulários
   const [newEnvForm, setNewEnvForm] = useState({ nome: "", tipo: "COZINHA" as EnvironmentType });
@@ -377,11 +393,13 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
         </div>
       </div>
 
-      {/* Tabs Layout */}
       <Tabs defaultValue="environments">
         <TabsList>
           <TabsTrigger value="environments">
             <Layers className="h-4 w-4 mr-2" /> Ambientes ({project.environments.length})
+          </TabsTrigger>
+          <TabsTrigger value="quotes">
+            <DollarSign className="h-4 w-4 mr-2" /> Orçamentos ({project.quotes?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="files">
             <FileText className="h-4 w-4 mr-2" /> Arquivos Técnicos ({project.files.length})
@@ -631,6 +649,140 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
               ))
             )}
           </div>
+        </TabsContent>
+
+        {/* Tab: Orçamentos */}
+        <TabsContent value="quotes" className="space-y-4">
+          {isCreatingQuote ? (
+            <QuoteBuilder
+              projectId={project.id}
+              onCancel={() => setIsCreatingQuote(false)}
+              onSuccess={(newQuoteData) => {
+                const newQuote: Quote = {
+                  id: newQuoteData.quote.id,
+                  versao: newQuoteData.version,
+                  subtotal: newQuoteData.quote.subtotal,
+                  desconto: newQuoteData.quote.desconto,
+                  valor_final: newQuoteData.quote.valor_final,
+                  validade: newQuoteData.quote.validade.toISOString ? newQuoteData.quote.validade.toISOString() : new Date(newQuoteData.quote.validade).toISOString(),
+                  observacoes: newQuoteData.quote.observacoes
+                };
+                
+                setProject({
+                  ...project,
+                  quotes: [newQuote, ...project.quotes],
+                  timeline: [
+                    {
+                      id: `local-time-${Date.now()}`,
+                      acao: `Orçamento comercial v${newQuote.versao} gerado no valor de ${formatCurrency(newQuote.valor_final)}`,
+                      data: new Date().toISOString(),
+                      interno_sotamente: false,
+                      user: { name: "Sistema" }
+                    },
+                    ...project.timeline
+                  ]
+                });
+                setIsCreatingQuote(false);
+              }}
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">Propostas & Orçamentos Comerciais</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Gere orçamentos e envie propostas em PDF de 5 páginas.
+                  </p>
+                </div>
+                <Button onClick={() => setIsCreatingQuote(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-1.5" /> Nova Proposta
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
+                {project.quotes.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground">
+                    Nenhum orçamento gerado para este projeto. Clique em "Nova Proposta" para começar.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/30">
+                    {project.quotes.map((q) => (
+                      <div key={q.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/10 transition-colors">
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex items-center gap-2.5">
+                            <h4 className="font-bold text-base text-foreground leading-none">
+                              Proposta Comercial v{q.versao}
+                            </h4>
+                            <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
+                              Validade: {new Date(q.validade).toLocaleDateString("pt-BR")}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                            <span>Subtotal: <strong className="text-foreground">{formatCurrency(q.subtotal)}</strong></span>
+                            {q.desconto > 0 && <span className="text-amber-500 font-medium">Desconto: -{formatCurrency(q.desconto)}</span>}
+                            <span>Valor Final: <strong className="text-primary font-bold">{formatCurrency(q.valor_final)}</strong></span>
+                          </div>
+                          {q.observacoes && (
+                            <p className="text-xs text-muted-foreground/80 line-clamp-1 italic">
+                              "{q.observacoes}"
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Confirmar a aprovação da Proposta v${q.versao}? Isso mudará o status do projeto para APROVADO.`)) {
+                                setProject(prev => ({ ...prev, status_geral: "APROVADO" }));
+                                await approveQuote(project.id, q.id, q.versao);
+                                setProject(prev => ({
+                                  ...prev,
+                                  timeline: [
+                                    {
+                                      id: `local-time-${Date.now()}`,
+                                      acao: `Proposta comercial v${q.versao} foi APROVADA pelo cliente.`,
+                                      data: new Date().toISOString(),
+                                      interno_sotamente: false,
+                                      user: { name: "Vendas" }
+                                    },
+                                    ...prev.timeline
+                                  ]
+                                }));
+                              }
+                            }}
+                            className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovar Proposta
+                          </button>
+
+                          <Link
+                            href={`/quotes/${q.id}/print`}
+                            target="_blank"
+                            className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-border/60 bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all cursor-pointer"
+                          >
+                            <FileText className="h-4 w-4 mr-1.5" /> Gerar PDF (5 Págs)
+                          </Link>
+
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Deseja realmente excluir a Proposta v${q.versao}?`)) {
+                                setProject({ ...project, quotes: project.quotes.filter(item => item.id !== q.id) });
+                                await deleteQuote(project.id, q.id, q.versao);
+                              }
+                            }}
+                            className="p-2 rounded-lg hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors cursor-pointer"
+                            title="Excluir Orçamento"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

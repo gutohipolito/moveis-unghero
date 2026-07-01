@@ -29,7 +29,8 @@ const MOCK_DETAILS: Record<string, any> = {
     timeline: [
       { id: "time-1", acao: "Lead capturado via formulário do Instagram", data: new Date("2026-06-28T14:32:00Z"), interno_sotamente: false, user: { name: "Sistema" } },
       { id: "time-2", acao: "Primeiro contato telefônico. Cliente solicitou projeto preliminar.", data: new Date("2026-06-29T10:15:00Z"), interno_sotamente: true, user: { name: "João (Vendedor)" } }
-    ]
+    ],
+    quotes: []
   },
   "proj-2": {
     id: "proj-2",
@@ -55,6 +56,17 @@ const MOCK_DETAILS: Record<string, any> = {
     timeline: [
       { id: "time-3", acao: "Reunião de briefing inicial com a cliente e o arquiteto", data: new Date("2026-06-25T16:00:00Z"), interno_sotamente: false, user: { name: "João (Vendedor)" } },
       { id: "time-4", acao: "Desenho das primeiras plantas no SketchUp iniciado", data: new Date("2026-06-27T09:00:00Z"), interno_sotamente: true, user: { name: "Lucas (Projetista)" } }
+    ],
+    quotes: [
+      {
+        id: "q-1",
+        versao: 1,
+        subtotal: 82000.0,
+        desconto: 4000.0,
+        valor_final: 78000.0,
+        validade: new Date("2026-07-20T00:00:00Z"),
+        observacoes: "Proposta preliminar em MDF Freijó e puxadores perfil bronze. Ferragens amortecidas standard."
+      }
     ]
   },
   "proj-6": {
@@ -82,6 +94,17 @@ const MOCK_DETAILS: Record<string, any> = {
       { id: "time-5", acao: "Contrato assinado eletronicamente", data: new Date("2026-06-15T18:00:00Z"), interno_sotamente: false, user: { name: "João (Vendedor)" } },
       { id: "time-6", acao: "Projeto técnico validado pelo engenheiro da fábrica", data: new Date("2026-06-20T11:00:00Z"), interno_sotamente: true, user: { name: "Carlos (Produção)" } },
       { id: "time-7", acao: "MDF Branco Tx e Freijó liberados para máquina de corte", data: new Date("2026-06-28T08:30:00Z"), interno_sotamente: true, user: { name: "Carlos (Produção)" } }
+    ],
+    quotes: [
+      {
+        id: "q-2",
+        versao: 1,
+        subtotal: 95000.0,
+        desconto: 6000.0,
+        valor_final: 89000.0,
+        validade: new Date("2026-06-30T00:00:00Z"),
+        observacoes: "Orçamento fechado e assinado. MDF e ferragens especiais inclusas."
+      }
     ]
   }
 };
@@ -95,7 +118,7 @@ export default async function ProjectPage({ params }: RouteParams) {
   
   const session = await auth.api.getSession({
     headers: await headers()
-  });
+  }).catch(() => null);
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
@@ -115,6 +138,7 @@ export default async function ProjectPage({ params }: RouteParams) {
         client: true,
         environments: true,
         files: true,
+        quotes: true,
         timeline: {
           include: {
             user: {
@@ -129,7 +153,6 @@ export default async function ProjectPage({ params }: RouteParams) {
     });
 
     if (!project) {
-      // Se não achar no banco tenta ver se tem nos mocks
       project = MOCK_DETAILS[id];
       isMock = true;
     }
@@ -158,6 +181,7 @@ export default async function ProjectPage({ params }: RouteParams) {
         { id: "env-gen-1", nome: "Cozinha de Exemplo", tipo: "COZINHA", status: "AGUARDANDO_MEDICAO" }
       ],
       files: [],
+      quotes: [],
       timeline: [
         { id: "time-gen-1", acao: "Projeto inicial gerado na rota dinamicamente", data: new Date(), interno_sotamente: false, user: { name: "Sistema" } }
       ]
@@ -191,7 +215,16 @@ export default async function ProjectPage({ params }: RouteParams) {
       data: t.data.toISOString ? t.data.toISOString() : new Date(t.data).toISOString(),
       interno_sotamente: t.interno_sotamente,
       user: t.user || { name: "Usuário do SaaS" }
-    }))
+    })),
+    quotes: project.quotes?.map((q: any) => ({
+      id: q.id,
+      versao: q.versao,
+      subtotal: Number(q.subtotal),
+      desconto: Number(q.desconto),
+      valor_final: Number(q.valor_final),
+      validade: q.validade.toISOString ? q.validade.toISOString() : new Date(q.validade).toISOString(),
+      observacoes: q.observacoes
+    })) || []
   };
 
   return (
