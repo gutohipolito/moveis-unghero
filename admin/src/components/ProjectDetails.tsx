@@ -1,0 +1,738 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { 
+  updateProjectGeneralStatus, 
+  updateEnvironmentStatus, 
+  addEnvironment, 
+  addTimelineEvent, 
+  toggleFileApproval, 
+  uploadProjectFile,
+  type EnvironmentType,
+  type EnvironmentStatus,
+  type FileType
+} from "@/app/actions/project";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { 
+  ArrowLeft, 
+  User, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  TrendingUp, 
+  Plus, 
+  Layers, 
+  Clock, 
+  FileText, 
+  CheckCircle2, 
+  AlertCircle, 
+  Lock, 
+  Eye, 
+  Upload, 
+  ArrowRight,
+  ShieldCheck,
+  Send,
+  Building
+} from "lucide-react";
+
+interface Environment {
+  id: string;
+  nome: string;
+  tipo: string;
+  status: string;
+}
+
+interface ProjectFile {
+  id: string;
+  tipo: string;
+  url: string;
+  versao: number;
+  aprovado_producao: boolean;
+  nome_arquivo: string;
+}
+
+interface TimelineEvent {
+  id: string;
+  acao: string;
+  data: string;
+  interno_sotamente: boolean;
+  user: {
+    name: string;
+  };
+}
+
+interface Project {
+  id: string;
+  valor_previsto: number;
+  status_geral: string;
+  client: {
+    id: string;
+    nome: string;
+    cidade: string;
+    origem: string;
+    telefone: string;
+    email: string;
+    observacoes?: string | null;
+  };
+  environments: Environment[];
+  files: ProjectFile[];
+  timeline: TimelineEvent[];
+}
+
+interface ProjectDetailsProps {
+  initialProject: Project;
+  companyId: string;
+  isMock: boolean;
+}
+
+const ENVIRONMENT_STATUSES: { value: EnvironmentStatus; label: string; bg: string }[] = [
+  { value: "AGUARDANDO_MEDICAO", label: "Aguardando Medição", bg: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  { value: "EM_DETALHAMENTO", label: "Em Detalhamento", bg: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+  { value: "PRONTO_PRODUCAO", label: "Pronto para Produção", bg: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  { value: "EM_CORTE", label: "Em Corte / Usinagem", bg: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
+  { value: "MONTAGEM_FABRICA", label: "Montagem na Fábrica", bg: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  { value: "PRONTO_ENTREGA", label: "Pronto para Entrega", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  { value: "EM_INSTALACAO", label: "Em Instalação", bg: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+  { value: "FINALIZADO", label: "Finalizado", bg: "bg-slate-500/10 text-slate-400 border-slate-500/20" }
+];
+
+const FILE_TYPES: { value: FileType; label: string }[] = [
+  { value: "MEDICAO", label: "Medição Técnica" },
+  { value: "RENDER", label: "Render 3D" },
+  { value: "CONTRATO", label: "Contrato Assinado" },
+  { value: "FOTO", label: "Foto do Local / Instalação" },
+  { value: "PROJETO_TECNICO", label: "Projeto Técnico (CAD/SketchUp)" }
+];
+
+export default function ProjectDetails({ initialProject, companyId, isMock }: ProjectDetailsProps) {
+  const [project, setProject] = useState<Project>(initialProject);
+  const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+
+  // Estados dos formulários
+  const [newEnvForm, setNewEnvForm] = useState({ nome: "", tipo: "COZINHA" as EnvironmentType });
+  const [timelineInput, setTimelineInput] = useState("");
+  const [isTimelinePrivate, setIsTimelinePrivate] = useState(true);
+  const [timelineFilter, setTimelineFilter] = useState<"ALL" | "PUBLIC" | "PRIVATE">("ALL");
+  const [uploadForm, setUploadForm] = useState({ tipo: "RENDER" as FileType, nome_arquivo: "" });
+  const [loading, setLoading] = useState(false);
+
+  // Helper de Moeda
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  };
+
+  // Handler de alteração do status geral do projeto
+  const handleStatusChange = async (newStatus: string) => {
+    const originalStatus = project.status_geral;
+    setProject({ ...project, status_geral: newStatus });
+    
+    const result = await updateProjectGeneralStatus(project.id, newStatus);
+    if (!result.success) {
+      setProject({ ...project, status_geral: originalStatus });
+      alert("Erro ao alterar o status do projeto.");
+    }
+  };
+
+  // Handler de alteração do status do ambiente individual
+  const handleEnvStatusChange = async (envId: string, newStatus: EnvironmentStatus) => {
+    const originalEnvs = [...project.environments];
+    const updatedEnvs = project.environments.map(e => e.id === envId ? { ...e, status: newStatus } : e);
+    setProject({ ...project, environments: updatedEnvs });
+
+    const result = await updateEnvironmentStatus(project.id, envId, newStatus);
+    if (!result.success) {
+      setProject({ ...project, environments: originalEnvs });
+      alert("Erro ao atualizar o status do ambiente.");
+    }
+  };
+
+  // Submit para adicionar ambiente
+  const handleAddEnvSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const result = await addEnvironment(project.id, newEnvForm.nome, newEnvForm.tipo);
+    if (result.success && result.data) {
+      setProject({
+        ...project,
+        environments: [...project.environments, result.data as Environment],
+        // Adiciona um evento mockado localmente na timeline para atualizar instantaneamente
+        timeline: [
+          {
+            id: `local-time-${Date.now()}`,
+            acao: `Ambiente "${newEnvForm.nome}" (${newEnvForm.tipo}) adicionado ao projeto`,
+            data: new Date().toISOString(),
+            interno_sotamente: false,
+            user: { name: "Usuário do SaaS" }
+          },
+          ...project.timeline
+        ]
+      });
+      setIsAddEnvOpen(false);
+      setNewEnvForm({ nome: "", tipo: "COZINHA" });
+    } else {
+      alert("Erro ao adicionar ambiente.");
+    }
+    setLoading(false);
+  };
+
+  // Enviar nota na Timeline
+  const handleSendTimeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!timelineInput.trim()) return;
+
+    const text = timelineInput.trim();
+    setTimelineInput("");
+
+    const result = await addTimelineEvent(project.id, text, isTimelinePrivate);
+    if (result.success && result.data) {
+      setProject({
+        ...project,
+        timeline: [
+          {
+            id: result.data.id,
+            acao: result.data.acao,
+            data: result.data.data.toISOString ? result.data.data.toISOString() : new Date(result.data.data).toISOString(),
+            interno_sotamente: result.data.interno_sotamente,
+            user: result.data.user
+          },
+          ...project.timeline
+        ]
+      });
+    } else {
+      alert("Erro ao publicar nota.");
+    }
+  };
+
+  // Toggle de liberação de arquivos para corte na fábrica
+  const handleToggleFileApproval = async (fileId: string, currentApproved: boolean) => {
+    const updatedFiles = project.files.map(f => f.id === fileId ? { ...f, aprovado_producao: !currentApproved } : f);
+    setProject({ ...project, files: updatedFiles });
+
+    const result = await toggleFileApproval(project.id, fileId, !currentApproved);
+    if (!result.success) {
+      // Reverte estado
+      setProject({
+        ...project,
+        files: project.files.map(f => f.id === fileId ? { ...f, aprovado_producao: currentApproved } : f)
+      });
+      alert("Erro ao alterar o status do arquivo.");
+    } else {
+      // Cria uma entrada local na timeline
+      const logText = `Arquivo técnico foi ${!currentApproved ? "LIBERADO" : "BLOQUEADO"} para a produção/corte.`;
+      setProject(prev => ({
+        ...prev,
+        timeline: [
+          {
+            id: `local-time-${Date.now()}`,
+            acao: logText,
+            data: new Date().toISOString(),
+            interno_sotamente: true,
+            user: { name: "Produção" }
+          },
+          ...prev.timeline
+        ]
+      }));
+    }
+  };
+
+  // Submit de Upload do arquivo
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const result = await uploadProjectFile(project.id, uploadForm);
+    if (result.success && result.data) {
+      const newFile: ProjectFile = {
+        id: result.data.id,
+        tipo: result.data.tipo,
+        url: result.data.url,
+        versao: result.data.versao,
+        aprovado_producao: result.data.aprovado_producao,
+        nome_arquivo: uploadForm.nome_arquivo || `Arquivo_${uploadForm.tipo}_v${result.data.versao}.pdf`
+      };
+
+      setProject({
+        ...project,
+        files: [newFile, ...project.files],
+        timeline: [
+          {
+            id: `local-time-${Date.now()}`,
+            acao: `Upload do arquivo "${newFile.nome_arquivo}" (v${newFile.versao}) realizado`,
+            data: new Date().toISOString(),
+            interno_sotamente: true,
+            user: { name: "Sistema" }
+          },
+          ...project.timeline
+        ]
+      });
+      setIsUploadOpen(false);
+      setUploadForm({ tipo: "RENDER", nome_arquivo: "" });
+    } else {
+      alert("Erro ao realizar upload.");
+    }
+    setLoading(false);
+  };
+
+  // Filtra a timeline conforme a privacidade selecionada
+  const filteredTimeline = project.timeline.filter(item => {
+    if (timelineFilter === "PUBLIC") return !item.interno_sotamente;
+    if (timelineFilter === "PRIVATE") return item.interno_sotamente;
+    return true;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Botão de Voltar e Banner de Mock */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Link 
+          href="/crm" 
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+          Voltar para o CRM Kanban
+        </Link>
+        {isMock && (
+          <span className="text-[11px] font-semibold bg-accent border border-primary/20 text-primary px-3 py-1 rounded-full">
+            Modo de Demonstração / Dados Mockados
+          </span>
+        )}
+      </div>
+
+      {/* Card Principal - Cabeçalho e Informações Básicas */}
+      <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-md p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="space-y-4 col-span-2">
+            <div>
+              <span className="text-xs font-bold text-primary tracking-widest uppercase">
+                Cliente & Projeto
+              </span>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mt-1">
+                {project.client.nome}
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 text-muted-foreground mr-2.5" />
+                Cidade: <span className="text-foreground font-medium ml-1">{project.client.cidade}</span>
+              </div>
+              <div className="flex items-center">
+                <Phone className="h-4 w-4 text-muted-foreground mr-2.5" />
+                WhatsApp: <span className="text-foreground font-medium ml-1">{project.client.telefone}</span>
+              </div>
+              <div className="flex items-center">
+                <Mail className="h-4 w-4 text-muted-foreground mr-2.5" />
+                E-mail: <span className="text-foreground font-medium ml-1">{project.client.email}</span>
+              </div>
+              <div className="flex items-center">
+                <Building className="h-4 w-4 text-muted-foreground mr-2.5" />
+                Origem Lead: <span className="text-foreground font-medium ml-1 uppercase">{project.client.origem}</span>
+              </div>
+            </div>
+
+            {project.client.observacoes && (
+              <div className="p-3.5 rounded-lg bg-black/20 border border-border/40 text-xs text-muted-foreground">
+                <span className="font-semibold block text-foreground mb-1">Notas do Cliente:</span>
+                {project.client.observacoes}
+              </div>
+            )}
+          </div>
+
+          {/* Painel Comercial Rápido */}
+          <div className="p-5 rounded-xl border border-border/60 bg-black/15 flex flex-col justify-between h-full gap-4">
+            <div>
+              <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
+              <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
+                {formatCurrency(project.valor_previsto)}
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-muted-foreground block uppercase tracking-wider">
+                Status Operacional Geral
+              </label>
+              <Select 
+                value={project.status_geral} 
+                onChange={(e) => handleStatusChange(e.target.value)}
+                className="w-full"
+              >
+                <option value="LEAD">Lead</option>
+                <option value="ORCAMENTO">Orçamento</option>
+                <option value="NEGOCIACAO">Negociação</option>
+                <option value="CONFERENCIA_TECNICA">Conferência Técnica</option>
+                <option value="APROVADO">Aprovado pelo Cliente</option>
+                <option value="PRODUCAO">Em Produção (Fábrica)</option>
+                <option value="INSTALACAO">Em Instalação</option>
+                <option value="FINALIZADO">Finalizado</option>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs Layout */}
+      <Tabs defaultValue="environments">
+        <TabsList>
+          <TabsTrigger value="environments">
+            <Layers className="h-4 w-4 mr-2" /> Ambientes ({project.environments.length})
+          </TabsTrigger>
+          <TabsTrigger value="files">
+            <FileText className="h-4 w-4 mr-2" /> Arquivos Técnicos ({project.files.length})
+          </TabsTrigger>
+          <TabsTrigger value="timeline">
+            <Clock className="h-4 w-4 mr-2" /> Histórico & Notas ({filteredTimeline.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Ambientes */}
+        <TabsContent value="environments" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold">Módulos de Ambientes / Cômodos</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Monitore e atualize as etapas de fabricação de cada cômodo de forma individual.
+              </p>
+            </div>
+            <Button onClick={() => setIsAddEnvOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1.5" /> Novo Cômodo
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {project.environments.length === 0 ? (
+              <div className="col-span-2 border border-dashed border-border/30 rounded-xl p-8 text-center text-sm text-muted-foreground">
+                Nenhum ambiente adicionado a este projeto. Clique em "Novo Cômodo" para começar.
+              </div>
+            ) : (
+              project.environments.map((env) => {
+                const currentStatusInfo = ENVIRONMENT_STATUSES.find(s => s.value === env.status);
+                return (
+                  <div 
+                    key={env.id} 
+                    className="p-5 rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs flex flex-col justify-between gap-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[9px] font-bold bg-secondary px-1.5 py-0.5 rounded text-muted-foreground uppercase tracking-widest block w-max mb-1.5">
+                          {env.tipo}
+                        </span>
+                        <h4 className="font-semibold text-base text-foreground">{env.nome}</h4>
+                      </div>
+                      
+                      {/* Badge de Status Atual */}
+                      <span className={`text-[11px] font-medium border px-2.5 py-0.5 rounded-full ${currentStatusInfo?.bg}`}>
+                        {currentStatusInfo?.label}
+                      </span>
+                    </div>
+
+                    <div className="border-t border-border/30 pt-3 flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                        Alterar Status de Fabricação:
+                      </label>
+                      <Select 
+                        value={env.status} 
+                        onChange={(e) => handleEnvStatusChange(env.id, e.target.value as EnvironmentStatus)}
+                        className="w-full text-xs"
+                      >
+                        {ENVIRONMENT_STATUSES.map(status => (
+                          <option key={status.value} value={status.value}>
+                            {status.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Arquivos Técnicos */}
+        <TabsContent value="files" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold">Gerenciador de Arquivos & Renders</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Faça upload de projetos em DWG, SketchUp, PDFs de medição e renders em alta definição.
+              </p>
+            </div>
+            <Button onClick={() => setIsUploadOpen(true)} size="sm">
+              <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
+            {project.files.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Nenhum arquivo ou projeto técnico enviado.
+              </div>
+            ) : (
+              <div className="divide-y divide-border/30">
+                {project.files.map((file) => (
+                  <div key={file.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/10 transition-colors">
+                    <div className="flex items-start">
+                      <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 mr-3 text-primary">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-sm text-foreground leading-none">{file.nome_arquivo}</h4>
+                        <div className="flex items-center mt-2 gap-3 text-xs text-muted-foreground">
+                          <span className="bg-secondary px-1.5 py-0.5 rounded text-[10px] font-semibold text-muted-foreground uppercase">
+                            {FILE_TYPES.find(t => t.value === file.tipo)?.label || file.tipo}
+                          </span>
+                          <span className="font-medium">Versão {file.versao}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {/* Toggle de Liberação para Produção */}
+                      <button
+                        onClick={() => handleToggleFileApproval(file.id, file.aprovado_producao)}
+                        className={`flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                          file.aprovado_producao 
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
+                            : "bg-secondary text-muted-foreground border-border/60 hover:text-foreground hover:bg-accent/40"
+                        }`}
+                      >
+                        {file.aprovado_producao ? (
+                          <>
+                            <ShieldCheck className="h-4 w-4 mr-1.5 text-emerald-400" /> Aprovado Fábrica
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-4 w-4 mr-1.5" /> Liberar p/ Fábrica
+                          </>
+                        )}
+                      </button>
+
+                      <a
+                        href={file.url}
+                        className="inline-flex items-center justify-center p-2 rounded-lg border border-border/60 bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
+                        title="Baixar Arquivo"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: Timeline & Notas */}
+        <TabsContent value="timeline" className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold">Timeline & Histórico Operacional</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Notas internas da equipe, medições e registros de alteração.
+              </p>
+            </div>
+            
+            {/* Filtros da Timeline */}
+            <div className="inline-flex rounded-lg border border-border/40 p-0.5 bg-secondary text-xs">
+              <button 
+                onClick={() => setTimelineFilter("ALL")}
+                className={`px-2.5 py-1 rounded ${timelineFilter === "ALL" ? "bg-card text-foreground font-semibold" : "text-muted-foreground"}`}
+              >
+                Todas as Notas
+              </button>
+              <button 
+                onClick={() => setTimelineFilter("PUBLIC")}
+                className={`px-2.5 py-1 rounded ${timelineFilter === "PUBLIC" ? "bg-card text-foreground font-semibold" : "text-muted-foreground"}`}
+              >
+                Públicas
+              </button>
+              <button 
+                onClick={() => setTimelineFilter("PRIVATE")}
+                className={`px-2.5 py-1 rounded ${timelineFilter === "PRIVATE" ? "bg-card text-foreground font-semibold" : "text-muted-foreground"}`}
+              >
+                Internas
+              </button>
+            </div>
+          </div>
+
+          {/* Form para adicionar Notas */}
+          <form onSubmit={handleSendTimeline} className="p-4 rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs flex gap-3 items-end">
+            <div className="flex-1 space-y-2">
+              <Input
+                required
+                placeholder="Adicione um comentário ou detalhe técnico no histórico..."
+                value={timelineInput}
+                onChange={(e) => setTimelineInput(e.target.value)}
+                className="bg-black/10 border-border/40"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsTimelinePrivate(!isTimelinePrivate)}
+                  className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded border transition-colors ${
+                    isTimelinePrivate 
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
+                      : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  }`}
+                >
+                  {isTimelinePrivate ? (
+                    <>
+                      <Lock className="h-3 w-3 mr-1" /> Nota Interna (Fábrica/Vendedor)
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3 w-3 mr-1" /> Visível p/ Cliente
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            <Button type="submit" size="icon" className="h-9 w-9">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+
+          {/* Lista de Eventos */}
+          <div className="relative border-l border-border/40 ml-4 pl-6 space-y-6 py-2">
+            {filteredTimeline.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Nenhuma nota correspondente encontrada.</div>
+            ) : (
+              filteredTimeline.map((event) => (
+                <div key={event.id} className="relative group">
+                  {/* Marcador na Linha */}
+                  <span className="absolute -left-10 top-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-card border border-border/60 text-muted-foreground ring-8 ring-background">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  </span>
+                  
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-semibold text-foreground">{event.user.name}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(event.data).toLocaleString("pt-BR")}
+                      </span>
+                      {event.interno_sotamente && (
+                        <span className="text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 py-0.2 rounded inline-flex items-center">
+                          <Lock className="h-2.5 w-2.5 mr-0.5" /> Interna
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground pr-4">
+                      {event.acao}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal - Novo Cômodo */}
+      <Dialog isOpen={isAddEnvOpen} onClose={() => setIsAddEnvOpen(false)}>
+        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
+          Adicionar Novo Cômodo / Ambiente
+        </h3>
+        <form onSubmit={handleAddEnvSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Nome do Cômodo
+            </label>
+            <Input
+              required
+              placeholder="Ex: Cozinha Americana Gourmet, Suíte Master"
+              value={newEnvForm.nome}
+              onChange={(e) => setNewEnvForm({ ...newEnvForm, nome: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Tipo do Cômodo
+            </label>
+            <Select
+              value={newEnvForm.tipo}
+              onChange={(e) => setNewEnvForm({ ...newEnvForm, tipo: e.target.value as EnvironmentType })}
+            >
+              <option value="COZINHA">Cozinha</option>
+              <option value="CLOSET">Closet</option>
+              <option value="DORMITORIO">Dormitório</option>
+              <option value="BANHEIRO">Banheiro</option>
+              <option value="OUTROS">Outros</option>
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddEnvOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading} className="font-semibold">
+              {loading ? "Adicionando..." : "Adicionar Cômodo"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Modal - Upload de Arquivo */}
+      <Dialog isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)}>
+        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
+          Upload de Arquivo Técnico / Render
+        </h3>
+        <form onSubmit={handleUploadSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Nome Descritivo do Arquivo
+            </label>
+            <Input
+              required
+              placeholder="Ex: Detalhamento_Corte_Cozinha.pdf, Render_V1.jpg"
+              value={uploadForm.nome_arquivo}
+              onChange={(e) => setUploadForm({ ...uploadForm, nome_arquivo: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Categoria do Arquivo
+            </label>
+            <Select
+              value={uploadForm.tipo}
+              onChange={(e) => setUploadForm({ ...uploadForm, tipo: e.target.value as FileType })}
+            >
+              {FILE_TYPES.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsUploadOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading} className="font-semibold">
+              {loading ? "Enviando..." : "Salvar Arquivo"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </div>
+  );
+}

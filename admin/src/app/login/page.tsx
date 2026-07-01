@@ -1,0 +1,158 @@
+"use client";
+
+import React, { useState } from "react";
+import { loginSimulated } from "@/app/actions/login";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  Lock, 
+  Mail, 
+  ShieldAlert, 
+  Sparkles,
+  ArrowRight,
+  ChevronRight
+} from "lucide-react";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Submit normal do Better Auth (tentativa real)
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    // Tenta autenticação real. Como o banco pode estar offline localmente, 
+    // sugerimos o uso das ações rápidas simuladas
+    setTimeout(() => {
+      alert("Para testar localmente sem configurar banco de dados PostgreSQL, utilize um dos botões do painel 'Acesso Rápido de Demonstração' abaixo.");
+      setLoading(false);
+    }, 1000);
+  };
+
+  // Login de Demonstração
+  const handleDemoLogin = async (role: string) => {
+    setLoading(true);
+    await loginSimulated(role);
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-6">
+        
+        {/* Logo / Branding */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-widest text-gradient-gold">
+              MÓVEIS UNGHERO
+            </h1>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">
+              SaaS Admin & CRM
+            </p>
+          </div>
+        </div>
+
+        {/* Card de Login */}
+        <div className="rounded-2xl border border-border/40 bg-card/65 backdrop-blur-md p-6 shadow-2xl space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold text-foreground">Acesse sua conta</h2>
+            <p className="text-xs text-muted-foreground">Preencha suas credenciais de acesso.</p>
+          </div>
+
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground block">E-mail</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                <Input
+                  type="email"
+                  required
+                  placeholder="admin@moveisunghero.com"
+                  className="pl-9 bg-black/15 border-border/40 focus-visible:ring-primary"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground block">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+                <Input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  className="pl-9 bg-black/15 border-border/40 focus-visible:ring-primary"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full font-semibold" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar no Painel"} <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </form>
+
+          {/* Divisor Decorativo */}
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-border/40"></div>
+            <span className="flex-shrink mx-4 text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+              Demonstração
+            </span>
+            <div className="flex-grow border-t border-border/40"></div>
+          </div>
+
+          {/* Painel de Acesso Rápido Simulado */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 text-xs text-amber-400 font-medium bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-lg">
+              <ShieldAlert className="h-4 w-4 flex-shrink-0" />
+              <span>Acesse com um clique para testar as telas da Fase 1:</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                onClick={() => handleDemoLogin("ADMIN")}
+                className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
+                disabled={loading}
+              >
+                <span>Administrador Geral (ADMIN)</span>
+                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => handleDemoLogin("COMERCIAL")}
+                className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
+                disabled={loading}
+              >
+                <span>Vendedor Comercial (COMERCIAL)</span>
+                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => handleDemoLogin("PRODUCAO")}
+                className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
+                disabled={loading}
+              >
+                <span>Chão de Fábrica (PRODUCAO)</span>
+                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer do Login */}
+        <p className="text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Móveis Unghero. Todos os direitos reservados.
+        </p>
+
+      </div>
+    </div>
+  );
+}
