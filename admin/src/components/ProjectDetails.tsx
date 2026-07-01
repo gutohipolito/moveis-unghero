@@ -14,11 +14,13 @@ import {
   type FileType
 } from "@/app/actions/project";
 import { approveQuote, deleteQuote } from "@/app/actions/quotes";
+import { createInstallment, payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
@@ -80,6 +82,25 @@ interface Quote {
   observacoes: string;
 }
 
+interface Installment {
+  id: string;
+  valor: number;
+  data_vencimento: string;
+  data_pagamento: string | null;
+  status: string;
+  tipo: string;
+}
+
+interface Task {
+  id: string;
+  titulo: string;
+  descricao: string;
+  responsavel: string;
+  data: string;
+  status: string;
+  tipo: string;
+}
+
 interface Project {
   id: string;
   valor_previsto: number;
@@ -97,6 +118,8 @@ interface Project {
   files: ProjectFile[];
   timeline: TimelineEvent[];
   quotes: Quote[];
+  tasks: Task[];
+  installments: Installment[];
 }
 
 interface ProjectDetailsProps {
@@ -129,6 +152,24 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
+  const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+
+  // Estados dos formulários
+  const [newInstallmentForm, setNewInstallmentForm] = useState({
+    valor: "",
+    data_vencimento: "2026-07-01",
+    tipo: "PARCELA" as "ENTRADA" | "PARCELA"
+  });
+
+  const [newTaskForm, setNewTaskForm] = useState({
+    titulo: "",
+    descricao: "",
+    responsavel: "",
+    data: "2026-07-01",
+    hora: "09:00",
+    tipo: "MEDICAO_TECNICA" as "VISITA_COMERCIAL" | "MEDICAO_TECNICA" | "ENTREGA_MOVEIS" | "INSTALACAO" | "OUTROS"
+  });
 
   // Estados dos formulários
   const [newEnvForm, setNewEnvForm] = useState({ nome: "", tipo: "COZINHA" as EnvironmentType });
@@ -296,6 +337,118 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
     setLoading(false);
   };
 
+  const handlePayInstallment = async (installmentId: string) => {
+    if (!confirm("Confirmar o recebimento desta parcela?")) return;
+    
+    setProject(prev => ({
+      ...prev,
+      installments: prev.installments.map(ins => ins.id === installmentId ? {
+        ...ins,
+        status: "PAGO",
+        data_pagamento: new Date().toISOString()
+      } : ins)
+    }));
+
+    await payInstallment(project.id, installmentId);
+  };
+
+  const handleAddInstallmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInstallmentForm.valor || !newInstallmentForm.data_vencimento) return;
+
+    setLoading(true);
+    const valueNum = parseFloat(newInstallmentForm.valor);
+    const result = await createInstallment(project.id, {
+      valor: valueNum,
+      data_vencimento: newInstallmentForm.data_vencimento,
+      tipo: newInstallmentForm.tipo
+    });
+
+    if (result.success && result.installment) {
+      const added: Installment = {
+        id: result.installment.id,
+        valor: Number(result.installment.valor),
+        data_vencimento: result.installment.data_vencimento.toISOString ? result.installment.data_vencimento.toISOString() : new Date(result.installment.data_vencimento).toISOString(),
+        data_pagamento: null,
+        status: "PENDENTE",
+        tipo: result.installment.tipo
+      };
+
+      setProject(prev => ({
+        ...prev,
+        installments: [...prev.installments, added]
+      }));
+      setIsAddInstallmentOpen(false);
+      setNewInstallmentForm({ valor: "", data_vencimento: "2026-07-01", tipo: "PARCELA" });
+    }
+    setLoading(false);
+  };
+
+  const handleToggleTask = async (taskId: string, completed: boolean) => {
+    setProject(prev => ({
+      ...prev,
+      tasks: prev.tasks.map(t => t.id === taskId ? {
+        ...t,
+        status: completed ? "CONCLUIDA" : "PENDENTE"
+      } : t)
+    }));
+
+    await toggleTaskStatus(project.id, taskId, completed);
+  };
+
+  const handleAddTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskForm.titulo || !newTaskForm.responsavel) return;
+
+    setLoading(true);
+    const dataHoraIso = new Date(`${newTaskForm.data}T${newTaskForm.hora}:00Z`).toISOString();
+    
+    const result = await createTask(project.id, {
+      titulo: newTaskForm.titulo,
+      descricao: newTaskForm.descricao,
+      responsavel: newTaskForm.responsavel,
+      data: dataHoraIso,
+      tipo: newTaskForm.tipo
+    });
+
+    if (result.success && result.task) {
+      const added: Task = {
+        id: result.task.id,
+        titulo: result.task.titulo,
+        descricao: result.task.descricao || "",
+        responsavel: result.task.responsavel,
+        data: result.task.data.toISOString ? result.task.data.toISOString() : new Date(result.task.data).toISOString(),
+        status: result.task.status,
+        tipo: result.task.tipo
+      };
+
+      setProject(prev => ({
+        ...prev,
+        tasks: [added, ...prev.tasks],
+        timeline: [
+          {
+            id: `local-time-${Date.now()}`,
+            acao: `Tarefa "${added.titulo}" agendada com sucesso para o dia ${new Date(added.data).toLocaleDateString("pt-BR")}.`,
+            data: new Date().toISOString(),
+            interno_sotamente: false,
+            user: { name: "Sistema" }
+          },
+          ...prev.timeline
+        ]
+      }));
+      setIsAddTaskOpen(false);
+      setNewTaskForm({
+        titulo: "",
+        descricao: "",
+        responsavel: "",
+        data: "2026-07-01",
+        hora: "09:00",
+        tipo: "MEDICAO_TECNICA"
+      });
+    }
+    setLoading(false);
+  };
+
   // Filtra a timeline conforme a privacidade selecionada
   const filteredTimeline = project.timeline.filter(item => {
     if (timelineFilter === "PUBLIC") return !item.interno_sotamente;
@@ -400,6 +553,12 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
           </TabsTrigger>
           <TabsTrigger value="quotes">
             <DollarSign className="h-4 w-4 mr-2" /> Orçamentos ({project.quotes?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="finances">
+            <DollarSign className="h-4 w-4 mr-2" /> Financeiro ({project.installments?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="tasks">
+            <CheckCircle2 className="h-4 w-4 mr-2" /> Tarefas ({project.tasks?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="files">
             <FileText className="h-4 w-4 mr-2" /> Arquivos Técnicos ({project.files.length})
@@ -784,6 +943,204 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             </div>
           )}
         </TabsContent>
+
+        {/* Tab: Financeiro do Projeto */}
+        <TabsContent value="finances" className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold">Fluxo Financeiro do Projeto</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Controle o recebimento de entradas, parcelas e saldo devedor do contrato.
+              </p>
+            </div>
+            <Button onClick={() => setIsAddInstallmentOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1.5" /> Lançar Parcela
+            </Button>
+          </div>
+
+          {/* Indicadores Financeiros Rápidos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4 bg-card/25 border-border/40">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Valor do Contrato</span>
+              <strong className="text-lg text-foreground font-extrabold">{formatCurrency(project.valor_previsto)}</strong>
+            </Card>
+            <Card className="p-4 bg-card/25 border-border/40">
+              <span className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider block">Valor Recebido</span>
+              <strong className="text-lg text-emerald-400 font-extrabold">
+                {formatCurrency(
+                  project.installments
+                    .filter(ins => ins.status === "PAGO")
+                    .reduce((acc, curr) => acc + curr.valor, 0)
+                )}
+              </strong>
+            </Card>
+            <Card className="p-4 bg-card/25 border-border/40">
+              <span className="text-[10px] text-amber-500/80 font-bold uppercase tracking-wider block">Saldo Pendente</span>
+              <strong className="text-lg text-amber-400 font-extrabold">
+                {formatCurrency(
+                  project.valor_previsto - 
+                  project.installments
+                    .filter(ins => ins.status === "PAGO")
+                    .reduce((acc, curr) => acc + curr.valor, 0)
+                )}
+              </strong>
+            </Card>
+          </div>
+
+          <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
+            {project.installments.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Nenhuma parcela cadastrada para este projeto. Clique em "Lançar Parcela" para iniciar o fluxo financeiro.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/30 text-muted-foreground text-xs uppercase font-bold bg-black/10">
+                      <th className="p-4">Tipo</th>
+                      <th className="p-4 text-right">Valor</th>
+                      <th className="p-4 text-center">Vencimento</th>
+                      <th className="p-4 text-center">Pagamento</th>
+                      <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/20 text-neutral-300">
+                    {project.installments.map((ins) => {
+                      const isPaid = ins.status === "PAGO";
+                      return (
+                        <tr key={ins.id} className="hover:bg-black/10 transition-colors">
+                          <td className="p-4">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              ins.tipo === "ENTRADA" 
+                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                                : "bg-secondary text-muted-foreground"
+                            }`}>
+                              {ins.tipo}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right font-black text-foreground">
+                            {formatCurrency(ins.valor)}
+                          </td>
+                          <td className="p-4 text-center font-medium">
+                            {new Date(ins.data_vencimento).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="p-4 text-center text-xs text-muted-foreground">
+                            {ins.data_pagamento 
+                              ? new Date(ins.data_pagamento).toLocaleDateString("pt-BR") 
+                              : "—"
+                            }
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded inline-flex items-center gap-1 ${
+                              isPaid 
+                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" 
+                                : ins.status === "ATRASADO"
+                                  ? "bg-destructive/15 text-destructive/80 border border-destructive/20" 
+                                  : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                            }`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${
+                                isPaid ? "bg-emerald-400" : ins.status === "ATRASADO" ? "bg-destructive" : "bg-amber-400"
+                              }`} />
+                              {ins.status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            {!isPaid && (
+                              <Button 
+                                onClick={() => handlePayInstallment(ins.id)} 
+                                size="sm" 
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] py-1 h-7 font-bold"
+                              >
+                                Quitar
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab: Tarefas & Agenda do Projeto */}
+        <TabsContent value="tasks" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold">Tarefas & Compromissos Operacionais</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Organize e agende medições técnicas, vistorias e etapas de montagem para este projeto.
+              </p>
+            </div>
+            <Button onClick={() => setIsAddTaskOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1.5" /> Agendar
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
+            {project.tasks.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Nenhum compromisso técnico agendado. Clique em "Agendar" para registrar uma atividade.
+              </div>
+            ) : (
+              <div className="divide-y divide-border/20">
+                {project.tasks.map((t) => {
+                  const isCompleted = t.status === "CONCLUIDA";
+                  
+                  // Mapeia estilos do tipo
+                  const typeStyles: Record<string, string> = {
+                    VISITA_COMERCIAL: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                    MEDICAO_TECNICA: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                    ENTREGA_MOVEIS: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                    INSTALACAO: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                    OUTROS: "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                  };
+                  
+                  return (
+                    <div key={t.id} className={`p-4 flex items-center justify-between gap-4 hover:bg-black/10 transition-colors ${
+                      isCompleted ? "opacity-50" : ""
+                    }`}>
+                      <div className="flex items-start gap-3 min-w-0">
+                        {/* Checkbox customizado */}
+                        <input
+                          type="checkbox"
+                          checked={isCompleted}
+                          onChange={(e) => handleToggleTask(t.id, e.target.checked)}
+                          className="h-4.5 w-4.5 rounded border-border bg-black/20 text-primary focus:ring-primary/40 focus:ring-1 cursor-pointer mt-0.5"
+                        />
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <h4 className={`font-bold text-sm text-foreground leading-none ${
+                              isCompleted ? "line-through" : ""
+                            }`}>
+                              {t.titulo}
+                            </h4>
+                            <span className={`text-[9px] font-bold px-2 py-0.2 rounded border uppercase tracking-wider ${
+                              typeStyles[t.tipo] || typeStyles.OUTROS
+                            }`}>
+                              {t.tipo.replace("_", " ")}
+                            </span>
+                          </div>
+                          {t.descricao && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">{t.descricao}</p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-2">
+                            <span>📅 {new Date(t.data).toLocaleDateString("pt-BR")} às {new Date(t.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}</span>
+                            <span>•</span>
+                            <span>👤 Responsável: <strong>{t.responsavel}</strong></span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Modal - Novo Cômodo */}
@@ -881,6 +1238,169 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             </Button>
             <Button type="submit" disabled={loading} className="font-semibold">
               {loading ? "Enviando..." : "Salvar Arquivo"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Modal - Novo Recebível / Parcela */}
+      <Dialog isOpen={isAddInstallmentOpen} onClose={() => setIsAddInstallmentOpen(false)}>
+        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
+          Lançar Parcela / Entrada Financeira
+        </h3>
+        <form onSubmit={handleAddInstallmentSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Valor da Parcela (R$)
+            </label>
+            <Input
+              required
+              type="number"
+              step="0.01"
+              placeholder="Ex: 5000.00"
+              value={newInstallmentForm.valor}
+              onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, valor: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Data de Vencimento
+              </label>
+              <Input
+                required
+                type="date"
+                value={newInstallmentForm.data_vencimento}
+                onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, data_vencimento: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Tipo
+              </label>
+              <Select
+                value={newInstallmentForm.tipo}
+                onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, tipo: e.target.value as any })}
+              >
+                <option value="PARCELA">Parcela Padrão</option>
+                <option value="ENTRADA">Entrada / Sinal</option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddInstallmentOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading} className="font-semibold">
+              {loading ? "Lançando..." : "Confirmar Parcela"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Modal - Novo Agendamento / Tarefa */}
+      <Dialog isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)}>
+        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
+          Agendar Compromisso Técnico / Tarefa
+        </h3>
+        <form onSubmit={handleAddTaskSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Título do Compromisso
+            </label>
+            <Input
+              required
+              placeholder="Ex: Medição da Cozinha Gourmet, Entrega Módulos Closets"
+              value={newTaskForm.titulo}
+              onChange={(e) => setNewTaskForm({ ...newTaskForm, titulo: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Descrição Detalhada
+            </label>
+            <textarea
+              className="w-full bg-card/60 border border-border/60 hover:border-border rounded-lg p-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary placeholder-muted-foreground transition-all duration-200 resize-none h-16"
+              placeholder="Descreva observações técnicas relevantes ou requisitos..."
+              value={newTaskForm.descricao}
+              onChange={(e) => setNewTaskForm({ ...newTaskForm, descricao: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Data do Compromisso
+              </label>
+              <Input
+                required
+                type="date"
+                value={newTaskForm.data}
+                onChange={(e) => setNewTaskForm({ ...newTaskForm, data: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Horário
+              </label>
+              <Input
+                required
+                type="time"
+                value={newTaskForm.hora}
+                onChange={(e) => setNewTaskForm({ ...newTaskForm, hora: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Responsável Técnico
+              </label>
+              <Input
+                required
+                placeholder="Ex: Roberto (Montador)"
+                value={newTaskForm.responsavel}
+                onChange={(e) => setNewTaskForm({ ...newTaskForm, responsavel: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Tipo do Evento
+              </label>
+              <Select
+                value={newTaskForm.tipo}
+                onChange={(e) => setNewTaskForm({ ...newTaskForm, tipo: e.target.value as any })}
+              >
+                <option value="MEDICAO_TECNICA">Medição Técnica</option>
+                <option value="ENTREGA_MOVEIS">Entrega de Móveis</option>
+                <option value="INSTALACAO">Instalação / Montagem</option>
+                <option value="VISITA_COMERCIAL">Visita Comercial</option>
+                <option value="OUTROS">Outros</option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddTaskOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading} className="font-semibold">
+              {loading ? "Agendando..." : "Confirmar Agendamento"}
             </Button>
           </div>
         </form>

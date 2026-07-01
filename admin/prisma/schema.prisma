@@ -113,12 +113,13 @@ model Project {
   client_id      String
   client         Client        @relation(fields: [client_id], references: [id])
   valor_previsto Decimal       @db.Decimal(12, 2)
-  status_geral   ProjectStatus // LEAD, ORCAMENTO, NEGOCIACAO, CONFERENCIA_TECNICA, APROVADO, PRODUCAO, INSTALACAO, FINALIZADO
+  status_geral   ProjectStatus
   environments   Environment[]
   quotes         Quote[]
   files          File[]
   tasks          Task[]
   timeline       Timeline[]
+  installments   Installment[]
 }
 
 enum ProjectStatus {
@@ -213,9 +214,42 @@ model Task {
   id          String   @id @default(uuid())
   project_id  String
   project     Project  @relation(fields: [project_id], references: [id])
+  titulo      String   @default("Tarefa")
+  descricao   String?
   responsavel String
   data        DateTime
-  status      String
+  status      String   @default("PENDENTE") // PENDENTE, CONCLUIDA
+  tipo        TaskType @default(OUTROS)
+}
+
+enum TaskType {
+  VISITA_COMERCIAL
+  MEDICAO_TECNICA
+  ENTREGA_MOVEIS
+  INSTALACAO
+  OUTROS
+}
+
+model Installment {
+  id              String            @id @default(uuid())
+  project_id      String
+  project         Project           @relation(fields: [project_id], references: [id])
+  valor           Decimal           @db.Decimal(12, 2)
+  data_vencimento DateTime
+  data_pagamento  DateTime?
+  status          InstallmentStatus @default(PENDENTE)
+  tipo            InstallmentType   @default(PARCELA)
+}
+
+enum InstallmentStatus {
+  PENDENTE
+  PAGO
+  ATRASADO
+}
+
+enum InstallmentType {
+  ENTRADA
+  PARCELA
 }
 
 model Timeline {

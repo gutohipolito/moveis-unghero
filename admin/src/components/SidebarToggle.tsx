@@ -10,7 +10,8 @@ import {
   Kanban,
   FolderOpen,
   Calendar,
-  DollarSign
+  DollarSign,
+  Layers
 } from "lucide-react";
 
 interface SidebarToggleProps {
@@ -22,11 +23,19 @@ interface SidebarToggleProps {
   };
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<any>;
+  badge?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { name: "CRM Kanban", href: "/crm", icon: Kanban },
   { name: "Clientes & Projetos", href: "/crm", icon: FolderOpen },
-  { name: "Agenda", href: "#", icon: Calendar, badge: "Em Breve" },
-  { name: "Financeiro", href: "#", icon: DollarSign, badge: "Em Breve" },
+  { name: "Agenda", href: "/agenda", icon: Calendar },
+  { name: "Chão de Fábrica", href: "/factory", icon: Layers },
+  { name: "Financeiro", href: "/financeiro", icon: DollarSign },
 ];
 
 export default function SidebarToggle({ user }: SidebarToggleProps) {

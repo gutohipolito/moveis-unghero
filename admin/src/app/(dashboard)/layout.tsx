@@ -10,7 +10,8 @@ import {
   Settings, 
   User as UserIcon,
   LogOut,
-  FolderOpen
+  FolderOpen,
+  Layers
 } from "lucide-react";
 import { logoutSimulated } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
@@ -32,11 +33,19 @@ export default async function DashboardLayout({
     image: null
   };
 
-  const navItems = [
+  interface NavItem {
+    name: string;
+    href: string;
+    icon: React.ComponentType<any>;
+    badge?: string;
+  }
+
+  const navItems: NavItem[] = [
     { name: "CRM Kanban", href: "/crm", icon: Kanban },
-    { name: "Clientes & Projetos", href: "/crm", icon: FolderOpen }, // Na Fase 1 o crm serve como central
-    { name: "Agenda", href: "#", icon: Calendar, badge: "Em Breve" },
-    { name: "Financeiro", href: "#", icon: DollarSign, badge: "Em Breve" },
+    { name: "Clientes & Projetos", href: "/crm", icon: FolderOpen },
+    { name: "Agenda", href: "/agenda", icon: Calendar },
+    { name: "Chão de Fábrica", href: "/factory", icon: Layers },
+    { name: "Financeiro", href: "/financeiro", icon: DollarSign },
   ];
 
   return (

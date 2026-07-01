@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ProjectDetails from "@/components/ProjectDetails";
-import { redirect } from "next/navigation";
 
 // Dados fictícios detalhados para caso o banco de dados esteja vazio ou inacessível
 const MOCK_DETAILS: Record<string, any> = {
@@ -30,7 +29,28 @@ const MOCK_DETAILS: Record<string, any> = {
       { id: "time-1", acao: "Lead capturado via formulário do Instagram", data: new Date("2026-06-28T14:32:00Z"), interno_sotamente: false, user: { name: "Sistema" } },
       { id: "time-2", acao: "Primeiro contato telefônico. Cliente solicitou projeto preliminar.", data: new Date("2026-06-29T10:15:00Z"), interno_sotamente: true, user: { name: "João (Vendedor)" } }
     ],
-    quotes: []
+    quotes: [],
+    tasks: [
+      {
+        id: "evt-4",
+        titulo: "Briefing de Novo Projeto",
+        descricao: "Primeira visita técnica comercial no local para fotografias e medidas brutas da sala.",
+        responsavel: "João (Vendedor)",
+        data: new Date("2026-07-03T15:00:00Z"),
+        status: "CONCLUIDA",
+        tipo: "VISITA_COMERCIAL"
+      }
+    ],
+    installments: [
+      {
+        id: "inst-6",
+        valor: 20000.0,
+        data_vencimento: new Date("2026-06-01T00:00:00Z"),
+        data_pagamento: null,
+        status: "ATRASADO",
+        tipo: "PARCELA"
+      }
+    ]
   },
   "proj-2": {
     id: "proj-2",
@@ -66,6 +86,35 @@ const MOCK_DETAILS: Record<string, any> = {
         valor_final: 78000.0,
         validade: new Date("2026-07-20T00:00:00Z"),
         observacoes: "Proposta preliminar em MDF Freijó e puxadores perfil bronze. Ferragens amortecidas standard."
+      }
+    ],
+    tasks: [
+      {
+        id: "evt-1",
+        titulo: "Medição Técnica do Closets",
+        descricao: "Confirmar medidas exatas das tomadas no Closet Master e alturas dos cabideiros.",
+        responsavel: "Lucas (Projetista)",
+        data: new Date("2026-07-06T10:00:00Z"),
+        status: "PENDENTE",
+        tipo: "MEDICAO_TECNICA"
+      }
+    ],
+    installments: [
+      {
+        id: "inst-4",
+        valor: 39000.0,
+        data_vencimento: new Date("2026-06-25T00:00:00Z"),
+        data_pagamento: new Date("2026-06-25T10:30:00Z"),
+        status: "PAGO",
+        tipo: "ENTRADA"
+      },
+      {
+        id: "inst-5",
+        valor: 39000.0,
+        data_vencimento: new Date("2026-07-25T00:00:00Z"),
+        data_pagamento: null,
+        status: "PENDENTE",
+        tipo: "PARCELA"
       }
     ]
   },
@@ -105,6 +154,52 @@ const MOCK_DETAILS: Record<string, any> = {
         validade: new Date("2026-06-30T00:00:00Z"),
         observacoes: "Orçamento fechado e assinado. MDF e ferragens especiais inclusas."
       }
+    ],
+    tasks: [
+      {
+        id: "evt-2",
+        titulo: "Entrega de Módulos da Cozinha",
+        descricao: "Descarregar módulos e ferragens especiais Blum. Necessário ajudante técnico.",
+        responsavel: "Carlos (Produção)",
+        data: new Date("2026-07-15T08:00:00Z"),
+        status: "PENDENTE",
+        tipo: "ENTREGA_MOVEIS"
+      },
+      {
+        id: "evt-3",
+        titulo: "Instalação Fita de LED e Fina Marcenaria",
+        descricao: "Ajustes de portas Lacca e instalação das fitas LED embutidas.",
+        responsavel: "Roberto (Montador)",
+        data: new Date("2026-07-17T13:30:00Z"),
+        status: "PENDENTE",
+        tipo: "INSTALACAO"
+      }
+    ],
+    installments: [
+      {
+        id: "inst-1",
+        valor: 39000.0,
+        data_vencimento: new Date("2026-06-15T00:00:00Z"),
+        data_pagamento: new Date("2026-06-15T15:00:00Z"),
+        status: "PAGO",
+        tipo: "ENTRADA"
+      },
+      {
+        id: "inst-2",
+        valor: 25000.0,
+        data_vencimento: new Date("2026-07-15T00:00:00Z"),
+        data_pagamento: null,
+        status: "PENDENTE",
+        tipo: "PARCELA"
+      },
+      {
+        id: "inst-3",
+        valor: 25000.0,
+        data_vencimento: new Date("2026-08-15T00:00:00Z"),
+        data_pagamento: null,
+        status: "PENDENTE",
+        tipo: "PARCELA"
+      }
     ]
   }
 };
@@ -139,6 +234,8 @@ export default async function ProjectPage({ params }: RouteParams) {
         environments: true,
         files: true,
         quotes: true,
+        tasks: true,
+        installments: true,
         timeline: {
           include: {
             user: {
@@ -182,6 +279,8 @@ export default async function ProjectPage({ params }: RouteParams) {
       ],
       files: [],
       quotes: [],
+      tasks: [],
+      installments: [],
       timeline: [
         { id: "time-gen-1", acao: "Projeto inicial gerado na rota dinamicamente", data: new Date(), interno_sotamente: false, user: { name: "Sistema" } }
       ]
@@ -224,6 +323,23 @@ export default async function ProjectPage({ params }: RouteParams) {
       valor_final: Number(q.valor_final),
       validade: q.validade.toISOString ? q.validade.toISOString() : new Date(q.validade).toISOString(),
       observacoes: q.observacoes
+    })) || [],
+    tasks: project.tasks?.map((t: any) => ({
+      id: t.id,
+      titulo: t.titulo || "Compromisso",
+      descricao: t.descricao || "",
+      responsavel: t.responsavel,
+      data: t.data.toISOString ? t.data.toISOString() : new Date(t.data).toISOString(),
+      status: t.status,
+      tipo: t.tipo || "OUTROS"
+    })) || [],
+    installments: project.installments?.map((ins: any) => ({
+      id: ins.id,
+      valor: Number(ins.valor),
+      data_vencimento: ins.data_vencimento.toISOString ? ins.data_vencimento.toISOString() : new Date(ins.data_vencimento).toISOString(),
+      data_pagamento: ins.data_pagamento ? (ins.data_pagamento.toISOString ? ins.data_pagamento.toISOString() : new Date(ins.data_pagamento).toISOString()) : null,
+      status: ins.status,
+      tipo: ins.tipo
     })) || []
   };
 
