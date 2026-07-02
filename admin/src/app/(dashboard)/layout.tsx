@@ -146,7 +146,7 @@ export default async function DashboardLayout({
       </aside>
 
       {/* ─── Conteúdo Principal ─── */}
-      <div className="flex flex-col flex-1 md:pl-64">
+      <div className="flex flex-col flex-1 md:pl-64 min-w-0">
 
         {/* Topbar Mobile — logo simples */}
         <header className="flex items-center justify-between h-14 px-4 md:hidden"
@@ -163,7 +163,7 @@ export default async function DashboardLayout({
         </header>
 
         {/* Corpo da Página */}
-        <main className="flex-1 p-5 md:p-7">
+        <main className="flex-1 p-5 md:p-7 overflow-x-hidden min-w-0">
           <div className="w-full max-w-full space-y-6 animate-in fade-in duration-300">
             {children}
           </div>

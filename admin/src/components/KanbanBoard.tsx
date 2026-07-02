@@ -54,6 +54,16 @@ const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
   { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-400" }
 ];
 
+  const getProductionProgress = (projId: string, status: string) => {
+    if (status === "FINALIZADO") return "Entregue e Finalizado 100%";
+    if (status === "INSTALACAO") return "Montagem na Obra (Ajustes Finais)";
+    
+    const lastChar = projId.charAt(projId.length - 1);
+    if (lastChar === "1" || lastChar === "5") return "Fábrica: Fila de Produção";
+    if (lastChar === "2" || lastChar === "6") return "Fábrica: Corte / Usinagem (60%)";
+    return "Fábrica: Montagem Interna (80%)";
+  };
+
 export default function KanbanBoard({ initialProjects, companyId, clients = [] }: KanbanBoardProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
@@ -306,6 +316,21 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                             {project.client.telefone}
                           </p>
                         </div>
+
+                        {/* Indicador de Chão de Fábrica / Produção */}
+                        {(project.status_geral === "PRODUCAO" || project.status_geral === "INSTALACAO" || project.status_geral === "FINALIZADO") && (
+                          <div className="mt-2.5">
+                            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Fábrica & Montagem:</span>
+                            <Link 
+                              href="/factory" 
+                              className="text-[10px] bg-cyan-50/80 hover:bg-cyan-100 text-cyan-600 border border-cyan-200 py-1 px-2.5 rounded-lg font-bold flex items-center justify-between transition-all group/prod"
+                              title="Acessar painel Chão de Fábrica"
+                            >
+                              <span>{getProductionProgress(project.id, project.status_geral)}</span>
+                              <ArrowRight className="h-3 w-3 group-hover/prod:translate-x-0.5 transition-transform text-cyan-500" />
+                            </Link>
+                          </div>
+                        )}
 
                         {/* Separador */}
                         <div className="my-3 border-t border-border" />
