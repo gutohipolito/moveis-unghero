@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
+import { getClients } from "@/app/actions/cliente";
 import KanbanBoard from "@/components/KanbanBoard";
 
 // Lista de Leads/Projetos Fictícios para Mock caso o banco esteja vazio ou inacessível
@@ -153,6 +154,9 @@ export default async function CRMPage() {
     }
   }));
 
+  const clientResponse = await getClients(userCompanyId);
+  const clientsList = clientResponse.success ? clientResponse.clients : [];
+
   return (
     <div className="space-y-6">
       {/* Cabeçalho da Página */}
@@ -170,7 +174,11 @@ export default async function CRMPage() {
       </div>
 
       {/* Board Kanban Interativo */}
-      <KanbanBoard initialProjects={formattedProjects} companyId={userCompanyId} />
+      <KanbanBoard 
+        initialProjects={formattedProjects} 
+        companyId={userCompanyId} 
+        clients={clientsList as any} 
+      />
     </div>
   );
 }

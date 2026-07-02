@@ -6,7 +6,6 @@ import { updateProjectStatus, createLead, type ProjectStatus, type Origin } from
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { 
   Plus, 
   MapPin, 
@@ -34,6 +33,14 @@ interface Project {
 interface KanbanBoardProps {
   initialProjects: Project[];
   companyId: string;
+  clients?: Array<{
+    id: string;
+    nome: string;
+    email: string;
+    telefone: string;
+    cidade: string;
+    origem: Origin;
+  }>;
 }
 
 const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
@@ -47,13 +54,15 @@ const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
   { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-400" }
 ];
 
-export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardProps) {
+export default function KanbanBoard({ initialProjects, companyId, clients = [] }: KanbanBoardProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
   
   // Estados do formulário de novo lead
+  const [isExistingClient, setIsExistingClient] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [loading, setLoading] = useState(false);
   const [leadForm, setLeadForm] = useState({
     nome: "",
@@ -104,6 +113,33 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
     }
   };
 
+  const resetLeadForm = () => {
+    setSelectedClientId("");
+    setLeadForm({
+      nome: "",
+      email: "",
+      telefone: "",
+      cidade: "",
+      origem: "INSTAGRAM" as Origin,
+      valor_previsto: ""
+    });
+  };
+
+  const handleSelectClient = (clientId: string) => {
+    setSelectedClientId(clientId);
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      setLeadForm(prev => ({
+        ...prev,
+        nome: client.nome,
+        email: client.email,
+        telefone: client.telefone,
+        cidade: client.cidade,
+        origem: client.origem as Origin
+      }));
+    }
+  };
+
   // Formulário Submit Handler
   const handleNewLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +148,8 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
     const data = {
       ...leadForm,
       valor_previsto: Number(leadForm.valor_previsto) || 0,
-      company_id: companyId
+      company_id: companyId,
+      client_id: isExistingClient ? selectedClientId : undefined
     };
 
     const result = await createLead(data);
@@ -135,6 +172,8 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
 
       setProjects([newProj, ...projects]);
       setIsNewLeadOpen(false);
+      setIsExistingClient(false);
+      setSelectedClientId("");
       setLeadForm({
         nome: "",
         email: "",
@@ -303,12 +342,51 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
         </h3>
         
         <form onSubmit={handleNewLeadSubmit} className="space-y-4">
+          {/* Alternador Novo Cliente / Cliente Existente */}
+          {clients && clients.length > 0 && (
+            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
+              <button
+                type="button"
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${!isExistingClient ? 'bg-white shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => { setIsExistingClient(false); resetLeadForm(); }}
+              >
+                Novo Cliente
+              </button>
+              <button
+                type="button"
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${isExistingClient ? 'bg-white shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => { setIsExistingClient(true); }}
+              >
+                Cliente Cadastrado
+              </button>
+            </div>
+          )}
+
+          {isExistingClient && (
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Selecionar Cliente da Base
+              </label>
+              <select
+                value={selectedClientId}
+                onChange={(e) => handleSelectClient(e.target.value)}
+                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+              >
+                <option value="">Selecione o cliente...</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.nome} ({c.email})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
               Nome Completo do Cliente
             </label>
             <Input
               required
+              disabled={isExistingClient}
               placeholder="Ex: João da Silva"
               value={leadForm.nome}
               onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
@@ -323,6 +401,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
               <Input
                 type="email"
                 required
+                disabled={isExistingClient}
                 placeholder="exemplo@email.com"
                 value={leadForm.email}
                 onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
@@ -334,6 +413,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
               </label>
               <Input
                 required
+                disabled={isExistingClient}
                 placeholder="(54) 99999-9999"
                 value={leadForm.telefone}
                 onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
@@ -348,6 +428,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
               </label>
               <Input
                 required
+                disabled={isExistingClient}
                 placeholder="Ex: Bento Gonçalves"
                 value={leadForm.cidade}
                 onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
@@ -357,9 +438,11 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Origem do Lead
               </label>
-              <Select
+              <select
+                disabled={isExistingClient}
                 value={leadForm.origem}
                 onChange={(e) => setLeadForm({ ...leadForm, origem: e.target.value as Origin })}
+                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
               >
                 <option value="INSTAGRAM">Instagram</option>
                 <option value="SITE">Site institucional</option>
@@ -367,7 +450,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                 <option value="GOOGLE">Google Ads/Orgânico</option>
                 <option value="WHATSAPP">WhatsApp Corporativo</option>
                 <option value="FACEBOOK">Facebook</option>
-              </Select>
+              </select>
             </div>
           </div>
 

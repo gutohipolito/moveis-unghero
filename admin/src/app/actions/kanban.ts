@@ -50,21 +50,32 @@ export async function createLead(formData: {
   origem: Origin;
   valor_previsto: number;
   company_id: string;
+  client_id?: string; // Opcional, para associar a cliente já cadastrado
 }) {
   try {
     // Tenta gravar no banco real
     const result = await prisma.$transaction(async (tx) => {
-      const client = await tx.client.create({
-        data: {
-          nome: formData.nome,
-          email: formData.email,
-          telefone: formData.telefone,
-          cidade: formData.cidade,
-          origem: formData.origem,
-          status: "LEAD",
-          company_id: formData.company_id,
-        }
-      });
+      let client;
+
+      if (formData.client_id) {
+        // Busca o cliente existente
+        client = await tx.client.findFirstOrThrow({
+          where: { id: formData.client_id }
+        });
+      } else {
+        // Cria um novo cliente
+        client = await tx.client.create({
+          data: {
+            nome: formData.nome,
+            email: formData.email,
+            telefone: formData.telefone,
+            cidade: formData.cidade,
+            origem: formData.origem,
+            status: "LEAD",
+            company_id: formData.company_id,
+          }
+        });
+      }
 
       const project = await tx.project.create({
         data: {
