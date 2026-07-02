@@ -13,7 +13,8 @@ import {
   FolderOpen,
   Layers,
   LayoutDashboard,
-  Users
+  Users,
+  Package
 } from "lucide-react";
 import { logoutSimulated } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
@@ -46,6 +47,7 @@ export default async function DashboardLayout({
     { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
     { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
     { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
+    { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
     { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
   ];
 

@@ -12,7 +12,8 @@ import {
   DollarSign,
   Layers,
   LayoutDashboard,
-  Users
+  Users,
+  Package
 } from "lucide-react";
 
 interface SidebarToggleProps {
@@ -37,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
   { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
   { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
+  { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
 ];
 
