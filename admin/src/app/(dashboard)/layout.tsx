@@ -6,14 +6,13 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { 
   Kanban, 
-  Users, 
   Calendar, 
   DollarSign, 
-  Settings, 
   User as UserIcon,
   LogOut,
   FolderOpen,
-  Layers
+  Layers,
+  LayoutDashboard
 } from "lucide-react";
 import { logoutSimulated } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
@@ -25,9 +24,8 @@ export default async function DashboardLayout({
 }) {
   const session = await auth.api.getSession({
     headers: await headers()
-  }).catch(() => null); // captura erro se o banco estiver indisponível
+  }).catch(() => null);
 
-  // Cria uma sessão mockada para o layout se não houver conexão com o banco
   const user = session?.user || {
     name: "Administrador Unghero",
     email: "admin@unghero.com.br",
@@ -40,106 +38,156 @@ export default async function DashboardLayout({
     href: string;
     icon: React.ComponentType<any>;
     badge?: string;
+    section?: string;
   }
 
   const navItems: NavItem[] = [
-    { name: "CRM Kanban", href: "/crm", icon: Kanban },
-    { name: "Clientes & Projetos", href: "/crm", icon: FolderOpen },
-    { name: "Agenda", href: "/agenda", icon: Calendar },
-    { name: "Chão de Fábrica", href: "/factory", icon: Layers },
-    { name: "Financeiro", href: "/financeiro", icon: DollarSign },
+    { name: "Dashboard", href: "/crm", icon: LayoutDashboard, section: "Principal" },
+    { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
+    { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
+    { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
+    { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
   ];
 
+  const sections = [...new Set(navItems.map(i => i.section))];
+
   return (
-    <div className="flex min-h-screen bg-transparent">
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-[#2d241f] bg-black/40 backdrop-blur-xl z-30">
+    <div className="flex min-h-screen" style={{ background: "hsl(210 20% 98%)" }}>
+
+      {/* ─── Sidebar Desktop ─── */}
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30"
+        style={{ borderRight: "1px solid hsl(210 15% 89%)", background: "#ffffff" }}>
+
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Cabeçalho do Sidebar */}
-          <div className="flex items-center h-16 px-6 border-b border-[#2d241f]/50">
-            <Link href="/crm" className="flex flex-col">
-              <span className="text-sm font-black tracking-widest text-gradient-gold leading-none">
-                MÓVEIS UNGHERO
-              </span>
-              <span className="text-[9px] text-[#b8a090] uppercase tracking-widest mt-1 block font-bold">
-                SaaS Admin
-              </span>
+
+          {/* Logo */}
+          <div className="flex items-center h-16 px-5" style={{ borderBottom: "1px solid hsl(210 15% 89%)" }}>
+            <Link href="/crm" className="flex items-center gap-3 group w-full">
+              {/* Logo com filtro de cor bronze/cobre */}
+              <div className="flex-shrink-0 h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center"
+                style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 85%)" }}>
+                <img 
+                  src="/logo.png" 
+                  alt="Móveis Unghero" 
+                  className="h-7 w-auto object-contain"
+                  style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-black tracking-wider leading-none" 
+                  style={{ color: "hsl(220 20% 10%)" }}>
+                  Unghero
+                </span>
+                <span className="text-[10px] font-semibold mt-0.5 tracking-widest uppercase"
+                  style={{ color: "hsl(28 85% 45%)" }}>
+                  SaaS Admin
+                </span>
+              </div>
             </Link>
           </div>
 
-          {/* Links de Navegação */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center justify-between px-3.5 py-2.5 text-xs font-bold rounded-xl text-[#b8a090] hover:text-foreground hover:bg-[#211915]/50 border border-transparent hover:border-primary/10 hover:gold-glow transition-all duration-300 group"
-              >
-                <div className="flex items-center">
-                  <item.icon className="mr-3 h-4.5 w-4.5 text-[#b8a090] group-hover:text-primary transition-colors" />
-                  {item.name}
+          {/* Nav */}
+          <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-5">
+            {sections.map(section => (
+              <div key={section}>
+                <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2"
+                  style={{ color: "hsl(210 10% 60%)" }}>
+                  {section}
+                </p>
+                <div className="space-y-0.5">
+                  {navItems.filter(i => i.section === section).map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className="sidebar-nav-link"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="sidebar-nav-icon">
+                          <item.icon className="h-4 w-4" style={{ color: "hsl(28 85% 45%)" }} />
+                        </div>
+                        <span>{item.name}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: "hsl(28 85% 45%)", color: "white" }}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
                 </div>
-                {item.badge && (
-                  <span className="text-[9px] font-bold bg-primary/15 border border-primary/25 px-1.5 py-0.5 rounded text-primary">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
+              </div>
             ))}
           </nav>
 
-          {/* Rodapé do Sidebar (Perfil do Usuário) */}
-          <div className="flex flex-col p-4 border-t border-[#2d241f] bg-black/25">
-            <div className="flex items-center px-2 py-1.5 mb-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+          {/* Rodapé / Perfil */}
+          <div className="p-3 m-3 rounded-xl" 
+            style={{ background: "hsl(210 20% 97%)", border: "1px solid hsl(210 15% 89%)" }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0"
+                style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 85%)" }}>
                 {user.image ? (
-                  <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full" />
+                  <img src={user.image} alt={user.name} className="w-9 h-9 rounded-xl object-cover" />
                 ) : (
-                  <UserIcon className="h-4 w-4 text-primary" />
+                  <UserIcon className="h-4 w-4" style={{ color: "hsl(28 85% 45%)" }} />
                 )}
               </div>
-              <div className="ml-3 overflow-hidden">
-                <p className="text-sm font-semibold truncate leading-none text-foreground">
+              <div className="overflow-hidden flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: "hsl(220 20% 10%)" }}>
                   {user.name}
                 </p>
-                <span className="text-[9px] font-bold text-primary uppercase tracking-widest mt-1.5 inline-block">
-                  {user.cargo || "COMERCIAL"}
+                <span className="text-[10px] font-bold uppercase tracking-wider"
+                  style={{ color: "hsl(28 85% 45%)" }}>
+                  {(user as any).cargo || "COMERCIAL"}
                 </span>
               </div>
             </div>
-            {/* Server Action de Logout */}
             <form action={logoutSimulated} className="w-full">
               <button
                 type="submit"
-                className="flex items-center w-full px-3 py-2 text-xs font-semibold rounded-lg text-[#b8a090] hover:text-destructive hover:bg-destructive/5 border border-transparent hover:border-destructive/10 transition-all cursor-pointer"
+                className="flex items-center w-full px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+                style={{ color: "hsl(210 10% 50%)" }}
               >
-                <LogOut className="mr-3 h-4 w-4" />
+                <LogOut className="mr-2 h-3.5 w-3.5" />
                 Sair do Painel
               </button>
             </form>
           </div>
+
         </div>
       </aside>
 
-      {/* Conteúdo Principal */}
+      {/* ─── Conteúdo Principal ─── */}
       <div className="flex flex-col flex-1 md:pl-64">
+
         {/* Topbar Mobile */}
-        <header className="flex items-center justify-between h-16 px-6 border-b border-[#2d241f] bg-black/40 backdrop-blur-md md:hidden">
-          <Link href="/crm" className="flex flex-col">
-            <span className="text-sm font-black tracking-widest text-gradient-gold">
-              UNGHERO
+        <header className="flex items-center justify-between h-14 px-4 md:hidden"
+          style={{ borderBottom: "1px solid hsl(210 15% 89%)", background: "white" }}>
+          <Link href="/crm" className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center"
+              style={{ background: "hsl(28 85% 95%)" }}>
+              <img 
+                src="/logo.png" 
+                alt="Móveis Unghero" 
+                className="h-6 w-auto object-contain"
+                style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
+              />
+            </div>
+            <span className="text-sm font-black tracking-wide" style={{ color: "hsl(220 20% 10%)" }}>
+              Unghero
             </span>
           </Link>
           <SidebarToggle user={user} />
         </header>
 
         {/* Corpo da Página */}
-        <main className="flex-1 p-6 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <main className="flex-1 p-5 md:p-7">
+          <div className="w-full max-w-full space-y-6 animate-in fade-in duration-300">
             {children}
           </div>
         </main>
       </div>
+
     </div>
   );
 }

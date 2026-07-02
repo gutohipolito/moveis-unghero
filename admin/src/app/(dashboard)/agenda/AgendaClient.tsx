@@ -180,7 +180,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
       <div className="lg:col-span-8 space-y-6">
         
         {/* Painel de Filtros e Controles */}
-        <Card className="p-4 glass-card border-[#2d241f] flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <Card className="p-4 glass-card border-border flex flex-wrap items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Filter className="h-3.5 w-3.5" />
@@ -190,7 +190,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             <Select 
               value={filterTipo} 
               onChange={(e) => setFilterTipo(e.target.value)}
-              className="text-xs py-1 h-8 bg-black/20"
+              className="text-xs py-1 h-8 bg-slate-100"
             >
               <option value="ALL">Todos os Tipos</option>
               <option value="VISITA_COMERCIAL">Visitas Comerciais</option>
@@ -203,7 +203,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             <Select 
               value={filterStatus} 
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="text-xs py-1 h-8 bg-black/20"
+              className="text-xs py-1 h-8 bg-slate-100"
             >
               <option value="ALL">Todos os Status</option>
               <option value="PENDENTE">Pendentes</option>
@@ -217,9 +217,9 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
         </Card>
 
         {/* Grade do Calendário */}
-        <Card className="glass-card border-[#2d241f] overflow-hidden">
+        <Card className="glass-card border-border overflow-hidden">
           {/* Cabeçalho do Calendário */}
-          <div className="p-4 border-b border-[#2d241f]/50 flex items-center justify-between bg-black/15">
+          <div className="p-4 border-b border-border/50 flex items-center justify-between bg-slate-50">
             <div className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-primary" />
               <h2 className="font-bold text-lg text-foreground">
@@ -240,7 +240,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
           </div>
 
           {/* Dias da Semana */}
-          <div className="grid grid-cols-7 text-center py-2 bg-black/15 border-b border-[#2d241f]/40 text-xs font-bold text-[#b8a090]">
+          <div className="grid grid-cols-7 text-center py-2 bg-slate-50 border-b border-border/40 text-xs font-bold text-muted-foreground">
             <div>DOM</div>
             <div>SEG</div>
             <div>TER</div>
@@ -251,11 +251,11 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
           </div>
 
           {/* Dias do Calendário */}
-          <div className="grid grid-cols-7 grid-rows-5 border-collapse divide-x divide-y divide-[#2d241f]/35">
+          <div className="grid grid-cols-7 grid-rows-5 border-collapse divide-x divide-y divide-border">
             {calendarCells.map((day, idx) => {
               if (day === null) {
                 return (
-                  <div key={`empty-${idx}`} className="h-28 bg-black/5/5" />
+                  <div key={`empty-${idx}`} className="h-28 bg-slate-50" />
                 );
               }
 
@@ -270,7 +270,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
               return (
                 <div 
                   key={`day-${day}`} 
-                  className="h-28 p-1.5 flex flex-col justify-between hover:bg-black/10 transition-colors group cursor-pointer"
+                  className="h-28 p-1.5 flex flex-col justify-between hover:bg-slate-100 transition-colors group cursor-pointer"
                   onClick={() => {
                     if (dayEvents.length > 0) {
                       setSelectedEvent(dayEvents[0]);
@@ -415,7 +415,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
                   <div 
                     key={evt.id} 
                     onClick={() => setSelectedEvent(evt)}
-                    className={`p-3 rounded-lg border ${cfg.border} bg-black/10 hover:bg-black/20 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    className={`p-3 rounded-lg border ${cfg.border} bg-black/10 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isCompleted ? "opacity-50" : ""
                     }`}
                   >

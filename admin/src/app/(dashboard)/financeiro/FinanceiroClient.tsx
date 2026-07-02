@@ -84,7 +84,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
       
       {/* Cards de Indicadores Financeiros */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
+        <Card className="p-5 glass-card border-border flex items-center gap-4">
           <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
             <TrendingUp className="h-5 w-5" />
           </div>
@@ -94,7 +94,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
         </Card>
 
-        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
+        <Card className="p-5 glass-card border-border flex items-center gap-4">
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
             <CheckCircle2 className="h-5 w-5" />
           </div>
@@ -104,7 +104,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
         </Card>
 
-        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
+        <Card className="p-5 glass-card border-border flex items-center gap-4">
           <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
             <Clock className="h-5 w-5" />
           </div>
@@ -114,7 +114,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
         </Card>
 
-        <Card className="p-5 glass-card border-[#2d241f] flex items-center gap-4">
+        <Card className="p-5 glass-card border-border flex items-center gap-4">
           <div className="p-3 bg-destructive/10 text-destructive/80 rounded-xl">
             <AlertTriangle className="h-5 w-5" />
           </div>
@@ -127,7 +127,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
 
       {/* Detalhamento de VPL & Comissões baseadas em VPL */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-4 bg-black/35 border border-[#2d241f] rounded-xl flex items-center justify-between shadow-md">
+        <Card className="p-4 bg-white border border-border rounded-xl flex items-center justify-between shadow-md">
           <div>
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Faturamento em Valor Presente Líquido (VPL)</span>
             <p className="text-[11px] text-muted-foreground mt-0.5">Margem protegida descontando taxas de parcelamento longo.</p>
@@ -135,9 +135,9 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           <strong className="text-xl text-emerald-400 font-extrabold">{formatCurrency(faturamentoTotal * 0.88)}</strong>
         </Card>
 
-        <Card className="p-4 bg-black/35 border border-[#2d241f] rounded-xl flex items-center justify-between shadow-md">
+        <Card className="p-4 bg-white border border-border rounded-xl flex items-center justify-between shadow-md">
           <div>
-            <span className="text-[10px] text-[#b8a090] font-bold uppercase tracking-wider block">Comissões Calculadas sobre VPL (5% Médio)</span>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Comissões Calculadas sobre VPL (5% Médio)</span>
             <p className="text-[11px] text-muted-foreground mt-0.5">Comissões dos projetistas alinhadas com o lucro real da venda.</p>
           </div>
           <strong className="text-xl text-amber-500 font-extrabold">{formatCurrency((faturamentoTotal * 0.88) * 0.05)}</strong>
@@ -145,14 +145,14 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <Card className="p-4 glass-card border-[#2d241f] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-4 glass-card border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome do cliente..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-black/20"
+            className="pl-9 bg-slate-100"
           />
         </div>
 
@@ -161,7 +161,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           <Select 
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-black/20 text-xs h-9"
+            className="bg-slate-100 text-xs h-9"
           >
             <option value="ALL">Todos os Recebíveis</option>
             <option value="PAGO">Liquidadas / Pagas</option>
@@ -172,11 +172,11 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
       </Card>
 
       {/* Tabela de Contas a Receber */}
-      <Card className="glass-card border-[#2d241f] overflow-hidden">
+      <Card className="glass-card border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#2d241f]/50 text-muted-foreground text-xs uppercase font-bold bg-black/15">
+              <tr className="border-b border-border/50 text-muted-foreground text-xs uppercase font-bold bg-slate-50">
                 <th className="p-4">Cliente / Contratante</th>
                 <th className="p-4 text-center">Tipo</th>
                 <th className="p-4 text-right">Valor Parcela</th>
@@ -186,7 +186,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/20 text-neutral-300">
+            <tbody className="divide-y divide-border/20 text-foreground">
               {filteredInstallments.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
@@ -199,7 +199,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
                   const isLate = item.status === "ATRASADO";
                   
                   return (
-                    <tr key={item.id} className="hover:bg-black/10 transition-colors">
+                    <tr key={item.id} className="hover:bg-slate-100 transition-colors">
                       <td className="p-4 font-bold text-foreground">
                         <div className="flex flex-col">
                           <span>{item.clientName}</span>

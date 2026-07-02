@@ -608,7 +608,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
       </div>
 
       {/* Card Principal - Cabeçalho e Informações Básicas */}
-      <div className="rounded-xl border border-[#2d241f] bg-black/45 backdrop-blur-md p-6 shadow-xl">
+      <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="space-y-4 col-span-2">
             <div>
@@ -640,7 +640,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             </div>
 
             {project.client.observacoes && (
-              <div className="p-3.5 rounded-lg bg-black/20 border border-border/40 text-xs text-muted-foreground">
+              <div className="p-3.5 rounded-lg bg-slate-50 border border-border text-xs text-muted-foreground">
                 <span className="font-semibold block text-foreground mb-1">Notas do Cliente:</span>
                 {project.client.observacoes}
               </div>
@@ -648,7 +648,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
           </div>
 
           {/* Painel Comercial Rápido */}
-          <div className="p-5 rounded-xl border border-[#2d241f] bg-black/25 flex flex-col justify-between h-full gap-4">
+          <div className="p-5 rounded-xl border border-border bg-slate-50 flex flex-col justify-between h-full gap-4 shadow-sm">
             <div>
               <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
               <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
@@ -657,13 +657,13 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-muted-foreground block uppercase tracking-wider">
+              <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider">
                 Status Operacional Geral
               </label>
               <Select 
                 value={project.status_geral} 
                 onChange={(e) => handleStatusChange(e.target.value)}
-                className="w-full"
+                className="w-full text-xs"
               >
                 <option value="LEAD">Lead</option>
                 <option value="ORCAMENTO">Orçamento</option>
@@ -680,19 +680,19 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
       </div>
 
       {/* Radar de Prazos (SLA) - Inspirado no Planejados Pro */}
-      <div className="rounded-xl border border-[#2d241f] bg-black/45 backdrop-blur-md p-5 shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-[#2d241f]/35 pb-3">
+      <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-border pb-3">
           <div>
-            <h3 className="text-sm font-bold tracking-wider text-[#b8a090] uppercase flex items-center gap-1.5">
+            <h3 className="text-sm font-bold tracking-wider text-foreground uppercase flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               Radar de Prazos (SLA Centralizado)
             </h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Acompanhamento automatizado de prazos e fluxo operacional da loja de planejados.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold uppercase">
+            <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded font-bold uppercase">
               SLA Ativo
             </span>
           </div>
@@ -734,12 +734,12 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
               const isProgress = step.status === "PROGRESSO";
               
               return (
-                <div key={step.id} className="relative flex flex-col justify-between p-3.5 rounded-lg bg-black/20 border border-[#2d241f]/50">
+                <div key={step.id} className="relative flex flex-col justify-between p-3.5 rounded-lg bg-slate-50 border border-border shadow-xs">
                   <div className="flex justify-between items-start gap-2">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                       Etapa 0{idx + 1}
                     </span>
-                    <span className="text-[9px] text-[#b8a090] font-semibold bg-black/30 px-1.5 py-0.5 rounded border border-[#2d241f]/40">
+                    <span className="text-xs text-muted-foreground font-semibold bg-secondary px-2 py-0.5 rounded border border-border">
                       SLA: {step.sla}
                     </span>
                   </div>
@@ -747,14 +747,14 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                     {step.name}
                   </h4>
                   
-                  <div className="mt-auto pt-2 border-t border-[#2d241f]/20 flex items-center justify-between gap-2">
+                  <div className="mt-auto pt-2 border-t border-border flex items-center justify-between gap-2">
                     <span className={`text-[10px] font-bold uppercase ${
-                      isCompleted ? "text-emerald-400" : isProgress ? "text-amber-400 animate-pulse" : "text-muted-foreground"
+                      isCompleted ? "text-emerald-500" : isProgress ? "text-amber-500 animate-pulse" : "text-muted-foreground"
                     }`}>
                       {isCompleted ? "✓ Concluído" : isProgress ? "● Em Progresso" : "○ Pendente"}
                     </span>
                     <div className={`w-2 h-2 rounded-full ${
-                      isCompleted ? "bg-emerald-400 gold-glow" : isProgress ? "bg-amber-400 animate-pulse" : "bg-neutral-700"
+                      isCompleted ? "bg-emerald-500 gold-glow" : isProgress ? "bg-amber-400 animate-pulse" : "bg-neutral-300"
                     }`} />
                   </div>
                 </div>
@@ -802,7 +802,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {project.environments.length === 0 ? (
-              <div className="col-span-2 border border-dashed border-border/30 rounded-xl p-8 text-center text-sm text-muted-foreground">
+              <div className="col-span-2 border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
                 Nenhum ambiente adicionado a este projeto. Clique em "Novo Cômodo" para começar.
               </div>
             ) : (
@@ -811,24 +811,24 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 return (
                   <div 
                     key={env.id} 
-                    className="p-5 rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs flex flex-col justify-between gap-4"
+                    className="p-5 rounded-xl border border-border bg-white flex flex-col justify-between gap-4 shadow-sm"
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className="text-[9px] font-bold bg-secondary px-1.5 py-0.5 rounded text-muted-foreground uppercase tracking-widest block w-max mb-1.5">
+                        <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest block w-max mb-1.5">
                           {env.tipo}
                         </span>
                         <h4 className="font-semibold text-base text-foreground">{env.nome}</h4>
                       </div>
                       
                       {/* Badge de Status Atual */}
-                      <span className={`text-[11px] font-medium border px-2.5 py-0.5 rounded-full ${currentStatusInfo?.bg}`}>
+                      <span className={`text-xs font-medium border px-2.5 py-0.5 rounded-full ${currentStatusInfo?.bg}`}>
                         {currentStatusInfo?.label}
                       </span>
                     </div>
 
-                    <div className="border-t border-border/30 pt-3 flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                    <div className="border-t border-border pt-3 flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">
                         Alterar Status de Fabricação:
                       </label>
                       <Select 
@@ -860,7 +860,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={() => handleSimulatePromobImport()} size="sm" variant="outline" className="border-[#2d241f] text-primary hover:bg-[#2d241f]/20 font-semibold cursor-pointer">
+              <Button onClick={() => handleSimulatePromobImport()} size="sm" variant="outline" className="border-border text-primary hover:bg-secondary/20 font-semibold cursor-pointer">
                 <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 animate-pulse" />
                 {isImportingPromob ? "Importando..." : "Importar Promob (IA)"}
               </Button>
@@ -878,7 +878,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
             ) : (
               <div className="divide-y divide-border/30">
                 {project.files.map((file) => (
-                  <div key={file.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/10 transition-colors">
+                  <div key={file.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-100 transition-colors">
                     <div className="flex items-start">
                       <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 mr-3 text-primary">
                         <FileText className="h-5 w-5" />
@@ -1101,7 +1101,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 ) : (
                   <div className="divide-y divide-border/30">
                     {project.quotes.map((q) => (
-                      <div key={q.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/10 transition-colors">
+                      <div key={q.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-100 transition-colors">
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2.5">
                             <h4 className="font-bold text-base text-foreground leading-none">
@@ -1138,7 +1138,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                           {!q.observacoes?.includes("Assinatura Digital Realizada") && (
                             <button
                               onClick={() => handleSimulateDigitalSignature(q.id)}
-                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#2d241f] bg-black/25 text-[#b8a090] hover:text-foreground hover:bg-[#2d241f]/20 transition-all cursor-pointer flex items-center gap-1"
+                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-border bg-slate-50 text-muted-foreground hover:text-foreground hover:bg-secondary/20 transition-all cursor-pointer flex items-center gap-1"
                             >
                               ✍️ Assinar Digitalmente
                             </button>
@@ -1264,7 +1264,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                     {project.installments.map((ins) => {
                       const isPaid = ins.status === "PAGO";
                       return (
-                        <tr key={ins.id} className="hover:bg-black/10 transition-colors">
+                        <tr key={ins.id} className="hover:bg-slate-100 transition-colors">
                           <td className="p-4">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                               ins.tipo === "ENTRADA" 
@@ -1355,7 +1355,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                   };
                   
                   return (
-                    <div key={t.id} className={`p-4 flex items-center justify-between gap-4 hover:bg-black/10 transition-colors ${
+                    <div key={t.id} className={`p-4 flex items-center justify-between gap-4 hover:bg-slate-100 transition-colors ${
                       isCompleted ? "opacity-50" : ""
                     }`}>
                       <div className="flex items-start gap-3 min-w-0">
@@ -1364,7 +1364,7 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                           type="checkbox"
                           checked={isCompleted}
                           onChange={(e) => handleToggleTask(t.id, e.target.checked)}
-                          className="h-4.5 w-4.5 rounded border-border bg-black/20 text-primary focus:ring-primary/40 focus:ring-1 cursor-pointer mt-0.5"
+                          className="h-4.5 w-4.5 rounded border-border bg-slate-100 text-primary focus:ring-primary/40 focus:ring-1 cursor-pointer mt-0.5"
                         />
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2.5 flex-wrap">

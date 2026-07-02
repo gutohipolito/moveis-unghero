@@ -8,10 +8,10 @@ import {
   User as UserIcon,
   LogOut,
   Kanban,
-  FolderOpen,
   Calendar,
   DollarSign,
-  Layers
+  Layers,
+  LayoutDashboard
 } from "lucide-react";
 
 interface SidebarToggleProps {
@@ -27,100 +27,130 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<any>;
-  badge?: string;
+  section: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { name: "CRM Kanban", href: "/crm", icon: Kanban },
-  { name: "Clientes & Projetos", href: "/crm", icon: FolderOpen },
-  { name: "Agenda", href: "/agenda", icon: Calendar },
-  { name: "Chão de Fábrica", href: "/factory", icon: Layers },
-  { name: "Financeiro", href: "/financeiro", icon: DollarSign },
+  { name: "Dashboard", href: "/crm", icon: LayoutDashboard, section: "Principal" },
+  { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
+  { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
+  { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
+  { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
 ];
+
+const SECTIONS = [...new Set(NAV_ITEMS.map(i => i.section))];
 
 export default function SidebarToggle({ user }: SidebarToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
-
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
     <div className="relative">
       <button
         onClick={toggleMenu}
-        className="flex items-center justify-center p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+        className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors cursor-pointer"
+        style={{ background: "hsl(210 20% 95%)", color: "hsl(220 20% 35%)" }}
         aria-label="Menu principal"
       >
-        <Menu className="h-6 w-6" />
+        <Menu className="h-5 w-5" />
       </button>
 
       {/* Backdrop */}
       {isOpen && (
         <div 
           onClick={toggleMenu}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-all duration-300 md:hidden"
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(4px)" }}
         />
       )}
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 bottom-0 left-0 w-64 bg-black/45 border-r border-[#2d241f] backdrop-blur-xl z-50 transform ${
+        className={`fixed top-0 bottom-0 left-0 w-72 z-50 md:hidden flex flex-col transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out md:hidden flex flex-col`}
+        } transition-transform duration-300 ease-in-out`}
+        style={{ background: "white", borderRight: "1px solid hsl(210 15% 89%)" }}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-[#2d241f]/50">
-          <div className="flex flex-col">
-            <span className="text-sm font-black tracking-widest text-gradient-gold leading-none">
-              UNGHERO
-            </span>
-            <span className="text-[9px] text-[#b8a090] uppercase tracking-widest mt-1 block font-bold">
-              SaaS Admin
-            </span>
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between h-16 px-4"
+          style={{ borderBottom: "1px solid hsl(210 15% 89%)" }}>
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
+              style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 85%)" }}>
+              <img 
+                src="/logo.png" 
+                alt="Móveis Unghero" 
+                className="h-7 w-auto object-contain"
+                style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
+              />
+            </div>
+            <div>
+              <p className="text-sm font-black tracking-wider leading-none"
+                style={{ color: "hsl(220 20% 10%)" }}>
+                Unghero
+              </p>
+              <span className="text-[10px] font-semibold tracking-widest uppercase"
+                style={{ color: "hsl(28 85% 45%)" }}>
+                SaaS Admin
+              </span>
+            </div>
           </div>
           <button
             onClick={toggleMenu}
-            className="p-1 rounded-lg hover:bg-[#2d241f]/40 text-[#b8a090] hover:text-foreground cursor-pointer"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+            style={{ color: "hsl(210 10% 50%)" }}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Links */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={toggleMenu}
-              className="flex items-center justify-between px-3.5 py-2.5 text-xs font-bold rounded-xl text-[#b8a090] hover:text-foreground hover:bg-[#211915]/50 border border-transparent hover:border-primary/10 hover:gold-glow transition-all duration-300 group"
-            >
-              <div className="flex items-center">
-                <item.icon className="mr-3 h-4.5 w-4.5 text-[#b8a090] group-hover:text-primary transition-colors" />
-                {item.name}
+        {/* Nav Links */}
+        <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-5">
+          {SECTIONS.map(section => (
+            <div key={section}>
+              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2"
+                style={{ color: "hsl(210 10% 60%)" }}>
+                {section}
+              </p>
+              <div className="space-y-0.5">
+                {NAV_ITEMS.filter(i => i.section === section).map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={toggleMenu}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200"
+                    style={{ color: "hsl(220 20% 35%)" }}
+                  >
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: "hsl(210 20% 95%)" }}>
+                      <item.icon className="h-4 w-4" style={{ color: "hsl(28 85% 45%)" }} />
+                    </div>
+                    <span>{item.name}</span>
+                  </Link>
+                ))}
               </div>
-              {item.badge && (
-                <span className="text-[9px] font-bold bg-primary/15 border border-primary/25 px-1.5 py-0.5 rounded text-primary">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
+            </div>
           ))}
         </nav>
 
         {/* User Perfil */}
-        <div className="flex flex-col p-4 border-t border-[#2d241f] bg-black/25">
-          <div className="flex items-center px-2 py-1.5 mb-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+        <div className="p-3 m-3 rounded-xl"
+          style={{ background: "hsl(210 20% 97%)", border: "1px solid hsl(210 15% 89%)" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0"
+              style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 85%)" }}>
               {user.image ? (
-                <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full" />
+                <img src={user.image} alt={user.name} className="w-9 h-9 rounded-xl object-cover" />
               ) : (
-                <UserIcon className="h-4 w-4 text-primary" />
+                <UserIcon className="h-4 w-4" style={{ color: "hsl(28 85% 45%)" }} />
               )}
             </div>
-            <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-semibold truncate leading-none text-foreground">
+            <div className="overflow-hidden flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: "hsl(220 20% 10%)" }}>
                 {user.name}
               </p>
-              <span className="text-[9px] font-bold text-primary uppercase tracking-widest mt-1.5 inline-block">
+              <span className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: "hsl(28 85% 45%)" }}>
                 {user.cargo || "COMERCIAL"}
               </span>
             </div>
@@ -128,9 +158,10 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
           <form action="/api/auth/sign-out" method="POST" className="w-full">
             <button
               type="submit"
-              className="flex items-center w-full px-3 py-2 text-xs font-semibold rounded-lg text-[#b8a090] hover:text-destructive hover:bg-destructive/5 border border-transparent hover:border-destructive/10 transition-all cursor-pointer"
+              className="flex items-center w-full px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+              style={{ color: "hsl(210 10% 50%)" }}
             >
-              <LogOut className="mr-3 h-4 w-4" />
+              <LogOut className="mr-2 h-3.5 w-3.5" />
               Sair do Painel
             </button>
           </form>

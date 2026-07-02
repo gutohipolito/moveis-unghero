@@ -164,7 +164,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
   return (
     <div className="space-y-6">
       {/* Topbar de Ações e Métricas Rápidas */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 rounded-xl border border-[#2d241f] bg-black/45 backdrop-blur-md gap-6 shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 rounded-xl border border-border bg-white backdrop-blur-md gap-6 shadow-xl">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center">
             <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 mr-3">
@@ -177,7 +177,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
               </span>
             </div>
           </div>
-          <div className="flex items-center border-l border-[#2d241f] pl-6">
+          <div className="flex items-center border-l border-border pl-6">
             <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mr-3">
               <UserCheck className="h-5 w-5 text-emerald-400" />
             </div>
@@ -203,19 +203,19 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
           const isOver = dragOverColumn === col.id;
 
           return (
-            <div
+            <div 
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`flex-shrink-0 w-80 rounded-xl border border-[#2d241f] bg-black/25 flex flex-col transition-all duration-300 ${
-                isOver ? "bg-[#2d241f]/30 border-primary/20 scale-[1.01] shadow-lg" : ""
+              className={`flex-shrink-0 w-80 rounded-xl border border-border bg-slate-100/50 flex flex-col transition-all duration-300 ${
+                isOver ? "bg-slate-200/50 border-primary/20 scale-[1.01] shadow-lg" : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
-              <div className={`p-4 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-[#2d241f]/50 bg-black/15`}>
+              <div className={`p-4 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-border bg-slate-100/80`}>
                 <div className="flex items-center space-x-2">
                   <span className="font-extrabold text-xs uppercase tracking-wider">{col.title}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/30 text-[#b8a090]">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
                     {colProjects.length}
                   </span>
                 </div>
@@ -228,7 +228,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                 onDragLeave={() => setDragOverColumn(null)}
               >
                 {colProjects.length === 0 ? (
-                  <div className="h-full flex items-center justify-center border border-dashed border-[#2d241f]/80 rounded-xl p-6 text-center text-xs text-muted-foreground/60">
+                  <div className="h-full flex items-center justify-center border border-dashed border-border rounded-xl p-6 text-center text-xs text-muted-foreground/60">
                     Nenhum projeto nesta etapa
                   </div>
                 ) : (
@@ -240,16 +240,16 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                         draggable
                         onDragStart={(e) => handleDragStart(e, project.id)}
                         onDragEnd={handleDragEnd}
-                        className={`group glass-card p-4 rounded-xl text-card-foreground shadow-lg transition-all duration-300 cursor-grab active:cursor-grabbing hover:border-primary/30 hover:scale-[1.01] ${
+                        className={`group bg-white p-4 rounded-xl text-card-foreground shadow-sm border border-border transition-all duration-300 cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-md ${
                           isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
                         }`}
                       >
                         {/* Origem Badge */}
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[8px] font-bold bg-[#2d241f] px-1.5 py-0.5 rounded text-[#b8a090] uppercase tracking-widest border border-[#3d302a]/55">
+                          <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest border border-border">
                             {project.client.origem}
                           </span>
-                          <span className="text-[9px] text-[#b8a090] flex items-center font-medium">
+                          <span className="text-xs text-muted-foreground flex items-center font-medium">
                             <MapPin className="h-3 w-3 mr-0.5 text-primary" />
                             {project.client.cidade}
                           </span>
@@ -261,7 +261,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                         </h4>
 
                         {/* Detalhes de Contato */}
-                        <div className="mt-2 space-y-1 text-xs text-[#b8a090]">
+                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                           <p className="flex items-center">
                             <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
                             {project.client.telefone}
@@ -269,7 +269,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                         </div>
 
                         {/* Separador */}
-                        <div className="my-3 border-t border-[#2d241f]/50" />
+                        <div className="my-3 border-t border-border" />
 
                         {/* Rodapé do Card */}
                         <div className="flex items-center justify-between">
@@ -280,7 +280,7 @@ export default function KanbanBoard({ initialProjects, companyId }: KanbanBoardP
                           
                           <Link 
                             href={`/projects/${project.id}`}
-                            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-[#2d241f] hover:bg-primary/20 text-[#b8a090] hover:text-primary border border-[#3c3029] transition-all cursor-pointer group/link"
+                            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer group/link"
                             title="Ver Detalhes do Projeto"
                           >
                             <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />

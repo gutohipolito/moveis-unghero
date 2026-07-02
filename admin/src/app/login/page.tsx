@@ -43,12 +43,18 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         
         {/* Logo / Branding */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
-            <Sparkles className="h-6 w-6" />
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden"
+            style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 80%)" }}>
+            <img 
+              src="/logo.png" 
+              alt="Móveis Unghero" 
+              className="w-12 h-12 object-contain"
+              style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
+            />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-widest text-gradient-gold">
+            <h1 className="text-xl font-black tracking-widest text-gradient-gold">
               MÓVEIS UNGHERO
             </h1>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">
@@ -58,7 +64,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card de Login */}
-        <div className="rounded-2xl border border-border/40 bg-card/65 backdrop-blur-md p-6 shadow-2xl space-y-6">
+        <div className="rounded-2xl border border-border bg-white p-6 shadow-sm space-y-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold text-foreground">Acesse sua conta</h2>
             <p className="text-xs text-muted-foreground">Preencha suas credenciais de acesso.</p>
@@ -73,7 +79,7 @@ export default function LoginPage() {
                   type="email"
                   required
                   placeholder="admin@moveisunghero.com"
-                  className="pl-9 bg-black/15 border-border/40 focus-visible:ring-primary"
+                  className="pl-9 bg-white border-border focus-visible:ring-primary"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -88,7 +94,7 @@ export default function LoginPage() {
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="pl-9 bg-black/15 border-border/40 focus-visible:ring-primary"
+                  className="pl-9 bg-white border-border focus-visible:ring-primary"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />

@@ -208,7 +208,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
 
         {/* Bloco 2: Tabela Dinâmica de Itens */}
         <div className="rounded-xl border border-border/40 bg-black/10 overflow-hidden">
-          <div className="p-4 bg-black/20 border-b border-border/40 flex justify-between items-center">
+          <div className="p-4 bg-slate-100 border-b border-border/40 flex justify-between items-center">
             <span className="text-xs font-bold uppercase tracking-wider text-foreground">
               Tabela Comercial de Itens
             </span>
