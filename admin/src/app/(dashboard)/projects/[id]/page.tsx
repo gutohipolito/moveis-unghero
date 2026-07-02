@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import ProjectDetails from "@/components/ProjectDetails";
 
 // Dados fictícios detalhados para caso o banco de dados esteja vazio ou inacessível
@@ -220,43 +220,49 @@ export default async function ProjectPage({ params }: RouteParams) {
   let project = null;
   let isMock = false;
 
-  try {
-    // Tenta buscar o projeto completo do banco
-    project = await prisma.project.findFirst({
-      where: {
-        id: id,
-        client: {
-          company_id: userCompanyId
-        }
-      },
-      include: {
-        client: true,
-        environments: true,
-        files: true,
-        quotes: true,
-        tasks: true,
-        installments: true,
-        timeline: {
-          include: {
-            user: {
-              select: { name: true }
+  if (isDatabaseOffline()) {
+    project = MOCK_DETAILS[id];
+    isMock = true;
+  } else {
+    try {
+      // Tenta buscar o projeto completo do banco
+      project = await prisma.project.findFirst({
+        where: {
+          id: id,
+          client: {
+            company_id: userCompanyId
+          }
+        },
+        include: {
+          client: true,
+          environments: true,
+          files: true,
+          quotes: true,
+          tasks: true,
+          installments: true,
+          timeline: {
+            include: {
+              user: {
+                select: { name: true }
+              }
+            },
+            orderBy: {
+              data: "desc"
             }
-          },
-          orderBy: {
-            data: "desc"
           }
         }
-      }
-    });
+      });
 
-    if (!project) {
+      if (!project) {
+        project = MOCK_DETAILS[id];
+        isMock = true;
+      }
+    } catch (error) {
+      console.warn("Falha de conexão com banco de dados na busca de detalhes do projeto, usando mocks.");
+      setDatabaseOffline(true);
       project = MOCK_DETAILS[id];
       isMock = true;
     }
-  } catch (error) {
-    console.warn("Falha de conexão com banco de dados na busca de detalhes do projeto, usando mocks.");
-    project = MOCK_DETAILS[id];
-    isMock = true;
   }
 
   // Se não houver projeto no banco nem nos mocks, cria um mock básico sob demanda

@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import AgendaClient from "./AgendaClient";
 
 // Mock de dados para agenda técnica
@@ -84,51 +84,58 @@ export default async function AgendaPage() {
   let projects = [];
   let isMock = false;
 
-  try {
-    // Tenta buscar as tarefas do banco com relações
-    tasks = await prisma.task.findMany({
-      where: {
-        project: {
-          client: {
-            company_id: userCompanyId
-          }
-        }
-      },
-      include: {
-        project: {
-          include: {
-            client: true
-          }
-        }
-      },
-      orderBy: {
-        data: "asc"
-      }
-    });
-
-    projects = await prisma.project.findMany({
-      where: {
-        client: {
-          company_id: userCompanyId
-        }
-      },
-      include: {
-        client: true
-      }
-    });
-
-    if (tasks.length === 0) {
-      tasks = MOCK_EVENTS;
-      isMock = true;
-    }
-    if (projects.length === 0) {
-      projects = MOCK_PROJECTS;
-    }
-  } catch (error) {
-    console.warn("Falha de conexão com banco de dados na busca da agenda. Usando mocks.");
+  if (isDatabaseOffline()) {
     tasks = MOCK_EVENTS;
     projects = MOCK_PROJECTS;
     isMock = true;
+  } else {
+    try {
+      // Tenta buscar as tarefas do banco com relações
+      tasks = await prisma.task.findMany({
+        where: {
+          project: {
+            client: {
+              company_id: userCompanyId
+            }
+          }
+        },
+        include: {
+          project: {
+            include: {
+              client: true
+            }
+          }
+        },
+        orderBy: {
+          data: "asc"
+        }
+      });
+
+      projects = await prisma.project.findMany({
+        where: {
+          client: {
+            company_id: userCompanyId
+          }
+        },
+        include: {
+          client: true
+        }
+      });
+
+      if (tasks.length === 0) {
+        tasks = MOCK_EVENTS;
+        isMock = true;
+      }
+      if (projects.length === 0) {
+        projects = MOCK_PROJECTS;
+      }
+    } catch (error) {
+      console.warn("Falha de conexão com banco de dados na busca da agenda. Usando mocks.");
+      setDatabaseOffline(true);
+      tasks = MOCK_EVENTS;
+      projects = MOCK_PROJECTS;
+      isMock = true;
+    }
   }
 
   // Formata dados seguros

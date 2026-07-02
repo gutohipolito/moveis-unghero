@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import FactoryClient from "./FactoryClient";
 
 // Mock de dados para cômodos na fábrica
@@ -77,38 +77,44 @@ export default async function FactoryPage() {
   let environments = [];
   let isMock = false;
 
-  try {
-    // Tenta buscar no banco os ambientes cujos projetos tenham arquivos com aprovado_producao = true
-    environments = await prisma.environment.findMany({
-      where: {
-        project: {
-          client: {
-            company_id: userCompanyId
-          },
-          files: {
-            some: {
-              aprovado_producao: true
+  if (isDatabaseOffline()) {
+    environments = MOCK_ENVIRONMENTS;
+    isMock = true;
+  } else {
+    try {
+      // Tenta buscar no banco os ambientes cujos projetos tenham arquivos com aprovado_producao = true
+      environments = await prisma.environment.findMany({
+        where: {
+          project: {
+            client: {
+              company_id: userCompanyId
+            },
+            files: {
+              some: {
+                aprovado_producao: true
+              }
+            }
+          }
+        },
+        include: {
+          project: {
+            include: {
+              client: true
             }
           }
         }
-      },
-      include: {
-        project: {
-          include: {
-            client: true
-          }
-        }
-      }
-    });
+      });
 
-    if (environments.length === 0) {
+      if (environments.length === 0) {
+        environments = MOCK_ENVIRONMENTS;
+        isMock = true;
+      }
+    } catch (error) {
+      console.warn("Falha de conexão com banco de dados no chão de fábrica. Usando mocks.");
+      setDatabaseOffline(true);
       environments = MOCK_ENVIRONMENTS;
       isMock = true;
     }
-  } catch (error) {
-    console.warn("Falha de conexão com banco de dados no chão de fábrica. Usando mocks.");
-    environments = MOCK_ENVIRONMENTS;
-    isMock = true;
   }
 
   // Formata os dados seguros

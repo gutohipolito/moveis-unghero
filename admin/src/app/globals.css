@@ -30,13 +30,13 @@
 :root {
   /* Tema Claro Sofisticado de Luxo (Clean Minimalist Luxury) */
   --background: 210 20% 98%;
-  --foreground: 220 20% 10%;
+  --foreground: 220 30% 5%; /* Contraste ampliado */
   
   --card: 0 0% 100%;
-  --card-foreground: 220 20% 10%;
+  --card-foreground: 220 30% 5%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 10%;
+  --popover-foreground: 220 30% 5%;
   
   --primary: 28 85% 45%; /* Bronze/cobre polido */
   --primary-foreground: 0 0% 100%;
@@ -45,7 +45,7 @@
   --secondary-foreground: 220 20% 15%;
   
   --muted: 210 20% 95%;
-  --muted-foreground: 210 10% 45%;
+  --muted-foreground: 210 12% 38%; /* Contraste ampliado */
   
   --accent: 210 20% 92%;
   --accent-foreground: 220 20% 15%;
@@ -53,11 +53,11 @@
   --destructive: 0 84.2% 40.2%;
   --destructive-foreground: 210 20% 98%;
   
-  --border: 210 15% 89%; /* Bordas bem claras */
-  --input: 210 15% 89%;
+  --border: 210 15% 86%; /* Bordas ligeiramente mais definidas */
+  --input: 210 15% 86%;
   --ring: 28 85% 45%;
   
-  --radius: 0.75rem;
+  --radius: 1rem; /* Cantos mais redondos (16px) */
 }
 
 /* Transições suaves e scrollbar customizada */
@@ -96,29 +96,31 @@ body {
 
 /* Efeito de Glassmorphism Premium Claro */
 .glassmorphism {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(28, 85, 45, 0.08);
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.04);
-  transition: all 0.25s ease;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card-hover {
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card-hover:hover {
-  transform: translateY(-2px);
-  border-color: rgba(217, 119, 6, 0.35);
-  box-shadow: 0 10px 25px 0 rgba(217, 119, 6, 0.08);
+  transform: translateY(-4px);
+  border-color: rgba(28, 85, 45, 0.2);
+  box-shadow: 0 16px 36px 0 rgba(28, 85, 45, 0.06), 0 4px 12px 0 rgba(0, 0, 0, 0.02);
 }
 
 /* Gradientes suaves claros */
@@ -143,17 +145,18 @@ body {
 .btn-metallic {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   border: 1px solid rgba(217, 119, 6, 0.2);
-  box-shadow: 0 3px 8px 0 rgba(180, 83, 9, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px 0 rgba(180, 83, 9, 0.18), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
+  border-radius: 0.75rem;
   transition: all 0.2s ease;
 }
 
 .btn-metallic:hover {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   border-color: rgba(217, 119, 6, 0.35);
-  box-shadow: 0 5px 12px 0 rgba(180, 83, 9, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
-  transform: translateY(-0.5px);
+  box-shadow: 0 6px 16px 0 rgba(180, 83, 9, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .btn-metallic:active {
@@ -163,7 +166,7 @@ body {
 
 /* Glow metálico sutil */
 .gold-glow {
-  box-shadow: 0 0 12px 1px rgba(217, 119, 6, 0.08);
+  box-shadow: 0 0 16px 2px rgba(217, 119, 6, 0.1);
 }
 
 /* Pulsar sutil para indicar estados em progresso ativamente */
@@ -187,18 +190,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 0.75rem;
-  color: hsl(220 20% 35%);
-  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem; /* Letras maiores */
+  font-weight: 600; /* Fontes com mais leitura */
+  border-radius: 1rem; /* Cantos arredondados */
+  color: hsl(220 20% 30%); /* Mais contraste */
+  transition: all 0.2s ease;
   text-decoration: none;
 }
 
 .sidebar-nav-link:hover {
   background: hsl(210 20% 94%);
-  color: hsl(220 20% 8%);
+  color: hsl(220 30% 5%); /* Maior contraste no hover */
+  transform: translateX(2px);
 }
 
 .sidebar-nav-link:hover .sidebar-nav-icon {
@@ -209,48 +213,50 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.5rem;
-  background: hsl(210 20% 95%);
+  width: 2.25rem; /* Ícones em pill maiores */
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background: hsl(210 20% 93%);
   flex-shrink: 0;
-  transition: background 0.15s ease;
+  transition: background 0.2s ease;
 }
 
 /* ─── Card Utility: Clean White Card ─── */
 .card-clean {
-  background: #ffffff;
-  border: 1px solid hsl(210 15% 89%);
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
 }
 
 /* ─── Table header legível ─── */
 thead tr {
   background: hsl(210 20% 97%);
-  border-bottom: 1px solid hsl(210 15% 89%);
+  border-bottom: 1px solid hsl(210 15% 86%);
 }
 
 thead th {
-  color: hsl(210 10% 45%);
-  font-size: 0.6875rem;
-  font-weight: 700;
+  color: hsl(220 20% 25%); /* Mais escuro para melhor contraste */
+  font-size: 0.75rem; /* Ligeiramente maior */
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1rem;
 }
 
 tbody tr {
-  border-bottom: 1px solid hsl(210 15% 93%);
+  border-bottom: 1px solid hsl(210 15% 91%);
   transition: background 0.12s ease;
 }
 
 tbody tr:hover {
-  background: hsl(210 20% 98%);
+  background: hsl(210 20% 97%);
 }
 
 tbody td {
-  color: hsl(220 20% 15%);
-  padding: 0.75rem 1rem;
-  font-size: 0.8125rem;
+  color: hsl(220 30% 5%); /* Mais escuro para excelente contraste */
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem; /* Ligeiramente maior (14px) */
 }

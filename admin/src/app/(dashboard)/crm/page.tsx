@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import KanbanBoard from "@/components/KanbanBoard";
 
 // Lista de Leads/Projetos Fictícios para Mock caso o banco esteja vazio ou inacessível
@@ -108,28 +108,34 @@ export default async function CRMPage() {
   let projects = [];
   let isMock = false;
 
-  try {
-    // Tenta buscar os projetos do banco de dados vinculados à empresa do usuário
-    projects = await prisma.project.findMany({
-      where: {
-        client: {
-          company_id: userCompanyId
+  if (isDatabaseOffline()) {
+    projects = MOCK_PROJECTS;
+    isMock = true;
+  } else {
+    try {
+      // Tenta buscar os projetos do banco de dados vinculados à empresa do usuário
+      projects = await prisma.project.findMany({
+        where: {
+          client: {
+            company_id: userCompanyId
+          }
+        },
+        include: {
+          client: true,
         }
-      },
-      include: {
-        client: true,
-      }
-    });
+      });
 
-    // Se a busca der certo mas o banco estiver vazio, usa os mocks para visualização
-    if (projects.length === 0) {
+      // Se a busca der certo mas o banco estiver vazio, usa os mocks para visualização
+      if (projects.length === 0) {
+        projects = MOCK_PROJECTS;
+        isMock = true;
+      }
+    } catch (error) {
+      console.warn("Conexão ao banco falhou no carregamento do CRM, usando dados simulados.");
+      setDatabaseOffline(true);
       projects = MOCK_PROJECTS;
       isMock = true;
     }
-  } catch (error) {
-    console.warn("Conexão ao banco falhou no carregamento do CRM, usando dados simulados.");
-    projects = MOCK_PROJECTS;
-    isMock = true;
   }
 
   // Mapeia os dados do Prisma para o formato JSON simples para o client component

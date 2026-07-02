@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import FinanceiroClient from "./FinanceiroClient";
 
 // Mock de faturas e parcelas financeiras
@@ -101,36 +101,42 @@ export default async function FinanceiroPage() {
   let installments = [];
   let isMock = false;
 
-  try {
-    // Busca do banco
-    installments = await prisma.installment.findMany({
-      where: {
-        project: {
-          client: {
-            company_id: userCompanyId
+  if (isDatabaseOffline()) {
+    installments = MOCK_INSTALLMENTS;
+    isMock = true;
+  } else {
+    try {
+      // Busca do banco
+      installments = await prisma.installment.findMany({
+        where: {
+          project: {
+            client: {
+              company_id: userCompanyId
+            }
           }
-        }
-      },
-      include: {
-        project: {
-          include: {
-            client: true
+        },
+        include: {
+          project: {
+            include: {
+              client: true
+            }
           }
+        },
+        orderBy: {
+          data_vencimento: "asc"
         }
-      },
-      orderBy: {
-        data_vencimento: "asc"
-      }
-    });
+      });
 
-    if (installments.length === 0) {
+      if (installments.length === 0) {
+        installments = MOCK_INSTALLMENTS;
+        isMock = true;
+      }
+    } catch (error) {
+      console.warn("Falha de conexão com banco de dados no financeiro geral. Usando mocks.");
+      setDatabaseOffline(true);
       installments = MOCK_INSTALLMENTS;
       isMock = true;
     }
-  } catch (error) {
-    console.warn("Falha de conexão com banco de dados no financeiro geral. Usando mocks.");
-    installments = MOCK_INSTALLMENTS;
-    isMock = true;
   }
 
   // Formata os dados de forma segura
