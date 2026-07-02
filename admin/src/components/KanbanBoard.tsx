@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { updateProjectStatus, createLead, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import { updateProjectStatus, createLead, updateProjectAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,8 @@ import {
   DollarSign, 
   ArrowRight,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Edit
 } from "lucide-react";
 
 interface Project {
@@ -67,10 +68,14 @@ const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
 export default function KanbanBoard({ initialProjects, companyId, clients = [] }: KanbanBoardProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
+  const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingStatusGeral, setEditingStatusGeral] = useState<ProjectStatus>("LEAD");
+  const [statusGeralInicial, setStatusGeralInicial] = useState<ProjectStatus>("LEAD");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
   
-  // Estados do formulário de novo lead
+  // Estados do formulário de lead
   const [isExistingClient, setIsExistingClient] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -82,6 +87,62 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     origem: "INSTAGRAM" as Origin,
     valor_previsto: ""
   });
+
+  const openEditModal = (project: Project) => {
+    setEditingProjectId(project.id);
+    setEditingStatusGeral(project.status_geral as ProjectStatus);
+    setLeadForm({
+      nome: project.client.nome,
+      email: project.client.email,
+      telefone: project.client.telefone,
+      cidade: project.client.cidade,
+      origem: project.client.origem as Origin,
+      valor_previsto: project.valor_previsto.toString()
+    });
+    setIsEditLeadOpen(true);
+  };
+
+  const handleEditLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProjectId) return;
+    setLoading(true);
+
+    const data = {
+      valor_previsto: Number(leadForm.valor_previsto) || 0,
+      status_geral: editingStatusGeral,
+      nome: leadForm.nome,
+      telefone: leadForm.telefone,
+      cidade: leadForm.cidade,
+      origem: leadForm.origem
+    };
+
+    const result = await updateProjectAction(editingProjectId, data);
+
+    if (result.success) {
+      setProjects(projects.map(p => {
+        if (p.id === editingProjectId) {
+          return {
+            ...p,
+            valor_previsto: data.valor_previsto,
+            status_geral: data.status_geral,
+            client: {
+              ...p.client,
+              nome: data.nome,
+              telefone: data.telefone,
+              cidade: data.cidade,
+              origem: data.origem
+            }
+          };
+        }
+        return p;
+      }));
+      setIsEditLeadOpen(false);
+      resetLeadForm();
+    } else {
+      alert("Erro ao salvar alterações.");
+    }
+    setLoading(false);
+  };
 
   // Drag & Drop Handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -123,8 +184,11 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     }
   };
 
+  // resetLeadForm
   const resetLeadForm = () => {
     setSelectedClientId("");
+    setStatusGeralInicial("LEAD");
+    setEditingProjectId(null);
     setLeadForm({
       nome: "",
       email: "",
@@ -159,7 +223,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       ...leadForm,
       valor_previsto: Number(leadForm.valor_previsto) || 0,
       company_id: companyId,
-      client_id: isExistingClient ? selectedClientId : undefined
+      client_id: isExistingClient ? selectedClientId : undefined,
+      status_geral: statusGeralInicial
     };
 
     const result = await createLead(data);
@@ -169,7 +234,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       const newProj: Project = {
         id: result.data.project.id,
         valor_previsto: Number(result.data.project.valor_previsto),
-        status_geral: "LEAD",
+        status_geral: statusGeralInicial,
         client: {
           id: result.data.client.id,
           nome: result.data.client.nome,
@@ -184,6 +249,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       setIsNewLeadOpen(false);
       setIsExistingClient(false);
       setSelectedClientId("");
+      setStatusGeralInicial("LEAD");
       setLeadForm({
         nome: "",
         email: "",
@@ -342,13 +408,24 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                             {formatCurrency(project.valor_previsto).replace("R$", "")}
                           </div>
                           
-                          <Link 
-                            href={`/projects/${project.id}`}
-                            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer group/link"
-                            title="Ver Detalhes do Projeto"
-                          >
-                            <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
-                          </Link>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(project)}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer"
+                              title="Editar Card"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                            
+                            <Link 
+                              href={`/projects/${project.id}`}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer group/link"
+                              title="Ver Detalhes do Projeto"
+                            >
+                              <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     );
@@ -479,17 +556,34 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Valor Previsto do Projeto (R$)
-            </label>
-            <Input
-              type="number"
-              required
-              placeholder="Ex: 45000"
-              value={leadForm.valor_previsto}
-              onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Valor Previsto (R$)
+              </label>
+              <Input
+                type="number"
+                required
+                placeholder="Ex: 45000"
+                value={leadForm.valor_previsto}
+                onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Etapa / Coluna Inicial
+              </label>
+              <select
+                value={statusGeralInicial}
+                onChange={(e) => setStatusGeralInicial(e.target.value as ProjectStatus)}
+                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+              >
+                {COLUMNS.map(col => (
+                  <option key={col.id} value={col.id}>{col.title}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
@@ -503,6 +597,128 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </Button>
             <Button type="submit" disabled={loading} className="font-semibold">
               {loading ? "Cadastrando..." : "Cadastrar Lead"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Modal - Editar Card do Kanban */}
+      <Dialog isOpen={isEditLeadOpen} onClose={() => setIsEditLeadOpen(false)}>
+        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
+          Editar Informações do Card
+        </h3>
+        
+        <form onSubmit={handleEditLeadSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Nome Completo do Cliente
+            </label>
+            <Input
+              required
+              placeholder="Ex: João da Silva"
+              value={leadForm.nome}
+              onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                E-mail
+              </label>
+              <Input
+                type="email"
+                required
+                placeholder="exemplo@email.com"
+                value={leadForm.email}
+                onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Telefone / WhatsApp
+              </label>
+              <Input
+                required
+                placeholder="(54) 99999-9999"
+                value={leadForm.telefone}
+                onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Cidade de Instalação
+              </label>
+              <Input
+                required
+                placeholder="Ex: Bento Gonçalves"
+                value={leadForm.cidade}
+                onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Origem do Lead
+              </label>
+              <select
+                value={leadForm.origem}
+                onChange={(e) => setLeadForm({ ...leadForm, origem: e.target.value as Origin })}
+                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+              >
+                <option value="INSTAGRAM">Instagram</option>
+                <option value="SITE">Site institucional</option>
+                <option value="INDICACAO">Indicação de Cliente</option>
+                <option value="GOOGLE">Google Ads/Orgânico</option>
+                <option value="WHATSAPP">WhatsApp Corporativo</option>
+                <option value="FACEBOOK">Facebook</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Valor do Projeto (R$)
+              </label>
+              <Input
+                type="number"
+                required
+                placeholder="Ex: 45000"
+                value={leadForm.valor_previsto}
+                onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Etapa / Coluna no Kanban
+              </label>
+              <select
+                value={editingStatusGeral}
+                onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
+                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+              >
+                {COLUMNS.map(col => (
+                  <option key={col.id} value={col.id}>{col.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditLeadOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading} className="font-semibold">
+              {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </form>

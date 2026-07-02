@@ -51,8 +51,11 @@ export async function createLead(formData: {
   valor_previsto: number;
   company_id: string;
   client_id?: string; // Opcional, para associar a cliente já cadastrado
+  status_geral?: ProjectStatus; // Opcional, status inicial
 }) {
   try {
+    const statusInicial = formData.status_geral || "LEAD";
+    
     // Tenta gravar no banco real
     const result = await prisma.$transaction(async (tx) => {
       let client;
@@ -71,7 +74,7 @@ export async function createLead(formData: {
             telefone: formData.telefone,
             cidade: formData.cidade,
             origem: formData.origem,
-            status: "LEAD",
+            status: statusInicial,
             company_id: formData.company_id,
           }
         });
@@ -81,7 +84,7 @@ export async function createLead(formData: {
         data: {
           client_id: client.id,
           valor_previsto: formData.valor_previsto,
-          status_geral: "LEAD",
+          status_geral: statusInicial,
         }
       });
 
@@ -108,8 +111,49 @@ export async function createLead(formData: {
       simulated: true,
       data: {
         client: { id: "simulated-client-id", ...formData },
-        project: { id: "simulated-project-id", client_id: "simulated-client-id", valor_previsto: formData.valor_previsto, status_geral: "LEAD" }
+        project: { id: "simulated-project-id", client_id: "simulated-client-id", valor_previsto: formData.valor_previsto, status_geral: formData.status_geral || "LEAD" }
       }
     };
   }
 }
+
+// Server Action para editar um projeto/card no Kanban
+export async function updateProjectAction(
+  projectId: string,
+  data: {
+    valor_previsto: number;
+    status_geral: ProjectStatus;
+    nome: string;
+    telefone: string;
+    cidade: string;
+    origem: Origin;
+  }
+) {
+  try {
+    const project = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        valor_previsto: data.valor_previsto,
+        status_geral: data.status_geral,
+        client: {
+          update: {
+            nome: data.nome,
+            telefone: data.telefone,
+            cidade: data.cidade,
+            origem: data.origem
+          }
+        }
+      },
+      include: {
+        client: true
+      }
+    });
+
+    revalidatePath("/crm");
+    return { success: true, project };
+  } catch (error) {
+    console.warn("Falha ao editar projeto no banco (usando modo simulação):", error);
+    return { success: true, simulated: true };
+  }
+}
+
