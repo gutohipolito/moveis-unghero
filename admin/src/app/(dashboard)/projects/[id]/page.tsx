@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import ProjectDetails from "@/components/ProjectDetails";
 
@@ -211,9 +211,7 @@ interface RouteParams {
 export default async function ProjectPage({ params }: RouteParams) {
   const { id } = await params;
   
-  const session = await auth.api.getSession({
-    headers: await headers()
-  }).catch(() => null);
+  const session = await getSessionSafe(await headers()).catch(() => null);
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 

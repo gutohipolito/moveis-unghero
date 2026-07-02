@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import FactoryClient from "./FactoryClient";
 
@@ -68,9 +68,7 @@ const MOCK_ENVIRONMENTS = [
 ];
 
 export default async function FactoryPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  }).catch(() => null);
+  const session = await getSessionSafe(await headers()).catch(() => null);
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 

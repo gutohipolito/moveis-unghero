@@ -3,7 +3,7 @@ export const runtime = "edge";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { auth, getSessionSafe } from "@/lib/auth";
 import { 
   Kanban, 
   Calendar, 
@@ -23,9 +23,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  }).catch(() => null);
+  const session = await getSessionSafe(await headers()).catch(() => null);
 
   const user = session?.user || {
     name: "Administrador Unghero",

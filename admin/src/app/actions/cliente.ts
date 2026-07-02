@@ -23,7 +23,7 @@ const MOCK_CLIENTS = [
     cidade: "Caxias do Sul",
     origem: "INSTAGRAM" as Origin,
     status: "LEAD",
-    observacoes: "Interessado em projeto de cozinha sob medida e painel de TV para sala.",
+    observacoes: "[PF - CPF: 123.456.789-00] Interessado em projeto de cozinha sob medida e painel de TV para sala.",
     projects: [
       { id: "proj-1", status_geral: "LEAD", valor_previsto: 45000.0 }
     ]
@@ -36,7 +36,7 @@ const MOCK_CLIENTS = [
     cidade: "Farroupilha",
     origem: "INDICACAO" as Origin,
     status: "APROVADO",
-    observacoes: "Cliente super exigente. Projeto de dormitório infantil e lavabo já aprovados.",
+    observacoes: "[PF - CPF: 987.654.321-00] Cliente super exigente. Projeto de dormitório infantil e lavabo já aprovados.",
     projects: [
       { id: "proj-2", status_geral: "ORCAMENTO", valor_previsto: 78000.0 }
     ]
@@ -49,7 +49,7 @@ const MOCK_CLIENTS = [
     cidade: "Bento Gonçalves",
     origem: "SITE" as Origin,
     status: "NEGOCIACAO",
-    observacoes: "Negociando orçamento da área gourmet integrada. Proposta comercial enviada.",
+    observacoes: "[PJ - CNPJ: 12.345.678/0001-99] Negociando orçamento da área gourmet integrada. Proposta comercial enviada.",
     projects: [
       { id: "proj-3", status_geral: "NEGOCIACAO", valor_previsto: 120000.0 }
     ]
@@ -62,7 +62,7 @@ const MOCK_CLIENTS = [
     cidade: "Caxias do Sul",
     origem: "GOOGLE" as Origin,
     status: "CONFERENCIA_TECNICA",
-    observacoes: "Fechando medição fina do apartamento residencial completo.",
+    observacoes: "[PF - CPF: 456.789.012-34] Fechando medição fina do apartamento residencial completo.",
     projects: [
       { id: "proj-4", status_geral: "CONFERENCIA_TECNICA", valor_previsto: 62000.0 }
     ]
@@ -75,7 +75,7 @@ const MOCK_CLIENTS = [
     cidade: "Flores da Cunha",
     origem: "WHATSAPP" as Origin,
     status: "APROVADO",
-    observacoes: "Assinou contrato digital para projeto de móveis corporativos.",
+    observacoes: "[PF - CPF: 789.012-345-67] Assinou contrato digital para projeto de móveis corporativos.",
     projects: [
       { id: "proj-5", status_geral: "APROVADO", valor_previsto: 35000.0 }
     ]
@@ -88,7 +88,7 @@ const MOCK_CLIENTS = [
     cidade: "Farroupilha",
     origem: "INSTAGRAM" as Origin,
     status: "PRODUCAO",
-    observacoes: "Marcenaria da cozinha americana está na fábrica para corte e montagem.",
+    observacoes: "[PF - CPF: 890.123.456-78] Marcenaria da cozinha americana está na fábrica para corte e montagem.",
     projects: [
       { id: "proj-6", status_geral: "PRODUCAO", valor_previsto: 89000.0 }
     ]
@@ -101,7 +101,7 @@ const MOCK_CLIENTS = [
     cidade: "Caxias do Sul",
     origem: "INDICACAO" as Origin,
     status: "INSTALACAO",
-    observacoes: "Móveis entregues. Equipe de montagem efetuando os ajustes finos no local.",
+    observacoes: "[PF - CPF: 901.234.567-89] Móveis entregues. Equipe de montagem efetuando os ajustes finos no local.",
     projects: [
       { id: "proj-7", status_geral: "INSTALACAO", valor_previsto: 55000.0 }
     ]

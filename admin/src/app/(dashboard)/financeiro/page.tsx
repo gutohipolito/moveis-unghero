@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import FinanceiroClient from "./FinanceiroClient";
 
@@ -92,9 +92,7 @@ const MOCK_INSTALLMENTS = [
 ];
 
 export default async function FinanceiroPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  }).catch(() => null);
+  const session = await getSessionSafe(await headers()).catch(() => null);
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 

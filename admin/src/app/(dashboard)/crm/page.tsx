@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getClients } from "@/app/actions/cliente";
 import KanbanBoard from "@/components/KanbanBoard";
@@ -100,9 +100,7 @@ const MOCK_PROJECTS = [
 ];
 
 export default async function CRMPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
+  const session = await getSessionSafe(await headers()).catch(() => null);
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 

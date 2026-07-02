@@ -85,6 +85,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Estados de Formulários
+  const [tipoPessoa, setTipoPessoa] = useState<"PF" | "PJ">("PF");
+  const [documento, setDocumento] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -95,6 +97,29 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [valorPrevisto, setValorPrevisto] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper para fazer o parse das observações e extrair CPF/CNPJ
+  const parseDocument = (obs: string) => {
+    let tipo: "PF" | "PJ" = "PF";
+    let doc = "";
+    let cleanObs = obs || "";
+    if (obs?.startsWith("[PF - CPF:")) {
+      const closingBracket = obs.indexOf("]");
+      if (closingBracket !== -1) {
+        doc = obs.substring(10, closingBracket).trim();
+        cleanObs = obs.substring(closingBracket + 1).trim();
+        tipo = "PF";
+      }
+    } else if (obs?.startsWith("[PJ - CNPJ:")) {
+      const closingBracket = obs.indexOf("]");
+      if (closingBracket !== -1) {
+        doc = obs.substring(11, closingBracket).trim();
+        cleanObs = obs.substring(closingBracket + 1).trim();
+        tipo = "PJ";
+      }
+    }
+    return { tipo, doc, cleanObs };
+  };
 
   // Filtragem dos Clientes
   const filteredClients = clients.filter(c => {
@@ -111,7 +136,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     e.preventDefault();
     if (!nome || !email || !telefone || !cidade) return;
 
-    const data = { nome, email, telefone, cidade, origem, status, observacoes, company_id: companyId };
+    const docPrefixo = documento ? `[${tipoPessoa} - ${tipoPessoa === "PF" ? "CPF" : "CNPJ"}: ${documento}] ` : "";
+    const fullObservacoes = docPrefixo + observacoes;
+
+    const data = { nome, email, telefone, cidade, origem, status, observacoes: fullObservacoes, company_id: companyId };
     const res = await createClientAction(data);
 
     if (res.success) {
@@ -135,7 +163,13 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setCidade(client.cidade);
     setOrigem(client.origem);
     setStatus(client.status);
-    setObservacoes(client.observacoes);
+    
+    // Parse do documento nas observações
+    const parsed = parseDocument(client.observacoes);
+    setTipoPessoa(parsed.tipo);
+    setDocumento(parsed.doc);
+    setObservacoes(parsed.cleanObs);
+    
     setIsEditOpen(true);
   };
 
@@ -144,7 +178,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     e.preventDefault();
     if (!selectedClient || !nome || !email || !telefone || !cidade) return;
 
-    const data = { nome, email, telefone, cidade, origem, status, observacoes };
+    const docPrefixo = documento ? `[${tipoPessoa} - ${tipoPessoa === "PF" ? "CPF" : "CNPJ"}: ${documento}] ` : "";
+    const fullObservacoes = docPrefixo + observacoes;
+
+    const data = { nome, email, telefone, cidade, origem, status, observacoes: fullObservacoes };
     const res = await updateClientAction(selectedClient.id, data);
 
     if (res.success) {
@@ -264,6 +301,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   };
 
   const resetForm = () => {
+    setTipoPessoa("PF");
+    setDocumento("");
     setNome("");
     setEmail("");
     setTelefone("");
@@ -381,17 +420,32 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <tr key={client.id} className="hover:bg-slate-50/50 transition-colors">
                       {/* Cliente & Contato */}
                       <td className="p-4">
-                        <div className="flex flex-col">
-                          <strong className="text-sm font-bold text-foreground">{client.nome}</strong>
-                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-muted-foreground/80" /> {client.telefone}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3 text-muted-foreground/80" /> {client.email}
-                            </span>
-                          </div>
-                        </div>
+                        {(() => {
+                          const parsed = parseDocument(client.observacoes);
+                          return (
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <strong className="text-sm font-bold text-foreground">{client.nome}</strong>
+                                <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
+                                  {parsed.tipo}
+                                </span>
+                              </div>
+                              {parsed.doc && (
+                                <span className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                  {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
+                                </span>
+                              )}
+                              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3 text-muted-foreground/80" /> {client.telefone}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3 text-muted-foreground/80" /> {client.email}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Cidade */}
@@ -478,10 +532,39 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               <p className="text-xs text-muted-foreground">Preencha as informações do lead para a base.</p>
             </div>
 
+            {/* Alternador de abas PF/PJ */}
+            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
+              <button
+                type="button"
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => { setTipoPessoa("PF"); setDocumento(""); }}
+              >
+                Pessoa Física (PF)
+              </button>
+              <button
+                type="button"
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => { setTipoPessoa("PJ"); setDocumento(""); }}
+              >
+                Pessoa Jurídica (PJ)
+              </button>
+            </div>
+
             <form onSubmit={handleCreateClient} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground block">Nome Completo</label>
-                <Input required value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Lucas de Souza" className="border-border bg-slate-50 text-sm" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {tipoPessoa === "PF" ? "Nome Completo" : "Razão Social / Fantasia"}
+                  </label>
+                  <Input required value={nome} onChange={e => setNome(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: Lucas de Souza" : "Ex: Unghero Ltda"} className="border-border bg-slate-50 text-sm" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {tipoPessoa === "PF" ? "CPF" : "CNPJ"}
+                  </label>
+                  <Input required value={documento} onChange={e => setDocumento(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: 123.456.789-00" : "Ex: 12.345.678/0001-99"} className="border-border bg-slate-50 text-sm" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -546,10 +629,39 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               <p className="text-xs text-muted-foreground">Atualize as informações de contato e notas do lead.</p>
             </div>
 
+            {/* Alternador de abas PF/PJ */}
+            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
+              <button
+                type="button"
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => { setTipoPessoa("PF"); }}
+              >
+                Pessoa Física (PF)
+              </button>
+              <button
+                type="button"
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => { setTipoPessoa("PJ"); }}
+              >
+                Pessoa Jurídica (PJ)
+              </button>
+            </div>
+
             <form onSubmit={handleUpdateClient} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground block">Nome Completo</label>
-                <Input required value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Lucas de Souza" className="border-border bg-slate-50 text-sm" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {tipoPessoa === "PF" ? "Nome Completo" : "Razão Social / Fantasia"}
+                  </label>
+                  <Input required value={nome} onChange={e => setNome(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: Lucas de Souza" : "Ex: Unghero Ltda"} className="border-border bg-slate-50 text-sm" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {tipoPessoa === "PF" ? "CPF" : "CNPJ"}
+                  </label>
+                  <Input required value={documento} onChange={e => setDocumento(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: 123.456.789-00" : "Ex: 12.345.678/0001-99"} className="border-border bg-slate-50 text-sm" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
