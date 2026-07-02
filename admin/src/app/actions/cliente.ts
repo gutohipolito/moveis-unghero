@@ -398,3 +398,161 @@ export async function importClientsAction(
     return { success: true, simulated: true, count: clients.length };
   }
 }
+
+export interface Activity {
+  id: string;
+  data: string;
+  titulo: string;
+  descricao: string;
+  autor: string;
+}
+
+export interface Payment {
+  id: string;
+  descricao: string;
+  valor: number;
+  vencimento: string;
+  status: "PAGO" | "PENDENTE" | "ATRASADO";
+  pagoEm?: string;
+  metodo?: string;
+}
+
+const MOCK_ACTIVITIES: Record<string, Activity[]> = {
+  "cli-1": [
+    { id: "act-1", data: "2026-06-15T10:00:00Z", titulo: "Lead Criado", descricao: "Contato inicial gerado a partir do formulário de anúncio do Instagram.", autor: "Sistema" },
+    { id: "act-2", data: "2026-06-16T14:30:00Z", titulo: "Primeiro Contato", descricao: "Conversa via WhatsApp para entender as necessidades (Cozinha sob medida e painel da sala).", autor: "Lucas (Comercial)" },
+    { id: "act-3", data: "2026-06-20T09:00:00Z", titulo: "Proposta Enviada", descricao: "Apresentação da estimativa de orçamento inicial (R$ 45.000,00).", autor: "Lucas (Comercial)" }
+  ],
+  "cli-2": [
+    { id: "act-4", data: "2026-05-10T09:00:00Z", titulo: "Lead Criado", descricao: "Origem por indicação de outro arquiteto parceiro.", autor: "Felipe (Projetista)" },
+    { id: "act-5", data: "2026-05-15T15:00:00Z", titulo: "Projeto 3D Apresentado", descricao: "Apresentação detalhada da modelagem do dormitório infantil e lavabo.", autor: "Felipe (Projetista)" },
+    { id: "act-6", data: "2026-06-01T11:00:00Z", titulo: "Proposta Comercial Aprovada", descricao: "Cliente assinou eletronicamente o contrato de prestação de serviços e marcenaria.", autor: "Sistema" },
+    { id: "act-7", data: "2026-06-03T14:00:00Z", titulo: "Sinal Pago", descricao: "Entrada financeira recebida via Pix no valor de R$ 26.000,00.", autor: "Ana (Financeiro)" },
+    { id: "act-8", data: "2026-06-10T16:00:00Z", titulo: "Conferência Técnica Executada", descricao: "Medição fina a laser realizada no local da obra para liberação dos desenhos executivos.", autor: "Felipe (Projetista)" }
+  ],
+  "cli-3": [
+    { id: "act-9", data: "2026-06-10T08:30:00Z", titulo: "Lead Criado", descricao: "Origem direta por formulário do site institucional.", autor: "Sistema" },
+    { id: "act-10", data: "2026-06-12T10:00:00Z", titulo: "Visita Técnica", descricao: "Visita ao imóvel comercial para levantamento de briefing e fotos.", autor: "Lucas (Comercial)" },
+    { id: "act-11", data: "2026-06-25T17:00:00Z", titulo: "Apresentação Comercial", descricao: "Envio de proposta formal de R$ 120.000,00 para aprovação corporativa.", autor: "Lucas (Comercial)" }
+  ]
+};
+
+const MOCK_PAYMENTS: Record<string, Payment[]> = {
+  "cli-1": [
+    { id: "pay-1", descricao: "Sinal Contratual (1/2)", valor: 22500.0, vencimento: "2026-06-22", status: "PENDENTE" },
+    { id: "pay-2", descricao: "Entrega Técnica (2/2)", valor: 22500.0, vencimento: "2026-07-22", status: "PENDENTE" }
+  ],
+  "cli-2": [
+    { id: "pay-3", descricao: "Sinal de Entrada (1/3)", valor: 26000.0, vencimento: "2026-06-03", status: "PAGO", pagoEm: "2026-06-03", metodo: "PIX" },
+    { id: "pay-4", descricao: "Medição Executiva (2/3)", valor: 26000.0, vencimento: "2026-07-03", status: "PAGO", pagoEm: "2026-07-01", metodo: "PIX" },
+    { id: "pay-5", descricao: "Entrega Final (3/3)", valor: 26000.0, vencimento: "2026-08-03", status: "PENDENTE" }
+  ],
+  "cli-3": [
+    { id: "pay-6", descricao: "Parcela Única à Vista", valor: 120000.0, vencimento: "2026-07-05", status: "PENDENTE" }
+  ],
+  "cli-4": [
+    { id: "pay-7", descricao: "Entrada (50%)", valor: 31000.0, vencimento: "2026-06-20", status: "PAGO", pagoEm: "2026-06-20", metodo: "Transferência" },
+    { id: "pay-8", descricao: "Parcela Final (50%)", valor: 31000.0, vencimento: "2026-07-20", status: "PENDENTE" }
+  ],
+  "cli-5": [
+    { id: "pay-9", descricao: "Sinal (1/2)", valor: 17500.0, vencimento: "2026-06-15", status: "PAGO", pagoEm: "2026-06-14", metodo: "PIX" },
+    { id: "pay-10", descricao: "Entrega (2/2)", valor: 17500.0, vencimento: "2026-07-15", status: "PENDENTE" }
+  ],
+  "cli-6": [
+    { id: "pay-11", descricao: "Sinal (1/2)", valor: 44500.0, vencimento: "2026-05-10", status: "PAGO", pagoEm: "2026-05-10", metodo: "Pix" },
+    { id: "pay-12", descricao: "Faturamento (2/2)", valor: 44500.0, vencimento: "2026-06-10", status: "ATRASADO" }
+  ],
+  "cli-7": [
+    { id: "pay-13", descricao: "Entrada Contratual", valor: 27500.0, vencimento: "2026-04-20", status: "PAGO", pagoEm: "2026-04-20", metodo: "Boleto" },
+    { id: "pay-14", descricao: "Entrega Montagem", valor: 27500.0, vencimento: "2026-06-20", status: "PAGO", pagoEm: "2026-06-18", metodo: "Pix" }
+  ]
+};
+
+export async function getClientDetailsAction(clientId: string) {
+  if (isDatabaseOffline()) {
+    const client = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
+    const activities = MOCK_ACTIVITIES[clientId] || [
+      { id: `act-${Date.now()}`, data: new Date().toISOString(), titulo: "Acesso de Registro", descricao: "Visualização das informações cadastrais do cliente no sistema.", autor: "Sistema" }
+    ];
+    const payments = MOCK_PAYMENTS[clientId] || [];
+    return {
+      success: true,
+      client,
+      activities,
+      payments
+    };
+  }
+
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        projects: {
+          select: {
+            id: true,
+            status_geral: true,
+            valor_previsto: true
+          }
+        }
+      }
+    });
+
+    if (!client) {
+      const mockCli = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
+      return {
+        success: true,
+        client: mockCli,
+        activities: MOCK_ACTIVITIES[clientId] || [],
+        payments: MOCK_PAYMENTS[clientId] || []
+      };
+    }
+
+    const formattedClient = {
+      id: client.id,
+      nome: client.nome,
+      email: client.email,
+      telefone: client.telefone,
+      cidade: client.cidade,
+      origem: client.origem as Origin,
+      status: client.status,
+      observacoes: client.observacoes || "",
+      projects: client.projects.map(p => ({
+        id: p.id,
+        status_geral: p.status_geral,
+        valor_previsto: Number(p.valor_previsto)
+      }))
+    };
+
+    return {
+      success: true,
+      client: formattedClient,
+      activities: MOCK_ACTIVITIES[clientId] || [
+        { id: `act-${Date.now()}`, data: new Date().toISOString(), titulo: "Registro de Cadastro", descricao: "Acesso de consulta do perfil do cliente.", autor: "Sistema" }
+      ],
+      payments: MOCK_PAYMENTS[clientId] || []
+    };
+  } catch (e) {
+    const mockCli = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
+    return {
+      success: true,
+      client: mockCli,
+      activities: MOCK_ACTIVITIES[clientId] || [],
+      payments: MOCK_PAYMENTS[clientId] || []
+    };
+  }
+}
+
+export async function addActivityAction(clientId: string, titulo: string, descricao: string, autor: string) {
+  const newActivity: Activity = {
+    id: `act-new-${Date.now()}`,
+    data: new Date().toISOString(),
+    titulo,
+    descricao,
+    autor
+  };
+  return {
+    success: true,
+    activity: newActivity
+  };
+}
+

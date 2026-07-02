@@ -425,7 +425,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           return (
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <strong className="text-sm font-bold text-foreground">{client.nome}</strong>
+                                <Link href={`/clientes/${client.id}`} className="text-sm font-bold text-primary hover:underline hover:text-primary/85 transition-all">
+                                  {client.nome}
+                                </Link>
                                 <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
                                   {parsed.tipo}
                                 </span>
