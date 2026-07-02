@@ -13,7 +13,8 @@ import {
   Layers,
   LayoutDashboard,
   Users,
-  Package
+  Package,
+  Truck
 } from "lucide-react";
 
 interface SidebarToggleProps {
@@ -33,12 +34,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { name: "Dashboard", href: "/crm", icon: LayoutDashboard, section: "Principal" },
+  { name: "Dashboard / BI", href: "/bi", icon: LayoutDashboard, section: "Principal" },
   { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
   { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
   { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
   { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
   { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
+  { name: "Logística & Entrega", href: "/logistica", icon: Truck, section: "Operacional" },
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
 ];
 

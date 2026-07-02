@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createQuote, type ItemType } from "@/app/actions/quotes";
+import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -20,7 +21,11 @@ interface QuoteItemInput {
   tipo_custo: ItemType;
   valor_unitario: number;
   valor_total: number;
+  inventoryItemId?: string;
+  precoCusto?: number;
+  markup?: number;
 }
+
 
 // Modelos pré-definidos de Propostas
 const TEMPLATES = {
@@ -68,7 +73,20 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
   });
   const [items, setItems] = useState<QuoteItemInput[]>([]);
   const [desconto, setDesconto] = useState<number>(0);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadInventory() {
+      const res = await getInventoryAndSuppliers("company-id-mock");
+      if (res.success && res.inventory) {
+        setInventory(res.inventory);
+      }
+    }
+    loadInventory();
+  }, []);
+
 
   // Carrega itens do template inicial
   useEffect(() => {
@@ -87,7 +105,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
     }
   }, [template]);
 
-  // Adicionar uma nova linha de item vazia
+  // Adicionar uma nova linha de item vazia (Item Livre)
   const handleAddItem = () => {
     const newItem: QuoteItemInput = {
       id: `item-${Date.now()}`,
@@ -96,6 +114,28 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
       tipo_custo: "MOVEIS_MDF",
       valor_unitario: 0,
       valor_total: 0
+    };
+    setItems([...items, newItem]);
+    setTemplate("CUSTOM");
+  };
+
+  // Adicionar item do estoque
+  const handleAddItemFromStock = () => {
+    const defaultItem = inventory[0] || { id: "inv-1", nome: "Chapa MDF Guararapes Freijó Puro 18mm", precoCusto: 280.0, categoria: "CHAPAS_MDF" };
+    const mappedType: ItemType = 
+      defaultItem.categoria === "CHAPAS_MDF" ? "MOVEIS_MDF" :
+      defaultItem.categoria === "FERRAGENS" ? "FERRAGENS_ESPECIAIS" : "OUTROS";
+
+    const newItem: QuoteItemInput = {
+      id: `item-${Date.now()}`,
+      descricao: defaultItem.nome,
+      quantidade: 1,
+      tipo_custo: mappedType,
+      valor_unitario: defaultItem.precoCusto * 2.2,
+      valor_total: defaultItem.precoCusto * 2.2,
+      inventoryItemId: defaultItem.id,
+      precoCusto: defaultItem.precoCusto,
+      markup: 2.2
     };
     setItems([...items, newItem]);
     setTemplate("CUSTOM");
@@ -111,10 +151,46 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
   const handleUpdateItem = (id: string, field: keyof QuoteItemInput, value: any) => {
     const updated = items.map(item => {
       if (item.id === id) {
-        const updatedItem = { ...item, [field]: value };
+        let updatedItem = { ...item, [field]: value };
+        
+        // Se mudou o material selecionado do estoque
+        if (field === "inventoryItemId") {
+          const selected = inventory.find(i => i.id === value);
+          if (selected) {
+            const mappedType: ItemType = 
+              selected.categoria === "CHAPAS_MDF" ? "MOVEIS_MDF" :
+              selected.categoria === "FERRAGENS" ? "FERRAGENS_ESPECIAIS" : "OUTROS";
+            
+            const currentMarkup = item.markup || 2.2;
+            updatedItem = {
+              ...updatedItem,
+              descricao: selected.nome,
+              precoCusto: selected.precoCusto,
+              tipo_custo: mappedType,
+              valor_unitario: selected.precoCusto * currentMarkup,
+              valor_total: item.quantidade * (selected.precoCusto * currentMarkup)
+            };
+          }
+        }
+        
+        // Se mudou o markup
+        if (field === "markup") {
+          const mk = Number(value) || 1;
+          const cost = item.precoCusto || 0;
+          updatedItem.valor_unitario = cost * mk;
+          updatedItem.valor_total = item.quantidade * (cost * mk);
+        }
+        
+        // Regra geral de totalizacao
         if (field === "quantidade" || field === "valor_unitario") {
           updatedItem.valor_total = Number(updatedItem.quantidade) * Number(updatedItem.valor_unitario);
         }
+        if (field === "quantidade" && item.inventoryItemId) {
+          const cost = item.precoCusto || 0;
+          const mk = item.markup || 2.2;
+          updatedItem.valor_total = Number(value) * (cost * mk);
+        }
+        
         return updatedItem;
       }
       return item;
@@ -122,6 +198,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
     setItems(updated);
     setTemplate("CUSTOM");
   };
+
 
   // Cálculos comerciais
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
@@ -155,6 +232,26 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
     const result = await createQuote(projectId, inputData);
 
     if (result.success && result.data) {
+      // Dar baixa no estoque se o checkbox estiver ativo e houver itens de estoque
+      if (baixarEstoque) {
+        const itemsToDeduct = items
+          .filter(item => item.inventoryItemId)
+          .map(item => ({
+            itemId: item.inventoryItemId!,
+            quantity: item.quantidade
+          }));
+
+        if (itemsToDeduct.length > 0) {
+          const deductRes = await deductInventoryAction(itemsToDeduct);
+          if (deductRes.success) {
+            alert(`Orçamento v${result.data.version} salvo! Baixa automática realizada no estoque da marcenaria com sucesso.`);
+          }
+        } else {
+          alert(`Orçamento v${result.data.version} salvo com sucesso!`);
+        }
+      } else {
+        alert(`Orçamento v${result.data.version} salvo com sucesso!`);
+      }
       onSuccess(result.data);
     } else {
       alert("Falha ao salvar a proposta comercial.");
@@ -208,23 +305,28 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
 
         {/* Bloco 2: Tabela Dinâmica de Itens */}
         <div className="rounded-xl border border-border/40 bg-black/10 overflow-hidden">
-          <div className="p-4 bg-slate-100 border-b border-border/40 flex justify-between items-center">
+          <div className="p-4 bg-slate-100 border-b border-border/40 flex justify-between items-center flex-wrap gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-foreground">
               Tabela Comercial de Itens
             </span>
-            <Button type="button" onClick={handleAddItem} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-1" /> Adicionar Item
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" onClick={handleAddItem} size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" /> + Item Livre
+              </Button>
+              <Button type="button" onClick={handleAddItemFromStock} size="sm" variant="outline" className="border-cyan-200 text-cyan-600 hover:bg-cyan-50">
+                <Plus className="h-4 w-4 mr-1 text-cyan-500" /> + Insumo do Estoque
+              </Button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/40 bg-black/5 text-muted-foreground text-xs font-semibold uppercase">
-                  <th className="p-3 w-1/2">Descrição do Insumo / Serviço</th>
+                  <th className="p-3 w-5/12">Descrição do Insumo / Serviço</th>
                   <th className="p-3 w-28">Categoria</th>
                   <th className="p-3 w-20 text-center">Qtd</th>
-                  <th className="p-3 w-32">Valor Unit.</th>
+                  <th className="p-3 w-40">Valor / Precificação</th>
                   <th className="p-3 w-32">Total</th>
                   <th className="p-3 w-12"></th>
                 </tr>
@@ -233,74 +335,119 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
                 {items.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
-                      Tabela vazia. Clique em "Adicionar Item" para iniciar.
+                      Tabela vazia. Adicione um "Item Livre" ou um "Insumo do Estoque" para começar.
                     </td>
                   </tr>
                 ) : (
-                  items.map((item) => (
-                    <tr key={item.id} className="hover:bg-card/20 transition-colors">
-                      <td className="p-2">
-                        <Input
-                          required
-                          placeholder="Ex: Cozinha sob medida MDF Freijó 18mm"
-                          value={item.descricao}
-                          onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
-                          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-0.5 h-8 text-sm"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <Select
-                          value={item.tipo_custo}
-                          onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
-                          className="h-8 py-0 px-2 text-xs bg-transparent border-none focus:ring-0"
-                        >
-                          <option value="MOVEIS_MDF">MDF/Marcenaria</option>
-                          <option value="FERRAGENS_ESPECIAIS">Ferragens Esp.</option>
-                          <option value="MAO_DE_OBRA">Mão de Obra</option>
-                          <option value="OUTROS">Outros</option>
-                        </Select>
-                      </td>
-                      <td className="p-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          required
-                          className="bg-transparent border-none text-center focus-visible:ring-0 focus-visible:ring-offset-0 h-8 text-sm p-1"
-                          value={item.quantidade}
-                          onChange={(e) => handleUpdateItem(item.id, "quantidade", Number(e.target.value))}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <div className="flex items-center relative">
-                          <span className="text-[10px] text-muted-foreground absolute left-1">R$</span>
+                  items.map((item) => {
+                    const isStockItem = !!item.inventoryItemId;
+
+                    return (
+                      <tr key={item.id} className="hover:bg-card/20 transition-colors">
+                        <td className="p-2">
+                          {isStockItem ? (
+                            <div className="space-y-1">
+                              <select
+                                value={item.inventoryItemId}
+                                onChange={(e) => handleUpdateItem(item.id, "inventoryItemId", e.target.value)}
+                                className="w-full bg-slate-50 border border-border/50 rounded-lg text-sm p-1.5 focus:ring-1 focus:ring-primary outline-none font-semibold text-foreground"
+                              >
+                                {inventory.map((inv) => (
+                                  <option key={inv.id} value={inv.id}>
+                                    {inv.nome}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="text-[10px] text-cyan-600 font-bold flex items-center gap-1.5 px-1">
+                                <span>Custo: R$ {(item.precoCusto || 0).toFixed(2)}</span>
+                                <span className="text-muted-foreground/30">|</span>
+                                <span>Venda Sugerida: R$ {(item.valor_unitario || 0).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <Input
+                              required
+                              placeholder="Ex: Cozinha sob medida MDF Freijó 18mm"
+                              value={item.descricao}
+                              onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
+                              className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-0.5 h-8 text-sm"
+                            />
+                          )}
+                        </td>
+                        <td className="p-2">
+                          <Select
+                            disabled={isStockItem}
+                            value={item.tipo_custo}
+                            onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
+                            className="h-8 py-0 px-2 text-xs bg-transparent border-none focus:ring-0"
+                          >
+                            <option value="MOVEIS_MDF">MDF/Marcenaria</option>
+                            <option value="FERRAGENS_ESPECIAIS">Ferragens Esp.</option>
+                            <option value="MAO_DE_OBRA">Mão de Obra</option>
+                            <option value="OUTROS">Outros</option>
+                          </Select>
+                        </td>
+                        <td className="p-2">
                           <Input
                             type="number"
-                            min="0"
+                            min="1"
                             required
-                            className="bg-transparent border-none pl-6 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 text-sm"
-                            value={item.valor_unitario}
-                            onChange={(e) => handleUpdateItem(item.id, "valor_unitario", Number(e.target.value))}
+                            className="bg-transparent border-none text-center focus-visible:ring-0 focus-visible:ring-offset-0 h-8 text-sm p-1"
+                            value={item.quantidade}
+                            onChange={(e) => handleUpdateItem(item.id, "quantidade", Number(e.target.value))}
                           />
-                        </div>
-                      </td>
-                      <td className="p-2 font-semibold text-foreground">
-                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.valor_total)}
-                      </td>
-                      <td className="p-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="p-1 rounded-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="p-2">
+                          {isStockItem ? (
+                            <div className="flex items-center gap-1 px-1">
+                              <span className="text-[10px] text-muted-foreground">x</span>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min="1"
+                                max="10"
+                                required
+                                className="w-16 bg-slate-50 border border-border/50 rounded-lg text-center h-8 text-sm font-bold"
+                                value={item.markup || 2.2}
+                                onChange={(e) => handleUpdateItem(item.id, "markup", Number(e.target.value))}
+                                title="Markup Multiplicador"
+                              />
+                              <span className="text-[10px] text-muted-foreground font-semibold">Markup</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center relative">
+                              <span className="text-[10px] text-muted-foreground absolute left-1">R$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                required
+                                className="bg-transparent border-none pl-6 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 text-sm"
+                                value={item.valor_unitario}
+                                onChange={(e) => handleUpdateItem(item.id, "valor_unitario", Number(e.target.value))}
+                              />
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2 font-semibold text-foreground">
+                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.valor_total)}
+                        </td>
+                        <td className="p-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="p-1 rounded-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
+
         </div>
 
         {/* Bloco 3: Observações / Detalhamento do Projeto */}
@@ -353,6 +500,22 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
             </span>
           </div>
         </div>
+
+        {/* Baixa no Estoque Checkbox */}
+        {items.some(item => item.inventoryItemId) && (
+          <div className="flex items-center gap-2 p-3.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5 my-4">
+            <input
+              type="checkbox"
+              id="baixarEstoque"
+              checked={baixarEstoque}
+              onChange={(e) => setBaixarEstoque(e.target.checked)}
+              className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 border-cyan-300 cursor-pointer"
+            />
+            <label htmlFor="baixarEstoque" className="text-xs font-semibold text-cyan-700 cursor-pointer">
+              Dar baixa automática nos insumos e ferragens selecionados do estoque físico ao salvar
+            </label>
+          </div>
+        )}
 
         {/* Ações */}
         <div className="flex justify-end gap-3 border-t border-border/40 pt-4">

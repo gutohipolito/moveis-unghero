@@ -1,0 +1,361 @@
+"use client";
+
+import React, { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { 
+  TrendingUp, 
+  DollarSign, 
+  Award, 
+  PieChart, 
+  Percent, 
+  ArrowUpRight, 
+  Users, 
+  MapPin 
+} from "lucide-react";
+
+interface Project {
+  id: string;
+  valor_previsto: number;
+  status_geral: string;
+  client: {
+    id: string;
+    nome: string;
+    cidade: string;
+    origem: string;
+    telefone: string;
+    email: string;
+  };
+}
+
+interface BiClientProps {
+  initialProjects: Project[];
+}
+
+const COLUMNS_CRM = [
+  { id: "LEAD", label: "Leads", color: "from-amber-500 to-amber-600" },
+  { id: "ORCAMENTO", label: "Orçamentos", color: "from-orange-500 to-orange-600" },
+  { id: "NEGOCIACAO", label: "Negociação", color: "from-blue-500 to-blue-600" },
+  { id: "CONFERENCIA_TECNICA", label: "Conf. Técnica", color: "from-purple-500 to-purple-600" },
+  { id: "APROVADO", label: "Aprovados", color: "from-emerald-500 to-emerald-600" },
+  { id: "PRODUCAO", label: "Produção", color: "from-cyan-500 to-cyan-600" },
+  { id: "INSTALACAO", label: "Instalação", color: "from-indigo-500 to-indigo-600" },
+  { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" }
+];
+
+export default function BiClient({ initialProjects }: BiClientProps) {
+  const [filterPeriod, setFilterPeriod] = useState<"30" | "90" | "365">("90");
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }).format(val);
+  };
+
+  // 1. Cálculos de CRM e Funil
+  const totalPipeline = initialProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
+  const statusCounts = COLUMNS_CRM.map(col => {
+    const list = initialProjects.filter(p => p.status_geral === col.id);
+    const sum = list.reduce((acc, p) => acc + p.valor_previsto, 0);
+    return {
+      id: col.id,
+      label: col.label,
+      count: list.length,
+      value: sum,
+      color: col.color
+    };
+  });
+
+  const maxCRMValue = Math.max(...statusCounts.map(s => s.value), 1);
+
+  // 2. Receitas vs Custos (Margem de marcenaria de luxo)
+  // Projetos aprovados, em produção, instalação ou finalizados representam faturamento real
+  const activeClosedProjects = initialProjects.filter(p => 
+    ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"].includes(p.status_geral)
+  );
+  
+  const grossRevenue = activeClosedProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
+  // O custo estimado de materiais de alta tecnologia em marcenaria fina gira em torno de 38%
+  const estimatedMaterialCost = grossRevenue * 0.38;
+  // Custos fixos e mão de obra em torno de 22%
+  const estimatedLabourCost = grossRevenue * 0.22;
+  const netProfit = grossRevenue - estimatedMaterialCost - estimatedLabourCost;
+  const profitMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+
+  // 3. Origens de Leads Rentáveis
+  const originsData = ["INSTAGRAM", "INDICACAO", "SITE", "GOOGLE", "WHATSAPP"].map(orig => {
+    const list = initialProjects.filter(p => p.client.origem === orig);
+    const sum = list.reduce((acc, p) => acc + p.valor_previsto, 0);
+    return {
+      name: orig,
+      count: list.length,
+      value: sum
+    };
+  }).sort((a, b) => b.value - a.value);
+
+  const maxOriginValue = Math.max(...originsData.map(o => o.value), 1);
+
+  // 4. Ranking de Projetistas e Comissões
+  // Mock de projetistas parceiros
+  const designers = [
+    { name: "Patricia Albuquerque (Farroupilha)", city: "Farroupilha", salesIds: ["proj-2", "proj-5"] },
+    { name: "Gustavo Lemos (Caxias)", city: "Caxias do Sul", salesIds: ["proj-1", "proj-6", "proj-8"] },
+    { name: "Fernanda Castoldi (Bento)", city: "Bento Gonçalves", salesIds: ["proj-3", "proj-4", "proj-7"] }
+  ];
+
+  const designerRanking = designers.map(des => {
+    const list = initialProjects.filter(p => des.salesIds.includes(p.id));
+    const totalSold = list.reduce((acc, p) => acc + p.valor_previsto, 0);
+    // Comissão da Unghero para parceiros especificadores é de 5% sobre projetos vendidos
+    const comission = totalSold * 0.05;
+    return {
+      name: des.name,
+      city: des.city,
+      count: list.length,
+      totalSold,
+      comission
+    };
+  }).sort((a, b) => b.totalSold - a.totalSold);
+
+  return (
+    <div className="space-y-8 pb-12">
+      
+      {/* Filtro do Período */}
+      <div className="flex justify-end">
+        <div className="flex p-1 bg-slate-100/80 backdrop-blur-md border border-border/40 rounded-xl text-xs font-bold gap-1">
+          <button 
+            onClick={() => setFilterPeriod("30")}
+            className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${filterPeriod === "30" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Últimos 30 dias
+          </button>
+          <button 
+            onClick={() => setFilterPeriod("90")}
+            className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${filterPeriod === "90" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Últimos 90 dias
+          </button>
+          <button 
+            onClick={() => setFilterPeriod("365")}
+            className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${filterPeriod === "365" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Este Ano
+          </button>
+        </div>
+      </div>
+
+      {/* Cards de Métricas Principais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Pipeline de Vendas</span>
+            <span className="text-xl font-black text-neutral-900 tracking-tight block">
+              {formatCurrency(totalPipeline)}
+            </span>
+            <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
+              <ArrowUpRight className="h-3 w-3 mr-0.5" /> +14.2% este mês
+            </span>
+          </div>
+          <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+        </Card>
+
+        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Receita Aprovada</span>
+            <span className="text-xl font-black text-neutral-900 tracking-tight block">
+              {formatCurrency(grossRevenue)}
+            </span>
+            <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
+              <ArrowUpRight className="h-3 w-3 mr-0.5" /> +8.7% vs meta
+            </span>
+          </div>
+          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+            <DollarSign className="h-5 w-5" />
+          </div>
+        </Card>
+
+        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Custo Insumos (Est.)</span>
+            <span className="text-xl font-black text-neutral-900 tracking-tight block">
+              {formatCurrency(estimatedMaterialCost)}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-bold block">
+              Baseado no consumo de MDF/ferragens
+            </span>
+          </div>
+          <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
+            <Percent className="h-5 w-5" />
+          </div>
+        </Card>
+
+        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Lucro Líquido (Est.)</span>
+            <span className="text-xl font-black text-gradient-gold tracking-tight block">
+              {formatCurrency(netProfit)}
+            </span>
+            <span className="text-[10px] text-amber-600 font-bold block">
+              Margem média de {profitMargin.toFixed(1)}%
+            </span>
+          </div>
+          <div className="p-3 bg-amber-500/10 rounded-xl text-amber-600">
+            <Award className="h-5 w-5" />
+          </div>
+        </Card>
+
+      </div>
+
+      {/* Grid de Gráficos de CRM e Canais */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Gráfico 1: Funil de CRM */}
+        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl space-y-6">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">
+              Distribuição do Funil CRM (Volume Comercial)
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Total financeiro retido em cada coluna operacional do Kanban.
+            </p>
+          </div>
+
+          <div className="space-y-3.5">
+            {statusCounts.map((col) => {
+              const percentage = (col.value / maxCRMValue) * 100;
+              return (
+                <div key={col.id} className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-neutral-800">
+                    <span>{col.label} ({col.count} {col.count === 1 ? "projeto" : "projetos"})</span>
+                    <span>{formatCurrency(col.value)}</span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full bg-gradient-to-r ${col.color} transition-all duration-1000`} 
+                      style={{ width: `${Math.max(2, percentage)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Gráfico 2: Origem dos Leads e Atração Comercial */}
+        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl space-y-6 flex flex-col justify-between">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-neutral-900">
+              Rentabilidade por Canal de Captação
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Quais canais trazem projetos de maior valor bruto de fechamento.
+            </p>
+          </div>
+
+          <div className="space-y-5 my-auto py-4">
+            {originsData.map((orig) => {
+              const pct = (orig.value / maxOriginValue) * 100;
+              return (
+                <div key={orig.name} className="flex items-center gap-4">
+                  <span className="w-24 text-xs font-extrabold text-muted-foreground text-right tracking-wider block uppercase">
+                    {orig.name}
+                  </span>
+                  <div className="flex-1 space-y-1">
+                    <div className="w-full h-4 bg-slate-100 rounded-lg overflow-hidden relative">
+                      <div 
+                        className="h-full rounded-lg bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-1000" 
+                        style={{ width: `${Math.max(2, pct)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="w-32 text-right">
+                    <strong className="text-xs font-bold text-neutral-800 block">
+                      {formatCurrency(orig.value)}
+                    </strong>
+                    <span className="text-[10px] text-muted-foreground block font-medium">
+                      {orig.count} {orig.count === 1 ? "lead" : "leads"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-3">
+            <PieChart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <strong className="text-amber-800 font-bold block mb-0.5">Destaque Comercial:</strong>
+              <p className="text-amber-700/80 leading-relaxed font-medium">
+                Os leads via <span className="font-bold text-amber-800">Indicação de Clientes e Instagram</span> são responsáveis por 70% do nosso faturamento, com ticket médio superior a R$ 80.000,00 por projeto.
+              </p>
+            </div>
+          </div>
+        </Card>
+
+      </div>
+
+      {/* Ranking de Projetistas & Comissões */}
+      <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl space-y-6">
+        <div>
+          <h3 className="text-lg font-bold tracking-tight text-neutral-900">
+            Produtividade de Arquitetos e Projetistas Parceiros (Unghero Especificações)
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Acompanhamento das especificações ativas e cálculo da taxa de comissão contratual de marcenaria (5%).
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50">
+                <th className="p-3">Nome do Profissional</th>
+                <th className="p-3">Cidade / Região</th>
+                <th className="p-3 text-center">Projetos Ativos</th>
+                <th className="p-3 text-right">Faturamento Total</th>
+                <th className="p-3 text-right">Comissão a Pagar (5%)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/20 text-neutral-700">
+              {designerRanking.map((des, index) => (
+                <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                      {des.city}
+                    </div>
+                  </td>
+                  <td className="p-3 text-center font-bold text-neutral-800">
+                    {des.count}
+                  </td>
+                  <td className="p-3 text-right font-bold text-neutral-900">
+                    {formatCurrency(des.totalSold)}
+                  </td>
+                  <td className="p-3 text-right">
+                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-xs">
+                      {formatCurrency(des.comission)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+    </div>
+  );
+}

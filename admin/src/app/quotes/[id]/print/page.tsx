@@ -123,6 +123,18 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
+  // Helper para obter CPF/CNPJ do campo observacoes do cliente
+  const parseDocument = (obs: string | null) => {
+    if (!obs) return { tipo: "", documento: "" };
+    const pfMatch = obs.match(/\[PF - CPF:\s*([^\]]+)\]/);
+    if (pfMatch) return { tipo: "PF", documento: pfMatch[1] };
+    const pjMatch = obs.match(/\[PJ - CNPJ:\s*([^\]]+)\]/);
+    if (pjMatch) return { tipo: "PJ", documento: pjMatch[1] };
+    return { tipo: "", documento: "" };
+  };
+
+  const doc = parseDocument(client.observacoes || null);
+
   return (
     <div className="bg-white text-black min-h-screen font-sans">
       
@@ -180,20 +192,23 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           <div className="w-full bg-neutral-50 border border-neutral-100 rounded-xl p-8 space-y-2 text-sm text-neutral-700">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cliente</span>
+                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cliente / Contratante</span>
                 <strong className="text-neutral-900 text-base">{client.nome}</strong>
+                {doc.documento && (
+                  <span className="text-xs text-neutral-500 block font-bold mt-0.5">{doc.tipo}: {doc.documento}</span>
+                )}
               </div>
               <div>
-                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cidade</span>
+                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cidade de Instalação</span>
                 <strong className="text-neutral-900 text-base">{client.cidade}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Data Emissão</span>
-                <strong className="text-neutral-900">{formattedDataEmissao}</strong>
+                <strong className="text-neutral-900 block">{formattedDataEmissao}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Validade Proposta</span>
-                <strong className="text-neutral-900">{formattedValidade}</strong>
+                <strong className="text-neutral-900 block">{formattedValidade}</strong>
               </div>
             </div>
           </div>
@@ -357,6 +372,9 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
               <div className="space-y-2">
                 <div className="border-t border-neutral-300 w-full pt-2" />
                 <strong className="text-neutral-950 block">{client.nome}</strong>
+                {doc.documento && (
+                  <span className="text-xs text-neutral-500 block font-semibold">{doc.tipo}: {doc.documento}</span>
+                )}
                 <span className="text-xs text-neutral-400">Contratante (Cliente)</span>
               </div>
               <div className="space-y-2">

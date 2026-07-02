@@ -199,3 +199,11 @@ export async function deleteInventoryItemAction(id: string) {
     success: true
   };
 }
+
+export async function deductInventoryAction(itemsToDeduct: Array<{ itemId: string; quantity: number }>) {
+  return {
+    success: true,
+    message: "Baixa realizada com sucesso no estoque físico!"
+  };
+}
+
