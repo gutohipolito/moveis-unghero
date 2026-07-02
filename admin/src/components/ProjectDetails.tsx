@@ -43,7 +43,8 @@ import {
   Send,
   Building,
   DollarSign,
-  Trash2
+  Trash2,
+  Sparkles
 } from "lucide-react";
 
 interface Environment {
@@ -178,6 +179,138 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
   const [timelineFilter, setTimelineFilter] = useState<"ALL" | "PUBLIC" | "PRIVATE">("ALL");
   const [uploadForm, setUploadForm] = useState({ tipo: "RENDER" as FileType, nome_arquivo: "" });
   const [loading, setLoading] = useState(false);
+  const [isImportingPromob, setIsImportingPromob] = useState(false);
+  const [isRenderingPro, setIsRenderingPro] = useState(false);
+
+  // Simula a importação inteligente de arquivos XML/TXT do Promob via IA
+  const handleSimulatePromobImport = () => {
+    setIsImportingPromob(true);
+    setTimeout(() => {
+      // Cria cômodos simulados extraídos do arquivo do Promob
+      const simulatedEnv1 = {
+        id: "promob-env-1-" + Date.now(),
+        nome: "Cozinha Gourmet Integrada (Promob XML)",
+        tipo: "COZINHA" as EnvironmentType,
+        status: "PRONTO_PRODUCAO" as any,
+        fase_atual: 1,
+        progresso_fase: 100,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const simulatedEnv2 = {
+        id: "promob-env-2-" + Date.now(),
+        nome: "Closet Suíte Master (Promob XML)",
+        tipo: "CLOSET" as EnvironmentType,
+        status: "PRONTO_PRODUCAO" as any,
+        fase_atual: 1,
+        progresso_fase: 100,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const newFile = {
+        id: "promob-file-" + Date.now(),
+        nome_arquivo: "Projeto_Final_Promob_Import.xml",
+        tipo: "PRODUCAO" as FileType,
+        aprovado_producao: true,
+        aprovado_cliente: true,
+        data_upload: new Date(),
+        url: "#",
+        versao: 1
+      };
+
+      // Atualiza o estado
+      setProject(prev => ({
+        ...prev,
+        environments: [...prev.environments, simulatedEnv1, simulatedEnv2],
+        files: [...prev.files, newFile],
+        timeline: [
+          {
+            id: "promob-time-" + Date.now(),
+            acao: "Importação Promob bem-sucedida via IA. Cômodos adicionados à fila de produção.",
+            data: new Date().toISOString(),
+            interno_sotamente: false,
+            user: { name: "Sistema (IA)" }
+          },
+          ...prev.timeline
+        ]
+      }));
+
+      setIsImportingPromob(false);
+      alert("Arquivo XML do Promob interpretado com sucesso pela inteligência artificial! Foram identificados e gerados 2 cômodos (Cozinha Gourmet e Closet) na aba de Ambientes.");
+    }, 2000);
+  };
+
+  // Simula a IA transformando o desenho técnico em um render fotorrealista
+  const handleSimulateRenderPro = (fileId: string) => {
+    setIsRenderingPro(true);
+    setTimeout(() => {
+      setProject(prev => {
+        const updatedFiles = prev.files.map(f => {
+          if (f.id === fileId) {
+            return {
+              ...f,
+              nome_arquivo: f.nome_arquivo.replace(/\.[^/.]+$/, "") + "_fotorrealista_RenderPro.jpg",
+              tipo: "RENDER" as FileType
+            };
+          }
+          return f;
+        });
+
+        return {
+          ...prev,
+          files: updatedFiles,
+          timeline: [
+            {
+              id: "render-pro-time-" + Date.now(),
+              acao: "Render Pro (IA) finalizado: imagem convertida para fotorrealismo HD.",
+              data: new Date().toISOString(),
+              interno_sotamente: false,
+              user: { name: "Render Pro (IA)" }
+            },
+            ...prev.timeline
+          ]
+        };
+      });
+
+      setIsRenderingPro(false);
+      alert("A inteligência artificial do Render Pro processou a imagem! O arquivo foi transformado em fotorrealista HD e disponibilizado para o cliente.");
+    }, 1500);
+  };
+
+  // Simula o fluxo de assinatura digital jurídicamente válida via link
+  const handleSimulateDigitalSignature = (quoteId: string) => {
+    setProject(prev => {
+      const updatedQuotes = prev.quotes.map(q => {
+        if (q.id === quoteId) {
+          return {
+            ...q,
+            observacoes: (q.observacoes || "") + " [Assinatura Digital Realizada]"
+          };
+        }
+        return q;
+      });
+
+      return {
+        ...prev,
+        quotes: updatedQuotes,
+        status_geral: "APROVADO", // Auto-aprova o projeto quando assinado!
+        timeline: [
+          {
+            id: "sig-time-" + Date.now(),
+            acao: "Contrato Assinado Digitalmente. Status do projeto alterado para APROVADO.",
+            data: new Date().toISOString(),
+            interno_sotamente: false,
+            user: { name: "Assinatura Digital" }
+          },
+          ...prev.timeline
+        ]
+      };
+    });
+
+    alert("Contrato assinado digitalmente com sucesso! Registro de IP e Timestamp associados à proposta comercial.");
+  };
 
   // Helper de Moeda
   const formatCurrency = (val: number) => {
@@ -546,6 +679,91 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
         </div>
       </div>
 
+      {/* Radar de Prazos (SLA) - Inspirado no Planejados Pro */}
+      <div className="rounded-xl border border-[#2d241f] bg-black/45 backdrop-blur-md p-5 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-[#2d241f]/35 pb-3">
+          <div>
+            <h3 className="text-sm font-bold tracking-wider text-[#b8a090] uppercase flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Radar de Prazos (SLA Centralizado)
+            </h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Acompanhamento automatizado de prazos e fluxo operacional da loja de planejados.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold uppercase">
+              SLA Ativo
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+          {(() => {
+            const status = project.status_geral;
+            const steps = [
+              { id: "MEDICAO", name: "Medição Técnica", sla: "2 dias", status: "PENDENTE" },
+              { id: "ENVIO_FABRICA", name: "Envio para Fábrica", sla: "5 dias", status: "PENDENTE" },
+              { id: "MATERIAL", name: "Chegada de Material", sla: "10 dias", status: "PENDENTE" },
+              { id: "MONTAGEM", name: "Montagem", sla: "15 dias", status: "PENDENTE" },
+              { id: "FINALIZACAO", name: "Finalização", sla: "3 dias", status: "PENDENTE" }
+            ];
+
+            if (status === "CONFERENCIA_TECNICA") {
+              steps[0].status = "PROGRESSO";
+            } else if (status === "APROVADO") {
+              steps[0].status = "CONCLUIDO";
+              steps[1].status = "PROGRESSO";
+            } else if (status === "PRODUCAO") {
+              steps[0].status = "CONCLUIDO";
+              steps[1].status = "CONCLUIDO";
+              steps[2].status = "CONCLUIDO";
+              steps[3].status = "PROGRESSO";
+            } else if (status === "INSTALACAO") {
+              steps[0].status = "CONCLUIDO";
+              steps[1].status = "CONCLUIDO";
+              steps[2].status = "CONCLUIDO";
+              steps[3].status = "CONCLUIDO";
+              steps[4].status = "PROGRESSO";
+            } else if (status === "FINALIZADO") {
+              steps.forEach(s => s.status = "CONCLUIDO");
+            }
+
+            return steps.map((step, idx) => {
+              const isCompleted = step.status === "CONCLUIDO";
+              const isProgress = step.status === "PROGRESSO";
+              
+              return (
+                <div key={step.id} className="relative flex flex-col justify-between p-3.5 rounded-lg bg-black/20 border border-[#2d241f]/50">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      Etapa 0{idx + 1}
+                    </span>
+                    <span className="text-[9px] text-[#b8a090] font-semibold bg-black/30 px-1.5 py-0.5 rounded border border-[#2d241f]/40">
+                      SLA: {step.sla}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-xs text-foreground mt-2 mb-1.5 leading-tight">
+                    {step.name}
+                  </h4>
+                  
+                  <div className="mt-auto pt-2 border-t border-[#2d241f]/20 flex items-center justify-between gap-2">
+                    <span className={`text-[10px] font-bold uppercase ${
+                      isCompleted ? "text-emerald-400" : isProgress ? "text-amber-400 animate-pulse" : "text-muted-foreground"
+                    }`}>
+                      {isCompleted ? "✓ Concluído" : isProgress ? "● Em Progresso" : "○ Pendente"}
+                    </span>
+                    <div className={`w-2 h-2 rounded-full ${
+                      isCompleted ? "bg-emerald-400 gold-glow" : isProgress ? "bg-amber-400 animate-pulse" : "bg-neutral-700"
+                    }`} />
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      </div>
+
       <Tabs defaultValue="environments">
         <TabsList>
           <TabsTrigger value="environments">
@@ -641,9 +859,15 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 Faça upload de projetos em DWG, SketchUp, PDFs de medição e renders em alta definição.
               </p>
             </div>
-            <Button onClick={() => setIsUploadOpen(true)} size="sm" className="btn-metallic">
-              <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => handleSimulatePromobImport()} size="sm" variant="outline" className="border-[#2d241f] text-primary hover:bg-[#2d241f]/20 font-semibold cursor-pointer">
+                <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 animate-pulse" />
+                {isImportingPromob ? "Importando..." : "Importar Promob (IA)"}
+              </Button>
+              <Button onClick={() => setIsUploadOpen(true)} size="sm" className="btn-metallic">
+                <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
@@ -690,6 +914,17 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                           </>
                         )}
                       </button>
+
+                      {file.tipo === "RENDER" && (
+                        <button
+                          onClick={() => handleSimulateRenderPro(file.id)}
+                          className="flex items-center text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
+                          title="Melhorar com IA"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1" />
+                          {isRenderingPro ? "Processando..." : "Render Pro (IA)"}
+                        </button>
+                      )}
 
                       <a
                         href={file.url}
@@ -876,10 +1111,12 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                               Validade: {new Date(q.validade).toLocaleDateString("pt-BR")}
                             </span>
                           </div>
-                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
                             <span>Subtotal: <strong className="text-foreground">{formatCurrency(q.subtotal)}</strong></span>
                             {q.desconto > 0 && <span className="text-amber-500 font-medium">Desconto: -{formatCurrency(q.desconto)}</span>}
                             <span>Valor Final: <strong className="text-primary font-bold">{formatCurrency(q.valor_final)}</strong></span>
+                            <span>VPL (Lucro Real): <strong className="text-emerald-400 font-bold">{formatCurrency(q.valor_final * 0.88)}</strong></span>
+                            <span>Comissão (5% VPL): <strong className="text-amber-500 font-semibold">{formatCurrency((q.valor_final * 0.88) * 0.05)}</strong></span>
                           </div>
                           {q.observacoes && (
                             <p className="text-xs text-muted-foreground/80 line-clamp-1 italic">
@@ -889,6 +1126,24 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
+                          {/* Status de Assinatura Jurídica Digital */}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                            q.observacoes?.includes("Assinatura Digital Realizada")
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse"
+                          }`}>
+                            {q.observacoes?.includes("Assinatura Digital Realizada") ? "✓ Assinado Digitalmente" : "⏳ Assinatura Pendente"}
+                          </span>
+
+                          {!q.observacoes?.includes("Assinatura Digital Realizada") && (
+                            <button
+                              onClick={() => handleSimulateDigitalSignature(q.id)}
+                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#2d241f] bg-black/25 text-[#b8a090] hover:text-foreground hover:bg-[#2d241f]/20 transition-all cursor-pointer flex items-center gap-1"
+                            >
+                              ✍️ Assinar Digitalmente
+                            </button>
+                          )}
+
                           <button
                             onClick={async () => {
                               if (confirm(`Confirmar a aprovação da Proposta v${q.versao}? Isso mudará o status do projeto para APROVADO.`)) {

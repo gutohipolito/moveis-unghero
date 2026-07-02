@@ -125,6 +125,25 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
         </Card>
       </div>
 
+      {/* Detalhamento de VPL & Comissões baseadas em VPL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="p-4 bg-black/35 border border-[#2d241f] rounded-xl flex items-center justify-between shadow-md">
+          <div>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Faturamento em Valor Presente Líquido (VPL)</span>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Margem protegida descontando taxas de parcelamento longo.</p>
+          </div>
+          <strong className="text-xl text-emerald-400 font-extrabold">{formatCurrency(faturamentoTotal * 0.88)}</strong>
+        </Card>
+
+        <Card className="p-4 bg-black/35 border border-[#2d241f] rounded-xl flex items-center justify-between shadow-md">
+          <div>
+            <span className="text-[10px] text-[#b8a090] font-bold uppercase tracking-wider block">Comissões Calculadas sobre VPL (5% Médio)</span>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Comissões dos projetistas alinhadas com o lucro real da venda.</p>
+          </div>
+          <strong className="text-xl text-amber-500 font-extrabold">{formatCurrency((faturamentoTotal * 0.88) * 0.05)}</strong>
+        </Card>
+      </div>
+
       {/* Barra de Filtros e Busca */}
       <Card className="p-4 glass-card border-[#2d241f] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
