@@ -60,29 +60,15 @@ export default async function DashboardLayout({
 
         <div className="flex flex-col flex-1 min-h-0">
 
-          {/* Logo */}
+          {/* Logo — apenas a imagem, sem container extra */}
           <div className="flex items-center h-16 px-5" style={{ borderBottom: "1px solid hsl(210 15% 89%)" }}>
-            <Link href="/crm" className="flex items-center gap-3 group w-full">
-              {/* Logo com filtro de cor bronze/cobre */}
-              <div className="flex-shrink-0 h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center"
-                style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 85%)" }}>
-                <img 
-                  src="/logo.png" 
-                  alt="Móveis Unghero" 
-                  className="h-7 w-auto object-contain"
-                  style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
-                />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-black tracking-wider leading-none" 
-                  style={{ color: "hsl(220 20% 10%)" }}>
-                  Unghero
-                </span>
-                <span className="text-[10px] font-semibold mt-0.5 tracking-widest uppercase"
-                  style={{ color: "hsl(28 85% 45%)" }}>
-                  SaaS Admin
-                </span>
-              </div>
+            <Link href="/crm">
+              <img 
+                src="/logo.png" 
+                alt="Móveis Unghero" 
+                className="h-10 w-auto object-contain"
+                style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.7)" }}
+              />
             </Link>
           </div>
 
@@ -160,22 +146,16 @@ export default async function DashboardLayout({
       {/* ─── Conteúdo Principal ─── */}
       <div className="flex flex-col flex-1 md:pl-64">
 
-        {/* Topbar Mobile */}
+        {/* Topbar Mobile — logo simples */}
         <header className="flex items-center justify-between h-14 px-4 md:hidden"
           style={{ borderBottom: "1px solid hsl(210 15% 89%)", background: "white" }}>
-          <Link href="/crm" className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center"
-              style={{ background: "hsl(28 85% 95%)" }}>
-              <img 
-                src="/logo.png" 
-                alt="Móveis Unghero" 
-                className="h-6 w-auto object-contain"
-                style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
-              />
-            </div>
-            <span className="text-sm font-black tracking-wide" style={{ color: "hsl(220 20% 10%)" }}>
-              Unghero
-            </span>
+          <Link href="/crm">
+            <img 
+              src="/logo.png" 
+              alt="Móveis Unghero" 
+              className="h-8 w-auto object-contain"
+              style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.7)" }}
+            />
           </Link>
           <SidebarToggle user={user} />
         </header>

@@ -72,29 +72,14 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
         style={{ background: "white", borderRight: "1px solid hsl(210 15% 89%)" }}
       >
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between h-16 px-4"
+        <div className="flex items-center justify-between h-16 px-5"
           style={{ borderBottom: "1px solid hsl(210 15% 89%)" }}>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
-              style={{ background: "hsl(28 85% 95%)", border: "1px solid hsl(28 85% 85%)" }}>
-              <img 
-                src="/logo.png" 
-                alt="Móveis Unghero" 
-                className="h-7 w-auto object-contain"
-                style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.75)" }}
-              />
-            </div>
-            <div>
-              <p className="text-sm font-black tracking-wider leading-none"
-                style={{ color: "hsl(220 20% 10%)" }}>
-                Unghero
-              </p>
-              <span className="text-[10px] font-semibold tracking-widest uppercase"
-                style={{ color: "hsl(28 85% 45%)" }}>
-                SaaS Admin
-              </span>
-            </div>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="Móveis Unghero" 
+            className="h-9 w-auto object-contain"
+            style={{ filter: "sepia(1) saturate(2) hue-rotate(340deg) brightness(0.7)" }}
+          />
           <button
             onClick={toggleMenu}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
