@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { updateEnvironmentStatus } from "@/app/actions/project";
+import { updateEnvironmentResponsavel } from "@/app/actions/colaboradores";
 import { Card } from "@/components/ui/card";
 import { 
   Layers, 
@@ -23,10 +24,19 @@ interface EnvironmentItem {
   status: string;
   projectId: string;
   clientName: string;
+  responsavelId?: string | null;
+  responsavelNome?: string | null;
+}
+
+interface ColaboradorSelect {
+  id: string;
+  name: string;
+  cargo: string;
 }
 
 interface FactoryClientProps {
   initialEnvironments: EnvironmentItem[];
+  colaboradores: ColaboradorSelect[];
 }
 
 const COLUMNS = [
@@ -46,9 +56,25 @@ const ENVIRONMENT_ICONS: Record<string, string> = {
   OUTROS: "🪵"
 };
 
-export default function FactoryClient({ initialEnvironments }: FactoryClientProps) {
+export default function FactoryClient({ initialEnvironments, colaboradores }: FactoryClientProps) {
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  const handleResponsavelChange = async (environmentId: string, responsavelId: string) => {
+    const cleanId = responsavelId === "none" ? null : responsavelId;
+    const selected = colaboradores.find(c => c.id === cleanId);
+    const nome = selected ? selected.name : null;
+
+    // Atualiza estado local
+    setEnvironments(environments.map(env => 
+      env.id === environmentId 
+        ? { ...env, responsavelId: cleanId, responsavelNome: nome } 
+        : env
+    ));
+
+    // Grava no banco Neon
+    await updateEnvironmentResponsavel(environmentId, cleanId);
+  };
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -203,6 +229,25 @@ export default function FactoryClient({ initialEnvironments }: FactoryClientProp
                             <ArrowRight className="h-3 w-3" />
                           </button>
                         )}
+                      </div>
+
+                      {/* Seletor de Responsável da Fábrica */}
+                      <div className="border-t border-slate-100 pt-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Responsável:</span>
+                          <select
+                            value={item.responsavelId || "none"}
+                            onChange={(e) => handleResponsavelChange(item.id, e.target.value)}
+                            className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 cursor-pointer outline-none max-w-[120px] truncate"
+                          >
+                            <option value="none" className="text-slate-400">Nenhum</option>
+                            {colaboradores.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.name.split(" ")[0]} ({c.cargo})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </Card>
                   ))

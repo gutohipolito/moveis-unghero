@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
+import { getColaboradores } from "@/app/actions/colaboradores";
 import FactoryClient from "./FactoryClient";
 
 // Mock de dados para cômodos na fábrica
@@ -72,6 +73,14 @@ export default async function FactoryPage() {
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
+  // Busca os colaboradores cadastrados na empresa
+  const colaboradoresRes = await getColaboradores(userCompanyId);
+  const colaboradores = colaboradoresRes.success && colaboradoresRes.colaboradores ? colaboradoresRes.colaboradores.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    cargo: c.cargo
+  })) : [];
+
   let environments = [];
   let isMock = false;
 
@@ -99,7 +108,8 @@ export default async function FactoryPage() {
             include: {
               client: true
             }
-          }
+          },
+          responsavel: true
         }
       });
 
@@ -121,8 +131,10 @@ export default async function FactoryPage() {
     nome: e.nome,
     tipo: e.tipo,
     status: e.status,
-    projectId: e.project.id,
-    clientName: e.project.client.nome
+    projectId: e.project?.id || "",
+    clientName: e.project?.client?.nome || "Cliente avulso",
+    responsavelId: e.responsavel_id || null,
+    responsavelNome: e.responsavel?.name || null
   }));
 
   return (
@@ -143,7 +155,7 @@ export default async function FactoryPage() {
         )}
       </div>
 
-      <FactoryClient initialEnvironments={formattedEnvs} />
+      <FactoryClient initialEnvironments={formattedEnvs} colaboradores={colaboradores} />
     </div>
   );
 }

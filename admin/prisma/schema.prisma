@@ -37,6 +37,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   timeline      Timeline[]
+  ambientes_sob_responsabilidade Environment[] @relation("UserResponsavel")
 }
 
 enum Role {
@@ -134,12 +135,16 @@ enum ProjectStatus {
 }
 
 model Environment {
-  id         String            @id @default(uuid())
-  project_id String
-  project    Project           @relation(fields: [project_id], references: [id])
-  nome       String            // Ex: "Cozinha Americana", "Closet Master"
-  tipo       EnvironmentType   // COZINHA, CLOSET, DORMITORIO, BANHEIRO, OUTROS
-  status     EnvironmentStatus // AGUARDANDO_MEDICAO, EM_DETALHAMENTO, PRONTO_PRODUCAO, EM_CORTE, MONTAGEM_FABRICA, PRONTO_ENTREGA, EM_INSTALACAO, FINALIZADO
+  id             String            @id @default(uuid())
+  project_id     String
+  project        Project           @relation(fields: [project_id], references: [id])
+  nome           String            // Ex: "Cozinha Americana", "Closet Master"
+  tipo           EnvironmentType   // COZINHA, CLOSET, DORMITORIO, BANHEIRO, OUTROS
+  status         EnvironmentStatus // AGUARDANDO_MEDICAO, EM_DETALHAMENTO, PRONTO_PRODUCAO, EM_CORTE, MONTAGEM_FABRICA, PRONTO_ENTREGA, EM_INSTALACAO, FINALIZADO
+  
+  // Responsável na Fábrica
+  responsavel_id String?
+  responsavel    User?             @relation("UserResponsavel", fields: [responsavel_id], references: [id])
 }
 
 enum EnvironmentType {

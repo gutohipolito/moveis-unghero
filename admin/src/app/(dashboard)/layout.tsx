@@ -47,6 +47,7 @@ export default async function DashboardLayout({
     { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
     { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Principal" },
     { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
+    { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Principal" },
     { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
     { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
     { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
