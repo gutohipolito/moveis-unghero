@@ -14,7 +14,8 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  Truck
+  Truck,
+  ClipboardList
 } from "lucide-react";
 import { logoutSimulated } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
@@ -44,6 +45,7 @@ export default async function DashboardLayout({
   const navItems: NavItem[] = [
     { name: "Dashboard / BI", href: "/bi", icon: LayoutDashboard, section: "Principal" },
     { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
+    { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Principal" },
     { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
     { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
     { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },

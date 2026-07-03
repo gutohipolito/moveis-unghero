@@ -160,3 +160,111 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
     return { success: true, simulated: true };
   }
 }
+
+// Busca todos os orçamentos do sistema
+export async function getQuotes() {
+  try {
+    const quotes = await prisma.quote.findMany({
+      include: {
+        project: {
+          include: {
+            client: true
+          }
+        },
+        items: true
+      },
+      orderBy: {
+        validade: "desc"
+      }
+    });
+    // Convertemos campos Decimal para number para evitar problemas de serialização nas Server Actions
+    const serializedQuotes = quotes.map(q => ({
+      ...q,
+      subtotal: Number(q.subtotal),
+      desconto: Number(q.desconto),
+      valor_final: Number(q.valor_final),
+      items: q.items.map(item => ({
+        ...item,
+        valor_unitario: Number(item.valor_unitario),
+        valor_total: Number(item.valor_total)
+      }))
+    }));
+    return { success: true, data: serializedQuotes };
+  } catch (error) {
+    console.warn("Erro ao buscar orçamentos, retornando dados simulados:", error);
+    
+    // Retorna dados simulados estruturados idênticos ao schema
+    const mockQuotes = [
+      {
+        id: "q-mock-1",
+        project_id: "p-mock-1",
+        versao: 1,
+        subtotal: 15400.00,
+        desconto: 1400.00,
+        valor_final: 14000.00,
+        validade: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+        observacoes: "Pagamento facilitado em 3x no cartão.",
+        project: {
+          id: "p-mock-1",
+          status_geral: "ORCAMENTO",
+          client: {
+            id: "c-mock-1",
+            nome: "José Carlos Silva",
+            cidade: "Bento Gonçalves"
+          }
+        },
+        items: [
+          { id: "qi-mock-1", quote_id: "q-mock-1", descricao: "Móveis planejados para Cozinha MDF Grafite", quantidade: 1, tipo_custo: "MOVEIS_MDF" as const, valor_unitario: 12400.00, valor_total: 12400.00 },
+          { id: "qi-mock-2", quote_id: "q-mock-1", descricao: "Ferragens especiais com amortecedor Blum", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS" as const, valor_unitario: 3000.00, valor_total: 3000.00 }
+        ]
+      },
+      {
+        id: "q-mock-2",
+        project_id: "p-mock-2",
+        versao: 2,
+        subtotal: 28000.00,
+        desconto: 2000.00,
+        valor_final: 26000.00,
+        validade: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        observacoes: "Cliente solicitou inclusão do painel de TV da sala.",
+        project: {
+          id: "p-mock-2",
+          status_geral: "APROVADO",
+          client: {
+            id: "c-mock-2",
+            nome: "Mariana Souza Santos",
+            cidade: "Caxias do Sul"
+          }
+        },
+        items: [
+          { id: "qi-mock-3", quote_id: "q-mock-2", descricao: "Móveis planejados para Cozinha e Painel de TV", quantidade: 1, tipo_custo: "MOVEIS_MDF" as const, valor_unitario: 25000.00, valor_total: 25000.00 },
+          { id: "qi-mock-4", quote_id: "q-mock-2", descricao: "Mão de obra de instalação especializada", quantidade: 1, tipo_custo: "MAO_DE_OBRA" as const, valor_unitario: 3000.00, valor_total: 3000.00 }
+        ]
+      },
+      {
+        id: "q-mock-3",
+        project_id: "p-mock-3",
+        versao: 1,
+        subtotal: 9200.00,
+        desconto: 500.00,
+        valor_final: 8700.00,
+        validade: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
+        observacoes: "Sem observações adicionais.",
+        project: {
+          id: "p-mock-3",
+          status_geral: "LEAD",
+          client: {
+            id: "c-mock-3",
+            nome: "Arthur Ferreira Lima",
+            cidade: "Farroupilha"
+          }
+        },
+        items: [
+          { id: "qi-mock-5", quote_id: "q-mock-3", descricao: "Banheiro planejado em MDF Branco TX e nichos", quantidade: 1, tipo_custo: "MOVEIS_MDF" as const, valor_unitario: 8700.00, valor_total: 8700.00 }
+        ]
+      }
+    ];
+    return { success: true, data: mockQuotes, simulated: true };
+  }
+}
+
