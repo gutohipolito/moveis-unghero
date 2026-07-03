@@ -94,25 +94,28 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
     revalidatePath(`/projects/${projectId}`);
     return { success: true, data: result };
   } catch (error) {
-    console.warn("Simulação de criação de orçamento (banco inacessível):", error);
-    
-    // Fallback simulado
-    const simulatedVersion = Math.floor(Math.random() * 3) + 1;
-    const mockQuote = {
-      id: `simulated-quote-${Math.random().toString(36).substr(2, 9)}`,
-      project_id: projectId,
-      versao: simulatedVersion,
-      subtotal: data.subtotal,
-      desconto: data.desconto,
-      valor_final: data.valor_final,
-      validade: new Date(data.validade).toISOString(),
-      observacoes: data.observacoes || ""
-    };
-
+    console.error("Erro na Server Action createQuote:", error);
+    if (isDatabaseOffline()) {
+      const simulatedVersion = Math.floor(Math.random() * 3) + 1;
+      const mockQuote = {
+        id: `simulated-quote-${Math.random().toString(36).substr(2, 9)}`,
+        project_id: projectId,
+        versao: simulatedVersion,
+        subtotal: data.subtotal,
+        desconto: data.desconto,
+        valor_final: data.valor_final,
+        validade: new Date(data.validade).toISOString(),
+        observacoes: data.observacoes || ""
+      };
+      return { 
+        success: true, 
+        simulated: true, 
+        data: { quote: mockQuote, version: simulatedVersion } 
+      };
+    }
     return { 
-      success: true, 
-      simulated: true, 
-      data: { quote: mockQuote, version: simulatedVersion } 
+      success: false, 
+      error: error instanceof Error ? error.message : "Erro desconhecido ao salvar orçamento no banco remoto" 
     };
   }
 }
@@ -139,8 +142,11 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
     revalidatePath(`/projects/${projectId}`);
     return { success: true };
   } catch (error) {
-    console.warn("Simulação de aprovação de orçamento:", error);
-    return { success: true, simulated: true };
+    console.error("Erro na Server Action approveQuote:", error);
+    if (isDatabaseOffline()) {
+      return { success: true, simulated: true };
+    }
+    return { success: false, error: error instanceof Error ? error.message : "Erro ao aprovar orçamento no banco remoto" };
   }
 }
 
@@ -170,8 +176,11 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
     revalidatePath(`/projects/${projectId}`);
     return { success: true };
   } catch (error) {
-    console.warn("Simulação de exclusão de orçamento:", error);
-    return { success: true, simulated: true };
+    console.error("Erro na Server Action deleteQuote:", error);
+    if (isDatabaseOffline()) {
+      return { success: true, simulated: true };
+    }
+    return { success: false, error: error instanceof Error ? error.message : "Erro ao excluir orçamento no banco remoto" };
   }
 }
 
@@ -348,9 +357,12 @@ export async function createProjectForClient(clientId: string, companyId: string
     revalidatePath("/quotes");
     return { success: true, projectId: project.id };
   } catch (error) {
-    console.warn("Erro ao criar projeto para cliente (usando simulação):", error);
-    const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
-    return { success: true, projectId: mockProjectId, simulated: true };
+    console.error("Erro na Server Action createProjectForClient:", error);
+    if (isDatabaseOffline()) {
+      const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
+      return { success: true, projectId: mockProjectId, simulated: true };
+    }
+    return { success: false, error: error instanceof Error ? error.message : "Erro ao inicializar orçamento no banco remoto" };
   }
 }
 
@@ -407,9 +419,12 @@ export async function createQuickClientAndProject(data: {
     revalidatePath("/quotes");
     return { success: true, projectId: result.projectId };
   } catch (error) {
-    console.warn("Erro ao criar cliente e projeto avulso (usando simulação):", error);
-    const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
-    return { success: true, projectId: mockProjectId, simulated: true };
+    console.error("Erro na Server Action createQuickClientAndProject:", error);
+    if (isDatabaseOffline()) {
+      const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
+      return { success: true, projectId: mockProjectId, simulated: true };
+    }
+    return { success: false, error: error instanceof Error ? error.message : "Erro ao criar cadastro avulso no banco remoto" };
   }
 }
 

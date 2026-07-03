@@ -121,7 +121,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
     if (res.success && res.projectId) {
       setSelectedProjectId(res.projectId);
     } else {
-      alert("Erro ao inicializar orçamento para o cliente.");
+      alert(res.error || "Erro ao inicializar orçamento para o cliente.");
     }
     setIsGeneratingProject(false);
   };
@@ -143,7 +143,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
     if (res.success && res.projectId) {
       setSelectedProjectId(res.projectId);
     } else {
-      alert("Erro ao criar cadastro avulso.");
+      alert(res.error || "Erro ao criar cadastro avulso.");
     }
     setIsGeneratingProject(false);
   };
@@ -187,7 +187,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
       if (res.success) {
         setQuotes(prev => prev.filter(q => q.id !== quoteId));
       } else {
-        alert("Erro ao excluir orçamento.");
+        alert((res as any).error || "Erro ao excluir orçamento.");
       }
     }
   };

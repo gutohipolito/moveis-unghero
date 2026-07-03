@@ -254,7 +254,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
       }
       onSuccess(result.data);
     } else {
-      alert("Falha ao salvar a proposta comercial.");
+      alert(result.error || "Falha ao salvar a proposta comercial.");
     }
     setLoading(false);
   };
