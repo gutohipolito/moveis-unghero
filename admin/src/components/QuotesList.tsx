@@ -147,11 +147,16 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     setIsGeneratingProject(false);
   };
 
-  const handleCreateSuccess = async () => {
+  const handleCreateSuccess = async (newQuoteData?: any) => {
     const res = await getQuotes();
     if (res.success) {
       setQuotes(res.data as any || []);
     }
+
+    if (newQuoteData?.quote?.id) {
+      window.open(`/quotes/${newQuoteData.quote.id}/print`, "_blank");
+    }
+
     setIsCreateOpen(false);
     setSelectedProjectId(null);
     setSearchProject("");
