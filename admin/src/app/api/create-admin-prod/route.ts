@@ -30,6 +30,11 @@ export async function GET() {
       await prisma.user.delete({ where: { id: existingUser.id } });
     }
 
+    // Limpa também qualquer credencial órfã ou residual associada a este e-mail na tabela Account
+    await prisma.account.deleteMany({
+      where: { accountId: "admin@moveisunghero.com.br" }
+    });
+
     // 3. Cadastra o novo usuário Administrador via better-auth api
     const newUser = await auth.api.signUpEmail({
       body: {
