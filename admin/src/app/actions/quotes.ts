@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export type ItemType = 
@@ -303,6 +303,11 @@ export async function getProjectsForQuotes() {
 
 // Cria um projeto temporário para um cliente existente
 export async function createProjectForClient(clientId: string, companyId: string) {
+  if (isDatabaseOffline()) {
+    const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
+    return { success: true, projectId: mockProjectId, simulated: true };
+  }
+
   try {
     const project = await prisma.project.create({
       data: {
@@ -338,6 +343,11 @@ export async function createQuickClientAndProject(data: {
   cidade: string;
   companyId: string;
 }) {
+  if (isDatabaseOffline()) {
+    const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
+    return { success: true, projectId: mockProjectId, simulated: true };
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o cliente

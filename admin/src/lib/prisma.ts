@@ -23,11 +23,17 @@ let realPrisma: PrismaClient | null = null;
 // Portanto, criamos o PrismaClient apenas se tivermos uma conexão ativa do Neon compatível com Edge.
 if (!isMockUrl && process.env.DATABASE_URL) {
   try {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-    const adapter = new PrismaNeon(pool)
-    realPrisma = new PrismaClient({ adapter })
+    // Declaramos o tipo global do EdgeRuntime para fins de verificação em Next.js
+    const isEdge = typeof (globalThis as any).EdgeRuntime === "string";
+    if (isEdge) {
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+      const adapter = new PrismaNeon(pool)
+      realPrisma = new PrismaClient({ adapter })
+    } else {
+      realPrisma = new PrismaClient()
+    }
   } catch (error) {
-    console.warn("Falha ao inicializar o adaptador Neon. Banco de dados indisponível.");
+    console.warn("Falha ao inicializar o Prisma Client:", error);
     globalForPrisma.isDbOffline = true;
   }
 }
