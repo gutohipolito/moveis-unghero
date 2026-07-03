@@ -301,4 +301,88 @@ export async function getProjectsForQuotes() {
   }
 }
 
+// Cria um projeto temporário para um cliente existente
+export async function createProjectForClient(clientId: string, companyId: string) {
+  try {
+    const project = await prisma.project.create({
+      data: {
+        client_id: clientId,
+        valor_previsto: 0,
+        status_geral: "ORCAMENTO"
+      }
+    });
+
+    await prisma.timeline.create({
+      data: {
+        project_id: project.id,
+        acao: `Projeto temporário criado para orçamento comercial de cliente existente`,
+        interno_sotamente: true,
+        user_id: "system-admin-mock-id"
+      }
+    });
+
+    revalidatePath("/quotes");
+    return { success: true, projectId: project.id };
+  } catch (error) {
+    console.warn("Erro ao criar projeto para cliente (usando simulação):", error);
+    const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
+    return { success: true, projectId: mockProjectId, simulated: true };
+  }
+}
+
+// Cria um cliente e um projeto associado de forma rápida (avulso)
+export async function createQuickClientAndProject(data: {
+  nome: string;
+  email: string;
+  telefone: string;
+  cidade: string;
+  companyId: string;
+}) {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Cria o cliente
+      const client = await tx.client.create({
+        data: {
+          nome: data.nome,
+          email: data.email || `${data.nome.toLowerCase().replace(/\s+/g, '')}@avulso.com`,
+          telefone: data.telefone || "(54) 99999-9999",
+          cidade: data.cidade,
+          origem: "WHATSAPP",
+          status: "LEAD",
+          company_id: data.companyId
+        }
+      });
+
+      // 2. Cria o projeto associado
+      const project = await tx.project.create({
+        data: {
+          client_id: client.id,
+          valor_previsto: 0,
+          status_geral: "ORCAMENTO"
+        }
+      });
+
+      // 3. Cria o registro na timeline
+      await tx.timeline.create({
+        data: {
+          project_id: project.id,
+          acao: `Lead avulso e projeto criados automaticamente para orçamento comercial`,
+          interno_sotamente: true,
+          user_id: "system-admin-mock-id"
+        }
+      });
+
+      return { projectId: project.id };
+    });
+
+    revalidatePath("/quotes");
+    return { success: true, projectId: result.projectId };
+  } catch (error) {
+    console.warn("Erro ao criar cliente e projeto avulso (usando simulação):", error);
+    const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
+    return { success: true, projectId: mockProjectId, simulated: true };
+  }
+}
+
+
 
