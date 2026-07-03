@@ -56,6 +56,41 @@ interface PrintPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Componentes padrões para o cabeçalho e rodapé do PDF comercial
+function PrintHeader({ pageNum, title }: { pageNum: string; title: string }) {
+  return (
+    <div className="w-full flex items-center justify-between border-b-2 border-amber-500/20 pb-3 mb-6">
+      <div className="flex items-center gap-3 animate-in fade-in duration-300">
+        <span className="text-[9px] font-black text-amber-700 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10 tracking-widest">
+          PÁGINA {pageNum}
+        </span>
+        <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-widest">
+          {title}
+        </h4>
+      </div>
+      <img 
+        src="/logo.png" 
+        alt="Móveis Unghero" 
+        className="h-6 w-auto object-contain opacity-80"
+        style={{ filter: "sepia(1) saturate(1.5) hue-rotate(340deg) brightness(0.6)" }}
+      />
+    </div>
+  );
+}
+
+function PrintFooter({ version }: { version: number }) {
+  return (
+    <div className="w-full border-t border-neutral-100 pt-3 mt-6 flex justify-between items-center text-[9px] text-neutral-400 font-medium">
+      <div>
+        <strong>Móveis Unghero LTDA</strong> — CNPJ: 12.345.678/0001-90
+      </div>
+      <div>
+        Proposta Comercial v{version} — unghero.com.br
+      </div>
+    </div>
+  );
+}
+
 export default async function PrintQuotePage({ params }: PrintPageProps) {
   const { id } = await params;
   
@@ -215,10 +250,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         {/* ================= PÁGINA 2: CONCEITO & DESCRITIVO ================= */}
         <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Página 02 // Móveis Unghero</span>
-              <span className="text-xs text-amber-600 font-semibold">Memorial Conceitual</span>
-            </div>
+            <PrintHeader pageNum="02" title="Memorial Conceitual" />
 
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Conceito do Projeto</h3>
@@ -237,19 +269,13 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             </div>
           </div>
 
-          <div className="border-t border-neutral-100 pt-4 flex justify-between text-[10px] text-neutral-400">
-            <span>Móveis Unghero — Proposta Comercial v{quote.versao}</span>
-            <span>unghero.com.br</span>
-          </div>
+          <PrintFooter version={quote.versao} />
         </div>
 
         {/* ================= PÁGINA 3: TABELA COMERCIAL ================= */}
         <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Página 03 // Detalhamento Comercial</span>
-              <span className="text-xs text-amber-600 font-semibold">Tabela Comercial</span>
-            </div>
+            <PrintHeader pageNum="03" title="Detalhamento Comercial" />
 
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Valores e Itens do Projeto</h3>
@@ -296,19 +322,13 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             </div>
           </div>
 
-          <div className="border-t border-neutral-100 pt-4 flex justify-between text-[10px] text-neutral-400">
-            <span>Móveis Unghero — Proposta Comercial v{quote.versao}</span>
-            <span>unghero.com.br</span>
-          </div>
+          <PrintFooter version={quote.versao} />
         </div>
 
         {/* ================= PÁGINA 4: CONDIÇÕES & GARANTIA ================= */}
         <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Página 04 // Condições Gerais</span>
-              <span className="text-xs text-amber-600 font-semibold">Políticas e prazos</span>
-            </div>
+            <PrintHeader pageNum="04" title="Condições Gerais" />
 
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Condições Comerciais e Garantia</h3>
@@ -342,19 +362,13 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             </div>
           </div>
 
-          <div className="border-t border-neutral-100 pt-4 flex justify-between text-[10px] text-neutral-400">
-            <span>Móveis Unghero — Proposta Comercial v{quote.versao}</span>
-            <span>unghero.com.br</span>
-          </div>
+          <PrintFooter version={quote.versao} />
         </div>
 
         {/* ================= PÁGINA 5: ASSINATURA ================= */}
         <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Página 05 // Assinaturas</span>
-              <span className="text-xs text-amber-600 font-semibold">Termo de Aceite</span>
-            </div>
+            <PrintHeader pageNum="05" title="Termo de Aceite" />
 
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Aceite da Proposta Comercial</h3>
@@ -383,10 +397,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             </div>
           </div>
 
-          <div className="border-t border-neutral-100 pt-4 flex justify-between text-[10px] text-neutral-400">
-            <span>Móveis Unghero — Proposta Comercial v{quote.versao}</span>
-            <span>unghero.com.br</span>
-          </div>
+          <PrintFooter version={quote.versao} />
         </div>
 
       </div>

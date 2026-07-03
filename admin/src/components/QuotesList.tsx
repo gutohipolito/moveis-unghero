@@ -11,12 +11,15 @@ import {
   Calculator, 
   FileText,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Loader2
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { deleteQuote } from "@/app/actions/quotes";
+import { deleteQuote, getProjectsForQuotes, getQuotes } from "@/app/actions/quotes";
+import QuoteBuilder from "@/components/QuoteBuilder";
 
 interface QuoteItem {
   id: string;
@@ -61,6 +64,39 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
+
+  // Estados para criação direta de Orçamento
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [searchProject, setSearchProject] = useState("");
+
+  const handleOpenCreateModal = async () => {
+    setIsCreateOpen(true);
+    setLoadingProjects(true);
+    const res = await getProjectsForQuotes();
+    if (res.success) {
+      setProjects(res.data || []);
+    }
+    setLoadingProjects(false);
+  };
+
+  const handleCreateSuccess = async () => {
+    const res = await getQuotes();
+    if (res.success) {
+      setQuotes(res.data as any || []);
+    }
+    setIsCreateOpen(false);
+    setSelectedProjectId(null);
+    setSearchProject("");
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreateOpen(false);
+    setSelectedProjectId(null);
+    setSearchProject("");
+  };
 
   const handleDeleteQuote = async (projectId: string, quoteId: string, version: number) => {
     if (confirm(`Deseja realmente excluir a versão ${version} deste orçamento?`)) {
@@ -127,6 +163,15 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           <p className="text-sm text-slate-500">
             Gerencie e visualize todas as propostas comerciais e orçamentos emitidos.
           </p>
+        </div>
+        <div>
+          <Button 
+            onClick={handleOpenCreateModal} 
+            className="font-bold btn-metallic gap-1.5 bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)]"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Orçamento
+          </Button>
         </div>
       </div>
 
@@ -312,6 +357,94 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           </table>
         </div>
       </div>
+
+      {/* ─── MODAL: CRIAR NOVO ORÇAMENTO ─── */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
+          <div className={`bg-white border border-slate-200 w-full rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 transition-all max-h-[90vh] overflow-y-auto ${selectedProjectId ? 'max-w-5xl' : 'max-w-lg'}`}>
+            
+            {/* Título & Fechar */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  {selectedProjectId ? "Montar Proposta Comercial" : "Selecionar Projeto & Cliente"}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {selectedProjectId 
+                    ? "Preencha as especificações, ambientes e adicione itens ao orçamento" 
+                    : "Escolha um projeto ativo para iniciar o orçamento."}
+                </p>
+              </div>
+              <button 
+                onClick={handleCancelCreate} 
+                className="text-slate-400 hover:text-slate-600 text-sm font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+
+            {/* FASE 1: Seleção de Projeto */}
+            {!selectedProjectId && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input 
+                    placeholder="Filtrar projetos por cliente..." 
+                    className="pl-9 bg-slate-50 border-slate-200"
+                    value={searchProject}
+                    onChange={(e) => setSearchProject(e.target.value)}
+                  />
+                </div>
+
+                {loadingProjects ? (
+                  <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
+                    <Loader2 className="h-6 w-6 animate-spin text-[hsl(28_85%_45%)]" />
+                    <span className="text-sm">Carregando projetos...</span>
+                  </div>
+                ) : (
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-lg">
+                    {projects.filter(p => 
+                      p.client.nome.toLowerCase().includes(searchProject.toLowerCase())
+                    ).length === 0 ? (
+                      <p className="p-4 text-center text-sm text-slate-400">Nenhum projeto ativo encontrado.</p>
+                    ) : (
+                      projects.filter(p => 
+                        p.client.nome.toLowerCase().includes(searchProject.toLowerCase())
+                      ).map(p => (
+                        <div 
+                          key={p.id} 
+                          onClick={() => setSelectedProjectId(p.id)}
+                          className="p-3 flex justify-between items-center hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <div>
+                            <strong className="text-sm text-slate-800 block">{p.client.nome}</strong>
+                            <span className="text-xs text-slate-400 font-mono">ID: {p.id.substring(0, 8).toUpperCase()} // {p.client.cidade}</span>
+                          </div>
+                          <span className="text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            {p.status_geral}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* FASE 2: Construtor do Orçamento */}
+            {selectedProjectId && (
+              <div className="pt-2">
+                <QuoteBuilder 
+                  projectId={selectedProjectId}
+                  onSuccess={handleCreateSuccess}
+                  onCancel={handleCancelCreate}
+                />
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

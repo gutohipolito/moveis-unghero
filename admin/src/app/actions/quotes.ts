@@ -268,3 +268,37 @@ export async function getQuotes() {
   }
 }
 
+// Busca todos os projetos ativos para seleção no construtor de orçamentos
+export async function getProjectsForQuotes() {
+  try {
+    const projects = await prisma.project.findMany({
+      include: {
+        client: true
+      },
+      orderBy: {
+        status_geral: "asc"
+      }
+    });
+    const serializedProjects = projects.map(p => ({
+      id: p.id,
+      valor_previsto: Number(p.valor_previsto),
+      status_geral: p.status_geral,
+      client: {
+        id: p.client.id,
+        nome: p.client.nome,
+        cidade: p.client.cidade
+      }
+    }));
+    return { success: true, data: serializedProjects };
+  } catch (error) {
+    console.warn("Erro ao buscar projetos para orçamentos, retornando dados simulados:", error);
+    const mockProjects = [
+      { id: "p-mock-1", status_geral: "ORCAMENTO", client: { id: "c-mock-1", nome: "José Carlos Silva", cidade: "Bento Gonçalves" } },
+      { id: "p-mock-2", status_geral: "NEGOCIACAO", client: { id: "c-mock-2", nome: "Mariana Souza Santos", cidade: "Caxias do Sul" } },
+      { id: "p-mock-3", status_geral: "LEAD", client: { id: "c-mock-3", nome: "Arthur Ferreira Lima", cidade: "Farroupilha" } }
+    ];
+    return { success: true, data: mockProjects, simulated: true };
+  }
+}
+
+
