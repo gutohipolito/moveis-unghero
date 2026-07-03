@@ -6,6 +6,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  secret: process.env.BETTER_AUTH_SECRET || "better-auth-secret-key-32-characters-min",
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
