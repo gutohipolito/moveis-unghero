@@ -1,5 +1,3 @@
-export const runtime = "edge";
-
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getClients } from "@/app/actions/cliente";
