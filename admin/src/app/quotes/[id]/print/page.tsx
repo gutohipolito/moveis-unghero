@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ArrowLeft, Printer, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
+import PrintButton from "@/components/PrintButton";
 
 // Mock para fallback caso o banco esteja indisponível ou orçamento não exista
 const MOCK_QUOTES: Record<string, any> = {
@@ -249,12 +250,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             </span>
           )}
           {/* Botão que aciona a impressão nativa do navegador */}
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer"
-          >
-            <Printer className="h-4 w-4" /> Imprimir Proposta / Salvar PDF
-          </button>
+          <PrintButton />
         </div>
       </div>
 

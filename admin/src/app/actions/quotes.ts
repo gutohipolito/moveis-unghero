@@ -2,6 +2,8 @@
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -70,16 +72,20 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           project_id: projectId,
           acao: `Orçamento comercial v${nextVersion} criado no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.valor_final)}`,
           interno_sotamente: false,
-          user_id: "system-admin-mock-id"
+          user_id: await getLoggedUserId()
         }
       });
 
       return { 
         quote: {
-          ...quote,
+          id: quote.id,
+          project_id: quote.project_id,
+          versao: quote.versao,
           subtotal: Number(quote.subtotal),
           desconto: Number(quote.desconto),
           valor_final: Number(quote.valor_final),
+          validade: quote.validade.toISOString(),
+          observacoes: quote.observacoes
         },
         version: nextVersion 
       };
@@ -99,7 +105,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
       subtotal: data.subtotal,
       desconto: data.desconto,
       valor_final: data.valor_final,
-      validade: new Date(data.validade),
+      validade: new Date(data.validade).toISOString(),
       observacoes: data.observacoes || ""
     };
 
@@ -126,7 +132,7 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
         project_id: projectId,
         acao: `Proposta comercial v${version} foi APROVADA pelo cliente. Projeto movido para a etapa de Preparação Técnica.`,
         interno_sotamente: false,
-        user_id: "system-admin-mock-id"
+        user_id: await getLoggedUserId()
       }
     });
 
@@ -156,7 +162,7 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
           project_id: projectId,
           acao: `Orçamento comercial v${version} foi excluído do sistema`,
           interno_sotamente: true,
-          user_id: "system-admin-mock-id"
+          user_id: await getLoggedUserId()
         }
       });
     });
@@ -185,12 +191,17 @@ export async function getQuotes() {
         validade: "desc"
       }
     });
-    // Convertemos campos Decimal para number para evitar problemas de serialização nas Server Actions
+    // Convertemos campos Decimal para number e datas para ISOString para evitar problemas de serialização nas Server Actions
     const serializedQuotes = quotes.map(q => ({
       ...q,
       subtotal: Number(q.subtotal),
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),
+      validade: q.validade instanceof Date ? q.validade.toISOString() : q.validade,
+      project: q.project ? {
+        ...q.project,
+        valor_previsto: Number(q.project.valor_previsto)
+      } : null,
       items: q.items.map(item => ({
         ...item,
         valor_unitario: Number(item.valor_unitario),
@@ -330,7 +341,7 @@ export async function createProjectForClient(clientId: string, companyId: string
         project_id: project.id,
         acao: `Projeto temporário criado para orçamento comercial de cliente existente`,
         interno_sotamente: true,
-        user_id: "system-admin-mock-id"
+        user_id: await getLoggedUserId()
       }
     });
 
@@ -386,7 +397,7 @@ export async function createQuickClientAndProject(data: {
           project_id: project.id,
           acao: `Lead avulso e projeto criados automaticamente para orçamento comercial`,
           interno_sotamente: true,
-          user_id: "system-admin-mock-id"
+          user_id: await getLoggedUserId()
         }
       });
 
@@ -400,6 +411,27 @@ export async function createQuickClientAndProject(data: {
     const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
     return { success: true, projectId: mockProjectId, simulated: true };
   }
+}
+
+// Auxiliar para buscar dinamicamente o ID do usuário logado real ou fallback
+async function getLoggedUserId(): Promise<string> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    }).catch(() => null);
+
+    if (session?.user?.id) {
+      return session.user.id;
+    }
+
+    const firstUser = await prisma.user.findFirst();
+    if (firstUser?.id) {
+      return firstUser.id;
+    }
+  } catch (error) {
+    console.warn("Erro ao obter usuário logado ou fallback, usando mock:", error);
+  }
+  return "system-admin-mock-id";
 }
 
 
