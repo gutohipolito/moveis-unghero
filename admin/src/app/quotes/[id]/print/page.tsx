@@ -122,7 +122,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
 
   try {
     // Busca do banco
-    quote = await prisma.quote.findUnique({
+    const dbQuote = await prisma.quote.findUnique({
       where: { id },
       include: {
         items: true,
@@ -134,12 +134,25 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
       }
     });
 
-    if (!quote) {
+    if (dbQuote) {
+      // Serializa decimais em number para evitar quebras no Intl.NumberFormat do Node.js em produção
+      quote = {
+        ...dbQuote,
+        subtotal: Number(dbQuote.subtotal),
+        desconto: Number(dbQuote.desconto),
+        valor_final: Number(dbQuote.valor_final),
+        items: dbQuote.items.map(item => ({
+          ...item,
+          valor_unitario: Number(item.valor_unitario),
+          valor_total: Number(item.valor_total)
+        }))
+      };
+    } else {
       quote = MOCK_QUOTES[id];
       isMock = true;
     }
   } catch (error) {
-    console.warn("Banco offline ao gerar impressão de proposta. Usando mock.");
+    console.warn("Banco offline ao gerar impressão de proposta. Usando mock:", error);
     quote = MOCK_QUOTES[id];
     isMock = true;
   }
