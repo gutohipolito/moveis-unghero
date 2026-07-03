@@ -32,6 +32,7 @@ async function main() {
   // 3. Criar usuários por cargos
   const userAdmin = await prisma.user.create({
     data: {
+      id: "system-admin-mock-id",
       name: "Gustavo Hipólito",
       email: "gustavo@moveisunghero.com.br",
       emailVerified: true,
