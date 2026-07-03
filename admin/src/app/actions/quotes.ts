@@ -379,6 +379,24 @@ export async function createQuickClientAndProject(data: {
     return { success: true, projectId: mockProjectId, simulated: true };
   }
 
+  if (data.companyId === "mock-company-id") {
+    try {
+      await prisma.company.upsert({
+        where: { id: "mock-company-id" },
+        update: {},
+        create: {
+          id: "mock-company-id",
+          nome: "Móveis Unghero",
+          cnpj: "13.415.510/0001-71",
+          telefone: "(54) 9 9997-1050",
+          email: "moveisunghero@gmail.com"
+        }
+      });
+    } catch (e) {
+      console.warn("Erro ao garantir empresa mock no banco real:", e);
+    }
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o cliente
@@ -443,6 +461,35 @@ async function getLoggedUserId(): Promise<string> {
     if (firstUser?.id) {
       return firstUser.id;
     }
+
+    // Se a base do Neon de produção estiver vazia (sem seed nem usuários), 
+    // garantimos a criação física da empresa e usuário de mock dinamicamente
+    // para impedir violações de restrição de chave estrangeira (FK) na Timeline.
+    await prisma.company.upsert({
+      where: { id: "mock-company-id" },
+      update: {},
+      create: {
+        id: "mock-company-id",
+        nome: "Móveis Unghero",
+        cnpj: "13.415.510/0001-71",
+        telefone: "(54) 9 9997-1050",
+        email: "moveisunghero@gmail.com"
+      }
+    });
+
+    const mockUser = await prisma.user.upsert({
+      where: { id: "system-admin-mock-id" },
+      update: {},
+      create: {
+        id: "system-admin-mock-id",
+        name: "Gustavo Hipólito (Demo)",
+        email: "gustavo@moveisunghero.com.br",
+        cargo: "ADMIN",
+        company_id: "mock-company-id"
+      }
+    });
+
+    return mockUser.id;
   } catch (error) {
     console.warn("Erro ao obter usuário logado ou fallback, usando mock:", error);
   }
