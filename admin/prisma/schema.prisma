@@ -38,6 +38,7 @@ model User {
   accounts      Account[]
   timeline      Timeline[]
   ambientes_sob_responsabilidade Environment[] @relation("UserResponsavel")
+  timecards     TimeCard[]
 }
 
 enum Role {
@@ -266,4 +267,16 @@ model Timeline {
   acao              String
   data              DateTime @default(now())
   interno_sotamente Boolean  @default(true)
+}
+
+model TimeCard {
+  id          String    @id @default(uuid())
+  user_id     String
+  user        User      @relation(fields: [user_id], references: [id])
+  data        DateTime  @default(now())
+  entrada     DateTime?
+  almoco_in   DateTime?
+  almoco_out  DateTime?
+  saida       DateTime?
+  horas       Decimal?  @db.Decimal(4, 2)
 }

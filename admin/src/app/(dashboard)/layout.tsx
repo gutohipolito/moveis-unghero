@@ -15,7 +15,8 @@ import {
   Users,
   Package,
   Truck,
-  ClipboardList
+  ClipboardList,
+  Clock
 } from "lucide-react";
 import { logoutSimulated } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
@@ -50,6 +51,7 @@ export default async function DashboardLayout({
     { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Principal" },
     { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
     { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
+    { name: "Portal do Colaborador", href: "/factory/portal", icon: Clock, section: "Operacional" },
     { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
     { name: "Logística & Entrega", href: "/logistica", icon: Truck, section: "Operacional" },
     { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
