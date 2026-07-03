@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
-  console.log("Iniciando criação de usuário Administrador real na Vercel...");
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const email = searchParams.get("email") || "admin@moveisunghero.com.br";
+  const password = searchParams.get("password") || "admin@unghero";
+
+  console.log(`Iniciando criação de usuário Administrador em produção para email: ${email}...`);
 
   try {
     // 1. Garante a empresa de demonstração
@@ -21,7 +25,7 @@ export async function GET() {
 
     // 2. Limpa qualquer usuário anterior com o mesmo e-mail para evitar duplicidade
     const existingUser = await prisma.user.findUnique({
-      where: { email: "admin@moveisunghero.com.br" }
+      where: { email }
     });
 
     if (existingUser) {
@@ -32,14 +36,14 @@ export async function GET() {
 
     // Limpa também qualquer credencial órfã ou residual associada a este e-mail na tabela Account
     await prisma.account.deleteMany({
-      where: { accountId: "admin@moveisunghero.com.br" }
+      where: { accountId: email }
     });
 
     // 3. Cadastra o novo usuário Administrador via better-auth api
     const newUser = await auth.api.signUpEmail({
       body: {
-        email: "admin@moveisunghero.com.br",
-        password: "admin@unghero",
+        email,
+        password,
         name: "Administrador Unghero",
         company_id: company.id,
         cargo: "ADMIN"
@@ -48,7 +52,7 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      message: "Administrador criado com sucesso em produção!", 
+      message: `Administrador com email "${email}" criado com sucesso em produção!`, 
       user: {
         email: newUser.user.email,
         cargo: newUser.user.cargo,
