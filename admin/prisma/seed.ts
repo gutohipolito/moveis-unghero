@@ -21,6 +21,7 @@ async function main() {
   // 2. Criar a empresa
   const company = await prisma.company.create({
     data: {
+      id: "mock-company-id",
       nome: "Móveis Unghero",
       cnpj: "12.345.678/0001-90",
       telefone: "(54) 3451-2299",
@@ -66,6 +67,7 @@ async function main() {
   // 4. Criar Clientes e Projetos
   const client1 = await prisma.client.create({
     data: {
+      id: "cli-1",
       company_id: company.id,
       nome: "Renato Silveira",
       cidade: "Caxias do Sul",
@@ -103,6 +105,7 @@ async function main() {
 
   const client2 = await prisma.client.create({
     data: {
+      id: "cli-2",
       company_id: company.id,
       nome: "Mariana Rezende",
       cidade: "Farroupilha",
@@ -140,6 +143,7 @@ async function main() {
 
   const client3 = await prisma.client.create({
     data: {
+      id: "cli-3",
       company_id: company.id,
       nome: "Juliana Castro",
       cidade: "Farroupilha",
