@@ -59,21 +59,43 @@ interface PrintPageProps {
 // Componentes padrões para o cabeçalho e rodapé do PDF comercial
 function PrintHeader({ pageNum, title }: { pageNum: string; title: string }) {
   return (
-    <div className="w-full flex items-center justify-between border-b-2 border-amber-500/20 pb-3 mb-6">
-      <div className="flex items-center gap-3 animate-in fade-in duration-300">
-        <span className="text-[9px] font-black text-amber-700 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10 tracking-widest">
-          PÁGINA {pageNum}
-        </span>
-        <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-widest">
+    <div className="w-full border-b-2 border-amber-500/20 pb-4 mb-6">
+      <div className="flex justify-between items-start">
+        {/* Lado Esquerdo: Logo & Nome */}
+        <div className="flex items-center gap-3">
+          <img 
+            src="/logo.png" 
+            alt="Móveis Unghero" 
+            className="h-10 w-auto object-contain"
+            style={{ filter: "sepia(1) saturate(1.5) hue-rotate(340deg) brightness(0.6)" }}
+          />
+          <div>
+            <h1 className="text-sm font-extrabold tracking-wider text-neutral-900 leading-tight">
+              MÓVEIS UNGHERO
+            </h1>
+            <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-semibold block">
+              Marcenaria Fina & Design Sob Medida
+            </span>
+          </div>
+        </div>
+
+        {/* Lado Direito: Informações da Empresa */}
+        <div className="text-[8px] text-neutral-500 text-right leading-relaxed font-medium">
+          <p><strong>Móveis Unghero LTDA</strong> // CNPJ 13.415.510/0001-71</p>
+          <p>Rua Cenira Cambruzzi, 155 - Planalto - Farroupilha - RS</p>
+          <p>Fone: (54) 9 9997-1050 // moveisunghero@gmail.com</p>
+        </div>
+      </div>
+
+      {/* Título da Seção Atual do PDF */}
+      <div className="flex justify-between items-center mt-3 pt-2 border-t border-neutral-100">
+        <h4 className="text-xs font-black text-neutral-800 uppercase tracking-widest">
           {title}
         </h4>
+        <span className="text-[9px] font-black text-amber-700 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10 tracking-widest">
+          FOLHA {pageNum}
+        </span>
       </div>
-      <img 
-        src="/logo.png" 
-        alt="Móveis Unghero" 
-        className="h-6 w-auto object-contain opacity-80"
-        style={{ filter: "sepia(1) saturate(1.5) hue-rotate(340deg) brightness(0.6)" }}
-      />
     </div>
   );
 }
@@ -82,10 +104,10 @@ function PrintFooter({ version }: { version: number }) {
   return (
     <div className="w-full border-t border-neutral-100 pt-3 mt-6 flex justify-between items-center text-[9px] text-neutral-400 font-medium">
       <div>
-        <strong>Móveis Unghero LTDA</strong> — CNPJ: 12.345.678/0001-90
+        Este documento é uma proposta comercial sujeita a alteração sem aviso prévio.
       </div>
       <div>
-        Proposta Comercial v{version} — unghero.com.br
+        Proposta Comercial v{version} — moveisunghero.com.br
       </div>
     </div>
   );
@@ -169,7 +191,48 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   const doc = parseDocument(client.observacoes || null);
 
   return (
-    <div className="bg-white text-black min-h-screen font-sans">
+    <div className="bg-slate-50 text-black min-h-screen font-sans print:bg-white">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @page {
+          size: A4 portrait;
+          margin: 0;
+        }
+        @media print {
+          body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+          }
+          .print-page {
+            height: 297mm !important;
+            width: 210mm !important;
+            max-height: 297mm !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            padding: 20mm !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+        }
+        @media screen {
+          .print-page {
+            width: 210mm;
+            height: 297mm;
+            margin: 20px auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          }
+        }
+      `}} />
       
       {/* Barra superior de controle (Oculta na impressão) */}
       <div className="print:hidden sticky top-0 bg-neutral-900 text-white p-4 flex items-center justify-between shadow-md z-50">
@@ -199,7 +262,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
       <div className="max-w-[800px] mx-auto p-4 md:p-8 space-y-8 print:p-0 print:space-y-0">
 
         {/* ================= PÁGINA 1: CAPA ================= */}
-        <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between items-center bg-radial-gradient from-neutral-50 to-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
+        <div className="print-page flex flex-col justify-between items-center bg-radial-gradient from-neutral-50 to-white">
           <div className="text-center pt-16">
             <div className="inline-flex p-4 rounded-3xl bg-amber-50 border border-amber-200 text-amber-600 mb-6">
               <Sparkles className="h-10 w-10" />
@@ -248,7 +311,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         </div>
 
         {/* ================= PÁGINA 2: CONCEITO & DESCRITIVO ================= */}
-        <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
+        <div className="print-page flex flex-col justify-between">
           <div className="space-y-6">
             <PrintHeader pageNum="02" title="Memorial Conceitual" />
 
@@ -273,7 +336,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         </div>
 
         {/* ================= PÁGINA 3: TABELA COMERCIAL ================= */}
-        <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
+        <div className="print-page flex flex-col justify-between">
           <div className="space-y-6">
             <PrintHeader pageNum="03" title="Detalhamento Comercial" />
 
@@ -326,7 +389,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         </div>
 
         {/* ================= PÁGINA 4: CONDIÇÕES & GARANTIA ================= */}
-        <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
+        <div className="print-page flex flex-col justify-between">
           <div className="space-y-6">
             <PrintHeader pageNum="04" title="Condições Gerais" />
 
@@ -366,7 +429,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         </div>
 
         {/* ================= PÁGINA 5: ASSINATURA ================= */}
-        <div className="w-full h-[1120px] border border-neutral-200 shadow-lg p-16 flex flex-col justify-between bg-white print:border-none print:shadow-none print:h-[297mm] print:w-[210mm] print:page-break-after-always break-after-page page-break-after-always">
+        <div className="print-page flex flex-col justify-between">
           <div className="space-y-6">
             <PrintHeader pageNum="05" title="Termo de Aceite" />
 
