@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { loginSimulated } from "@/app/actions/login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsLocalhost(
+        window.location.hostname === "localhost" || 
+        window.location.hostname === "127.0.0.1"
+      );
+    }
+  }, []);
 
   // Submit normal do Better Auth (tentativa real)
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -106,51 +116,59 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Divisor Decorativo */}
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-border/40"></div>
-            <span className="flex-shrink mx-4 text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
-              Demonstração
-            </span>
-            <div className="flex-grow border-t border-border/40"></div>
-          </div>
+          {/* Painel de Acesso Rápido Simulado APENAS em localhost */}
+          {isLocalhost && (
+            <>
+              {/* Divisor Decorativo */}
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-border/40"></div>
+                <span className="flex-shrink mx-4 text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+                  Demonstração
+                </span>
+                <div className="flex-grow border-t border-border/40"></div>
+              </div>
 
-          {/* Painel de Acesso Rápido Simulado */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2 text-xs text-amber-400 font-medium bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-lg">
-              <ShieldAlert className="h-4 w-4 flex-shrink-0" />
-              <span>Acesse com um clique para testar as telas da Fase 1:</span>
-            </div>
+              {/* Painel de Acesso Rápido Simulado */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 text-xs text-amber-400 font-medium bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-lg">
+                  <ShieldAlert className="h-4 w-4 flex-shrink-0" />
+                  <span>Acesse com um clique para testar as telas da Fase 1:</span>
+                </div>
 
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                onClick={() => handleDemoLogin("ADMIN")}
-                className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
-                disabled={loading}
-              >
-                <span>Administrador Geral (ADMIN)</span>
-                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    onClick={() => handleDemoLogin("ADMIN")}
+                    className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
+                    disabled={loading}
+                    type="button"
+                  >
+                    <span>Administrador Geral (ADMIN)</span>
+                    <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
 
-              <button
-                onClick={() => handleDemoLogin("COMERCIAL")}
-                className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
-                disabled={loading}
-              >
-                <span>Vendedor Comercial (COMERCIAL)</span>
-                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+                  <button
+                    onClick={() => handleDemoLogin("COMERCIAL")}
+                    className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
+                    disabled={loading}
+                    type="button"
+                  >
+                    <span>Vendedor Comercial (COMERCIAL)</span>
+                    <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
 
-              <button
-                onClick={() => handleDemoLogin("PRODUCAO")}
-                className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
-                disabled={loading}
-              >
-                <span>Chão de Fábrica (PRODUCAO)</span>
-                <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
-          </div>
+                  <button
+                    onClick={() => handleDemoLogin("PRODUCAO")}
+                    className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold rounded-lg bg-secondary border border-border/60 hover:border-primary/40 hover:bg-accent/40 text-left transition-all group text-foreground cursor-pointer"
+                    disabled={loading}
+                    type="button"
+                  >
+                    <span>Chão de Fábrica (PRODUCAO)</span>
+                    <ChevronRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer do Login */}
