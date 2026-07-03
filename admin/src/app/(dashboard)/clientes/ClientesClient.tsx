@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { 
   Users, 
@@ -323,7 +324,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Módulo de Leads & Clientes</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-black tracking-tight">Módulo de Leads & Clientes</h1>
+              <PrivacyToggle />
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">Gerenciamento completo, importação, exportação e fluxos do CRM.</p>
           </div>
         </div>

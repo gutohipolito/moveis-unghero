@@ -150,7 +150,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Pipeline de Vendas</span>
-            <span className="text-xl font-black text-neutral-900 tracking-tight block">
+            <span className="text-xl font-black text-neutral-900 tracking-tight block privacy-value">
               {formatCurrency(totalPipeline)}
             </span>
             <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
@@ -165,7 +165,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Receita Aprovada</span>
-            <span className="text-xl font-black text-neutral-900 tracking-tight block">
+            <span className="text-xl font-black text-neutral-900 tracking-tight block privacy-value">
               {formatCurrency(grossRevenue)}
             </span>
             <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
@@ -180,7 +180,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Custo Insumos (Est.)</span>
-            <span className="text-xl font-black text-neutral-900 tracking-tight block">
+            <span className="text-xl font-black text-neutral-900 tracking-tight block privacy-value">
               {formatCurrency(estimatedMaterialCost)}
             </span>
             <span className="text-[10px] text-muted-foreground font-bold block">
@@ -195,7 +195,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Lucro Líquido (Est.)</span>
-            <span className="text-xl font-black text-gradient-gold tracking-tight block">
+            <span className="text-xl font-black text-gradient-gold tracking-tight block privacy-value">
               {formatCurrency(netProfit)}
             </span>
             <span className="text-[10px] text-amber-600 font-bold block">
@@ -230,7 +230,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
                 <div key={col.id} className="space-y-1">
                   <div className="flex justify-between text-xs font-bold text-neutral-800">
                     <span>{col.label} ({col.count} {col.count === 1 ? "projeto" : "projetos"})</span>
-                    <span>{formatCurrency(col.value)}</span>
+                    <span className="privacy-value">{formatCurrency(col.value)}</span>
                   </div>
                   <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                     <div 
@@ -272,7 +272,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
                     </div>
                   </div>
                   <div className="w-32 text-right">
-                    <strong className="text-xs font-bold text-neutral-800 block">
+                    <strong className="text-xs font-bold text-neutral-800 block privacy-value">
                       {formatCurrency(orig.value)}
                     </strong>
                     <span className="text-[10px] text-muted-foreground block font-medium">
@@ -341,11 +341,11 @@ export default function BiClient({ initialProjects }: BiClientProps) {
                   <td className="p-3 text-center font-bold text-neutral-800">
                     {des.count}
                   </td>
-                  <td className="p-3 text-right font-bold text-neutral-900">
+                  <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
                     {formatCurrency(des.totalSold)}
                   </td>
                   <td className="p-3 text-right">
-                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-xs">
+                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-xs privacy-value">
                       {formatCurrency(des.comission)}
                     </span>
                   </td>

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import FinanceiroClient from "./FinanceiroClient";
+import PrivacyToggle from "@/components/PrivacyToggle";
 
 // Mock de faturas e parcelas financeiras
 const MOCK_INSTALLMENTS = [
@@ -153,9 +154,12 @@ export default async function FinanceiroPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gradient-gold">
-            Painel Financeiro Simplificado
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-gradient-gold">
+              Painel Financeiro Simplificado
+            </h1>
+            <PrivacyToggle />
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Acompanhe o faturamento, entradas, saldo devedor e controle as parcelas de recebíveis de todos os projetos.
           </p>

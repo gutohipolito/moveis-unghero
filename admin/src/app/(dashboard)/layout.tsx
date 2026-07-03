@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, getSessionSafe } from "@/lib/auth";
+import { PrivacyProvider } from "@/context/PrivacyContext";
 import { 
   Kanban, 
   Calendar, 
@@ -56,7 +57,8 @@ export default async function DashboardLayout({
   const sections = [...new Set(navItems.map(i => i.section))];
 
   return (
-    <div className="flex min-h-screen" style={{ background: "hsl(210 20% 98%)" }}>
+    <PrivacyProvider>
+      <div className="flex min-h-screen" style={{ background: "hsl(210 20% 98%)" }}>
 
       {/* ─── Sidebar Desktop ─── */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30"
@@ -172,6 +174,7 @@ export default async function DashboardLayout({
         </main>
       </div>
 
-    </div>
+      </div>
+    </PrivacyProvider>
   );
 }

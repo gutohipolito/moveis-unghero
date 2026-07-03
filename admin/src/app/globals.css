@@ -260,3 +260,12 @@ tbody td {
   padding: 0.875rem 1rem;
   font-size: 0.875rem; /* Ligeiramente maior (14px) */
 }
+
+/* Modo de Privacidade / Apresentação */
+.privacy-active .privacy-value {
+  filter: blur(6px) !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  transition: filter 0.2s ease-in-out;
+}
+

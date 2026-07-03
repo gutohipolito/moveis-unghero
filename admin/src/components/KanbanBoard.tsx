@@ -287,7 +287,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Total em Negociação</span>
-              <span className="text-xl font-black tracking-tight text-gradient-gold">
+              <span className="text-xl font-black tracking-tight text-gradient-gold privacy-value">
                 {formatCurrency(totalPipeline)}
               </span>
             </div>
@@ -334,7 +334,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     {colProjects.length}
                   </span>
                 </div>
-                <span className="text-xs font-black text-foreground">{formatCurrency(colSum)}</span>
+                <span className="text-xs font-black text-foreground privacy-value">{formatCurrency(colSum)}</span>
               </div>
 
               {/* Lista de Cards */}
@@ -405,7 +405,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                         <div className="flex items-center justify-between">
                           <div className="flex items-center text-foreground font-black text-sm">
                             <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary" />
-                            {formatCurrency(project.valor_previsto).replace("R$", "")}
+                            <span className="privacy-value">{formatCurrency(project.valor_previsto).replace("R$", "")}</span>
                           </div>
                           
                           <div className="flex items-center gap-1">

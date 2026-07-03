@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -163,13 +164,14 @@ export default function ClienteDetailsClient({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
+              <PrivacyToggle />
               <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
                 {parsed.tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
               </span>
             </div>
 
             {parsed.doc && (
-              <span className="text-xs font-semibold text-slate-500 block mt-0.5">
+              <span className="text-xs font-semibold text-slate-500 block mt-0.5 privacy-value">
                 {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
               </span>
             )}
@@ -295,7 +297,7 @@ export default function ClienteDetailsClient({
                         <strong className="text-sm font-bold text-foreground">Projeto Código: {p.id.toUpperCase()}</strong>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Atualizado recentemente</span>
-                          <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> Previsto: {p.valor_previsto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                          <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> Previsto: <span className="privacy-value">{p.valor_previsto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></span>
                         </div>
                       </div>
 
@@ -353,7 +355,7 @@ export default function ClienteDetailsClient({
                         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                           <div className="text-right">
                             <span className="text-xs font-medium text-muted-foreground block">Valor da Parcela</span>
-                            <strong className="text-sm font-black text-foreground">{pay.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
+                            <strong className="text-sm font-black text-foreground privacy-value">{pay.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
                           </div>
 
                           <div>

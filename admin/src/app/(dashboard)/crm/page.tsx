@@ -3,6 +3,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getClients } from "@/app/actions/cliente";
 import KanbanBoard from "@/components/KanbanBoard";
+import PrivacyToggle from "@/components/PrivacyToggle";
 
 // Lista de Leads/Projetos Fictícios para Mock caso o banco esteja vazio ou inacessível
 const MOCK_PROJECTS = [
@@ -160,9 +161,12 @@ export default async function CRMPage() {
       {/* Cabeçalho da Página */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Pipeline de Vendas (CRM)
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
+              Pipeline de Vendas (CRM)
+            </h1>
+            <PrivacyToggle />
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             {isMock 
               ? "Modo Demonstração: Exibindo projetos simulados da Móveis Unghero."

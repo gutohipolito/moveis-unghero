@@ -90,7 +90,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Faturamento Bruto</span>
-            <strong className="text-xl text-foreground font-extrabold">{formatCurrency(faturamentoTotal)}</strong>
+            <strong className="text-xl text-foreground font-extrabold privacy-value">{formatCurrency(faturamentoTotal)}</strong>
           </div>
         </Card>
 
@@ -100,7 +100,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Total Recebido</span>
-            <strong className="text-xl text-foreground font-extrabold">{formatCurrency(totalRecebido)}</strong>
+            <strong className="text-xl text-foreground font-extrabold privacy-value">{formatCurrency(totalRecebido)}</strong>
           </div>
         </Card>
 
@@ -110,7 +110,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Saldo a Receber</span>
-            <strong className="text-xl text-foreground font-extrabold">{formatCurrency(totalPendente)}</strong>
+            <strong className="text-xl text-foreground font-extrabold privacy-value">{formatCurrency(totalPendente)}</strong>
           </div>
         </Card>
 
@@ -120,7 +120,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Inadimplência</span>
-            <strong className="text-xl text-foreground font-extrabold">{formatCurrency(totalAtrasado)}</strong>
+            <strong className="text-xl text-foreground font-extrabold privacy-value">{formatCurrency(totalAtrasado)}</strong>
           </div>
         </Card>
       </div>
@@ -132,7 +132,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Faturamento em Valor Presente Líquido (VPL)</span>
             <p className="text-[11px] text-muted-foreground mt-0.5">Margem protegida descontando taxas de parcelamento longo.</p>
           </div>
-          <strong className="text-xl text-emerald-400 font-extrabold">{formatCurrency(faturamentoTotal * 0.88)}</strong>
+          <strong className="text-xl text-emerald-400 font-extrabold privacy-value">{formatCurrency(faturamentoTotal * 0.88)}</strong>
         </Card>
 
         <Card className="p-4 bg-white border border-border rounded-xl flex items-center justify-between shadow-md">
@@ -140,7 +140,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Comissões Calculadas sobre VPL (5% Médio)</span>
             <p className="text-[11px] text-muted-foreground mt-0.5">Comissões dos projetistas alinhadas com o lucro real da venda.</p>
           </div>
-          <strong className="text-xl text-amber-500 font-extrabold">{formatCurrency((faturamentoTotal * 0.88) * 0.05)}</strong>
+          <strong className="text-xl text-amber-500 font-extrabold privacy-value">{formatCurrency((faturamentoTotal * 0.88) * 0.05)}</strong>
         </Card>
       </div>
 
@@ -220,7 +220,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
                           {item.tipo}
                         </span>
                       </td>
-                      <td className="p-4 text-right font-black text-foreground">
+                      <td className="p-4 text-right font-black text-foreground privacy-value">
                         {formatCurrency(item.valor)}
                       </td>
                       <td className="p-4 text-center font-medium">

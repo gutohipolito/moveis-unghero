@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -243,9 +244,12 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
       {/* ─── CABEÇALHO ─── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
-            <Boxes className="h-7 w-7 text-primary" /> Estoque & Fornecedores
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
+              <Boxes className="h-7 w-7 text-primary" /> Estoque & Fornecedores
+            </h1>
+            <PrivacyToggle />
+          </div>
           <p className="text-sm text-muted-foreground">Controle de insumos e matérias-primas da Móveis Unghero.</p>
         </div>
 
@@ -276,7 +280,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
           </div>
           <div>
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Patrimônio em Estoque</span>
-            <strong className="text-2xl font-black text-foreground mt-0.5 block">
+            <strong className="text-2xl font-black text-foreground mt-0.5 block privacy-value">
               {totalStockValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </strong>
           </div>
@@ -418,10 +422,10 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                           {!isOutOfStock && isCritical && <span className="text-[9px] font-bold text-amber-600 block mt-1">Reposição Crítica!</span>}
                         </td>
                         <td className="p-4 text-center text-xs font-semibold text-muted-foreground">{item.minima} un</td>
-                        <td className="p-4 text-right text-xs font-medium text-slate-600">
+                        <td className="p-4 text-right text-xs font-medium text-slate-600 privacy-value">
                           {item.precoCusto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                         </td>
-                        <td className="p-4 text-right text-sm font-bold text-foreground">
+                        <td className="p-4 text-right text-sm font-bold text-foreground privacy-value">
                           {(item.quantidade * item.precoCusto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                         </td>
                         <td className="p-4 text-center">
