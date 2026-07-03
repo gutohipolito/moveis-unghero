@@ -33,12 +33,33 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     
-    // Tenta autenticação real. Como o banco pode estar offline localmente, 
-    // sugerimos o uso das ações rápidas simuladas
-    setTimeout(() => {
-      alert("Para testar localmente sem configurar banco de dados PostgreSQL, utilize um dos botões do painel 'Acesso Rápido de Demonstração' abaixo.");
+    try {
+      const res = await fetch("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data) {
+        // Login realizado com sucesso. O better-auth já definiu os cookies de sessão no navegador.
+        // Redireciona o usuário para o painel principal.
+        window.location.href = "/crm";
+      } else {
+        alert(data?.message || "E-mail ou senha incorretos.");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Erro no login:", err);
+      alert("Erro ao conectar ao servidor de autenticação.");
       setLoading(false);
-    }, 1000);
+    }
   };
 
   // Login de Demonstração
