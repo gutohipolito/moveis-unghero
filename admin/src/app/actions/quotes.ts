@@ -74,7 +74,15 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
         }
       });
 
-      return { quote, version: nextVersion };
+      return { 
+        quote: {
+          ...quote,
+          subtotal: Number(quote.subtotal),
+          desconto: Number(quote.desconto),
+          valor_final: Number(quote.valor_final),
+        },
+        version: nextVersion 
+      };
     });
 
     revalidatePath(`/projects/${projectId}`);
