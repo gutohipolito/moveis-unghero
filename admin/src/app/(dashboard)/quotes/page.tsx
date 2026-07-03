@@ -11,11 +11,13 @@ export default async function QuotesPage() {
   const companyId = session?.user?.company_id || "mock-company-id";
   const response = await getQuotes();
   const quotes = response.success ? response.data : [];
+  const isDbOffline = (response as any).simulated || false;
 
   return (
     <QuotesList 
       initialQuotes={quotes as any} 
       companyId={companyId} 
+      isDbOffline={isDbOffline}
     />
   );
 }

@@ -65,9 +65,10 @@ interface Quote {
 interface QuotesListProps {
   initialQuotes: Quote[];
   companyId: string;
+  isDbOffline?: boolean;
 }
 
-export default function QuotesList({ initialQuotes, companyId }: QuotesListProps) {
+export default function QuotesList({ initialQuotes, companyId, isDbOffline = false }: QuotesListProps) {
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
@@ -238,10 +239,23 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
       {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <FileText className="h-6 w-6 text-[hsl(28_85%_45%)]" />
-            Orçamentos
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <FileText className="h-6 w-6 text-[hsl(28_85%_45%)]" />
+              Orçamentos
+            </h1>
+            {isDbOffline ? (
+              <span className="text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 select-none">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Modo de Simulação
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 select-none">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Banco Neon Ativo
+              </span>
+            )}
+          </div>
           <p className="text-sm text-slate-500">
             Gerencie e visualize todas as propostas comerciais e orçamentos emitidos.
           </p>
