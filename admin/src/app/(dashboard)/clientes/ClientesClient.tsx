@@ -711,7 +711,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           setDocumento(val);
                           fetchCompanyByCnpj(val);
                         }} 
-                        placeholder="Apenas números ou formatado" 
+                         
                         className="border-slate-350 bg-white text-xs h-9 font-semibold text-slate-900 focus:border-primary" 
                       />
                     </div>
@@ -727,7 +727,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         required 
                         value={documento} 
                         onChange={e => setDocumento(e.target.value)} 
-                        placeholder="Apenas números ou formatado" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -741,7 +741,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       required 
                       value={nome} 
                       onChange={e => setNome(e.target.value)} 
-                      placeholder="Nome do cliente" 
+                       
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -753,7 +753,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
-                      placeholder="E-mail do cliente" 
+                       
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -764,7 +764,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       required 
                       value={telefone} 
                       onChange={e => setTelefone(e.target.value)} 
-                      placeholder="(54) 99999-9999" 
+                       
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -791,7 +791,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           setCep(val);
                           fetchAddressByCep(val);
                         }} 
-                        placeholder="95700-000" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -800,7 +800,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={endereco} 
                         onChange={e => setEndereco(e.target.value)} 
-                        placeholder="Avenida, rua, travessa..." 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -812,7 +812,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={numero} 
                         onChange={e => setNumero(e.target.value)} 
-                        placeholder="Número da casa/obra" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -821,7 +821,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={bairro} 
                         onChange={e => setBairro(e.target.value)} 
-                        placeholder="Nome do bairro" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -834,7 +834,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         required 
                         value={cidade} 
                         onChange={e => setCidade(e.target.value)} 
-                        placeholder="Cidade de instalação" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -843,7 +843,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={uf} 
                         onChange={e => setUf(e.target.value)} 
-                        placeholder="Estado" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 uppercase focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -899,7 +899,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <textarea 
                       value={obsImovel} 
                       onChange={e => setObsImovel(e.target.value)} 
-                      placeholder="Parede de gesso, umidade, reforço..." 
+                       
                       className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
                     />
                   </div>
@@ -909,7 +909,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <textarea 
                       value={obsEntrega} 
                       onChange={e => setObsEntrega(e.target.value)} 
-                      placeholder="Horários restritos, sem elevador..." 
+                       
                       className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
                     />
                   </div>
@@ -928,7 +928,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 <textarea
                   value={observacoes}
                   onChange={e => setObservacoes(e.target.value)}
-                  placeholder="Descreva o que o cliente busca para o projeto dele..."
+                  
                   className="w-full h-16 bg-slate-50 border border-slate-350 rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary focus:bg-white font-semibold resize-none text-slate-900"
                 />
               </div>
@@ -1001,7 +1001,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           setDocumento(val);
                           fetchCompanyByCnpj(val);
                         }} 
-                        placeholder="Apenas números ou formatado" 
+                         
                         className="border-slate-350 bg-white text-xs h-9 font-semibold text-slate-900 focus:border-primary" 
                       />
                     </div>
@@ -1017,7 +1017,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         required 
                         value={documento} 
                         onChange={e => setDocumento(e.target.value)} 
-                        placeholder="Apenas números ou formatado" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1031,7 +1031,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       required 
                       value={nome} 
                       onChange={e => setNome(e.target.value)} 
-                      placeholder="Nome do cliente" 
+                       
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -1043,7 +1043,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
-                      placeholder="E-mail do cliente" 
+                       
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -1054,7 +1054,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       required 
                       value={telefone} 
                       onChange={e => setTelefone(e.target.value)} 
-                      placeholder="(54) 99999-9999" 
+                       
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -1081,7 +1081,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           setCep(val);
                           fetchAddressByCep(val);
                         }} 
-                        placeholder="95700-000" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1090,7 +1090,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={endereco} 
                         onChange={e => setEndereco(e.target.value)} 
-                        placeholder="Avenida, rua, travessa..." 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1102,7 +1102,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={numero} 
                         onChange={e => setNumero(e.target.value)} 
-                        placeholder="Número da casa/obra" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1111,7 +1111,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={bairro} 
                         onChange={e => setBairro(e.target.value)} 
-                        placeholder="Nome do bairro" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1124,7 +1124,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         required 
                         value={cidade} 
                         onChange={e => setCidade(e.target.value)} 
-                        placeholder="Cidade de instalação" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1133,7 +1133,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       <Input 
                         value={uf} 
                         onChange={e => setUf(e.target.value)} 
-                        placeholder="Estado" 
+                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 uppercase focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1189,7 +1189,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <textarea 
                       value={obsImovel} 
                       onChange={e => setObsImovel(e.target.value)} 
-                      placeholder="Parede de gesso, umidade, reforço..." 
+                       
                       className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
                     />
                   </div>
@@ -1199,7 +1199,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <textarea 
                       value={obsEntrega} 
                       onChange={e => setObsEntrega(e.target.value)} 
-                      placeholder="Horários restritos, sem elevador..." 
+                       
                       className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
                     />
                   </div>
@@ -1218,7 +1218,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 <textarea
                   value={observacoes}
                   onChange={e => setObservacoes(e.target.value)}
-                  placeholder="Descreva o que o cliente busca para o projeto dele..."
+                  
                   className="w-full h-16 bg-slate-50 border border-slate-350 rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary focus:bg-white font-semibold resize-none text-slate-900"
                 />
               </div>
@@ -1251,7 +1251,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 <Input
                   required
                   type="number"
-                  placeholder="Valor estimado do projeto"
+                  
                   value={valorPrevisto}
                   onChange={e => setValorPrevisto(e.target.value)}
                   className="border-border bg-slate-50 text-sm"

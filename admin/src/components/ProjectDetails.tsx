@@ -799,7 +799,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   <div className="md:col-span-2 space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Observações do Projeto</label>
                     <textarea
-                      placeholder="Adicione observações operacionais internas do projeto..."
+                      
                       value={observacoesProj}
                       onChange={(e) => setObservacoesProj(e.target.value)}
                       rows={3}
@@ -1143,7 +1143,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             <div className="flex-1 space-y-2">
               <Input
                 required
-                placeholder="Adicione um comentário ou detalhe técnico no histórico..."
+                
                 value={timelineInput}
                 onChange={(e) => setTimelineInput(e.target.value)}
                 className="bg-black/10 border-border/40"
@@ -1574,7 +1574,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <Input
               required
-              placeholder="Nome do ambiente (ex. Cozinha, Suíte)"
+              
               value={newEnvForm.nome}
               onChange={(e) => setNewEnvForm({ ...newEnvForm, nome: e.target.value })}
             />
@@ -1624,7 +1624,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <Input
               required
-              placeholder="Nome do arquivo"
+              
               value={uploadForm.nome_arquivo}
               onChange={(e) => setUploadForm({ ...uploadForm, nome_arquivo: e.target.value })}
             />
@@ -1676,7 +1676,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               required
               type="number"
               step="0.01"
-              placeholder="Valor em reais"
+              
               value={newInstallmentForm.valor}
               onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, valor: e.target.value })}
             />
@@ -1737,7 +1737,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <Input
               required
-              placeholder="Título da tarefa ou visita"
+              
               value={newTaskForm.titulo}
               onChange={(e) => setNewTaskForm({ ...newTaskForm, titulo: e.target.value })}
             />
@@ -1749,7 +1749,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <textarea
               className="w-full bg-card/60 border border-border/60 hover:border-border rounded-lg p-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary placeholder-muted-foreground transition-all duration-200 resize-none h-16"
-              placeholder="Descreva observações técnicas relevantes ou requisitos..."
+              
               value={newTaskForm.descricao}
               onChange={(e) => setNewTaskForm({ ...newTaskForm, descricao: e.target.value })}
             />
@@ -1787,7 +1787,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </label>
               <Input
                 required
-                placeholder="Responsável pela execução"
+                
                 value={newTaskForm.responsavel}
                 onChange={(e) => setNewTaskForm({ ...newTaskForm, responsavel: e.target.value })}
               />

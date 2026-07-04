@@ -469,7 +469,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             </label>
             <Input
               required
-              placeholder="Título da tarefa ou visita"
+              
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
             />
@@ -481,7 +481,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             </label>
             <textarea
               className="w-full bg-card/60 border border-border/60 hover:border-border rounded-lg p-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary placeholder-muted-foreground transition-all duration-200 resize-none h-16"
-              placeholder="Descreva observações técnicas relevantes ou requisitos..."
+              
               value={form.descricao}
               onChange={(e) => setForm({ ...form, descricao: e.target.value })}
             />
@@ -519,7 +519,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
               </label>
               <Input
                 required
-                placeholder="Responsável pela execução"
+                
                 value={form.responsavel}
                 onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
               />
