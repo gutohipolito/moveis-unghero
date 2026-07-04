@@ -95,7 +95,8 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
     return { success: true, data: result };
   } catch (error) {
     console.error("Erro na Server Action createQuote:", error);
-    if (isDatabaseOffline()) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isDatabaseOffline() && !isProduction) {
       const simulatedVersion = Math.floor(Math.random() * 3) + 1;
       const mockQuote = {
         id: `simulated-quote-${Math.random().toString(36).substr(2, 9)}`,
@@ -143,7 +144,8 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
     return { success: true };
   } catch (error) {
     console.error("Erro na Server Action approveQuote:", error);
-    if (isDatabaseOffline()) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isDatabaseOffline() && !isProduction) {
       return { success: true, simulated: true };
     }
     return { success: false, error: error instanceof Error ? error.message : "Erro ao aprovar orçamento no banco remoto" };
@@ -177,7 +179,8 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
     return { success: true };
   } catch (error) {
     console.error("Erro na Server Action deleteQuote:", error);
-    if (isDatabaseOffline()) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isDatabaseOffline() && !isProduction) {
       return { success: true, simulated: true };
     }
     return { success: false, error: error instanceof Error ? error.message : "Erro ao excluir orçamento no banco remoto" };
@@ -219,7 +222,12 @@ export async function getQuotes() {
     }));
     return { success: true, data: serializedQuotes };
   } catch (error) {
-    console.warn("Erro ao buscar orçamentos, retornando dados simulados:", error);
+    console.warn("Erro ao buscar orçamentos:", error);
+    
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction) {
+      return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
+    }
     
     // Retorna dados simulados estruturados idênticos ao schema
     const mockQuotes = [
@@ -319,7 +327,11 @@ export async function getProjectsForQuotes() {
     }));
     return { success: true, data: serializedProjects };
   } catch (error) {
-    console.warn("Erro ao buscar projetos para orçamentos, retornando dados simulados:", error);
+    console.warn("Erro ao buscar projetos para orçamentos:", error);
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction) {
+      return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
+    }
     const mockProjects = [
       { id: "p-mock-1", status_geral: "ORCAMENTO", client: { id: "c-mock-1", nome: "José Carlos Silva", cidade: "Bento Gonçalves" } },
       { id: "p-mock-2", status_geral: "NEGOCIACAO", client: { id: "c-mock-2", nome: "Mariana Souza Santos", cidade: "Caxias do Sul" } },
@@ -331,7 +343,8 @@ export async function getProjectsForQuotes() {
 
 // Cria um projeto temporário para um cliente existente
 export async function createProjectForClient(clientId: string, companyId: string) {
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+  if (isDatabaseOffline() && !isProduction) {
     const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
     return { success: true, projectId: mockProjectId, simulated: true };
   }
@@ -358,7 +371,7 @@ export async function createProjectForClient(clientId: string, companyId: string
     return { success: true, projectId: project.id };
   } catch (error) {
     console.error("Erro na Server Action createProjectForClient:", error);
-    if (isDatabaseOffline()) {
+    if (isDatabaseOffline() && !isProduction) {
       const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
       return { success: true, projectId: mockProjectId, simulated: true };
     }
@@ -374,7 +387,8 @@ export async function createQuickClientAndProject(data: {
   cidade: string;
   companyId: string;
 }) {
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+  if (isDatabaseOffline() && !isProduction) {
     const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
     return { success: true, projectId: mockProjectId, simulated: true };
   }
@@ -438,7 +452,7 @@ export async function createQuickClientAndProject(data: {
     return { success: true, projectId: result.projectId };
   } catch (error) {
     console.error("Erro na Server Action createQuickClientAndProject:", error);
-    if (isDatabaseOffline()) {
+    if (isDatabaseOffline() && !isProduction) {
       const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
       return { success: true, projectId: mockProjectId, simulated: true };
     }

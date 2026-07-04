@@ -118,7 +118,9 @@ export async function loginCliente(data: { identificador: string; cpf: string })
   const idLimpo = data.identificador.trim().toLowerCase();
   const cpfLimpo = cleanCpf(data.cpf);
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     // Fallback de Demonstração (Mocks)
     if (idLimpo.includes("mariana") || idLimpo.includes("mari") || cpfLimpo === "12345678900" || idLimpo.includes("cli-2")) {
       cookieStore.set("cliente-session", "cli-2", { path: "/" });
@@ -145,23 +147,27 @@ export async function loginCliente(data: { identificador: string; cpf: string })
       cookieStore.set("cliente-session", client.id, {
         path: "/",
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: isProduction,
         maxAge: 60 * 60 * 24 // 1 dia
       });
       return { success: true, clientId: client.id };
     }
   } catch (error) {
-    console.warn("Banco offline no login de cliente. Usando fallback mockado.");
-    setDatabaseOffline(true);
+    console.warn("Banco offline no login de cliente.");
+    if (!isProduction) {
+      setDatabaseOffline(true);
+    }
   }
 
-  // Fallbacks de Demonstração (Mocks) se der erro no banco
-  if (idLimpo.includes("mariana") || idLimpo.includes("mari") || cpfLimpo === "12345678900" || idLimpo.includes("cli-2")) {
-    cookieStore.set("cliente-session", "cli-2", { path: "/" });
-    return { success: true, clientId: "cli-2" };
-  } else if (idLimpo.includes("juliana") || idLimpo.includes("ju") || cpfLimpo === "98765432100" || idLimpo.includes("cli-6")) {
-    cookieStore.set("cliente-session", "cli-6", { path: "/" });
-    return { success: true, clientId: "cli-6" };
+  // Fallbacks de Demonstração (Mocks) se der erro no banco (apenas fora de produção)
+  if (!isProduction) {
+    if (idLimpo.includes("mariana") || idLimpo.includes("mari") || cpfLimpo === "12345678900" || idLimpo.includes("cli-2")) {
+      cookieStore.set("cliente-session", "cli-2", { path: "/" });
+      return { success: true, clientId: "cli-2" };
+    } else if (idLimpo.includes("juliana") || idLimpo.includes("ju") || cpfLimpo === "98765432100" || idLimpo.includes("cli-6")) {
+      cookieStore.set("cliente-session", "cli-6", { path: "/" });
+      return { success: true, clientId: "cli-6" };
+    }
   }
 
   return { success: false, error: "Cliente não cadastrado no CRM ou dados inválidos." };
@@ -188,7 +194,9 @@ export async function logoutCliente() {
 
 // 1. Listar Clientes
 export async function getClients(companyId: string) {
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     return { success: true, clients: MOCK_CLIENTS };
   }
 
@@ -238,9 +246,12 @@ export async function getClients(companyId: string) {
 
     return { success: true, clients: formatted };
   } catch (error) {
-    console.warn("Falha de conexão na listagem de clientes. Usando mocks.");
-    setDatabaseOffline(true);
-    return { success: true, clients: MOCK_CLIENTS };
+    console.warn("Falha de conexão na listagem de clientes.");
+    if (!isProduction) {
+      setDatabaseOffline(true);
+      return { success: true, clients: MOCK_CLIENTS };
+    }
+    return { success: false, error: "Erro de conexão ao banco de dados", clients: [] };
   }
 }
 
@@ -514,7 +525,9 @@ const MOCK_PAYMENTS: Record<string, Payment[]> = {
 };
 
 export async function getClientDetailsAction(clientId: string) {
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     const client = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
     const activities = MOCK_ACTIVITIES[clientId] || [
       { id: `act-${Date.now()}`, data: new Date().toISOString(), titulo: "Acesso de Registro", descricao: "Visualização das informações cadastrais do cliente no sistema.", autor: "Sistema" }
@@ -543,13 +556,16 @@ export async function getClientDetailsAction(clientId: string) {
     });
 
     if (!client) {
-      const mockCli = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
-      return {
-        success: true,
-        client: mockCli,
-        activities: MOCK_ACTIVITIES[clientId] || [],
-        payments: MOCK_PAYMENTS[clientId] || []
-      };
+      if (!isProduction) {
+        const mockCli = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
+        return {
+          success: true,
+          client: mockCli,
+          activities: MOCK_ACTIVITIES[clientId] || [],
+          payments: MOCK_PAYMENTS[clientId] || []
+        };
+      }
+      return { success: false, error: "Cliente não encontrado" };
     }
 
     const formattedClient = {
@@ -586,13 +602,16 @@ export async function getClientDetailsAction(clientId: string) {
       payments: MOCK_PAYMENTS[clientId] || []
     };
   } catch (e) {
-    const mockCli = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
-    return {
-      success: true,
-      client: mockCli,
-      activities: MOCK_ACTIVITIES[clientId] || [],
-      payments: MOCK_PAYMENTS[clientId] || []
-    };
+    if (!isProduction) {
+      const mockCli = MOCK_CLIENTS.find(c => c.id === clientId) || MOCK_CLIENTS[0];
+      return {
+        success: true,
+        client: mockCli,
+        activities: MOCK_ACTIVITIES[clientId] || [],
+        payments: MOCK_PAYMENTS[clientId] || []
+      };
+    }
+    return { success: false, error: "Erro de conexão ao banco de dados" };
   }
 }
 

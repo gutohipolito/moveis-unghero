@@ -97,10 +97,12 @@ export default async function FinanceiroPage() {
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
-  let installments = [];
+  let installments: any[] = [];
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     installments = MOCK_INSTALLMENTS;
     isMock = true;
   } else {
@@ -126,15 +128,20 @@ export default async function FinanceiroPage() {
         }
       });
 
-      if (installments.length === 0) {
+      if (installments.length === 0 && !isProduction) {
         installments = MOCK_INSTALLMENTS;
         isMock = true;
       }
     } catch (error) {
-      console.warn("Falha de conexão com banco de dados no financeiro geral. Usando mocks.");
-      setDatabaseOffline(true);
-      installments = MOCK_INSTALLMENTS;
-      isMock = true;
+      console.warn("Falha de conexão com banco de dados no financeiro geral.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        installments = MOCK_INSTALLMENTS;
+        isMock = true;
+      } else {
+        installments = [];
+        isMock = false;
+      }
     }
   }
 

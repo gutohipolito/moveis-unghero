@@ -81,10 +81,12 @@ export default async function FactoryPage() {
     cargo: c.cargo
   })) : [];
 
-  let environments = [];
+  let environments: any[] = [];
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     environments = MOCK_ENVIRONMENTS;
     isMock = true;
   } else {
@@ -113,15 +115,20 @@ export default async function FactoryPage() {
         }
       });
 
-      if (environments.length === 0) {
+      if (environments.length === 0 && !isProduction) {
         environments = MOCK_ENVIRONMENTS;
         isMock = true;
       }
     } catch (error) {
-      console.warn("Falha de conexão com banco de dados no chão de fábrica. Usando mocks.");
-      setDatabaseOffline(true);
-      environments = MOCK_ENVIRONMENTS;
-      isMock = true;
+      console.warn("Falha de conexão com banco de dados no chão de fábrica.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        environments = MOCK_ENVIRONMENTS;
+        isMock = true;
+      } else {
+        environments = [];
+        isMock = false;
+      }
     }
   }
 

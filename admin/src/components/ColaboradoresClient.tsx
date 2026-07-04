@@ -289,7 +289,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
               <div className="space-y-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nome Completo</label>
                 <Input 
-                  placeholder="Ex: João da Silva"
+                  placeholder="Nome completo do colaborador"
                   className="bg-slate-50 border-slate-200 text-sm h-10 rounded-lg text-slate-800"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -301,7 +301,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">E-mail Corporativo</label>
                 <Input 
                   type="email"
-                  placeholder="Ex: joao.marceneiro@moveisunghero.com.br"
+                  placeholder="E-mail profissional"
                   className="bg-slate-50 border-slate-200 text-sm h-10 rounded-lg text-slate-800"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

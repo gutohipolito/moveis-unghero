@@ -3,6 +3,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import ProjectDetails from "@/components/ProjectDetails";
+import { notFound } from "next/navigation";
 
 // Dados fictícios detalhados para caso o banco de dados esteja vazio ou inacessível
 const MOCK_DETAILS: Record<string, any> = {
@@ -219,7 +220,9 @@ export default async function ProjectPage({ params }: RouteParams) {
   let project = null;
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     project = MOCK_DETAILS[id];
     isMock = true;
   } else {
@@ -253,20 +256,29 @@ export default async function ProjectPage({ params }: RouteParams) {
         }
       });
 
-      if (!project) {
+      if (!project && !isProduction) {
         project = MOCK_DETAILS[id];
         isMock = true;
       }
     } catch (error) {
-      console.warn("Falha de conexão com banco de dados na busca de detalhes do projeto, usando mocks.");
-      setDatabaseOffline(true);
-      project = MOCK_DETAILS[id];
-      isMock = true;
+      console.warn("Falha de conexão com banco de dados na busca de detalhes do projeto.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        project = MOCK_DETAILS[id];
+        isMock = true;
+      } else {
+        project = null;
+        isMock = false;
+      }
     }
   }
 
-  // Se não houver projeto no banco nem nos mocks, cria um mock básico sob demanda
+  // Se não houver projeto no banco nem nos mocks
   if (!project) {
+    if (isProduction) {
+      return notFound();
+    }
+    // Cria um mock básico sob demanda apenas fora de produção
     project = {
       id: id,
       valor_previsto: 55000.0,

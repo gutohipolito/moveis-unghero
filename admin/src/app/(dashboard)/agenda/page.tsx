@@ -78,11 +78,13 @@ export default async function AgendaPage() {
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
-  let tasks = [];
-  let projects = [];
+  let tasks: any[] = [];
+  let projects: any[] = [];
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     tasks = MOCK_EVENTS;
     projects = MOCK_PROJECTS;
     isMock = true;
@@ -120,19 +122,25 @@ export default async function AgendaPage() {
         }
       });
 
-      if (tasks.length === 0) {
+      if (tasks.length === 0 && !isProduction) {
         tasks = MOCK_EVENTS;
         isMock = true;
       }
-      if (projects.length === 0) {
+      if (projects.length === 0 && !isProduction) {
         projects = MOCK_PROJECTS;
       }
     } catch (error) {
-      console.warn("Falha de conexão com banco de dados na busca da agenda. Usando mocks.");
-      setDatabaseOffline(true);
-      tasks = MOCK_EVENTS;
-      projects = MOCK_PROJECTS;
-      isMock = true;
+      console.warn("Falha de conexão com banco de dados na busca da agenda.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        tasks = MOCK_EVENTS;
+        projects = MOCK_PROJECTS;
+        isMock = true;
+      } else {
+        tasks = [];
+        projects = [];
+        isMock = false;
+      }
     }
   }
 

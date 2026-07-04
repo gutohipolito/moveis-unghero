@@ -41,7 +41,9 @@ export default async function PortalColaboradorPage() {
     metaSemanal: 6
   };
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     tasks = MOCK_TASKS;
     timeCards = [
       {
@@ -97,23 +99,28 @@ export default async function PortalColaboradorPage() {
         metrics = metricsRes.metrics;
       }
 
-      // Se não tiver tarefas vinculadas de verdade, preenche com mocks para preencher o visual do cliente
-      if (tasks.length === 0) {
+      // Se não tiver tarefas vinculadas de verdade, preenche com mocks para preencher o visual do cliente (apenas fora de produção)
+      if (tasks.length === 0 && !isProduction) {
         tasks = MOCK_TASKS;
         metrics.ativos += MOCK_TASKS.length;
         metrics.totalGeral += MOCK_TASKS.length;
       }
 
     } catch (error) {
-      console.warn("Falha de conexão com banco de dados no Portal do Colaborador. Usando mocks.");
-      tasks = MOCK_TASKS;
-      timeCards = [];
-      metrics = {
-        ativos: 2,
-        finalizadosSemana: 3,
-        totalGeral: 5,
-        metaSemanal: 6
-      };
+      console.warn("Falha de conexão com banco de dados no Portal do Colaborador.");
+      if (!isProduction) {
+        tasks = MOCK_TASKS;
+        timeCards = [];
+        metrics = {
+          ativos: 2,
+          finalizadosSemana: 3,
+          totalGeral: 5,
+          metaSemanal: 6
+        };
+      } else {
+        tasks = [];
+        timeCards = [];
+      }
     }
   }
 

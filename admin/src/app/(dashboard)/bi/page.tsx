@@ -118,10 +118,12 @@ export default async function BIPage() {
   const session = await getSessionSafe(await headers()).catch(() => null);
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
-  let projects = [];
+  let projects: any[] = [];
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     projects = MOCK_PROJECTS;
     isMock = true;
   } else {
@@ -137,15 +139,20 @@ export default async function BIPage() {
         }
       });
 
-      if (projects.length === 0) {
+      if (projects.length === 0 && !isProduction) {
         projects = MOCK_PROJECTS;
         isMock = true;
       }
     } catch (error) {
-      console.warn("Conexão ao banco falhou no carregamento do BI, usando dados simulados.");
-      setDatabaseOffline(true);
-      projects = MOCK_PROJECTS;
-      isMock = true;
+      console.warn("Conexão ao banco falhou no carregamento do BI.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        projects = MOCK_PROJECTS;
+        isMock = true;
+      } else {
+        projects = [];
+        isMock = false;
+      }
     }
   }
 

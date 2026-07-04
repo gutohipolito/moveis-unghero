@@ -60,10 +60,12 @@ export default async function LogisticaPage() {
   const session = await getSessionSafe(await headers()).catch(() => null);
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
-  let projects = [];
+  let projects: any[] = [];
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     projects = MOCK_OPERATIONAL_PROJECTS;
     isMock = true;
   } else {
@@ -83,15 +85,20 @@ export default async function LogisticaPage() {
         }
       });
 
-      if (projects.length === 0) {
+      if (projects.length === 0 && !isProduction) {
         projects = MOCK_OPERATIONAL_PROJECTS;
         isMock = true;
       }
     } catch (error) {
-      console.warn("Conexão ao banco falhou no carregamento da Logística, usando dados simulados.");
-      setDatabaseOffline(true);
-      projects = MOCK_OPERATIONAL_PROJECTS;
-      isMock = true;
+      console.warn("Conexão ao banco falhou no carregamento da Logística.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        projects = MOCK_OPERATIONAL_PROJECTS;
+        isMock = true;
+      } else {
+        projects = [];
+        isMock = false;
+      }
     }
   }
 

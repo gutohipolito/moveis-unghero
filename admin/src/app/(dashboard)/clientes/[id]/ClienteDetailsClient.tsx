@@ -390,7 +390,7 @@ export default function ClienteDetailsClient({
                       required
                       value={newTitle}
                       onChange={e => setNewTitle(e.target.value)}
-                      placeholder="Ex: Visita na obra realizada, Ligação feita"
+                      placeholder="Assunto da interação ou reunião"
                       className="border-border bg-slate-50 text-xs py-1"
                     />
                   </div>

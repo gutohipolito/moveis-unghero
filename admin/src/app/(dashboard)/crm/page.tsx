@@ -105,10 +105,12 @@ export default async function CRMPage() {
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
 
-  let projects = [];
+  let projects: any[] = [];
   let isMock = false;
 
-  if (isDatabaseOffline()) {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isDatabaseOffline() && !isProduction) {
     projects = MOCK_PROJECTS;
     isMock = true;
   } else {
@@ -125,16 +127,21 @@ export default async function CRMPage() {
         }
       });
 
-      // Se a busca der certo mas o banco estiver vazio, usa os mocks para visualização
-      if (projects.length === 0) {
+      // Se a busca der certo mas o banco estiver vazio, usa os mocks para visualização (apenas fora de produção)
+      if (projects.length === 0 && !isProduction) {
         projects = MOCK_PROJECTS;
         isMock = true;
       }
     } catch (error) {
-      console.warn("Conexão ao banco falhou no carregamento do CRM, usando dados simulados.");
-      setDatabaseOffline(true);
-      projects = MOCK_PROJECTS;
-      isMock = true;
+      console.warn("Conexão ao banco falhou no carregamento do CRM.");
+      if (!isProduction) {
+        setDatabaseOffline(true);
+        projects = MOCK_PROJECTS;
+        isMock = true;
+      } else {
+        projects = [];
+        isMock = false;
+      }
     }
   }
 
