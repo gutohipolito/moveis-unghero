@@ -60,7 +60,7 @@ export function Dialog({ isOpen, onClose, children, className }: DialogProps) {
       onCancel={handleCancel}
       onClick={handleClick}
       className={cn(
-        "rounded-2xl border border-border/80 bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-xs outline-hidden focus:outline-hidden w-[92vw] max-w-lg fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 open:animate-in open:fade-in open:zoom-in-95 max-h-[90vh] flex flex-col",
+        "rounded-2xl border border-border/80 bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-xs outline-hidden focus:outline-hidden w-[92vw] max-w-lg fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 open:animate-in open:fade-in open:zoom-in-95 max-h-[90vh] open:flex open:flex-col",
         className
       )}
     >
