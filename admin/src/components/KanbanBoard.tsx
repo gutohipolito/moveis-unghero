@@ -63,14 +63,14 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
-  { id: "LEAD", title: "Leads", color: "border-t-amber-500 bg-amber-500/5 text-amber-400" },
-  { id: "ORCAMENTO", title: "Orçamentos", color: "border-t-orange-500 bg-orange-500/5 text-orange-400" },
-  { id: "NEGOCIACAO", title: "Negociação", color: "border-t-blue-500 bg-blue-500/5 text-blue-400" },
-  { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica", color: "border-t-purple-500 bg-purple-500/5 text-purple-400" },
-  { id: "APROVADO", title: "Aprovados", color: "border-t-emerald-500 bg-emerald-500/5 text-emerald-400" },
-  { id: "PRODUCAO", title: "Produção", color: "border-t-cyan-500 bg-cyan-500/5 text-cyan-400" },
-  { id: "INSTALACAO", title: "Instalação", color: "border-t-indigo-500 bg-indigo-500/5 text-indigo-400" },
-  { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-400" }
+  { id: "LEAD", title: "Leads", color: "border-t-amber-500 bg-amber-500/5 text-amber-700" },
+  { id: "ORCAMENTO", title: "Orçamentos", color: "border-t-orange-500 bg-orange-500/5 text-orange-700" },
+  { id: "NEGOCIACAO", title: "Negociação", color: "border-t-blue-500 bg-blue-500/5 text-blue-700" },
+  { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica", color: "border-t-purple-500 bg-purple-500/5 text-purple-700" },
+  { id: "APROVADO", title: "Aprovados", color: "border-t-emerald-500 bg-emerald-500/5 text-emerald-700" },
+  { id: "PRODUCAO", title: "Produção", color: "border-t-cyan-500 bg-cyan-500/5 text-cyan-700" },
+  { id: "INSTALACAO", title: "Instalação", color: "border-t-indigo-500 bg-indigo-500/5 text-indigo-700" },
+  { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-600" }
 ];
 
   const getProductionProgress = (projId: string, status: string) => {
@@ -294,6 +294,21 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     }
   };
 
+  const handleMoveRight = async (project: Project) => {
+    const currentIdx = COLUMNS.findIndex((col) => col.id === project.status_geral);
+    if (currentIdx === -1 || currentIdx === COLUMNS.length - 1) return;
+
+    const targetStatus = COLUMNS[currentIdx + 1].id;
+    const originalProjects = [...projects];
+    setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: targetStatus } : p)));
+
+    const result = await updateProjectStatus(project.id, targetStatus);
+    if (!result.success) {
+      setProjects(originalProjects);
+      alert("Falha ao avançar o projeto. Tente novamente.");
+    }
+  };
+
   // resetLeadForm
   const resetLeadForm = () => {
     setSelectedClientId("");
@@ -416,19 +431,19 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Total em Negociação</span>
-              <span className="text-xl font-black tracking-tight text-gradient-gold privacy-value">
+              <span className="kpi-label">Total em Negociação</span>
+              <span className="kpi-value text-gradient-gold privacy-value">
                 {formatCurrency(totalPipeline)}
               </span>
             </div>
           </div>
           <div className="flex items-center border-l border-border pl-6">
             <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mr-3">
-              <UserCheck className="h-5 w-5 text-emerald-400" />
+              <UserCheck className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Projetos Ativos</span>
-              <span className="text-xl font-black tracking-tight text-emerald-400">
+              <span className="kpi-label">Projetos Ativos</span>
+              <span className="kpi-value text-emerald-600">
                 {activeProjectsCount}
               </span>
             </div>
@@ -441,7 +456,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       </div>
 
       {/* Grid de Colunas Kanban */}
-      <div className="flex gap-4 overflow-x-auto pb-4 select-none min-h-[500px]">
+      <div className="kanban-scroll select-none min-h-[420px] md:min-h-[500px]">
         {COLUMNS.map((col) => {
           const colProjects = projects.filter((p) => p.status_geral === col.id);
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
@@ -452,24 +467,24 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`flex-shrink-0 w-80 rounded-xl border border-border bg-slate-100/50 flex flex-col transition-all duration-300 ${
-                isOver ? "bg-slate-200/50 border-primary/20 scale-[1.01] shadow-lg" : ""
+              className={`kanban-column rounded-xl border border-border bg-slate-50/80 flex flex-col transition-all duration-300 ${
+                isOver ? "bg-slate-100 border-primary/30 scale-[1.01] shadow-lg" : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
-              <div className={`p-4 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-border bg-slate-100/80`}>
-                <div className="flex items-center space-x-2">
-                  <span className="font-extrabold text-xs uppercase tracking-wider">{col.title}</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              <div className={`p-3.5 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-border`}>
+                <div className="flex items-center space-x-2 min-w-0">
+                  <span className="font-bold text-xs uppercase tracking-wide truncate">{col.title}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                     {colProjects.length}
                   </span>
                 </div>
-                <span className="text-xs font-black text-foreground privacy-value">{formatCurrency(colSum)}</span>
+                <span className="text-xs font-bold text-foreground privacy-value shrink-0 ml-2">{formatCurrency(colSum)}</span>
               </div>
 
               {/* Lista de Cards */}
               <div 
-                className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[600px] min-h-[400px]"
+                className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[55vh] md:max-h-[600px] min-h-[280px] md:min-h-[400px]"
                 onDragLeave={() => setDragOverColumn(null)}
               >
                 {colProjects.length === 0 ? (
@@ -538,6 +553,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                           </div>
                           
                           <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveRight(project)}
+                              className="md:hidden inline-flex items-center justify-center p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+                              title="Avançar etapa"
+                            >
+                              <ArrowRight className="h-4 w-4" />
+                            </button>
                             <button
                               type="button"
                               onClick={() => openEditModal(project)}

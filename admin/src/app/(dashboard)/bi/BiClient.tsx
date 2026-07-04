@@ -149,8 +149,8 @@ export default function BiClient({ initialProjects }: BiClientProps) {
         
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Pipeline de Vendas</span>
-            <span className="text-xl font-black text-neutral-900 tracking-tight block privacy-value">
+            <span className="kpi-label">Pipeline de Vendas</span>
+            <span className="kpi-value privacy-value">
               {formatCurrency(totalPipeline)}
             </span>
             <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
@@ -164,8 +164,8 @@ export default function BiClient({ initialProjects }: BiClientProps) {
 
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Receita Aprovada</span>
-            <span className="text-xl font-black text-neutral-900 tracking-tight block privacy-value">
+            <span className="kpi-label">Receita Aprovada</span>
+            <span className="kpi-value privacy-value">
               {formatCurrency(grossRevenue)}
             </span>
             <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
@@ -179,8 +179,8 @@ export default function BiClient({ initialProjects }: BiClientProps) {
 
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Custo Insumos (Est.)</span>
-            <span className="text-xl font-black text-neutral-900 tracking-tight block privacy-value">
+            <span className="kpi-label">Custo Insumos (Est.)</span>
+            <span className="kpi-value privacy-value">
               {formatCurrency(estimatedMaterialCost)}
             </span>
             <span className="text-[10px] text-muted-foreground font-bold block">
@@ -194,8 +194,8 @@ export default function BiClient({ initialProjects }: BiClientProps) {
 
         <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Lucro Líquido (Est.)</span>
-            <span className="text-xl font-black text-gradient-gold tracking-tight block privacy-value">
+            <span className="kpi-label">Lucro Líquido (Est.)</span>
+            <span className="kpi-value text-gradient-gold privacy-value">
               {formatCurrency(netProfit)}
             </span>
             <span className="text-[10px] text-amber-600 font-bold block">

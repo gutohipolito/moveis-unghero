@@ -40,12 +40,12 @@ interface FactoryClientProps {
 }
 
 const COLUMNS = [
-  { id: "PRONTO_PRODUCAO", name: "Fila de Produção", bg: "bg-purple-500/10 text-purple-400 border-purple-500/20", icon: ClipboardList },
-  { id: "EM_CORTE", name: "Corte / Usinagem", bg: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20", icon: Layers },
-  { id: "MONTAGEM_FABRICA", name: "Montagem Fábrica", bg: "bg-orange-500/10 text-orange-400 border-orange-500/20", icon: Wrench },
-  { id: "PRONTO_ENTREGA", name: "Pronto p/ Entrega", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: Package },
-  { id: "EM_INSTALACAO", name: "Instalação", bg: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20", icon: Truck },
-  { id: "FINALIZADO", name: "Finalizado", bg: "bg-slate-500/10 text-slate-400 border-slate-500/20", icon: CheckCircle2 }
+  { id: "PRONTO_PRODUCAO", name: "Fila de Produção", bg: "bg-purple-500/10 text-purple-700 border-purple-500/20", icon: ClipboardList },
+  { id: "EM_CORTE", name: "Corte / Usinagem", bg: "bg-cyan-500/10 text-cyan-700 border-cyan-500/20", icon: Layers },
+  { id: "MONTAGEM_FABRICA", name: "Montagem Fábrica", bg: "bg-orange-500/10 text-orange-700 border-orange-500/20", icon: Wrench },
+  { id: "PRONTO_ENTREGA", name: "Pronto p/ Entrega", bg: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: Package },
+  { id: "EM_INSTALACAO", name: "Instalação", bg: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20", icon: Truck },
+  { id: "FINALIZADO", name: "Finalizado", bg: "bg-slate-500/10 text-slate-600 border-slate-500/20", icon: CheckCircle2 }
 ];
 
 const ENVIRONMENT_ICONS: Record<string, string> = {
@@ -129,8 +129,8 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
             <ClipboardList className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Total na Fábrica</span>
-            <strong className="text-xl text-foreground font-extrabold">{totalPecas} cômodos</strong>
+            <span className="kpi-label">Total na Fábrica</span>
+            <strong className="kpi-value">{totalPecas} cômodos</strong>
           </div>
         </Card>
 
@@ -139,8 +139,8 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Em Corte/Usinagem</span>
-            <strong className="text-xl text-foreground font-extrabold">{emCorteCount} cômodos</strong>
+            <span className="kpi-label">Em Corte/Usinagem</span>
+            <strong className="kpi-value">{emCorteCount} cômodos</strong>
           </div>
         </Card>
 
@@ -149,8 +149,8 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
             <Wrench className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Em Montagem</span>
-            <strong className="text-xl text-foreground font-extrabold">{emMontagemCount} peças</strong>
+            <span className="kpi-label">Em Montagem</span>
+            <strong className="kpi-value">{emMontagemCount} peças</strong>
           </div>
         </Card>
 
@@ -159,14 +159,14 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
             <Package className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Pronto p/ Expedição</span>
-            <strong className="text-xl text-foreground font-extrabold">{prontoEntregaCount} cômodos</strong>
+            <span className="kpi-label">Pronto p/ Expedição</span>
+            <strong className="kpi-value">{prontoEntregaCount} cômodos</strong>
           </div>
         </Card>
       </div>
 
       {/* Grid de Colunas Kanban de Produção */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-start">
+      <div className="kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-start">
         {COLUMNS.map(col => {
           const colItems = environments.filter(item => item.status === col.id);
           const Icon = col.icon;
@@ -176,7 +176,7 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="flex flex-col bg-slate-50 border border-border rounded-xl overflow-hidden min-h-[480px]"
+              className="kanban-column lg:w-auto flex flex-col bg-slate-50 border border-border rounded-xl overflow-hidden min-h-[320px] lg:min-h-[420px]"
             >
               {/* Cabeçalho da Coluna */}
               <div className={`p-3.5 flex items-center justify-between border-b border-border/50 bg-slate-50 ${col.bg} font-bold text-xs uppercase tracking-wider`}>

@@ -3,6 +3,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import BiClient from "./BiClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
+import PageHeader from "@/components/PageHeader";
 
 // Dados Fictícios de Projetos para Mock caso o banco esteja inacessível
 const MOCK_PROJECTS = [
@@ -173,24 +174,19 @@ export default async function BIPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/40 pb-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-black tracking-tight text-neutral-900">
-              Relatórios & BI Executivo
-            </h1>
-            <PrivacyToggle />
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Análise e inteligência de mercado para marcenaria de luxo da Móveis Unghero.
-          </p>
-        </div>
-        {isMock && (
-          <span className="self-start md:self-center text-xs bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-full font-bold">
-            Simulação de Dados (Offline)
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Relatórios & BI"
+        description="Análise e inteligência de mercado para a operação comercial da Móveis Unghero."
+        badge={
+          isMock ? (
+            <span className="badge-meta px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
+              Simulação
+            </span>
+          ) : undefined
+        }
+      >
+        <PrivacyToggle />
+      </PageHeader>
 
       <BiClient initialProjects={formattedProjects} />
     </div>

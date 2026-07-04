@@ -445,21 +445,22 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     <div className="space-y-6">
       
       {/* Topbar e Ações Gerais */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 glass-card gap-6 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl">
-            <Users className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-black tracking-tight">Módulo de Leads & Clientes</h1>
-              <PrivacyToggle />
+      <div className="page-header">
+        <div className="page-header-main">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl shrink-0">
+              <Users className="h-6 w-6 text-primary" />
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">Gerenciamento completo, importação, exportação e fluxos do CRM.</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="page-title">Leads & Clientes</h1>
+                <PrivacyToggle />
+              </div>
+              <p className="page-subtitle">Gerenciamento completo, importação, exportação e fluxos do CRM.</p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+          <div className="page-header-actions">
           <Button onClick={handleImportClick} variant="outline" className="text-xs font-bold gap-2">
             <Upload className="h-4 w-4" /> Importar JSON
           </Button>
@@ -478,6 +479,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} className="font-bold btn-metallic gap-1.5">
             <Plus className="h-4.5 w-4.5" /> Novo Lead / Cliente
           </Button>
+          </div>
         </div>
       </div>
 

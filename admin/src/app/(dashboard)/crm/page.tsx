@@ -4,6 +4,7 @@ import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getClients } from "@/app/actions/cliente";
 import KanbanBoard from "@/components/KanbanBoard";
 import PrivacyToggle from "@/components/PrivacyToggle";
+import PageHeader from "@/components/PageHeader";
 
 // Lista de Leads/Projetos Fictícios para Mock caso o banco esteja vazio ou inacessível
 const MOCK_PROJECTS = [
@@ -165,22 +166,16 @@ export default async function CRMPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho da Página */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-900">
-              Pipeline de Vendas (CRM)
-            </h1>
-            <PrivacyToggle />
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isMock 
-              ? "Modo Demonstração: Exibindo projetos simulados da Móveis Unghero."
-              : "Gerencie as etapas de negociação e fabricação dos móveis sob medida."}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Pipeline de Vendas"
+        description={
+          isMock
+            ? "Modo demonstração: exibindo projetos simulados da Móveis Unghero."
+            : "Gerencie as etapas de negociação e fabricação dos móveis sob medida."
+        }
+      >
+        <PrivacyToggle />
+      </PageHeader>
 
       {/* Board Kanban Interativo */}
       <KanbanBoard 

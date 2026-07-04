@@ -3,6 +3,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import FactoryClient from "./FactoryClient";
+import PageHeader from "@/components/PageHeader";
 
 // Mock de dados para cômodos na fábrica
 const MOCK_ENVIRONMENTS = [
@@ -146,21 +147,17 @@ export default async function FactoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gradient-gold">
-            Controle de Produção (Chão de Fábrica)
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Acompanhe em tempo real as etapas de fabricação e montagem dos cômodos liberados para corte.
-          </p>
-        </div>
-        {isMock && (
-          <span className="self-start text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded font-semibold tracking-wide uppercase">
-            Modo de Demonstração
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Chão de Fábrica"
+        description="Acompanhe em tempo real as etapas de fabricação e montagem dos cômodos liberados para produção."
+        badge={
+          isMock ? (
+            <span className="badge-meta px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
+              Demonstração
+            </span>
+          ) : undefined
+        }
+      />
 
       <FactoryClient initialEnvironments={formattedEnvs} colaboradores={colaboradores} />
     </div>
