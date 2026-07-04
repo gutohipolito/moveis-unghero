@@ -3,14 +3,33 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get("email") || "admin@moveisunghero.com.br";
-  const password = searchParams.get("password") || "admin@unghero";
+  const setupSecret = process.env.ADMIN_SETUP_SECRET;
+  if (!setupSecret) {
+    return NextResponse.json(
+      { success: false, error: "ADMIN_SETUP_SECRET não configurado." },
+      { status: 403 }
+    );
+  }
 
-  console.log(`Iniciando criação de usuário Administrador em produção para email: ${email}...`);
+  const { searchParams } = new URL(request.url);
+  const providedSecret = searchParams.get("secret");
+  if (providedSecret !== setupSecret) {
+    return NextResponse.json(
+      { success: false, error: "Secret inválido." },
+      { status: 403 }
+    );
+  }
+
+  const email = searchParams.get("email") || "admin@moveisunghero.com.br";
+  const password = searchParams.get("password");
+  if (!password) {
+    return NextResponse.json(
+      { success: false, error: "Parâmetro password é obrigatório." },
+      { status: 400 }
+    );
+  }
 
   try {
-    // 1. Garante a empresa de demonstração
     const company = await prisma.company.upsert({
       where: { id: "mock-company-id" },
       update: {},
@@ -19,51 +38,46 @@ export async function GET(request: NextRequest) {
         nome: "Móveis Unghero",
         cnpj: "13.415.510/0001-71",
         telefone: "(54) 9 9997-1050",
-        email: "moveisunghero@gmail.com"
-      }
+        email: "moveisunghero@gmail.com",
+      },
     });
 
-    // 2. Limpa qualquer usuário anterior com o mesmo e-mail para evitar duplicidade
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       await prisma.account.deleteMany({ where: { userId: existingUser.id } });
       await prisma.session.deleteMany({ where: { userId: existingUser.id } });
       await prisma.user.delete({ where: { id: existingUser.id } });
     }
 
-    // Limpa também qualquer credencial órfã ou residual associada a este e-mail na tabela Account
-    await prisma.account.deleteMany({
-      where: { accountId: email }
-    });
+    await prisma.account.deleteMany({ where: { accountId: email } });
 
-    // 3. Cadastra o novo usuário Administrador via better-auth api
     const newUser = await auth.api.signUpEmail({
       body: {
         email,
         password,
         name: "Administrador Unghero",
         company_id: company.id,
-        cargo: "ADMIN"
-      }
+        cargo: "ADMIN",
+      },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Administrador com email "${email}" criado com sucesso em produção!`, 
+    return NextResponse.json({
+      success: true,
+      message: `Administrador com email "${email}" criado com sucesso.`,
       user: {
         email: newUser.user.email,
         cargo: newUser.user.cargo,
-        id: newUser.user.id
-      }
+        id: newUser.user.id,
+      },
     });
   } catch (error) {
-    console.error("Erro ao criar o usuário administrador em produção:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Erro desconhecido" 
-    }, { status: 500 });
+    console.error("Erro ao criar administrador:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Erro desconhecido",
+      },
+      { status: 500 }
+    );
   }
 }

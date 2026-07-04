@@ -1,8 +1,7 @@
 import React from "react";
 import { loginCliente, loginClienteSimulado } from "@/app/actions/cliente";
 import LoginFormClient from "./LoginFormClient";
-import { Sparkles, ArrowRight, User, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Sparkles, ArrowRight, AlertCircle } from "lucide-react";
 
 export default function ClienteLoginPage() {
   
@@ -48,43 +47,44 @@ export default function ClienteLoginPage() {
           </div>
         </div>
 
-        {/* Bloco de Acesso de Demonstração */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-3">
-          <div className="flex items-center gap-2 text-primary">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <h3 className="text-xs font-bold uppercase tracking-wider">Acesso de Demonstração</h3>
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-normal">
-            Acesse como um cliente cadastrado no CRM para testar a visualização completa do portal pós-venda:
-          </p>
-          <div className="grid grid-cols-2 gap-2.5">
-            <form action={handleQuickAccess.bind(null, "cli-2")}>
-              <button 
-                type="submit"
-                className="w-full inline-flex items-center justify-between text-left text-[11px] font-semibold p-2.5 rounded-lg border border-border/40 hover:border-primary/40 bg-black/25 text-neutral-300 hover:text-foreground transition-all cursor-pointer group"
-              >
-                <div className="truncate">
-                  <span className="block text-[8px] text-muted-foreground font-bold uppercase">Julho / Orçamento</span>
-                  Mariana Rezende
-                </div>
-                <ArrowRight className="h-3 w-3 shrink-0 ml-1 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </form>
+        {process.env.NODE_ENV !== "production" && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-3">
+            <div className="flex items-center gap-2 text-primary">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">Acesso de Demonstração</h3>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Acesse como um cliente cadastrado no CRM para testar a visualização completa do portal pós-venda:
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <form action={handleQuickAccess.bind(null, "cli-2")}>
+                <button
+                  type="submit"
+                  className="w-full inline-flex items-center justify-between text-left text-[11px] font-semibold p-2.5 rounded-lg border border-border/40 hover:border-primary/40 bg-black/25 text-neutral-300 hover:text-foreground transition-all cursor-pointer group"
+                >
+                  <div className="truncate">
+                    <span className="block text-[8px] text-muted-foreground font-bold uppercase">Julho / Orçamento</span>
+                    Mariana Rezende
+                  </div>
+                  <ArrowRight className="h-3 w-3 shrink-0 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </form>
 
-            <form action={handleQuickAccess.bind(null, "cli-6")}>
-              <button 
-                type="submit"
-                className="w-full inline-flex items-center justify-between text-left text-[11px] font-semibold p-2.5 rounded-lg border border-border/40 hover:border-primary/40 bg-black/25 text-neutral-300 hover:text-foreground transition-all cursor-pointer group"
-              >
-                <div className="truncate">
-                  <span className="block text-[8px] text-muted-foreground font-bold uppercase">Fábrica / Produção</span>
-                  Juliana Castro
-                </div>
-                <ArrowRight className="h-3 w-3 shrink-0 ml-1 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </form>
+              <form action={handleQuickAccess.bind(null, "cli-6")}>
+                <button
+                  type="submit"
+                  className="w-full inline-flex items-center justify-between text-left text-[11px] font-semibold p-2.5 rounded-lg border border-border/40 hover:border-primary/40 bg-black/25 text-neutral-300 hover:text-foreground transition-all cursor-pointer group"
+                >
+                  <div className="truncate">
+                    <span className="block text-[8px] text-muted-foreground font-bold uppercase">Fábrica / Produção</span>
+                    Juliana Castro
+                  </div>
+                  <ArrowRight className="h-3 w-3 shrink-0 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

@@ -174,6 +174,10 @@ export async function loginCliente(data: { identificador: string; cpf: string })
 }
 
 export async function loginClienteSimulado(clientId: string) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Acesso de demonstração não está disponível em produção.");
+  }
+
   const cookieStore = await cookies();
   cookieStore.set("cliente-session", clientId, {
     path: "/",

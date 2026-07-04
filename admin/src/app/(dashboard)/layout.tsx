@@ -1,13 +1,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth, getSessionSafe } from "@/lib/auth";
+import { getSessionSafe } from "@/lib/auth";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { 
   User as UserIcon,
   LogOut
 } from "lucide-react";
-import { logoutSimulated } from "@/app/actions/login";
+import { logout } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
 import SidebarNav from "@/components/SidebarNav";
 
@@ -16,14 +16,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSessionSafe(await headers()).catch(() => null);
+  const session = await getSessionSafe(await headers());
 
-  const user = session?.user || {
-    name: "Administrador Unghero",
-    email: "admin@unghero.com.br",
-    cargo: "ADMIN",
-    image: null
-  };
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user;
 
   // Navegação gerida pelo componente de cliente SidebarNav
 
@@ -74,7 +73,7 @@ export default async function DashboardLayout({
                 </span>
               </div>
             </div>
-            <form action={logoutSimulated} className="w-full">
+            <form action={logout} className="w-full">
               <button
                 type="submit"
                 className="flex items-center w-full px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer"

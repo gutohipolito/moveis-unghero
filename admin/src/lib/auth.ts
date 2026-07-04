@@ -2,11 +2,20 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 
+const authSecret = process.env.BETTER_AUTH_SECRET;
+if (!authSecret && process.env.NODE_ENV === "production") {
+  throw new Error("BETTER_AUTH_SECRET é obrigatório em produção.");
+}
+
 export const auth = betterAuth({
+  baseURL:
+    process.env.BETTER_AUTH_URL ||
+    process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+    "http://localhost:3000",
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  secret: process.env.BETTER_AUTH_SECRET || "better-auth-secret-key-32-characters-min",
+  secret: authSecret || "dev-only-secret-min-32-characters-long",
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -19,7 +28,7 @@ export const auth = betterAuth({
         defaultValue: "",
       },
       cargo: {
-        type: "string", // ADMIN, COMERCIAL, PROJETISTA, PRODUCAO, FINANCEIRO
+        type: "string",
         required: true,
         defaultValue: "COMERCIAL",
       },
@@ -27,58 +36,59 @@ export const auth = betterAuth({
   },
 });
 
-export async function getSessionSafe(headersList: Headers) {
-  // BYPASS INCONDICIONAL TEMPORÁRIO PARA PRODUÇÃO:
-  // Retorna automaticamente a sessão do administrador físico real da base Neon.
-  // Isso remove totalmente qualquer barreira de login da Vercel e permite ao
-  // cliente usar e testar o painel imediatamente conectado ao banco real.
-  try {
-    const dbAdmin = await prisma.user.findFirst({
-      where: { cargo: "ADMIN" }
-    });
+const DEV_MOCK_ROLES = ["ADMIN", "COMERCIAL", "PROJETISTA", "PRODUCAO", "FINANCEIRO"] as const;
 
-    if (dbAdmin) {
-      return {
-        user: {
-          id: dbAdmin.id,
-          name: dbAdmin.name,
-          email: dbAdmin.email,
-          cargo: dbAdmin.cargo,
-          company_id: dbAdmin.company_id,
-          image: null
-        },
-        session: {
-          id: "mock-session-id",
-          userId: dbAdmin.id,
-          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1 ano
-          token: "mock-token",
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      };
-    }
-  } catch (e) {
-    console.warn("Erro ao buscar administrador no Neon para o autologin:", e);
-  }
-
-  // Fallback padrão se o banco estiver vazio ou offline
-  return {
-    user: {
-      id: "zhugccYr8CSUHnP5ARWrpQptplupF2mM",
-      name: "Administrador Unghero",
-      email: "admin@moveisunghero.com.br",
-      cargo: "ADMIN",
-      company_id: "mock-company-id",
-      image: null
-    },
-    session: {
-      id: "mock-session-id",
-      userId: "zhugccYr8CSUHnP5ARWrpQptplupF2mM",
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
-      token: "mock-token",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  };
+function parseDevMockRole(cookieHeader: string): string | null {
+  const match = cookieHeader.match(/better-auth\.session_token=mock-token-(\w+)-/);
+  if (!match) return null;
+  const role = match[1].toUpperCase();
+  return DEV_MOCK_ROLES.includes(role as (typeof DEV_MOCK_ROLES)[number]) ? role : null;
 }
 
+async function getDevMockSession(role: string) {
+  try {
+    const user = await prisma.user.findFirst({
+      where: { cargo: role as (typeof DEV_MOCK_ROLES)[number] },
+    });
+
+    if (!user) return null;
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cargo: user.cargo,
+        company_id: user.company_id,
+        image: user.image,
+      },
+      session: {
+        id: "dev-mock-session",
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        token: "dev-mock-token",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getSessionSafe(headersList: Headers) {
+  if (process.env.NODE_ENV !== "production") {
+    const mockRole = parseDevMockRole(headersList.get("cookie") || "");
+    if (mockRole) {
+      const mockSession = await getDevMockSession(mockRole);
+      if (mockSession) return mockSession;
+    }
+  }
+
+  try {
+    return await auth.api.getSession({ headers: headersList });
+  } catch (error) {
+    console.warn("Erro ao obter sessão:", error);
+    return null;
+  }
+}

@@ -1,32 +1,73 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const PUBLIC_PATHS = new Set(["/login", "/cliente/login"]);
+
+const PUBLIC_PREFIXES = ["/api/auth"];
+
+const PROTECTED_PREFIXES = [
+  "/bi",
+  "/crm",
+  "/quotes",
+  "/clientes",
+  "/colaboradores",
+  "/agenda",
+  "/factory",
+  "/estoque",
+  "/logistica",
+  "/financeiro",
+  "/projects",
+  "/cliente/dashboard",
+];
+
+function isPublicPath(pathname: string) {
+  if (PUBLIC_PATHS.has(pathname)) return true;
+  return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+function isProtectedPath(pathname: string) {
+  if (pathname === "/") return true;
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
+function getSessionToken(request: NextRequest) {
+  return (
+    request.cookies.get("better-auth.session_token")?.value ||
+    request.cookies.get("__Secure-better-auth.session_token")?.value
+  );
+}
+
 export async function middleware(request: NextRequest) {
-  const sessionToken = 
-    request.cookies.get("better-auth.session_token")?.value || 
-    request.cookies.get("__Secure-better-auth.session_token")?.value;
+  const { pathname } = request.nextUrl;
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
-  const isDashboardRoute = 
-    request.nextUrl.pathname.startsWith("/crm") || 
-    request.nextUrl.pathname.startsWith("/projects") ||
-    request.nextUrl.pathname === "/";
-
-  // Se não estiver autenticado e tentar acessar rotas privadas, redireciona para o login
-  if (isDashboardRoute && !sessionToken) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Se estiver autenticado e tentar acessar a página de login, redireciona para o CRM/Kanban
-  if (isAuthRoute && sessionToken) {
-    return NextResponse.redirect(new URL("/crm", request.url));
-  }
-
-  // Redireciona a raiz "/" para o "/crm" se estiver logado, senão para o "/login"
-  if (request.nextUrl.pathname === "/") {
-    if (sessionToken) {
+  if (isPublicPath(pathname)) {
+    const sessionToken = getSessionToken(request);
+    if (sessionToken && pathname === "/login") {
       return NextResponse.redirect(new URL("/crm", request.url));
-    } else {
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname === "/") {
+    const sessionToken = getSessionToken(request);
+    return NextResponse.redirect(
+      new URL(sessionToken ? "/crm" : "/login", request.url)
+    );
+  }
+
+  if (pathname.startsWith("/cliente/dashboard")) {
+    const clientSession = request.cookies.get("cliente-session")?.value;
+    if (!clientSession) {
+      return NextResponse.redirect(new URL("/cliente/login", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (isProtectedPath(pathname)) {
+    const sessionToken = getSessionToken(request);
+    if (!sessionToken) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
   }
@@ -38,7 +79,18 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/bi/:path*",
     "/crm/:path*",
-    "/projects/:path*"
+    "/quotes/:path*",
+    "/clientes/:path*",
+    "/colaboradores/:path*",
+    "/agenda/:path*",
+    "/factory/:path*",
+    "/estoque/:path*",
+    "/logistica/:path*",
+    "/financeiro/:path*",
+    "/projects/:path*",
+    "/cliente/login",
+    "/cliente/dashboard/:path*",
   ],
 };

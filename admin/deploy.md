@@ -37,6 +37,7 @@ Durante a configuração do deploy na Vercel, você precisará adicionar as segu
 | `BETTER_AUTH_SECRET` | Uma hash aleatória longa para assinar as sessões de login. | Gerado via terminal |
 | `BETTER_AUTH_URL` | URL de produção do seu admin: `https://admin.moveisunghero.com.br` | Domínio final |
 | `NEXT_PUBLIC_BETTER_AUTH_URL` | Mesma URL pública descrita acima: `https://admin.moveisunghero.com.br` | Domínio final |
+| `ADMIN_SETUP_SECRET` | Secret para criar o primeiro administrador via `/api/create-admin-prod` | Gerado via terminal |
 
 ---
 
@@ -91,3 +92,15 @@ Para fazer o endereço `admin.moveisunghero.com.br` abrir o painel da Vercel:
 3. A Vercel detectará o apontamento DNS feito na HostGator e emitirá um certificado SSL de segurança HTTPS de forma automática em poucos minutos.
 
 Pronto! A partir desse momento, qualquer alteração que você fizer no código local e enviar ao GitHub (`git push`) gerará um build de produção automático na Vercel e atualizará o site em tempo real sem nenhuma lentidão de desenvolvimento!
+
+---
+
+## 🔐 Primeiro acesso (criar administrador)
+
+Após o deploy, crie o usuário administrador inicial acessando (substitua os valores):
+
+```
+https://admin.moveisunghero.com.br/api/create-admin-prod?secret=SEU_ADMIN_SETUP_SECRET&email=admin@moveisunghero.com.br&password=SUA_SENHA_FORTE
+```
+
+Em seguida, acesse `/login` com as credenciais criadas. O login de demonstração (acesso rápido por perfil) funciona apenas em `localhost` durante o desenvolvimento.
