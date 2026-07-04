@@ -424,7 +424,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   return (
     <div className="space-y-6">
       {/* Topbar de Ações e Métricas Rápidas */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-6 rounded-xl border border-border bg-white backdrop-blur-md gap-6 shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-5 rounded-[var(--radius)] border border-border bg-card gap-5">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center">
             <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 mr-3">
@@ -467,7 +467,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`kanban-column rounded-xl border border-border bg-slate-50/80 flex flex-col transition-all duration-300 ${
+              className={`kanban-column rounded-[var(--radius)] border border-border bg-card flex flex-col transition-all duration-200 ${
                 isOver ? "bg-slate-100 border-primary/30 scale-[1.01] shadow-lg" : ""
               }`}
             >

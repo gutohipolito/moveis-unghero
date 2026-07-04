@@ -24,32 +24,45 @@ export default async function DashboardLayout({
   return (
     <PrivacyProvider>
       <div className="flex min-h-screen bg-background">
-        <aside className="hidden md:flex md:w-60 lg:w-64 md:flex-col md:fixed md:inset-y-0 z-30 bg-white border-r border-border">
+        <aside className="app-sidebar hidden md:flex md:w-56 lg:w-60 md:flex-col md:fixed md:inset-y-0 z-30">
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex items-center h-16 px-5 border-b border-border shrink-0">
-              <Link href="/crm">
-                <img src="/logo.png" alt="Móveis Unghero" className="logo-bronze h-10 w-auto object-contain" />
+            <div className="flex items-center gap-2.5 h-14 px-4 border-b border-[hsl(var(--sidebar-border))] shrink-0">
+              <Link href="/crm" className="flex items-center gap-2.5 min-w-0">
+                <img
+                  src="/logo.png"
+                  alt=""
+                  className="logo-sidebar h-8 w-8 object-contain shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="font-[family-name:var(--font-display)] text-sm font-semibold text-[hsl(var(--sidebar-foreground))] truncate leading-tight">
+                    Móveis Unghero
+                  </p>
+                  <p className="text-[10px] text-[hsl(var(--sidebar-muted))] leading-tight">Painel operacional</p>
+                </div>
               </Link>
             </div>
 
             <SidebarNav />
 
-            <div className="p-3 m-3 shrink-0">
+            <div className="p-3 shrink-0">
               <SidebarUser user={user} />
             </div>
           </div>
         </aside>
 
-        <div className="flex flex-col flex-1 md:pl-60 lg:pl-64 min-w-0">
-          <header className="sticky top-0 flex items-center justify-between h-14 px-4 md:hidden z-40 backdrop-blur-md bg-white/90 border-b border-border pt-[env(safe-area-inset-top,0)]">
-            <Link href="/crm">
-              <img src="/logo.png" alt="Móveis Unghero" className="logo-bronze h-8 w-auto object-contain" />
+        <div className="flex flex-col flex-1 md:pl-56 lg:pl-60 min-w-0">
+          <header className="sticky top-0 flex items-center justify-between h-14 px-4 md:hidden z-40 bg-card border-b border-border pt-[env(safe-area-inset-top,0)]">
+            <Link href="/crm" className="flex items-center gap-2 min-w-0">
+              <img src="/logo.png" alt="" className="h-7 w-7 object-contain shrink-0" />
+              <span className="font-[family-name:var(--font-display)] text-sm font-semibold truncate">
+                Unghero
+              </span>
             </Link>
             <SidebarToggle user={user} />
           </header>
 
-          <main className="flex-1 p-4 sm:p-5 md:p-7 overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-7">
-            <div className="w-full max-w-full space-y-6 animate-in fade-in duration-300">
+          <main className="flex-1 p-4 sm:p-5 md:p-6 lg:p-7 overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-7">
+            <div className="w-full max-w-[1400px] mx-auto space-y-5">
               {children}
             </div>
           </main>

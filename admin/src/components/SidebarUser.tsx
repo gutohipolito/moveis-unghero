@@ -22,7 +22,7 @@ export default function SidebarUser({ user }: SidebarUserProps) {
           )}
         </div>
         <div className="overflow-hidden flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate text-foreground">{user.name}</p>
+          <p className="text-sm font-medium truncate text-[hsl(var(--sidebar-foreground))]">{user.name}</p>
           <span className="sidebar-user-role">{user.cargo || "COMERCIAL"}</span>
         </div>
       </div>

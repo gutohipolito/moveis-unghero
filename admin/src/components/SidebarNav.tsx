@@ -74,10 +74,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="sidebar-nav-icon">
-                      <item.icon
-                        className="h-4 w-4"
-                        style={{ color: isActive ? "hsl(28 85% 35%)" : "hsl(28 85% 45%)" }}
-                      />
+                      <item.icon className="h-4 w-4" />
                     </div>
                     <span className="truncate">{label}</span>
                   </div>
