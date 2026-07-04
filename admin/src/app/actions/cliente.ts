@@ -220,6 +220,15 @@ export async function getClients(companyId: string) {
       origem: c.origem as Origin,
       status: c.status,
       observacoes: c.observacoes || "",
+      cnpj: c.cnpj || "",
+      cep: c.cep || "",
+      endereco: c.endereco || "",
+      numero: c.numero || "",
+      bairro: c.bairro || "",
+      uf: c.uf || "",
+      tipo_imovel: c.tipo_imovel || "",
+      obs_imovel: c.obs_imovel || "",
+      obs_entrega: c.obs_entrega || "",
       projects: c.projects.map(p => ({
         id: p.id,
         status_geral: p.status_geral,
@@ -245,6 +254,15 @@ export async function createClientAction(formData: {
   status: string;
   observacoes?: string;
   company_id: string;
+  cnpj?: string;
+  cep?: string;
+  endereco?: string;
+  numero?: string;
+  bairro?: string;
+  uf?: string;
+  tipo_imovel?: string;
+  obs_imovel?: string;
+  obs_entrega?: string;
 }) {
   if (isDatabaseOffline()) {
     revalidatePath("/clientes");
@@ -265,7 +283,16 @@ export async function createClientAction(formData: {
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
-        company_id: formData.company_id
+        company_id: formData.company_id,
+        cnpj: formData.cnpj || null,
+        cep: formData.cep || null,
+        endereco: formData.endereco || null,
+        numero: formData.numero || null,
+        bairro: formData.bairro || null,
+        uf: formData.uf || null,
+        tipo_imovel: formData.tipo_imovel || null,
+        obs_imovel: formData.obs_imovel || null,
+        obs_entrega: formData.obs_entrega || null,
       }
     });
 
@@ -292,6 +319,15 @@ export async function updateClientAction(
     origem: Origin;
     status: string;
     observacoes?: string;
+    cnpj?: string;
+    cep?: string;
+    endereco?: string;
+    numero?: string;
+    bairro?: string;
+    uf?: string;
+    tipo_imovel?: string;
+    obs_imovel?: string;
+    obs_entrega?: string;
   }
 ) {
   if (isDatabaseOffline()) {
@@ -309,7 +345,16 @@ export async function updateClientAction(
         cidade: formData.cidade,
         origem: formData.origem,
         status: formData.status,
-        observacoes: formData.observacoes || ""
+        observacoes: formData.observacoes || "",
+        cnpj: formData.cnpj !== undefined ? formData.cnpj : undefined,
+        cep: formData.cep !== undefined ? formData.cep : undefined,
+        endereco: formData.endereco !== undefined ? formData.endereco : undefined,
+        numero: formData.numero !== undefined ? formData.numero : undefined,
+        bairro: formData.bairro !== undefined ? formData.bairro : undefined,
+        uf: formData.uf !== undefined ? formData.uf : undefined,
+        tipo_imovel: formData.tipo_imovel !== undefined ? formData.tipo_imovel : undefined,
+        obs_imovel: formData.obs_imovel !== undefined ? formData.obs_imovel : undefined,
+        obs_entrega: formData.obs_entrega !== undefined ? formData.obs_entrega : undefined,
       }
     });
 
@@ -516,6 +561,15 @@ export async function getClientDetailsAction(clientId: string) {
       origem: client.origem as Origin,
       status: client.status,
       observacoes: client.observacoes || "",
+      cnpj: client.cnpj || "",
+      cep: client.cep || "",
+      endereco: client.endereco || "",
+      numero: client.numero || "",
+      bairro: client.bairro || "",
+      uf: client.uf || "",
+      tipo_imovel: client.tipo_imovel || "",
+      obs_imovel: client.obs_imovel || "",
+      obs_entrega: client.obs_entrega || "",
       projects: client.projects.map(p => ({
         id: p.id,
         status_geral: p.status_geral,

@@ -17,7 +17,8 @@ import {
   Phone, 
   MapPin, 
   ExternalLink,
-  PlusCircle
+  PlusCircle,
+  HelpCircle
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,15 @@ interface Client {
   status: string;
   observacoes: string;
   projects?: ProjectSummary[];
+  cnpj?: string | null;
+  cep?: string | null;
+  endereco?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  uf?: string | null;
+  tipo_imovel?: string | null;
+  obs_imovel?: string | null;
+  obs_entrega?: string | null;
 }
 
 interface ClientesClientProps {
@@ -97,6 +107,66 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [observacoes, setObservacoes] = useState("");
   const [valorPrevisto, setValorPrevisto] = useState("");
 
+  // Novos campos cadastrais de endereço e imóvel
+  const [cnpj, setCnpj] = useState("");
+  const [cep, setCep] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [numero, setNumero] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [uf, setUf] = useState("");
+  const [tipoImovel, setTipoImovel] = useState("CASA");
+  const [obsImovel, setObsImovel] = useState("");
+  const [obsEntrega, setObsEntrega] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Funções de autocompletar via API
+  const fetchAddressByCep = async (cepValue: string) => {
+    const cleanCep = cepValue.replace(/\D/g, "");
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setEndereco(data.logradouro || "");
+          setBairro(data.bairro || "");
+          setCidade(data.localidade || "");
+          setUf(data.uf || "");
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CEP:", err);
+      }
+    }
+  };
+
+  const fetchCompanyByCnpj = async (cnpjValue: string) => {
+    const cleanCnpj = cnpjValue.replace(/\D/g, "");
+    if (cleanCnpj.length === 14) {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+        const data = await res.json();
+        if (data && !data.message) {
+          setNome(data.nome_fantasia || data.razao_social || "");
+          setEmail(data.email || email || "");
+          setTelefone(data.ddd_telefone_1 || data.telefone || telefone || "");
+          setCep(data.cep || cep || "");
+          setEndereco(data.logradouro || endereco || "");
+          setNumero(data.numero || numero || "");
+          setBairro(data.bairro || bairro || "");
+          setCidade(data.municipio || cidade || "");
+          setUf(data.uf || uf || "");
+          
+          if (data.cep) {
+            fetchAddressByCep(data.cep);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CNPJ:", err);
+      }
+      setLoading(false);
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper para fazer o parse das observações e extrair CPF/CNPJ
@@ -140,7 +210,25 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     const docPrefixo = documento ? `[${tipoPessoa} - ${tipoPessoa === "PF" ? "CPF" : "CNPJ"}: ${documento}] ` : "";
     const fullObservacoes = docPrefixo + observacoes;
 
-    const data = { nome, email, telefone, cidade, origem, status, observacoes: fullObservacoes, company_id: companyId };
+    const data = { 
+      nome, 
+      email, 
+      telefone, 
+      cidade, 
+      origem, 
+      status, 
+      observacoes: fullObservacoes, 
+      company_id: companyId,
+      cnpj: tipoPessoa === "PJ" ? documento : cnpj,
+      cep,
+      endereco,
+      numero,
+      bairro,
+      uf,
+      tipo_imovel: tipoImovel,
+      obs_imovel: obsImovel,
+      obs_entrega: obsEntrega
+    };
     const res = await createClientAction(data);
 
     if (res.success) {
@@ -170,6 +258,17 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setTipoPessoa(parsed.tipo);
     setDocumento(parsed.doc);
     setObservacoes(parsed.cleanObs);
+
+    // Carregar novos campos
+    setCnpj(client.cnpj || "");
+    setCep(client.cep || "");
+    setEndereco(client.endereco || "");
+    setNumero(client.numero || "");
+    setBairro(client.bairro || "");
+    setUf(client.uf || "");
+    setTipoImovel(client.tipo_imovel || "CASA");
+    setObsImovel(client.obs_imovel || "");
+    setObsEntrega(client.obs_entrega || "");
     
     setIsEditOpen(true);
   };
@@ -182,7 +281,24 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     const docPrefixo = documento ? `[${tipoPessoa} - ${tipoPessoa === "PF" ? "CPF" : "CNPJ"}: ${documento}] ` : "";
     const fullObservacoes = docPrefixo + observacoes;
 
-    const data = { nome, email, telefone, cidade, origem, status, observacoes: fullObservacoes };
+    const data = { 
+      nome, 
+      email, 
+      telefone, 
+      cidade, 
+      origem, 
+      status, 
+      observacoes: fullObservacoes,
+      cnpj: tipoPessoa === "PJ" ? documento : cnpj,
+      cep,
+      endereco,
+      numero,
+      bairro,
+      uf,
+      tipo_imovel: tipoImovel,
+      obs_imovel: obsImovel,
+      obs_entrega: obsEntrega
+    };
     const res = await updateClientAction(selectedClient.id, data);
 
     if (res.success) {
@@ -312,6 +428,17 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setStatus("LEAD");
     setObservacoes("");
     setSelectedClient(null);
+    
+    // Reset dos novos campos
+    setCnpj("");
+    setCep("");
+    setEndereco("");
+    setNumero("");
+    setBairro("");
+    setUf("");
+    setTipoImovel("CASA");
+    setObsImovel("");
+    setObsEntrega("");
   };
 
   return (
@@ -397,14 +524,14 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       <Card className="glass-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead>
+            <thead className="bg-slate-100 text-slate-800 border-b border-border">
               <tr>
-                <th className="p-4">Cliente / Contato</th>
-                <th className="p-4 text-center">Cidade</th>
-                <th className="p-4 text-center">Origem</th>
-                <th className="p-4 text-center">Status</th>
-                <th className="p-4">Projetos / Orçamentos Vinculados</th>
-                <th className="p-4 text-right">Ações</th>
+                <th className="p-4 whitespace-nowrap font-bold">Cliente / Contato</th>
+                <th className="p-4 text-center whitespace-nowrap font-bold">Cidade</th>
+                <th className="p-4 text-center whitespace-nowrap font-bold">Origem</th>
+                <th className="p-4 text-center whitespace-nowrap font-bold">Status</th>
+                <th className="p-4 whitespace-nowrap font-bold">Projetos / Orçamentos Vinculados</th>
+                <th className="p-4 text-right whitespace-nowrap font-bold">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
@@ -429,24 +556,24 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           return (
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <Link href={`/clientes/${client.id}`} className="text-sm font-bold text-primary hover:underline hover:text-primary/85 transition-all">
+                                <Link href={`/clientes/${client.id}`} className="text-sm font-bold text-slate-900 hover:underline hover:text-primary transition-all">
                                   {client.nome}
                                 </Link>
-                                <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
+                                <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
                                   {parsed.tipo}
                                 </span>
                               </div>
                               {parsed.doc && (
-                                <span className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                <span className="text-[11px] font-bold text-slate-600 mt-0.5">
                                   {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
                                 </span>
                               )}
-                              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3 text-muted-foreground/80" /> {client.telefone}
+                              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <Phone className="h-3 w-3 text-slate-500" /> {client.telefone}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3 text-muted-foreground/80" /> {client.email}
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <Mail className="h-3 w-3 text-slate-500" /> {client.email}
                                 </span>
                               </div>
                             </div>
@@ -455,22 +582,22 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       </td>
 
                       {/* Cidade */}
-                      <td className="p-4 text-center text-xs font-semibold text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
+                      <td className="p-4 text-center text-xs font-bold text-slate-700">
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap">
                           <MapPin className="h-3.5 w-3.5 text-rose-500" /> {client.cidade}
                         </span>
                       </td>
 
                       {/* Origem */}
                       <td className="p-4 text-center">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${orgBadge.bg} ${orgBadge.text} whitespace-nowrap`}>
                           {client.origem}
                         </span>
                       </td>
 
                       {/* Status */}
                       <td className="p-4 text-center">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statBadge.bg} ${statBadge.text}`}>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${statBadge.bg} ${statBadge.text} whitespace-nowrap`}>
                           {client.status.replace("_", " ")}
                         </span>
                       </td>
@@ -478,14 +605,14 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       {/* Projetos / Orçamentos Vinculados */}
                       <td className="p-4">
                         {projectList.length === 0 ? (
-                          <span className="text-xs text-muted-foreground italic">Nenhum projeto iniciado</span>
+                          <span className="text-xs text-muted-foreground italic font-semibold">Nenhum projeto iniciado</span>
                         ) : (
                           <div className="flex flex-wrap gap-1.5 max-w-[280px]">
                             {projectList.map(p => (
                               <Link 
                                 key={p.id}
                                 href={`/projects/${p.id}`}
-                                className="text-[10px] bg-primary/5 hover:bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold transition-all"
+                                className="text-[10px] bg-primary/5 hover:bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1 font-extrabold transition-all whitespace-nowrap"
                               >
                                 {p.status_geral} <ExternalLink className="h-2 w-2" />
                               </Link>
@@ -495,7 +622,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       </td>
 
                       {/* Ações */}
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openProjectModal(client)}
@@ -532,92 +659,285 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       {/* ─── MODAL: CADASTRAR CLIENTE ─── */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Cadastrar Novo Lead / Cliente</h3>
-              <p className="text-xs text-muted-foreground">Preencha as informações do lead para a base.</p>
+          <div className="bg-white border border-border w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Cadastrar Novo Lead / Cliente</h3>
+                <p className="text-xs text-muted-foreground">Preencha os dados cadastrais, endereço e imóvel do cliente.</p>
+              </div>
+              
+              {/* Alternador de abas PF/PJ */}
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-64">
+                <button
+                  type="button"
+                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => { setTipoPessoa("PF"); setDocumento(""); }}
+                >
+                  Pessoa Física (PF)
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => { setTipoPessoa("PJ"); setDocumento(""); }}
+                >
+                  Pessoa Jurídica (PJ)
+                </button>
+              </div>
             </div>
 
-            {/* Alternador de abas PF/PJ */}
-            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
-              <button
-                type="button"
-                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => { setTipoPessoa("PF"); setDocumento(""); }}
-              >
-                Pessoa Física (PF)
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => { setTipoPessoa("PJ"); setDocumento(""); }}
-              >
-                Pessoa Jurídica (PJ)
-              </button>
-            </div>
+            <form onSubmit={handleCreateClient} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                
+                {/* Coluna 1: Informações do Cliente */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">
+                    1. Dados do Cliente
+                  </span>
+                  
+                  {/* CNPJ se for PJ ou CPF se for PF */}
+                  {tipoPessoa === "PJ" ? (
+                    <div className="p-3 bg-[hsl(28_85%_98%)] border border-[hsl(28_85%_85%)] rounded-xl space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                        CNPJ da Empresa
+                        <span title="Digite o CNPJ para preencher os dados cadastrais da empresa no ato.">
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                        </span>
+                      </label>
+                      <Input 
+                        required 
+                        value={documento} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setDocumento(val);
+                          fetchCompanyByCnpj(val);
+                        }} 
+                        placeholder="Apenas números ou formatado" 
+                        className="border-slate-350 bg-white text-xs h-9 font-semibold text-slate-900 focus:border-primary" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                        CPF do Cliente
+                        <span title="Insira o CPF para identificação e contratos.">
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                        </span>
+                      </label>
+                      <Input 
+                        required 
+                        value={documento} 
+                        onChange={e => setDocumento(e.target.value)} 
+                        placeholder="Apenas números ou formatado" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  )}
 
-            <form onSubmit={handleCreateClient} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">
-                    {tipoPessoa === "PF" ? "Nome Completo" : "Razão Social / Fantasia"}
-                  </label>
-                  <Input required value={nome} onChange={e => setNome(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: Lucas de Souza" : "Ex: Unghero Ltda"} className="border-border bg-slate-50 text-sm" />
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                      {tipoPessoa === "PF" ? "Nome Completo" : "Razão Social / Nome Fantasia"}
+                    </label>
+                    <Input 
+                      required 
+                      value={nome} 
+                      onChange={e => setNome(e.target.value)} 
+                      placeholder="Nome do cliente" 
+                      className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">E-mail</label>
+                    <Input 
+                      required 
+                      type="email" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      placeholder="exemplo@email.com" 
+                      className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Telefone / WhatsApp</label>
+                    <Input 
+                      required 
+                      value={telefone} 
+                      onChange={e => setTelefone(e.target.value)} 
+                      placeholder="(54) 99999-9999" 
+                      className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">
-                    {tipoPessoa === "PF" ? "CPF" : "CNPJ"}
-                  </label>
-                  <Input required value={documento} onChange={e => setDocumento(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: 123.456.789-00" : "Ex: 12.345.678/0001-99"} className="border-border bg-slate-50 text-sm" />
+                {/* Coluna 2: Endereço & CEP */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">
+                    2. Localização & Entrega
+                  </span>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                        CEP
+                        <span title="Preenche o endereço automaticamente ao digitar.">
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                        </span>
+                      </label>
+                      <Input 
+                        value={cep} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setCep(val);
+                          fetchAddressByCep(val);
+                        }} 
+                        placeholder="95700-000" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Rua / Logradouro</label>
+                      <Input 
+                        value={endereco} 
+                        onChange={e => setEndereco(e.target.value)} 
+                        placeholder="Avenida, rua, travessa..." 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Número</label>
+                      <Input 
+                        value={numero} 
+                        onChange={e => setNumero(e.target.value)} 
+                        placeholder="Número da casa/obra" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Bairro</label>
+                      <Input 
+                        value={bairro} 
+                        onChange={e => setBairro(e.target.value)} 
+                        placeholder="Nome do bairro" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Cidade</label>
+                      <Input 
+                        required 
+                        value={cidade} 
+                        onChange={e => setCidade(e.target.value)} 
+                        placeholder="Cidade de instalação" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">UF</label>
+                      <Input 
+                        value={uf} 
+                        onChange={e => setUf(e.target.value)} 
+                        placeholder="Estado" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 uppercase focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Coluna 3: Ficha Técnica & Comercial */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">
+                    3. Imóvel & Comercial
+                  </span>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Tipo de Imóvel</label>
+                    <select 
+                      value={tipoImovel} 
+                      onChange={e => setTipoImovel(e.target.value)} 
+                      className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
+                    >
+                      <option value="CASA">Casa Residencial</option>
+                      <option value="APARTAMENTO">Apartamento</option>
+                      <option value="COMERCIAL">Comercial / Escritório</option>
+                      <option value="SOBRADO">Sobrado / Triplex</option>
+                      <option value="OUTRO">Outro</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Origem</label>
+                      <select 
+                        value={origem} 
+                        onChange={e => setOrigem(e.target.value as Origin)} 
+                        className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
+                      >
+                        {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Status</label>
+                      <select 
+                        value={status} 
+                        onChange={e => setStatus(e.target.value)} 
+                        className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
+                      >
+                        {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Observações da Obra / Imóvel</label>
+                    <textarea 
+                      value={obsImovel} 
+                      onChange={e => setObsImovel(e.target.value)} 
+                      placeholder="Parede de gesso, umidade, reforço..." 
+                      className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Observações na Entrega</label>
+                    <textarea 
+                      value={obsEntrega} 
+                      onChange={e => setObsEntrega(e.target.value)} 
+                      placeholder="Horários restritos, sem elevador..." 
+                      className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
+                    />
+                  </div>
+                </div>
+
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">E-mail</label>
-                  <Input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Ex: lucas@email.com" className="border-border bg-slate-50 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Telefone / WhatsApp</label>
-                  <Input required value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="Ex: (54) 99999-8888" className="border-border bg-slate-50 text-sm" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Cidade</label>
-                  <Input required value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Ex: Bento Gonçalves" className="border-border bg-slate-50 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Origem</label>
-                  <select value={origem} onChange={e => setOrigem(e.target.value as Origin)} className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none">
-                    {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Status</label>
-                  <select value={status} onChange={e => setStatus(e.target.value)} className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none">
-                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground block">Observações Iniciais</label>
+              {/* Notas Gerais */}
+              <div className="space-y-1.5 border-t border-slate-100 pt-4">
+                <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                  Observações Gerais / Briefing Comercial
+                  <span title="Móveis que o cliente procura, estilo, preferências de cores.">
+                    <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                  </span>
+                </label>
                 <textarea
                   value={observacoes}
                   onChange={e => setObservacoes(e.target.value)}
-                  placeholder="Quais móveis sob medida o cliente procura? Detalhes do imóvel..."
-                  className="w-full h-20 bg-slate-50 border border-border rounded-lg text-sm p-2 outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Descreva o que o cliente busca para o projeto dele..."
+                  className="w-full h-16 bg-slate-50 border border-slate-350 rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary focus:bg-white font-semibold resize-none text-slate-900"
                 />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs font-bold">
+                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs font-bold cursor-pointer h-9 px-4">
                   Cancelar
                 </Button>
-                <Button type="submit" className="font-bold btn-metallic">
+                <Button type="submit" className="font-bold text-xs h-9 px-5 bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white border-none cursor-pointer shadow-sm">
                   Cadastrar Cliente
                 </Button>
               </div>
@@ -629,92 +949,285 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       {/* ─── MODAL: EDITAR CLIENTE ─── */}
       {isEditOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Editar Dados de Lead</h3>
-              <p className="text-xs text-muted-foreground">Atualize as informações de contato e notas do lead.</p>
+          <div className="bg-white border border-border w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Editar Dados de Lead</h3>
+                <p className="text-xs text-muted-foreground">Atualize as informações cadastrais, endereço e imóvel do cliente.</p>
+              </div>
+              
+              {/* Alternador de abas PF/PJ */}
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-64">
+                <button
+                  type="button"
+                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => { setTipoPessoa("PF"); }}
+                >
+                  Pessoa Física (PF)
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => { setTipoPessoa("PJ"); }}
+                >
+                  Pessoa Jurídica (PJ)
+                </button>
+              </div>
             </div>
 
-            {/* Alternador de abas PF/PJ */}
-            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
-              <button
-                type="button"
-                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => { setTipoPessoa("PF"); }}
-              >
-                Pessoa Física (PF)
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => { setTipoPessoa("PJ"); }}
-              >
-                Pessoa Jurídica (PJ)
-              </button>
-            </div>
+            <form onSubmit={handleUpdateClient} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                
+                {/* Coluna 1: Informações do Cliente */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">
+                    1. Dados do Cliente
+                  </span>
+                  
+                  {/* CNPJ se for PJ ou CPF se for PF */}
+                  {tipoPessoa === "PJ" ? (
+                    <div className="p-3 bg-[hsl(28_85%_98%)] border border-[hsl(28_85%_85%)] rounded-xl space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                        CNPJ da Empresa
+                        <span title="Digite o CNPJ para puxar dados da empresa automaticamente.">
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                        </span>
+                      </label>
+                      <Input 
+                        required 
+                        value={documento} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setDocumento(val);
+                          fetchCompanyByCnpj(val);
+                        }} 
+                        placeholder="Apenas números ou formatado" 
+                        className="border-slate-350 bg-white text-xs h-9 font-semibold text-slate-900 focus:border-primary" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                        CPF do Cliente
+                        <span title="Insira o CPF para identificação e contratos.">
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                        </span>
+                      </label>
+                      <Input 
+                        required 
+                        value={documento} 
+                        onChange={e => setDocumento(e.target.value)} 
+                        placeholder="Apenas números ou formatado" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  )}
 
-            <form onSubmit={handleUpdateClient} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">
-                    {tipoPessoa === "PF" ? "Nome Completo" : "Razão Social / Fantasia"}
-                  </label>
-                  <Input required value={nome} onChange={e => setNome(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: Lucas de Souza" : "Ex: Unghero Ltda"} className="border-border bg-slate-50 text-sm" />
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-755 flex items-center gap-1">
+                      {tipoPessoa === "PF" ? "Nome Completo" : "Razão Social / Nome Fantasia"}
+                    </label>
+                    <Input 
+                      required 
+                      value={nome} 
+                      onChange={e => setNome(e.target.value)} 
+                      placeholder="Nome do cliente" 
+                      className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">E-mail</label>
+                    <Input 
+                      required 
+                      type="email" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      placeholder="exemplo@email.com" 
+                      className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Telefone / WhatsApp</label>
+                    <Input 
+                      required 
+                      value={telefone} 
+                      onChange={e => setTelefone(e.target.value)} 
+                      placeholder="(54) 99999-9999" 
+                      className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">
-                    {tipoPessoa === "PF" ? "CPF" : "CNPJ"}
-                  </label>
-                  <Input required value={documento} onChange={e => setDocumento(e.target.value)} placeholder={tipoPessoa === "PF" ? "Ex: 123.456.789-00" : "Ex: 12.345.678/0001-99"} className="border-border bg-slate-50 text-sm" />
+                {/* Coluna 2: Endereço & CEP */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">
+                    2. Localização & Entrega
+                  </span>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                        CEP
+                        <span title="Preenche o endereço automaticamente ao digitar.">
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                        </span>
+                      </label>
+                      <Input 
+                        value={cep} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setCep(val);
+                          fetchAddressByCep(val);
+                        }} 
+                        placeholder="95700-000" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Rua / Logradouro</label>
+                      <Input 
+                        value={endereco} 
+                        onChange={e => setEndereco(e.target.value)} 
+                        placeholder="Avenida, rua, travessa..." 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Número</label>
+                      <Input 
+                        value={numero} 
+                        onChange={e => setNumero(e.target.value)} 
+                        placeholder="Número da casa/obra" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Bairro</label>
+                      <Input 
+                        value={bairro} 
+                        onChange={e => setBairro(e.target.value)} 
+                        placeholder="Nome do bairro" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Cidade</label>
+                      <Input 
+                        required 
+                        value={cidade} 
+                        onChange={e => setCidade(e.target.value)} 
+                        placeholder="Cidade de instalação" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-xs font-bold text-slate-750">UF</label>
+                      <Input 
+                        value={uf} 
+                        onChange={e => setUf(e.target.value)} 
+                        placeholder="Estado" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 uppercase focus:border-primary focus:bg-white" 
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Coluna 3: Ficha Técnica & Comercial */}
+                <div className="space-y-4">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">
+                    3. Imóvel & Comercial
+                  </span>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Tipo de Imóvel</label>
+                    <select 
+                      value={tipoImovel} 
+                      onChange={e => setTipoImovel(e.target.value)} 
+                      className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
+                    >
+                      <option value="CASA">Casa Residencial</option>
+                      <option value="APARTAMENTO">Apartamento</option>
+                      <option value="COMERCIAL">Comercial / Escritório</option>
+                      <option value="SOBRADO">Sobrado / Triplex</option>
+                      <option value="OUTRO">Outro</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Origem</label>
+                      <select 
+                        value={origem} 
+                        onChange={e => setOrigem(e.target.value as Origin)} 
+                        className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
+                      >
+                        {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-750">Status</label>
+                      <select 
+                        value={status} 
+                        onChange={e => setStatus(e.target.value)} 
+                        className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
+                      >
+                        {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Observações da Obra / Imóvel</label>
+                    <textarea 
+                      value={obsImovel} 
+                      onChange={e => setObsImovel(e.target.value)} 
+                      placeholder="Parede de gesso, umidade, reforço..." 
+                      className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-750">Observações na Entrega</label>
+                    <textarea 
+                      value={obsEntrega} 
+                      onChange={e => setObsEntrega(e.target.value)} 
+                      placeholder="Horários restritos, sem elevador..." 
+                      className="w-full h-14 p-2 text-xs bg-slate-50 border border-slate-350 rounded-lg focus:ring-1 focus:ring-primary focus:bg-white outline-none font-semibold resize-none text-slate-900"
+                    />
+                  </div>
+                </div>
+
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">E-mail</label>
-                  <Input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Ex: lucas@email.com" className="border-border bg-slate-50 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Telefone / WhatsApp</label>
-                  <Input required value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="Ex: (54) 99999-8888" className="border-border bg-slate-50 text-sm" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Cidade</label>
-                  <Input required value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Ex: Bento Gonçalves" className="border-border bg-slate-50 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Origem</label>
-                  <select value={origem} onChange={e => setOrigem(e.target.value as Origin)} className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none">
-                    {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Status</label>
-                  <select value={status} onChange={e => setStatus(e.target.value)} className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none">
-                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground block">Observações Iniciais</label>
+              {/* Notas Gerais */}
+              <div className="space-y-1.5 border-t border-slate-100 pt-4">
+                <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
+                  Observações Gerais / Briefing Comercial
+                  <span title="Móveis que o cliente procura, estilo, preferências de cores.">
+                    <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                  </span>
+                </label>
                 <textarea
                   value={observacoes}
                   onChange={e => setObservacoes(e.target.value)}
-                  placeholder="Observações do projeto..."
-                  className="w-full h-20 bg-slate-50 border border-border rounded-lg text-sm p-2 outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Descreva o que o cliente busca para o projeto dele..."
+                  className="w-full h-16 bg-slate-50 border border-slate-350 rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary focus:bg-white font-semibold resize-none text-slate-900"
                 />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="text-xs font-bold">
+                <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="text-xs font-bold cursor-pointer h-9 px-4">
                   Cancelar
                 </Button>
-                <Button type="submit" className="font-bold btn-metallic">
+                <Button type="submit" className="font-bold text-xs h-9 px-5 bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white border-none cursor-pointer shadow-sm">
                   Salvar Alterações
                 </Button>
               </div>
