@@ -52,6 +52,15 @@ export async function createLead(formData: {
   company_id: string;
   client_id?: string; // Opcional, para associar a cliente já cadastrado
   status_geral?: ProjectStatus; // Opcional, status inicial
+  cnpj?: string;
+  cep?: string;
+  endereco?: string;
+  numero?: string;
+  bairro?: string;
+  uf?: string;
+  tipo_imovel?: string;
+  obs_imovel?: string;
+  obs_entrega?: string;
 }) {
   try {
     const statusInicial = formData.status_geral || "LEAD";
@@ -76,6 +85,15 @@ export async function createLead(formData: {
             origem: formData.origem,
             status: statusInicial,
             company_id: formData.company_id,
+            cnpj: formData.cnpj || null,
+            cep: formData.cep || null,
+            endereco: formData.endereco || null,
+            numero: formData.numero || null,
+            bairro: formData.bairro || null,
+            uf: formData.uf || null,
+            tipo_imovel: formData.tipo_imovel || null,
+            obs_imovel: formData.obs_imovel || null,
+            obs_entrega: formData.obs_entrega || null,
           }
         });
       }
@@ -127,6 +145,15 @@ export async function updateProjectAction(
     telefone: string;
     cidade: string;
     origem: Origin;
+    cnpj?: string;
+    cep?: string;
+    endereco?: string;
+    numero?: string;
+    bairro?: string;
+    uf?: string;
+    tipo_imovel?: string;
+    obs_imovel?: string;
+    obs_entrega?: string;
   }
 ) {
   try {
@@ -140,7 +167,16 @@ export async function updateProjectAction(
             nome: data.nome,
             telefone: data.telefone,
             cidade: data.cidade,
-            origem: data.origem
+            origem: data.origem,
+            cnpj: data.cnpj !== undefined ? data.cnpj : undefined,
+            cep: data.cep !== undefined ? data.cep : undefined,
+            endereco: data.endereco !== undefined ? data.endereco : undefined,
+            numero: data.numero !== undefined ? data.numero : undefined,
+            bairro: data.bairro !== undefined ? data.bairro : undefined,
+            uf: data.uf !== undefined ? data.uf : undefined,
+            tipo_imovel: data.tipo_imovel !== undefined ? data.tipo_imovel : undefined,
+            obs_imovel: data.obs_imovel !== undefined ? data.obs_imovel : undefined,
+            obs_entrega: data.obs_entrega !== undefined ? data.obs_entrega : undefined,
           }
         }
       },

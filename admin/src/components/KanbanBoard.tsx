@@ -28,6 +28,15 @@ interface Project {
     origem: string;
     telefone: string;
     email: string;
+    cnpj?: string | null;
+    cep?: string | null;
+    endereco?: string | null;
+    numero?: string | null;
+    bairro?: string | null;
+    uf?: string | null;
+    tipo_imovel?: string | null;
+    obs_imovel?: string | null;
+    obs_entrega?: string | null;
   };
 }
 
@@ -41,6 +50,15 @@ interface KanbanBoardProps {
     telefone: string;
     cidade: string;
     origem: Origin;
+    cnpj?: string | null;
+    cep?: string | null;
+    endereco?: string | null;
+    numero?: string | null;
+    bairro?: string | null;
+    uf?: string | null;
+    tipo_imovel?: string | null;
+    obs_imovel?: string | null;
+    obs_entrega?: string | null;
   }>;
 }
 
@@ -85,8 +103,73 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     telefone: "",
     cidade: "",
     origem: "INSTAGRAM" as Origin,
-    valor_previsto: ""
+    valor_previsto: "",
+    cnpj: "",
+    cep: "",
+    endereco: "",
+    numero: "",
+    bairro: "",
+    uf: "",
+    tipo_imovel: "CASA",
+    obs_imovel: "",
+    obs_entrega: ""
   });
+
+  // Funções de autocompletar via API
+  const fetchAddressByCep = async (cepValue: string) => {
+    const cleanCep = cepValue.replace(/\D/g, "");
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setLeadForm(prev => ({
+            ...prev,
+            cep: cepValue,
+            endereco: data.logradouro || "",
+            bairro: data.bairro || "",
+            cidade: data.localidade || "",
+            uf: data.uf || ""
+          }));
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CEP:", err);
+      }
+    }
+  };
+
+  const fetchCompanyByCnpj = async (cnpjValue: string) => {
+    const cleanCnpj = cnpjValue.replace(/\D/g, "");
+    if (cleanCnpj.length === 14) {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+        const data = await res.json();
+        if (data && !data.message) {
+          setLeadForm(prev => ({
+            ...prev,
+            cnpj: cnpjValue,
+            nome: data.nome_fantasia || data.razao_social || "",
+            email: data.email || prev.email || "",
+            telefone: data.ddd_telefone_1 || data.telefone || prev.telefone || "",
+            cep: data.cep || prev.cep || "",
+            endereco: data.logradouro || prev.endereco || "",
+            numero: data.numero || prev.numero || "",
+            bairro: data.bairro || prev.bairro || "",
+            cidade: data.municipio || prev.cidade || "",
+            uf: data.uf || prev.uf || ""
+          }));
+          
+          if (data.cep) {
+            fetchAddressByCep(data.cep);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CNPJ:", err);
+      }
+      setLoading(false);
+    }
+  };
 
   const openEditModal = (project: Project) => {
     setEditingProjectId(project.id);
@@ -97,7 +180,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       telefone: project.client.telefone,
       cidade: project.client.cidade,
       origem: project.client.origem as Origin,
-      valor_previsto: project.valor_previsto.toString()
+      valor_previsto: project.valor_previsto.toString(),
+      cnpj: project.client.cnpj || "",
+      cep: project.client.cep || "",
+      endereco: project.client.endereco || "",
+      numero: project.client.numero || "",
+      bairro: project.client.bairro || "",
+      uf: project.client.uf || "",
+      tipo_imovel: project.client.tipo_imovel || "CASA",
+      obs_imovel: project.client.obs_imovel || "",
+      obs_entrega: project.client.obs_entrega || ""
     });
     setIsEditLeadOpen(true);
   };
@@ -113,7 +205,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       nome: leadForm.nome,
       telefone: leadForm.telefone,
       cidade: leadForm.cidade,
-      origem: leadForm.origem
+      origem: leadForm.origem,
+      cnpj: leadForm.cnpj || "",
+      cep: leadForm.cep || "",
+      endereco: leadForm.endereco || "",
+      numero: leadForm.numero || "",
+      bairro: leadForm.bairro || "",
+      uf: leadForm.uf || "",
+      tipo_imovel: leadForm.tipo_imovel,
+      obs_imovel: leadForm.obs_imovel,
+      obs_entrega: leadForm.obs_entrega
     };
 
     const result = await updateProjectAction(editingProjectId, data);
@@ -130,7 +231,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               nome: data.nome,
               telefone: data.telefone,
               cidade: data.cidade,
-              origem: data.origem
+              origem: data.origem,
+              cnpj: data.cnpj,
+              cep: data.cep,
+              endereco: data.endereco,
+              numero: data.numero,
+              bairro: data.bairro,
+              uf: data.uf,
+              tipo_imovel: data.tipo_imovel,
+              obs_imovel: data.obs_imovel,
+              obs_entrega: data.obs_entrega
             }
           };
         }
@@ -166,7 +276,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     e.preventDefault();
     const id = e.dataTransfer.getData("text/plain");
     
-    // Atualiza o estado local imediatamente (Optimistic Update)
+    // - Atualiza o estado local imediatamente (Optimistic Update)
     const originalProjects = [...projects];
     const updated = projects.map(p => p.id === id ? { ...p, status_geral: targetStatus } : p);
     setProjects(updated);
@@ -195,7 +305,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       telefone: "",
       cidade: "",
       origem: "INSTAGRAM" as Origin,
-      valor_previsto: ""
+      valor_previsto: "",
+      cnpj: "",
+      cep: "",
+      endereco: "",
+      numero: "",
+      bairro: "",
+      uf: "",
+      tipo_imovel: "CASA",
+      obs_imovel: "",
+      obs_entrega: ""
     });
   };
 
@@ -209,7 +328,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         email: client.email,
         telefone: client.telefone,
         cidade: client.cidade,
-        origem: client.origem as Origin
+        origem: client.origem as Origin,
+        cnpj: client.cnpj || "",
+        cep: client.cep || "",
+        endereco: client.endereco || "",
+        numero: client.numero || "",
+        bairro: client.bairro || "",
+        uf: client.uf || "",
+        tipo_imovel: client.tipo_imovel || "CASA",
+        obs_imovel: client.obs_imovel || "",
+        obs_entrega: client.obs_entrega || ""
       }));
     }
   };
@@ -241,7 +369,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           cidade: result.data.client.cidade,
           origem: result.data.client.origem,
           telefone: result.data.client.telefone,
-          email: result.data.client.email
+          email: result.data.client.email,
+          cnpj: result.data.client.cnpj,
+          cep: result.data.client.cep,
+          endereco: result.data.client.endereco,
+          numero: result.data.client.numero,
+          bairro: result.data.client.bairro,
+          uf: result.data.client.uf,
+          tipo_imovel: result.data.client.tipo_imovel,
+          obs_imovel: result.data.client.obs_imovel,
+          obs_entrega: result.data.client.obs_entrega
         }
       };
 
@@ -250,14 +387,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       setIsExistingClient(false);
       setSelectedClientId("");
       setStatusGeralInicial("LEAD");
-      setLeadForm({
-        nome: "",
-        email: "",
-        telefone: "",
-        cidade: "",
-        origem: "INSTAGRAM",
-        valor_previsto: ""
-      });
+      resetLeadForm();
     } else {
       alert("Erro ao cadastrar o lead.");
     }
@@ -442,7 +572,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           Cadastrar Novo Lead & Cliente
         </h3>
         
-        <form onSubmit={handleNewLeadSubmit} className="space-y-4">
+        <form onSubmit={handleNewLeadSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
           {/* Alternador Novo Cliente / Cliente Existente */}
           {clients && clients.length > 0 && (
             <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
@@ -464,14 +594,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           )}
 
           {isExistingClient && (
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+            <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+              <label className="text-xs font-bold text-slate-500 block mb-1">
                 Selecionar Cliente da Base
               </label>
               <select
                 value={selectedClientId}
                 onChange={(e) => handleSelectClient(e.target.value)}
-                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+                className="w-full bg-white border border-slate-200 rounded-lg text-xs font-semibold p-2.5 focus:ring-1 focus:ring-primary outline-none cursor-pointer"
               >
                 <option value="">Selecione o cliente...</option>
                 {clients.map(c => (
@@ -481,47 +611,154 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
           )}
 
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Nome Completo do Cliente
-            </label>
-            <Input
-              required
-              disabled={isExistingClient}
-              placeholder="Ex: João da Silva"
-              value={leadForm.nome}
-              onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                E-mail
-              </label>
+          {/* Autopreenchimento de CNPJ no topo com largura total */}
+          {!isExistingClient && (
+            <div className="p-4 rounded-xl border border-[hsl(28_85%_90%)] bg-[hsl(28_85%_98%)] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[hsl(28_85%_45%)] uppercase tracking-wider block">
+                  Autopreenchimento CNPJ (Pessoas Jurídicas)
+                </span>
+                <span className="text-[9px] font-semibold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                  BrasilAPI integrada
+                </span>
+              </div>
               <Input
-                type="email"
-                required
-                disabled={isExistingClient}
-                placeholder="exemplo@email.com"
-                value={leadForm.email}
-                onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                placeholder="Digite o CNPJ para preencher os dados da empresa automaticamente..."
+                value={leadForm.cnpj}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLeadForm({ ...leadForm, cnpj: val });
+                  fetchCompanyByCnpj(val);
+                }}
+                className="bg-white border-slate-200 text-xs h-10 font-medium"
               />
             </div>
+          )}
+
+          {/* Seção 1: Dados Básicos */}
+          <div className="space-y-3.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+              Informações Gerais do Cliente
+            </span>
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Telefone / WhatsApp
+                Nome Completo do Cliente / Razão Social
               </label>
               <Input
                 required
                 disabled={isExistingClient}
-                placeholder="(54) 99999-9999"
-                value={leadForm.telefone}
-                onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
+                placeholder="Ex: João da Silva / Unghero Móveis Ltda"
+                value={leadForm.nome}
+                onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
+                className="text-xs h-10 font-semibold"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  E-mail
+                </label>
+                <Input
+                  type="email"
+                  required
+                  disabled={isExistingClient}
+                  placeholder="exemplo@email.com"
+                  value={leadForm.email}
+                  onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                  className="text-xs h-10"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Telefone / WhatsApp
+                </label>
+                <Input
+                  required
+                  disabled={isExistingClient}
+                  placeholder="(54) 99999-9999"
+                  value={leadForm.telefone}
+                  onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
             </div>
           </div>
 
+          {/* Seção 2: Localização e Endereço Completo */}
+          {!isExistingClient && (
+            <div className="space-y-3.5 pt-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+                Endereço de Entrega & Instalação
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-1">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    CEP
+                  </label>
+                  <Input
+                    placeholder="95700-000"
+                    value={leadForm.cep}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setLeadForm({ ...leadForm, cep: val });
+                      fetchAddressByCep(val);
+                    }}
+                    className="text-xs h-10 font-semibold"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Rua / Logradouro
+                  </label>
+                  <Input
+                    placeholder="Ex: Avenida Planalto"
+                    value={leadForm.endereco}
+                    onChange={(e) => setLeadForm({ ...leadForm, endereco: e.target.value })}
+                    className="text-xs h-10 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-1">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Número
+                  </label>
+                  <Input
+                    placeholder="123"
+                    value={leadForm.numero}
+                    onChange={(e) => setLeadForm({ ...leadForm, numero: e.target.value })}
+                    className="text-xs h-10 font-semibold"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Bairro
+                  </label>
+                  <Input
+                    placeholder="Ex: São Bento"
+                    value={leadForm.bairro}
+                    onChange={(e) => setLeadForm({ ...leadForm, bairro: e.target.value })}
+                    className="text-xs h-10 font-semibold"
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Estado (UF)
+                  </label>
+                  <Input
+                    placeholder="RS"
+                    value={leadForm.uf}
+                    onChange={(e) => setLeadForm({ ...leadForm, uf: e.target.value })}
+                    className="text-xs h-10 font-semibold uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Cidade e Origem */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
@@ -533,6 +770,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 placeholder="Ex: Bento Gonçalves"
                 value={leadForm.cidade}
                 onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
+                className="text-xs h-10 font-semibold"
               />
             </div>
             <div>
@@ -543,7 +781,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 disabled={isExistingClient}
                 value={leadForm.origem}
                 onChange={(e) => setLeadForm({ ...leadForm, origem: e.target.value as Origin })}
-                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+                className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
               >
                 <option value="INSTAGRAM">Instagram</option>
                 <option value="SITE">Site institucional</option>
@@ -555,46 +793,108 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Valor Previsto (R$)
-              </label>
-              <Input
-                type="number"
-                required
-                placeholder="Ex: 45000"
-                value={leadForm.valor_previsto}
-                onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-              />
-            </div>
+          {/* Seção 3: Características do Imóvel e Entrega */}
+          {!isExistingClient && (
+            <div className="space-y-3.5 pt-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+                Ficha Técnica do Imóvel & Logística
+              </span>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Tipo do Imóvel
+                  </label>
+                  <select
+                    value={leadForm.tipo_imovel}
+                    onChange={(e) => setLeadForm({ ...leadForm, tipo_imovel: e.target.value })}
+                    className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none animate-fade-in"
+                  >
+                    <option value="CASA">Casa Residencial</option>
+                    <option value="APARTAMENTO">Apartamento Residencial</option>
+                    <option value="COMERCIAL">Sala Comercial / Escritório</option>
+                    <option value="SOBRADO">Sobrado / Triplex</option>
+                    <option value="OUTRO">Outro / Especial</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Etapa / Coluna Inicial
-              </label>
-              <select
-                value={statusGeralInicial}
-                onChange={(e) => setStatusGeralInicial(e.target.value as ProjectStatus)}
-                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
-              >
-                {COLUMNS.map(col => (
-                  <option key={col.id} value={col.id}>{col.title}</option>
-                ))}
-              </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                      Observações da Obra / Imóvel
+                    </label>
+                    <textarea
+                      placeholder="Ex: Parede de gesso acartonado, fiação exposta, necessidade de reforço..."
+                      value={leadForm.obs_imovel}
+                      onChange={(e) => setLeadForm({ ...leadForm, obs_imovel: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-semibold resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                      Restrições de Entrega / Logística
+                    </label>
+                    <textarea
+                      placeholder="Ex: Elevador de serviço pequeno, entrega permitida das 9h às 11h..."
+                      value={leadForm.obs_entrega}
+                      onChange={(e) => setLeadForm({ ...leadForm, obs_entrega: e.target.value })}
+                      rows={2}
+                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-semibold resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Seção 4: Dados do Projeto Comercial */}
+          <div className="space-y-3.5 pt-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+              Detalhes do Projeto & Negócio
+            </span>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Valor Previsto (R$)
+                </label>
+                <Input
+                  type="number"
+                  required
+                  placeholder="Ex: 45000"
+                  value={leadForm.valor_previsto}
+                  onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Etapa / Coluna Inicial
+                </label>
+                <select
+                  value={statusGeralInicial}
+                  onChange={(e) => setStatusGeralInicial(e.target.value as ProjectStatus)}
+                  className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
+                >
+                  {COLUMNS.map(col => (
+                    <option key={col.id} value={col.id}>{col.title}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+          <div className="flex justify-end gap-3 pt-4.5 border-t border-border/40 mt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsNewLeadOpen(false)}
               disabled={loading}
+              className="text-xs font-bold cursor-pointer"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none">
               {loading ? "Cadastrando..." : "Cadastrar Lead"}
             </Button>
           </div>
@@ -607,45 +907,148 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           Editar Informações do Card
         </h3>
         
-        <form onSubmit={handleEditLeadSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Nome Completo do Cliente
-            </label>
+        <form onSubmit={handleEditLeadSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
+          {/* Autopreenchimento de CNPJ no topo com largura total */}
+          <div className="p-4 rounded-xl border border-[hsl(28_85%_90%)] bg-[hsl(28_85%_98%)] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[hsl(28_85%_45%)] uppercase tracking-wider block">
+                CNPJ (Editar / Preencher dados da Empresa)
+              </span>
+              <span className="text-[9px] font-semibold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                BrasilAPI integrada
+              </span>
+            </div>
             <Input
-              required
-              placeholder="Ex: João da Silva"
-              value={leadForm.nome}
-              onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
+              placeholder="Digite o CNPJ..."
+              value={leadForm.cnpj}
+              onChange={(e) => {
+                const val = e.target.value;
+                setLeadForm({ ...leadForm, cnpj: val });
+                fetchCompanyByCnpj(val);
+              }}
+              className="bg-white border-slate-200 text-xs h-10 font-medium"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Seção 1: Dados Básicos */}
+          <div className="space-y-3.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+              Informações Gerais do Cliente
+            </span>
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                E-mail
+                Nome Completo do Cliente / Razão Social
               </label>
               <Input
-                type="email"
                 required
-                placeholder="exemplo@email.com"
-                value={leadForm.email}
-                onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                placeholder="Ex: João da Silva"
+                value={leadForm.nome}
+                onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
+                className="text-xs h-10 font-semibold"
               />
             </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Telefone / WhatsApp
-              </label>
-              <Input
-                required
-                placeholder="(54) 99999-9999"
-                value={leadForm.telefone}
-                onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  E-mail
+                </label>
+                <Input
+                  type="email"
+                  required
+                  placeholder="exemplo@email.com"
+                  value={leadForm.email}
+                  onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                  className="text-xs h-10"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Telefone / WhatsApp
+                </label>
+                <Input
+                  required
+                  placeholder="(54) 99999-9999"
+                  value={leadForm.telefone}
+                  onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
             </div>
           </div>
 
+          {/* Seção 2: Localização e Endereço Completo */}
+          <div className="space-y-3.5 pt-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+              Endereço de Entrega & Instalação
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  CEP
+                </label>
+                <Input
+                  placeholder="95700-000"
+                  value={leadForm.cep}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setLeadForm({ ...leadForm, cep: val });
+                    fetchAddressByCep(val);
+                  }}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Rua / Logradouro
+                </label>
+                <Input
+                  placeholder="Ex: Avenida Planalto"
+                  value={leadForm.endereco}
+                  onChange={(e) => setLeadForm({ ...leadForm, endereco: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Número
+                </label>
+                <Input
+                  placeholder="123"
+                  value={leadForm.numero}
+                  onChange={(e) => setLeadForm({ ...leadForm, numero: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Bairro
+                </label>
+                <Input
+                  placeholder="Ex: São Bento"
+                  value={leadForm.bairro}
+                  onChange={(e) => setLeadForm({ ...leadForm, bairro: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Estado (UF)
+                </label>
+                <Input
+                  placeholder="RS"
+                  value={leadForm.uf}
+                  onChange={(e) => setLeadForm({ ...leadForm, uf: e.target.value })}
+                  className="text-xs h-10 font-semibold uppercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Cidade e Origem */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
@@ -656,6 +1059,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 placeholder="Ex: Bento Gonçalves"
                 value={leadForm.cidade}
                 onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
+                className="text-xs h-10 font-semibold"
               />
             </div>
             <div>
@@ -665,7 +1069,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <select
                 value={leadForm.origem}
                 onChange={(e) => setLeadForm({ ...leadForm, origem: e.target.value as Origin })}
-                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+                className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
               >
                 <option value="INSTAGRAM">Instagram</option>
                 <option value="SITE">Site institucional</option>
@@ -677,46 +1081,106 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Valor do Projeto (R$)
-              </label>
-              <Input
-                type="number"
-                required
-                placeholder="Ex: 45000"
-                value={leadForm.valor_previsto}
-                onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-              />
-            </div>
+          {/* Seção 3: Características do Imóvel e Entrega */}
+          <div className="space-y-3.5 pt-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+              Ficha Técnica do Imóvel & Logística
+            </span>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Tipo do Imóvel
+                </label>
+                <select
+                  value={leadForm.tipo_imovel}
+                  onChange={(e) => setLeadForm({ ...leadForm, tipo_imovel: e.target.value })}
+                  className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
+                >
+                  <option value="CASA">Casa Residencial</option>
+                  <option value="APARTAMENTO">Apartamento Residencial</option>
+                  <option value="COMERCIAL">Sala Comercial / Escritório</option>
+                  <option value="SOBRADO">Sobrado / Triplex</option>
+                  <option value="OUTRO">Outro / Especial</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Etapa / Coluna no Kanban
-              </label>
-              <select
-                value={editingStatusGeral}
-                onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
-                className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
-              >
-                {COLUMNS.map(col => (
-                  <option key={col.id} value={col.id}>{col.title}</option>
-                ))}
-              </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Observações da Obra / Imóvel
+                  </label>
+                  <textarea
+                    placeholder="Ex: Parede de gesso acartonado, fiação exposta, necessidade de reforço..."
+                    value={leadForm.obs_imovel}
+                    onChange={(e) => setLeadForm({ ...leadForm, obs_imovel: e.target.value })}
+                    rows={2}
+                    className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-semibold resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Restrições de Entrega / Logística
+                  </label>
+                  <textarea
+                    placeholder="Ex: Elevador de serviço pequeno, entrega permitida das 9h às 11h..."
+                    value={leadForm.obs_entrega}
+                    onChange={(e) => setLeadForm({ ...leadForm, obs_entrega: e.target.value })}
+                    rows={2}
+                    className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-semibold resize-none"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+          {/* Seção 4: Dados do Projeto Comercial */}
+          <div className="space-y-3.5 pt-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
+              Detalhes do Projeto & Negócio
+            </span>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Valor do Projeto (R$)
+                </label>
+                <Input
+                  type="number"
+                  required
+                  placeholder="Ex: 45000"
+                  value={leadForm.valor_previsto}
+                  onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
+                  className="text-xs h-10 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Etapa / Coluna no Kanban
+                </label>
+                <select
+                  value={editingStatusGeral}
+                  onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
+                  className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
+                >
+                  {COLUMNS.map(col => (
+                    <option key={col.id} value={col.id}>{col.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4.5 border-t border-border/40 mt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsEditLeadOpen(false)}
               disabled={loading}
+              className="text-xs font-bold cursor-pointer"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold">
+            <Button type="submit" disabled={loading} className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none">
               {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>

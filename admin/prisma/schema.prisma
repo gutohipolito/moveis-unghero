@@ -89,17 +89,28 @@ model Verification {
 }
 
 model Client {
-  id          String    @id @default(uuid())
-  company_id  String
-  company     Company   @relation(fields: [company_id], references: [id])
-  nome        String
-  telefone    String
-  email       String
-  cidade      String
-  origem      Origin    // SITE, INSTAGRAM, INDICACAO, GOOGLE, WHATSAPP, FACEBOOK
-  status      String
-  observacoes String?
-  projects    Project[]
+  id           String    @id @default(uuid())
+  company_id   String
+  company      Company   @relation(fields: [company_id], references: [id])
+  nome         String
+  telefone     String
+  email        String
+  cidade       String
+  origem       Origin    // SITE, INSTAGRAM, INDICACAO, GOOGLE, WHATSAPP, FACEBOOK
+  status       String
+  observacoes  String?
+  projects     Project[]
+
+  // Novos campos cadastrais de endereço e imóvel
+  cnpj         String?
+  cep          String?
+  endereco     String?
+  numero       String?
+  bairro       String?
+  uf           String?
+  tipo_imovel  String?   // Casa, Apartamento, Comercial, etc.
+  obs_imovel   String?   // Observações do imóvel/obra
+  obs_entrega  String?   // Restrições/observações de entrega
 }
 
 enum Origin {
