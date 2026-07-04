@@ -3,6 +3,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import FinanceiroClient from "./FinanceiroClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
+import PageHeader from "@/components/PageHeader";
 
 // Mock de faturas e parcelas financeiras
 const MOCK_INSTALLMENTS = [
@@ -159,24 +160,19 @@ export default async function FinanceiroPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-gradient-gold">
-              Painel Financeiro Simplificado
-            </h1>
-            <PrivacyToggle />
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Acompanhe o faturamento, entradas, saldo devedor e controle as parcelas de recebíveis de todos os projetos.
-          </p>
-        </div>
-        {isMock && (
-          <span className="self-start text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded font-semibold tracking-wide uppercase">
-            Dados de Demonstração
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Financeiro"
+        description="Faturamento, entradas, saldo devedor e parcelas de todos os projetos."
+        badge={
+          isMock ? (
+            <span className="badge-meta px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
+              Demonstração
+            </span>
+          ) : undefined
+        }
+      >
+        <PrivacyToggle />
+      </PageHeader>
 
       <FinanceiroClient initialInstallments={formattedInsts} />
     </div>

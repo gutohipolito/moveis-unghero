@@ -491,7 +491,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             placeholder="Buscar por nome, e-mail ou telefone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-slate-50 border-border text-sm"
+            className="pl-9 bg-muted/40 border-border text-sm"
           />
         </div>
 
@@ -501,7 +501,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             <select
               value={filterOrigin}
               onChange={(e) => setFilterOrigin(e.target.value)}
-              className="bg-slate-50 border border-border rounded-lg text-xs p-2 focus:ring-1 focus:ring-primary outline-none"
+              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="ALL">Todas</option>
               {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -513,7 +513,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-slate-50 border border-border rounded-lg text-xs p-2 focus:ring-1 focus:ring-primary outline-none"
+              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="ALL">Todos os Status</option>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
@@ -522,11 +522,106 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
         </div>
       </Card>
 
-      {/* Tabela de Leads */}
-      <Card className="glass-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      {/* Lista de clientes — cards no mobile, tabela no desktop */}
+      <Card className="glass-card overflow-hidden">
+        {filteredClients.length === 0 ? (
+          <p className="p-8 text-center text-sm text-muted-foreground">
+            Nenhum lead ou cliente corresponde aos filtros aplicados.
+          </p>
+        ) : (
+          <>
+            <div className="md:hidden divide-y divide-border">
+              {filteredClients.map((client) => {
+                const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
+                const statBadge = STATUS_BADGES[client.status] || { bg: "bg-muted", text: "text-muted-foreground" };
+                const projectList = client.projects || [];
+                const parsed = parseDocument(client.observacoes);
+
+                return (
+                  <article key={client.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/clientes/${client.id}`} className="font-semibold text-foreground hover:text-primary truncate">
+                            {client.nome}
+                          </Link>
+                          <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {parsed.tipo}
+                          </span>
+                        </div>
+                        {parsed.doc && (
+                          <p className="detail-text mt-0.5">
+                            {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`badge-meta px-2 py-0.5 rounded-full shrink-0 ${statBadge.bg} ${statBadge.text}`}>
+                        {client.status.replace("_", " ")}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Phone className="h-3.5 w-3.5" /> {client.telefone}
+                      </span>
+                      <span className="inline-flex items-center gap-1 min-w-0 truncate">
+                        <Mail className="h-3.5 w-3.5 shrink-0" /> {client.email}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 text-primary" /> {client.cidade}
+                      </span>
+                      <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
+                        {client.origem}
+                      </span>
+                    </div>
+
+                    {projectList.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {projectList.map((p) => (
+                          <Link
+                            key={p.id}
+                            href={`/projects/${p.id}`}
+                            className="badge-meta px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20"
+                          >
+                            {p.status_geral}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => openProjectModal(client)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10 text-emerald-700 text-sm font-medium cursor-pointer"
+                      >
+                        <PlusCircle className="h-4 w-4" /> Projeto
+                      </button>
+                      <button
+                        onClick={() => openEditModal(client)}
+                        className="p-2 rounded-md bg-primary/10 text-primary cursor-pointer"
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClient(client.id)}
+                        className="p-2 rounded-md bg-destructive/10 text-destructive cursor-pointer"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="bg-slate-100 text-slate-800 border-b border-border">
+            <thead>
               <tr>
                 <th className="p-4 whitespace-nowrap font-bold">Cliente / Contato</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Cidade</th>
@@ -537,14 +632,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
-              {filteredClients.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-sm text-muted-foreground">
-                    Nenhum lead ou cliente corresponde aos filtros aplicados.
-                  </td>
-                </tr>
-              ) : (
-                filteredClients.map((client) => {
+              {filteredClients.map((client) => {
                   const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-slate-100", text: "text-slate-600" };
                   const statBadge = STATUS_BADGES[client.status] || { bg: "bg-slate-100", text: "text-slate-600" };
                   const projectList = client.projects || [];
@@ -651,11 +739,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       </td>
                     </tr>
                   );
-                })
-              )}
+                })}
             </tbody>
           </table>
-        </div>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* ─── MODAL: CADASTRAR CLIENTE ─── */}

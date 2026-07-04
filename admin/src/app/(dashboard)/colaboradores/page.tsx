@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import ColaboradoresClient from "@/components/ColaboradoresClient";
+import PageHeader from "@/components/PageHeader";
 
 export default async function ColaboradoresPage() {
   // Obtém a sessão de administrador real ou bypass
@@ -22,16 +23,12 @@ export default async function ColaboradoresPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gradient-gold">
-          Colaboradores & Equipe
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Gerencie a equipe de fábrica, comerciais e administradores da sua marcenaria.
-        </p>
-      </div>
+      <PageHeader
+        title="Colaboradores"
+        description="Gerencie a equipe de fábrica, comerciais e administradores da marcenaria."
+      />
 
-      <ColaboradoresClient 
+      <ColaboradoresClient
         initialColaboradores={colaboradores} 
         companyId={companyId} 
       />

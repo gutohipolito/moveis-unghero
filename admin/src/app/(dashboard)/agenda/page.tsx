@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import AgendaClient from "./AgendaClient";
+import PageHeader from "@/components/PageHeader";
 
 // Mock de dados para agenda técnica
 const MOCK_EVENTS = [
@@ -164,23 +165,19 @@ export default async function AgendaPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gradient-gold">
-            Agenda Técnica & Compromissos
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Gerencie visitas comerciais, medições físicas, entregas e instalações de marcenaria fina.
-          </p>
-        </div>
-        {isMock && (
-          <span className="self-start text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded font-semibold tracking-wide uppercase">
-            Dados de Demonstração
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Agenda"
+        description="Visitas comerciais, medições, entregas e instalações."
+        badge={
+          isMock ? (
+            <span className="badge-meta px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
+              Demonstração
+            </span>
+          ) : undefined
+        }
+      />
 
-      <AgendaClient 
+      <AgendaClient
         initialEvents={formattedEvents} 
         projects={formattedProjects} 
       />

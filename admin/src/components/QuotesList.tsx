@@ -27,6 +27,7 @@ import {
 } from "@/app/actions/quotes";
 import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
+import PageHeader from "@/components/PageHeader";
 
 interface QuoteItem {
   id: string;
@@ -236,40 +237,27 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <FileText className="h-6 w-6 text-[hsl(28_85%_45%)]" />
-              Orçamentos
-            </h1>
-            {isDbOffline ? (
-              <span className="text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 select-none">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Modo de Simulação
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 select-none">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Banco Neon Ativo
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-slate-500">
-            Gerencie e visualize todas as propostas comerciais e orçamentos emitidos.
-          </p>
-        </div>
-        <div>
-          <Button 
-            onClick={handleOpenCreateModal} 
-            className="font-bold btn-metallic gap-1.5 bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)]"
-          >
+      <PageHeader
+        title="Orçamentos"
+        description="Propostas comerciais e orçamentos emitidos para clientes."
+        badge={
+          isDbOffline ? (
+            <span className="badge-meta px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
+              Simulação
+            </span>
+          ) : (
+            <span className="badge-meta px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+              Neon ativo
+            </span>
+          )
+        }
+        actions={
+          <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
             <Plus className="h-4 w-4" />
-            Novo Orçamento
+            Novo orçamento
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
