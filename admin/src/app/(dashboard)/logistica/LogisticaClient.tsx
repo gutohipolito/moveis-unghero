@@ -275,7 +275,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
                   <div>
                     <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">Ajudantes / Equipe</label>
                     <Input
-                      placeholder="Ex: Silas & Thiago (Equipe B)"
+                      placeholder="Nomes dos ajudantes / equipe"
                       value={newExpForm.ajudantes}
                       onChange={(e) => setNewExpForm({ ...newExpForm, ajudantes: e.target.value })}
                       className="bg-white text-xs"
@@ -465,7 +465,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">Nome de quem recebeu o projeto</label>
                 <Input
                   required
-                  placeholder="Ex: Patricia Rezende (Cliente)"
+                  placeholder="Nome completo do recebedor"
                   value={signatureForm.recebedorNome}
                   onChange={(e) => setSignatureForm({ ...signatureForm, recebedorNome: e.target.value })}
                 />
@@ -475,7 +475,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">Documento de Identificação (RG / CPF)</label>
                 <Input
                   required
-                  placeholder="Ex: 123.456.789-00"
+                  placeholder="Documento de identificação (RG ou CPF)"
                   value={signatureForm.recebedorDoc}
                   onChange={(e) => setSignatureForm({ ...signatureForm, recebedorDoc: e.target.value })}
                 />

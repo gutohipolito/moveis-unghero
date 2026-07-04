@@ -538,28 +538,28 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
             <form onSubmit={handleSaveSupplier} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground block">Razão Social / Nome da Marca</label>
-                <Input required value={supplierNome} onChange={e => setSupplierNome(e.target.value)} placeholder="Ex: Blum Brasil" className="border-border bg-slate-50 text-sm" />
+                <Input required value={supplierNome} onChange={e => setSupplierNome(e.target.value)} placeholder="Nome da empresa ou marca" className="border-border bg-slate-50 text-sm" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">CNPJ</label>
-                  <Input required value={supplierCnpj} onChange={e => setSupplierCnpj(e.target.value)} placeholder="Ex: 12.345.678/0001-01" className="border-border bg-slate-50 text-sm" />
+                  <Input required value={supplierCnpj} onChange={e => setSupplierCnpj(e.target.value)} placeholder="Apenas números ou formatado" className="border-border bg-slate-50 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Material Principal</label>
-                  <Input required value={supplierMaterial} onChange={e => setSupplierMaterial(e.target.value)} placeholder="Ex: Dobradiças" className="border-border bg-slate-50 text-sm" />
+                  <Input required value={supplierMaterial} onChange={e => setSupplierMaterial(e.target.value)} placeholder="Tipo de material" className="border-border bg-slate-50 text-sm" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">E-mail Comercial</label>
-                  <Input type="email" value={supplierEmail} onChange={e => setSupplierEmail(e.target.value)} placeholder="vendas@fornecedor.com" className="border-border bg-slate-50 text-sm" />
+                  <Input type="email" value={supplierEmail} onChange={e => setSupplierEmail(e.target.value)} placeholder="e-mail de contato" className="border-border bg-slate-50 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Telefone Comercial</label>
-                  <Input value={supplierTelefone} onChange={e => setSupplierTelefone(e.target.value)} placeholder="(11) 98765-4321" className="border-border bg-slate-50 text-sm" />
+                  <Input value={supplierTelefone} onChange={e => setSupplierTelefone(e.target.value)} placeholder="Telefone de contato" className="border-border bg-slate-50 text-sm" />
                 </div>
               </div>
 
@@ -586,10 +586,10 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
             </div>
 
             <form onSubmit={handleSaveItem} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Nome do Material / Insumo</label>
-                  <Input required value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder="Ex: Chapa MDF Freijó 18mm" className="border-border bg-slate-50 text-sm" />
+                  <Input required value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder="Nome do material" className="border-border bg-slate-50 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Categoria</label>
@@ -605,18 +605,18 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Estoque Atual (Qtd)</label>
-                  <Input required type="number" value={itemQuantidade} onChange={e => setItemQuantidade(e.target.value)} placeholder="Ex: 50" className="border-border bg-slate-50 text-sm" />
+                  <Input required type="number" value={itemQuantidade} onChange={e => setItemQuantidade(e.target.value)} placeholder="Qtd atual" className="border-border bg-slate-50 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Estoque Mínimo (Qtd)</label>
-                  <Input required type="number" value={itemMinima} onChange={e => setItemMinima(e.target.value)} placeholder="Ex: 10" className="border-border bg-slate-50 text-sm" />
+                  <Input required type="number" value={itemMinima} onChange={e => setItemMinima(e.target.value)} placeholder="Qtd mínima" className="border-border bg-slate-50 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Preço de Custo (R$)</label>
-                  <Input required type="number" step="0.01" value={itemPreco} onChange={e => setItemPreco(e.target.value)} placeholder="Ex: 180.50" className="border-border bg-slate-50 text-sm" />
+                  <Input required type="number" step="0.01" value={itemPreco} onChange={e => setItemPreco(e.target.value)} placeholder="Preço" className="border-border bg-slate-50 text-sm" />
                 </div>
               </div>
 

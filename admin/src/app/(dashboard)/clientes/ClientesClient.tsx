@@ -753,7 +753,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
-                      placeholder="exemplo@email.com" 
+                      placeholder="E-mail do cliente" 
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -1043,7 +1043,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
-                      placeholder="exemplo@email.com" 
+                      placeholder="E-mail do cliente" 
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
                   </div>
@@ -1251,7 +1251,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 <Input
                   required
                   type="number"
-                  placeholder="Ex: 55000"
+                  placeholder="Valor estimado do projeto"
                   value={valorPrevisto}
                   onChange={e => setValorPrevisto(e.target.value)}
                   className="border-border bg-slate-50 text-sm"

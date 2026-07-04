@@ -4,22 +4,12 @@ import Link from "next/link";
 import { auth, getSessionSafe } from "@/lib/auth";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { 
-  Kanban, 
-  Calendar, 
-  DollarSign, 
   User as UserIcon,
-  LogOut,
-  FolderOpen,
-  Layers,
-  LayoutDashboard,
-  Users,
-  Package,
-  Truck,
-  ClipboardList,
-  Clock
+  LogOut
 } from "lucide-react";
 import { logoutSimulated } from "@/app/actions/login";
 import SidebarToggle from "@/components/SidebarToggle";
+import SidebarNav from "@/components/SidebarNav";
 
 export default async function DashboardLayout({
   children,
@@ -35,29 +25,7 @@ export default async function DashboardLayout({
     image: null
   };
 
-  interface NavItem {
-    name: string;
-    href: string;
-    icon: React.ComponentType<any>;
-    badge?: string;
-    section?: string;
-  }
-
-  const navItems: NavItem[] = [
-    { name: "Dashboard / BI", href: "/bi", icon: LayoutDashboard, section: "Principal" },
-    { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
-    { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Principal" },
-    { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
-    { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Principal" },
-    { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
-    { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
-    { name: "Portal do Colaborador", href: "/factory/portal", icon: Clock, section: "Operacional" },
-    { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
-    { name: "Logística & Entrega", href: "/logistica", icon: Truck, section: "Operacional" },
-    { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
-  ];
-
-  const sections = [...new Set(navItems.map(i => i.section))];
+  // Navegação gerida pelo componente de cliente SidebarNav
 
   return (
     <PrivacyProvider>
@@ -82,38 +50,7 @@ export default async function DashboardLayout({
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-5">
-            {sections.map(section => (
-              <div key={section}>
-                <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2"
-                  style={{ color: "hsl(210 10% 60%)" }}>
-                  {section}
-                </p>
-                <div className="space-y-0.5">
-                  {navItems.filter(i => i.section === section).map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className="sidebar-nav-link"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="sidebar-nav-icon">
-                          <item.icon className="h-4 w-4" style={{ color: "hsl(28 85% 45%)" }} />
-                        </div>
-                        <span>{item.name}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: "hsl(28 85% 45%)", color: "white" }}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
+          <SidebarNav />
 
           {/* Rodapé / Perfil */}
           <div className="p-3 m-3 rounded-xl" 
@@ -155,9 +92,9 @@ export default async function DashboardLayout({
       {/* ─── Conteúdo Principal ─── */}
       <div className="flex flex-col flex-1 md:pl-64 min-w-0">
 
-        {/* Topbar Mobile — logo simples */}
-        <header className="flex items-center justify-between h-14 px-4 md:hidden"
-          style={{ borderBottom: "1px solid hsl(210 15% 89%)", background: "white" }}>
+        {/* Topbar Mobile — logo simples e sticky translúcido */}
+        <header className="sticky top-0 flex items-center justify-between h-14 px-4 md:hidden z-40 backdrop-blur-md bg-white/80"
+          style={{ borderBottom: "1px solid hsl(210 15% 89%)" }}>
           <Link href="/crm">
             <img 
               src="/logo.png" 

@@ -52,7 +52,7 @@ export default function LoginFormClient({ loginAction }: LoginFormClientProps) {
         <Input
           type="text"
           required
-          placeholder="Ex: mariana@email.com ou (54) 99123-4567"
+          placeholder="Digite seu e-mail ou telefone"
           value={identificador}
           onChange={(e) => setIdentificador(e.target.value)}
         />
@@ -65,7 +65,7 @@ export default function LoginFormClient({ loginAction }: LoginFormClientProps) {
         <Input
           type="text"
           required
-          placeholder="Apenas números (Ex: 12345678900)"
+          placeholder="Apenas números"
           value={cpf}
           onChange={(e) => setCpf(e.target.value)}
         />

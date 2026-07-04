@@ -2,20 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { 
   Menu, 
   X, 
   User as UserIcon,
-  LogOut,
-  Kanban,
-  Calendar,
-  DollarSign,
-  Layers,
-  LayoutDashboard,
-  Users,
-  Package,
-  Truck
+  LogOut
 } from "lucide-react";
+import { NAV_ITEMS } from "@/components/SidebarNav";
 
 interface SidebarToggleProps {
   user: {
@@ -26,27 +20,10 @@ interface SidebarToggleProps {
   };
 }
 
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<any>;
-  section: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { name: "Dashboard / BI", href: "/bi", icon: LayoutDashboard, section: "Principal" },
-  { name: "CRM / Projetos", href: "/crm", icon: Kanban, section: "Principal" },
-  { name: "Clientes & Leads", href: "/clientes", icon: Users, section: "Principal" },
-  { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
-  { name: "Chão de Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
-  { name: "Estoque & Fornecedores", href: "/estoque", icon: Package, section: "Operacional" },
-  { name: "Logística & Entrega", href: "/logistica", icon: Truck, section: "Operacional" },
-  { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
-];
-
 const SECTIONS = [...new Set(NAV_ITEMS.map(i => i.section))];
 
 export default function SidebarToggle({ user }: SidebarToggleProps) {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -104,21 +81,26 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
                 {section}
               </p>
               <div className="space-y-0.5">
-                {NAV_ITEMS.filter(i => i.section === section).map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={toggleMenu}
-                    className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200"
-                    style={{ color: "hsl(220 20% 35%)" }}
-                  >
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-                      style={{ background: "hsl(210 20% 95%)" }}>
-                      <item.icon className="h-4 w-4" style={{ color: "hsl(28 85% 45%)" }} />
-                    </div>
-                    <span>{item.name}</span>
-                  </Link>
-                ))}
+                {NAV_ITEMS.filter(i => i.section === section).map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={toggleMenu}
+                      className={`flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                        isActive ? "sidebar-nav-link-active" : ""
+                      }`}
+                      style={{ color: isActive ? "hsl(28 85% 35%)" : "hsl(220 20% 35%)" }}
+                    >
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ background: isActive ? "hsl(28 85% 90%)" : "hsl(210 20% 95%)" }}>
+                        <item.icon className="h-4 w-4" style={{ color: isActive ? "hsl(28 85% 35%)" : "hsl(28 85% 45%)" }} />
+                      </div>
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ))}

@@ -469,7 +469,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             </label>
             <Input
               required
-              placeholder="Ex: Medição da Cozinha Gourmet, Entrega Módulos Closets"
+              placeholder="Título da tarefa ou visita"
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
             />
@@ -487,7 +487,7 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Data do Compromisso
@@ -512,14 +512,14 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Responsável Técnico
               </label>
               <Input
                 required
-                placeholder="Ex: Roberto (Montador)"
+                placeholder="Responsável pela execução"
                 value={form.responsavel}
                 onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
               />

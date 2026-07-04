@@ -60,11 +60,11 @@ export function Dialog({ isOpen, onClose, children, className }: DialogProps) {
       onCancel={handleCancel}
       onClick={handleClick}
       className={cn(
-        "rounded-xl border border-border bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm outline-hidden focus:outline-hidden max-w-lg w-full fixed m-auto inset-0 transition-all duration-300 open:animate-in open:fade-in open:zoom-in-95",
+        "rounded-2xl border border-border/80 bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-xs outline-hidden focus:outline-hidden w-[92vw] max-w-lg fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 open:animate-in open:fade-in open:zoom-in-95 max-h-[90vh] flex flex-col",
         className
       )}
     >
-      <div className="p-6 relative">
+      <div className="p-5 md:p-6 relative overflow-y-auto flex-1 max-h-[90vh] break-words">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 cursor-pointer"

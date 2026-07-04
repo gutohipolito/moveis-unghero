@@ -109,7 +109,7 @@ export default function LoginPage() {
                 <Input
                   type="email"
                   required
-                  placeholder="admin@moveisunghero.com"
+                  placeholder="seu.email@moveisunghero.com"
                   className="pl-9 bg-white border-border focus-visible:ring-primary"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

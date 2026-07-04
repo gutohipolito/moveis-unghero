@@ -1574,7 +1574,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <Input
               required
-              placeholder="Ex: Cozinha Americana Gourmet, Suíte Master"
+              placeholder="Nome do ambiente (ex. Cozinha, Suíte)"
               value={newEnvForm.nome}
               onChange={(e) => setNewEnvForm({ ...newEnvForm, nome: e.target.value })}
             />
@@ -1624,7 +1624,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <Input
               required
-              placeholder="Ex: Detalhamento_Corte_Cozinha.pdf, Render_V1.jpg"
+              placeholder="Nome do arquivo"
               value={uploadForm.nome_arquivo}
               onChange={(e) => setUploadForm({ ...uploadForm, nome_arquivo: e.target.value })}
             />
@@ -1676,13 +1676,13 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               required
               type="number"
               step="0.01"
-              placeholder="Ex: 5000.00"
+              placeholder="Valor em reais"
               value={newInstallmentForm.valor}
               onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, valor: e.target.value })}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Data de Vencimento
@@ -1737,7 +1737,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </label>
             <Input
               required
-              placeholder="Ex: Medição da Cozinha Gourmet, Entrega Módulos Closets"
+              placeholder="Título da tarefa ou visita"
               value={newTaskForm.titulo}
               onChange={(e) => setNewTaskForm({ ...newTaskForm, titulo: e.target.value })}
             />
@@ -1755,7 +1755,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Data do Compromisso
@@ -1780,14 +1780,14 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Responsável Técnico
               </label>
               <Input
                 required
-                placeholder="Ex: Roberto (Montador)"
+                placeholder="Responsável pela execução"
                 value={newTaskForm.responsavel}
                 onChange={(e) => setNewTaskForm({ ...newTaskForm, responsavel: e.target.value })}
               />

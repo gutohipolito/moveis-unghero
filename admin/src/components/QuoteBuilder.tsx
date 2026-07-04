@@ -367,7 +367,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
                           ) : (
                             <Input
                               required
-                              placeholder="Ex: Cozinha sob medida MDF Freijó 18mm"
+                              placeholder="Descrição do item ou ambiente"
                               value={item.descricao}
                               onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
                               className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-0.5 h-8 text-sm"

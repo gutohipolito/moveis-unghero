@@ -647,14 +647,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <Input
                 required
                 disabled={isExistingClient}
-                placeholder="Ex: João da Silva / Unghero Móveis Ltda"
+                placeholder="Nome do cliente ou empresa"
                 value={leadForm.nome}
                 onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
                 className="text-xs h-10 font-semibold"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   E-mail
@@ -663,7 +663,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   type="email"
                   required
                   disabled={isExistingClient}
-                  placeholder="exemplo@email.com"
+                  placeholder="e-mail do cliente"
                   value={leadForm.email}
                   onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                   className="text-xs h-10"
@@ -676,7 +676,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 <Input
                   required
                   disabled={isExistingClient}
-                  placeholder="(54) 99999-9999"
+                  placeholder="DDD + Telefone"
                   value={leadForm.telefone}
                   onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
                   className="text-xs h-10 font-semibold"
@@ -691,13 +691,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
                 Endereço de Entrega & Instalação
               </span>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-1">
                   <label className="text-xs font-semibold text-muted-foreground block mb-1">
                     CEP
                   </label>
                   <Input
-                    placeholder="95700-000"
+                    placeholder="CEP"
                     value={leadForm.cep}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -707,12 +707,12 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     className="text-xs h-10 font-semibold"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-muted-foreground block mb-1">
                     Rua / Logradouro
                   </label>
                   <Input
-                    placeholder="Ex: Avenida Planalto"
+                    placeholder="Rua, avenida, etc."
                     value={leadForm.endereco}
                     onChange={(e) => setLeadForm({ ...leadForm, endereco: e.target.value })}
                     className="text-xs h-10 font-semibold"
@@ -720,35 +720,35 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-1">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="sm:col-span-1">
                   <label className="text-xs font-semibold text-muted-foreground block mb-1">
                     Número
                   </label>
                   <Input
-                    placeholder="123"
+                    placeholder="Número"
                     value={leadForm.numero}
                     onChange={(e) => setLeadForm({ ...leadForm, numero: e.target.value })}
                     className="text-xs h-10 font-semibold"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-muted-foreground block mb-1">
                     Bairro
                   </label>
                   <Input
-                    placeholder="Ex: São Bento"
+                    placeholder="Bairro"
                     value={leadForm.bairro}
                     onChange={(e) => setLeadForm({ ...leadForm, bairro: e.target.value })}
                     className="text-xs h-10 font-semibold"
                   />
                 </div>
-                <div className="md:col-span-1">
+                <div className="sm:col-span-1">
                   <label className="text-xs font-semibold text-muted-foreground block mb-1">
                     Estado (UF)
                   </label>
                   <Input
-                    placeholder="RS"
+                    placeholder="UF"
                     value={leadForm.uf}
                     onChange={(e) => setLeadForm({ ...leadForm, uf: e.target.value })}
                     className="text-xs h-10 font-semibold uppercase"
@@ -759,7 +759,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           )}
 
           {/* Cidade e Origem */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Cidade de Instalação
@@ -767,7 +767,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <Input
                 required
                 disabled={isExistingClient}
-                placeholder="Ex: Bento Gonçalves"
+                placeholder="Cidade"
                 value={leadForm.cidade}
                 onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
                 className="text-xs h-10 font-semibold"
@@ -817,13 +817,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground block mb-1">
                       Observações da Obra / Imóvel
                     </label>
                     <textarea
-                      placeholder="Ex: Parede de gesso acartonado, fiação exposta, necessidade de reforço..."
+                      placeholder="Dificuldades na instalação, parede de gesso, umidade, etc."
                       value={leadForm.obs_imovel}
                       onChange={(e) => setLeadForm({ ...leadForm, obs_imovel: e.target.value })}
                       rows={2}
@@ -835,7 +835,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                       Restrições de Entrega / Logística
                     </label>
                     <textarea
-                      placeholder="Ex: Elevador de serviço pequeno, entrega permitida das 9h às 11h..."
+                      placeholder="Sem elevador, horários restritos de condomínio, etc."
                       value={leadForm.obs_entrega}
                       onChange={(e) => setLeadForm({ ...leadForm, obs_entrega: e.target.value })}
                       rows={2}
@@ -852,7 +852,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
               Detalhes do Projeto & Negócio
             </span>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Valor Previsto (R$)
@@ -860,7 +860,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 <Input
                   type="number"
                   required
-                  placeholder="Ex: 45000"
+                  placeholder="Valor estimado do projeto"
                   value={leadForm.valor_previsto}
                   onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
                   className="text-xs h-10 font-semibold"
@@ -941,14 +941,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               </label>
               <Input
                 required
-                placeholder="Ex: João da Silva"
+                placeholder="Nome do cliente ou empresa"
                 value={leadForm.nome}
                 onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
                 className="text-xs h-10 font-semibold"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   E-mail
@@ -956,7 +956,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 <Input
                   type="email"
                   required
-                  placeholder="exemplo@email.com"
+                  placeholder="e-mail do cliente"
                   value={leadForm.email}
                   onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                   className="text-xs h-10"
@@ -968,7 +968,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 </label>
                 <Input
                   required
-                  placeholder="(54) 99999-9999"
+                  placeholder="DDD + Telefone"
                   value={leadForm.telefone}
                   onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
                   className="text-xs h-10 font-semibold"
@@ -982,13 +982,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
               Endereço de Entrega & Instalação
             </span>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-1">
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   CEP
                 </label>
                 <Input
-                  placeholder="95700-000"
+                  placeholder="CEP"
                   value={leadForm.cep}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -998,12 +998,12 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   className="text-xs h-10 font-semibold"
                 />
               </div>
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Rua / Logradouro
                 </label>
                 <Input
-                  placeholder="Ex: Avenida Planalto"
+                  placeholder="Rua, avenida, etc."
                   value={leadForm.endereco}
                   onChange={(e) => setLeadForm({ ...leadForm, endereco: e.target.value })}
                   className="text-xs h-10 font-semibold"
@@ -1011,35 +1011,35 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="sm:col-span-1">
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Número
                 </label>
                 <Input
-                  placeholder="123"
+                  placeholder="Número"
                   value={leadForm.numero}
                   onChange={(e) => setLeadForm({ ...leadForm, numero: e.target.value })}
                   className="text-xs h-10 font-semibold"
                 />
               </div>
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Bairro
                 </label>
                 <Input
-                  placeholder="Ex: São Bento"
+                  placeholder="Bairro"
                   value={leadForm.bairro}
                   onChange={(e) => setLeadForm({ ...leadForm, bairro: e.target.value })}
                   className="text-xs h-10 font-semibold"
                 />
               </div>
-              <div className="md:col-span-1">
+              <div className="sm:col-span-1">
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Estado (UF)
                 </label>
                 <Input
-                  placeholder="RS"
+                  placeholder="UF"
                   value={leadForm.uf}
                   onChange={(e) => setLeadForm({ ...leadForm, uf: e.target.value })}
                   className="text-xs h-10 font-semibold uppercase"
@@ -1049,14 +1049,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           </div>
 
           {/* Cidade e Origem */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
                 Cidade de Instalação
               </label>
               <Input
                 required
-                placeholder="Ex: Bento Gonçalves"
+                placeholder="Cidade"
                 value={leadForm.cidade}
                 onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
                 className="text-xs h-10 font-semibold"
@@ -1104,13 +1104,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground block mb-1">
                     Observações da Obra / Imóvel
                   </label>
                   <textarea
-                    placeholder="Ex: Parede de gesso acartonado, fiação exposta, necessidade de reforço..."
+                    placeholder="Dificuldades na instalação, parede de gesso, umidade, etc."
                     value={leadForm.obs_imovel}
                     onChange={(e) => setLeadForm({ ...leadForm, obs_imovel: e.target.value })}
                     rows={2}
@@ -1122,7 +1122,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     Restrições de Entrega / Logística
                   </label>
                   <textarea
-                    placeholder="Ex: Elevador de serviço pequeno, entrega permitida das 9h às 11h..."
+                    placeholder="Sem elevador, horários restritos de condomínio, etc."
                     value={leadForm.obs_entrega}
                     onChange={(e) => setLeadForm({ ...leadForm, obs_entrega: e.target.value })}
                     rows={2}
@@ -1138,7 +1138,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
               Detalhes do Projeto & Negócio
             </span>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Valor do Projeto (R$)
@@ -1146,7 +1146,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 <Input
                   type="number"
                   required
-                  placeholder="Ex: 45000"
+                  placeholder="Valor total do projeto"
                   value={leadForm.valor_previsto}
                   onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
                   className="text-xs h-10 font-semibold"

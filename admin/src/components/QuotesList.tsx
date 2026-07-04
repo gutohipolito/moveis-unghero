@@ -621,12 +621,12 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                     {/* Modo 3: Orçamento Avulso */}
                     {creationMode === "QUICK" && (
                       <form onSubmit={handleCreateQuickClient} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-1">
                             <label className="text-xs font-bold text-slate-500 block">Nome do Cliente *</label>
                             <Input 
                               required 
-                              placeholder="Ex: Pedro Henrique" 
+                              placeholder="Nome completo do cliente" 
                               value={quickNome}
                               onChange={e => setQuickNome(e.target.value)}
                               className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
@@ -636,7 +636,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                             <label className="text-xs font-bold text-slate-500 block">Cidade *</label>
                             <Input 
                               required 
-                              placeholder="Ex: Bento Gonçalves" 
+                              placeholder="Cidade" 
                               value={quickCidade}
                               onChange={e => setQuickCidade(e.target.value)}
                               className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
@@ -644,12 +644,12 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-1">
                             <label className="text-xs font-bold text-slate-500 block">E-mail (Opcional)</label>
                             <Input 
                               type="email"
-                              placeholder="Ex: pedro@email.com" 
+                              placeholder="E-mail do cliente" 
                               value={quickEmail}
                               onChange={e => setQuickEmail(e.target.value)}
                               className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
@@ -658,7 +658,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                           <div className="space-y-1">
                             <label className="text-xs font-bold text-slate-500 block">Telefone (Opcional)</label>
                             <Input 
-                              placeholder="Ex: (54) 99999-8888" 
+                              placeholder="DDD + Telefone" 
                               value={quickTelefone}
                               onChange={e => setQuickTelefone(e.target.value)}
                               className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
