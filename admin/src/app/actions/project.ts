@@ -199,3 +199,48 @@ export async function uploadProjectFile(projectId: string, data: { tipo: FileTyp
     return { success: true, simulated: true, data: mockFile };
   }
 }
+
+// Atualiza informações de controle (Responsável, Data de Entrega, Observações) do projeto
+export async function updateProjectDetails(
+  projectId: string,
+  data: {
+    data_entrega_prevista?: string | null;
+    responsavel_id?: string | null;
+    observacoes?: string | null;
+  }
+) {
+  try {
+    const updateData: any = {};
+    
+    if (data.data_entrega_prevista !== undefined) {
+      updateData.data_entrega_prevista = data.data_entrega_prevista ? new Date(data.data_entrega_prevista) : null;
+    }
+    if (data.responsavel_id !== undefined) {
+      updateData.responsavel_id = data.responsavel_id === "none" ? null : data.responsavel_id;
+    }
+    if (data.observacoes !== undefined) {
+      updateData.observacoes = data.observacoes;
+    }
+
+    await prisma.project.update({
+      where: { id: projectId },
+      data: updateData,
+    });
+
+    // Registra na timeline
+    await prisma.timeline.create({
+      data: {
+        project_id: projectId,
+        acao: `Os detalhes operacionais do projeto (entrega/responsável/observações) foram atualizados`,
+        interno_sotamente: true,
+        user_id: "system-admin-mock-id",
+      },
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.warn("Erro ao atualizar detalhes do projeto:", error);
+    return { success: false, error: error.message };
+  }
+}

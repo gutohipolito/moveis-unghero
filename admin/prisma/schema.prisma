@@ -39,6 +39,7 @@ model User {
   timeline      Timeline[]
   ambientes_sob_responsabilidade Environment[] @relation("UserResponsavel")
   timecards     TimeCard[]
+  projetos_sob_responsabilidade  Project[]     @relation("ProjectResponsavel")
 }
 
 enum Role {
@@ -122,6 +123,12 @@ model Project {
   tasks          Task[]
   timeline       Timeline[]
   installments   Installment[]
+  
+  // Controle Operacional do Projeto
+  data_entrega_prevista DateTime?
+  responsavel_id        String?
+  responsavel           User?         @relation("ProjectResponsavel", fields: [responsavel_id], references: [id])
+  observacoes           String?
 }
 
 enum ProjectStatus {

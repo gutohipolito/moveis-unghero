@@ -359,44 +359,43 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                           isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
                         }`}
                       >
-                        {/* Origem Badge */}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest border border-border">
-                            {project.client.origem}
-                          </span>
-                          <span className="text-xs text-muted-foreground flex items-center font-medium">
-                            <MapPin className="h-3 w-3 mr-0.5 text-primary" />
-                            {project.client.cidade}
-                          </span>
-                        </div>
-
-                        {/* Nome do Cliente */}
-                        <h4 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                          {project.client.nome}
-                        </h4>
-
-                        {/* Detalhes de Contato */}
-                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                          <p className="flex items-center">
-                            <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
-                            {project.client.telefone}
-                          </p>
-                        </div>
-
-                        {/* Indicador de Chão de Fábrica / Produção */}
-                        {(project.status_geral === "PRODUCAO" || project.status_geral === "INSTALACAO" || project.status_geral === "FINALIZADO") && (
-                          <div className="mt-2.5">
-                            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Fábrica & Montagem:</span>
-                            <Link 
-                              href="/factory" 
-                              className="text-[10px] bg-cyan-50/80 hover:bg-cyan-100 text-cyan-600 border border-cyan-200 py-1 px-2.5 rounded-lg font-bold flex items-center justify-between transition-all group/prod"
-                              title="Acessar painel Chão de Fábrica"
-                            >
-                              <span>{getProductionProgress(project.id, project.status_geral)}</span>
-                              <ArrowRight className="h-3 w-3 group-hover/prod:translate-x-0.5 transition-transform text-cyan-500" />
-                            </Link>
+                        <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
+                          {/* Origem Badge */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest border border-border">
+                              {project.client.origem}
+                            </span>
+                            <span className="text-xs text-muted-foreground flex items-center font-medium">
+                              <MapPin className="h-3 w-3 mr-0.5 text-primary" />
+                              {project.client.cidade}
+                            </span>
                           </div>
-                        )}
+
+                          {/* Nome do Cliente */}
+                          <h4 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                            {project.client.nome}
+                          </h4>
+
+                          {/* Detalhes de Contato */}
+                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                            <p className="flex items-center">
+                              <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
+                              {project.client.telefone}
+                            </p>
+                          </div>
+
+                          {/* Indicador de Chão de Fábrica / Produção */}
+                          {(project.status_geral === "PRODUCAO" || project.status_geral === "INSTALACAO" || project.status_geral === "FINALIZADO") && (
+                            <div className="mt-2.5">
+                              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Fábrica & Montagem:</span>
+                              <div
+                                className="text-[10px] bg-cyan-50/80 text-cyan-600 border border-cyan-200 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-between"
+                              >
+                                <span>{getProductionProgress(project.id, project.status_geral)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </Link>
 
                         {/* Separador */}
                         <div className="my-3 border-t border-border" />

@@ -9,6 +9,7 @@ import {
   addTimelineEvent, 
   toggleFileApproval, 
   uploadProjectFile,
+  updateProjectDetails,
   type EnvironmentType,
   type EnvironmentStatus,
   type FileType
@@ -44,7 +45,8 @@ import {
   Building,
   DollarSign,
   Trash2,
-  Sparkles
+  Sparkles,
+  Calendar
 } from "lucide-react";
 
 interface Environment {
@@ -121,11 +123,24 @@ interface Project {
   quotes: Quote[];
   tasks: Task[];
   installments: Installment[];
+  
+  // Controle Operacional do Projeto
+  data_entrega_prevista?: string | null;
+  responsavel_id?: string | null;
+  responsavelNome?: string | null;
+  observacoes?: string | null;
+}
+
+interface ColaboradorSelect {
+  id: string;
+  name: string;
+  cargo: string;
 }
 
 interface ProjectDetailsProps {
   initialProject: Project;
   companyId: string;
+  colaboradores: ColaboradorSelect[];
   isMock: boolean;
 }
 
@@ -148,9 +163,49 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
   { value: "PROJETO_TECNICO", label: "Projeto Técnico (CAD/SketchUp)" }
 ];
 
-export default function ProjectDetails({ initialProject, companyId, isMock }: ProjectDetailsProps) {
+export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock }: ProjectDetailsProps) {
   const [project, setProject] = useState<Project>(initialProject);
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
+
+  // Estados para Controle Operacional do Projeto (Responsável, Entrega e Observações)
+  const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
+  const [dataEntrega, setDataEntrega] = useState(project.data_entrega_prevista ? project.data_entrega_prevista.split("T")[0] : "");
+  const [observacoesProj, setObservacoesProj] = useState(project.observacoes || "");
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+
+  const handleSaveProjectDetails = async () => {
+    setLoading(true);
+    const res = await updateProjectDetails(project.id, {
+      data_entrega_prevista: dataEntrega || null,
+      responsavel_id: responsavelId,
+      observacoes: observacoesProj
+    });
+
+    if (res.success) {
+      const selected = colaboradores.find(c => c.id === responsavelId);
+      setProject(prev => ({
+        ...prev,
+        responsavel_id: responsavelId === "none" ? null : responsavelId,
+        responsavelNome: selected ? selected.name : null,
+        data_entrega_prevista: dataEntrega ? new Date(dataEntrega).toISOString() : null,
+        observacoes: observacoesProj,
+        timeline: [
+          {
+            id: `local-meta-${Date.now()}`,
+            acao: `Detalhes operacionais atualizados (Responsável: ${selected ? selected.name : "Nenhum"}, Entrega: ${dataEntrega ? new Date(dataEntrega).toLocaleDateString("pt-BR") : "não definida"})`,
+            data: new Date().toISOString(),
+            interno_sotamente: true,
+            user: { name: "Sistema" }
+          },
+          ...prev.timeline
+        ]
+      }));
+      setIsEditingMeta(false);
+    } else {
+      alert("Erro ao atualizar detalhes do projeto: " + res.error);
+    }
+    setLoading(false);
+  };
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
@@ -645,6 +700,115 @@ export default function ProjectDetails({ initialProject, companyId, isMock }: Pr
                 {project.client.observacoes}
               </div>
             )}
+
+            {/* Controle Operacional do Projeto */}
+            <div className="border-t border-slate-100 pt-4 mt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Controle Operacional & Prazos
+                </span>
+                {!isEditingMeta ? (
+                  <Button 
+                    onClick={() => setIsEditingMeta(true)}
+                    variant="ghost" 
+                    size="sm"
+                    className="text-[10px] font-bold text-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_95%)] h-7 cursor-pointer"
+                  >
+                    Editar Controle
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={() => setIsEditingMeta(false)}
+                      variant="ghost" 
+                      size="sm"
+                      className="text-[10px] font-bold text-slate-400 h-7 cursor-pointer"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleSaveProjectDetails}
+                      size="sm"
+                      className="text-[10px] font-bold bg-[hsl(28_85%_45%)] text-white h-7 cursor-pointer border-none px-3"
+                    >
+                      Salvar
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {!isEditingMeta ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2">
+                    <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
+                      <User className="h-3.5 w-3.5 text-primary" />
+                      Responsável Geral:
+                    </div>
+                    <strong className="text-sm text-slate-800 font-bold block">
+                      {project.responsavelNome || "Não atribuído"}
+                    </strong>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2">
+                    <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
+                      <Calendar className="h-3.5 w-3.5 text-primary" />
+                      Previsão de Entrega:
+                    </div>
+                    <strong className="text-sm text-slate-800 font-bold block">
+                      {project.data_entrega_prevista 
+                        ? new Date(project.data_entrega_prevista).toLocaleDateString("pt-BR") 
+                        : "Não definida"}
+                    </strong>
+                  </div>
+
+                  {project.observacoes && (
+                    <div className="md:col-span-2 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1 text-slate-600">
+                      <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">Observações do Projeto:</span>
+                      <p className="text-slate-700 font-medium whitespace-pre-wrap">{project.observacoes}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Responsável Geral</label>
+                    <select
+                      value={responsavelId}
+                      onChange={(e) => setResponsavelId(e.target.value)}
+                      className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs px-3 font-semibold cursor-pointer outline-none"
+                    >
+                      <option value="none">Nenhum</option>
+                      {colaboradores.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.cargo})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Previsão de Entrega</label>
+                    <Input
+                      type="date"
+                      value={dataEntrega}
+                      onChange={(e) => setDataEntrega(e.target.value)}
+                      className="bg-slate-50 border-slate-200 text-xs h-10 rounded-lg text-slate-800"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Observações do Projeto</label>
+                    <textarea
+                      placeholder="Adicione observações operacionais internas do projeto..."
+                      value={observacoesProj}
+                      onChange={(e) => setObservacoesProj(e.target.value)}
+                      rows={3}
+                      className="w-full p-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs font-semibold outline-none resize-none"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Painel Comercial Rápido */}

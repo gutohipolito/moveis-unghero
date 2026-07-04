@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
+import { getColaboradores } from "@/app/actions/colaboradores";
 import ProjectDetails from "@/components/ProjectDetails";
 
 // Dados fictícios detalhados para caso o banco de dados esteja vazio ou inacessível
@@ -238,6 +239,7 @@ export default async function ProjectPage({ params }: RouteParams) {
           quotes: true,
           tasks: true,
           installments: true,
+          responsavel: true,
           timeline: {
             include: {
               user: {
@@ -287,10 +289,21 @@ export default async function ProjectPage({ params }: RouteParams) {
       installments: [],
       timeline: [
         { id: "time-gen-1", acao: "Projeto inicial gerado na rota dinamicamente", data: new Date(), interno_sotamente: false, user: { name: "Sistema" } }
-      ]
+      ],
+      data_entrega_prevista: null,
+      responsavel_id: null,
+      observacoes: ""
     };
     isMock = true;
   }
+
+  // Busca colaboradores ativos
+  const colaboradoresRes = await getColaboradores(userCompanyId);
+  const colaboradores = colaboradoresRes.success && colaboradoresRes.colaboradores ? colaboradoresRes.colaboradores.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    cargo: c.cargo
+  })) : [];
 
   // Formata o projeto de forma segura
   const formattedProject = {
@@ -298,6 +311,10 @@ export default async function ProjectPage({ params }: RouteParams) {
     valor_previsto: Number(project.valor_previsto),
     status_geral: project.status_geral,
     client: project.client,
+    data_entrega_prevista: project.data_entrega_prevista ? (project.data_entrega_prevista.toISOString ? project.data_entrega_prevista.toISOString() : new Date(project.data_entrega_prevista).toISOString()) : null,
+    responsavel_id: project.responsavel_id || null,
+    responsavelNome: project.responsavel?.name || null,
+    observacoes: project.observacoes || "",
     environments: project.environments.map((env: any) => ({
       id: env.id,
       nome: env.nome,
@@ -350,8 +367,9 @@ export default async function ProjectPage({ params }: RouteParams) {
   return (
     <div className="space-y-6">
       <ProjectDetails 
-        initialProject={formattedProject} 
+        initialProject={formattedProject as any} 
         companyId={userCompanyId} 
+        colaboradores={colaboradores}
         isMock={isMock} 
       />
     </div>
