@@ -3,9 +3,11 @@
 import React, { useState } from "react";
 import { Role } from "@prisma/client";
 import { createColaborador, deleteColaborador } from "@/app/actions/colaboradores";
+import ActionDialog, { type ActionDialogVariant } from "@/components/ActionDialog";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { 
   Users, 
   UserPlus, 
@@ -19,7 +21,6 @@ import {
   Wallet,
   Mail,
   Calendar,
-  X 
 } from "lucide-react";
 
 interface ColaboradorItem {
@@ -33,6 +34,12 @@ interface ColaboradorItem {
 interface ColaboradoresClientProps {
   initialColaboradores: ColaboradorItem[];
   companyId: string;
+}
+
+interface FeedbackState {
+  variant: ActionDialogVariant;
+  title: string;
+  message: string;
 }
 
 const CARGO_BADGES: Record<
@@ -108,23 +115,44 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
+function resetCreateForm(
+  setName: (v: string) => void,
+  setEmail: (v: string) => void,
+  setPassword: (v: string) => void,
+  setCargo: (v: Role) => void
+) {
+  setName("");
+  setEmail("");
+  setPassword("");
+  setCargo("PRODUCAO");
+}
+
 export default function ColaboradoresClient({ initialColaboradores, companyId }: ColaboradoresClientProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorItem[]>(initialColaboradores);
   const [search, setSearch] = useState("");
   const [filterCargo, setFilterCargo] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ColaboradorItem | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
-  // Form states
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<Role>("PRODUCAO");
   const [password, setPassword] = useState("");
 
+  const showFeedback = (variant: ActionDialogVariant, title: string, message: string) => {
+    setFeedback({ variant, title, message });
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
+      showFeedback(
+        "error",
+        "Campos obrigatórios",
+        "Preencha nome, e-mail e senha provisória para cadastrar o colaborador."
+      );
       return;
     }
 
@@ -138,63 +166,84 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
     });
 
     if (res.success && res.user) {
-      setColaboradores([...colaboradores, {
-        id: res.user.id,
-        name: res.user.name,
-        email: res.user.email,
-        cargo: res.user.cargo as Role,
-        createdAt: new Date(res.user.createdAt)
-      }]);
-      setIsModalOpen(false);
-      setName("");
-      setEmail("");
-      setPassword("");
-      setCargo("PRODUCAO");
+      const cargoLabel = CARGO_BADGES[res.user.cargo as Role]?.label || res.user.cargo;
+      setColaboradores([
+        ...colaboradores,
+        {
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email,
+          cargo: res.user.cargo as Role,
+          createdAt: new Date(res.user.createdAt),
+        },
+      ]);
+      setIsCreateOpen(false);
+      resetCreateForm(setName, setEmail, setPassword, setCargo);
+      showFeedback(
+        "success",
+        "Colaborador cadastrado",
+        `${res.user.name} foi adicionado à equipe como ${cargoLabel}.`
+      );
     } else {
-      alert(res.error || "Ocorreu um erro ao salvar o colaborador.");
+      showFeedback(
+        "error",
+        "Não foi possível cadastrar",
+        res.error || "Ocorreu um erro ao salvar o colaborador. Tente novamente."
+      );
     }
     setLoading(false);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Deseja mesmo remover o colaborador ${name} da equipe?`)) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
 
     setLoading(true);
-    const res = await deleteColaborador(id);
+    const target = deleteTarget;
+    const res = await deleteColaborador(target.id);
+
     if (res.success) {
-      setColaboradores(colaboradores.filter(c => c.id !== id));
+      setColaboradores(colaboradores.filter((c) => c.id !== target.id));
+      setDeleteTarget(null);
+      showFeedback(
+        "success",
+        "Colaborador removido",
+        `${target.name} foi removido da equipe com sucesso.`
+      );
     } else {
-      alert(res.error || "Erro ao deletar colaborador.");
+      setDeleteTarget(null);
+      showFeedback(
+        "error",
+        "Não foi possível remover",
+        res.error || "Erro ao remover colaborador. Tente novamente."
+      );
     }
     setLoading(false);
   };
 
-  // Filtragem
-  const filtered = colaboradores.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase());
+  const filtered = colaboradores.filter((c) => {
+    const matchesSearch =
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email.toLowerCase().includes(search.toLowerCase());
     const matchesCargo = filterCargo === "ALL" || c.cargo === filterCargo;
     return matchesSearch && matchesCargo;
   });
 
-  // Estatísticas
   const total = colaboradores.length;
-  const producaoCount = colaboradores.filter(c => c.cargo === "PRODUCAO").length;
-  const comercialCount = colaboradores.filter(c => c.cargo === "COMERCIAL").length;
-  const adminCount = colaboradores.filter(c => c.cargo === "ADMIN").length;
+  const producaoCount = colaboradores.filter((c) => c.cargo === "PRODUCAO").length;
+  const comercialCount = colaboradores.filter((c) => c.cargo === "COMERCIAL").length;
+  const adminCount = colaboradores.filter((c) => c.cargo === "ADMIN").length;
 
   return (
     <div className="space-y-6">
-      
-      {/* Cards de Indicadores da Equipe */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 glass-card border-border flex items-center gap-4">
           <div className="p-3 bg-[hsl(28_85%_95%)] text-[hsl(28_85%_45%)] rounded-lg">
             <Users className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Total de Colaboradores</span>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
+              Total de Colaboradores
+            </span>
             <strong className="text-xl text-foreground font-extrabold">{total} pessoas</strong>
           </div>
         </Card>
@@ -204,7 +253,9 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             <Hammer className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Chão de Fábrica</span>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
+              Chão de Fábrica
+            </span>
             <strong className="text-xl text-foreground font-extrabold">{producaoCount} marceneiros</strong>
           </div>
         </Card>
@@ -214,7 +265,9 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             <BadgePercent className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Equipe de Vendas</span>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
+              Equipe de Vendas
+            </span>
             <strong className="text-xl text-foreground font-extrabold">{comercialCount} comerciais</strong>
           </div>
         </Card>
@@ -224,25 +277,26 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Gestores / ADMIN</span>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
+              Gestores / ADMIN
+            </span>
             <strong className="text-xl text-foreground font-extrabold">{adminCount} diretores</strong>
           </div>
         </Card>
       </div>
 
-      {/* Ações e Filtros */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row gap-3 flex-1 max-w-2xl">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Buscar por nome ou e-mail..." 
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou e-mail..."
               className="pl-9 bg-muted/40 border-border text-sm h-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <select 
+          <select
             value={filterCargo}
             onChange={(e) => setFilterCargo(e.target.value)}
             className="h-10 rounded-lg border border-border bg-muted/40 text-foreground text-sm px-3 font-medium cursor-pointer outline-none min-w-[180px]"
@@ -256,16 +310,15 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
           </select>
         </div>
 
-        <Button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white font-semibold text-xs px-4 py-2.5 h-10 rounded-lg flex items-center gap-1.5 cursor-pointer border-none shadow-sm transition-all"
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic"
         >
           <UserPlus className="h-4 w-4" />
           Adicionar Colaborador
         </Button>
       </div>
 
-      {/* Grid de cards da equipe */}
       {filtered.length === 0 ? (
         <Card className="glass-card p-12 text-center">
           <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
@@ -276,17 +329,16 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {filtered.map((c) => {
-            const badge =
-              CARGO_BADGES[c.cargo] || {
-                label: c.cargo,
-                shortLabel: c.cargo,
-                bg: "bg-muted",
-                text: "text-muted-foreground",
-                border: "border-border",
-                avatar: "bg-muted text-muted-foreground border-border",
-                accent: "bg-gradient-to-r from-muted to-muted",
-                icon: Users,
-              };
+            const badge = CARGO_BADGES[c.cargo] || {
+              label: c.cargo,
+              shortLabel: c.cargo,
+              bg: "bg-muted",
+              text: "text-muted-foreground",
+              border: "border-border",
+              avatar: "bg-muted text-muted-foreground border-border",
+              accent: "bg-gradient-to-r from-muted to-muted",
+              icon: Users,
+            };
             const BadgeIcon = badge.icon;
             const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR", {
               day: "2-digit",
@@ -318,9 +370,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                   </div>
 
                   <div className="min-w-0 space-y-1">
-                    <h3 className="text-base font-bold text-foreground leading-tight truncate">
-                      {c.name}
-                    </h3>
+                    <h3 className="text-base font-bold text-foreground leading-tight truncate">{c.name}</h3>
                     <p className="text-xs text-muted-foreground font-medium">{badge.label}</p>
                   </div>
 
@@ -335,14 +385,11 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                     </p>
                   </div>
 
-                  <div className="mt-auto pt-3 border-t border-border/60 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground/70 uppercase tracking-wider">
-                      #{c.id.substring(0, 8)}
-                    </span>
+                  <div className="mt-auto pt-3 border-t border-border/60 flex justify-end">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(c.id, c.name)}
+                      onClick={() => setDeleteTarget(c)}
                       className="h-8 px-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors gap-1.5"
                       disabled={isProtected || loading}
                       title="Remover colaborador"
@@ -358,104 +405,116 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         </div>
       )}
 
-      {/* Modal / Overlay para Criar Colaborador */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
-          <Card className="w-full max-w-md bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden animate-scale-up">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-[hsl(28_85%_45%)]" />
-                <h3 className="font-extrabold text-base text-slate-800">Novo Colaborador</h3>
-              </div>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+      <Dialog
+        isOpen={isCreateOpen}
+        onClose={() => {
+          if (loading) return;
+          setIsCreateOpen(false);
+          resetCreateForm(setName, setEmail, setPassword, setCargo);
+        }}
+        className="max-w-md"
+      >
+        <div className="space-y-4 pr-6">
+          <div className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" />
+            <h3 className="font-bold text-lg text-foreground">Novo Colaborador</h3>
+          </div>
+
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Nome completo</label>
+              <Input
+                placeholder="Nome completo do colaborador"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleCreate} className="p-5 space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nome Completo</label>
-                <Input 
-                  placeholder="Nome completo do colaborador"
-                  className="bg-slate-50 border-slate-200 text-sm h-10 rounded-lg text-slate-800"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">E-mail corporativo</label>
+              <Input
+                type="email"
+                placeholder="E-mail profissional"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">E-mail Corporativo</label>
-                <Input 
-                  type="email"
-                  placeholder="E-mail profissional"
-                  className="bg-slate-50 border-slate-200 text-sm h-10 rounded-lg text-slate-800"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Cargo / função</label>
+              <select
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value as Role)}
+                className="w-full h-10 rounded-lg border border-border bg-muted/40 text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
+              >
+                <option value="PRODUCAO">Fábrica</option>
+                <option value="COMERCIAL">Comercial</option>
+                <option value="PROJETISTA">Projetista</option>
+                <option value="FINANCEIRO">Financeiro</option>
+                <option value="ADMIN">Diretoria</option>
+              </select>
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cargo / Função</label>
-                <select 
-                  value={cargo}
-                  onChange={(e) => setCargo(e.target.value as Role)}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm px-3 font-semibold cursor-pointer outline-none"
-                >
-                  <option value="PRODUCAO">Fábrica</option>
-                  <option value="COMERCIAL">Comercial</option>
-                  <option value="PROJETISTA">Projetista</option>
-                  <option value="FINANCEIRO">Financeiro</option>
-                  <option value="ADMIN">Diretoria</option>
-                </select>
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Senha provisória</label>
+              <Input
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Senha Provisória</label>
-                <Input 
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  className="bg-slate-50 border-slate-200 text-sm h-10 rounded-lg text-slate-800"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              {/* Botões */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 rounded-lg font-bold text-xs text-slate-500 cursor-pointer transition-all"
-                  disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <Button
-                  type="submit"
-                  className="flex-1 h-10 bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border-none"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Cadastrar Equipe"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Card>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 font-semibold"
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  resetCreateForm(setName, setEmail, setPassword, setCargo);
+                }}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" className="flex-1 font-semibold btn-metallic" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cadastrar"}
+              </Button>
+            </div>
+          </form>
         </div>
-      )}
+      </Dialog>
 
+      <ActionDialog
+        open={Boolean(deleteTarget)}
+        variant="confirm"
+        title="Remover colaborador?"
+        message={
+          deleteTarget
+            ? `${deleteTarget.name} será removido da equipe e perderá acesso ao painel. Esta ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Sim, remover"
+        cancelLabel="Cancelar"
+        loading={loading}
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (!loading) setDeleteTarget(null);
+        }}
+      />
+
+      <ActionDialog
+        open={Boolean(feedback)}
+        variant={feedback?.variant ?? "success"}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        onClose={() => setFeedback(null)}
+      />
     </div>
   );
 }
