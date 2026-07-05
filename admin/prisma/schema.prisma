@@ -168,6 +168,11 @@ model Project {
   tasks          Task[]
   timeline       Timeline[]
   installments   Installment[]
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+  ultimo_contato_em     DateTime?
+  motivo_perda          String?
   
   // Controle Operacional do Projeto
   data_entrega_prevista DateTime?
@@ -185,6 +190,7 @@ enum ProjectStatus {
   PRODUCAO
   INSTALACAO
   FINALIZADO
+  PERDIDO
 }
 
 model Environment {

@@ -3,8 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-// Tipo de Status do Projeto conforme o Schema do Prisma
-export type ProjectStatus = 
+export type ProjectStatus =
   | "LEAD"
   | "ORCAMENTO"
   | "NEGOCIACAO"
@@ -12,10 +11,10 @@ export type ProjectStatus =
   | "APROVADO"
   | "PRODUCAO"
   | "INSTALACAO"
-  | "FINALIZADO";
+  | "FINALIZADO"
+  | "PERDIDO";
 
-// Tipo de Origem do Lead
-export type Origin = 
+export type Origin =
   | "SITE"
   | "INSTAGRAM"
   | "INDICACAO"
@@ -23,25 +22,82 @@ export type Origin =
   | "WHATSAPP"
   | "FACEBOOK";
 
-// Server Action para atualizar o status de um projeto no Kanban
+function revalidateCrmPaths() {
+  revalidatePath("/crm");
+  revalidatePath("/", "layout");
+}
+
 export async function updateProjectStatus(projectId: string, newStatus: ProjectStatus) {
   try {
-    // Tenta atualizar no banco de dados real
     await prisma.project.update({
       where: { id: projectId },
-      data: { status_geral: newStatus }
+      data: {
+        status_geral: newStatus,
+        ...(newStatus === "PERDIDO" ? {} : { motivo_perda: null }),
+      },
     });
-    
-    revalidatePath("/crm");
+
+    revalidateCrmPaths();
     return { success: true };
   } catch (error) {
     console.warn("Falha ao atualizar status no banco (usando modo simulação):", error);
-    // Modo simulação para quando o banco real não está rodando localmente
     return { success: true, simulated: true };
   }
 }
 
-// Server Action para criar um novo Lead (Cliente + Projeto Inicial)
+export async function markProjectContacted(projectId: string) {
+  try {
+    const now = new Date();
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { ultimo_contato_em: now },
+    });
+
+    revalidateCrmPaths();
+    return { success: true, ultimo_contato_em: now.toISOString() };
+  } catch (error) {
+    console.warn("Falha ao registrar contato:", error);
+    return { success: true, simulated: true, ultimo_contato_em: new Date().toISOString() };
+  }
+}
+
+export async function markProjectAsLost(projectId: string, motivo?: string) {
+  try {
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status_geral: "PERDIDO",
+        motivo_perda: motivo?.trim() || null,
+      },
+    });
+
+    revalidateCrmPaths();
+    return { success: true };
+  } catch (error) {
+    console.warn("Falha ao marcar perda:", error);
+    return { success: true, simulated: true };
+  }
+}
+
+export async function restoreProjectFromLoss(projectId: string, newStatus: ProjectStatus = "LEAD") {
+  try {
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status_geral: newStatus,
+        motivo_perda: null,
+        ultimo_contato_em: new Date(),
+      },
+    });
+
+    revalidateCrmPaths();
+    return { success: true };
+  } catch (error) {
+    console.warn("Falha ao reativar lead:", error);
+    return { success: true, simulated: true };
+  }
+}
+
 export async function createLead(formData: {
   nome: string;
   email: string;
@@ -50,8 +106,8 @@ export async function createLead(formData: {
   origem: Origin;
   valor_previsto: number;
   company_id: string;
-  client_id?: string; // Opcional, para associar a cliente já cadastrado
-  status_geral?: ProjectStatus; // Opcional, status inicial
+  client_id?: string;
+  status_geral?: ProjectStatus;
   tipo_pessoa?: "PF" | "PJ";
   cpf?: string;
   cnpj?: string;
@@ -66,18 +122,16 @@ export async function createLead(formData: {
 }) {
   try {
     const statusInicial = formData.status_geral || "LEAD";
-    
-    // Tenta gravar no banco real
+    const now = new Date();
+
     const result = await prisma.$transaction(async (tx) => {
       let client;
 
       if (formData.client_id) {
-        // Busca o cliente existente
         client = await tx.client.findFirstOrThrow({
-          where: { id: formData.client_id }
+          where: { id: formData.client_id },
         });
       } else {
-        // Cria um novo cliente
         client = await tx.client.create({
           data: {
             nome: formData.nome,
@@ -98,7 +152,7 @@ export async function createLead(formData: {
             tipo_imovel: formData.tipo_imovel || null,
             obs_imovel: formData.obs_imovel || null,
             obs_entrega: formData.obs_entrega || null,
-          }
+          },
         });
       }
 
@@ -107,39 +161,44 @@ export async function createLead(formData: {
           client_id: client.id,
           valor_previsto: formData.valor_previsto,
           status_geral: statusInicial,
-        }
+          ultimo_contato_em: now,
+        },
       });
 
-      // Cria a timeline inicial
       await tx.timeline.create({
         data: {
           project_id: project.id,
           acao: "Lead criado no sistema",
           interno_sotamente: false,
-          user_id: "system-admin-mock-id", // mock id
-        }
+          user_id: "system-admin-mock-id",
+        },
       });
 
       return { client, project };
     });
 
-    revalidatePath("/crm");
+    revalidateCrmPaths();
     return { success: true, data: result };
   } catch (error) {
     console.warn("Falha ao criar lead no banco (usando modo simulação):", error);
-    // Retorna simulação de sucesso para testes locais sem banco
-    return { 
-      success: true, 
+    return {
+      success: true,
       simulated: true,
       data: {
         client: { id: "simulated-client-id", ...formData },
-        project: { id: "simulated-project-id", client_id: "simulated-client-id", valor_previsto: formData.valor_previsto, status_geral: formData.status_geral || "LEAD" }
-      }
+        project: {
+          id: "simulated-project-id",
+          client_id: "simulated-client-id",
+          valor_previsto: formData.valor_previsto,
+          status_geral: formData.status_geral || "LEAD",
+          ultimo_contato_em: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      },
     };
   }
 }
 
-// Server Action para editar um projeto/card no Kanban
 export async function updateProjectAction(
   projectId: string,
   data: {
@@ -168,6 +227,7 @@ export async function updateProjectAction(
       data: {
         valor_previsto: data.valor_previsto,
         status_geral: data.status_geral,
+        motivo_perda: data.status_geral === "PERDIDO" ? undefined : null,
         client: {
           update: {
             nome: data.nome,
@@ -185,19 +245,18 @@ export async function updateProjectAction(
             tipo_imovel: data.tipo_imovel !== undefined ? data.tipo_imovel : undefined,
             obs_imovel: data.obs_imovel !== undefined ? data.obs_imovel : undefined,
             obs_entrega: data.obs_entrega !== undefined ? data.obs_entrega : undefined,
-          }
-        }
+          },
+        },
       },
       include: {
-        client: true
-      }
+        client: true,
+      },
     });
 
-    revalidatePath("/crm");
+    revalidateCrmPaths();
     return { success: true, project };
   } catch (error) {
     console.warn("Falha ao editar projeto no banco (usando modo simulação):", error);
     return { success: true, simulated: true };
   }
 }
-

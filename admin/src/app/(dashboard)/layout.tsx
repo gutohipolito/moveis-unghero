@@ -7,6 +7,7 @@ import SidebarToggle from "@/components/SidebarToggle";
 import SidebarNav from "@/components/SidebarNav";
 import DashboardHeader from "@/components/DashboardHeader";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import { getNotifications } from "@/app/actions/notifications";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,9 @@ export default async function DashboardLayout({
   }
 
   const user = session.user;
+  const companyId = user.company_id || "mock-company-id";
+  const notificationsRes = await getNotifications(companyId);
+  const notifications = notificationsRes.notifications;
 
   return (
     <PrivacyProvider>
@@ -49,7 +53,7 @@ export default async function DashboardLayout({
           </div>
 
           <div className="hidden md:block">
-            <DashboardHeader user={user} />
+            <DashboardHeader user={user} initialNotifications={notifications} />
           </div>
 
           <main className="flex-1 p-4 sm:p-5 md:p-6 lg:p-7 overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-7">

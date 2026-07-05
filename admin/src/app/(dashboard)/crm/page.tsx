@@ -12,6 +12,8 @@ const MOCK_PROJECTS = [
     id: "proj-1",
     valor_previsto: 45000.0,
     status_geral: "LEAD",
+    ultimo_contato_em: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
     client: {
       id: "cli-1",
       nome: "Renato Silveira",
@@ -25,6 +27,8 @@ const MOCK_PROJECTS = [
     id: "proj-2",
     valor_previsto: 78000.0,
     status_geral: "ORCAMENTO",
+    ultimo_contato_em: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
     client: {
       id: "cli-2",
       nome: "Mariana Rezende",
@@ -38,6 +42,8 @@ const MOCK_PROJECTS = [
     id: "proj-3",
     valor_previsto: 120000.0,
     status_geral: "NEGOCIACAO",
+    ultimo_contato_em: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     client: {
       id: "cli-3",
       nome: "Carlos Eduardo Costa",
@@ -87,18 +93,21 @@ const MOCK_PROJECTS = [
     }
   },
   {
-    id: "proj-7",
-    valor_previsto: 55000.0,
-    status_geral: "INSTALACAO",
+    id: "proj-lost-1",
+    valor_previsto: 32000.0,
+    status_geral: "PERDIDO",
+    motivo_perda: "Cliente optou por outro fornecedor",
+    ultimo_contato_em: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
     client: {
-      id: "cli-7",
-      nome: "Lúcia Albuquerque",
-      cidade: "Caxias do Sul",
-      origem: "INDICACAO",
-      telefone: "(54) 98111-9988",
-      email: "lucia@email.com",
-    }
-  }
+      id: "cli-lost-1",
+      nome: "Fernando Almeida",
+      cidade: "Garibaldi",
+      origem: "WHATSAPP",
+      telefone: "(54) 99811-2233",
+      email: "fernando@email.com",
+    },
+  },
 ];
 
 export default async function CRMPage() {
@@ -151,6 +160,11 @@ export default async function CRMPage() {
     id: p.id,
     valor_previsto: Number(p.valor_previsto),
     status_geral: p.status_geral,
+    ultimo_contato_em: p.ultimo_contato_em
+      ? new Date(p.ultimo_contato_em).toISOString()
+      : null,
+    createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : null,
+    motivo_perda: p.motivo_perda || null,
     client: {
       id: p.client.id,
       nome: p.client.nome,

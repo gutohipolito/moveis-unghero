@@ -2,7 +2,19 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { updateProjectStatus, createLead, updateProjectAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import {
+  COMMERCIAL_LOSS_STATUSES,
+} from "@/lib/notifications";
+import {
+  FOLLOW_UP_ALERT_DAYS,
+  FOLLOW_UP_BADGE_STYLES,
+  FOLLOW_UP_CARD_STYLES,
+  getDaysSinceContact,
+  getFollowUpLevel,
+  getFollowUpMessage,
+  needsFollowUp,
+} from "@/lib/followUp";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,13 +27,21 @@ import {
   ArrowRight,
   TrendingUp,
   UserCheck,
-  Edit
+  Edit,
+  AlertTriangle,
+  BellRing,
+  RotateCcw,
+  XCircle,
+  MessageCircle,
 } from "lucide-react";
 
 interface Project {
   id: string;
   valor_previsto: number;
   status_geral: string;
+  ultimo_contato_em?: string | null;
+  createdAt?: string | null;
+  motivo_perda?: string | null;
   client: {
     id: string;
     nome: string;
@@ -63,7 +83,7 @@ interface KanbanBoardProps {
   }>;
 }
 
-const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
+const FUNNEL_COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
   { id: "LEAD", title: "Prospecção", color: "border-t-amber-500 bg-amber-500/5 text-amber-700" },
   { id: "ORCAMENTO", title: "Orçamentos", color: "border-t-orange-500 bg-orange-500/5 text-orange-700" },
   { id: "NEGOCIACAO", title: "Negociação", color: "border-t-blue-500 bg-blue-500/5 text-blue-700" },
@@ -71,7 +91,12 @@ const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
   { id: "APROVADO", title: "Aprovados", color: "border-t-emerald-500 bg-emerald-500/5 text-emerald-700" },
   { id: "PRODUCAO", title: "Produção", color: "border-t-cyan-500 bg-cyan-500/5 text-cyan-700" },
   { id: "INSTALACAO", title: "Instalação", color: "border-t-indigo-500 bg-indigo-500/5 text-indigo-700" },
-  { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-600" }
+  { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-600" },
+];
+
+const STATUS_OPTIONS = [
+  ...FUNNEL_COLUMNS,
+  { id: "PERDIDO" as ProjectStatus, title: "Perdido", color: "" },
 ];
 
   const getProductionProgress = (projId: string, status: string) => {
@@ -93,6 +118,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [statusGeralInicial, setStatusGeralInicial] = useState<ProjectStatus>("LEAD");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
+  const [boardView, setBoardView] = useState<"funil" | "perdas">("funil");
+  const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
+  const [lossMotivo, setLossMotivo] = useState("");
   
   // Estados do formulário de lead
   const [isExistingClient, setIsExistingClient] = useState(false);
@@ -299,10 +327,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   };
 
   const handleMoveRight = async (project: Project) => {
-    const currentIdx = COLUMNS.findIndex((col) => col.id === project.status_geral);
-    if (currentIdx === -1 || currentIdx === COLUMNS.length - 1) return;
+    const currentIdx = FUNNEL_COLUMNS.findIndex((col) => col.id === project.status_geral);
+    if (currentIdx === -1 || currentIdx === FUNNEL_COLUMNS.length - 1) return;
 
-    const targetStatus = COLUMNS[currentIdx + 1].id;
+    const targetStatus = FUNNEL_COLUMNS[currentIdx + 1].id;
     const originalProjects = [...projects];
     setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: targetStatus } : p)));
 
@@ -311,6 +339,64 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       setProjects(originalProjects);
       showError("Falha ao avançar", "Não foi possível avançar o projeto. Tente novamente.");
     }
+  };
+
+  const handleMarkContacted = async (project: Project) => {
+    const now = new Date().toISOString();
+    setProjects(
+      projects.map((p) =>
+        p.id === project.id ? { ...p, ultimo_contato_em: now } : p
+      )
+    );
+    const result = await markProjectContacted(project.id);
+    if (result.success) {
+      showSuccess("Contato registrado", `Follow-up de ${project.client.nome} atualizado para hoje.`);
+    } else {
+      showError("Erro", "Não foi possível registrar o contato.");
+    }
+  };
+
+  const handleConfirmLoss = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lossModalProject) return;
+    setLoading(true);
+
+    const result = await markProjectAsLost(lossModalProject.id, lossMotivo);
+    if (result.success) {
+      setProjects(
+        projects.map((p) =>
+          p.id === lossModalProject.id
+            ? { ...p, status_geral: "PERDIDO", motivo_perda: lossMotivo || null }
+            : p
+        )
+      );
+      setLossModalProject(null);
+      setLossMotivo("");
+      showSuccess("Lead marcado como perda", `${lossModalProject.client.nome} foi movido para Perdas.`);
+    } else {
+      showError("Erro", "Não foi possível registrar a perda.");
+    }
+    setLoading(false);
+  };
+
+  const handleRestoreLoss = async (project: Project) => {
+    setLoading(true);
+    const result = await restoreProjectFromLoss(project.id, "LEAD");
+    if (result.success) {
+      const now = new Date().toISOString();
+      setProjects(
+        projects.map((p) =>
+          p.id === project.id
+            ? { ...p, status_geral: "LEAD", motivo_perda: null, ultimo_contato_em: now }
+            : p
+        )
+      );
+      showSuccess("Lead reativado", `${project.client.nome} voltou para Prospecção.`);
+      setBoardView("funil");
+    } else {
+      showError("Erro", "Não foi possível reativar o lead.");
+    }
+    setLoading(false);
   };
 
   // resetLeadForm
@@ -382,6 +468,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         id: result.data.project.id,
         valor_previsto: Number(result.data.project.valor_previsto),
         status_geral: statusGeralInicial,
+        ultimo_contato_em: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         client: {
           id: result.data.client.id,
           nome: result.data.client.nome,
@@ -422,9 +510,175 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     }).format(val);
   };
 
-  // Calcula estatísticas rápidas
-  const totalPipeline = projects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
-  const activeProjectsCount = projects.filter(p => p.status_geral !== "FINALIZADO").length;
+  const funnelProjects = projects.filter((p) => p.status_geral !== "PERDIDO");
+  const lostProjects = projects.filter((p) => p.status_geral === "PERDIDO");
+  const followUpAlerts = funnelProjects.filter(
+    (p) => getFollowUpLevel(p) === "alert"
+  );
+  const followUpWarnings = funnelProjects.filter(
+    (p) => getFollowUpLevel(p) === "warning"
+  );
+
+  const totalPipeline = funnelProjects
+    .filter((p) => !["FINALIZADO", "PERDIDO"].includes(p.status_geral))
+    .reduce((acc, curr) => acc + curr.valor_previsto, 0);
+  const activeProjectsCount = funnelProjects.filter(
+    (p) => !["FINALIZADO", "PERDIDO"].includes(p.status_geral)
+  ).length;
+
+  const renderProjectCard = (project: Project, colId?: ProjectStatus) => {
+    const isDraggingThis = activeDragId === project.id;
+    const followLevel = getFollowUpLevel(project);
+    const followMessage = getFollowUpMessage(project);
+    const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
+    const showFollowUp = needsFollowUp(project.status_geral);
+
+    return (
+      <div
+        key={project.id}
+        draggable={boardView === "funil"}
+        onDragStart={(e) => handleDragStart(e, project.id)}
+        onDragEnd={handleDragEnd}
+        className={`group bg-white p-4 rounded-xl text-card-foreground shadow-sm border border-border transition-all duration-300 ${
+          boardView === "funil" ? "cursor-grab active:cursor-grabbing" : ""
+        } hover:border-primary/50 hover:shadow-md ${
+          isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
+        } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
+      >
+        {followMessage && (
+          <div
+            className={`mb-3 flex items-start gap-1.5 text-[10px] font-bold px-2 py-1.5 rounded-lg border ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
+          >
+            {followLevel === "alert" ? (
+              <BellRing className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            )}
+            <span>{followMessage}</span>
+          </div>
+        )}
+
+        <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest border border-border">
+              {project.client.origem}
+            </span>
+            <span className="text-xs text-muted-foreground flex items-center font-medium">
+              <MapPin className="h-3 w-3 mr-0.5 text-primary" />
+              {project.client.cidade}
+            </span>
+          </div>
+
+          <h4 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+            {project.client.nome}
+          </h4>
+
+          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+            <p className="flex items-center">
+              <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
+              {project.client.telefone}
+            </p>
+            {showFollowUp && (
+              <p className="text-[10px] text-muted-foreground/80">
+                Último contato: há {getDaysSinceContact(project)} dia(s)
+              </p>
+            )}
+          </div>
+
+          {(project.status_geral === "PRODUCAO" ||
+            project.status_geral === "INSTALACAO" ||
+            project.status_geral === "FINALIZADO") && (
+            <div className="mt-2.5">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                Fábrica & Montagem:
+              </span>
+              <div className="text-[10px] bg-cyan-50/80 text-cyan-600 border border-cyan-200 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-between">
+                <span>{getProductionProgress(project.id, project.status_geral)}</span>
+              </div>
+            </div>
+          )}
+
+          {project.status_geral === "PERDIDO" && project.motivo_perda && (
+            <p className="text-[10px] text-muted-foreground bg-slate-50 border border-border rounded-lg p-2 mt-2">
+              <strong>Motivo:</strong> {project.motivo_perda}
+            </p>
+          )}
+        </Link>
+
+        <div className="my-3 border-t border-border" />
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center text-foreground font-black text-sm">
+            <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary" />
+            <span className="privacy-value">
+              {formatCurrency(project.valor_previsto).replace("R$", "")}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 flex-wrap justify-end">
+            {showFollowUp && boardView === "funil" && (
+              <button
+                type="button"
+                onClick={() => handleMarkContacted(project)}
+                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/20 transition-all cursor-pointer"
+                title="Registrar que houve contato hoje"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {canMarkLoss && boardView === "funil" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLossModalProject(project);
+                  setLossMotivo("");
+                }}
+                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-500/20 transition-all cursor-pointer"
+                title="Marcar como perda"
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {project.status_geral === "PERDIDO" && (
+              <button
+                type="button"
+                onClick={() => handleRestoreLoss(project)}
+                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+                title="Reativar lead"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {boardView === "funil" && colId && colId !== "FINALIZADO" && (
+              <button
+                type="button"
+                onClick={() => handleMoveRight(project)}
+                className="md:hidden inline-flex items-center justify-center p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+                title="Avançar etapa"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => openEditModal(project)}
+              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer"
+              title="Editar Card"
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </button>
+            <Link
+              href={`/projects/${project.id}`}
+              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer group/link"
+              title="Ver Detalhes do Projeto"
+            >
+              <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -460,9 +714,75 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         </Button>
       </div>
 
-      {/* Grid de Colunas Kanban */}
+      {/* Abas Funil / Perdas */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="inline-flex rounded-lg border border-border bg-card p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => setBoardView("funil")}
+            className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer ${
+              boardView === "funil"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Funil ativo
+          </button>
+          <button
+            type="button"
+            onClick={() => setBoardView("perdas")}
+            className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+              boardView === "perdas"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Perdas
+            {lostProjects.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-background/20 font-extrabold">
+                {lostProjects.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {boardView === "funil" && (followUpAlerts.length > 0 || followUpWarnings.length > 0) && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {followUpAlerts.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-800 border border-red-500/20 font-semibold">
+                <BellRing className="h-3.5 w-3.5" />
+                {followUpAlerts.length} sem resposta há {FOLLOW_UP_ALERT_DAYS}+ dias
+              </span>
+            )}
+            {followUpWarnings.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/20 font-semibold">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {followUpWarnings.length} próximo(s) do limite
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {boardView === "perdas" ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Leads que não converteram. Você pode reativá-los para o funil quando fizer sentido retomar a negociação.
+          </p>
+          {lostProjects.length === 0 ? (
+            <div className="border border-dashed border-border rounded-xl p-10 text-center text-sm text-muted-foreground">
+              Nenhuma perda registrada ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {lostProjects.map((project) => renderProjectCard(project))}
+            </div>
+          )}
+        </div>
+      ) : (
+      <>
       <div className="kanban-scroll select-none min-h-[420px] md:min-h-[500px]">
-        {COLUMNS.map((col) => {
+        {FUNNEL_COLUMNS.map((col) => {
           const colProjects = projects.filter((p) => p.status_geral === col.id);
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
           const isOver = dragOverColumn === col.id;
@@ -497,102 +817,64 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     Nenhum projeto nesta etapa
                   </div>
                 ) : (
-                  colProjects.map((project) => {
-                    const isDraggingThis = activeDragId === project.id;
-                    return (
-                      <div
-                        key={project.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, project.id)}
-                        onDragEnd={handleDragEnd}
-                        className={`group bg-white p-4 rounded-xl text-card-foreground shadow-sm border border-border transition-all duration-300 cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-md ${
-                          isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
-                        }`}
-                      >
-                        <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
-                          {/* Origem Badge */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest border border-border">
-                              {project.client.origem}
-                            </span>
-                            <span className="text-xs text-muted-foreground flex items-center font-medium">
-                              <MapPin className="h-3 w-3 mr-0.5 text-primary" />
-                              {project.client.cidade}
-                            </span>
-                          </div>
-
-                          {/* Nome do Cliente */}
-                          <h4 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                            {project.client.nome}
-                          </h4>
-
-                          {/* Detalhes de Contato */}
-                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                            <p className="flex items-center">
-                              <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
-                              {project.client.telefone}
-                            </p>
-                          </div>
-
-                          {/* Indicador de Chão de Fábrica / Produção */}
-                          {(project.status_geral === "PRODUCAO" || project.status_geral === "INSTALACAO" || project.status_geral === "FINALIZADO") && (
-                            <div className="mt-2.5">
-                              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Fábrica & Montagem:</span>
-                              <div
-                                className="text-[10px] bg-cyan-50/80 text-cyan-600 border border-cyan-200 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-between"
-                              >
-                                <span>{getProductionProgress(project.id, project.status_geral)}</span>
-                              </div>
-                            </div>
-                          )}
-                        </Link>
-
-                        {/* Separador */}
-                        <div className="my-3 border-t border-border" />
-
-                        {/* Rodapé do Card */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-foreground font-black text-sm">
-                            <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary" />
-                            <span className="privacy-value">{formatCurrency(project.valor_previsto).replace("R$", "")}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveRight(project)}
-                              className="md:hidden inline-flex items-center justify-center p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
-                              title="Avançar etapa"
-                            >
-                              <ArrowRight className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(project)}
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer"
-                              title="Editar Card"
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </button>
-                            
-                            <Link 
-                              href={`/projects/${project.id}`}
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer group/link"
-                              title="Ver Detalhes do Projeto"
-                            >
-                              <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                  colProjects.map((project) => renderProjectCard(project, col.id))
                 )}
               </div>
             </div>
           );
         })}
       </div>
+      </>
+      )}
+
+      {/* Modal - Marcar perda */}
+      <Dialog
+        isOpen={!!lossModalProject}
+        onClose={() => {
+          if (loading) return;
+          setLossModalProject(null);
+          setLossMotivo("");
+        }}
+      >
+        <h3 className="text-lg font-bold tracking-tight text-foreground mb-2">
+          Registrar perda
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          {lossModalProject
+            ? `O lead ${lossModalProject.client.nome} será movido para Perdas.`
+            : ""}
+        </p>
+        <form onSubmit={handleConfirmLoss} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Motivo (opcional)
+            </label>
+            <textarea
+              value={lossMotivo}
+              onChange={(e) => setLossMotivo(e.target.value)}
+              rows={3}
+              placeholder="Ex.: Optou por outro fornecedor, orçamento acima do esperado..."
+              className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setLossModalProject(null);
+                setLossMotivo("");
+              }}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading} className="bg-red-600 hover:bg-red-700 text-white border-none">
+              {loading ? "Salvando..." : "Confirmar perda"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       {/* Modal - Novo Lead / Cliente */}
       <Dialog isOpen={isNewLeadOpen} onClose={() => setIsNewLeadOpen(false)}>
@@ -891,7 +1173,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   onChange={(e) => setStatusGeralInicial(e.target.value as ProjectStatus)}
                   className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
                 >
-                  {COLUMNS.map(col => (
+                  {FUNNEL_COLUMNS.map((col) => (
                     <option key={col.id} value={col.id}>{col.title}</option>
                   ))}
                 </select>
@@ -1164,7 +1446,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
                   className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
                 >
-                  {COLUMNS.map(col => (
+                  {STATUS_OPTIONS.map(col => (
                     <option key={col.id} value={col.id}>{col.title}</option>
                   ))}
                 </select>

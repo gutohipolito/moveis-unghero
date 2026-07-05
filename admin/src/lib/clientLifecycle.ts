@@ -27,7 +27,7 @@ export function isClienteRecord(client: ClientLike): boolean {
 
 export function isNegociacaoRecord(client: ClientLike): boolean {
   if (isClienteRecord(client)) return false;
-  if (client.status === "NEGOCIACAO") return true;
+  if (client.status === "NEGOCIACAO" || client.status === "PERDIDO") return false;
   return (client.projects ?? []).some((p) =>
     NEGOCIACAO_PROJECT_STATUSES.has(p.status_geral)
   );
