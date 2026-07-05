@@ -15,6 +15,7 @@ import {
   getFollowUpMessage,
   needsFollowUp,
 } from "@/lib/followUp";
+import { labelOrigin } from "@/lib/navLabels";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ import {
   RotateCcw,
   XCircle,
   MessageCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface Project {
@@ -121,6 +124,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [boardView, setBoardView] = useState<"funil" | "perdas">("funil");
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   
   // Estados do formulário de lead
   const [isExistingClient, setIsExistingClient] = useState(false);
@@ -510,6 +514,15 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     }).format(val);
   };
 
+  const toggleCardCollapse = (id: string) => {
+    setCollapsedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const funnelProjects = projects.filter((p) => p.status_geral !== "PERDIDO");
   const lostProjects = projects.filter((p) => p.status_geral === "PERDIDO");
   const followUpAlerts = funnelProjects.filter(
@@ -532,6 +545,70 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     const followMessage = getFollowUpMessage(project);
     const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
     const showFollowUp = needsFollowUp(project.status_geral);
+    const isCollapsed = collapsedCards.has(project.id);
+
+    const actionButtons = (
+      <div className="flex items-center gap-1 flex-wrap">
+        {showFollowUp && boardView === "funil" && (
+          <button
+            type="button"
+            onClick={() => handleMarkContacted(project)}
+            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+            title="Registrar que houve contato hoje"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {canMarkLoss && boardView === "funil" && (
+          <button
+            type="button"
+            onClick={() => {
+              setLossModalProject(project);
+              setLossMotivo("");
+            }}
+            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-500/20 transition-all cursor-pointer"
+            title="Marcar como perda"
+          >
+            <XCircle className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {project.status_geral === "PERDIDO" && (
+          <button
+            type="button"
+            onClick={() => handleRestoreLoss(project)}
+            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+            title="Reativar lead"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {boardView === "funil" && colId && colId !== "FINALIZADO" && (
+          <button
+            type="button"
+            onClick={() => handleMoveRight(project)}
+            className="md:hidden inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+            title="Avançar etapa"
+          >
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => openEditModal(project)}
+          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+          title="Editar card"
+        >
+          <Edit className="h-3.5 w-3.5" />
+        </button>
+        <Link
+          href={`/projects/${project.id}`}
+          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer group/link"
+          title="Ver detalhes do projeto"
+        >
+          <ArrowRight className="h-3.5 w-3.5 group-hover/link:translate-x-0.5 transition-transform" />
+        </Link>
+      </div>
+    );
 
     return (
       <div
@@ -539,141 +616,118 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         draggable={boardView === "funil"}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
-        className={`group bg-white p-4 rounded-xl text-card-foreground shadow-sm border border-border transition-all duration-300 ${
+        className={`group bg-white rounded-xl text-card-foreground shadow-sm border border-border transition-all duration-300 overflow-hidden ${
           boardView === "funil" ? "cursor-grab active:cursor-grabbing" : ""
         } hover:border-primary/50 hover:shadow-md ${
           isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
         } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
       >
-        {followMessage && (
-          <div
-            className={`mb-3 flex items-start gap-1.5 text-[10px] font-bold px-2 py-1.5 rounded-lg border ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
-          >
-            {followLevel === "alert" ? (
-              <BellRing className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-            )}
-            <span>{followMessage}</span>
-          </div>
-        )}
-
-        <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest border border-border">
-              {project.client.origem}
-            </span>
-            <span className="text-xs text-muted-foreground flex items-center font-medium">
-              <MapPin className="h-3 w-3 mr-0.5 text-primary" />
-              {project.client.cidade}
-            </span>
-          </div>
-
-          <h4 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-            {project.client.nome}
-          </h4>
-
-          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-            <p className="flex items-center">
-              <Phone className="h-3 w-3 mr-1 opacity-70 text-primary" />
-              {project.client.telefone}
-            </p>
-            {showFollowUp && (
-              <p className="text-[10px] text-muted-foreground/80">
-                Último contato: há {getDaysSinceContact(project)} dia(s)
-              </p>
-            )}
-          </div>
-
-          {(project.status_geral === "PRODUCAO" ||
-            project.status_geral === "INSTALACAO" ||
-            project.status_geral === "FINALIZADO") && (
-            <div className="mt-2.5">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                Fábrica & Montagem:
-              </span>
-              <div className="text-[10px] bg-cyan-50/80 text-cyan-600 border border-cyan-200 py-1.5 px-2.5 rounded-lg font-bold flex items-center justify-between">
-                <span>{getProductionProgress(project.id, project.status_geral)}</span>
-              </div>
+        <div className="p-3 space-y-2">
+          {followMessage && !isCollapsed && (
+            <div
+              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
+            >
+              {followLevel === "alert" ? (
+                <BellRing className="h-3 w-3 shrink-0" />
+              ) : (
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+              )}
+              <span className="truncate">{followMessage}</span>
             </div>
           )}
 
-          {project.status_geral === "PERDIDO" && project.motivo_perda && (
-            <p className="text-[10px] text-muted-foreground bg-slate-50 border border-border rounded-lg p-2 mt-2">
-              <strong>Motivo:</strong> {project.motivo_perda}
-            </p>
-          )}
-        </Link>
+          <div className="flex items-start justify-between gap-2">
+            <Link href={`/projects/${project.id}`} className="min-w-0 flex-1 space-y-1 cursor-pointer">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[9px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-wide uppercase border border-primary/15">
+                  {labelOrigin(project.client.origem)}
+                </span>
+                <span className="text-[10px] text-muted-foreground flex items-center font-medium">
+                  <MapPin className="h-2.5 w-2.5 mr-0.5 text-primary shrink-0" />
+                  {project.client.cidade}
+                </span>
+                {followMessage && isCollapsed && followLevel !== "ok" && (
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                      followLevel === "alert" ? "bg-red-500" : "bg-amber-500"
+                    }`}
+                    title={followMessage}
+                  />
+                )}
+              </div>
 
-        <div className="my-3 border-t border-border" />
+              <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
+                {project.client.nome}
+              </h4>
+            </Link>
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center text-foreground font-black text-sm">
-            <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary" />
-            <span className="privacy-value">
-              {formatCurrency(project.valor_previsto).replace("R$", "")}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 flex-wrap justify-end">
-            {showFollowUp && boardView === "funil" && (
-              <button
-                type="button"
-                onClick={() => handleMarkContacted(project)}
-                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/20 transition-all cursor-pointer"
-                title="Registrar que houve contato hoje"
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {canMarkLoss && boardView === "funil" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setLossModalProject(project);
-                  setLossMotivo("");
-                }}
-                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-500/20 transition-all cursor-pointer"
-                title="Marcar como perda"
-              >
-                <XCircle className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {project.status_geral === "PERDIDO" && (
-              <button
-                type="button"
-                onClick={() => handleRestoreLoss(project)}
-                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
-                title="Reativar lead"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {boardView === "funil" && colId && colId !== "FINALIZADO" && (
-              <button
-                type="button"
-                onClick={() => handleMoveRight(project)}
-                className="md:hidden inline-flex items-center justify-center p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
-                title="Avançar etapa"
-              >
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            )}
             <button
               type="button"
-              onClick={() => openEditModal(project)}
-              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer"
-              title="Editar Card"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCardCollapse(project.id);
+              }}
+              className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/15 text-primary border border-primary/15 transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100"
+              title={isCollapsed ? "Expandir card" : "Recolher card"}
             >
-              <Edit className="h-3.5 w-3.5" />
+              {isCollapsed ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronUp className="h-3.5 w-3.5" />
+              )}
             </button>
-            <Link
-              href={`/projects/${project.id}`}
-              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary border border-border transition-all cursor-pointer group/link"
-              title="Ver Detalhes do Projeto"
-            >
-              <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
-            </Link>
+          </div>
+
+          <div
+            className={`grid transition-all duration-200 ease-in-out ${
+              isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer pt-1">
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p className="flex items-center">
+                    <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
+                    {project.client.telefone}
+                  </p>
+                  {showFollowUp && (
+                    <p className="text-[10px] text-muted-foreground/80 pl-4">
+                      Último contato: há {getDaysSinceContact(project)} dia(s)
+                    </p>
+                  )}
+                </div>
+
+                {(project.status_geral === "PRODUCAO" ||
+                  project.status_geral === "INSTALACAO" ||
+                  project.status_geral === "FINALIZADO") && (
+                  <div>
+                    <span className="text-[9px] font-semibold text-primary/80 uppercase tracking-wide block mb-1">
+                      Fábrica & Montagem
+                    </span>
+                    <div className="text-[10px] bg-primary/10 text-primary border border-primary/20 py-1.5 px-2 rounded-lg font-semibold">
+                      {getProductionProgress(project.id, project.status_geral)}
+                    </div>
+                  </div>
+                )}
+
+                {project.status_geral === "PERDIDO" && project.motivo_perda && (
+                  <p className="text-[10px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-lg p-2">
+                    <strong className="text-primary">Motivo:</strong> {project.motivo_perda}
+                  </p>
+                )}
+              </Link>
+            </div>
+          </div>
+
+          <div className="border-t border-border/70 pt-2 space-y-2">
+            <div className="flex items-center text-foreground font-black text-sm">
+              <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary shrink-0" />
+              <span className="privacy-value">
+                {formatCurrency(project.valor_previsto).replace("R$", "")}
+              </span>
+            </div>
+            {actionButtons}
           </div>
         </div>
       </div>
