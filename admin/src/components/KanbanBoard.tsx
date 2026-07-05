@@ -63,7 +63,7 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
-  { id: "LEAD", title: "Leads", color: "border-t-amber-500 bg-amber-500/5 text-amber-700" },
+  { id: "LEAD", title: "Prospecção", color: "border-t-amber-500 bg-amber-500/5 text-amber-700" },
   { id: "ORCAMENTO", title: "Orçamentos", color: "border-t-orange-500 bg-orange-500/5 text-orange-700" },
   { id: "NEGOCIACAO", title: "Negociação", color: "border-t-blue-500 bg-blue-500/5 text-blue-700" },
   { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica", color: "border-t-purple-500 bg-purple-500/5 text-purple-700" },
@@ -451,7 +451,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         </div>
 
         <Button onClick={() => setIsNewLeadOpen(true)} className="w-full lg:w-auto font-bold btn-metallic">
-          <Plus className="mr-2 h-4.5 w-4.5" /> Novo Lead / Cliente
+          <Plus className="mr-2 h-4.5 w-4.5" /> Novo contato
         </Button>
       </div>
 

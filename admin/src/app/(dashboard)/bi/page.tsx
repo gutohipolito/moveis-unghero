@@ -175,7 +175,7 @@ export default async function BIPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Relatórios & BI"
+        title="Relatórios"
         description="Análise e inteligência de mercado para a operação comercial da Móveis Unghero."
         badge={
           isMock ? (

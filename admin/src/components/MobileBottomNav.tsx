@@ -6,11 +6,11 @@ import { Kanban, Users, ClipboardList, Layers, LayoutDashboard } from "lucide-re
 import { isNavItemActive } from "@/components/SidebarNav";
 
 const MOBILE_NAV = [
-  { name: "CRM", href: "/crm", icon: Kanban },
-  { name: "Clientes", href: "/clientes", icon: Users },
+  { name: "Funil", href: "/crm", icon: Kanban },
+  { name: "Contatos", href: "/clientes", icon: Users },
   { name: "Orçamentos", href: "/quotes", icon: ClipboardList },
   { name: "Fábrica", href: "/factory", icon: Layers },
-  { name: "BI", href: "/bi", icon: LayoutDashboard },
+  { name: "Relatórios", href: "/bi", icon: LayoutDashboard },
 ];
 
 export default function MobileBottomNav() {

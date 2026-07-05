@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { 
@@ -30,6 +30,13 @@ import {
   importClientsAction
 } from "@/app/actions/cliente";
 import { createLead, type Origin } from "@/app/actions/kanban";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getClientTab,
+  CLIENT_TAB_LABELS,
+  type ClientTab,
+} from "@/lib/clientLifecycle";
+import { labelOrigin, labelStatus } from "@/lib/navLabels";
 
 interface ProjectSummary {
   id: string;
@@ -87,7 +94,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [search, setSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [activeTab, setActiveTab] = useState<ClientTab>("leads");
   
   // Estados para Modais
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -192,14 +199,27 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     return { tipo, doc, cleanObs };
   };
 
-  // Filtragem dos Clientes
-  const filteredClients = clients.filter(c => {
-    const matchesSearch = c.nome.toLowerCase().includes(search.toLowerCase()) || 
-                          c.email.toLowerCase().includes(search.toLowerCase()) || 
-                          c.telefone.includes(search);
+  // Filtragem por aba, busca e origem
+  const tabCounts = useMemo(() => {
+    const counts: Record<ClientTab, number> = {
+      leads: 0,
+      negociacoes: 0,
+      clientes: 0,
+    };
+    for (const c of clients) {
+      counts[getClientTab(c)]++;
+    }
+    return counts;
+  }, [clients]);
+
+  const filteredClients = clients.filter((c) => {
+    const matchesSearch =
+      c.nome.toLowerCase().includes(search.toLowerCase()) ||
+      c.email.toLowerCase().includes(search.toLowerCase()) ||
+      c.telefone.includes(search);
     const matchesOrigin = filterOrigin === "ALL" || c.origem === filterOrigin;
-    const matchesStatus = filterStatus === "ALL" || c.status === filterStatus;
-    return matchesSearch && matchesOrigin && matchesStatus;
+    const matchesTab = getClientTab(c) === activeTab;
+    return matchesSearch && matchesOrigin && matchesTab;
   });
 
   // Salvar Novo Cliente
@@ -453,10 +473,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="page-title">Leads & Clientes</h1>
+                <h1 className="page-title">Contatos</h1>
                 <PrivacyToggle />
               </div>
-              <p className="page-subtitle">Gerenciamento completo, importação, exportação e fluxos do CRM.</p>
+              <p className="page-subtitle">
+                {CLIENT_TAB_LABELS[activeTab].description}
+              </p>
             </div>
           </div>
 
@@ -477,7 +499,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           </Button>
 
           <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} className="font-bold btn-metallic gap-1.5">
-            <Plus className="h-4.5 w-4.5" /> Novo Lead / Cliente
+            <Plus className="h-4.5 w-4.5" /> Novo contato
           </Button>
           </div>
         </div>
@@ -497,36 +519,41 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-muted-foreground flex items-center gap-1"><Filter className="h-3 w-3" /> Origem:</span>
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <Filter className="h-3 w-3" /> Origem:
+            </span>
             <select
               value={filterOrigin}
               onChange={(e) => setFilterOrigin(e.target.value)}
               className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="ALL">Todas</option>
-              {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-muted-foreground flex items-center gap-1"><Filter className="h-3 w-3" /> Status:</span>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="ALL">Todos os Status</option>
-              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+              {ORIGINS.map((o) => (
+                <option key={o} value={o}>
+                  {labelOrigin(o)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
       </Card>
 
-      {/* Lista de clientes — cards no mobile, tabela no desktop */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ClientTab)}>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
+          {(["leads", "negociacoes", "clientes"] as ClientTab[]).map((tab) => (
+            <TabsTrigger key={tab} value={tab} className="flex-1 min-w-[7rem] gap-1.5">
+              {CLIENT_TAB_LABELS[tab].title}
+              <span className="text-xs opacity-70 tabular-nums">({tabCounts[tab]})</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {/* Lista de contatos — cards no mobile, tabela no desktop */}
       <Card className="glass-card overflow-hidden">
         {filteredClients.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">
-            Nenhum lead ou cliente corresponde aos filtros aplicados.
+            Nenhum contato nesta aba com os filtros aplicados.
           </p>
         ) : (
           <>
@@ -556,7 +583,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         )}
                       </div>
                       <span className={`badge-meta px-2 py-0.5 rounded-full shrink-0 ${statBadge.bg} ${statBadge.text}`}>
-                        {client.status.replace("_", " ")}
+                        {labelStatus(client.status)}
                       </span>
                     </div>
 
@@ -574,7 +601,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         <MapPin className="h-3.5 w-3.5 text-primary" /> {client.cidade}
                       </span>
                       <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
-                        {client.origem}
+                        {labelOrigin(client.origem)}
                       </span>
                     </div>
 
@@ -681,14 +708,14 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       {/* Origem */}
                       <td className="p-4 text-center">
                         <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${orgBadge.bg} ${orgBadge.text} whitespace-nowrap`}>
-                          {client.origem}
+                          {labelOrigin(client.origem)}
                         </span>
                       </td>
 
                       {/* Status */}
                       <td className="p-4 text-center">
                         <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${statBadge.bg} ${statBadge.text} whitespace-nowrap`}>
-                          {client.status.replace("_", " ")}
+                          {labelStatus(client.status)}
                         </span>
                       </td>
 
@@ -980,7 +1007,11 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         onChange={e => setStatus(e.target.value)} 
                         className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
                       >
-                        {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {labelStatus(s)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -1270,7 +1301,11 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         onChange={e => setStatus(e.target.value)} 
                         className="w-full h-9 bg-slate-50 border border-slate-350 rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary focus:bg-white outline-none cursor-pointer text-slate-900"
                       >
-                        {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {labelStatus(s)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

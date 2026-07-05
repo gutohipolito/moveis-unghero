@@ -167,7 +167,7 @@ export default async function CRMPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Pipeline de Vendas"
+        title="Funil Comercial"
         description={
           isMock
             ? "Modo demonstração: exibindo projetos simulados da Móveis Unghero."

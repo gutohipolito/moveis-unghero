@@ -26,16 +26,16 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { name: "Dashboard / BI", shortName: "Dashboard", href: "/bi", icon: LayoutDashboard, section: "Principal" },
-  { name: "CRM / Projetos", shortName: "CRM", href: "/crm", icon: Kanban, section: "Principal" },
+  { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Principal" },
+  { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Principal" },
   { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Principal" },
-  { name: "Clientes & Leads", shortName: "Clientes", href: "/clientes", icon: Users, section: "Principal" },
+  { name: "Contatos", href: "/clientes", icon: Users, section: "Principal" },
   { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Principal" },
   { name: "Agenda", href: "/agenda", icon: Calendar, section: "Operacional" },
   { name: "Chão de Fábrica", shortName: "Fábrica", href: "/factory", icon: Layers, section: "Operacional" },
-  { name: "Portal do Colaborador", shortName: "Portal RH", href: "/factory/portal", icon: Clock, section: "Operacional" },
-  { name: "Estoque & Fornecedores", shortName: "Estoque", href: "/estoque", icon: Package, section: "Operacional" },
-  { name: "Logística & Entrega", shortName: "Logística", href: "/logistica", icon: Truck, section: "Operacional" },
+  { name: "Portal do Colaborador", shortName: "Portal", href: "/factory/portal", icon: Clock, section: "Operacional" },
+  { name: "Estoque e Fornecedores", shortName: "Estoque", href: "/estoque", icon: Package, section: "Operacional" },
+  { name: "Logística e Entrega", shortName: "Logística", href: "/logistica", icon: Truck, section: "Operacional" },
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
 ];
 

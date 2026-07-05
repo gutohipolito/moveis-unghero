@@ -2,7 +2,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 interface TabsProps {
-  defaultValue: string
+  defaultValue?: string
   value?: string
   onValueChange?: (value: string) => void
   children: React.ReactNode
@@ -10,7 +10,7 @@ interface TabsProps {
 }
 
 export function Tabs({ defaultValue, value, onValueChange, children, className }: TabsProps) {
-  const [activeTab, setActiveTab] = React.useState(value || defaultValue)
+  const [activeTab, setActiveTab] = React.useState(value || defaultValue || "")
 
   React.useEffect(() => {
     if (value !== undefined) {
