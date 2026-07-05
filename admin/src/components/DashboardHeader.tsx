@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { logout } from "@/app/actions/login";
 import NotificationCenter from "@/components/NotificationCenter";
-import { Clock, CloudSun, ChevronDown, LogOut, User as UserIcon } from "lucide-react";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { Clock, CloudSun, ChevronDown, Download, LogOut, User as UserIcon } from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
 
 const TIMEZONE = "America/Sao_Paulo";
@@ -46,6 +47,7 @@ export default function DashboardHeader({
   const [temperature, setTemperature] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { canInstall, installing, install } = usePwaInstall();
 
   useEffect(() => {
     setNow(new Date());
@@ -166,6 +168,20 @@ export default function DashboardHeader({
                     </p>
                   )}
                 </div>
+              )}
+              {canInstall && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void install();
+                    setMenuOpen(false);
+                  }}
+                  disabled={installing}
+                  className="dashboard-user-menu-item w-full"
+                >
+                  <Download className="h-4 w-4" />
+                  {installing ? "Instalando..." : "Instalar aplicativo"}
+                </button>
               )}
               <form action={logout}>
                 <button type="submit" className="dashboard-user-menu-item w-full">

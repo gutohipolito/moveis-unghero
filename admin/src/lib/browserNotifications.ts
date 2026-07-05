@@ -29,8 +29,8 @@ export function showBrowserNotification(
 
   const n = new Notification(notification.title, {
     body: notification.message,
-    icon: "/logo.png",
-    badge: "/logo.png",
+    icon: "/pwa-icon/192",
+    badge: "/pwa-icon/192",
     tag: notification.id,
     requireInteraction: notification.priority === "high",
     silent: notification.priority !== "high",
@@ -71,7 +71,7 @@ export function showBrowserNotificationSummary(count: number, urgentCount: numbe
 
   const n = new Notification(title, {
     body,
-    icon: "/logo.png",
+    icon: "/pwa-icon/192",
     tag: "mu-notification-summary",
   });
 

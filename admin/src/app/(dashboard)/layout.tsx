@@ -7,6 +7,7 @@ import SidebarToggle from "@/components/SidebarToggle";
 import SidebarNav from "@/components/SidebarNav";
 import DashboardHeader from "@/components/DashboardHeader";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import PwaInstallBanner from "@/components/PwaInstallBanner";
 import { getNotifications } from "@/app/actions/notifications";
 
 export default async function DashboardLayout({
@@ -59,6 +60,8 @@ export default async function DashboardLayout({
               initialNotifications={notifications}
             />
           </div>
+
+          <PwaInstallBanner />
 
           <main className="flex-1 p-4 sm:p-5 md:p-6 lg:p-7 overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-7">
             <div className="w-full space-y-5">{children}</div>
