@@ -1,13 +1,13 @@
 ---
-description: Commit automático ao concluir todas as tarefas da sessão
+description: Commit e push automáticos ao concluir todas as tarefas da sessão
 alwaysApply: true
 ---
 
-# Commit automático ao concluir tarefas
+# Commit e push automáticos ao concluir tarefas
 
-Quando **todas as tarefas solicitadas** estiverem concluídas e houver alterações no repositório, faça o commit **sem pedir confirmação extra**.
+Quando **todas as tarefas solicitadas** estiverem concluídas e houver alterações no repositório, faça **commit e push** sem pedir confirmação extra.
 
-## Quando commitar
+## Quando commitar e enviar
 
 - Implementação, correção, refatoração ou ajuste de UI concluídos
 - Build ou verificação relevante passou (quando aplicável)
@@ -20,21 +20,23 @@ Quando **todas as tarefas solicitadas** estiverem concluídas e houver alteraç�
 - Não há diff para commitar
 - Arquivos sensíveis (.env, credenciais, secrets) — avise o usuário em vez de commitar
 
-## Protocolo de commit
+## Protocolo
 
 1. Em paralelo: `git status`, `git diff`, `git log -5 --oneline`
 2. Stage apenas arquivos da tarefa — **não** incluir `.agents/`, `skills-lock.json`, `.neon` ou outros artefatos locais não solicitados
 3. Mensagem no estilo do repositório (`feat:`, `fix:`, `refactor:`), 1–2 frases focadas no **porquê**
-4. Commit via HEREDOC; se hook falhar, corrigir e criar **novo** commit (nunca `--amend` após falha)
-5. Rodar `git status` após o commit para confirmar sucesso
-6. Informar hash e mensagem do commit na resposta final
+4. Commit com `/usr/bin/git commit` (evita erro de `--trailer` no git antigo do PATH)
+5. Se hook falhar, corrigir e criar **novo** commit (nunca `--amend` após falha)
+6. Push: `git push origin main` (ou a branch atual com upstream)
+7. Confirmar sucesso com `git status` e informar hash, mensagem e que o deploy na Vercel foi disparado
 
 ## Push
 
-- **Não** fazer push automaticamente — só quando o usuário pedir explicitamente
+- **Sempre** fazer push após commit bem-sucedido, para disparar deploy na Vercel via GitHub
+- Se o push falhar (rede, permissão, conflito), informar o erro e o que falta fazer manualmente
 
 ## Exemplo de fluxo
 
 ```
-Tarefa concluída → build ok → git add (arquivos relevantes) → git commit → informar usuário
+Tarefa concluída → build ok → git add → git commit → git push → Vercel deploy
 ```
