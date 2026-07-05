@@ -641,111 +641,111 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
       >
         <div className="p-3 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <Link href={`/projects/${project.id}`} className="min-w-0 flex-1 space-y-1.5 cursor-pointer">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border ${accent.tag}`}
+                >
+                  {labelOrigin(project.client.origem)}
+                </span>
+                <span className="text-[10px] text-muted-foreground flex items-center font-medium">
+                  <MapPin className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                  {project.client.cidade}
+                </span>
+              </div>
+              <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
+                {project.client.nome}
+              </h4>
+              <p className="flex items-center text-xs text-muted-foreground">
+                <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
+                {project.client.telefone}
+              </p>
+            </Link>
+
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCardCollapse(project.id);
+              }}
+              className="p-1.5 rounded-md bg-secondary hover:bg-secondary/80 text-muted-foreground border border-border transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100"
+              title={isCollapsed ? "Expandir card" : "Recolher card"}
+            >
+              {isCollapsed ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronUp className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
+
           <div
             className={`grid transition-all duration-200 ease-in-out ${
               isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
             }`}
           >
             <div className="overflow-hidden">
-              <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
-                {followMessage && (
-                  <div
-                    className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
-                  >
-                    {followLevel === "alert" ? (
-                      <BellRing className="h-3 w-3 shrink-0" />
-                    ) : (
-                      <AlertTriangle className="h-3 w-3 shrink-0" />
-                    )}
-                    <span className="truncate">{followMessage}</span>
-                  </div>
-                )}
+              <div className="space-y-2 border-t border-border/70 pt-2">
+                <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
+                  {followMessage && (
+                    <div
+                      className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
+                    >
+                      {followLevel === "alert" ? (
+                        <BellRing className="h-3 w-3 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                      )}
+                      <span className="truncate">{followMessage}</span>
+                    </div>
+                  )}
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border ${accent.tag}`}
-                  >
-                    {labelOrigin(project.client.origem)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground flex items-center font-medium">
-                    <MapPin className="h-2.5 w-2.5 mr-0.5 shrink-0" />
-                    {project.client.cidade}
-                  </span>
-                </div>
-
-                <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
-                  {project.client.nome}
-                </h4>
-
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <p className="flex items-center">
-                    <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
-                    {project.client.telefone}
-                  </p>
                   {showFollowUp && (
-                    <p className="text-[10px] text-muted-foreground/80 pl-4">
+                    <p className="text-[10px] text-muted-foreground/80">
                       Último contato: há {getDaysSinceContact(project)} dia(s)
                     </p>
                   )}
-                </div>
 
-                {(project.status_geral === "PRODUCAO" ||
-                  project.status_geral === "INSTALACAO" ||
-                  project.status_geral === "FINALIZADO") && (
-                  <div>
-                    <span
-                      className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}
-                    >
-                      Fábrica & Montagem
-                    </span>
-                    <div
-                      className={`text-[10px] text-muted-foreground bg-white border ${accent.border} py-1.5 px-2 rounded-lg font-medium`}
-                    >
-                      {getProductionProgress(project.id, project.status_geral)}
+                  {(project.status_geral === "PRODUCAO" ||
+                    project.status_geral === "INSTALACAO" ||
+                    project.status_geral === "FINALIZADO") && (
+                    <div>
+                      <span
+                        className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}
+                      >
+                        Fábrica & Montagem
+                      </span>
+                      <div
+                        className={`text-[10px] text-muted-foreground bg-white border ${accent.border} py-1.5 px-2 rounded-lg font-medium`}
+                      >
+                        {getProductionProgress(project.id, project.status_geral)}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {project.status_geral === "PERDIDO" && project.motivo_perda && (
-                  <div>
-                    <span className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}>
-                      Motivo da perda
-                    </span>
-                    <p className={`text-[10px] text-muted-foreground bg-white border ${accent.border} rounded-lg p-2`}>
-                      {project.motivo_perda}
-                    </p>
-                  </div>
-                )}
-              </Link>
-            </div>
-          </div>
+                  {project.status_geral === "PERDIDO" && project.motivo_perda && (
+                    <div>
+                      <span className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}>
+                        Motivo da perda
+                      </span>
+                      <p className={`text-[10px] text-muted-foreground bg-white border ${accent.border} rounded-lg p-2`}>
+                        {project.motivo_perda}
+                      </p>
+                    </div>
+                  )}
+                </Link>
 
-          <div className={`space-y-2 ${isCollapsed ? "" : "border-t border-border/70 pt-2"}`}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center text-foreground font-black text-sm min-w-0">
-                <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary shrink-0" />
-                <span className="privacy-value truncate">
-                  {formatCurrency(project.valor_previsto).replace("R$", "")}
-                </span>
+                <div className="flex items-center text-foreground font-black text-sm">
+                  <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary shrink-0" />
+                  <span className="privacy-value truncate">
+                    {formatCurrency(project.valor_previsto).replace("R$", "")}
+                  </span>
+                </div>
+                {actionButtons}
               </div>
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleCardCollapse(project.id);
-                }}
-                className="p-1.5 rounded-md bg-secondary hover:bg-secondary/80 text-muted-foreground border border-border transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100"
-                title={isCollapsed ? "Expandir card" : "Recolher card"}
-              >
-                {isCollapsed ? (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                )}
-              </button>
             </div>
-            {actionButtons}
           </div>
         </div>
       </div>
