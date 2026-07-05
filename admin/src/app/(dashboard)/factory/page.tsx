@@ -112,7 +112,8 @@ export default async function FactoryPage() {
               client: true
             }
           },
-          responsavel: true
+          responsavel: true,
+          ajudante: true
         }
       });
 
@@ -142,7 +143,9 @@ export default async function FactoryPage() {
     projectId: e.project?.id || "",
     clientName: e.project?.client?.nome || "Cliente avulso",
     responsavelId: e.responsavel_id || null,
-    responsavelNome: e.responsavel?.name || null
+    responsavelNome: e.responsavel?.name || null,
+    ajudanteId: e.ajudante_id || null,
+    ajudanteNome: e.ajudante?.name || null
   }));
 
   return (

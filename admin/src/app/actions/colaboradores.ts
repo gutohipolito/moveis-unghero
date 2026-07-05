@@ -79,6 +79,10 @@ export async function deleteColaborador(userId: string) {
         where: { responsavel_id: userId },
         data: { responsavel_id: null },
       });
+      await tx.environment.updateMany({
+        where: { ajudante_id: userId },
+        data: { ajudante_id: null },
+      });
 
       // Deleta o usuário
       await tx.user.delete({ where: { id: userId } });
@@ -107,6 +111,24 @@ export async function updateEnvironmentResponsavel(environmentId: string, respon
     return { success: true, environment: updated };
   } catch (error: any) {
     console.error("Erro ao atualizar responsável do cômodo:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Associa um ajudante opcional da fábrica a um cômodo/ambiente
+export async function updateEnvironmentAjudante(environmentId: string, ajudanteId: string | null) {
+  try {
+    const updated = await prisma.environment.update({
+      where: { id: environmentId },
+      data: {
+        ajudante_id: ajudanteId,
+      },
+    });
+
+    revalidatePath("/factory");
+    return { success: true, environment: updated };
+  } catch (error: any) {
+    console.error("Erro ao atualizar ajudante do cômodo:", error);
     return { success: false, error: error.message };
   }
 }

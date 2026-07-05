@@ -2,19 +2,18 @@
 
 import React, { useState } from "react";
 import { updateEnvironmentStatus } from "@/app/actions/project";
-import { updateEnvironmentResponsavel } from "@/app/actions/colaboradores";
+import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
 import { Card } from "@/components/ui/card";
-import { 
-  Layers, 
-  ChevronRight, 
+import {
+  Layers,
   ArrowRight,
-  TrendingUp, 
-  Package, 
-  Wrench, 
-  Truck, 
+  Package,
+  Wrench,
+  Truck,
   CheckCircle2,
-  Sparkles,
-  ClipboardList
+  ClipboardList,
+  User,
+  Users,
 } from "lucide-react";
 
 interface EnvironmentItem {
@@ -26,6 +25,8 @@ interface EnvironmentItem {
   clientName: string;
   responsavelId?: string | null;
   responsavelNome?: string | null;
+  ajudanteId?: string | null;
+  ajudanteNome?: string | null;
 }
 
 interface ColaboradorSelect {
@@ -40,21 +41,125 @@ interface FactoryClientProps {
 }
 
 const COLUMNS = [
-  { id: "PRONTO_PRODUCAO", name: "Fila de Produção", bg: "bg-purple-500/10 text-purple-700 border-purple-500/20", icon: ClipboardList },
-  { id: "EM_CORTE", name: "Corte / Usinagem", bg: "bg-cyan-500/10 text-cyan-700 border-cyan-500/20", icon: Layers },
-  { id: "MONTAGEM_FABRICA", name: "Montagem Fábrica", bg: "bg-orange-500/10 text-orange-700 border-orange-500/20", icon: Wrench },
-  { id: "PRONTO_ENTREGA", name: "Pronto p/ Entrega", bg: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: Package },
-  { id: "EM_INSTALACAO", name: "Instalação", bg: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20", icon: Truck },
-  { id: "FINALIZADO", name: "Finalizado", bg: "bg-slate-500/10 text-slate-600 border-slate-500/20", icon: CheckCircle2 }
+  {
+    id: "PRONTO_PRODUCAO",
+    name: "Fila de Produção",
+    bg: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+    accent: "bg-gradient-to-r from-purple-500 to-purple-600",
+    icon: ClipboardList,
+  },
+  {
+    id: "EM_CORTE",
+    name: "Corte / Usinagem",
+    bg: "bg-cyan-500/10 text-cyan-700 border-cyan-500/20",
+    accent: "bg-gradient-to-r from-cyan-500 to-cyan-600",
+    icon: Layers,
+  },
+  {
+    id: "MONTAGEM_FABRICA",
+    name: "Montagem Fábrica",
+    bg: "bg-orange-500/10 text-orange-700 border-orange-500/20",
+    accent: "bg-gradient-to-r from-orange-500 to-orange-600",
+    icon: Wrench,
+  },
+  {
+    id: "PRONTO_ENTREGA",
+    name: "Pronto p/ Entrega",
+    bg: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+    accent: "bg-gradient-to-r from-emerald-500 to-emerald-600",
+    icon: Package,
+  },
+  {
+    id: "EM_INSTALACAO",
+    name: "Instalação",
+    bg: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20",
+    accent: "bg-gradient-to-r from-indigo-500 to-indigo-600",
+    icon: Truck,
+  },
+  {
+    id: "FINALIZADO",
+    name: "Finalizado",
+    bg: "bg-slate-500/10 text-slate-600 border-slate-500/20",
+    accent: "bg-gradient-to-r from-slate-400 to-slate-500",
+    icon: CheckCircle2,
+  },
 ];
+
+const TIPO_LABELS: Record<string, string> = {
+  COZINHA: "Cozinha",
+  CLOSET: "Closet",
+  DORMITORIO: "Dormitório",
+  BANHEIRO: "Banheiro",
+  OUTROS: "Outros",
+};
 
 const ENVIRONMENT_ICONS: Record<string, string> = {
   COZINHA: "🍳",
   CLOSET: "👔",
   DORMITORIO: "🛏️",
   BANHEIRO: "🚿",
-  OUTROS: "🪵"
+  OUTROS: "🪵",
 };
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+function TeamSelect({
+  label,
+  optional,
+  value,
+  excludeId,
+  colaboradores,
+  onChange,
+}: {
+  label: string;
+  optional?: boolean;
+  value: string | null | undefined;
+  excludeId?: string | null;
+  colaboradores: ColaboradorSelect[];
+  onChange: (id: string) => void;
+}) {
+  const selected = colaboradores.find((c) => c.id === value);
+  const options = colaboradores.filter((c) => c.id !== excludeId);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+          {label}
+          {optional && (
+            <span className="ml-1 font-normal normal-case text-muted-foreground/60">(opcional)</span>
+          )}
+        </span>
+        {selected && (
+          <span
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
+            title={selected.name}
+          >
+            {getInitials(selected.name)}
+          </span>
+        )}
+      </div>
+      <select
+        value={value || "none"}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-8 text-xs font-medium text-foreground bg-secondary/60 border border-border rounded-md px-2 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
+      >
+        <option value="none">{optional ? "Sem ajudante" : "Nenhum"}</option>
+        {options.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name} ({c.cargo})
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export default function FactoryClient({ initialEnvironments, colaboradores }: FactoryClientProps) {
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
@@ -62,21 +167,48 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
 
   const handleResponsavelChange = async (environmentId: string, responsavelId: string) => {
     const cleanId = responsavelId === "none" ? null : responsavelId;
-    const selected = colaboradores.find(c => c.id === cleanId);
-    const nome = selected ? selected.name : null;
+    const selected = colaboradores.find((c) => c.id === cleanId);
 
-    // Atualiza estado local
-    setEnvironments(environments.map(env => 
-      env.id === environmentId 
-        ? { ...env, responsavelId: cleanId, responsavelNome: nome } 
-        : env
-    ));
+    setEnvironments(
+      environments.map((env) =>
+        env.id === environmentId
+          ? {
+              ...env,
+              responsavelId: cleanId,
+              responsavelNome: selected?.name ?? null,
+              ...(cleanId && env.ajudanteId === cleanId
+                ? { ajudanteId: null, ajudanteNome: null }
+                : {}),
+            }
+          : env
+      )
+    );
 
-    // Grava no banco Neon
+    if (cleanId) {
+      const env = environments.find((e) => e.id === environmentId);
+      if (env?.ajudanteId === cleanId) {
+        await updateEnvironmentAjudante(environmentId, null);
+      }
+    }
+
     await updateEnvironmentResponsavel(environmentId, cleanId);
   };
 
-  // Drag and drop handlers
+  const handleAjudanteChange = async (environmentId: string, ajudanteId: string) => {
+    const cleanId = ajudanteId === "none" ? null : ajudanteId;
+    const selected = colaboradores.find((c) => c.id === cleanId);
+
+    setEnvironments(
+      environments.map((env) =>
+        env.id === environmentId
+          ? { ...env, ajudanteId: cleanId, ajudanteNome: selected?.name ?? null }
+          : env
+      )
+    );
+
+    await updateEnvironmentAjudante(environmentId, cleanId);
+  };
+
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("text/plain", id);
     setDraggedId(id);
@@ -91,38 +223,32 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
     const id = e.dataTransfer.getData("text/plain") || draggedId;
     if (!id) return;
 
-    // Atualiza local
-    const item = environments.find(env => env.id === id);
+    const item = environments.find((env) => env.id === id);
     if (!item || item.status === targetStatus) return;
 
-    setEnvironments(environments.map(env => env.id === id ? { ...env, status: targetStatus } : env));
+    setEnvironments(environments.map((env) => (env.id === id ? { ...env, status: targetStatus } : env)));
     setDraggedId(null);
 
-    // Salva no banco de dados
     await updateEnvironmentStatus(item.projectId, item.id, targetStatus as any);
   };
 
-  // Mover manual (útil em mobile)
   const handleMoveRight = async (item: EnvironmentItem) => {
-    const currentIdx = COLUMNS.findIndex(col => col.id === item.status);
+    const currentIdx = COLUMNS.findIndex((col) => col.id === item.status);
     if (currentIdx === -1 || currentIdx === COLUMNS.length - 1) return;
 
     const nextStatus = COLUMNS[currentIdx + 1].id;
-    setEnvironments(environments.map(env => env.id === item.id ? { ...env, status: nextStatus } : env));
-    
+    setEnvironments(environments.map((env) => (env.id === item.id ? { ...env, status: nextStatus } : env)));
+
     await updateEnvironmentStatus(item.projectId, item.id, nextStatus as any);
   };
 
-  // Estatísticas do painel
   const totalPecas = environments.length;
-  const emCorteCount = environments.filter(e => e.status === "EM_CORTE").length;
-  const emMontagemCount = environments.filter(e => e.status === "MONTAGEM_FABRICA").length;
-  const prontoEntregaCount = environments.filter(e => e.status === "PRONTO_ENTREGA").length;
+  const emCorteCount = environments.filter((e) => e.status === "EM_CORTE").length;
+  const emMontagemCount = environments.filter((e) => e.status === "MONTAGEM_FABRICA").length;
+  const prontoEntregaCount = environments.filter((e) => e.status === "PRONTO_ENTREGA").length;
 
   return (
     <div className="space-y-6">
-      
-      {/* Cards de Métricas Operacionais */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 glass-card border-border flex items-center gap-4">
           <div className="p-3 bg-purple-500/10 text-purple-400 rounded-lg">
@@ -165,88 +291,95 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
         </Card>
       </div>
 
-      {/* Grid de Colunas Kanban de Produção */}
       <div className="kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-start">
-        {COLUMNS.map(col => {
-          const colItems = environments.filter(item => item.status === col.id);
+        {COLUMNS.map((col) => {
+          const colItems = environments.filter((item) => item.status === col.id);
           const Icon = col.icon;
-          
+
           return (
-            <div 
+            <div
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="kanban-column lg:w-auto flex flex-col bg-slate-50 border border-border rounded-xl overflow-hidden min-h-[320px] lg:min-h-[420px]"
+              className="kanban-column lg:w-auto flex flex-col bg-secondary/30 border border-border rounded-xl overflow-hidden min-h-[320px] lg:min-h-[480px]"
             >
-              {/* Cabeçalho da Coluna */}
-              <div className={`p-3.5 flex items-center justify-between border-b border-border/50 bg-slate-50 ${col.bg} font-bold text-xs uppercase tracking-wider`}>
+              <div
+                className={`p-3.5 flex items-center justify-between border-b border-border/50 font-bold text-xs uppercase tracking-wider ${col.bg}`}
+              >
                 <span className="flex items-center gap-1.5">
                   <Icon className="h-4 w-4" />
                   {col.name}
                 </span>
-                <span className="bg-secondary text-[10px] px-2 py-0.5 rounded-full font-extrabold text-muted-foreground">
+                <span className="bg-background/80 text-[10px] px-2 py-0.5 rounded-full font-extrabold text-muted-foreground">
                   {colItems.length}
                 </span>
               </div>
 
-              {/* Lista de Cards da Coluna */}
-              <div className="flex-1 p-3 space-y-3 max-h-[500px] overflow-y-auto scrollbar-thin">
+              <div className="flex-1 p-3 space-y-3 max-h-[560px] overflow-y-auto scrollbar-thin">
                 {colItems.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
                     Arrastar cômodo para esta fila...
                   </div>
                 ) : (
-                  colItems.map(item => (
+                  colItems.map((item) => (
                     <Card
                       key={item.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, item.id)}
-                      className={`p-3 glass-card hover:border-primary/30 active:scale-[0.97] transition-all duration-200 cursor-grab active:cursor-grabbing space-y-2.5 relative group ${
-                        draggedId === item.id ? "opacity-30" : ""
+                      className={`glass-card glass-card-hover overflow-hidden border-border/80 active:scale-[0.98] transition-all duration-200 cursor-grab active:cursor-grabbing relative group ${
+                        draggedId === item.id ? "opacity-40 scale-[0.98]" : ""
                       }`}
                     >
-                      <div className="space-y-1">
-                        <span className="text-[9px] bg-secondary/80 text-muted-foreground px-1.5 py-0.2 rounded font-semibold tracking-wide uppercase inline-flex items-center gap-1">
-                          {ENVIRONMENT_ICONS[item.tipo] || "🪵"} {item.tipo}
-                        </span>
-                        <h4 className="font-bold text-xs text-foreground leading-tight">
-                          {item.nome}
-                        </h4>
-                      </div>
+                      <div className={`h-1 ${col.accent}`} />
 
-                      <div className="flex items-center justify-between border-t border-border/10 pt-2 text-[10px] text-muted-foreground">
-                        <span className="truncate font-medium text-primary">
-                          👤 {item.clientName.split(" ")[0]}
-                        </span>
-                        
-                        {/* Botão de Avanço Rápido (para mobile/atalho) */}
-                        {col.id !== "FINALIZADO" && (
-                          <button
-                            onClick={() => handleMoveRight(item)}
-                            className="p-1 rounded bg-secondary hover:bg-primary/20 text-muted-foreground hover:text-primary transition-all cursor-pointer"
-                            title="Avançar etapa de produção"
-                          >
-                            <ArrowRight className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
+                      <div className="p-3.5 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1.5 min-w-0 flex-1">
+                            <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-semibold tracking-wide uppercase inline-flex items-center gap-1">
+                              {ENVIRONMENT_ICONS[item.tipo] || "🪵"}{" "}
+                              {TIPO_LABELS[item.tipo] || item.tipo}
+                            </span>
+                            <h4 className="font-bold text-sm text-foreground leading-snug">{item.nome}</h4>
+                          </div>
 
-                      {/* Seletor de Responsável da Fábrica */}
-                      <div className="border-t border-slate-100 pt-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Responsável:</span>
-                          <select
-                            value={item.responsavelId || "none"}
-                            onChange={(e) => handleResponsavelChange(item.id, e.target.value)}
-                            className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 cursor-pointer outline-none max-w-[120px] truncate"
-                          >
-                            <option value="none" className="text-slate-400">Nenhum</option>
-                            {colaboradores.map(c => (
-                              <option key={c.id} value={c.id}>
-                                {c.name.split(" ")[0]} ({c.cargo})
-                              </option>
-                            ))}
-                          </select>
+                          {col.id !== "FINALIZADO" && (
+                            <button
+                              onClick={() => handleMoveRight(item)}
+                              className="shrink-0 p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                              title="Avançar etapa de produção"
+                            >
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <User className="h-3 w-3 shrink-0" />
+                          <span className="truncate font-medium">{item.clientName}</span>
+                        </div>
+
+                        <div className="space-y-2.5 pt-2.5 border-t border-border/50">
+                          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                            <Users className="h-3 w-3" />
+                            Equipe
+                          </div>
+
+                          <TeamSelect
+                            label="Responsável"
+                            value={item.responsavelId}
+                            excludeId={item.ajudanteId}
+                            colaboradores={colaboradores}
+                            onChange={(id) => handleResponsavelChange(item.id, id)}
+                          />
+
+                          <TeamSelect
+                            label="Ajudante"
+                            optional
+                            value={item.ajudanteId}
+                            excludeId={item.responsavelId}
+                            colaboradores={colaboradores}
+                            onChange={(id) => handleAjudanteChange(item.id, id)}
+                          />
                         </div>
                       </div>
                     </Card>
@@ -257,7 +390,6 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
           );
         })}
       </div>
-
     </div>
   );
 }

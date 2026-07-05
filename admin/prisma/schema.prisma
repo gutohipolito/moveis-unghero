@@ -38,6 +38,7 @@ model User {
   accounts      Account[]
   timeline      Timeline[]
   ambientes_sob_responsabilidade Environment[] @relation("UserResponsavel")
+  ambientes_como_ajudante      Environment[] @relation("UserAjudante")
   timecards     TimeCard[]
   projetos_sob_responsabilidade  Project[]     @relation("ProjectResponsavel")
 }
@@ -168,9 +169,11 @@ model Environment {
   tipo           EnvironmentType   // COZINHA, CLOSET, DORMITORIO, BANHEIRO, OUTROS
   status         EnvironmentStatus // AGUARDANDO_MEDICAO, EM_DETALHAMENTO, PRONTO_PRODUCAO, EM_CORTE, MONTAGEM_FABRICA, PRONTO_ENTREGA, EM_INSTALACAO, FINALIZADO
   
-  // Responsável na Fábrica
+  // Equipe na fábrica
   responsavel_id String?
   responsavel    User?             @relation("UserResponsavel", fields: [responsavel_id], references: [id])
+  ajudante_id    String?
+  ajudante       User?             @relation("UserAjudante", fields: [ajudante_id], references: [id])
 }
 
 enum EnvironmentType {
