@@ -97,6 +97,23 @@ const FUNNEL_COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
   { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-600" },
 ];
 
+/** Borda e título dos blocos internos — mesma família de cor da coluna. */
+const COLUMN_INNER_ACCENT: Record<string, { title: string; border: string; tag: string }> = {
+  LEAD: { title: "text-amber-700", border: "border-amber-500/35", tag: "border-amber-500/25 text-amber-700 bg-amber-500/5" },
+  ORCAMENTO: { title: "text-orange-700", border: "border-orange-500/35", tag: "border-orange-500/25 text-orange-700 bg-orange-500/5" },
+  NEGOCIACAO: { title: "text-blue-700", border: "border-blue-500/35", tag: "border-blue-500/25 text-blue-700 bg-blue-500/5" },
+  CONFERENCIA_TECNICA: { title: "text-purple-700", border: "border-purple-500/35", tag: "border-purple-500/25 text-purple-700 bg-purple-500/5" },
+  APROVADO: { title: "text-emerald-700", border: "border-emerald-500/35", tag: "border-emerald-500/25 text-emerald-700 bg-emerald-500/5" },
+  PRODUCAO: { title: "text-cyan-700", border: "border-cyan-500/35", tag: "border-cyan-500/25 text-cyan-700 bg-cyan-500/5" },
+  INSTALACAO: { title: "text-indigo-700", border: "border-indigo-500/35", tag: "border-indigo-500/25 text-indigo-700 bg-indigo-500/5" },
+  FINALIZADO: { title: "text-slate-600", border: "border-slate-500/35", tag: "border-slate-500/25 text-slate-600 bg-slate-500/5" },
+  PERDIDO: { title: "text-slate-600", border: "border-slate-500/35", tag: "border-slate-500/25 text-slate-600 bg-slate-500/5" },
+};
+
+function getColumnAccent(status: string) {
+  return COLUMN_INNER_ACCENT[status] ?? COLUMN_INNER_ACCENT.LEAD;
+}
+
 const STATUS_OPTIONS = [
   ...FUNNEL_COLUMNS,
   { id: "PERDIDO" as ProjectStatus, title: "Perdido", color: "" },
@@ -546,6 +563,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
     const showFollowUp = needsFollowUp(project.status_geral);
     const isCollapsed = collapsedCards.has(project.id);
+    const accent = getColumnAccent(colId ?? project.status_geral);
 
     const actionButtons = (
       <div className="flex items-center gap-1 flex-wrap">
@@ -553,7 +571,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           <button
             type="button"
             onClick={() => handleMarkContacted(project)}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/25 transition-all cursor-pointer"
             title="Registrar que houve contato hoje"
           >
             <MessageCircle className="h-3.5 w-3.5" />
@@ -566,7 +584,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               setLossModalProject(project);
               setLossMotivo("");
             }}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-500/20 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-500/25 transition-all cursor-pointer"
             title="Marcar como perda"
           >
             <XCircle className="h-3.5 w-3.5" />
@@ -576,7 +594,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           <button
             type="button"
             onClick={() => handleRestoreLoss(project)}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 border border-cyan-500/25 transition-all cursor-pointer"
             title="Reativar lead"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -586,7 +604,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           <button
             type="button"
             onClick={() => handleMoveRight(project)}
-            className="md:hidden inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+            className="md:hidden inline-flex items-center justify-center p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 border border-amber-500/25 transition-all cursor-pointer"
             title="Avançar etapa"
           >
             <ArrowRight className="h-3.5 w-3.5" />
@@ -595,14 +613,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         <button
           type="button"
           onClick={() => openEditModal(project)}
-          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer"
+          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-slate-700 border border-slate-500/20 transition-all cursor-pointer"
           title="Editar card"
         >
           <Edit className="h-3.5 w-3.5" />
         </button>
         <Link
           href={`/projects/${project.id}`}
-          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all cursor-pointer group/link"
+          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all cursor-pointer group/link"
           title="Ver detalhes do projeto"
         >
           <ArrowRight className="h-3.5 w-3.5 group-hover/link:translate-x-0.5 transition-transform" />
@@ -623,30 +641,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
       >
         <div className="p-3 space-y-2">
-          {followMessage && !isCollapsed && (
-            <div
-              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
-            >
-              {followLevel === "alert" ? (
-                <BellRing className="h-3 w-3 shrink-0" />
-              ) : (
-                <AlertTriangle className="h-3 w-3 shrink-0" />
-              )}
-              <span className="truncate">{followMessage}</span>
-            </div>
-          )}
-
           <div className="flex items-start justify-between gap-2">
             <Link href={`/projects/${project.id}`} className="min-w-0 flex-1 space-y-1 cursor-pointer">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[9px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-wide uppercase border border-primary/15">
-                  {labelOrigin(project.client.origem)}
-                </span>
-                <span className="text-[10px] text-muted-foreground flex items-center font-medium">
-                  <MapPin className="h-2.5 w-2.5 mr-0.5 text-primary shrink-0" />
-                  {project.client.cidade}
-                </span>
-                {followMessage && isCollapsed && followLevel !== "ok" && (
+              <div className="flex items-center gap-1.5">
+                <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
+                  {project.client.nome}
+                </h4>
+                {followMessage && isCollapsed && (
                   <span
                     className={`h-1.5 w-1.5 rounded-full shrink-0 ${
                       followLevel === "alert" ? "bg-red-500" : "bg-amber-500"
@@ -655,10 +656,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   />
                 )}
               </div>
-
-              <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
-                {project.client.nome}
-              </h4>
+              <p className="flex items-center text-xs text-muted-foreground">
+                <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
+                {project.client.telefone}
+              </p>
             </Link>
 
             <button
@@ -668,7 +669,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 e.stopPropagation();
                 toggleCardCollapse(project.id);
               }}
-              className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/15 text-primary border border-primary/15 transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100"
+              className="p-1.5 rounded-md bg-secondary hover:bg-secondary/80 text-muted-foreground border border-border transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100"
               title={isCollapsed ? "Expandir card" : "Recolher card"}
             >
               {isCollapsed ? (
@@ -685,36 +686,64 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             }`}
           >
             <div className="overflow-hidden">
-              <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer pt-1">
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <p className="flex items-center">
-                    <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
-                    {project.client.telefone}
-                  </p>
-                  {showFollowUp && (
-                    <p className="text-[10px] text-muted-foreground/80 pl-4">
-                      Último contato: há {getDaysSinceContact(project)} dia(s)
-                    </p>
-                  )}
+              <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
+                {followMessage && (
+                  <div
+                    className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
+                  >
+                    {followLevel === "alert" ? (
+                      <BellRing className="h-3 w-3 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                    )}
+                    <span className="truncate">{followMessage}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border ${accent.tag}`}
+                  >
+                    {labelOrigin(project.client.origem)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground flex items-center font-medium">
+                    <MapPin className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                    {project.client.cidade}
+                  </span>
                 </div>
+
+                {showFollowUp && (
+                  <p className="text-[10px] text-muted-foreground/80">
+                    Último contato: há {getDaysSinceContact(project)} dia(s)
+                  </p>
+                )}
 
                 {(project.status_geral === "PRODUCAO" ||
                   project.status_geral === "INSTALACAO" ||
                   project.status_geral === "FINALIZADO") && (
                   <div>
-                    <span className="text-[9px] font-semibold text-primary/80 uppercase tracking-wide block mb-1">
+                    <span
+                      className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}
+                    >
                       Fábrica & Montagem
                     </span>
-                    <div className="text-[10px] bg-primary/10 text-primary border border-primary/20 py-1.5 px-2 rounded-lg font-semibold">
+                    <div
+                      className={`text-[10px] text-muted-foreground bg-white border ${accent.border} py-1.5 px-2 rounded-lg font-medium`}
+                    >
                       {getProductionProgress(project.id, project.status_geral)}
                     </div>
                   </div>
                 )}
 
                 {project.status_geral === "PERDIDO" && project.motivo_perda && (
-                  <p className="text-[10px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-lg p-2">
-                    <strong className="text-primary">Motivo:</strong> {project.motivo_perda}
-                  </p>
+                  <div>
+                    <span className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}>
+                      Motivo da perda
+                    </span>
+                    <p className={`text-[10px] text-muted-foreground bg-white border ${accent.border} rounded-lg p-2`}>
+                      {project.motivo_perda}
+                    </p>
+                  </div>
                 )}
               </Link>
             </div>
