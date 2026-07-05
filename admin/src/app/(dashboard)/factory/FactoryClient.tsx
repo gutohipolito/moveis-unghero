@@ -14,6 +14,10 @@ import {
   ClipboardList,
   User,
   Users,
+  ChevronDown,
+  ChevronUp,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 
 interface EnvironmentItem {
@@ -164,6 +168,29 @@ function TeamSelect({
 export default function FactoryClient({ initialEnvironments, colaboradores }: FactoryClientProps) {
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
+
+  const toggleCardCollapse = (id: string) => {
+    setCollapsedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleColumnCollapse = (colId: string, itemIds: string[]) => {
+    setCollapsedCards((prev) => {
+      const allCollapsed = itemIds.length > 0 && itemIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allCollapsed) {
+        itemIds.forEach((id) => next.delete(id));
+      } else {
+        itemIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
 
   const handleResponsavelChange = async (environmentId: string, responsavelId: string) => {
     const cleanId = responsavelId === "none" ? null : responsavelId;
@@ -291,37 +318,59 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
         </Card>
       </div>
 
-      <div className="kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-start">
+      <div className="kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-stretch min-h-[520px] lg:min-h-[calc(100vh-13rem)]">
         {COLUMNS.map((col) => {
           const colItems = environments.filter((item) => item.status === col.id);
           const Icon = col.icon;
+          const colItemIds = colItems.map((item) => item.id);
+          const allColCollapsed =
+            colItemIds.length > 0 && colItemIds.every((id) => collapsedCards.has(id));
 
           return (
             <div
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="kanban-column lg:w-auto flex flex-col bg-secondary/30 border border-border rounded-xl overflow-hidden min-h-[320px] lg:min-h-[480px]"
+              className="kanban-column lg:w-auto flex flex-col bg-secondary/30 border border-border rounded-xl overflow-hidden min-h-[480px] lg:min-h-[calc(100vh-13rem)]"
             >
               <div
-                className={`p-3.5 flex items-center justify-between border-b border-border/50 font-bold text-xs uppercase tracking-wider ${col.bg}`}
+                className={`p-3.5 flex items-center justify-between border-b border-border/50 font-bold text-xs uppercase tracking-wider shrink-0 ${col.bg}`}
               >
-                <span className="flex items-center gap-1.5">
-                  <Icon className="h-4 w-4" />
-                  {col.name}
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{col.name}</span>
                 </span>
-                <span className="bg-background/80 text-[10px] px-2 py-0.5 rounded-full font-extrabold text-muted-foreground">
-                  {colItems.length}
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {colItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => toggleColumnCollapse(col.id, colItemIds)}
+                      className="p-1 rounded-md bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title={allColCollapsed ? "Expandir todos os cards" : "Recolher todos os cards"}
+                    >
+                      {allColCollapsed ? (
+                        <ChevronsUpDown className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronsDownUp className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  )}
+                  <span className="bg-background/80 text-[10px] px-2 py-0.5 rounded-full font-extrabold text-muted-foreground">
+                    {colItems.length}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex-1 p-3 space-y-3 max-h-[560px] overflow-y-auto scrollbar-thin">
+              <div className="flex-1 p-3 space-y-3 min-h-[400px] max-h-[calc(100vh-16rem)] lg:max-h-[calc(100vh-13.5rem)] overflow-y-auto scrollbar-thin">
                 {colItems.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
+                  <div className="h-full min-h-[320px] flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
                     Arrastar cômodo para esta fila...
                   </div>
                 ) : (
-                  colItems.map((item) => (
+                  colItems.map((item) => {
+                    const isCollapsed = collapsedCards.has(item.id);
+
+                    return (
                     <Card
                       key={item.id}
                       draggable
@@ -342,48 +391,104 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
                             <h4 className="font-bold text-sm text-foreground leading-snug">{item.nome}</h4>
                           </div>
 
-                          {col.id !== "FINALIZADO" && (
+                          <div className="flex items-center gap-0.5 shrink-0">
                             <button
-                              onClick={() => handleMoveRight(item)}
-                              className="shrink-0 p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
-                              title="Avançar etapa de produção"
+                              type="button"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleCardCollapse(item.id);
+                              }}
+                              className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                              title={isCollapsed ? "Expandir card" : "Recolher card"}
                             >
-                              <ArrowRight className="h-3.5 w-3.5" />
+                              {isCollapsed ? (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              )}
                             </button>
+
+                            {col.id !== "FINALIZADO" && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveRight(item);
+                                }}
+                                className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                                title="Avançar etapa de produção"
+                              >
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+                            <User className="h-3 w-3 shrink-0" />
+                            <span className="truncate font-medium">{item.clientName}</span>
+                          </div>
+
+                          {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              {item.responsavelNome && (
+                                <span
+                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
+                                  title={`Responsável: ${item.responsavelNome}`}
+                                >
+                                  {getInitials(item.responsavelNome)}
+                                </span>
+                              )}
+                              {item.ajudanteNome && (
+                                <span
+                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-muted-foreground"
+                                  title={`Ajudante: ${item.ajudanteNome}`}
+                                >
+                                  {getInitials(item.ajudanteNome)}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <User className="h-3 w-3 shrink-0" />
-                          <span className="truncate font-medium">{item.clientName}</span>
-                        </div>
+                        <div
+                          className={`grid transition-all duration-200 ease-in-out ${
+                            isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+                          }`}
+                        >
+                          <div className="overflow-hidden">
+                            <div className="space-y-2.5 pt-2.5 border-t border-border/50">
+                              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                <Users className="h-3 w-3" />
+                                Equipe
+                              </div>
 
-                        <div className="space-y-2.5 pt-2.5 border-t border-border/50">
-                          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                            <Users className="h-3 w-3" />
-                            Equipe
+                              <TeamSelect
+                                label="Responsável"
+                                value={item.responsavelId}
+                                excludeId={item.ajudanteId}
+                                colaboradores={colaboradores}
+                                onChange={(id) => handleResponsavelChange(item.id, id)}
+                              />
+
+                              <TeamSelect
+                                label="Ajudante"
+                                optional
+                                value={item.ajudanteId}
+                                excludeId={item.responsavelId}
+                                colaboradores={colaboradores}
+                                onChange={(id) => handleAjudanteChange(item.id, id)}
+                              />
+                            </div>
                           </div>
-
-                          <TeamSelect
-                            label="Responsável"
-                            value={item.responsavelId}
-                            excludeId={item.ajudanteId}
-                            colaboradores={colaboradores}
-                            onChange={(id) => handleResponsavelChange(item.id, id)}
-                          />
-
-                          <TeamSelect
-                            label="Ajudante"
-                            optional
-                            value={item.ajudanteId}
-                            excludeId={item.responsavelId}
-                            colaboradores={colaboradores}
-                            onChange={(id) => handleAjudanteChange(item.id, id)}
-                          />
                         </div>
                       </div>
                     </Card>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
