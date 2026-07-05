@@ -37,6 +37,10 @@ import {
   type ClientTab,
 } from "@/lib/clientLifecycle";
 import { labelOrigin, labelStatus } from "@/lib/navLabels";
+import {
+  resolveClientDocument,
+  type TipoPessoa,
+} from "@/lib/clientDocument";
 
 interface ProjectSummary {
   id: string;
@@ -52,9 +56,10 @@ interface Client {
   cidade: string;
   origem: Origin;
   status: string;
-  observacoes: string;
-  projects?: ProjectSummary[];
+  tipo_pessoa?: TipoPessoa;
+  cpf?: string | null;
   cnpj?: string | null;
+  observacoes: string;
   cep?: string | null;
   endereco?: string | null;
   numero?: string | null;
@@ -63,6 +68,7 @@ interface Client {
   tipo_imovel?: string | null;
   obs_imovel?: string | null;
   obs_entrega?: string | null;
+  projects?: ProjectSummary[];
 }
 
 interface ClientesClientProps {
@@ -94,6 +100,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [search, setSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
+  const [filterTipoPessoa, setFilterTipoPessoa] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<ClientTab>("leads");
   
   // Estados para Modais
@@ -103,7 +110,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Estados de Formulários
-  const [tipoPessoa, setTipoPessoa] = useState<"PF" | "PJ">("PF");
+  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("PF");
   const [documento, setDocumento] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -114,8 +121,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [observacoes, setObservacoes] = useState("");
   const [valorPrevisto, setValorPrevisto] = useState("");
 
-  // Novos campos cadastrais de endereço e imóvel
-  const [cnpj, setCnpj] = useState("");
+  // Campos cadastrais de endereço e imóvel
   const [cep, setCep] = useState("");
   const [endereco, setEndereco] = useState("");
   const [numero, setNumero] = useState("");
@@ -176,30 +182,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper para fazer o parse das observações e extrair CPF/CNPJ
-  const parseDocument = (obs: string) => {
-    let tipo: "PF" | "PJ" = "PF";
-    let doc = "";
-    let cleanObs = obs || "";
-    if (obs?.startsWith("[PF - CPF:")) {
-      const closingBracket = obs.indexOf("]");
-      if (closingBracket !== -1) {
-        doc = obs.substring(10, closingBracket).trim();
-        cleanObs = obs.substring(closingBracket + 1).trim();
-        tipo = "PF";
-      }
-    } else if (obs?.startsWith("[PJ - CNPJ:")) {
-      const closingBracket = obs.indexOf("]");
-      if (closingBracket !== -1) {
-        doc = obs.substring(11, closingBracket).trim();
-        cleanObs = obs.substring(closingBracket + 1).trim();
-        tipo = "PJ";
-      }
-    }
-    return { tipo, doc, cleanObs };
-  };
-
-  // Filtragem por aba, busca e origem
   const tabCounts = useMemo(() => {
     const counts: Record<ClientTab, number> = {
       leads: 0,
@@ -213,22 +195,25 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   }, [clients]);
 
   const filteredClients = clients.filter((c) => {
+    const doc = resolveClientDocument(c);
+    const searchLower = search.toLowerCase();
     const matchesSearch =
-      c.nome.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase()) ||
-      c.telefone.includes(search);
+      c.nome.toLowerCase().includes(searchLower) ||
+      c.email.toLowerCase().includes(searchLower) ||
+      c.telefone.includes(search) ||
+      (doc.cpf || "").includes(search) ||
+      (doc.cnpj || "").includes(search);
     const matchesOrigin = filterOrigin === "ALL" || c.origem === filterOrigin;
+    const matchesTipo =
+      filterTipoPessoa === "ALL" || doc.tipo_pessoa === filterTipoPessoa;
     const matchesTab = getClientTab(c) === activeTab;
-    return matchesSearch && matchesOrigin && matchesTab;
+    return matchesSearch && matchesOrigin && matchesTipo && matchesTab;
   });
 
   // Salvar Novo Cliente
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome || !email || !telefone || !cidade) return;
-
-    const docPrefixo = documento ? `[${tipoPessoa} - ${tipoPessoa === "PF" ? "CPF" : "CNPJ"}: ${documento}] ` : "";
-    const fullObservacoes = docPrefixo + observacoes;
 
     const data = { 
       nome, 
@@ -237,9 +222,11 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       cidade, 
       origem, 
       status, 
-      observacoes: fullObservacoes, 
+      observacoes,
       company_id: companyId,
-      cnpj: tipoPessoa === "PJ" ? documento : cnpj,
+      tipo_pessoa: tipoPessoa,
+      cpf: tipoPessoa === "PF" ? documento : undefined,
+      cnpj: tipoPessoa === "PJ" ? documento : undefined,
       cep,
       endereco,
       numero,
@@ -273,14 +260,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setOrigem(client.origem);
     setStatus(client.status);
     
-    // Parse do documento nas observações
-    const parsed = parseDocument(client.observacoes);
-    setTipoPessoa(parsed.tipo);
-    setDocumento(parsed.doc);
-    setObservacoes(parsed.cleanObs);
+    const doc = resolveClientDocument(client);
+    setTipoPessoa(doc.tipo_pessoa);
+    setDocumento(doc.documento);
+    setObservacoes(doc.observacoes);
 
-    // Carregar novos campos
-    setCnpj(client.cnpj || "");
+    // Carregar campos de endereço
     setCep(client.cep || "");
     setEndereco(client.endereco || "");
     setNumero(client.numero || "");
@@ -298,9 +283,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     e.preventDefault();
     if (!selectedClient || !nome || !email || !telefone || !cidade) return;
 
-    const docPrefixo = documento ? `[${tipoPessoa} - ${tipoPessoa === "PF" ? "CPF" : "CNPJ"}: ${documento}] ` : "";
-    const fullObservacoes = docPrefixo + observacoes;
-
     const data = { 
       nome, 
       email, 
@@ -308,8 +290,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       cidade, 
       origem, 
       status, 
-      observacoes: fullObservacoes,
-      cnpj: tipoPessoa === "PJ" ? documento : cnpj,
+      observacoes,
+      tipo_pessoa: tipoPessoa,
+      cpf: tipoPessoa === "PF" ? documento : undefined,
+      cnpj: tipoPessoa === "PJ" ? documento : undefined,
       cep,
       endereco,
       numero,
@@ -449,8 +433,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setObservacoes("");
     setSelectedClient(null);
     
-    // Reset dos novos campos
-    setCnpj("");
     setCep("");
     setEndereco("");
     setNumero("");
@@ -535,6 +517,21 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <Filter className="h-3 w-3" /> Tipo:
+            </span>
+            <select
+              value={filterTipoPessoa}
+              onChange={(e) => setFilterTipoPessoa(e.target.value)}
+              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+            >
+              <option value="ALL">Todos</option>
+              <option value="PF">Pessoa Física</option>
+              <option value="PJ">Pessoa Jurídica</option>
+            </select>
+          </div>
         </div>
       </Card>
 
@@ -562,7 +559,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
                 const statBadge = STATUS_BADGES[client.status] || { bg: "bg-muted", text: "text-muted-foreground" };
                 const projectList = client.projects || [];
-                const parsed = parseDocument(client.observacoes);
+                const docInfo = resolveClientDocument(client);
 
                 return (
                   <article key={client.id} className="p-4 space-y-3">
@@ -573,12 +570,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                             {client.nome}
                           </Link>
                           <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                            {parsed.tipo}
+                            {docInfo.tipo_pessoa}
                           </span>
                         </div>
-                        {parsed.doc && (
+                        {docInfo.documento && (
                           <p className="detail-text mt-0.5">
-                            {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
+                            {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {docInfo.documento}
                           </p>
                         )}
                       </div>
@@ -669,20 +666,20 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       {/* Cliente & Contato */}
                       <td className="p-4">
                         {(() => {
-                          const parsed = parseDocument(client.observacoes);
+                          const docInfo = resolveClientDocument(client);
                           return (
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
                                 <Link href={`/clientes/${client.id}`} className="text-sm font-bold text-slate-900 hover:underline hover:text-primary transition-all">
                                   {client.nome}
                                 </Link>
-                                <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
-                                  {parsed.tipo}
+                                <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
+                                  {docInfo.tipo_pessoa}
                                 </span>
                               </div>
-                              {parsed.doc && (
+                              {docInfo.documento && (
                                 <span className="text-[11px] font-bold text-slate-600 mt-0.5">
-                                  {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
+                                  {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {docInfo.documento}
                                 </span>
                               )}
                               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">

@@ -52,6 +52,8 @@ export async function createLead(formData: {
   company_id: string;
   client_id?: string; // Opcional, para associar a cliente já cadastrado
   status_geral?: ProjectStatus; // Opcional, status inicial
+  tipo_pessoa?: "PF" | "PJ";
+  cpf?: string;
   cnpj?: string;
   cep?: string;
   endereco?: string;
@@ -85,7 +87,9 @@ export async function createLead(formData: {
             origem: formData.origem,
             status: statusInicial,
             company_id: formData.company_id,
-            cnpj: formData.cnpj || null,
+            tipo_pessoa: formData.tipo_pessoa || "PF",
+            cpf: formData.tipo_pessoa === "PJ" ? null : formData.cpf || null,
+            cnpj: formData.tipo_pessoa === "PJ" ? formData.cnpj || null : null,
             cep: formData.cep || null,
             endereco: formData.endereco || null,
             numero: formData.numero || null,
@@ -145,6 +149,8 @@ export async function updateProjectAction(
     telefone: string;
     cidade: string;
     origem: Origin;
+    tipo_pessoa?: "PF" | "PJ";
+    cpf?: string;
     cnpj?: string;
     cep?: string;
     endereco?: string;
@@ -168,6 +174,8 @@ export async function updateProjectAction(
             telefone: data.telefone,
             cidade: data.cidade,
             origem: data.origem,
+            tipo_pessoa: data.tipo_pessoa,
+            cpf: data.cpf !== undefined ? data.cpf : undefined,
             cnpj: data.cnpj !== undefined ? data.cnpj : undefined,
             cep: data.cep !== undefined ? data.cep : undefined,
             endereco: data.endereco !== undefined ? data.endereco : undefined,

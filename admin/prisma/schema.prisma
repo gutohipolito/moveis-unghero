@@ -89,19 +89,21 @@ model Verification {
 }
 
 model Client {
-  id           String    @id @default(uuid())
+  id           String     @id @default(uuid())
   company_id   String
-  company      Company   @relation(fields: [company_id], references: [id])
+  company      Company    @relation(fields: [company_id], references: [id])
   nome         String
   telefone     String
   email        String
   cidade       String
-  origem       Origin    // SITE, INSTAGRAM, INDICACAO, GOOGLE, WHATSAPP, FACEBOOK
+  origem       Origin     // SITE, INSTAGRAM, INDICACAO, GOOGLE, WHATSAPP, FACEBOOK
   status       String
   observacoes  String?
   projects     Project[]
+  tipo_pessoa  TipoPessoa @default(PF)
+  cpf          String?
 
-  // Novos campos cadastrais de endereço e imóvel
+  // Campos cadastrais de endereço e imóvel
   cnpj         String?
   cep          String?
   endereco     String?
@@ -120,6 +122,11 @@ enum Origin {
   GOOGLE
   WHATSAPP
   FACEBOOK
+}
+
+enum TipoPessoa {
+  PF
+  PJ
 }
 
 model Project {

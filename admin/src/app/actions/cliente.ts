@@ -1,6 +1,11 @@
 "use server";
 
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
+import {
+  parseLegacyDocumentFromObs,
+  resolveClientDocument,
+  type TipoPessoa,
+} from "@/lib/clientDocument";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -23,7 +28,10 @@ const MOCK_CLIENTS = [
     cidade: "Caxias do Sul",
     origem: "INSTAGRAM" as Origin,
     status: "LEAD",
-    observacoes: "[PF - CPF: 123.456.789-00] Interessado em projeto de cozinha sob medida e painel de TV para sala.",
+    tipo_pessoa: "PF" as TipoPessoa,
+    cpf: "123.456.789-00",
+    cnpj: "",
+    observacoes: "Interessado em projeto de cozinha sob medida e painel de TV para sala.",
     projects: [
       { id: "proj-1", status_geral: "LEAD", valor_previsto: 45000.0 }
     ]
@@ -36,7 +44,10 @@ const MOCK_CLIENTS = [
     cidade: "Farroupilha",
     origem: "INDICACAO" as Origin,
     status: "APROVADO",
-    observacoes: "[PF - CPF: 987.654.321-00] Cliente super exigente. Projeto de dormitório infantil e lavabo já aprovados.",
+    tipo_pessoa: "PF" as TipoPessoa,
+    cpf: "987.654.321-00",
+    cnpj: "",
+    observacoes: "Cliente super exigente. Projeto de dormitório infantil e lavabo já aprovados.",
     projects: [
       { id: "proj-2", status_geral: "ORCAMENTO", valor_previsto: 78000.0 }
     ]
@@ -49,7 +60,10 @@ const MOCK_CLIENTS = [
     cidade: "Bento Gonçalves",
     origem: "SITE" as Origin,
     status: "NEGOCIACAO",
-    observacoes: "[PJ - CNPJ: 12.345.678/0001-99] Negociando orçamento da área gourmet integrada. Proposta comercial enviada.",
+    tipo_pessoa: "PJ" as TipoPessoa,
+    cpf: "",
+    cnpj: "12.345.678/0001-99",
+    observacoes: "Negociando orçamento da área gourmet integrada. Proposta comercial enviada.",
     projects: [
       { id: "proj-3", status_geral: "NEGOCIACAO", valor_previsto: 120000.0 }
     ]
@@ -62,7 +76,10 @@ const MOCK_CLIENTS = [
     cidade: "Caxias do Sul",
     origem: "GOOGLE" as Origin,
     status: "CONFERENCIA_TECNICA",
-    observacoes: "[PF - CPF: 456.789.012-34] Fechando medição fina do apartamento residencial completo.",
+    tipo_pessoa: "PF" as TipoPessoa,
+    cpf: "456.789.012-34",
+    cnpj: "",
+    observacoes: "Fechando medição fina do apartamento residencial completo.",
     projects: [
       { id: "proj-4", status_geral: "CONFERENCIA_TECNICA", valor_previsto: 62000.0 }
     ]
@@ -75,7 +92,10 @@ const MOCK_CLIENTS = [
     cidade: "Flores da Cunha",
     origem: "WHATSAPP" as Origin,
     status: "APROVADO",
-    observacoes: "[PF - CPF: 789.012-345-67] Assinou contrato digital para projeto de móveis corporativos.",
+    tipo_pessoa: "PF" as TipoPessoa,
+    cpf: "789.012-345-67",
+    cnpj: "",
+    observacoes: "Assinou contrato digital para projeto de móveis corporativos.",
     projects: [
       { id: "proj-5", status_geral: "APROVADO", valor_previsto: 35000.0 }
     ]
@@ -88,7 +108,10 @@ const MOCK_CLIENTS = [
     cidade: "Farroupilha",
     origem: "INSTAGRAM" as Origin,
     status: "PRODUCAO",
-    observacoes: "[PF - CPF: 890.123.456-78] Marcenaria da cozinha americana está na fábrica para corte e montagem.",
+    tipo_pessoa: "PF" as TipoPessoa,
+    cpf: "890.123.456-78",
+    cnpj: "",
+    observacoes: "Marcenaria da cozinha americana está na fábrica para corte e montagem.",
     projects: [
       { id: "proj-6", status_geral: "PRODUCAO", valor_previsto: 89000.0 }
     ]
@@ -101,7 +124,10 @@ const MOCK_CLIENTS = [
     cidade: "Caxias do Sul",
     origem: "INDICACAO" as Origin,
     status: "INSTALACAO",
-    observacoes: "[PF - CPF: 901.234.567-89] Móveis entregues. Equipe de montagem efetuando os ajustes finos no local.",
+    tipo_pessoa: "PF" as TipoPessoa,
+    cpf: "901.234.567-89",
+    cnpj: "",
+    observacoes: "Móveis entregues. Equipe de montagem efetuando os ajustes finos no local.",
     projects: [
       { id: "proj-7", status_geral: "INSTALACAO", valor_previsto: 55000.0 }
     ]
@@ -111,6 +137,102 @@ const MOCK_CLIENTS = [
 // Limpa caracteres não numéricos do CPF
 function cleanCpf(cpf: string) {
   return cpf.replace(/\D/g, "");
+}
+
+function formatClientRecord(c: {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  cidade: string;
+  origem: string;
+  status: string;
+  observacoes: string | null;
+  tipo_pessoa?: TipoPessoa | null;
+  cpf?: string | null;
+  cnpj?: string | null;
+  cep?: string | null;
+  endereco?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  uf?: string | null;
+  tipo_imovel?: string | null;
+  obs_imovel?: string | null;
+  obs_entrega?: string | null;
+  projects?: { id: string; status_geral: string; valor_previsto: number | { toNumber?: () => number } }[];
+}) {
+  const doc = resolveClientDocument(c);
+  return {
+    id: c.id,
+    nome: c.nome,
+    email: c.email,
+    telefone: c.telefone,
+    cidade: c.cidade,
+    origem: c.origem as Origin,
+    status: c.status,
+    tipo_pessoa: doc.tipo_pessoa,
+    cpf: doc.cpf || "",
+    cnpj: doc.cnpj || "",
+    observacoes: doc.observacoes,
+    cep: c.cep || "",
+    endereco: c.endereco || "",
+    numero: c.numero || "",
+    bairro: c.bairro || "",
+    uf: c.uf || "",
+    tipo_imovel: c.tipo_imovel || "",
+    obs_imovel: c.obs_imovel || "",
+    obs_entrega: c.obs_entrega || "",
+    projects: (c.projects ?? []).map((p) => ({
+      id: p.id,
+      status_geral: p.status_geral,
+      valor_previsto:
+        typeof p.valor_previsto === "number"
+          ? p.valor_previsto
+          : Number(p.valor_previsto),
+    })),
+  };
+}
+
+let legacyDocumentsMigrated = false;
+
+async function migrateLegacyClientDocumentsIfNeeded() {
+  if (legacyDocumentsMigrated || isDatabaseOffline()) return;
+
+  try {
+    const legacyClients = await prisma.client.findMany({
+      where: {
+        OR: [
+          { observacoes: { startsWith: "[PF - CPF:" } },
+          { observacoes: { startsWith: "[PJ - CNPJ:" } },
+        ],
+      },
+      select: { id: true, observacoes: true, cnpj: true },
+    });
+
+    if (legacyClients.length === 0) {
+      legacyDocumentsMigrated = true;
+      return;
+    }
+
+    await prisma.$transaction(
+      legacyClients.map((client) => {
+        const migrated = parseLegacyDocumentFromObs(client.observacoes);
+        return prisma.client.update({
+          where: { id: client.id },
+          data: {
+            tipo_pessoa: migrated.tipo_pessoa,
+            cpf: migrated.cpf,
+            cnpj: migrated.cnpj || client.cnpj,
+            observacoes: migrated.observacoes || null,
+          },
+        });
+      })
+    );
+
+    legacyDocumentsMigrated = true;
+  } catch (error) {
+    console.warn("Falha ao migrar documentos legados de clientes:", error);
+  }
 }
 
 export async function loginCliente(data: { identificador: string; cpf: string }) {
@@ -144,6 +266,12 @@ export async function loginCliente(data: { identificador: string; cpf: string })
     });
 
     if (client) {
+      const doc = resolveClientDocument(client);
+      const storedCpf = cleanCpf(doc.cpf || "");
+      if (storedCpf && storedCpf !== cpfLimpo) {
+        return { success: false, error: "Cliente não cadastrado no CRM ou dados inválidos." };
+      }
+
       cookieStore.set("cliente-session", client.id, {
         path: "/",
         httpOnly: true,
@@ -205,6 +333,8 @@ export async function getClients(companyId: string) {
   }
 
   try {
+    await migrateLegacyClientDocumentsIfNeeded();
+
     const clients = await prisma.client.findMany({
       where: {
         company_id: companyId
@@ -223,30 +353,7 @@ export async function getClients(companyId: string) {
       }
     });
 
-    const formatted = clients.map(c => ({
-      id: c.id,
-      nome: c.nome,
-      email: c.email,
-      telefone: c.telefone,
-      cidade: c.cidade,
-      origem: c.origem as Origin,
-      status: c.status,
-      observacoes: c.observacoes || "",
-      cnpj: c.cnpj || "",
-      cep: c.cep || "",
-      endereco: c.endereco || "",
-      numero: c.numero || "",
-      bairro: c.bairro || "",
-      uf: c.uf || "",
-      tipo_imovel: c.tipo_imovel || "",
-      obs_imovel: c.obs_imovel || "",
-      obs_entrega: c.obs_entrega || "",
-      projects: c.projects.map(p => ({
-        id: p.id,
-        status_geral: p.status_geral,
-        valor_previsto: Number(p.valor_previsto)
-      }))
-    }));
+    const formatted = clients.map((c) => formatClientRecord(c));
 
     return { success: true, clients: formatted };
   } catch (error) {
@@ -269,6 +376,8 @@ export async function createClientAction(formData: {
   status: string;
   observacoes?: string;
   company_id: string;
+  tipo_pessoa?: TipoPessoa;
+  cpf?: string;
   cnpj?: string;
   cep?: string;
   endereco?: string;
@@ -279,12 +388,23 @@ export async function createClientAction(formData: {
   obs_imovel?: string;
   obs_entrega?: string;
 }) {
+  const tipoPessoa = formData.tipo_pessoa || "PF";
+  const cpf = tipoPessoa === "PF" ? formData.cpf || null : null;
+  const cnpj = tipoPessoa === "PJ" ? formData.cnpj || null : null;
+
   if (isDatabaseOffline()) {
     revalidatePath("/clientes");
     return { 
       success: true, 
       simulated: true, 
-      client: { id: `cli-simulated-${Date.now()}`, ...formData, projects: [] } 
+      client: {
+        id: `cli-simulated-${Date.now()}`,
+        ...formData,
+        tipo_pessoa: tipoPessoa,
+        cpf: cpf || "",
+        cnpj: cnpj || "",
+        projects: [],
+      } 
     };
   }
 
@@ -299,7 +419,9 @@ export async function createClientAction(formData: {
         status: formData.status,
         observacoes: formData.observacoes || "",
         company_id: formData.company_id,
-        cnpj: formData.cnpj || null,
+        tipo_pessoa: tipoPessoa,
+        cpf,
+        cnpj,
         cep: formData.cep || null,
         endereco: formData.endereco || null,
         numero: formData.numero || null,
@@ -312,13 +434,20 @@ export async function createClientAction(formData: {
     });
 
     revalidatePath("/clientes");
-    return { success: true, client: { ...client, projects: [] } };
+    return { success: true, client: formatClientRecord({ ...client, projects: [] }) };
   } catch (error) {
     console.warn("Falha ao criar cliente no banco (usando modo simulação):", error);
     return { 
       success: true, 
       simulated: true, 
-      client: { id: `cli-simulated-${Date.now()}`, ...formData, projects: [] } 
+      client: {
+        id: `cli-simulated-${Date.now()}`,
+        ...formData,
+        tipo_pessoa: tipoPessoa,
+        cpf: cpf || "",
+        cnpj: cnpj || "",
+        projects: [],
+      } 
     };
   }
 }
@@ -334,6 +463,8 @@ export async function updateClientAction(
     origem: Origin;
     status: string;
     observacoes?: string;
+    tipo_pessoa?: TipoPessoa;
+    cpf?: string;
     cnpj?: string;
     cep?: string;
     endereco?: string;
@@ -345,6 +476,10 @@ export async function updateClientAction(
     obs_entrega?: string;
   }
 ) {
+  const tipoPessoa = formData.tipo_pessoa || "PF";
+  const cpf = tipoPessoa === "PF" ? formData.cpf || null : null;
+  const cnpj = tipoPessoa === "PJ" ? formData.cnpj || null : null;
+
   if (isDatabaseOffline()) {
     revalidatePath("/clientes");
     return { success: true, simulated: true };
@@ -361,7 +496,9 @@ export async function updateClientAction(
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
-        cnpj: formData.cnpj !== undefined ? formData.cnpj : undefined,
+        tipo_pessoa: tipoPessoa,
+        cpf,
+        cnpj,
         cep: formData.cep !== undefined ? formData.cep : undefined,
         endereco: formData.endereco !== undefined ? formData.endereco : undefined,
         numero: formData.numero !== undefined ? formData.numero : undefined,
@@ -425,6 +562,9 @@ export async function importClientsAction(
     origem: Origin;
     status: string;
     observacoes?: string;
+    tipo_pessoa?: TipoPessoa;
+    cpf?: string;
+    cnpj?: string;
   }>,
   companyId: string
 ) {
@@ -435,8 +575,14 @@ export async function importClientsAction(
 
   try {
     await prisma.$transaction(
-      clients.map(c => 
-        prisma.client.create({
+      clients.map((c) => {
+        const legacy = parseLegacyDocumentFromObs(c.observacoes);
+        const tipoPessoa = c.tipo_pessoa || legacy.tipo_pessoa;
+        const cpf = c.cpf || legacy.cpf;
+        const cnpj = c.cnpj || legacy.cnpj;
+        const observacoes = legacy.observacoes || c.observacoes || "";
+
+        return prisma.client.create({
           data: {
             nome: c.nome,
             email: c.email,
@@ -444,11 +590,14 @@ export async function importClientsAction(
             cidade: c.cidade,
             origem: c.origem,
             status: c.status,
-            observacoes: c.observacoes || "",
-            company_id: companyId
-          }
-        })
-      )
+            observacoes,
+            company_id: companyId,
+            tipo_pessoa: tipoPessoa,
+            cpf: tipoPessoa === "PF" ? cpf : null,
+            cnpj: tipoPessoa === "PJ" ? cnpj : null,
+          },
+        });
+      })
     );
 
     revalidatePath("/clientes");
@@ -572,30 +721,7 @@ export async function getClientDetailsAction(clientId: string) {
       return { success: false, error: "Cliente não encontrado" };
     }
 
-    const formattedClient = {
-      id: client.id,
-      nome: client.nome,
-      email: client.email,
-      telefone: client.telefone,
-      cidade: client.cidade,
-      origem: client.origem as Origin,
-      status: client.status,
-      observacoes: client.observacoes || "",
-      cnpj: client.cnpj || "",
-      cep: client.cep || "",
-      endereco: client.endereco || "",
-      numero: client.numero || "",
-      bairro: client.bairro || "",
-      uf: client.uf || "",
-      tipo_imovel: client.tipo_imovel || "",
-      obs_imovel: client.obs_imovel || "",
-      obs_entrega: client.obs_entrega || "",
-      projects: client.projects.map(p => ({
-        id: p.id,
-        status_geral: p.status_geral,
-        valor_previsto: Number(p.valor_previsto)
-      }))
-    };
+    const formattedClient = formatClientRecord(client);
 
     return {
       success: true,

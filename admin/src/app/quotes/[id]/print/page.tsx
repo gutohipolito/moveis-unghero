@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveClientDocument } from "@/lib/clientDocument";
 import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
@@ -192,17 +193,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
-  // Helper para obter CPF/CNPJ do campo observacoes do cliente
-  const parseDocument = (obs: string | null) => {
-    if (!obs) return { tipo: "", documento: "" };
-    const pfMatch = obs.match(/\[PF - CPF:\s*([^\]]+)\]/);
-    if (pfMatch) return { tipo: "PF", documento: pfMatch[1] };
-    const pjMatch = obs.match(/\[PJ - CNPJ:\s*([^\]]+)\]/);
-    if (pjMatch) return { tipo: "PJ", documento: pjMatch[1] };
-    return { tipo: "", documento: "" };
-  };
-
-  const doc = parseDocument(client.observacoes || null);
+  const doc = resolveClientDocument(client);
 
   return (
     <div className="bg-slate-50 text-black min-h-screen font-sans print:bg-white">
@@ -300,7 +291,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                 <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cliente / Contratante</span>
                 <strong className="text-neutral-900 text-base">{client.nome}</strong>
                 {doc.documento && (
-                  <span className="text-xs text-neutral-500 block font-bold mt-0.5">{doc.tipo}: {doc.documento}</span>
+                  <span className="text-xs text-neutral-500 block font-bold mt-0.5">{doc.tipo_pessoa}: {doc.documento}</span>
                 )}
               </div>
               <div>
@@ -457,7 +448,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                 <div className="border-t border-neutral-300 w-full pt-2" />
                 <strong className="text-neutral-950 block">{client.nome}</strong>
                 {doc.documento && (
-                  <span className="text-xs text-neutral-500 block font-semibold">{doc.tipo}: {doc.documento}</span>
+                  <span className="text-xs text-neutral-500 block font-semibold">{doc.tipo_pessoa}: {doc.documento}</span>
                 )}
                 <span className="text-xs text-neutral-400">Contratante (Cliente)</span>
               </div>

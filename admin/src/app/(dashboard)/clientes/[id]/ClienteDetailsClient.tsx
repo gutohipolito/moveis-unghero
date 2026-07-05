@@ -11,6 +11,7 @@ import {
   type Payment, 
   addActivityAction 
 } from "@/app/actions/cliente";
+import { resolveClientDocument } from "@/lib/clientDocument";
 import { 
   ArrowLeft, 
   Phone, 
@@ -44,6 +45,9 @@ interface ClientDetails {
   cidade: string;
   origem: string;
   status: string;
+  tipo_pessoa?: "PF" | "PJ";
+  cpf?: string;
+  cnpj?: string;
   observacoes: string;
   projects?: ProjectSummary[];
 }
@@ -98,30 +102,7 @@ export default function ClienteDetailsClient({
   const [newDesc, setNewDesc] = useState("");
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
 
-  // Parse dinâmico do documento CPF/CNPJ
-  const parseDocument = (obs: string) => {
-    let tipo: "PF" | "PJ" = "PF";
-    let doc = "";
-    let cleanObs = obs || "";
-    if (obs?.startsWith("[PF - CPF:")) {
-      const closingBracket = obs.indexOf("]");
-      if (closingBracket !== -1) {
-        doc = obs.substring(10, closingBracket).trim();
-        cleanObs = obs.substring(closingBracket + 1).trim();
-        tipo = "PF";
-      }
-    } else if (obs?.startsWith("[PJ - CNPJ:")) {
-      const closingBracket = obs.indexOf("]");
-      if (closingBracket !== -1) {
-        doc = obs.substring(11, closingBracket).trim();
-        cleanObs = obs.substring(closingBracket + 1).trim();
-        tipo = "PJ";
-      }
-    }
-    return { tipo, doc, cleanObs };
-  };
-
-  const parsed = parseDocument(client.observacoes);
+  const docInfo = resolveClientDocument(client);
 
   // Link formatado para WhatsApp
   const numLimpo = client.telefone.replace(/\D/g, "");
@@ -165,14 +146,14 @@ export default function ClienteDetailsClient({
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
               <PrivacyToggle />
-              <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${parsed.tipo === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
-                {parsed.tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+              <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
+                {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
               </span>
             </div>
 
-            {parsed.doc && (
+            {docInfo.documento && (
               <span className="text-xs font-semibold text-slate-500 block mt-0.5 privacy-value">
-                {parsed.tipo === "PF" ? "CPF" : "CNPJ"}: {parsed.doc}
+                {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {docInfo.documento}
               </span>
             )}
 
@@ -264,7 +245,7 @@ export default function ClienteDetailsClient({
           <Card className="p-5 glass-card space-y-2">
             <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Observações / Notas</h3>
             <p className="text-xs text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
-              {parsed.cleanObs || "Sem observações iniciais registradas para este cliente."}
+              {docInfo.observacoes || "Sem observações iniciais registradas para este cliente."}
             </p>
           </Card>
         </div>
