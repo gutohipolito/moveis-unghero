@@ -756,25 +756,29 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
   return (
     <div className="space-y-[var(--space-5)]">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)]">
-        <KpiCard
-          label="Total em negociação"
-          value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
-          icon={TrendingUp}
-          accent="primary"
-        />
-        <KpiCard
-          label="Projetos ativos"
-          value={activeProjectsCount}
-          icon={UserCheck}
-          accent="success"
-          valueClassName="text-[hsl(var(--success))]"
-        />
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)] lg:flex lg:items-center lg:justify-between lg:gap-[var(--space-6)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)] lg:flex lg:items-center lg:gap-[var(--space-6)]">
+          <KpiCard
+            label="Total em negociação"
+            value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
+            icon={TrendingUp}
+            accent="primary"
+            className="lg:min-w-[14rem]"
+          />
+          <KpiCard
+            label="Projetos ativos"
+            value={activeProjectsCount}
+            icon={UserCheck}
+            accent="success"
+            valueClassName="text-[hsl(var(--success))]"
+            className="lg:min-w-[10rem]"
+          />
+        </div>
 
-      <Button onClick={() => setIsNewLeadOpen(true)} className="w-full sm:w-auto font-semibold">
-        <Plus className="mr-2 h-4 w-4" /> Novo contato
-      </Button>
+        <Button onClick={() => setIsNewLeadOpen(true)} className="w-full sm:w-auto font-semibold shrink-0">
+          <Plus className="mr-2 h-4 w-4" /> Novo contato
+        </Button>
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
         <SegmentControl

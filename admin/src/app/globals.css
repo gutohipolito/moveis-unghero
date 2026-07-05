@@ -473,10 +473,10 @@ body {
 }
 
 .mobile-topbar {
+  display: none;
   position: sticky;
   top: 0;
   z-index: 40;
-  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -487,6 +487,12 @@ body {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid hsl(var(--border) / 0.8);
+}
+
+@media (max-width: 767px) {
+  .mobile-topbar {
+    display: flex;
+  }
 }
 
 .mobile-topbar-brand {
@@ -560,6 +566,14 @@ body {
 }
 
 @media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+
+  .pwa-install-banner {
+    display: none;
+  }
+
   .dashboard-main-mobile {
     padding-bottom: 0;
   }

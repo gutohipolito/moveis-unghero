@@ -9,7 +9,7 @@ export default function PwaInstallBanner() {
   if (isInstalled || !canInstall) return null;
 
   return (
-    <div className="pwa-install-banner" role="region" aria-label="Instalar aplicativo">
+    <div className="pwa-install-banner md:hidden" role="region" aria-label="Instalar aplicativo">
       <div className="pwa-install-banner-content">
         <Download className="h-4 w-4 text-primary shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
