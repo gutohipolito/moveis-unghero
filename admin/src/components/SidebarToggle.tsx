@@ -37,8 +37,8 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
         className={`mobile-drawer app-sidebar md:hidden ${isOpen ? "mobile-drawer-open" : ""}`}
         aria-hidden={!isOpen}
       >
-        <div className="flex items-center justify-between h-14 px-4 border-b border-[hsl(var(--sidebar-border))] shrink-0">
-          <img src="/logo.png" alt="Móveis Unghero" className="logo-sidebar h-8 w-auto object-contain" />
+        <div className="flex items-center justify-between h-16 px-5 shrink-0">
+          <img src="/logo.png" alt="Móveis Unghero" className="logo-sidebar h-10 w-auto object-contain" />
           <button onClick={closeMenu} className="mobile-menu-btn" aria-label="Fechar menu">
             <X className="h-5 w-5" />
           </button>

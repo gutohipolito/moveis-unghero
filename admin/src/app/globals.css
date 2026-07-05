@@ -355,12 +355,18 @@ body {
   left: 0;
   right: 0;
   z-index: 35;
-  display: grid;
+  display: none;
   grid-template-columns: repeat(5, 1fr);
   padding: 0.25rem 0.375rem calc(0.375rem + env(safe-area-inset-bottom, 0));
   background: hsl(var(--card));
   border-top: 1px solid hsl(var(--border));
   box-shadow: 0 -4px 16px hsl(24 14% 14% / 0.05);
+}
+
+@media (max-width: 767px) {
+  .mobile-bottom-nav {
+    display: grid;
+  }
 }
 
 .mobile-bottom-nav-item {
@@ -384,6 +390,81 @@ body {
 
 .dashboard-main-mobile {
   padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+}
+
+@media (min-width: 768px) {
+  .dashboard-main-mobile {
+    padding-bottom: 0;
+  }
+}
+
+/* ─── Topbar desktop ─── */
+.dashboard-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 3.5rem;
+  padding: 0 1.25rem;
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.dashboard-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 0.625rem 0.375rem 0.375rem;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dashboard-user-trigger:hover {
+  background: hsl(var(--muted));
+}
+
+.dashboard-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: hsl(var(--muted));
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.dashboard-user-menu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  min-width: 11rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px hsl(24 14% 14% / 0.1);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.dashboard-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dashboard-user-menu-item:hover {
+  background: hsl(var(--muted));
 }
 
 .kanban-scroll {
