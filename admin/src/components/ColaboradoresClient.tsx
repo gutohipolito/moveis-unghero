@@ -17,6 +17,8 @@ import {
   Hammer, 
   BadgePercent, 
   Wallet,
+  Mail,
+  Calendar,
   X 
 } from "lucide-react";
 
@@ -33,13 +35,78 @@ interface ColaboradoresClientProps {
   companyId: string;
 }
 
-const CARGO_BADGES: Record<Role, { label: string; bg: string; text: string; border: string; icon: React.ComponentType<any> }> = {
-  ADMIN: { label: "Diretoria (ADMIN)", bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-500/20", icon: ShieldCheck },
-  COMERCIAL: { label: "Vendas (COMERCIAL)", bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", icon: BadgePercent },
-  PROJETISTA: { label: "Projetos (PROJETISTA)", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-500/20", icon: UserCheck },
-  PRODUCAO: { label: "Fábrica (PRODUCAO)", bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20", icon: Hammer },
-  FINANCEIRO: { label: "Finanças (FINANCEIRO)", bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", icon: Wallet },
+const CARGO_BADGES: Record<
+  Role,
+  {
+    label: string;
+    shortLabel: string;
+    bg: string;
+    text: string;
+    border: string;
+    avatar: string;
+    accent: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
+> = {
+  ADMIN: {
+    label: "Diretoria",
+    shortLabel: "Admin",
+    bg: "bg-purple-500/10",
+    text: "text-purple-700",
+    border: "border-purple-500/20",
+    avatar: "bg-purple-500/15 text-purple-700 border-purple-500/25",
+    accent: "bg-gradient-to-r from-purple-500 to-purple-600",
+    icon: ShieldCheck,
+  },
+  COMERCIAL: {
+    label: "Comercial",
+    shortLabel: "Vendas",
+    bg: "bg-blue-500/10",
+    text: "text-blue-700",
+    border: "border-blue-500/20",
+    avatar: "bg-blue-500/15 text-blue-700 border-blue-500/25",
+    accent: "bg-gradient-to-r from-blue-500 to-blue-600",
+    icon: BadgePercent,
+  },
+  PROJETISTA: {
+    label: "Projetista",
+    shortLabel: "Projetos",
+    bg: "bg-cyan-500/10",
+    text: "text-cyan-700",
+    border: "border-cyan-500/20",
+    avatar: "bg-cyan-500/15 text-cyan-700 border-cyan-500/25",
+    accent: "bg-gradient-to-r from-cyan-500 to-cyan-600",
+    icon: UserCheck,
+  },
+  PRODUCAO: {
+    label: "Fábrica",
+    shortLabel: "Produção",
+    bg: "bg-amber-500/10",
+    text: "text-amber-700",
+    border: "border-amber-500/20",
+    avatar: "bg-amber-500/15 text-amber-700 border-amber-500/25",
+    accent: "bg-gradient-to-r from-amber-500 to-orange-500",
+    icon: Hammer,
+  },
+  FINANCEIRO: {
+    label: "Financeiro",
+    shortLabel: "Finanças",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-700",
+    border: "border-emerald-500/20",
+    avatar: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25",
+    accent: "bg-gradient-to-r from-emerald-500 to-emerald-600",
+    icon: Wallet,
+  },
 };
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
 
 export default function ColaboradoresClient({ initialColaboradores, companyId }: ColaboradoresClientProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorItem[]>(initialColaboradores);
@@ -170,7 +237,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <Input 
               placeholder="Buscar por nome ou e-mail..." 
-              className="pl-9 bg-slate-50 border-slate-200 text-sm h-10 rounded-lg text-slate-800"
+              className="pl-9 bg-muted/40 border-border text-sm h-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -178,14 +245,14 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
           <select 
             value={filterCargo}
             onChange={(e) => setFilterCargo(e.target.value)}
-            className="h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs px-3 font-semibold cursor-pointer outline-none min-w-[200px]"
+            className="h-10 rounded-lg border border-border bg-muted/40 text-foreground text-sm px-3 font-medium cursor-pointer outline-none min-w-[180px]"
           >
-            <option value="ALL">Todos os Cargos</option>
-            <option value="ADMIN">Administrador (ADMIN)</option>
-            <option value="COMERCIAL">Comercial (COMERCIAL)</option>
-            <option value="PROJETISTA">Projetista (PROJETISTA)</option>
-            <option value="PRODUCAO">Fábrica (PRODUCAO)</option>
-            <option value="FINANCEIRO">Financeiro (FINANCEIRO)</option>
+            <option value="ALL">Todos os cargos</option>
+            <option value="ADMIN">Diretoria</option>
+            <option value="COMERCIAL">Comercial</option>
+            <option value="PROJETISTA">Projetista</option>
+            <option value="PRODUCAO">Fábrica</option>
+            <option value="FINANCEIRO">Financeiro</option>
           </select>
         </div>
 
@@ -198,73 +265,98 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         </Button>
       </div>
 
-      {/* Tabela de Equipe */}
-      <Card className="border border-border/80 rounded-xl overflow-hidden glass-card">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border/40" style={{ background: "hsl(210 20% 97.5%)" }}>
-                <th className="py-3 px-5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Colaborador</th>
-                <th className="py-3 px-5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">E-mail</th>
-                <th className="py-3 px-5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Função / Cargo</th>
-                <th className="py-3 px-5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Cadastrado em</th>
-                <th className="py-3 px-5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/20">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-sm text-slate-400 font-medium">
-                    Nenhum colaborador encontrado com os filtros selecionados.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(c => {
-                  const badge = CARGO_BADGES[c.cargo] || { label: c.cargo, bg: "bg-slate-500/10", text: "text-slate-400", border: "border-slate-500/20", icon: Users };
-                  const BadgeIcon = badge.icon;
-                  const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR");
+      {/* Grid de cards da equipe */}
+      {filtered.length === 0 ? (
+        <Card className="glass-card p-12 text-center">
+          <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground font-medium">
+            Nenhum colaborador encontrado com os filtros selecionados.
+          </p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {filtered.map((c) => {
+            const badge =
+              CARGO_BADGES[c.cargo] || {
+                label: c.cargo,
+                shortLabel: c.cargo,
+                bg: "bg-muted",
+                text: "text-muted-foreground",
+                border: "border-border",
+                avatar: "bg-muted text-muted-foreground border-border",
+                accent: "bg-gradient-to-r from-muted to-muted",
+                icon: Users,
+              };
+            const BadgeIcon = badge.icon;
+            const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            });
+            const isProtected = c.id === "system-admin-mock-id";
 
-                  return (
-                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 px-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm bg-[hsl(28_85%_95%)] text-[hsl(28_85%_45%)] border border-[hsl(28_85%_85%)]">
-                            {c.name.substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <strong className="text-sm font-bold text-slate-800 block leading-tight">{c.name}</strong>
-                            <span className="text-[10px] text-slate-400 font-mono">ID: {c.id.substring(0, 8).toUpperCase()}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-5 text-sm text-slate-600 font-medium">{c.email}</td>
-                      <td className="py-4 px-5">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
-                          <BadgeIcon className="h-3 w-3" />
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td className="py-4 px-5 text-sm text-slate-500 font-medium">{formattedDate}</td>
-                      <td className="py-4 px-5 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(c.id, c.name)}
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
-                          disabled={c.id === "system-admin-mock-id" || loading}
-                          title="Remover Colaborador"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+            return (
+              <Card
+                key={c.id}
+                className="glass-card glass-card-hover overflow-hidden flex flex-col border-border/80"
+              >
+                <div className={`h-1.5 w-full ${badge.accent}`} />
+
+                <div className="p-5 flex flex-col flex-1 gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div
+                      className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg border shrink-0 ${badge.avatar}`}
+                    >
+                      {getInitials(c.name)}
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}
+                    >
+                      <BadgeIcon className="h-3 w-3" />
+                      {badge.shortLabel}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="text-base font-bold text-foreground leading-tight truncate">
+                      {c.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-medium">{badge.label}</p>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p className="flex items-center gap-2 min-w-0">
+                      <Mail className="h-4 w-4 shrink-0 text-primary/70" />
+                      <span className="truncate">{c.email}</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 shrink-0 text-primary/70" />
+                      <span>Desde {formattedDate}</span>
+                    </p>
+                  </div>
+
+                  <div className="mt-auto pt-3 border-t border-border/60 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground/70 uppercase tracking-wider">
+                      #{c.id.substring(0, 8)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(c.id, c.name)}
+                      className="h-8 px-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors gap-1.5"
+                      disabled={isProtected || loading}
+                      title="Remover colaborador"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="text-xs font-semibold">Remover</span>
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
-      </Card>
+      )}
 
       {/* Modal / Overlay para Criar Colaborador */}
       {isModalOpen && (
@@ -316,11 +408,11 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                   onChange={(e) => setCargo(e.target.value as Role)}
                   className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm px-3 font-semibold cursor-pointer outline-none"
                 >
-                  <option value="PRODUCAO">Fábrica (PRODUCAO)</option>
-                  <option value="COMERCIAL">Comercial (COMERCIAL)</option>
-                  <option value="PROJETISTA">Projetista (PROJETISTA)</option>
-                  <option value="FINANCEIRO">Financeiro (FINANCEIRO)</option>
-                  <option value="ADMIN">Administrador (ADMIN)</option>
+                  <option value="PRODUCAO">Fábrica</option>
+                  <option value="COMERCIAL">Comercial</option>
+                  <option value="PROJETISTA">Projetista</option>
+                  <option value="FINANCEIRO">Financeiro</option>
+                  <option value="ADMIN">Diretoria</option>
                 </select>
               </div>
 
