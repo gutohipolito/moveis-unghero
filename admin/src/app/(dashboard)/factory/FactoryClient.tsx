@@ -165,6 +165,9 @@ function TeamSelect({
   );
 }
 
+const KANBAN_BOARD_HEIGHT =
+  "h-[calc(100dvh-32rem)] max-h-[calc(100dvh-32rem)] md:h-[calc(100dvh-23rem)] md:max-h-[calc(100dvh-23rem)]";
+
 export default function FactoryClient({ initialEnvironments, colaboradores }: FactoryClientProps) {
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -318,7 +321,9 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
         </Card>
       </div>
 
-      <div className="kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-stretch min-h-[520px] lg:min-h-[calc(100vh-13rem)]">
+      <div
+        className={`kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-stretch min-h-0 ${KANBAN_BOARD_HEIGHT}`}
+      >
         {COLUMNS.map((col) => {
           const colItems = environments.filter((item) => item.status === col.id);
           const Icon = col.icon;
@@ -331,7 +336,7 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="kanban-column lg:w-auto flex flex-col bg-secondary/30 border border-border rounded-xl overflow-hidden min-h-[480px] lg:min-h-[calc(100vh-13rem)]"
+              className="kanban-column lg:w-auto flex flex-col h-full min-h-0 bg-secondary/30 border border-border rounded-xl overflow-hidden"
             >
               <div
                 className={`p-3.5 flex items-center justify-between border-b border-border/50 font-bold text-xs uppercase tracking-wider shrink-0 ${col.bg}`}
@@ -361,9 +366,9 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
                 </div>
               </div>
 
-              <div className="flex-1 p-3 space-y-3 min-h-[400px] max-h-[calc(100vh-16rem)] lg:max-h-[calc(100vh-13.5rem)] overflow-y-auto scrollbar-thin">
+              <div className="flex-1 min-h-0 p-3 space-y-3 overflow-y-auto scrollbar-thin">
                 {colItems.length === 0 ? (
-                  <div className="h-full min-h-[320px] flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
+                  <div className="h-full min-h-[8rem] flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
                     Arrastar cômodo para esta fila...
                   </div>
                 ) : (
