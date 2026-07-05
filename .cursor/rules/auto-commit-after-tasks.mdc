@@ -1,0 +1,40 @@
+---
+description: Commit automático ao concluir todas as tarefas da sessão
+alwaysApply: true
+---
+
+# Commit automático ao concluir tarefas
+
+Quando **todas as tarefas solicitadas** estiverem concluídas e houver alterações no repositório, faça o commit **sem pedir confirmação extra**.
+
+## Quando commitar
+
+- Implementação, correção, refatoração ou ajuste de UI concluídos
+- Build ou verificação relevante passou (quando aplicável)
+- Existem arquivos modificados ou novos **relacionados à tarefa**
+
+## Quando NÃO commitar
+
+- Só houve perguntas, revisão ou explicação (sem mudanças de código)
+- A tarefa ficou incompleta ou bloqueada
+- Não há diff para commitar
+- Arquivos sensíveis (.env, credenciais, secrets) — avise o usuário em vez de commitar
+
+## Protocolo de commit
+
+1. Em paralelo: `git status`, `git diff`, `git log -5 --oneline`
+2. Stage apenas arquivos da tarefa — **não** incluir `.agents/`, `skills-lock.json`, `.neon` ou outros artefatos locais não solicitados
+3. Mensagem no estilo do repositório (`feat:`, `fix:`, `refactor:`), 1–2 frases focadas no **porquê**
+4. Commit via HEREDOC; se hook falhar, corrigir e criar **novo** commit (nunca `--amend` após falha)
+5. Rodar `git status` após o commit para confirmar sucesso
+6. Informar hash e mensagem do commit na resposta final
+
+## Push
+
+- **Não** fazer push automaticamente — só quando o usuário pedir explicitamente
+
+## Exemplo de fluxo
+
+```
+Tarefa concluída → build ok → git add (arquivos relevantes) → git commit → informar usuário
+```
