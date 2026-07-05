@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { registerPonto } from "@/app/actions/ponto";
 import { updateEnvironmentStatus } from "@/app/actions/project";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -82,6 +83,8 @@ export default function PortalColaboradorClient({
   const [timeCards, setTimeCards] = useState<TimeCardItem[]>(initialTimeCards);
   const [tasks, setTasks] = useState<EnvironmentItem[]>(initialTasks);
   const [loading, setLoading] = useState(false);
+  const dialog = useActionDialog();
+  const { showSuccess, showError } = dialog;
 
   // Calcula o cartão de ponto de hoje (se existir)
   const todayDateStr = new Date().toDateString();
@@ -142,8 +145,15 @@ export default function PortalColaboradorClient({
           saida: res.card.saida ? new Date(res.card.saida) : null,
         }, ...timeCards]);
       }
+      const labels: Record<string, string> = {
+        entrada: "Entrada registrada",
+        almoco_in: "Início do almoço registrado",
+        almoco_out: "Retorno do almoço registrado",
+        saida: "Saída registrada",
+      };
+      showSuccess(labels[nextPontoType] || "Ponto registrado", "Horário salvo com sucesso.");
     } else {
-      alert("Erro ao marcar o ponto: " + res.error);
+      showError("Erro ao marcar ponto", res.error || "Não foi possível registrar o horário.");
     }
     setLoading(false);
   };
@@ -153,8 +163,9 @@ export default function PortalColaboradorClient({
     const res = await updateEnvironmentStatus(projectId, taskId, newStatus as any);
     if (res.success) {
       setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      showSuccess("Tarefa atualizada", "Status da tarefa alterado com sucesso.");
     } else {
-      alert("Falha ao atualizar status da tarefa.");
+      showError("Erro ao atualizar", "Falha ao atualizar status da tarefa.");
     }
     setLoading(false);
   };
@@ -428,6 +439,7 @@ export default function PortalColaboradorClient({
         </div>
       </Card>
 
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

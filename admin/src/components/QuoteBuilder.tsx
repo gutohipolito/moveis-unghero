@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { createQuote, type ItemType } from "@/app/actions/quotes";
 import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -63,6 +64,8 @@ const TEMPLATES = {
 };
 
 export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBuilderProps) {
+  const dialog = useActionDialog();
+  const { showSuccess, showError } = dialog;
   const [template, setTemplate] = useState<"CUSTOM" | "PREMIUM" | "ECONOMICO" | "CORPORATIVO">("PREMIUM");
   const [observacoes, setObservacoes] = useState(TEMPLATES.PREMIUM.observacoes);
   const [validade, setValidade] = useState(() => {
@@ -208,7 +211,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) {
-      alert("Por favor, adicione pelo menos um item comercial no orçamento.");
+      showError("Orçamento vazio", "Adicione pelo menos um item comercial antes de salvar.");
       return;
     }
 
@@ -244,17 +247,20 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
         if (itemsToDeduct.length > 0) {
           const deductRes = await deductInventoryAction(itemsToDeduct);
           if (deductRes.success) {
-            alert(`Orçamento v${result.data.version} salvo! Baixa automática realizada no estoque da marcenaria com sucesso.`);
+            showSuccess(
+              "Orçamento salvo",
+              `Versão ${result.data.version} gravada com baixa automática no estoque.`
+            );
           }
         } else {
-          alert(`Orçamento v${result.data.version} salvo com sucesso!`);
+          showSuccess("Orçamento salvo", `Versão ${result.data.version} gravada com sucesso.`);
         }
       } else {
-        alert(`Orçamento v${result.data.version} salvo com sucesso!`);
+        showSuccess("Orçamento salvo", `Versão ${result.data.version} gravada com sucesso.`);
       }
       onSuccess(result.data);
     } else {
-      alert(result.error || "Falha ao salvar a proposta comercial.");
+      showError("Erro ao salvar", result.error || "Falha ao salvar a proposta comercial.");
     }
     setLoading(false);
   };
@@ -533,6 +539,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
         </div>
 
       </form>
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

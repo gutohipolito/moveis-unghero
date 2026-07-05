@@ -18,8 +18,9 @@ import {
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { 
-  deleteQuote, 
+  deleteQuote,
   getProjectsForQuotes, 
   getQuotes,
   createProjectForClient,
@@ -71,6 +72,8 @@ interface QuotesListProps {
 
 export default function QuotesList({ initialQuotes, companyId, isDbOffline = false }: QuotesListProps) {
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
 
@@ -121,8 +124,9 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
     const res = await createProjectForClient(clientId, companyId);
     if (res.success && res.projectId) {
       setSelectedProjectId(res.projectId);
+      showSuccess("Projeto vinculado", "Orçamento iniciado para o cliente selecionado.");
     } else {
-      alert(res.error || "Erro ao inicializar orçamento para o cliente.");
+      showError("Erro ao vincular", res.error || "Erro ao inicializar orçamento para o cliente.");
     }
     setIsGeneratingProject(false);
   };
@@ -130,7 +134,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
   const handleCreateQuickClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickNome || !quickCidade) {
-      alert("Por favor, preencha o Nome e a Cidade do cliente.");
+      showError("Campos obrigatórios", "Preencha o nome e a cidade do cliente.");
       return;
     }
     setIsGeneratingProject(true);
@@ -143,8 +147,9 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
     });
     if (res.success && res.projectId) {
       setSelectedProjectId(res.projectId);
+      showSuccess("Cadastro criado", `${quickNome} foi cadastrado e o orçamento foi iniciado.`);
     } else {
-      alert(res.error || "Erro ao criar cadastro avulso.");
+      showError("Erro ao cadastrar", res.error || "Erro ao criar cadastro avulso.");
     }
     setIsGeneratingProject(false);
   };
@@ -182,15 +187,21 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
     setQuickCidade("");
   };
 
-  const handleDeleteQuote = async (projectId: string, quoteId: string, version: number) => {
-    if (confirm(`Deseja realmente excluir a versão ${version} deste orçamento?`)) {
-      const res = await deleteQuote(projectId, quoteId, version);
-      if (res.success) {
-        setQuotes(prev => prev.filter(q => q.id !== quoteId));
-      } else {
-        alert((res as any).error || "Erro ao excluir orçamento.");
-      }
-    }
+  const handleDeleteQuote = (projectId: string, quoteId: string, version: number) => {
+    confirmAction({
+      title: "Excluir orçamento?",
+      message: `A versão ${version} será removida permanentemente. Esta ação não pode ser desfeita.`,
+      confirmLabel: "Sim, excluir",
+      onConfirm: async () => {
+        const res = await deleteQuote(projectId, quoteId, version);
+        if (res.success) {
+          setQuotes((prev) => prev.filter((q) => q.id !== quoteId));
+          showSuccess("Orçamento excluído", `A versão ${version} foi removida com sucesso.`);
+        } else {
+          showError("Erro ao excluir", (res as { error?: string }).error || "Erro ao excluir orçamento.");
+        }
+      },
+    });
   };
 
   const formatCurrency = (val: number) => {
@@ -683,6 +694,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
           </div>
         </div>
       )}
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

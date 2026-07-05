@@ -17,6 +17,7 @@ import {
 import { approveQuote, deleteQuote } from "@/app/actions/quotes";
 import { createInstallment, payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import QuoteBuilder from "@/components/QuoteBuilder";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,6 +166,8 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock }: ProjectDetailsProps) {
   const [project, setProject] = useState<Project>(initialProject);
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
 
   // Estados para Controle Operacional do Projeto (Responsável, Entrega e Observações)
@@ -201,8 +204,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         ]
       }));
       setIsEditingMeta(false);
+      showSuccess("Detalhes salvos", "Informações operacionais do projeto foram atualizadas.");
     } else {
-      alert("Erro ao atualizar detalhes do projeto: " + res.error);
+      showError("Erro ao salvar", `Não foi possível atualizar os detalhes: ${res.error}`);
     }
     setLoading(false);
   };
@@ -293,7 +297,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       }));
 
       setIsImportingPromob(false);
-      alert("Arquivo XML do Promob interpretado com sucesso pela inteligência artificial! Foram identificados e gerados 2 cômodos (Cozinha Gourmet e Closet) na aba de Ambientes.");
+      showSuccess(
+        "Promob importado",
+        "Arquivo XML interpretado com sucesso. Cozinha Gourmet e Closet foram adicionados aos ambientes."
+      );
     }, 2000);
   };
 
@@ -330,7 +337,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       });
 
       setIsRenderingPro(false);
-      alert("A inteligência artificial do Render Pro processou a imagem! O arquivo foi transformado em fotorrealista HD e disponibilizado para o cliente.");
+      showSuccess("Render concluído", "A imagem foi transformada em fotorrealismo HD e está disponível para o cliente.");
     }, 1500);
   };
 
@@ -364,7 +371,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       };
     });
 
-    alert("Contrato assinado digitalmente com sucesso! Registro de IP e Timestamp associados à proposta comercial.");
+    showSuccess(
+      "Contrato assinado",
+      "Assinatura digital registrada. O projeto foi alterado para Aprovado."
+    );
   };
 
   // Helper de Moeda
@@ -380,7 +390,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     const result = await updateProjectGeneralStatus(project.id, newStatus);
     if (!result.success) {
       setProject({ ...project, status_geral: originalStatus });
-      alert("Erro ao alterar o status do projeto.");
+      showError("Erro ao alterar status", "Não foi possível alterar o status do projeto.");
     }
   };
 
@@ -393,7 +403,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     const result = await updateEnvironmentStatus(project.id, envId, newStatus);
     if (!result.success) {
       setProject({ ...project, environments: originalEnvs });
-      alert("Erro ao atualizar o status do ambiente.");
+      showError("Erro ao atualizar ambiente", "Não foi possível atualizar o status do ambiente.");
     }
   };
 
@@ -419,10 +429,12 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           ...project.timeline
         ]
       });
+      const envNome = newEnvForm.nome;
       setIsAddEnvOpen(false);
       setNewEnvForm({ nome: "", tipo: "COZINHA" });
+      showSuccess("Ambiente adicionado", `"${envNome}" foi incluído no projeto.`);
     } else {
-      alert("Erro ao adicionar ambiente.");
+      showError("Erro ao adicionar", "Não foi possível adicionar o ambiente.");
     }
     setLoading(false);
   };
@@ -450,8 +462,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           ...project.timeline
         ]
       });
+      showSuccess("Nota publicada", isTimelinePrivate ? "Nota interna adicionada à timeline." : "Nota publicada na timeline do projeto.");
     } else {
-      alert("Erro ao publicar nota.");
+      showError("Erro ao publicar", "Não foi possível publicar a nota na timeline.");
     }
   };
 
@@ -467,7 +480,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         ...project,
         files: project.files.map(f => f.id === fileId ? { ...f, aprovado_producao: currentApproved } : f)
       });
-      alert("Erro ao alterar o status do arquivo.");
+      showError("Erro ao alterar arquivo", "Não foi possível alterar o status do arquivo.");
     } else {
       // Cria uma entrada local na timeline
       const logText = `Arquivo técnico foi ${!currentApproved ? "LIBERADO" : "BLOQUEADO"} para a produção/corte.`;
@@ -519,25 +532,70 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       });
       setIsUploadOpen(false);
       setUploadForm({ tipo: "RENDER", nome_arquivo: "" });
+      showSuccess("Upload concluído", "Arquivo adicionado ao projeto.");
     } else {
-      alert("Erro ao realizar upload.");
+      showError("Erro no upload", "Não foi possível realizar o upload do arquivo.");
     }
     setLoading(false);
   };
 
-  const handlePayInstallment = async (installmentId: string) => {
-    if (!confirm("Confirmar o recebimento desta parcela?")) return;
-    
-    setProject(prev => ({
-      ...prev,
-      installments: prev.installments.map(ins => ins.id === installmentId ? {
-        ...ins,
-        status: "PAGO",
-        data_pagamento: new Date().toISOString()
-      } : ins)
-    }));
+  const handlePayInstallment = (installmentId: string) => {
+    confirmAction({
+      title: "Confirmar recebimento?",
+      message: "Registrar o pagamento desta parcela no financeiro do projeto?",
+      confirmLabel: "Confirmar pagamento",
+      onConfirm: async () => {
+        setProject(prev => ({
+          ...prev,
+          installments: prev.installments.map(ins => ins.id === installmentId ? {
+            ...ins,
+            status: "PAGO",
+            data_pagamento: new Date().toISOString()
+          } : ins)
+        }));
+        await payInstallment(project.id, installmentId);
+        showSuccess("Pagamento registrado", "Parcela marcada como paga.");
+      },
+    });
+  };
 
-    await payInstallment(project.id, installmentId);
+  const handleApproveQuote = (quote: { id: string; versao: number }) => {
+    confirmAction({
+      title: "Aprovar proposta?",
+      message: `A versão ${quote.versao} será aprovada e o projeto passará para o status Aprovado.`,
+      confirmLabel: "Sim, aprovar",
+      onConfirm: async () => {
+        setProject(prev => ({ ...prev, status_geral: "APROVADO" }));
+        await approveQuote(project.id, quote.id, quote.versao);
+        setProject(prev => ({
+          ...prev,
+          timeline: [
+            {
+              id: `local-time-${Date.now()}`,
+              acao: `Proposta comercial v${quote.versao} foi APROVADA pelo cliente.`,
+              data: new Date().toISOString(),
+              interno_sotamente: false,
+              user: { name: "Vendas" }
+            },
+            ...prev.timeline
+          ]
+        }));
+        showSuccess("Proposta aprovada", `Versão ${quote.versao} aprovada com sucesso.`);
+      },
+    });
+  };
+
+  const handleDeleteProjectQuote = (quote: { id: string; versao: number }) => {
+    confirmAction({
+      title: "Excluir proposta?",
+      message: `A versão ${quote.versao} será removida permanentemente.`,
+      confirmLabel: "Sim, excluir",
+      onConfirm: async () => {
+        setProject(prev => ({ ...prev, quotes: prev.quotes.filter(item => item.id !== quote.id) }));
+        await deleteQuote(project.id, quote.id, quote.versao);
+        showSuccess("Proposta excluída", `Versão ${quote.versao} removida do projeto.`);
+      },
+    });
   };
 
   const handleAddInstallmentSubmit = async (e: React.FormEvent) => {
@@ -568,6 +626,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       }));
       setIsAddInstallmentOpen(false);
       setNewInstallmentForm({ valor: "", data_vencimento: "2026-07-01", tipo: "PARCELA" });
+      showSuccess("Parcela adicionada", "Nova parcela registrada no financeiro do projeto.");
     }
     setLoading(false);
   };
@@ -1309,25 +1368,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           )}
 
                           <button
-                            onClick={async () => {
-                              if (confirm(`Confirmar a aprovação da Proposta v${q.versao}? Isso mudará o status do projeto para APROVADO.`)) {
-                                setProject(prev => ({ ...prev, status_geral: "APROVADO" }));
-                                await approveQuote(project.id, q.id, q.versao);
-                                setProject(prev => ({
-                                  ...prev,
-                                  timeline: [
-                                    {
-                                      id: `local-time-${Date.now()}`,
-                                      acao: `Proposta comercial v${q.versao} foi APROVADA pelo cliente.`,
-                                      data: new Date().toISOString(),
-                                      interno_sotamente: false,
-                                      user: { name: "Vendas" }
-                                    },
-                                    ...prev.timeline
-                                  ]
-                                }));
-                              }
-                            }}
+                            onClick={() => handleApproveQuote(q)}
                             className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
                           >
                             <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovar Proposta
@@ -1342,12 +1383,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           </Link>
 
                           <button
-                            onClick={async () => {
-                              if (confirm(`Deseja realmente excluir a Proposta v${q.versao}?`)) {
-                                setProject({ ...project, quotes: project.quotes.filter(item => item.id !== q.id) });
-                                await deleteQuote(project.id, q.id, q.versao);
-                              }
-                            }}
+                            onClick={() => handleDeleteProjectQuote(q)}
                             className="p-2 rounded-lg hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors cursor-pointer"
                             title="Excluir Orçamento"
                           >
@@ -1824,6 +1860,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           </div>
         </form>
       </Dialog>
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

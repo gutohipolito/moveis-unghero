@@ -18,6 +18,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import Link from "next/link";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface InstallmentItem {
   id: string;
@@ -36,23 +37,28 @@ interface FinanceiroClientProps {
 
 export default function FinanceiroClient({ initialInstallments }: FinanceiroClientProps) {
   const [installments, setInstallments] = useState<InstallmentItem[]>(initialInstallments);
+  const dialog = useActionDialog();
+  const { showSuccess, confirmAction } = dialog;
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   // Ação de Quitar Parcela
-  const handlePay = async (item: InstallmentItem) => {
-    if (!confirm(`Confirmar o recebimento no valor de R$ ${item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}?`)) {
-      return;
-    }
-
-    // Atualiza estado local
-    setInstallments(installments.map(ins => ins.id === item.id ? { 
-      ...ins, 
-      status: "PAGO", 
-      data_pagamento: new Date().toISOString() 
-    } : ins));
-
-    await payInstallment(item.projectId, item.id);
+  const handlePay = (item: InstallmentItem) => {
+    const valor = item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+    confirmAction({
+      title: "Confirmar recebimento?",
+      message: `Registrar o pagamento de R$ ${valor} de ${item.clientName}?`,
+      confirmLabel: "Confirmar pagamento",
+      onConfirm: async () => {
+        setInstallments(installments.map(ins => ins.id === item.id ? { 
+          ...ins, 
+          status: "PAGO", 
+          data_pagamento: new Date().toISOString() 
+        } : ins));
+        await payInstallment(item.projectId, item.id);
+        showSuccess("Pagamento registrado", `Recebimento de R$ ${valor} confirmado para ${item.clientName}.`);
+      },
+    });
   };
 
   // Cálculos de Indicadores
@@ -266,6 +272,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
         </div>
       </Card>
 
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

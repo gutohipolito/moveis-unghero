@@ -41,6 +41,7 @@ import {
   resolveClientDocument,
   type TipoPessoa,
 } from "@/lib/clientDocument";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface ProjectSummary {
   id: string;
@@ -98,6 +99,8 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
 
 export default function ClientesClient({ initialClients, companyId }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
   const [filterTipoPessoa, setFilterTipoPessoa] = useState<string>("ALL");
@@ -247,6 +250,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       setClients([newCli, ...clients]);
       setIsCreateOpen(false);
       resetForm();
+      showSuccess("Contato cadastrado", `${nome} foi adicionado à base de contatos.`);
+    } else {
+      showError("Não foi possível cadastrar", "Ocorreu um erro ao salvar o contato. Tente novamente.");
     }
   };
 
@@ -309,17 +315,28 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       setClients(clients.map(c => c.id === selectedClient.id ? { ...c, ...data } : c));
       setIsEditOpen(false);
       resetForm();
+      showSuccess("Contato atualizado", `As informações de ${nome} foram salvas.`);
+    } else {
+      showError("Não foi possível salvar", "Ocorreu um erro ao atualizar o contato. Tente novamente.");
     }
   };
 
   // Excluir Cliente
-  const handleDeleteClient = async (clientId: string) => {
-    if (confirm("Tem certeza que deseja excluir este cliente? Todos os seus projetos vinculados serão removidos do sistema.")) {
-      const res = await deleteClientAction(clientId);
-      if (res.success) {
-        setClients(clients.filter(c => c.id !== clientId));
-      }
-    }
+  const handleDeleteClient = (clientId: string, clientName: string) => {
+    confirmAction({
+      title: "Excluir contato?",
+      message: `${clientName} e todos os projetos vinculados serão removidos permanentemente do sistema.`,
+      confirmLabel: "Sim, excluir",
+      onConfirm: async () => {
+        const res = await deleteClientAction(clientId);
+        if (res.success) {
+          setClients(clients.filter(c => c.id !== clientId));
+          showSuccess("Contato excluído", `${clientName} foi removido da base de contatos.`);
+        } else {
+          showError("Não foi possível excluir", "Erro ao remover o contato. Tente novamente.");
+        }
+      },
+    });
   };
 
   // Abrir Modal para Iniciar Projeto Associado ao Cliente
@@ -345,7 +362,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     });
 
     if (res.success) {
-      alert("Novo projeto iniciado com sucesso para este cliente e adicionado ao CRM Kanban!");
+      showSuccess(
+        "Projeto iniciado",
+        `Novo projeto de R$ ${Number(valorPrevisto).toLocaleString("pt-BR")} foi adicionado ao Funil Comercial para ${selectedClient.nome}.`
+      );
       // Atualiza localmente a lista de projetos do cliente correspondente
       const newProj: ProjectSummary = {
         id: res.data?.project?.id || `proj-${Date.now()}`,
@@ -362,6 +382,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
         return c;
       }));
       setIsProjectModalOpen(false);
+    } else {
+      showError("Não foi possível criar o projeto", "Erro ao iniciar projeto no funil comercial.");
     }
   };
 
@@ -390,7 +412,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       try {
         const imported = JSON.parse(evt.target?.result as string);
         if (!Array.isArray(imported)) {
-          alert("O arquivo importado precisa conter uma lista de contatos em formato JSON.");
+          showError("Arquivo inválido", "O arquivo importado precisa conter uma lista de contatos em formato JSON.");
           return;
         }
 
@@ -412,10 +434,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             projects: []
           }));
           setClients([...processed, ...clients]);
-          alert(`${validClients.length} contatos importados com sucesso!`);
+          showSuccess("Importação concluída", `${validClients.length} contato(s) importado(s) com sucesso.`);
         }
       } catch (err) {
-        alert("Erro ao ler arquivo JSON. Verifique a formatação do arquivo.");
+        showError("Erro na importação", "Erro ao ler arquivo JSON. Verifique a formatação do arquivo.");
       }
     };
     reader.readAsText(file);
@@ -631,7 +653,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteClient(client.id)}
+                        onClick={() => handleDeleteClient(client.id, client.nome)}
                         className="p-2 rounded-md bg-destructive/10 text-destructive cursor-pointer"
                         title="Excluir"
                       >
@@ -753,7 +775,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                             <Edit className="h-4.5 w-4.5" />
                           </button>
                           <button
-                            onClick={() => handleDeleteClient(client.id)}
+                            onClick={() => handleDeleteClient(client.id, client.nome)}
                             className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
                             title="Excluir lead"
                           >
@@ -1394,6 +1416,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
         </div>
       )}
 
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
   Signature
 } from "lucide-react";
 import { updateProjectStatus } from "@/app/actions/kanban";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface Project {
   id: string;
@@ -48,6 +49,8 @@ interface ExpedicaoCarga {
 }
 
 export default function LogisticaClient({ initialProjects }: LogisticaClientProps) {
+  const dialog = useActionDialog();
+  const { showSuccess, showError } = dialog;
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [activeTab, setActiveTab] = useState<"expedicao" | "montagem">("expedicao");
   const [loading, setLoading] = useState(false);
@@ -109,7 +112,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
   const handleCreateExpedicao = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newExpForm.projectId || !newExpForm.dataEntrega) {
-      alert("Por favor, preencha o projeto e a data de entrega.");
+      showError("Campos obrigatórios", "Selecione o projeto e a data de entrega.");
       return;
     }
 
@@ -130,7 +133,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
       dataEntrega: "",
       ajudantes: ""
     });
-    alert("Expedição e entrega agendados com sucesso!");
+    showSuccess("Expedição agendada", "Entrega registrada no calendário logístico.");
   };
 
   const handleUpdateExpStatus = (id: string, newStatus: any) => {
@@ -178,7 +181,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
     e.preventDefault();
     if (!signatureModalProjId) return;
     if (!signatureForm.recebedorNome || !signatureForm.recebedorDoc) {
-      alert("Por favor, insira o nome e documento do recebedor.");
+      showError("Campos obrigatórios", "Informe o nome e documento do recebedor.");
       return;
     }
 
@@ -189,7 +192,10 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
     // Limpa estados
     setSignatureModalProjId(null);
     setLoading(false);
-    alert("Termo assinado! Projeto finalizado e arquivado 100% com vistoria de marcenaria concluída!");
+    showSuccess(
+      "Projeto finalizado",
+      "Termo assinado! Projeto arquivado com vistoria de marcenaria concluída."
+    );
   };
 
   return (
@@ -523,6 +529,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
         </div>
       )}
 
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

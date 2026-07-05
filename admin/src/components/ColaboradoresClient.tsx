@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Role } from "@prisma/client";
 import { createColaborador, deleteColaborador } from "@/app/actions/colaboradores";
-import ActionDialog, { type ActionDialogVariant } from "@/components/ActionDialog";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,6 @@ interface ColaboradorItem {
 interface ColaboradoresClientProps {
   initialColaboradores: ColaboradorItem[];
   companyId: string;
-}
-
-interface FeedbackState {
-  variant: ActionDialogVariant;
-  title: string;
-  message: string;
 }
 
 const CARGO_BADGES: Record<
@@ -133,23 +127,18 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
   const [filterCargo, setFilterCargo] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<ColaboradorItem | null>(null);
-  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<Role>("PRODUCAO");
   const [password, setPassword] = useState("");
 
-  const showFeedback = (variant: ActionDialogVariant, title: string, message: string) => {
-    setFeedback({ variant, title, message });
-  };
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      showFeedback(
-        "error",
+      showError(
         "Campos obrigatórios",
         "Preencha nome, e-mail e senha provisória para cadastrar o colaborador."
       );
@@ -179,14 +168,12 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
       ]);
       setIsCreateOpen(false);
       resetCreateForm(setName, setEmail, setPassword, setCargo);
-      showFeedback(
-        "success",
+      showSuccess(
         "Colaborador cadastrado",
         `${res.user.name} foi adicionado à equipe como ${cargoLabel}.`
       );
     } else {
-      showFeedback(
-        "error",
+      showError(
         "Não foi possível cadastrar",
         res.error || "Ocorreu um erro ao salvar o colaborador. Tente novamente."
       );
@@ -194,30 +181,23 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
     setLoading(false);
   };
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-
-    setLoading(true);
-    const target = deleteTarget;
-    const res = await deleteColaborador(target.id);
-
-    if (res.success) {
-      setColaboradores(colaboradores.filter((c) => c.id !== target.id));
-      setDeleteTarget(null);
-      showFeedback(
-        "success",
-        "Colaborador removido",
-        `${target.name} foi removido da equipe com sucesso.`
-      );
-    } else {
-      setDeleteTarget(null);
-      showFeedback(
-        "error",
-        "Não foi possível remover",
-        res.error || "Erro ao remover colaborador. Tente novamente."
-      );
-    }
-    setLoading(false);
+  const requestDelete = (target: ColaboradorItem) => {
+    confirmAction({
+      title: "Remover colaborador?",
+      message: `${target.name} será removido da equipe e perderá acesso ao painel. Esta ação não pode ser desfeita.`,
+      confirmLabel: "Sim, remover",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await deleteColaborador(target.id);
+        if (res.success) {
+          setColaboradores((prev) => prev.filter((c) => c.id !== target.id));
+          showSuccess("Colaborador removido", `${target.name} foi removido da equipe com sucesso.`);
+        } else {
+          showError("Não foi possível remover", res.error || "Erro ao remover colaborador. Tente novamente.");
+        }
+        setLoading(false);
+      },
+    });
   };
 
   const filtered = colaboradores.filter((c) => {
@@ -389,7 +369,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDeleteTarget(c)}
+                      onClick={() => requestDelete(c)}
                       className="h-8 px-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors gap-1.5"
                       disabled={isProtected || loading}
                       title="Remover colaborador"
@@ -490,31 +470,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         </div>
       </Dialog>
 
-      <ActionDialog
-        open={Boolean(deleteTarget)}
-        variant="confirm"
-        title="Remover colaborador?"
-        message={
-          deleteTarget
-            ? `${deleteTarget.name} será removido da equipe e perderá acesso ao painel. Esta ação não pode ser desfeita.`
-            : ""
-        }
-        confirmLabel="Sim, remover"
-        cancelLabel="Cancelar"
-        loading={loading}
-        onConfirm={confirmDelete}
-        onClose={() => {
-          if (!loading) setDeleteTarget(null);
-        }}
-      />
-
-      <ActionDialog
-        open={Boolean(feedback)}
-        variant={feedback?.variant ?? "success"}
-        title={feedback?.title ?? ""}
-        message={feedback?.message ?? ""}
-        onClose={() => setFeedback(null)}
-      />
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { loginSimulated } from "@/app/actions/login";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Mail, ArrowRight, ChevronRight } from "lucide-react";
@@ -11,6 +12,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLocalhost, setIsLocalhost] = useState(false);
+  const dialog = useActionDialog();
+  const { showError } = dialog;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -37,11 +40,11 @@ export default function LoginPage() {
       if (res.ok && data) {
         window.location.href = "/crm";
       } else {
-        alert(data?.message || "E-mail ou senha incorretos.");
+        showError("Login inválido", data?.message || "E-mail ou senha incorretos.");
         setLoading(false);
       }
     } catch {
-      alert("Erro ao conectar ao servidor de autenticação.");
+      showError("Erro de conexão", "Não foi possível conectar ao servidor de autenticação.");
       setLoading(false);
     }
   };
@@ -134,6 +137,7 @@ export default function LoginPage() {
           )}
         </div>
       </div>
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

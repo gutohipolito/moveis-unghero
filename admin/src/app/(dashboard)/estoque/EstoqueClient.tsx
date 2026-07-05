@@ -15,6 +15,7 @@ import {
   type Supplier,
   type InventoryItem 
 } from "@/app/actions/estoque";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { 
   Package, 
   Users, 
@@ -55,6 +56,8 @@ const CATEGORY_COLORS = {
 };
 
 export default function EstoqueClient({ initialSuppliers, initialInventory, companyId }: EstoqueClientProps) {
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
   
@@ -157,6 +160,9 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
         setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? { ...s, ...data } : s));
         setIsSupplierModalOpen(false);
         resetSupplierForm();
+        showSuccess("Fornecedor atualizado", `${supplierNome} foi salvo com sucesso.`);
+      } else {
+        showError("Erro ao salvar", "Não foi possível atualizar o fornecedor.");
       }
     } else {
       const res = await createSupplierAction({ ...data, company_id: companyId });
@@ -164,6 +170,9 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
         setSuppliers([...suppliers, res.supplier]);
         setIsSupplierModalOpen(false);
         resetSupplierForm();
+        showSuccess("Fornecedor cadastrado", `${supplierNome} foi adicionado à base de fornecedores.`);
+      } else {
+        showError("Erro ao cadastrar", "Não foi possível cadastrar o fornecedor.");
       }
     }
   };
@@ -178,14 +187,22 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
     setIsSupplierModalOpen(true);
   };
 
-  const handleDeleteSupplier = async (id: string) => {
-    if (confirm("Tem certeza que deseja remover este fornecedor parceiro? Os itens vinculados ficarão sem fornecedor associado.")) {
-      const res = await deleteSupplierAction(id);
-      if (res.success) {
-        setSuppliers(suppliers.filter(s => s.id !== id));
-        setInventory(inventory.map(item => item.supplierId === id ? { ...item, supplierId: undefined, supplierName: "Sem Vínculo" } : item));
-      }
-    }
+  const handleDeleteSupplier = (id: string, nome: string) => {
+    confirmAction({
+      title: "Remover fornecedor?",
+      message: `${nome} será removido. Os insumos vinculados ficarão sem fornecedor associado.`,
+      confirmLabel: "Sim, remover",
+      onConfirm: async () => {
+        const res = await deleteSupplierAction(id);
+        if (res.success) {
+          setSuppliers(suppliers.filter(s => s.id !== id));
+          setInventory(inventory.map(item => item.supplierId === id ? { ...item, supplierId: undefined, supplierName: "Sem Vínculo" } : item));
+          showSuccess("Fornecedor removido", `${nome} foi excluído da base.`);
+        } else {
+          showError("Erro ao remover", "Não foi possível remover o fornecedor.");
+        }
+      },
+    });
   };
 
   // CRUD Itens Estoque
@@ -208,6 +225,9 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
         setInventory(inventory.map(i => i.id === editingItem.id ? { ...i, ...res.item } : i));
         setIsItemModalOpen(false);
         resetItemForm();
+        showSuccess("Insumo atualizado", `${itemNome} foi salvo no estoque.`);
+      } else {
+        showError("Erro ao salvar", "Não foi possível atualizar o insumo.");
       }
     } else {
       const res = await createInventoryItemAction({ ...data, company_id: companyId });
@@ -215,6 +235,9 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
         setInventory([...inventory, res.item]);
         setIsItemModalOpen(false);
         resetItemForm();
+        showSuccess("Insumo cadastrado", `${itemNome} foi adicionado ao estoque.`);
+      } else {
+        showError("Erro ao cadastrar", "Não foi possível cadastrar o insumo.");
       }
     }
   };
@@ -230,13 +253,21 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
     setIsItemModalOpen(true);
   };
 
-  const handleDeleteItem = async (id: string) => {
-    if (confirm("Deseja remover este insumo do controle de estoque?")) {
-      const res = await deleteInventoryItemAction(id);
-      if (res.success) {
-        setInventory(inventory.filter(i => i.id !== id));
-      }
-    }
+  const handleDeleteItem = (id: string, nome: string) => {
+    confirmAction({
+      title: "Remover insumo?",
+      message: `${nome} será removido permanentemente do controle de estoque.`,
+      confirmLabel: "Sim, remover",
+      onConfirm: async () => {
+        const res = await deleteInventoryItemAction(id);
+        if (res.success) {
+          setInventory(inventory.filter(i => i.id !== id));
+          showSuccess("Insumo removido", `${nome} foi excluído do estoque.`);
+        } else {
+          showError("Erro ao remover", "Não foi possível remover o insumo.");
+        }
+      },
+    });
   };
 
   return (
@@ -443,7 +474,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteItem(item.id)}
+                              onClick={() => handleDeleteItem(item.id, item.nome)}
                               className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
                               title="Remover insumo"
                             >
@@ -509,7 +540,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteSupplier(sup.id)}
+                            onClick={() => handleDeleteSupplier(sup.id, sup.nome)}
                             className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
                             title="Remover fornecedor"
                           >
@@ -647,6 +678,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
         </div>
       )}
 
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

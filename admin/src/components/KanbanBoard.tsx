@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { updateProjectStatus, createLead, updateProjectAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +98,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [isExistingClient, setIsExistingClient] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [loading, setLoading] = useState(false);
+  const dialog = useActionDialog();
+  const { showSuccess, showError } = dialog;
   const [leadForm, setLeadForm] = useState({
     nome: "",
     email: "",
@@ -248,8 +251,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       }));
       setIsEditLeadOpen(false);
       resetLeadForm();
+      showSuccess("Alterações salvas", "Os dados do card foram atualizados no funil.");
     } else {
-      alert("Erro ao salvar alterações.");
+      showError("Erro ao salvar", "Não foi possível salvar as alterações. Tente novamente.");
     }
     setLoading(false);
   };
@@ -290,7 +294,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     if (!result.success) {
       // Reverte se der erro
       setProjects(originalProjects);
-      alert("Falha ao mover o projeto. Tente novamente.");
+      showError("Falha ao mover", "Não foi possível mover o projeto. Tente novamente.");
     }
   };
 
@@ -305,7 +309,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     const result = await updateProjectStatus(project.id, targetStatus);
     if (!result.success) {
       setProjects(originalProjects);
-      alert("Falha ao avançar o projeto. Tente novamente.");
+      showError("Falha ao avançar", "Não foi possível avançar o projeto. Tente novamente.");
     }
   };
 
@@ -403,8 +407,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       setSelectedClientId("");
       setStatusGeralInicial("LEAD");
       resetLeadForm();
+      showSuccess("Contato adicionado", `${result.data.client.nome} foi incluído no funil comercial.`);
     } else {
-      alert("Erro ao cadastrar o lead.");
+      showError("Erro ao cadastrar", "Não foi possível cadastrar o contato. Verifique os dados e tente novamente.");
     }
     setLoading(false);
   };
@@ -1183,6 +1188,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           </div>
         </form>
       </Dialog>
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }
