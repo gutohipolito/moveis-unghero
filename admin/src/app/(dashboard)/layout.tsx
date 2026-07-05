@@ -53,7 +53,11 @@ export default async function DashboardLayout({
           </div>
 
           <div className="hidden md:block">
-            <DashboardHeader user={user} initialNotifications={notifications} />
+            <DashboardHeader
+              user={user}
+              companyId={companyId}
+              initialNotifications={notifications}
+            />
           </div>
 
           <main className="flex-1 p-4 sm:p-5 md:p-6 lg:p-7 overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-7">

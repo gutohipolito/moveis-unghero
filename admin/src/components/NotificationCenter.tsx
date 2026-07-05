@@ -1,0 +1,172 @@
+"use client";
+
+import React, { useRef, useState, useEffect } from "react";
+import Link from "next/link";
+import { Bell, BellRing, Monitor, Smartphone } from "lucide-react";
+import type { AppNotification } from "@/lib/notifications";
+import { useNotificationDelivery } from "@/hooks/useNotificationDelivery";
+
+interface NotificationCenterProps {
+  companyId: string;
+  initialNotifications: AppNotification[];
+}
+
+export default function NotificationCenter({
+  companyId,
+  initialNotifications,
+}: NotificationCenterProps) {
+  const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const {
+    notifications,
+    prefs,
+    browserPermission,
+    browserSupported,
+    enablingBrowser,
+    enableBrowserNotifications,
+    disableBrowserNotifications,
+    testBrowserNotification,
+  } = useNotificationDelivery({ companyId, initialNotifications });
+
+  const notifCount = notifications.length;
+  const urgentCount = notifications.filter((n) => n.priority === "high").length;
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open]);
+
+  const browserActive = prefs.browser && browserPermission === "granted";
+  const browserBlocked = browserPermission === "denied";
+
+  return (
+    <div className="relative" ref={panelRef}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="notification-trigger"
+        aria-label="Notificações"
+        aria-expanded={open}
+      >
+        <Bell className="h-4 w-4" />
+        {notifCount > 0 && (
+          <span
+            className={`notification-badge ${urgentCount > 0 ? "notification-badge-urgent" : ""}`}
+          >
+            {notifCount > 9 ? "9+" : notifCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="notification-panel">
+          <div className="notification-panel-header">
+            <p className="text-sm font-bold text-foreground">Notificações</p>
+            {notifCount > 0 && (
+              <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                {notifCount} pendente{notifCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          <div className="notification-channel-settings">
+            <div className="flex items-start gap-2">
+              <Monitor className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <p className="text-xs font-bold text-foreground">Alertas no navegador</p>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Avisos enquanto o painel estiver aberto. Push com aba fechada e e-mail em breve.
+                </p>
+                {browserBlocked ? (
+                  <p className="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+                    Permissão bloqueada. Libere nas configurações do navegador para este site.
+                  </p>
+                ) : !browserSupported ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Seu navegador não suporta notificações.
+                  </p>
+                ) : browserActive ? (
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
+                      <BellRing className="h-3 w-3" /> Ativo
+                    </span>
+                    <button
+                      type="button"
+                      onClick={testBrowserNotification}
+                      className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      Testar alerta
+                    </button>
+                    <button
+                      type="button"
+                      onClick={disableBrowserNotifications}
+                      className="text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      Desativar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={enablingBrowser}
+                    onClick={() => enableBrowserNotifications()}
+                    className="text-[10px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    {enablingBrowser ? "Aguardando permissão..." : "Ativar alertas no navegador"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 opacity-50 pt-1 border-t border-border/50">
+              <Smartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <p className="text-[10px] text-muted-foreground">Push mobile e e-mail — em breve</p>
+            </div>
+          </div>
+
+          {notifications.length === 0 ? (
+            <div className="notification-empty">
+              <Bell className="h-8 w-8 text-muted-foreground/40 mb-2 mx-auto" />
+              <p className="text-sm text-muted-foreground">Nenhuma notificação no momento.</p>
+            </div>
+          ) : (
+            <ul className="notification-list">
+              {notifications.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={`notification-item ${item.priority === "high" ? "notification-item-urgent" : ""}`}
+                  >
+                    <p className="text-xs font-bold text-foreground">{item.title}</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                      {item.message}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="notification-panel-footer">
+            <Link
+              href="/crm"
+              onClick={() => setOpen(false)}
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Ver funil comercial
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
