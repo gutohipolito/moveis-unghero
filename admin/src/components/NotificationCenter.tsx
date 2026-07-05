@@ -9,14 +9,24 @@ import { useNotificationDelivery } from "@/hooks/useNotificationDelivery";
 interface NotificationCenterProps {
   companyId: string;
   initialNotifications: AppNotification[];
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function NotificationCenter({
   companyId,
   initialNotifications,
+  isOpen,
+  onOpenChange,
 }: NotificationCenterProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const open = isOpen ?? internalOpen;
+  const setOpen = (value: boolean) => {
+    if (onOpenChange) onOpenChange(value);
+    else setInternalOpen(value);
+  };
 
   const {
     notifications,

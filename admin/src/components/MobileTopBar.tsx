@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import NotificationCenter from "@/components/NotificationCenter";
+import HeaderQuickActions from "@/components/HeaderQuickActions";
 import SidebarToggle from "@/components/SidebarToggle";
 import type { AppNotification } from "@/lib/notifications";
+import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 
 interface MobileTopBarProps {
   user: {
@@ -14,12 +15,16 @@ interface MobileTopBarProps {
   };
   companyId: string;
   initialNotifications: AppNotification[];
+  initialNotes: OperatorNote[];
+  initialReminders: OperatorReminder[];
 }
 
 export default function MobileTopBar({
   user,
   companyId,
   initialNotifications,
+  initialNotes,
+  initialReminders,
 }: MobileTopBarProps) {
   return (
     <header className="mobile-topbar md:hidden">
@@ -27,9 +32,11 @@ export default function MobileTopBar({
         <img src="/logo.png" alt="" className="h-7 w-auto object-contain" />
       </Link>
       <div className="mobile-topbar-actions">
-        <NotificationCenter
+        <HeaderQuickActions
           companyId={companyId}
           initialNotifications={initialNotifications}
+          initialNotes={initialNotes}
+          initialReminders={initialReminders}
         />
         <SidebarToggle user={user} />
       </div>

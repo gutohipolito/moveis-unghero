@@ -2,10 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { logout } from "@/app/actions/login";
-import NotificationCenter from "@/components/NotificationCenter";
+import HeaderQuickActions from "@/components/HeaderQuickActions";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { Clock, CloudSun, ChevronDown, Download, LogOut, User as UserIcon } from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
+import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 
 const TIMEZONE = "America/Sao_Paulo";
 const FARROUPILHA = { lat: -28.2758, lon: -51.7750 };
@@ -19,6 +20,8 @@ interface DashboardHeaderProps {
   };
   companyId: string;
   initialNotifications?: AppNotification[];
+  initialNotes?: OperatorNote[];
+  initialReminders?: OperatorReminder[];
 }
 
 function formatLocalTime(date: Date) {
@@ -42,6 +45,8 @@ export default function DashboardHeader({
   user,
   companyId,
   initialNotifications = [],
+  initialNotes = [],
+  initialReminders = [],
 }: DashboardHeaderProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [temperature, setTemperature] = useState<number | null>(null);
@@ -124,9 +129,11 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <NotificationCenter
+        <HeaderQuickActions
           companyId={companyId}
           initialNotifications={initialNotifications}
+          initialNotes={initialNotes}
+          initialReminders={initialReminders}
         />
 
         <div className="relative" ref={menuRef}>

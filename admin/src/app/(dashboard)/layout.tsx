@@ -10,6 +10,10 @@ import MobileTopBar from "@/components/MobileTopBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import PwaInstallBanner from "@/components/PwaInstallBanner";
 import { getNotifications } from "@/app/actions/notifications";
+import {
+  getOperatorNotes,
+  getOperatorReminders,
+} from "@/app/actions/operatorWorkspace";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +30,12 @@ export default async function DashboardLayout({
   const companyId = user.company_id || "mock-company-id";
   const notificationsRes = await getNotifications(companyId);
   const notifications = notificationsRes.notifications;
+  const [notesRes, remindersRes] = await Promise.all([
+    getOperatorNotes(),
+    getOperatorReminders(),
+  ]);
+  const notes = notesRes.notes;
+  const reminders = remindersRes.reminders;
 
   return (
     <PrivacyProvider>
@@ -54,6 +64,8 @@ export default async function DashboardLayout({
             }}
             companyId={companyId}
             initialNotifications={notifications}
+            initialNotes={notes}
+            initialReminders={reminders}
           />
 
           <div className="hidden md:block">
@@ -61,6 +73,8 @@ export default async function DashboardLayout({
               user={user}
               companyId={companyId}
               initialNotifications={notifications}
+              initialNotes={notes}
+              initialReminders={reminders}
             />
           </div>
 

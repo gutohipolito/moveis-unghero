@@ -43,6 +43,8 @@ model User {
   ambientes_como_ajudante      Environment[] @relation("UserAjudante")
   timecards     TimeCard[]
   projetos_sob_responsabilidade  Project[]     @relation("ProjectResponsavel")
+  operatorNotes     OperatorNote[]
+  operatorReminders OperatorReminder[]
 }
 
 enum Role {
@@ -366,4 +368,31 @@ model CatalogItem {
   slug        String?
   ordem       Int           @default(0)
   ativo       Boolean       @default(true)
+}
+
+model OperatorNote {
+  id         String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  company_id String
+  content    String
+  pinned     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([user_id, company_id])
+}
+
+model OperatorReminder {
+  id         String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  company_id String
+  title      String
+  due_at     DateTime
+  done       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([user_id, company_id, done, due_at])
 }
