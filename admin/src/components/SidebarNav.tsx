@@ -92,12 +92,10 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                     onClick={onNavigate}
                     className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""}`}
                   >
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className="sidebar-nav-icon mt-0.5">
-                        <item.icon className="h-4 w-4" />
-                      </div>
-                      <span className="leading-snug">{label}</span>
-                    </div>
+                    <span className="sidebar-nav-icon">
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <span className="sidebar-nav-label">{label}</span>
                     {item.badge && <span className="sidebar-nav-badge shrink-0">{item.badge}</span>}
                   </Link>
                 );
