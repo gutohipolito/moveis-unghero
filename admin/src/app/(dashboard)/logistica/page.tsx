@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
+import { getCatalogItemsBySlug } from "@/app/actions/cadastros";
 import LogisticaClient from "./LogisticaClient";
 
 // Dados Fictícios de Projetos Operacionais para Logística caso o banco esteja inacessível
@@ -117,6 +118,12 @@ export default async function LogisticaPage() {
     }
   }));
 
+  const veiculosRes = await getCatalogItemsBySlug(userCompanyId, "veiculos");
+  const veiculos = veiculosRes.items.map((item) => ({
+    id: item.id,
+    label: item.label,
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/40 pb-5">
@@ -135,7 +142,7 @@ export default async function LogisticaPage() {
         )}
       </div>
 
-      <LogisticaClient initialProjects={formattedProjects} />
+      <LogisticaClient initialProjects={formattedProjects} veiculos={veiculos} />
     </div>
   );
 }

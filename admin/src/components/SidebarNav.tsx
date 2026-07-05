@@ -14,6 +14,7 @@ import {
   Truck,
   ClipboardList,
   Clock,
+  BookMarked,
 } from "lucide-react";
 
 export interface NavItem {
@@ -36,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Portal do Colaborador", shortName: "Portal", href: "/factory/portal", icon: Clock, section: "Operacional" },
   { name: "Estoque e Fornecedores", shortName: "Estoque", href: "/estoque", icon: Package, section: "Operacional" },
   { name: "Logística e Entrega", shortName: "Logística", href: "/logistica", icon: Truck, section: "Operacional" },
+  { name: "Cadastros", href: "/cadastros", icon: BookMarked, section: "Operacional" },
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Financeiro" },
 ];
 

@@ -16,6 +16,7 @@ model Company {
   email    String
   users    User[]
   clients  Client[]
+  catalogGroups CatalogGroup[]
 }
 
 model User {
@@ -307,4 +308,31 @@ model TimeCard {
   almoco_out  DateTime?
   saida       DateTime?
   horas       Decimal?  @db.Decimal(4, 2)
+}
+
+// Listas configuráveis por empresa (veículos, categorias de estoque, etc.)
+model CatalogGroup {
+  id          String        @id @default(uuid())
+  company_id  String
+  company     Company       @relation(fields: [company_id], references: [id])
+  slug        String
+  nome        String
+  descricao   String?
+  usado_em    String?
+  items       CatalogItem[]
+
+  @@unique([company_id, slug])
+}
+
+model CatalogItem {
+  id          String        @id @default(uuid())
+  group_id    String
+  group       CatalogGroup  @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  parent_id   String?
+  parent      CatalogItem?  @relation("CatalogSubItems", fields: [parent_id], references: [id], onDelete: Cascade)
+  children    CatalogItem[] @relation("CatalogSubItems")
+  label       String
+  slug        String?
+  ordem       Int           @default(0)
+  ativo       Boolean       @default(true)
 }

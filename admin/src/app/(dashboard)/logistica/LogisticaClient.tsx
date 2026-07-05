@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,8 @@ import {
   ShieldCheck, 
   Calendar,
   Users,
-  Signature
+  Signature,
+  Settings2,
 } from "lucide-react";
 import { updateProjectStatus } from "@/app/actions/kanban";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -35,8 +37,14 @@ interface Project {
   };
 }
 
+interface VeiculoOption {
+  id: string;
+  label: string;
+}
+
 interface LogisticaClientProps {
   initialProjects: Project[];
+  veiculos: VeiculoOption[];
 }
 
 interface ExpedicaoCarga {
@@ -48,7 +56,7 @@ interface ExpedicaoCarga {
   status: "PENDENTE" | "CARREGADO" | "EM_TRANSITO" | "ENTREGUE";
 }
 
-export default function LogisticaClient({ initialProjects }: LogisticaClientProps) {
+export default function LogisticaClient({ initialProjects, veiculos }: LogisticaClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -76,9 +84,10 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
   ]);
 
   // Formulário para nova expedição
+  const defaultVeiculo = veiculos[0]?.label ?? "";
   const [newExpForm, setNewExpForm] = useState({
     projectId: "",
-    veiculo: "Caminhão 1 - Mercedes Accelo 815",
+    veiculo: defaultVeiculo,
     dataEntrega: "",
     ajudantes: ""
   });
@@ -129,7 +138,7 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
     setIsAddingExp(false);
     setNewExpForm({
       projectId: "",
-      veiculo: "Caminhão 1 - Mercedes Accelo 815",
+      veiculo: defaultVeiculo,
       dataEntrega: "",
       ajudantes: ""
     });
@@ -254,15 +263,31 @@ export default function LogisticaClient({ initialProjects }: LogisticaClientProp
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">Veículo / Frete</label>
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <label className="text-[10px] font-bold text-muted-foreground">Veículo / Frete</label>
+                      <Link
+                        href="/cadastros?grupo=veiculos"
+                        className="text-[10px] font-semibold text-primary hover:underline inline-flex items-center gap-0.5"
+                      >
+                        <Settings2 className="h-3 w-3" />
+                        Cadastrar veículos
+                      </Link>
+                    </div>
                     <select
                       value={newExpForm.veiculo}
                       onChange={(e) => setNewExpForm({ ...newExpForm, veiculo: e.target.value })}
                       className="w-full bg-white border border-border/60 rounded-lg text-xs p-2 focus:ring-1 focus:ring-primary outline-none font-semibold"
+                      disabled={veiculos.length === 0}
                     >
-                      <option value="Caminhão 1 - Mercedes Accelo 815">Caminhão 1 - Mercedes Accelo 815</option>
-                      <option value="Iveco Daily Cargo 30S13">Iveco Daily Cargo 30S13</option>
-                      <option value="Fretado Terceirizado Express">Fretado Terceirizado Express</option>
+                      {veiculos.length === 0 ? (
+                        <option value="">Nenhum veículo cadastrado</option>
+                      ) : (
+                        veiculos.map((v) => (
+                          <option key={v.id} value={v.label}>
+                            {v.label}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                 </div>

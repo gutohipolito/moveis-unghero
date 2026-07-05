@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,24 +31,31 @@ import {
   Filter, 
   TrendingUp, 
   ChevronRight,
-  Boxes
+  Boxes,
+  Settings2,
 } from "lucide-react";
+
+interface CategoryOption {
+  value: string;
+  label: string;
+}
 
 interface EstoqueClientProps {
   initialSuppliers: Supplier[];
   initialInventory: InventoryItem[];
   companyId: string;
+  categoryOptions: CategoryOption[];
 }
 
-const CATEGORIES = {
+const FALLBACK_CATEGORIES: Record<string, string> = {
   CHAPAS_MDF: "Chapas MDF",
   FERRAGENS: "Ferragens",
   ILUMINACAO: "Iluminação",
   TINTAS_QUIMICOS: "Tintas & Químicos",
-  OUTROS: "Outros"
+  OUTROS: "Outros",
 };
 
-const CATEGORY_COLORS = {
+const CATEGORY_COLORS: Record<string, string> = {
   CHAPAS_MDF: "bg-amber-500/10 text-amber-700 border-amber-200",
   FERRAGENS: "bg-blue-500/10 text-blue-700 border-blue-200",
   ILUMINACAO: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
@@ -55,11 +63,26 @@ const CATEGORY_COLORS = {
   OUTROS: "bg-slate-500/10 text-slate-700 border-slate-200"
 };
 
-export default function EstoqueClient({ initialSuppliers, initialInventory, companyId }: EstoqueClientProps) {
+export default function EstoqueClient({
+  initialSuppliers,
+  initialInventory,
+  companyId,
+  categoryOptions,
+}: EstoqueClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+
+  const categories = useMemo(() => {
+    const map: Record<string, string> = { ...FALLBACK_CATEGORIES };
+    categoryOptions.forEach((opt) => {
+      map[opt.value] = opt.label;
+    });
+    return map;
+  }, [categoryOptions]);
+
+  const defaultCategory = categoryOptions[0]?.value ?? "CHAPAS_MDF";
   
   // Controle de abas: "estoque" ou "fornecedores"
   const [activeTab, setActiveTab] = useState<"estoque" | "fornecedores">("estoque");
@@ -84,7 +107,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
 
   // Estados de Formulário - Item do Estoque
   const [itemNome, setItemNome] = useState("");
-  const [itemCategoria, setItemCategoria] = useState<keyof typeof CATEGORIES>("CHAPAS_MDF");
+  const [itemCategoria, setItemCategoria] = useState<string>(defaultCategory);
   const [itemQuantidade, setItemQuantidade] = useState("");
   const [itemMinima, setItemMinima] = useState("");
   const [itemPreco, setItemPreco] = useState("");
@@ -133,7 +156,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
   // Reset Formulário Item Estoque
   const resetItemForm = () => {
     setItemNome("");
-    setItemCategoria("CHAPAS_MDF");
+    setItemCategoria(defaultCategory);
     setItemQuantidade("");
     setItemMinima("");
     setItemPreco("");
@@ -212,7 +235,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
 
     const data = {
       nome: itemNome,
-      categoria: itemCategoria,
+      categoria: itemCategoria as InventoryItem["categoria"],
       quantidade: Number(itemQuantidade),
       minima: Number(itemMinima || 0),
       precoCusto: Number(itemPreco),
@@ -382,7 +405,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                   className="bg-slate-50 border border-border rounded-lg text-xs p-2.5 focus:ring-1 focus:ring-primary outline-none"
                 >
                   <option value="ALL">Todas</option>
-                  {Object.entries(CATEGORIES).map(([key, value]) => (
+                  {Object.entries(categories).map(([key, value]) => (
                     <option key={key} value={key}>{value}</option>
                   ))}
                 </select>
@@ -434,7 +457,7 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                   filteredInventory.map(item => {
                     const isCritical = item.quantidade < item.minima;
                     const isOutOfStock = item.quantidade <= 0;
-                    const catName = CATEGORIES[item.categoria] || item.categoria;
+                    const catName = categories[item.categoria] || item.categoria;
                     const catBadge = CATEGORY_COLORS[item.categoria] || "bg-slate-100 text-slate-600";
 
                     return (
@@ -623,13 +646,22 @@ export default function EstoqueClient({ initialSuppliers, initialInventory, comp
                   <Input required value={itemNome} onChange={e => setItemNome(e.target.value)}  className="border-border bg-slate-50 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Categoria</label>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-bold text-muted-foreground block">Categoria</label>
+                    <Link
+                      href="/cadastros?grupo=categorias_estoque"
+                      className="text-[10px] font-semibold text-primary hover:underline inline-flex items-center gap-0.5"
+                    >
+                      <Settings2 className="h-3 w-3" />
+                      Gerenciar categorias
+                    </Link>
+                  </div>
                   <select 
                     value={itemCategoria} 
-                    onChange={e => setItemCategoria(e.target.value as any)} 
+                    onChange={e => setItemCategoria(e.target.value)} 
                     className="w-full bg-slate-50 border border-border rounded-lg text-sm p-2.5 focus:ring-1 focus:ring-primary outline-none"
                   >
-                    {Object.entries(CATEGORIES).map(([key, value]) => (
+                    {Object.entries(categories).map(([key, value]) => (
                       <option key={key} value={key}>{value}</option>
                     ))}
                   </select>
