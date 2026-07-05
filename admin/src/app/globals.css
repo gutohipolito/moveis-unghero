@@ -106,9 +106,8 @@ body {
 }
 
 .page-header {
-  padding-bottom: 1rem;
+  padding-bottom: 0.25rem;
   margin-bottom: 0.25rem;
-  border-bottom: 1px solid hsl(var(--border));
 }
 
 .page-header-main {
@@ -220,8 +219,9 @@ body {
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.35;
   border-radius: calc(var(--radius) - 2px);
   color: hsl(var(--sidebar-foreground) / 0.82);
   transition: background 0.15s ease, color 0.15s ease;

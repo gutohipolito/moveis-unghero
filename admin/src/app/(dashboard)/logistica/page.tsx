@@ -3,6 +3,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getCatalogItemsBySlug } from "@/app/actions/cadastros";
 import LogisticaClient from "./LogisticaClient";
+import PageHeader from "@/components/PageHeader";
 
 // Dados Fictícios de Projetos Operacionais para Logística caso o banco esteja inacessível
 const MOCK_OPERATIONAL_PROJECTS = [
@@ -126,21 +127,17 @@ export default async function LogisticaPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/40 pb-5">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-900">
-            Módulo de Logística & Montagem
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Planejamento de rotas de expedição, equipes de montagem e controle de qualidade técnica.
-          </p>
-        </div>
-        {isMock && (
-          <span className="self-start md:self-center text-xs bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-full font-bold">
-            Simulação de Dados (Offline)
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Logística e Entrega"
+        description="Planejamento de rotas de expedição, equipes de montagem e controle de qualidade técnica."
+        badge={
+          isMock ? (
+            <span className="badge-meta px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
+              Demonstração
+            </span>
+          ) : undefined
+        }
+      />
 
       <LogisticaClient initialProjects={formattedProjects} veiculos={veiculos} />
     </div>

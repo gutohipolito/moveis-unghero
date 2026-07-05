@@ -25,7 +25,7 @@ export default async function ColaboradoresPage() {
     <div className="space-y-6">
       <PageHeader
         title="Colaboradores"
-        description="Gerencie a equipe de fábrica, comerciais e administradores da marcenaria."
+        description="Equipe interna com acesso ao painel — comercial, fábrica, financeiro e administradores. Para parceiros externos (arquitetos/projetistas), use Projetistas e Arquitetos."
       />
 
       <ColaboradoresClient

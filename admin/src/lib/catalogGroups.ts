@@ -66,7 +66,15 @@ export const FIXED_CATALOG_REFERENCES = [
     itens: ["Visita comercial", "Medição técnica", "Entrega de móveis", "Instalação", "Outros"],
   },
   {
-    nome: "Colaboradores (equipe)",
+    nome: "Projetistas e arquitetos (parceiros)",
+    usadoEm: "Comercial → parceiros que indicam ou co-projetam",
+    ondeCadastrar: "Menu Projetistas e Arquitetos — profissionais externos (não são colaboradores com login).",
+    itens: ["Projetista", "Arquiteto", "Decorador", "Engenheiro", "Outros"],
+    linkHref: "/parceiros",
+    linkLabel: "Ir para Projetistas e Arquitetos",
+  },
+  {
+    nome: "Colaboradores (equipe interna)",
     usadoEm: "Chão de Fábrica → Responsável / Ajudante",
     ondeCadastrar: "Menu Colaboradores — cadastre usuários com cargo Produção ou outro.",
     itens: [],

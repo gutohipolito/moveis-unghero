@@ -20,7 +20,7 @@ export default async function CadastrosPage({ searchParams }: CadastrosPageProps
     <div className="space-y-6">
       <PageHeader
         title="Cadastros"
-        description="Central de listas e categorias usadas em Logística, Estoque, Projetos e outras telas. Aqui você cadastra veículos, categorias de insumos e consulta onde cada lista é aplicada."
+        description="Central de listas configuráveis (veículos, categorias de insumos) e referências do sistema. Para parceiros profissionais, use Projetistas e Arquitetos."
       />
 
       <CadastrosClient

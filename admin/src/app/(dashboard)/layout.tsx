@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   return (
     <PrivacyProvider>
       <div className="flex min-h-screen bg-background">
-        <aside className="app-sidebar hidden md:flex md:w-56 lg:w-60 md:flex-col md:fixed md:inset-y-0 z-30">
+        <aside className="app-sidebar hidden md:flex md:w-[17.5rem] lg:w-[19rem] md:flex-col md:fixed md:inset-y-0 z-30">
           <div className="flex flex-col flex-1 min-h-0">
             <div className="flex items-center h-16 px-5 shrink-0">
               <Link href="/crm" aria-label="Móveis Unghero">
@@ -40,7 +40,7 @@ export default async function DashboardLayout({
           </div>
         </aside>
 
-        <div className="flex flex-col flex-1 md:pl-56 lg:pl-60 min-w-0">
+        <div className="flex flex-col flex-1 md:pl-[17.5rem] lg:pl-[19rem] min-w-0">
           <div className="md:hidden sticky top-0 flex items-center justify-between h-14 px-4 z-40 bg-card border-b border-border pt-[env(safe-area-inset-top,0)]">
             <Link href="/crm" aria-label="Móveis Unghero">
               <img src="/logo.png" alt="Móveis Unghero" className="logo-sidebar h-8 w-auto object-contain" />
