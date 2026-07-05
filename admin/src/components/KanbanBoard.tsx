@@ -19,6 +19,8 @@ import { labelOrigin } from "@/lib/navLabels";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { SegmentControl } from "@/components/ui/segment-control";
 import { Input } from "@/components/ui/input";
 import { 
   Plus, 
@@ -566,15 +568,15 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     const accent = getColumnAccent(colId ?? project.status_geral);
 
     const actionButtons = (
-      <div className="flex items-center gap-1 flex-wrap">
+      <div className="flex items-center gap-[var(--space-1)] flex-wrap">
         {showFollowUp && boardView === "funil" && (
           <button
             type="button"
             onClick={() => handleMarkContacted(project)}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/25 transition-all cursor-pointer"
+            className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
             title="Registrar que houve contato hoje"
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            <MessageCircle className="h-4 w-4" />
           </button>
         )}
         {canMarkLoss && boardView === "funil" && (
@@ -584,46 +586,46 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               setLossModalProject(project);
               setLossMotivo("");
             }}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-500/25 transition-all cursor-pointer"
+            className="kanban-card-action bg-red-500/10 text-red-700 border border-red-500/20"
             title="Marcar como perda"
           >
-            <XCircle className="h-3.5 w-3.5" />
+            <XCircle className="h-4 w-4" />
           </button>
         )}
         {project.status_geral === "PERDIDO" && (
           <button
             type="button"
             onClick={() => handleRestoreLoss(project)}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 border border-cyan-500/25 transition-all cursor-pointer"
+            className="kanban-card-action bg-cyan-500/10 text-cyan-700 border border-cyan-500/20"
             title="Reativar lead"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="h-4 w-4" />
           </button>
         )}
         {boardView === "funil" && colId && colId !== "FINALIZADO" && (
           <button
             type="button"
             onClick={() => handleMoveRight(project)}
-            className="md:hidden inline-flex items-center justify-center p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 border border-amber-500/25 transition-all cursor-pointer"
+            className="kanban-card-action md:hidden bg-amber-500/10 text-amber-800 border border-amber-500/20"
             title="Avançar etapa"
           >
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-4 w-4" />
           </button>
         )}
         <button
           type="button"
           onClick={() => openEditModal(project)}
-          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-slate-700 border border-slate-500/20 transition-all cursor-pointer"
+          className="kanban-card-action bg-slate-500/10 text-slate-700 border border-slate-500/20"
           title="Editar card"
         >
-          <Edit className="h-3.5 w-3.5" />
+          <Edit className="h-4 w-4" />
         </button>
         <Link
           href={`/projects/${project.id}`}
-          className="inline-flex items-center justify-center p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all cursor-pointer group/link"
+          className="kanban-card-action bg-primary/10 text-primary border border-primary/25 group/link"
           title="Ver detalhes do projeto"
         >
-          <ArrowRight className="h-3.5 w-3.5 group-hover/link:translate-x-0.5 transition-transform" />
+          <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
         </Link>
       </div>
     );
@@ -634,13 +636,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         draggable={boardView === "funil"}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
-        className={`group bg-white rounded-xl text-card-foreground shadow-sm border border-border transition-all duration-300 overflow-hidden ${
+        className={`group kanban-card overflow-hidden ${
           boardView === "funil" ? "cursor-grab active:cursor-grabbing" : ""
-        } hover:border-primary/50 hover:shadow-md ${
-          isDraggingThis ? "opacity-35 scale-95 border-dashed border-primary" : ""
+        } hover:border-primary/40 ${
+          isDraggingThis ? "opacity-35 scale-[0.98] border-dashed border-primary" : ""
         } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
       >
-        <div className="p-3 space-y-2">
+        <div className="space-y-[var(--space-2)]">
           <div className="flex items-start justify-between gap-2">
             <Link href={`/projects/${project.id}`} className="min-w-0 flex-1 space-y-1.5 cursor-pointer">
               <div className="flex items-center gap-2 flex-wrap">
@@ -753,70 +755,37 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Topbar de Ações e Métricas Rápidas */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-5 rounded-[var(--radius)] border border-border bg-card gap-5">
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center">
-            <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 mr-3">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <span className="kpi-label">Total em Negociação</span>
-              <span className="kpi-value text-gradient-gold privacy-value">
-                {formatCurrency(totalPipeline)}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center border-l border-border pl-6">
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mr-3">
-              <UserCheck className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <span className="kpi-label">Projetos Ativos</span>
-              <span className="kpi-value text-emerald-600">
-                {activeProjectsCount}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <Button onClick={() => setIsNewLeadOpen(true)} className="w-full lg:w-auto font-bold btn-metallic">
-          <Plus className="mr-2 h-4.5 w-4.5" /> Novo contato
-        </Button>
+    <div className="space-y-[var(--space-5)]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)]">
+        <KpiCard
+          label="Total em negociação"
+          value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
+          icon={TrendingUp}
+          accent="primary"
+        />
+        <KpiCard
+          label="Projetos ativos"
+          value={activeProjectsCount}
+          icon={UserCheck}
+          accent="success"
+          valueClassName="text-[hsl(var(--success))]"
+        />
       </div>
 
-      {/* Abas Funil / Perdas */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-border bg-card p-1 w-fit">
-          <button
-            type="button"
-            onClick={() => setBoardView("funil")}
-            className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer ${
-              boardView === "funil"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Funil ativo
-          </button>
-          <button
-            type="button"
-            onClick={() => setBoardView("perdas")}
-            className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
-              boardView === "perdas"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Perdas
-            {lostProjects.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-background/20 font-extrabold">
-                {lostProjects.length}
-              </span>
-            )}
-          </button>
-        </div>
+      <Button onClick={() => setIsNewLeadOpen(true)} className="w-full sm:w-auto font-semibold">
+        <Plus className="mr-2 h-4 w-4" /> Novo contato
+      </Button>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
+        <SegmentControl
+          value={boardView}
+          onChange={setBoardView}
+          aria-label="Visualização do funil"
+          options={[
+            { value: "funil", label: "Funil ativo" },
+            { value: "perdas", label: "Perdas", badge: lostProjects.length },
+          ]}
+        />
 
         {boardView === "funil" && (followUpAlerts.length > 0 || followUpWarnings.length > 0) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -842,8 +811,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             Leads que não converteram. Você pode reativá-los para o funil quando fizer sentido retomar a negociação.
           </p>
           {lostProjects.length === 0 ? (
-            <div className="border border-dashed border-border rounded-xl p-10 text-center text-sm text-muted-foreground">
-              Nenhuma perda registrada ainda.
+            <div className="empty-state">
+              <p className="empty-state-title">Nenhuma perda registrada</p>
+              <p className="empty-state-desc">Leads marcados como perda aparecerão aqui.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -864,8 +834,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`kanban-column rounded-[var(--radius)] border border-border bg-card flex flex-col transition-all duration-200 ${
-                isOver ? "bg-slate-100 border-primary/30 scale-[1.01] shadow-lg" : ""
+              className={`kanban-column surface-compact flex flex-col transition-all duration-[var(--motion-base)] ${
+                isOver ? "border-primary/30 shadow-[var(--shadow-md)]" : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
@@ -881,7 +851,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
               {/* Lista de Cards */}
               <div 
-                className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[55vh] md:max-h-[600px] min-h-[280px] md:min-h-[400px]"
+                className="flex-1 p-[var(--space-2)] space-y-[var(--space-2)] overflow-y-auto max-h-[55vh] md:max-h-[600px] min-h-[240px] md:min-h-[400px]"
                 onDragLeave={() => setDragOverColumn(null)}
               >
                 {colProjects.length === 0 ? (

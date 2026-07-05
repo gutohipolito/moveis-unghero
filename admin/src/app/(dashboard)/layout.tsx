@@ -6,6 +6,7 @@ import { PrivacyProvider } from "@/context/PrivacyContext";
 import SidebarToggle from "@/components/SidebarToggle";
 import SidebarNav from "@/components/SidebarNav";
 import DashboardHeader from "@/components/DashboardHeader";
+import MobileTopBar from "@/components/MobileTopBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import PwaInstallBanner from "@/components/PwaInstallBanner";
 import { getNotifications } from "@/app/actions/notifications";
@@ -46,12 +47,14 @@ export default async function DashboardLayout({
         </aside>
 
         <div className="flex flex-col flex-1 md:pl-[17.5rem] lg:pl-[19rem] min-w-0">
-          <div className="md:hidden sticky top-0 flex items-center justify-between h-14 px-4 z-40 bg-card border-b border-border pt-[env(safe-area-inset-top,0)]">
-            <Link href="/crm" aria-label="Móveis Unghero">
-              <img src="/logo.png" alt="Móveis Unghero" className="logo-sidebar h-8 w-auto object-contain" />
-            </Link>
-            <SidebarToggle user={user} />
-          </div>
+          <MobileTopBar
+            user={{
+              ...user,
+              email: user.email ?? "",
+            }}
+            companyId={companyId}
+            initialNotifications={notifications}
+          />
 
           <div className="hidden md:block">
             <DashboardHeader
@@ -63,8 +66,8 @@ export default async function DashboardLayout({
 
           <PwaInstallBanner />
 
-          <main className="flex-1 p-4 sm:p-5 md:p-6 lg:p-7 overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-7">
-            <div className="w-full space-y-5">{children}</div>
+          <main className="flex-1 px-[var(--space-4)] py-[var(--space-4)] sm:px-[var(--space-5)] md:px-[var(--space-6)] md:py-[var(--space-6)] overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-[var(--space-6)]">
+            <div className="w-full space-y-[var(--space-5)]">{children}</div>
           </main>
         </div>
 

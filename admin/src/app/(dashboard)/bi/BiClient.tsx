@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { SegmentControl } from "@/components/ui/segment-control";
 import { 
   TrendingUp, 
   DollarSign, 
   Award, 
   PieChart, 
   Percent, 
-  ArrowUpRight, 
   Users, 
   MapPin 
 } from "lucide-react";
@@ -118,107 +119,59 @@ export default function BiClient({ initialProjects }: BiClientProps) {
   }).sort((a, b) => b.totalSold - a.totalSold);
 
   return (
-    <div className="space-y-8 pb-12">
-      
-      {/* Filtro do Período */}
-      <div className="flex justify-end">
-        <div className="flex p-1 bg-slate-100/80 backdrop-blur-md border border-border/40 rounded-xl text-xs font-bold gap-1">
-          <button 
-            onClick={() => setFilterPeriod("30")}
-            className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${filterPeriod === "30" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Últimos 30 dias
-          </button>
-          <button 
-            onClick={() => setFilterPeriod("90")}
-            className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${filterPeriod === "90" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Últimos 90 dias
-          </button>
-          <button 
-            onClick={() => setFilterPeriod("365")}
-            className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${filterPeriod === "365" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Este Ano
-          </button>
-        </div>
+    <div className="space-y-[var(--space-6)] pb-[var(--space-8)]">
+      <div className="overflow-x-auto -mx-[var(--space-1)] px-[var(--space-1)]">
+        <SegmentControl
+          value={filterPeriod}
+          onChange={setFilterPeriod}
+          aria-label="Período do relatório"
+          className="min-w-max"
+          options={[
+            { value: "30", label: "30 dias" },
+            { value: "90", label: "90 dias" },
+            { value: "365", label: "Este ano" },
+          ]}
+        />
       </div>
 
-      {/* Cards de Métricas Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="kpi-label">Pipeline de Vendas</span>
-            <span className="kpi-value privacy-value">
-              {formatCurrency(totalPipeline)}
-            </span>
-            <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
-              <ArrowUpRight className="h-3 w-3 mr-0.5" /> +14.2% este mês
-            </span>
-          </div>
-          <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
-            <TrendingUp className="h-5 w-5" />
-          </div>
-        </Card>
-
-        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="kpi-label">Receita Aprovada</span>
-            <span className="kpi-value privacy-value">
-              {formatCurrency(grossRevenue)}
-            </span>
-            <span className="text-[10px] text-emerald-500 font-bold block flex items-center">
-              <ArrowUpRight className="h-3 w-3 mr-0.5" /> +8.7% vs meta
-            </span>
-          </div>
-          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
-            <DollarSign className="h-5 w-5" />
-          </div>
-        </Card>
-
-        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="kpi-label">Custo Insumos (Est.)</span>
-            <span className="kpi-value privacy-value">
-              {formatCurrency(estimatedMaterialCost)}
-            </span>
-            <span className="text-[10px] text-muted-foreground font-bold block">
-              Baseado no consumo de MDF/ferragens
-            </span>
-          </div>
-          <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
-            <Percent className="h-5 w-5" />
-          </div>
-        </Card>
-
-        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="kpi-label">Lucro Líquido (Est.)</span>
-            <span className="kpi-value text-gradient-gold privacy-value">
-              {formatCurrency(netProfit)}
-            </span>
-            <span className="text-[10px] text-amber-600 font-bold block">
-              Margem média de {profitMargin.toFixed(1)}%
-            </span>
-          </div>
-          <div className="p-3 bg-amber-500/10 rounded-xl text-amber-600">
-            <Award className="h-5 w-5" />
-          </div>
-        </Card>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+        <KpiCard
+          label="Pipeline de vendas"
+          value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
+          icon={TrendingUp}
+          accent="primary"
+          trend={{ value: "+14,2% este mês", positive: true }}
+        />
+        <KpiCard
+          label="Receita aprovada"
+          value={<span className="privacy-value">{formatCurrency(grossRevenue)}</span>}
+          icon={DollarSign}
+          accent="success"
+          trend={{ value: "+8,7% vs meta", positive: true }}
+        />
+        <KpiCard
+          label="Custo insumos (est.)"
+          value={<span className="privacy-value">{formatCurrency(estimatedMaterialCost)}</span>}
+          icon={Percent}
+          accent="info"
+          trend={{ value: "MDF e ferragens" }}
+        />
+        <KpiCard
+          label="Lucro líquido (est.)"
+          value={<span className="privacy-value">{formatCurrency(netProfit)}</span>}
+          icon={Award}
+          accent="warning"
+          trend={{ value: `Margem ${profitMargin.toFixed(1)}%`, positive: profitMargin > 0 }}
+        />
       </div>
 
-      {/* Grid de Gráficos de CRM e Canais */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Gráfico 1: Funil de CRM */}
-        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--space-4)]">
+        <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">
-              Distribuição do Funil CRM (Volume Comercial)
+            <h3 className="text-headline text-foreground">
+              Distribuição do funil CRM
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground mt-1">
               Total financeiro retido em cada coluna operacional do Kanban.
             </p>
           </div>
@@ -245,12 +198,12 @@ export default function BiClient({ initialProjects }: BiClientProps) {
         </Card>
 
         {/* Gráfico 2: Origem dos Leads e Atração Comercial */}
-        <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl space-y-6 flex flex-col justify-between">
+        <Card className="p-[var(--space-4)] space-y-[var(--space-4)] flex flex-col justify-between">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-neutral-900">
-              Rentabilidade por Canal de Captação
+            <h3 className="text-headline text-foreground">
+              Rentabilidade por canal
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground mt-1">
               Quais canais trazem projetos de maior valor bruto de fechamento.
             </p>
           </div>
@@ -298,17 +251,50 @@ export default function BiClient({ initialProjects }: BiClientProps) {
       </div>
 
       {/* Ranking de Projetistas & Comissões */}
-      <Card className="p-6 backdrop-blur-md bg-white/70 border-border/40 shadow-xl rounded-2xl space-y-6">
+      <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
         <div>
-          <h3 className="text-lg font-bold tracking-tight text-neutral-900">
-            Produtividade de Arquitetos e Projetistas Parceiros (Unghero Especificações)
+          <h3 className="text-headline text-foreground">
+            Projetistas parceiros
           </h3>
-          <p className="text-xs text-muted-foreground">
-            Acompanhamento das especificações ativas e cálculo da taxa de comissão contratual de marcenaria (5%).
+          <p className="text-caption text-muted-foreground mt-1">
+            Especificações ativas e comissão contratual (5%).
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile: cards */}
+        <div className="md:hidden space-y-[var(--space-3)]">
+          {designerRanking.map((des, index) => (
+            <div key={index} className="surface-compact p-[var(--space-3)] space-y-[var(--space-2)]">
+              <div className="flex items-center gap-[var(--space-3)]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-primary/15">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-title text-sm font-semibold truncate">{des.name}</p>
+                  <p className="text-caption text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> {des.city}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-[var(--space-2)] text-center">
+                <div>
+                  <p className="text-label text-muted-foreground">Projetos</p>
+                  <p className="text-title font-bold">{des.count}</p>
+                </div>
+                <div>
+                  <p className="text-label text-muted-foreground">Faturamento</p>
+                  <p className="text-caption font-bold privacy-value">{formatCurrency(des.totalSold)}</p>
+                </div>
+                <div>
+                  <p className="text-label text-muted-foreground">Comissão</p>
+                  <p className="text-caption font-bold text-[hsl(var(--success))] privacy-value">{formatCurrency(des.comission)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead>
               <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50">

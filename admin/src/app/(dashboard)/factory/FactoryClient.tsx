@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
 import { Card } from "@/components/ui/card";
+import { KpiCard } from "@/components/ui/kpi-card";
 import {
   Layers,
   ArrowRight,
@@ -278,47 +279,12 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
   const prontoEntregaCount = environments.filter((e) => e.status === "PRONTO_ENTREGA").length;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-purple-500/10 text-purple-400 rounded-lg">
-            <ClipboardList className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="kpi-label">Total na Fábrica</span>
-            <strong className="kpi-value">{totalPecas} cômodos</strong>
-          </div>
-        </Card>
-
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-lg">
-            <Layers className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="kpi-label">Em Corte/Usinagem</span>
-            <strong className="kpi-value">{emCorteCount} cômodos</strong>
-          </div>
-        </Card>
-
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-orange-500/10 text-orange-400 rounded-lg">
-            <Wrench className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="kpi-label">Em Montagem</span>
-            <strong className="kpi-value">{emMontagemCount} peças</strong>
-          </div>
-        </Card>
-
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
-            <Package className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="kpi-label">Pronto p/ Expedição</span>
-            <strong className="kpi-value">{prontoEntregaCount} cômodos</strong>
-          </div>
-        </Card>
+    <div className="space-y-[var(--space-5)]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+        <KpiCard label="Total na fábrica" value={`${totalPecas} cômodos`} icon={ClipboardList} accent="neutral" />
+        <KpiCard label="Em corte" value={`${emCorteCount} cômodos`} icon={Layers} accent="info" />
+        <KpiCard label="Em montagem" value={`${emMontagemCount} peças`} icon={Wrench} accent="warning" />
+        <KpiCard label="Pronto p/ expedição" value={`${prontoEntregaCount} cômodos`} icon={Package} accent="success" />
       </div>
 
       <div
