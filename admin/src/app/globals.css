@@ -524,6 +524,11 @@ body {
   min-height: var(--touch-min);
 }
 
+.mobile-topbar-logo-dark {
+  filter: brightness(0) saturate(100%);
+  opacity: 0.88;
+}
+
 .mobile-topbar-actions {
   display: flex;
   align-items: center;

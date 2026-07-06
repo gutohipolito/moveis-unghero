@@ -13,14 +13,22 @@ interface SidebarToggleProps {
     image?: string | null;
     cargo?: string;
   };
+  onOpenChange?: (open: boolean) => void;
 }
 
-export default function SidebarToggle({ user }: SidebarToggleProps) {
+export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const openMenu = useCallback(() => setIsOpen(true), []);
-  const closeMenu = useCallback(() => setIsOpen(false), []);
+  const openMenu = useCallback(() => {
+    setIsOpen(true);
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const closeMenu = useCallback(() => {
+    setIsOpen(false);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
 
   useEffect(() => {
     setMounted(true);
