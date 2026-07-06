@@ -933,6 +933,17 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   pointer-events: none !important;
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .login-shell {
   min-height: 100vh;
   display: grid;
@@ -940,7 +951,7 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
 }
 
 @media (min-width: 900px) {
-  .login-shell { grid-template-columns: 1fr 1fr; }
+  .login-shell { grid-template-columns: 1.15fr 0.85fr; }
 }
 
 .login-brand-panel {
@@ -950,7 +961,7 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   background-size: cover;
   background-position: center;
   color: #ffffff;
-  padding: 4rem 3rem;
+  padding: 4.5rem 3.5rem;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
@@ -962,8 +973,8 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(24, 18, 15, 0.75) 0%,
-    rgba(14, 11, 9, 0.92) 100%
+    rgba(24, 18, 15, 0.68) 0%,
+    rgba(14, 11, 9, 0.94) 100%
   );
   z-index: 1;
 }
@@ -972,44 +983,155 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   .login-brand-panel { display: flex; }
 }
 
-.login-form-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.5rem;
-  background-color: hsl(var(--background));
-  background-image: radial-gradient(circle at 80% 20%, hsl(42 96% 44% / 0.04) 0%, transparent 50%);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 24rem;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border) / 0.6);
-  border-radius: var(--radius-lg);
-  padding: 2.5rem 2rem;
-  box-shadow: 
-    0 10px 30px -10px hsl(24 14% 14% / 0.08),
-    0 1px 3px hsl(24 14% 14% / 0.02);
+.login-brand-content {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .login-brand-title {
   font-family: var(--font-display);
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.15;
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .login-brand-tagline {
   font-size: 1.05rem;
   color: rgba(255, 255, 255, 0.88);
-  margin-top: 1rem;
-  max-width: 22rem;
+  margin-top: 1.25rem;
+  max-width: 24rem;
   line-height: 1.6;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.login-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login-form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background-color: hsl(var(--background));
+  background-image: 
+    radial-gradient(circle at 10% 20%, hsl(42 96% 44% / 0.035) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, hsl(24 14% 14% / 0.015) 0%, transparent 50%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 25rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.55);
+  border-radius: 1.25rem;
+  padding: 3rem 2.25rem;
+  box-shadow: 
+    0 24px 48px -18px hsl(24 20% 10% / 0.08),
+    0 1px 3px hsl(24 20% 10% / 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: hsl(42 96% 44% / 0.08);
+  border: 1px solid hsl(42 96% 44% / 0.15);
+  color: hsl(42 90% 40%);
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+}
+
+.login-form-group .relative {
+  transition: transform 0.2s ease;
+}
+
+.login-form-group input {
+  height: 2.85rem !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid hsl(var(--border) / 0.9) !important;
+  padding-left: 2.75rem !important;
+  background: hsl(var(--card)) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+}
+
+.login-form-group input:focus {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 
+    0 0 0 4px hsl(var(--primary) / 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.02) !important;
+  outline: none !important;
+}
+
+.login-form-group .relative:focus-within svg {
+  color: hsl(var(--primary)) !important;
+  transform: translateY(-50%) scale(1.08) !important;
+}
+
+.login-form-group svg {
+  transition: color 0.2s ease, transform 0.2s ease !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  left: 0.875rem !important;
+}
+
+.login-submit-btn {
+  height: 2.85rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, hsl(42 96% 44%) 0%, hsl(36 90% 36%) 100%) !important;
+  border: 1px solid hsl(42 80% 32%) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    0 4px 14px hsl(42 96% 44% / 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, hsl(42 96% 48%) 0%, hsl(36 90% 40%) 100%) !important;
+  box-shadow: 
+    0 6px 18px hsl(42 96% 44% / 0.32),
+    0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.login-submit-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px hsl(42 96% 44% / 0.2) !important;
+}
+
+.login-submit-btn svg {
+  transition: transform 0.2s ease !important;
+}
+
+.login-submit-btn:hover svg {
+  transform: translateX(4px) !important;
 }
 
 .pwa-install-banner {
