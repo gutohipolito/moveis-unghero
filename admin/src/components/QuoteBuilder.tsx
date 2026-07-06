@@ -11,6 +11,7 @@ import { Plus, Trash2, ShieldCheck, DollarSign, Calculator, Percent } from "luci
 
 interface QuoteBuilderProps {
   projectId: string;
+  companyId: string;
   onSuccess: (newQuote: any) => void;
   onCancel: () => void;
 }
@@ -63,7 +64,7 @@ const TEMPLATES = {
   }
 };
 
-export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBuilderProps) {
+export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel }: QuoteBuilderProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
   const [template, setTemplate] = useState<"CUSTOM" | "PREMIUM" | "ECONOMICO" | "CORPORATIVO">("PREMIUM");
@@ -82,13 +83,13 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
 
   useEffect(() => {
     async function loadInventory() {
-      const res = await getInventoryAndSuppliers("company-id-mock");
+      const res = await getInventoryAndSuppliers(companyId);
       if (res.success && res.inventory) {
         setInventory(res.inventory);
       }
     }
     loadInventory();
-  }, []);
+  }, [companyId]);
 
 
   // Carrega itens do template inicial
@@ -245,7 +246,7 @@ export default function QuoteBuilder({ projectId, onSuccess, onCancel }: QuoteBu
           }));
 
         if (itemsToDeduct.length > 0) {
-          const deductRes = await deductInventoryAction(itemsToDeduct);
+          const deductRes = await deductInventoryAction(companyId, itemsToDeduct);
           if (deductRes.success) {
             showSuccess(
               "Orçamento salvo",

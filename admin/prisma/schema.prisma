@@ -18,6 +18,8 @@ model Company {
   clients  Client[]
   catalogGroups CatalogGroup[]
   professionalPartners ProfessionalPartner[]
+  suppliers      Supplier[]
+  inventoryItems InventoryItem[]
 }
 
 model User {
@@ -410,4 +412,40 @@ model ProjectSlaState {
   nota_fiscal_emitida_em DateTime?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+}
+
+model Supplier {
+  id                 String          @id @default(uuid())
+  company_id         String
+  company            Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  nome               String
+  cnpj               String
+  telefone           String          @default("")
+  email              String          @default("")
+  principal_material String          @default("")
+  ativo              Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  inventoryItems     InventoryItem[]
+
+  @@index([company_id])
+}
+
+model InventoryItem {
+  id          String    @id @default(uuid())
+  company_id  String
+  company     Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  supplier_id String?
+  supplier    Supplier? @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
+  nome        String
+  categoria   String
+  quantidade  Int       @default(0)
+  minima      Int       @default(0)
+  preco_custo Decimal   @db.Decimal(12, 2)
+  ativo       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([company_id])
+  @@index([company_id, categoria])
 }

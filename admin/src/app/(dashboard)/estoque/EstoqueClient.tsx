@@ -178,7 +178,7 @@ export default function EstoqueClient({
     };
 
     if (editingSupplier) {
-      const res = await updateSupplierAction(editingSupplier.id, data);
+      const res = await updateSupplierAction(editingSupplier.id, companyId, data);
       if (res.success) {
         setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? { ...s, ...data } : s));
         setIsSupplierModalOpen(false);
@@ -189,7 +189,7 @@ export default function EstoqueClient({
       }
     } else {
       const res = await createSupplierAction({ ...data, company_id: companyId });
-      if (res.success) {
+      if (res.success && res.supplier) {
         setSuppliers([...suppliers, res.supplier]);
         setIsSupplierModalOpen(false);
         resetSupplierForm();
@@ -216,7 +216,7 @@ export default function EstoqueClient({
       message: `${nome} será removido. Os insumos vinculados ficarão sem fornecedor associado.`,
       confirmLabel: "Sim, remover",
       onConfirm: async () => {
-        const res = await deleteSupplierAction(id);
+        const res = await deleteSupplierAction(id, companyId);
         if (res.success) {
           setSuppliers(suppliers.filter(s => s.id !== id));
           setInventory(inventory.map(item => item.supplierId === id ? { ...item, supplierId: undefined, supplierName: "Sem Vínculo" } : item));
@@ -235,7 +235,7 @@ export default function EstoqueClient({
 
     const data = {
       nome: itemNome,
-      categoria: itemCategoria as InventoryItem["categoria"],
+      categoria: itemCategoria,
       quantidade: Number(itemQuantidade),
       minima: Number(itemMinima || 0),
       precoCusto: Number(itemPreco),
@@ -243,8 +243,8 @@ export default function EstoqueClient({
     };
 
     if (editingItem) {
-      const res = await updateInventoryItemAction(editingItem.id, data);
-      if (res.success) {
+      const res = await updateInventoryItemAction(editingItem.id, companyId, data);
+      if (res.success && res.item) {
         setInventory(inventory.map(i => i.id === editingItem.id ? { ...i, ...res.item } : i));
         setIsItemModalOpen(false);
         resetItemForm();
@@ -254,7 +254,7 @@ export default function EstoqueClient({
       }
     } else {
       const res = await createInventoryItemAction({ ...data, company_id: companyId });
-      if (res.success) {
+      if (res.success && res.item) {
         setInventory([...inventory, res.item]);
         setIsItemModalOpen(false);
         resetItemForm();
@@ -282,7 +282,7 @@ export default function EstoqueClient({
       message: `${nome} será removido permanentemente do controle de estoque.`,
       confirmLabel: "Sim, remover",
       onConfirm: async () => {
-        const res = await deleteInventoryItemAction(id);
+        const res = await deleteInventoryItemAction(id, companyId);
         if (res.success) {
           setInventory(inventory.filter(i => i.id !== id));
           showSuccess("Insumo removido", `${nome} foi excluído do estoque.`);

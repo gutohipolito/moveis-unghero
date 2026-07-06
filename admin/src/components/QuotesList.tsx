@@ -685,6 +685,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
               <div className="pt-2">
                 <QuoteBuilder 
                   projectId={selectedProjectId}
+                  companyId={companyId}
                   onSuccess={handleCreateSuccess}
                   onCancel={handleCancelCreate}
                 />

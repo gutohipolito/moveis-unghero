@@ -1209,6 +1209,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           {isCreatingQuote ? (
             <QuoteBuilder
               projectId={project.id}
+              companyId={companyId}
               onCancel={() => setIsCreatingQuote(false)}
               onSuccess={(newQuoteData) => {
                 const newQuote: Quote = {
