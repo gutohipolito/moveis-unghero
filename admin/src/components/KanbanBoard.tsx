@@ -93,8 +93,6 @@ const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
   { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica" },
   { id: "APROVADO", title: "Aprovados" },
   { id: "PRODUCAO", title: "Produção" },
-  { id: "INSTALACAO", title: "Instalação" },
-  { id: "FINALIZADO", title: "Finalizados" },
 ];
 
 /** Tema visual por etapa — cabeçalho colorido; cards filhos só com borda e sombra. */
@@ -192,6 +190,8 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
   INSTALACAO: "Instalação: Logística de transporte e montagem dos móveis no endereço do cliente.",
   FINALIZADO: "Finalizados: Conferência final pós-instalação, termo de encerramento assinado e entrega final realizada.",
 };
+
+const HelpCircleIcon = HelpCircle as any;
 
   const getProductionProgress = (projId: string, status: string) => {
     if (status === "FINALIZADO") return "Entregue e Finalizado 100%";
@@ -906,9 +906,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               {/* Cabeçalho da Coluna */}
               <div className={`p-3.5 ${theme.header} rounded-t-xl flex items-center justify-between border-b border-border/60`}>
                 <div className="flex items-center space-x-2 min-w-0">
-                  <span title={COLUMN_DESCRIPTIONS[col.id]} className="flex shrink-0">
-                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
-                  </span>
+                  <HelpCircleIcon 
+                    className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help shrink-0" 
+                    title={COLUMN_DESCRIPTIONS[col.id]}
+                  />
                   <span className="font-bold text-xs uppercase tracking-wide truncate">{col.title}</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                     {colProjects.length}
@@ -1556,9 +1557,20 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
                   className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
                 >
-                  {STATUS_OPTIONS.map(col => (
-                    <option key={col.id} value={col.id}>{col.title}</option>
-                  ))}
+                  {(() => {
+                    const opts = [...STATUS_OPTIONS];
+                    if (!opts.some(o => o.id === editingStatusGeral)) {
+                      const allStatuses: Record<string, string> = {
+                        INSTALACAO: "Instalação",
+                        FINALIZADO: "Finalizados",
+                        PERDIDO: "Perdido"
+                      };
+                      opts.push({ id: editingStatusGeral, title: allStatuses[editingStatusGeral] || editingStatusGeral });
+                    }
+                    return opts.map(col => (
+                      <option key={col.id} value={col.id}>{col.title}</option>
+                    ));
+                  })()}
                 </select>
               </div>
             </div>
