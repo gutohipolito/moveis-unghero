@@ -107,52 +107,52 @@ const STAGE_THEME: Record<
   }
 > = {
   LEAD: {
-    header: "border-t-[3px] border-t-amber-500 bg-gradient-to-b from-amber-500/15 to-transparent text-amber-900",
-    cardBorder: "border-amber-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(245,158,11,0.45)]",
-    cardHover: "hover:border-amber-500/75 hover:shadow-[0_4px_14px_-3px_rgba(245,158,11,0.5)]",
-    dropRing: "ring-amber-500/35",
+    header: "border-t-[3px] border-t-blue-500 bg-gradient-to-b from-blue-500/15 to-transparent text-blue-900",
+    cardBorder: "border-blue-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(59,130,246,0.3)]",
+    cardHover: "hover:border-blue-500/75 hover:shadow-[0_4px_14px_-3px_rgba(59,130,246,0.4)]",
+    dropRing: "ring-blue-500/35",
   },
   ORCAMENTO: {
-    header: "border-t-[3px] border-t-orange-500 bg-gradient-to-b from-orange-500/15 to-transparent text-orange-900",
-    cardBorder: "border-orange-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(249,115,22,0.45)]",
-    cardHover: "hover:border-orange-500/75 hover:shadow-[0_4px_14px_-3px_rgba(249,115,22,0.5)]",
-    dropRing: "ring-orange-500/35",
+    header: "border-t-[3px] border-t-amber-500 bg-gradient-to-b from-amber-500/15 to-transparent text-amber-900",
+    cardBorder: "border-amber-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(245,158,11,0.35)]",
+    cardHover: "hover:border-amber-500/75 hover:shadow-[0_4px_14px_-3px_rgba(245,158,11,0.45)]",
+    dropRing: "ring-amber-500/35",
   },
   NEGOCIACAO: {
-    header: "border-t-[3px] border-t-sky-500 bg-gradient-to-b from-sky-500/15 to-transparent text-sky-900",
-    cardBorder: "border-sky-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(14,165,233,0.45)]",
-    cardHover: "hover:border-sky-500/75 hover:shadow-[0_4px_14px_-3px_rgba(14,165,233,0.5)]",
-    dropRing: "ring-sky-500/35",
+    header: "border-t-[3px] border-t-orange-500 bg-gradient-to-b from-orange-500/15 to-transparent text-orange-900",
+    cardBorder: "border-orange-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(249,115,22,0.35)]",
+    cardHover: "hover:border-orange-500/75 hover:shadow-[0_4px_14px_-3px_rgba(249,115,22,0.45)]",
+    dropRing: "ring-orange-500/35",
   },
   CONFERENCIA_TECNICA: {
-    header: "border-t-[3px] border-t-violet-500 bg-gradient-to-b from-violet-500/15 to-transparent text-violet-900",
-    cardBorder: "border-violet-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(139,92,246,0.45)]",
-    cardHover: "hover:border-violet-500/75 hover:shadow-[0_4px_14px_-3px_rgba(139,92,246,0.5)]",
-    dropRing: "ring-violet-500/35",
+    header: "border-t-[3px] border-t-purple-500 bg-gradient-to-b from-purple-500/15 to-transparent text-purple-900",
+    cardBorder: "border-purple-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(168,85,247,0.35)]",
+    cardHover: "hover:border-purple-500/75 hover:shadow-[0_4px_14px_-3px_rgba(168,85,247,0.45)]",
+    dropRing: "ring-purple-500/35",
   },
   APROVADO: {
     header: "border-t-[3px] border-t-emerald-500 bg-gradient-to-b from-emerald-500/15 to-transparent text-emerald-900",
-    cardBorder: "border-emerald-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(16,185,129,0.45)]",
-    cardHover: "hover:border-emerald-500/75 hover:shadow-[0_4px_14px_-3px_rgba(16,185,129,0.5)]",
+    cardBorder: "border-emerald-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(16,185,129,0.35)]",
+    cardHover: "hover:border-emerald-500/75 hover:shadow-[0_4px_14px_-3px_rgba(16,185,129,0.45)]",
     dropRing: "ring-emerald-500/35",
   },
   PRODUCAO: {
-    header: "border-t-[3px] border-t-teal-500 bg-gradient-to-b from-teal-500/15 to-transparent text-teal-900",
-    cardBorder: "border-teal-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(20,184,166,0.45)]",
-    cardHover: "hover:border-teal-500/75 hover:shadow-[0_4px_14px_-3px_rgba(20,184,166,0.5)]",
-    dropRing: "ring-teal-500/35",
+    header: "border-t-[3px] border-t-cyan-500 bg-gradient-to-b from-cyan-500/15 to-transparent text-cyan-900",
+    cardBorder: "border-cyan-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(6,182,212,0.35)]",
+    cardHover: "hover:border-cyan-500/75 hover:shadow-[0_4px_14px_-3px_rgba(6,182,212,0.45)]",
+    dropRing: "ring-cyan-500/35",
   },
   INSTALACAO: {
     header: "border-t-[3px] border-t-indigo-500 bg-gradient-to-b from-indigo-500/15 to-transparent text-indigo-900",
-    cardBorder: "border-indigo-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(99,102,241,0.45)]",
-    cardHover: "hover:border-indigo-500/75 hover:shadow-[0_4px_14px_-3px_rgba(99,102,241,0.5)]",
+    cardBorder: "border-indigo-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(99,102,241,0.35)]",
+    cardHover: "hover:border-indigo-500/75 hover:shadow-[0_4px_14px_-3px_rgba(99,102,241,0.45)]",
     dropRing: "ring-indigo-500/35",
   },
   FINALIZADO: {
@@ -164,8 +164,8 @@ const STAGE_THEME: Record<
   },
   PERDIDO: {
     header: "border-t-[3px] border-t-rose-500 bg-gradient-to-b from-rose-500/15 to-transparent text-rose-900",
-    cardBorder: "border-rose-500/50",
-    cardShadow: "shadow-[0_2px_10px_-4px_rgba(244,63,94,0.4)]",
+    cardBorder: "border-rose-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(244,63,94,0.35)]",
     cardHover: "hover:border-rose-500/75 hover:shadow-[0_4px_14px_-3px_rgba(244,63,94,0.45)]",
     dropRing: "ring-rose-500/35",
   },
@@ -191,7 +191,7 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
   FINALIZADO: "Finalizados: Conferência final pós-instalação, termo de encerramento assinado e entrega final realizada.",
 };
 
-const HelpCircleIcon = HelpCircle as any;
+
 
   const getProductionProgress = (projId: string, status: string) => {
     if (status === "FINALIZADO") return "Entregue e Finalizado 100%";
@@ -906,10 +906,14 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               {/* Cabeçalho da Coluna */}
               <div className={`p-3.5 ${theme.header} rounded-t-xl flex items-center justify-between border-b border-border/60`}>
                 <div className="flex items-center space-x-2 min-w-0">
-                  <HelpCircleIcon 
-                    className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help shrink-0" 
-                    title={COLUMN_DESCRIPTIONS[col.id]}
-                  />
+                  <div className="relative group/tooltip flex items-center shrink-0">
+                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
+                    <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-100 text-[11px] rounded-lg shadow-xl border border-slate-800 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto transition-all duration-200 z-50 leading-relaxed font-normal normal-case translate-y-1 group-hover/tooltip:translate-y-0">
+                      {COLUMN_DESCRIPTIONS[col.id]}
+                      {/* Seta indicadora do balão */}
+                      <div className="absolute top-full left-4 -mt-1 border-[5px] border-transparent border-t-slate-950"></div>
+                    </div>
+                  </div>
                   <span className="font-bold text-xs uppercase tracking-wide truncate">{col.title}</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                     {colProjects.length}
