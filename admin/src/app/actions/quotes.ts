@@ -3,6 +3,7 @@
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureActorUserId } from "@/lib/currentUser";
+import { getSessionCompanyId } from "@/lib/session";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -159,10 +160,15 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
   }
 }
 
-// Busca todos os orçamentos do sistema
+// Busca orçamentos da empresa do usuário logado
 export async function getQuotes() {
+  const companyId = await getSessionCompanyId();
+
   try {
     const quotes = await prisma.quote.findMany({
+      where: {
+        project: { client: { company_id: companyId } },
+      },
       include: {
         project: {
           include: {

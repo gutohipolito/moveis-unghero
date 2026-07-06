@@ -63,6 +63,17 @@ export function isNavItemActive(pathname: string, href: string): boolean {
   return true;
 }
 
+const HEAVY_ROUTES = new Set([
+  "/crm",
+  "/bi",
+  "/factory",
+  "/financeiro",
+  "/clientes",
+  "/quotes",
+  "/estoque",
+  "/logistica",
+]);
+
 interface SidebarNavProps {
   onNavigate?: () => void;
   compact?: boolean;
@@ -89,6 +100,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={!HEAVY_ROUTES.has(item.href)}
                     onClick={onNavigate}
                     className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""}`}
                   >

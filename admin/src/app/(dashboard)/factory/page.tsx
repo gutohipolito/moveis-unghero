@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getColaboradores } from "@/app/actions/colaboradores";
-import { getCompanySlaStates, ensureProjectSla } from "@/app/actions/productionSla";
+import { getCompanySlaStates } from "@/app/actions/productionSla";
 import { getSessionCompanyId } from "@/lib/session";
 import FactoryClient from "./FactoryClient";
 import PageHeader from "@/components/PageHeader";
@@ -14,7 +14,40 @@ export default async function FactoryPage({
   const params = await searchParams;
   const userCompanyId = await getSessionCompanyId();
 
-  const colaboradoresRes = await getColaboradores(userCompanyId);
+  const [colaboradoresRes, environments, slaStates] = await Promise.all([
+    getColaboradores(userCompanyId),
+    prisma.environment
+      .findMany({
+        where: {
+          project: {
+            client: { company_id: userCompanyId },
+            files: { some: { aprovado_producao: true } },
+          },
+        },
+        select: {
+          id: true,
+          nome: true,
+          tipo: true,
+          status: true,
+          responsavel_id: true,
+          ajudante_id: true,
+          project: {
+            select: {
+              id: true,
+              client: { select: { nome: true } },
+            },
+          },
+          responsavel: { select: { name: true } },
+          ajudante: { select: { name: true } },
+        },
+      })
+      .catch((error) => {
+        console.warn("Falha de conexão com banco de dados no chão de fábrica.", error);
+        return [];
+      }),
+    getCompanySlaStates(userCompanyId),
+  ]);
+
   const colaboradores =
     colaboradoresRes.success && colaboradoresRes.colaboradores
       ? colaboradoresRes.colaboradores.map((c: { id: string; name: string; cargo: string }) => ({
@@ -23,25 +56,6 @@ export default async function FactoryPage({
           cargo: c.cargo,
         }))
       : [];
-
-  let environments: any[] = [];
-  try {
-    environments = await prisma.environment.findMany({
-      where: {
-        project: {
-          client: { company_id: userCompanyId },
-          files: { some: { aprovado_producao: true } },
-        },
-      },
-      include: {
-        project: { include: { client: true } },
-        responsavel: true,
-        ajudante: true,
-      },
-    });
-  } catch (error) {
-    console.warn("Falha de conexão com banco de dados no chão de fábrica.", error);
-  }
 
   const formattedEnvs = environments.map((e) => ({
     id: e.id,
@@ -56,10 +70,6 @@ export default async function FactoryPage({
     ajudanteNome: e.ajudante?.name || null,
   }));
 
-  const uniqueProjectIds = [...new Set(formattedEnvs.map((e) => e.projectId).filter(Boolean))];
-  await Promise.all(uniqueProjectIds.map((id) => ensureProjectSla(id)));
-
-  const slaStates = await getCompanySlaStates(userCompanyId);
   const slaByProject: Record<string, ProjectSlaView> = {};
   for (const sla of slaStates) {
     slaByProject[sla.projectId] = sla;

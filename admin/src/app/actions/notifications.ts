@@ -19,19 +19,23 @@ export async function getNotifications(companyId: string): Promise<{
   }
 
   try {
-    const projects = await prisma.project.findMany({
-      where: {
-        status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
-        client: { company_id: companyId },
-      },
-      select: {
-        id: true,
-        status_geral: true,
-        ultimo_contato_em: true,
-        createdAt: true,
-        client: { select: { nome: true } },
-      },
-    });
+    const [projects, slaAlerts, invoicePending] = await Promise.all([
+      prisma.project.findMany({
+        where: {
+          status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
+          client: { company_id: companyId },
+        },
+        select: {
+          id: true,
+          status_geral: true,
+          ultimo_contato_em: true,
+          createdAt: true,
+          client: { select: { nome: true } },
+        },
+      }),
+      getSlaAlertProjects(companyId),
+      getInvoicePendingProjects(companyId),
+    ]);
 
     const followUp = buildFollowUpNotifications(
       projects.map((p) => ({
@@ -43,7 +47,6 @@ export async function getNotifications(companyId: string): Promise<{
       }))
     );
 
-    const slaAlerts = await getSlaAlertProjects(companyId);
     const slaNotifications = buildSlaNotifications(
       slaAlerts.map((s) => ({
         ...s,
@@ -51,7 +54,6 @@ export async function getNotifications(companyId: string): Promise<{
       }))
     );
 
-    const invoicePending = await getInvoicePendingProjects(companyId);
     const invoiceNotifications = buildInvoiceNotifications(
       invoicePending.map((p) => ({ id: p.id, client: p.client }))
     );

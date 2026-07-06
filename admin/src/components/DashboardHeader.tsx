@@ -62,33 +62,37 @@ export default function DashboardHeader({
 
   useEffect(() => {
     let cancelled = false;
+    let refreshTimer: ReturnType<typeof setInterval> | undefined;
 
-    async function loadWeather() {
-      try {
-        const url = new URL("https://api.open-meteo.com/v1/forecast");
-        url.searchParams.set("latitude", String(FARROUPILHA.lat));
-        url.searchParams.set("longitude", String(FARROUPILHA.lon));
-        url.searchParams.set("current", "temperature_2m");
-        url.searchParams.set("timezone", TIMEZONE);
+    const loadWeather = () => {
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.searchParams.set("latitude", String(FARROUPILHA.lat));
+      url.searchParams.set("longitude", String(FARROUPILHA.lon));
+      url.searchParams.set("current", "temperature_2m");
+      url.searchParams.set("timezone", TIMEZONE);
 
-        const res = await fetch(url.toString());
-        if (!res.ok) return;
+      fetch(url.toString())
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const temp = data?.current?.temperature_2m;
+          if (!cancelled && typeof temp === "number") {
+            setTemperature(Math.round(temp));
+          }
+        })
+        .catch(() => {
+          // Falha silenciosa
+        });
+    };
 
-        const data = await res.json();
-        const temp = data?.current?.temperature_2m;
-        if (!cancelled && typeof temp === "number") {
-          setTemperature(Math.round(temp));
-        }
-      } catch {
-        // Falha silenciosa
-      }
-    }
+    const startTimer = window.setTimeout(() => {
+      loadWeather();
+      refreshTimer = setInterval(loadWeather, 30 * 60_000);
+    }, 2500);
 
-    loadWeather();
-    const refresh = setInterval(loadWeather, 30 * 60_000);
     return () => {
       cancelled = true;
-      clearInterval(refresh);
+      window.clearTimeout(startTimer);
+      if (refreshTimer) clearInterval(refreshTimer);
     };
   }, []);
 

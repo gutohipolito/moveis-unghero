@@ -25,7 +25,6 @@ export type Origin =
 
 function revalidateCrmPaths() {
   revalidatePath("/crm");
-  revalidatePath("/", "layout");
 }
 
 export async function updateProjectStatus(projectId: string, newStatus: ProjectStatus) {

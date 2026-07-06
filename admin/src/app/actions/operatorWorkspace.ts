@@ -1,7 +1,6 @@
 "use server";
 
 import { headers } from "next/headers";
-import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { getSessionSafe } from "@/lib/auth";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
@@ -50,8 +49,44 @@ function mapReminder(row: {
   };
 }
 
-function revalidateDashboard() {
-  revalidatePath("/", "layout");
+export async function getOperatorNotesForUser(
+  userId: string,
+  companyId: string
+): Promise<{ success: boolean; notes: OperatorNote[] }> {
+  if (isDatabaseOffline()) {
+    return { success: false, notes: [] };
+  }
+
+  try {
+    const rows = await prisma.operatorNote.findMany({
+      where: { user_id: userId, company_id: companyId },
+      orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
+    });
+    return { success: true, notes: rows.map(mapNote) };
+  } catch (error) {
+    console.error("Erro ao buscar notas:", error);
+    return { success: false, notes: [] };
+  }
+}
+
+export async function getOperatorRemindersForUser(
+  userId: string,
+  companyId: string
+): Promise<{ success: boolean; reminders: OperatorReminder[] }> {
+  if (isDatabaseOffline()) {
+    return { success: false, reminders: [] };
+  }
+
+  try {
+    const rows = await prisma.operatorReminder.findMany({
+      where: { user_id: userId, company_id: companyId },
+      orderBy: [{ done: "asc" }, { due_at: "asc" }],
+    });
+    return { success: true, reminders: rows.map(mapReminder) };
+  } catch (error) {
+    console.error("Erro ao buscar lembretes:", error);
+    return { success: false, reminders: [] };
+  }
 }
 
 export async function getOperatorNotes(): Promise<{
@@ -64,11 +99,7 @@ export async function getOperatorNotes(): Promise<{
 
   try {
     const { userId, companyId } = await requireUser();
-    const rows = await prisma.operatorNote.findMany({
-      where: { user_id: userId, company_id: companyId },
-      orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
-    });
-    return { success: true, notes: rows.map(mapNote) };
+    return getOperatorNotesForUser(userId, companyId);
   } catch (error) {
     console.error("Erro ao buscar notas:", error);
     return { success: false, notes: [] };
@@ -98,7 +129,6 @@ export async function createOperatorNote(content: string): Promise<{
         content: trimmed,
       },
     });
-    revalidateDashboard();
     return { success: true, note: mapNote(row) };
   } catch (error) {
     console.error("Erro ao criar nota:", error);
@@ -116,7 +146,6 @@ export async function deleteOperatorNote(id: string): Promise<{ success: boolean
     await prisma.operatorNote.deleteMany({
       where: { id, user_id: userId },
     });
-    revalidateDashboard();
     return { success: true };
   } catch (error) {
     console.error("Erro ao excluir nota:", error);
@@ -140,7 +169,6 @@ export async function toggleOperatorNotePin(id: string): Promise<{ success: bool
       where: { id },
       data: { pinned: !existing.pinned },
     });
-    revalidateDashboard();
     return { success: true };
   } catch (error) {
     console.error("Erro ao fixar nota:", error);
@@ -158,11 +186,7 @@ export async function getOperatorReminders(): Promise<{
 
   try {
     const { userId, companyId } = await requireUser();
-    const rows = await prisma.operatorReminder.findMany({
-      where: { user_id: userId, company_id: companyId },
-      orderBy: [{ done: "asc" }, { due_at: "asc" }],
-    });
-    return { success: true, reminders: rows.map(mapReminder) };
+    return getOperatorRemindersForUser(userId, companyId);
   } catch (error) {
     console.error("Erro ao buscar lembretes:", error);
     return { success: false, reminders: [] };
@@ -197,7 +221,6 @@ export async function createOperatorReminder(
         due_at: dueAt,
       },
     });
-    revalidateDashboard();
     return { success: true, reminder: mapReminder(row) };
   } catch (error) {
     console.error("Erro ao criar lembrete:", error);
@@ -221,7 +244,6 @@ export async function toggleOperatorReminderDone(id: string): Promise<{ success:
       where: { id },
       data: { done: !existing.done },
     });
-    revalidateDashboard();
     return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar lembrete:", error);
@@ -239,7 +261,6 @@ export async function deleteOperatorReminder(id: string): Promise<{ success: boo
     await prisma.operatorReminder.deleteMany({
       where: { id, user_id: userId },
     });
-    revalidateDashboard();
     return { success: true };
   } catch (error) {
     console.error("Erro ao excluir lembrete:", error);

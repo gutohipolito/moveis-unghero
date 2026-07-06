@@ -1,40 +1,27 @@
-import { headers } from "next/headers";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getSessionSafe } from "@/lib/auth";
+import { getCachedSession } from "@/lib/session";
+import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
-import SidebarToggle from "@/components/SidebarToggle";
 import SidebarNav from "@/components/SidebarNav";
-import DashboardHeader from "@/components/DashboardHeader";
-import MobileTopBar from "@/components/MobileTopBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import { getNotifications } from "@/app/actions/notifications";
-import {
-  getOperatorNotes,
-  getOperatorReminders,
-} from "@/app/actions/operatorWorkspace";
+import DashboardHeaderSlot from "@/components/DashboardHeaderSlot";
+import HeaderSkeleton from "@/components/HeaderSkeleton";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSessionSafe(await headers());
+  const session = await getCachedSession();
 
   if (!session?.user) {
     redirect("/login");
   }
 
   const user = session.user;
-  const companyId = user.company_id || "mock-company-id";
-  const notificationsRes = await getNotifications(companyId);
-  const notifications = notificationsRes.notifications;
-  const [notesRes, remindersRes] = await Promise.all([
-    getOperatorNotes(),
-    getOperatorReminders(),
-  ]);
-  const notes = notesRes.notes;
-  const reminders = remindersRes.reminders;
+  const companyId = user.company_id || DEFAULT_COMPANY_ID;
 
   return (
     <PrivacyProvider>
@@ -56,26 +43,18 @@ export default async function DashboardLayout({
         </aside>
 
         <div className="flex flex-col flex-1 md:pl-[17.5rem] lg:pl-[19rem] min-w-0">
-          <MobileTopBar
-            user={{
-              ...user,
-              email: user.email ?? "",
-            }}
-            companyId={companyId}
-            initialNotifications={notifications}
-            initialNotes={notes}
-            initialReminders={reminders}
-          />
-
-          <div className="hidden md:block">
-            <DashboardHeader
-              user={user}
+          <Suspense fallback={<HeaderSkeleton />}>
+            <DashboardHeaderSlot
+              user={{
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                image: user.image,
+                cargo: user.cargo,
+              }}
               companyId={companyId}
-              initialNotifications={notifications}
-              initialNotes={notes}
-              initialReminders={reminders}
             />
-          </div>
+          </Suspense>
 
           <main className="flex-1 px-[var(--space-4)] py-[var(--space-4)] sm:px-[var(--space-5)] md:px-[var(--space-6)] md:py-[var(--space-6)] overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-[var(--space-6)]">
             <div className="w-full space-y-[var(--space-5)]">{children}</div>

@@ -5,22 +5,42 @@ import KanbanBoard from "@/components/KanbanBoard";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 
+const PROJECT_SELECT = {
+  id: true,
+  valor_previsto: true,
+  status_geral: true,
+  ultimo_contato_em: true,
+  createdAt: true,
+  motivo_perda: true,
+  client: {
+    select: {
+      id: true,
+      nome: true,
+      cidade: true,
+      origem: true,
+      telefone: true,
+      email: true,
+    },
+  },
+} as const;
+
 export default async function CRMPage() {
   const userCompanyId = await getSessionCompanyId();
 
-  let projects: any[] = [];
-  try {
-    projects = await prisma.project.findMany({
-      where: {
-        client: { company_id: userCompanyId },
-      },
-      include: { client: true },
-    });
-  } catch (error) {
-    console.warn("Conexão ao banco falhou no carregamento do CRM.", error);
-  }
+  const [projectsResult, clientResponse] = await Promise.all([
+    prisma.project
+      .findMany({
+        where: { client: { company_id: userCompanyId } },
+        select: PROJECT_SELECT,
+      })
+      .catch((error) => {
+        console.warn("Conexão ao banco falhou no carregamento do CRM.", error);
+        return [];
+      }),
+    getClients(userCompanyId),
+  ]);
 
-  const formattedProjects = projects.map((p) => ({
+  const formattedProjects = projectsResult.map((p) => ({
     id: p.id,
     valor_previsto: Number(p.valor_previsto),
     status_geral: p.status_geral,
@@ -29,17 +49,9 @@ export default async function CRMPage() {
       : null,
     createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : null,
     motivo_perda: p.motivo_perda || null,
-    client: {
-      id: p.client.id,
-      nome: p.client.nome,
-      cidade: p.client.cidade,
-      origem: p.client.origem,
-      telefone: p.client.telefone,
-      email: p.client.email,
-    },
+    client: p.client,
   }));
 
-  const clientResponse = await getClients(userCompanyId);
   const clientsList = clientResponse.success ? clientResponse.clients : [];
 
   return (
