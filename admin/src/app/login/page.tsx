@@ -41,18 +41,16 @@ export default function LoginPage() {
   return (
     <div className="login-shell">
       <div className="login-brand-panel">
-        <div className="login-brand-content relative z-10 m-auto">
+        <div className="login-brand-content relative z-10">
           <h1 className="login-brand-title">Feito com afeto.<br />Gerido com precisão.</h1>
         </div>
-        <div className="relative z-10 text-center">
-          <span className="login-brand-badge">
-            Farroupilha · RS · desde 2006
-          </span>
-        </div>
+        <p className="text-sm text-white/60 relative z-10 font-medium tracking-wide">
+          Farroupilha · RS · desde 2006
+        </p>
       </div>
 
       <div className="login-form-panel">
-        <div className="flex flex-col items-center w-full max-w-[25rem]">
+        <div className="relative z-10 flex flex-col items-center w-full max-w-[25rem]">
           <img src="/logo.png" alt="Móveis Unghero" className="login-form-logo h-12 w-auto mb-8" />
           
           <div className="login-card">
