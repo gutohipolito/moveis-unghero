@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
+import FactoryEnvironmentDetailModal from "@/components/FactoryEnvironmentDetailModal";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import {
   Layers,
@@ -184,7 +185,9 @@ export default function FactoryClient({
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [slaByProject, setSlaByProject] = useState(initialSlaByProject);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [didDrag, setDidDrag] = useState(false);
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
+  const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
   const [slaModal, setSlaModal] = useState<{
     projectId: string;
     stageKey: string;
@@ -286,6 +289,12 @@ export default function FactoryClient({
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("text/plain", id);
     setDraggedId(id);
+    setDidDrag(false);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    window.setTimeout(() => setDidDrag(false), 0);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -302,8 +311,57 @@ export default function FactoryClient({
 
     setEnvironments(environments.map((env) => (env.id === id ? { ...env, status: targetStatus } : env)));
     setDraggedId(null);
+    setDidDrag(true);
+    if (detailItem?.id === id) {
+      setDetailItem({ ...detailItem, status: targetStatus });
+    }
 
     await updateEnvironmentStatus(item.projectId, item.id, targetStatus as any);
+  };
+
+  const handleCardClick = (item: EnvironmentItem) => {
+    if (didDrag || draggedId) return;
+    setDetailItem(item);
+  };
+
+  const handleProductionStatusChange = async (envId: string, status: string) => {
+    const item = environments.find((e) => e.id === envId);
+    if (!item || item.status === status) return;
+
+    setEnvironments(
+      environments.map((env) => (env.id === envId ? { ...env, status } : env))
+    );
+    if (detailItem?.id === envId) {
+      setDetailItem({ ...detailItem, status });
+    }
+
+    await updateEnvironmentStatus(item.projectId, envId, status as Parameters<typeof updateEnvironmentStatus>[2]);
+  };
+
+  const handleDetailResponsavelChange = async (environmentId: string, responsavelId: string) => {
+    await handleResponsavelChange(environmentId, responsavelId);
+    const cleanId = responsavelId === "none" ? null : responsavelId;
+    const selected = colaboradores.find((c) => c.id === cleanId);
+    if (detailItem?.id === environmentId) {
+      setDetailItem({
+        ...detailItem,
+        responsavelId: cleanId,
+        responsavelNome: selected?.name ?? null,
+      });
+    }
+  };
+
+  const handleDetailAjudanteChange = async (environmentId: string, ajudanteId: string) => {
+    await handleAjudanteChange(environmentId, ajudanteId);
+    const cleanId = ajudanteId === "none" ? null : ajudanteId;
+    const selected = colaboradores.find((c) => c.id === cleanId);
+    if (detailItem?.id === environmentId) {
+      setDetailItem({
+        ...detailItem,
+        ajudanteId: cleanId,
+        ajudanteNome: selected?.name ?? null,
+      });
+    }
   };
 
   const handleMoveRight = async (item: EnvironmentItem) => {
@@ -329,6 +387,11 @@ export default function FactoryClient({
         <KpiCard label="Em montagem" value={`${emMontagemCount} peças`} icon={Wrench} accent="warning" />
         <KpiCard label="Pronto p/ expedição" value={`${prontoEntregaCount} cômodos`} icon={Package} accent="success" />
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Arraste entre colunas para a <strong className="font-semibold text-foreground">etapa de produção</strong> do cômodo.
+        Clique no card para ver e editar equipe, etapa de fábrica e <strong className="font-semibold text-foreground">radar de prazos (SLA)</strong> do projeto.
+      </p>
 
       <div
         className={`kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-stretch min-h-0 ${KANBAN_BOARD_HEIGHT}`}
@@ -389,7 +452,9 @@ export default function FactoryClient({
                       key={item.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, item.id)}
-                      className={`glass-card glass-card-hover overflow-hidden border-border/80 active:scale-[0.98] transition-all duration-200 cursor-grab active:cursor-grabbing relative group ${
+                      onDragEnd={handleDragEnd}
+                      onClick={() => handleCardClick(item)}
+                      className={`glass-card glass-card-hover overflow-hidden border-border/80 active:scale-[0.98] transition-all duration-200 cursor-pointer relative group ${
                         draggedId === item.id ? "opacity-40 scale-[0.98]" : ""
                       }`}
                     >
@@ -402,7 +467,10 @@ export default function FactoryClient({
                               {ENVIRONMENT_ICONS[item.tipo] || "🪵"}{" "}
                               {TIPO_LABELS[item.tipo] || item.tipo}
                             </span>
-                            <h4 className="font-bold text-sm text-foreground leading-snug">{item.nome}</h4>
+                            <h4 className="font-bold text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
+                              {item.nome}
+                            </h4>
+                            <p className="text-[10px] text-muted-foreground/80">Clique para detalhes</p>
                           </div>
 
                           <div className="flex items-center gap-0.5 shrink-0">
@@ -538,6 +606,29 @@ export default function FactoryClient({
           onSuccess={handleSlaSuccess}
         />
       )}
+
+      <FactoryEnvironmentDetailModal
+        item={detailItem}
+        sla={detailItem?.projectId ? slaByProject[detailItem.projectId] ?? null : null}
+        productionColumns={COLUMNS.map((c) => ({ id: c.id, name: c.name }))}
+        colaboradores={colaboradores}
+        siblingEnvironments={
+          detailItem
+            ? environments.filter((e) => e.projectId === detailItem.projectId)
+            : []
+        }
+        onClose={() => setDetailItem(null)}
+        onProductionStatusChange={handleProductionStatusChange}
+        onResponsavelChange={handleDetailResponsavelChange}
+        onAjudanteChange={handleDetailAjudanteChange}
+        onSlaUpdated={(projectId, updated) => {
+          setSlaByProject((prev) => ({ ...prev, [projectId]: updated }));
+        }}
+        onOpenSlaVerify={(projectId) => {
+          setDetailItem(null);
+          openSlaVerify(projectId);
+        }}
+      />
     </div>
   );
 }

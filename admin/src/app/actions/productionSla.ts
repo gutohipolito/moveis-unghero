@@ -195,6 +195,57 @@ export async function verifySlaStage(
   return { success: true, sla: updated ?? undefined };
 }
 
+export async function updateProjectSlaStage(
+  projectId: string,
+  stageKey: ProductionSlaStageKey
+): Promise<{ success: boolean; sla?: ProjectSlaView; error?: string }> {
+  const config = getStageConfig(stageKey);
+  await ensureProjectSla(projectId);
+
+  const stageIdx = PRODUCTION_SLA_STAGES.findIndex((s) => s.key === stageKey);
+  const completedStages = PRODUCTION_SLA_STAGES.slice(0, stageIdx).map((s) => s.key);
+
+  if (isDatabaseOffline()) {
+    const existing = MOCK_SLA.get(projectId);
+    if (existing) {
+      MOCK_SLA.set(projectId, {
+        ...existing,
+        currentStage: stageKey,
+        stageStartedAt: new Date().toISOString(),
+        extensionDays: 0,
+        completedStages: completedStages as ProductionSlaStageKey[],
+      });
+    }
+  } else {
+    try {
+      await prisma.projectSlaState.update({
+        where: { project_id: projectId },
+        data: {
+          current_stage: stageKey,
+          stage_started_at: new Date(),
+          extension_days: 0,
+          completed_stages: completedStages,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar etapa SLA:", error);
+      return { success: false, error: "Não foi possível atualizar a etapa de SLA." };
+    }
+  }
+
+  await logProjectTimeline(
+    projectId,
+    `Etapa de SLA definida manualmente para "${config.name}" (prazo: ${config.slaDays} dias, independente).`,
+    true
+  );
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/factory");
+
+  const updated = await getProjectSla(projectId);
+  return { success: true, sla: updated ?? undefined };
+}
+
 export async function markNotaFiscalEmitida(projectId: string) {
   if (isDatabaseOffline()) {
     const sla = MOCK_SLA.get(projectId);
