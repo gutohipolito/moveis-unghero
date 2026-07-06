@@ -17,36 +17,9 @@ export interface ParceiroDTO {
   createdAt: Date;
 }
 
-const MOCK_PARCEIROS: ParceiroDTO[] = [
-  {
-    id: "par-1",
-    nome: "Ana Paula Mendes",
-    tipo: "ARQUITETO",
-    email: "ana@studioam.com.br",
-    telefone: "(54) 99988-7766",
-    cidade: "Caxias do Sul",
-    escritorio: "Studio AM Arquitetura",
-    observacoes: "Parceira recorrente — projetos residenciais alto padrão.",
-    ativo: true,
-    createdAt: new Date("2025-03-10"),
-  },
-  {
-    id: "par-2",
-    nome: "Ricardo Fontana",
-    tipo: "PROJETISTA",
-    email: "ricardo@fontanaprojetos.com",
-    telefone: "(54) 99123-4567",
-    cidade: "Bento Gonçalves",
-    escritorio: "Fontana Projetos",
-    observacoes: null,
-    ativo: true,
-    createdAt: new Date("2025-06-02"),
-  },
-];
-
 export async function getParceiros(companyId: string) {
   if (isDatabaseOffline()) {
-    return { success: true as const, parceiros: MOCK_PARCEIROS };
+    return { success: false as const, error: "Banco de dados indisponível.", parceiros: [] as ParceiroDTO[] };
   }
 
   try {
@@ -58,7 +31,7 @@ export async function getParceiros(companyId: string) {
     return { success: true as const, parceiros };
   } catch (error) {
     console.error("Erro ao buscar parceiros:", error);
-    return { success: false as const, error: "Falha ao carregar parceiros.", parceiros: MOCK_PARCEIROS };
+    return { success: false as const, error: "Falha ao carregar parceiros.", parceiros: [] as ParceiroDTO[] };
   }
 }
 

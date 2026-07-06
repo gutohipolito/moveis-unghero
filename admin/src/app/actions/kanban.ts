@@ -42,7 +42,7 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
     return { success: true };
   } catch (error) {
     console.warn("Falha ao atualizar status no banco (usando modo simulação):", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o status do projeto." };
   }
 }
 
@@ -58,7 +58,7 @@ export async function markProjectContacted(projectId: string) {
     return { success: true, ultimo_contato_em: now.toISOString() };
   } catch (error) {
     console.warn("Falha ao registrar contato:", error);
-    return { success: true, simulated: true, ultimo_contato_em: new Date().toISOString() };
+    return { success: false, error: "Não foi possível registrar o contato.", ultimo_contato_em: null };
   }
 }
 
@@ -76,7 +76,7 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
     return { success: true };
   } catch (error) {
     console.warn("Falha ao marcar perda:", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o status do projeto." };
   }
 }
 
@@ -95,7 +95,7 @@ export async function restoreProjectFromLoss(projectId: string, newStatus: Proje
     return { success: true };
   } catch (error) {
     console.warn("Falha ao reativar lead:", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o status do projeto." };
   }
 }
 
@@ -186,22 +186,8 @@ export async function createLead(formData: {
     revalidateCrmPaths();
     return { success: true, data: result };
   } catch (error) {
-    console.warn("Falha ao criar lead no banco (usando modo simulação):", error);
-    return {
-      success: true,
-      simulated: true,
-      data: {
-        client: { id: "simulated-client-id", ...formData },
-        project: {
-          id: "simulated-project-id",
-          client_id: "simulated-client-id",
-          valor_previsto: formData.valor_previsto,
-          status_geral: formData.status_geral || "LEAD",
-          ultimo_contato_em: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-      },
-    };
+    console.warn("Falha ao criar lead no banco:", error);
+    return { success: false, error: "Não foi possível criar o lead." };
   }
 }
 
@@ -263,6 +249,6 @@ export async function updateProjectAction(
     return { success: true, project };
   } catch (error) {
     console.warn("Falha ao editar projeto no banco (usando modo simulação):", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o status do projeto." };
   }
 }

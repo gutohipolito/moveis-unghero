@@ -1,30 +1,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionSafe } from "@/lib/auth";
-import { prisma, isDatabaseOffline } from "@/lib/prisma";
-import { allowDevMocks } from "@/lib/devMocks";
+import { prisma } from "@/lib/prisma";
 import { getMyTimeCards, getColaboradorMetrics } from "@/app/actions/ponto";
 import PortalColaboradorClient from "@/components/PortalColaboradorClient";
-
-// Mocks caso o banco esteja offline ou vazio para demonstração
-const MOCK_TASKS = [
-  {
-    id: "env-p-1",
-    nome: "Cozinha Americana Planejada",
-    tipo: "COZINHA",
-    status: "EM_CORTE",
-    projectId: "proj-mock-1",
-    clientName: "Ana Cláudia"
-  },
-  {
-    id: "env-p-2",
-    nome: "Dormitório Casal Premium",
-    tipo: "DORMITORIO",
-    status: "PRONTO_PRODUCAO",
-    projectId: "proj-mock-2",
-    clientName: "Ricardo M."
-  }
-];
 
 export default async function PortalColaboradorPage() {
   const session = await getSessionSafe(await headers()).catch(() => null);
@@ -37,97 +16,51 @@ export default async function PortalColaboradorPage() {
   const userName = session.user.name;
   const userCargo = session.user.cargo;
 
-  let tasks: any[] = [];
-  let timeCards: any[] = [];
+  let tasks: Array<{
+    id: string;
+    nome: string;
+    tipo: string;
+    status: string;
+    projectId: string;
+    clientName: string;
+  }> = [];
+  let timeCards: Awaited<ReturnType<typeof getMyTimeCards>>["cards"] = [];
 
   let metrics = {
     ativos: 0,
     finalizadosSemana: 0,
     totalGeral: 0,
-    metaSemanal: 6
+    metaSemanal: 6,
   };
 
-  const isProduction = process.env.NODE_ENV === "production";
+  try {
+    const dbTasks = await prisma.environment.findMany({
+      where: { responsavel_id: userId },
+      include: {
+        project: { include: { client: true } },
+      },
+    });
 
-  if (isDatabaseOffline() && allowDevMocks()) {
-    tasks = MOCK_TASKS;
-    timeCards = [
-      {
-        id: "card-mock-1",
-        data: new Date(),
-        entrada: new Date(new Date().setHours(8, 0, 0, 0)),
-        almoco_in: new Date(new Date().setHours(12, 0, 0, 0)),
-        almoco_out: new Date(new Date().setHours(13, 0, 0, 0)),
-        saida: null,
-        horas: null
-      }
-    ];
-    metrics = {
-      ativos: 2,
-      finalizadosSemana: 3,
-      totalGeral: 5,
-      metaSemanal: 6
-    };
-  } else {
-    try {
-      // 1. Busca tarefas dele no Neon
-      const dbTasks = await prisma.environment.findMany({
-        where: {
-          responsavel_id: userId,
-        },
-        include: {
-          project: {
-            include: {
-              client: true
-            }
-          }
-        }
-      });
+    tasks = dbTasks.map((t) => ({
+      id: t.id,
+      nome: t.nome,
+      tipo: t.tipo,
+      status: t.status,
+      projectId: t.project.id,
+      clientName: t.project.client.nome,
+    }));
 
-      tasks = dbTasks.map(t => ({
-        id: t.id,
-        nome: t.nome,
-        tipo: t.tipo,
-        status: t.status,
-        projectId: t.project.id,
-        clientName: t.project.client.nome
-      }));
-
-      // 2. Busca folha de ponto do mês
-      const pontoRes = await getMyTimeCards(userId);
-      if (pontoRes.success && pontoRes.cards) {
-        timeCards = pontoRes.cards;
-      }
-
-      // 3. Busca métricas de produtividade
-      const metricsRes = await getColaboradorMetrics(userId);
-      if (metricsRes.success && metricsRes.metrics) {
-        metrics = metricsRes.metrics;
-      }
-
-      // Se não tiver tarefas vinculadas de verdade, preenche com mocks para preencher o visual do cliente (apenas fora de produção)
-      if (tasks.length === 0 && allowDevMocks()) {
-        tasks = MOCK_TASKS;
-        metrics.ativos += MOCK_TASKS.length;
-        metrics.totalGeral += MOCK_TASKS.length;
-      }
-
-    } catch (error) {
-      console.warn("Falha de conexão com banco de dados no Portal do Colaborador.");
-      if (allowDevMocks()) {
-        tasks = MOCK_TASKS;
-        timeCards = [];
-        metrics = {
-          ativos: 2,
-          finalizadosSemana: 3,
-          totalGeral: 5,
-          metaSemanal: 6
-        };
-      } else {
-        tasks = [];
-        timeCards = [];
-      }
+    const pontoRes = await getMyTimeCards(userId);
+    if (pontoRes.success && pontoRes.cards) {
+      timeCards = pontoRes.cards;
     }
+
+    const metricsRes = await getColaboradorMetrics(userId);
+    if (metricsRes.success && metricsRes.metrics) {
+      metrics = metricsRes.metrics;
+    }
+  } catch (error) {
+    console.warn("Falha de conexão com banco de dados no Portal do Colaborador.", error);
   }
 
   return (
@@ -141,11 +74,11 @@ export default async function PortalColaboradorPage() {
         </p>
       </div>
 
-      <PortalColaboradorClient 
+      <PortalColaboradorClient
         userId={userId}
         userName={userName}
         userCargo={userCargo}
-        initialTimeCards={timeCards}
+        initialTimeCards={timeCards ?? []}
         initialTasks={tasks}
         metrics={metrics}
       />

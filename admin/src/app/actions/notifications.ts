@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
-import { shouldUseOfflineMocks } from "@/lib/devMocks";
 import {
   buildFollowUpNotifications,
   buildInvoiceNotifications,
@@ -11,34 +10,10 @@ import {
 } from "@/lib/notifications";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
 
-const MOCK_NOTIFICATION_PROJECTS = [
-  {
-    id: "proj-1",
-    status_geral: "LEAD",
-    ultimo_contato_em: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    client: { nome: "Renato Silveira" },
-  },
-  {
-    id: "proj-2",
-    status_geral: "ORCAMENTO",
-    ultimo_contato_em: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    client: { nome: "Mariana Rezende" },
-  },
-];
-
 export async function getNotifications(companyId: string): Promise<{
   success: boolean;
   notifications: AppNotification[];
 }> {
-  if (shouldUseOfflineMocks()) {
-    return {
-      success: true,
-      notifications: buildFollowUpNotifications(MOCK_NOTIFICATION_PROJECTS),
-    };
-  }
-
   if (isDatabaseOffline()) {
     return { success: true, notifications: [] };
   }

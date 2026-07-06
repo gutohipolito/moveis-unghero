@@ -1,12 +1,21 @@
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSessionSafe } from "@/lib/auth";
+import { ADMIN_EMAIL } from "@/lib/constants";
 
-/** Resolve o usuário da sessão atual ou o primeiro usuário do banco. */
+export { ADMIN_EMAIL } from "@/lib/constants";
+
+/** Resolve o usuário da sessão atual ou o administrador principal. */
 export async function getCurrentUserId(): Promise<string | null> {
   try {
     const session = await getSessionSafe(await headers());
     if (session?.user?.id) return session.user.id;
+
+    const admin = await prisma.user.findUnique({
+      where: { email: ADMIN_EMAIL },
+      select: { id: true },
+    });
+    if (admin) return admin.id;
 
     const firstUser = await prisma.user.findFirst({
       orderBy: { createdAt: "asc" },
@@ -19,37 +28,18 @@ export async function getCurrentUserId(): Promise<string | null> {
   }
 }
 
-/**
- * Garante um ID de usuário para FK em timeline (ex.: base vazia em produção).
- * Usa sessão → primeiro usuário → bootstrap mínimo da empresa/admin.
- */
+/** Garante um ID de usuário para FK em timeline e orçamentos. */
 export async function ensureActorUserId(): Promise<string> {
   const current = await getCurrentUserId();
   if (current) return current;
 
-  await prisma.company.upsert({
-    where: { id: "mock-company-id" },
-    update: {},
-    create: {
-      id: "mock-company-id",
-      nome: "Móveis Unghero",
-      cnpj: "13.415.510/0001-71",
-      telefone: "(54) 9 9997-1050",
-      email: "moveisunghero@gmail.com",
-    },
+  const admin = await prisma.user.findUnique({
+    where: { email: ADMIN_EMAIL },
+    select: { id: true },
   });
+  if (admin) return admin.id;
 
-  const mockUser = await prisma.user.upsert({
-    where: { id: "system-admin-mock-id" },
-    update: {},
-    create: {
-      id: "system-admin-mock-id",
-      name: "Gustavo Hipólito",
-      email: "gustavo@moveisunghero.com.br",
-      cargo: "ADMIN",
-      company_id: "mock-company-id",
-    },
-  });
-
-  return mockUser.id;
+  throw new Error(
+    `Administrador não encontrado. Crie o usuário ${ADMIN_EMAIL} via /api/create-admin-prod.`
+  );
 }

@@ -241,9 +241,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     };
     const res = await createClientAction(data);
 
-    if (res.success) {
+    if (res.success && res.client) {
       const newCli = { 
-        id: res.client.id || `cli-${Date.now()}`, 
+        id: res.client.id, 
         ...data, 
         projects: [] 
       };

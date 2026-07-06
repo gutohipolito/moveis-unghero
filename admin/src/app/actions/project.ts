@@ -41,7 +41,7 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
     return { success: true };
   } catch (error) {
     console.warn("Simulação de alteração do status geral do projeto:", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o projeto." };
   }
 }
 
@@ -79,7 +79,7 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
     return { success: true };
   } catch (error) {
     console.warn("Simulação de alteração de status do ambiente:", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o projeto." };
   }
 }
 
@@ -104,15 +104,8 @@ export async function addEnvironment(projectId: string, nome: string, tipo: Envi
     revalidatePath(`/projects/${projectId}`);
     return { success: true, data: newEnv };
   } catch (error) {
-    console.warn("Simulação de adição de ambiente:", error);
-    const mockEnv = {
-      id: `simulated-env-${Math.random().toString(36).substr(2, 9)}`,
-      project_id: projectId,
-      nome,
-      tipo,
-      status: "AGUARDANDO_MEDICAO" as EnvironmentStatus
-    };
-    return { success: true, simulated: true, data: mockEnv };
+    console.warn("Falha ao adicionar ambiente:", error);
+    return { success: false, error: "Não foi possível adicionar o ambiente." };
   }
 }
 
@@ -141,15 +134,8 @@ export async function addTimelineEvent(projectId: string, acao: string, interno:
     revalidatePath(`/projects/${projectId}`);
     return { success: true, data: newEvent };
   } catch (error) {
-    console.warn("Simulação de inserção de nota na timeline:", error);
-    const mockEvent = {
-      id: `simulated-time-${Math.random().toString(36).substr(2, 9)}`,
-      acao,
-      data: new Date(),
-      interno_sotamente: interno,
-      user: { name: "Usuário SaaS (Simulado)" }
-    };
-    return { success: true, simulated: true, data: mockEvent };
+    console.warn("Falha ao inserir nota na timeline:", error);
+    return { success: false, error: "Não foi possível registrar o evento." };
   }
 }
 
@@ -175,7 +161,7 @@ export async function toggleFileApproval(projectId: string, fileId: string, appr
     return { success: true };
   } catch (error) {
     console.warn("Simulação de toggle de liberação de arquivo para produção:", error);
-    return { success: true, simulated: true };
+    return { success: false, error: "Não foi possível atualizar o projeto." };
   }
 }
 
@@ -209,17 +195,8 @@ export async function uploadProjectFile(projectId: string, data: { tipo: FileTyp
     revalidatePath(`/projects/${projectId}`);
     return { success: true, data: newFile };
   } catch (error) {
-    console.warn("Simulação de upload de arquivo:", error);
-    const mockFile = {
-      id: `simulated-file-${Math.random().toString(36).substr(2, 9)}`,
-      project_id: projectId,
-      tipo: data.tipo,
-      url: data.url || "#",
-      versao: 2, // Versão simulada incrementada
-      aprovado_producao: false,
-      nome_arquivo: data.nome_arquivo
-    };
-    return { success: true, simulated: true, data: mockFile };
+    console.warn("Falha no upload de arquivo:", error);
+    return { success: false, error: "Não foi possível enviar o arquivo." };
   }
 }
 

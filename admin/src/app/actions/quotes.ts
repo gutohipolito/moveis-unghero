@@ -94,28 +94,9 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
     return { success: true, data: result };
   } catch (error) {
     console.error("Erro na Server Action createQuote:", error);
-    const isProduction = process.env.NODE_ENV === "production";
-    if (isDatabaseOffline() && !isProduction) {
-      const simulatedVersion = Math.floor(Math.random() * 3) + 1;
-      const mockQuote = {
-        id: `simulated-quote-${Math.random().toString(36).substr(2, 9)}`,
-        project_id: projectId,
-        versao: simulatedVersion,
-        subtotal: data.subtotal,
-        desconto: data.desconto,
-        valor_final: data.valor_final,
-        validade: new Date(data.validade).toISOString(),
-        observacoes: data.observacoes || ""
-      };
-      return { 
-        success: true, 
-        simulated: true, 
-        data: { quote: mockQuote, version: simulatedVersion } 
-      };
-    }
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "Erro desconhecido ao salvar orçamento no banco remoto" 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro desconhecido ao salvar orçamento no banco remoto",
     };
   }
 }
@@ -143,10 +124,6 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
     return { success: true };
   } catch (error) {
     console.error("Erro na Server Action approveQuote:", error);
-    const isProduction = process.env.NODE_ENV === "production";
-    if (isDatabaseOffline() && !isProduction) {
-      return { success: true, simulated: true };
-    }
     return { success: false, error: error instanceof Error ? error.message : "Erro ao aprovar orçamento no banco remoto" };
   }
 }
@@ -178,10 +155,6 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
     return { success: true };
   } catch (error) {
     console.error("Erro na Server Action deleteQuote:", error);
-    const isProduction = process.env.NODE_ENV === "production";
-    if (isDatabaseOffline() && !isProduction) {
-      return { success: true, simulated: true };
-    }
     return { success: false, error: error instanceof Error ? error.message : "Erro ao excluir orçamento no banco remoto" };
   }
 }
@@ -222,84 +195,7 @@ export async function getQuotes() {
     return { success: true, data: serializedQuotes };
   } catch (error) {
     console.warn("Erro ao buscar orçamentos:", error);
-    
-    const isProduction = process.env.NODE_ENV === "production";
-    if (isProduction) {
-      return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
-    }
-    
-    // Retorna dados simulados estruturados idênticos ao schema
-    const mockQuotes = [
-      {
-        id: "q-mock-1",
-        project_id: "p-mock-1",
-        versao: 1,
-        subtotal: 15400.00,
-        desconto: 1400.00,
-        valor_final: 14000.00,
-        validade: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-        observacoes: "Pagamento facilitado em 3x no cartão.",
-        project: {
-          id: "p-mock-1",
-          status_geral: "ORCAMENTO",
-          client: {
-            id: "c-mock-1",
-            nome: "José Carlos Silva",
-            cidade: "Bento Gonçalves"
-          }
-        },
-        items: [
-          { id: "qi-mock-1", quote_id: "q-mock-1", descricao: "Móveis planejados para Cozinha MDF Grafite", quantidade: 1, tipo_custo: "MOVEIS_MDF" as const, valor_unitario: 12400.00, valor_total: 12400.00 },
-          { id: "qi-mock-2", quote_id: "q-mock-1", descricao: "Ferragens especiais com amortecedor Blum", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS" as const, valor_unitario: 3000.00, valor_total: 3000.00 }
-        ]
-      },
-      {
-        id: "q-mock-2",
-        project_id: "p-mock-2",
-        versao: 2,
-        subtotal: 28000.00,
-        desconto: 2000.00,
-        valor_final: 26000.00,
-        validade: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        observacoes: "Cliente solicitou inclusão do painel de TV da sala.",
-        project: {
-          id: "p-mock-2",
-          status_geral: "APROVADO",
-          client: {
-            id: "c-mock-2",
-            nome: "Mariana Souza Santos",
-            cidade: "Caxias do Sul"
-          }
-        },
-        items: [
-          { id: "qi-mock-3", quote_id: "q-mock-2", descricao: "Móveis planejados para Cozinha e Painel de TV", quantidade: 1, tipo_custo: "MOVEIS_MDF" as const, valor_unitario: 25000.00, valor_total: 25000.00 },
-          { id: "qi-mock-4", quote_id: "q-mock-2", descricao: "Mão de obra de instalação especializada", quantidade: 1, tipo_custo: "MAO_DE_OBRA" as const, valor_unitario: 3000.00, valor_total: 3000.00 }
-        ]
-      },
-      {
-        id: "q-mock-3",
-        project_id: "p-mock-3",
-        versao: 1,
-        subtotal: 9200.00,
-        desconto: 500.00,
-        valor_final: 8700.00,
-        validade: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
-        observacoes: "Sem observações adicionais.",
-        project: {
-          id: "p-mock-3",
-          status_geral: "LEAD",
-          client: {
-            id: "c-mock-3",
-            nome: "Arthur Ferreira Lima",
-            cidade: "Farroupilha"
-          }
-        },
-        items: [
-          { id: "qi-mock-5", quote_id: "q-mock-3", descricao: "Banheiro planejado em MDF Branco TX e nichos", quantidade: 1, tipo_custo: "MOVEIS_MDF" as const, valor_unitario: 8700.00, valor_total: 8700.00 }
-        ]
-      }
-    ];
-    return { success: true, data: mockQuotes, simulated: true };
+    return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
   }
 }
 
@@ -327,25 +223,14 @@ export async function getProjectsForQuotes() {
     return { success: true, data: serializedProjects };
   } catch (error) {
     console.warn("Erro ao buscar projetos para orçamentos:", error);
-    const isProduction = process.env.NODE_ENV === "production";
-    if (isProduction) {
-      return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
-    }
-    const mockProjects = [
-      { id: "p-mock-1", status_geral: "ORCAMENTO", client: { id: "c-mock-1", nome: "José Carlos Silva", cidade: "Bento Gonçalves" } },
-      { id: "p-mock-2", status_geral: "NEGOCIACAO", client: { id: "c-mock-2", nome: "Mariana Souza Santos", cidade: "Caxias do Sul" } },
-      { id: "p-mock-3", status_geral: "LEAD", client: { id: "c-mock-3", nome: "Arthur Ferreira Lima", cidade: "Farroupilha" } }
-    ];
-    return { success: true, data: mockProjects, simulated: true };
+    return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
   }
 }
 
 // Cria um projeto temporário para um cliente existente
 export async function createProjectForClient(clientId: string, companyId: string) {
-  const isProduction = process.env.NODE_ENV === "production";
-  if (isDatabaseOffline() && !isProduction) {
-    const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
-    return { success: true, projectId: mockProjectId, simulated: true };
+  if (isDatabaseOffline()) {
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -370,10 +255,6 @@ export async function createProjectForClient(clientId: string, companyId: string
     return { success: true, projectId: project.id };
   } catch (error) {
     console.error("Erro na Server Action createProjectForClient:", error);
-    if (isDatabaseOffline() && !isProduction) {
-      const mockProjectId = `p-mock-client-${Math.random().toString(36).substring(2, 9)}`;
-      return { success: true, projectId: mockProjectId, simulated: true };
-    }
     return { success: false, error: error instanceof Error ? error.message : "Erro ao inicializar orçamento no banco remoto" };
   }
 }
@@ -386,10 +267,8 @@ export async function createQuickClientAndProject(data: {
   cidade: string;
   companyId: string;
 }) {
-  const isProduction = process.env.NODE_ENV === "production";
-  if (isDatabaseOffline() && !isProduction) {
-    const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
-    return { success: true, projectId: mockProjectId, simulated: true };
+  if (isDatabaseOffline()) {
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   if (data.companyId === "mock-company-id") {
@@ -451,10 +330,6 @@ export async function createQuickClientAndProject(data: {
     return { success: true, projectId: result.projectId };
   } catch (error) {
     console.error("Erro na Server Action createQuickClientAndProject:", error);
-    if (isDatabaseOffline() && !isProduction) {
-      const mockProjectId = `p-mock-quick-${Math.random().toString(36).substring(2, 9)}`;
-      return { success: true, projectId: mockProjectId, simulated: true };
-    }
     return { success: false, error: error instanceof Error ? error.message : "Erro ao criar cadastro avulso no banco remoto" };
   }
 }

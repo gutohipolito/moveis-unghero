@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { ADMIN_EMAIL } from "@/lib/constants";
 import { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -64,9 +65,13 @@ export async function createColaborador(data: {
 // Exclui um colaborador e remove sessões e contas associadas
 export async function deleteColaborador(userId: string) {
   try {
-    // Não permite apagar o administrador de mock principal para evitar que o painel trave
-    if (userId === "system-admin-mock-id") {
-      return { success: false, error: "O administrador master do sistema não pode ser removido." };
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (user?.email === ADMIN_EMAIL) {
+      return { success: false, error: "O administrador principal não pode ser removido." };
     }
 
     await prisma.$transaction(async (tx) => {

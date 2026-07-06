@@ -32,48 +32,6 @@ export interface InventoryImportRow {
   supplierNome?: string;
 }
 
-const MOCK_SUPPLIERS: Supplier[] = [
-  {
-    id: "sup-1",
-    nome: "Blum Brasil",
-    cnpj: "12.345.678/0001-01",
-    telefone: "(11) 98765-4321",
-    email: "vendas@blum.com",
-    principalMaterial: "Ferragens e Sistemas de Gavetas",
-  },
-  {
-    id: "sup-2",
-    nome: "Guararapes MDF",
-    cnpj: "23.456.789/0001-02",
-    telefone: "(41) 99123-4567",
-    email: "contato@guararapes.com.br",
-    principalMaterial: "Chapas de MDF e Compensados",
-  },
-];
-
-const MOCK_INVENTORY: InventoryItem[] = [
-  {
-    id: "inv-1",
-    nome: "Chapa MDF Guararapes Freijó Puro 18mm",
-    categoria: "CHAPAS_MDF",
-    quantidade: 15,
-    minima: 10,
-    precoCusto: 280.0,
-    supplierId: "sup-2",
-    supplierName: "Guararapes MDF",
-  },
-  {
-    id: "inv-2",
-    nome: "Dobradiça Blum 110º Clip Top com Amortecedor",
-    categoria: "FERRAGENS",
-    quantidade: 120,
-    minima: 200,
-    precoCusto: 18.5,
-    supplierId: "sup-1",
-    supplierName: "Blum Brasil",
-  },
-];
-
 type DbSupplier = {
   id: string;
   nome: string;
@@ -118,17 +76,9 @@ function mapInventoryItem(row: DbInventoryItem): InventoryItem {
   };
 }
 
-function offlineResponse() {
-  return {
-    success: true as const,
-    suppliers: MOCK_SUPPLIERS,
-    inventory: MOCK_INVENTORY,
-  };
-}
-
 export async function getInventoryAndSuppliers(companyId: string) {
   if (isDatabaseOffline()) {
-    return offlineResponse();
+    return { success: true as const, suppliers: [] as Supplier[], inventory: [] as InventoryItem[] };
   }
 
   try {
@@ -151,13 +101,13 @@ export async function getInventoryAndSuppliers(companyId: string) {
     };
   } catch (error) {
     console.error("Erro ao carregar estoque:", error);
-    return offlineResponse();
+    return { success: false as const, suppliers: [] as Supplier[], inventory: [] as InventoryItem[] };
   }
 }
 
 export async function createSupplierAction(data: Omit<Supplier, "id"> & { company_id: string }) {
   if (isDatabaseOffline()) {
-    return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -186,7 +136,7 @@ export async function updateSupplierAction(
   data: Partial<Supplier>
 ) {
   if (isDatabaseOffline()) {
-    return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -220,7 +170,7 @@ export async function updateSupplierAction(
 
 export async function deleteSupplierAction(id: string, companyId: string) {
   if (isDatabaseOffline()) {
-    return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -244,7 +194,7 @@ export async function createInventoryItemAction(
   data: Omit<InventoryItem, "id" | "supplierName"> & { company_id: string }
 ) {
   if (isDatabaseOffline()) {
-    return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -284,7 +234,7 @@ export async function updateInventoryItemAction(
   data: Partial<InventoryItem>
 ) {
   if (isDatabaseOffline()) {
-    return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -331,7 +281,7 @@ export async function updateInventoryItemAction(
 
 export async function deleteInventoryItemAction(id: string, companyId: string) {
   if (isDatabaseOffline()) {
-    return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -356,10 +306,7 @@ export async function deductInventoryAction(
   itemsToDeduct: Array<{ itemId: string; quantity: number }>
 ) {
   if (isDatabaseOffline()) {
-    return {
-      success: true,
-      message: "Baixa simulada (modo demonstração offline).",
-    };
+    return { success: false, message: "Banco de dados indisponível." };
   }
 
   if (itemsToDeduct.length === 0) {
@@ -434,7 +381,7 @@ export async function importInventoryBulkAction(
   if (isDatabaseOffline()) {
     return {
       success: false,
-      error: "Importação indisponível no modo demonstração offline.",
+      error: "Banco de dados indisponível.",
       imported: 0,
       skipped: rows.length,
       errors: [] as string[],

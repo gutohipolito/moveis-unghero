@@ -14,8 +14,6 @@ import {
 } from "@/lib/productionSla";
 import { logProjectTimeline } from "@/app/actions/timeline";
 
-const MOCK_SLA = new Map<string, ProjectSlaView>();
-
 function mapSlaRow(
   row: {
     project_id: string;
@@ -39,19 +37,7 @@ function mapSlaRow(
 }
 
 export async function ensureProjectSla(projectId: string): Promise<ProjectSlaView | null> {
-  if (isDatabaseOffline()) {
-    if (!MOCK_SLA.has(projectId)) {
-      MOCK_SLA.set(projectId, {
-        projectId,
-        currentStage: "MEDICAO",
-        stageStartedAt: new Date().toISOString(),
-        extensionDays: 0,
-        completedStages: [],
-        notaFiscalEmitida: false,
-      });
-    }
-    return MOCK_SLA.get(projectId) ?? null;
-  }
+  if (isDatabaseOffline()) return null;
 
   try {
     const existing = await prisma.projectSlaState.findUnique({
@@ -82,9 +68,7 @@ export async function ensureProjectSla(projectId: string): Promise<ProjectSlaVie
 }
 
 export async function getCompanySlaStates(companyId: string): Promise<ProjectSlaView[]> {
-  if (isDatabaseOffline()) {
-    return Array.from(MOCK_SLA.values());
-  }
+  if (isDatabaseOffline()) return [];
 
   try {
     const rows = await prisma.projectSlaState.findMany({
@@ -104,9 +88,7 @@ export async function getCompanySlaStates(companyId: string): Promise<ProjectSla
 }
 
 export async function getProjectSla(projectId: string): Promise<ProjectSlaView | null> {
-  if (isDatabaseOffline()) {
-    return MOCK_SLA.get(projectId) ?? null;
-  }
+  if (isDatabaseOffline()) return null;
 
   try {
     const row = await prisma.projectSlaState.findUnique({
@@ -134,26 +116,15 @@ export async function verifySlaStage(
     const completedStages = [...sla.completedStages, sla.currentStage];
     const finished = !next;
 
-    if (isDatabaseOffline()) {
-      const updated: ProjectSlaView = {
-        ...sla,
-        completedStages,
-        currentStage: next ?? sla.currentStage,
-        stageStartedAt: new Date().toISOString(),
-        extensionDays: 0,
-      };
-      MOCK_SLA.set(projectId, updated);
-    } else {
-      await prisma.projectSlaState.update({
-        where: { project_id: projectId },
-        data: {
-          completed_stages: completedStages,
-          current_stage: next ?? sla.currentStage,
-          stage_started_at: new Date(),
-          extension_days: 0,
-        },
-      });
-    }
+    await prisma.projectSlaState.update({
+      where: { project_id: projectId },
+      data: {
+        completed_stages: completedStages,
+        current_stage: next ?? sla.currentStage,
+        stage_started_at: new Date(),
+        extension_days: 0,
+      },
+    });
 
     const nextConfig = next ? getStageConfig(next) : null;
     await logProjectTimeline(
@@ -169,17 +140,10 @@ export async function verifySlaStage(
       return { success: false, error: "Informe quantos dias adicionais de SLA são necessários." };
     }
 
-    if (isDatabaseOffline()) {
-      MOCK_SLA.set(projectId, {
-        ...sla,
-        extensionDays: sla.extensionDays + days,
-      });
-    } else {
-      await prisma.projectSlaState.update({
-        where: { project_id: projectId },
-        data: { extension_days: sla.extensionDays + days },
-      });
-    }
+    await prisma.projectSlaState.update({
+      where: { project_id: projectId },
+      data: { extension_days: sla.extensionDays + days },
+    });
 
     await logProjectTimeline(
       projectId,
@@ -205,32 +169,19 @@ export async function updateProjectSlaStage(
   const stageIdx = PRODUCTION_SLA_STAGES.findIndex((s) => s.key === stageKey);
   const completedStages = PRODUCTION_SLA_STAGES.slice(0, stageIdx).map((s) => s.key);
 
-  if (isDatabaseOffline()) {
-    const existing = MOCK_SLA.get(projectId);
-    if (existing) {
-      MOCK_SLA.set(projectId, {
-        ...existing,
-        currentStage: stageKey,
-        stageStartedAt: new Date().toISOString(),
-        extensionDays: 0,
-        completedStages: completedStages as ProductionSlaStageKey[],
-      });
-    }
-  } else {
-    try {
-      await prisma.projectSlaState.update({
-        where: { project_id: projectId },
-        data: {
-          current_stage: stageKey,
-          stage_started_at: new Date(),
-          extension_days: 0,
-          completed_stages: completedStages,
-        },
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar etapa SLA:", error);
-      return { success: false, error: "Não foi possível atualizar a etapa de SLA." };
-    }
+  try {
+    await prisma.projectSlaState.update({
+      where: { project_id: projectId },
+      data: {
+        current_stage: stageKey,
+        stage_started_at: new Date(),
+        extension_days: 0,
+        completed_stages: completedStages,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar etapa SLA:", error);
+    return { success: false, error: "Não foi possível atualizar a etapa de SLA." };
   }
 
   await logProjectTimeline(
@@ -248,10 +199,10 @@ export async function updateProjectSlaStage(
 
 export async function markNotaFiscalEmitida(projectId: string) {
   if (isDatabaseOffline()) {
-    const sla = MOCK_SLA.get(projectId);
-    if (sla) MOCK_SLA.set(projectId, { ...sla, notaFiscalEmitida: true });
-  } else {
-    await prisma.projectSlaState.upsert({
+    return { success: false, error: "Banco de dados indisponível." };
+  }
+
+  await prisma.projectSlaState.upsert({
       where: { project_id: projectId },
       create: {
         project_id: projectId,
@@ -263,8 +214,7 @@ export async function markNotaFiscalEmitida(projectId: string) {
         nota_fiscal_emitida: true,
         nota_fiscal_emitida_em: new Date(),
       },
-    });
-  }
+  });
 
   await logProjectTimeline(projectId, "Nota fiscal emitida e registrada no projeto.", false);
   revalidatePath(`/projects/${projectId}`);

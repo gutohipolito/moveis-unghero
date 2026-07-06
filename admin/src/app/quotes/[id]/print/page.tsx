@@ -1,60 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { resolveClientDocument } from "@/lib/clientDocument";
-import { allowDevMocks } from "@/lib/devMocks";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
-
-// Mock para fallback caso o banco esteja indisponível ou orçamento não exista
-const MOCK_QUOTES: Record<string, any> = {
-  "q-1": {
-    id: "q-1",
-    versao: 1,
-    subtotal: 82000.0,
-    desconto: 4000.0,
-    valor_final: 78000.0,
-    validade: new Date("2026-07-20T00:00:00Z"),
-    observacoes: "Mdf Lacca e texturas especiais com corrediças invisíveis e amortecimento Blum. Detalhes em vidro Reflecta e iluminação em fitas de LED embutidas. Garantia estendida de 10 anos da Móveis Unghero. Montagem com equipe própria especializada.",
-    project: {
-      client: {
-        nome: "Mariana Rezende",
-        cidade: "Farroupilha",
-        telefone: "(54) 99123-4567",
-        email: "mariana@email.com"
-      }
-    },
-    items: [
-      { descricao: "Móveis planejados em MDF Lacca e texturas amadeiradas nobres", quantidade: 1, tipo_custo: "MOVEIS_MDF", valor_unitario: 52000, valor_total: 52000 },
-      { descricao: "Ferragens de alta tecnologia invisíveis com amortecedores Blum/Hettich", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS", valor_unitario: 12000, valor_total: 12000 },
-      { descricao: "Fitas de LED de alto brilho embutidas em perfis de alumínio com sensores de toque", quantidade: 1, tipo_custo: "OUTROS", valor_unitario: 3500, valor_total: 3500 },
-      { descricao: "Mão de obra qualificada para projeto técnico detalhado e montagem fina", quantidade: 1, tipo_custo: "MAO_DE_OBRA", valor_unitario: 8000, valor_total: 8000 }
-    ]
-  },
-  "q-2": {
-    id: "q-2",
-    versao: 1,
-    subtotal: 95000.0,
-    desconto: 6000.0,
-    valor_final: 89000.0,
-    validade: new Date("2026-06-30T00:00:00Z"),
-    observacoes: "Mdf Lacca e texturas especiais com corrediças invisíveis e amortecimento Blum. Detalhes em vidro Reflecta e iluminação em fitas de LED embutidas. Garantia estendida de 10 anos da Móveis Unghero. Montagem com equipe própria especializada.",
-    project: {
-      client: {
-        nome: "Juliana Castro",
-        cidade: "Farroupilha",
-        telefone: "(54) 99555-4433",
-        email: "juliana@email.com"
-      }
-    },
-    items: [
-      { descricao: "Móveis planejados em MDF Lacca e texturas amadeiradas nobres", quantidade: 1, tipo_custo: "MOVEIS_MDF", valor_unitario: 52000, valor_total: 52000 },
-      { descricao: "Ferragens de alta tecnologia invisíveis com amortecedores Blum/Hettich", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS", valor_unitario: 12000, valor_total: 12000 },
-      { descricao: "Fitas de LED de alto brilho embutidas em perfis de alumínio com sensores de toque", quantidade: 1, tipo_custo: "OUTROS", valor_unitario: 3500, valor_total: 3500 },
-      { descricao: "Mão de obra qualificada para projeto técnico detalhado e montagem fina", quantidade: 1, tipo_custo: "MAO_DE_OBRA", valor_unitario: 8000, valor_total: 8000 }
-    ]
-  }
-};
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -121,7 +70,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   const { id } = await params;
 
   let quote = null;
-  let isMock = false;
 
   try {
     const dbQuote = await prisma.quote.findUnique({
@@ -154,13 +102,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   }
 
   if (!quote) {
-    if (allowDevMocks()) {
-      quote = MOCK_QUOTES[id];
-      isMock = !!quote;
-    }
-    if (!quote) {
-      notFound();
-    }
+    notFound();
   }
 
   // Prepara dados
@@ -226,11 +168,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
         </Link>
         <div className="flex items-center gap-3">
-          {isMock && (
-            <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded font-semibold">
-              Modo de Simulação
-            </span>
-          )}
           {/* Botão que aciona a impressão nativa do navegador */}
           <PrintButton />
         </div>

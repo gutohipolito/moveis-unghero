@@ -5,9 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { getSessionSafe } from "@/lib/auth";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
-
-const MOCK_NOTES: OperatorNote[] = [];
-const MOCK_REMINDERS: OperatorReminder[] = [];
+import { DEFAULT_COMPANY_ID } from "@/lib/session";
 
 async function requireUser() {
   const session = await getSessionSafe(await headers());
@@ -16,7 +14,7 @@ async function requireUser() {
   }
   return {
     userId: session.user.id,
-    companyId: session.user.company_id || "mock-company-id",
+    companyId: session.user.company_id || DEFAULT_COMPANY_ID,
   };
 }
 
@@ -61,7 +59,7 @@ export async function getOperatorNotes(): Promise<{
   notes: OperatorNote[];
 }> {
   if (isDatabaseOffline()) {
-    return { success: true, notes: [...MOCK_NOTES] };
+    return { success: false, notes: [] };
   }
 
   try {
@@ -88,16 +86,7 @@ export async function createOperatorNote(content: string): Promise<{
   }
 
   if (isDatabaseOffline()) {
-    const note: OperatorNote = {
-      id: `mock-note-${Date.now()}`,
-      content: trimmed,
-      pinned: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    MOCK_NOTES.unshift(note);
-    revalidateDashboard();
-    return { success: true, note };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -119,10 +108,7 @@ export async function createOperatorNote(content: string): Promise<{
 
 export async function deleteOperatorNote(id: string): Promise<{ success: boolean }> {
   if (isDatabaseOffline()) {
-    const index = MOCK_NOTES.findIndex((n) => n.id === id);
-    if (index >= 0) MOCK_NOTES.splice(index, 1);
-    revalidateDashboard();
-    return { success: true };
+    return { success: false };
   }
 
   try {
@@ -140,10 +126,7 @@ export async function deleteOperatorNote(id: string): Promise<{ success: boolean
 
 export async function toggleOperatorNotePin(id: string): Promise<{ success: boolean }> {
   if (isDatabaseOffline()) {
-    const note = MOCK_NOTES.find((n) => n.id === id);
-    if (note) note.pinned = !note.pinned;
-    revalidateDashboard();
-    return { success: true };
+    return { success: false };
   }
 
   try {
@@ -170,7 +153,7 @@ export async function getOperatorReminders(): Promise<{
   reminders: OperatorReminder[];
 }> {
   if (isDatabaseOffline()) {
-    return { success: true, reminders: [...MOCK_REMINDERS] };
+    return { success: false, reminders: [] };
   }
 
   try {
@@ -201,16 +184,7 @@ export async function createOperatorReminder(
   }
 
   if (isDatabaseOffline()) {
-    const reminder: OperatorReminder = {
-      id: `mock-reminder-${Date.now()}`,
-      title: trimmed,
-      dueAt: dueAt.toISOString(),
-      done: false,
-      createdAt: new Date().toISOString(),
-    };
-    MOCK_REMINDERS.push(reminder);
-    revalidateDashboard();
-    return { success: true, reminder };
+    return { success: false, error: "Banco de dados indisponível." };
   }
 
   try {
@@ -233,10 +207,7 @@ export async function createOperatorReminder(
 
 export async function toggleOperatorReminderDone(id: string): Promise<{ success: boolean }> {
   if (isDatabaseOffline()) {
-    const reminder = MOCK_REMINDERS.find((r) => r.id === id);
-    if (reminder) reminder.done = !reminder.done;
-    revalidateDashboard();
-    return { success: true };
+    return { success: false };
   }
 
   try {
@@ -260,10 +231,7 @@ export async function toggleOperatorReminderDone(id: string): Promise<{ success:
 
 export async function deleteOperatorReminder(id: string): Promise<{ success: boolean }> {
   if (isDatabaseOffline()) {
-    const index = MOCK_REMINDERS.findIndex((r) => r.id === id);
-    if (index >= 0) MOCK_REMINDERS.splice(index, 1);
-    revalidateDashboard();
-    return { success: true };
+    return { success: false };
   }
 
   try {

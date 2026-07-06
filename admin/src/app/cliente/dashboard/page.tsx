@@ -1,11 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import ClienteDashboardClient from "./ClienteDashboardClient";
-import {
-  getDevMockClientPortal,
-  loadClientPortalData,
-} from "@/lib/clientPortal";
-import { allowDevMocks, shouldUseOfflineMocks } from "@/lib/devMocks";
+import { loadClientPortalData } from "@/lib/clientPortal";
 
 export default async function ClienteDashboardPage() {
   const cookieStore = await cookies();
@@ -16,21 +12,10 @@ export default async function ClienteDashboardPage() {
   }
 
   let client = null;
-  let isMock = false;
-
-  if (shouldUseOfflineMocks()) {
-    client = getDevMockClientPortal(clientId);
-    isMock = !!client;
-  } else {
-    try {
-      client = await loadClientPortalData(clientId);
-    } catch (error) {
-      console.error("Falha ao carregar portal do cliente:", error);
-      if (allowDevMocks()) {
-        client = getDevMockClientPortal(clientId);
-        isMock = !!client;
-      }
-    }
+  try {
+    client = await loadClientPortalData(clientId);
+  } catch (error) {
+    console.error("Falha ao carregar portal do cliente:", error);
   }
 
   if (!client) {
@@ -38,5 +23,5 @@ export default async function ClienteDashboardPage() {
     redirect("/cliente/login");
   }
 
-  return <ClienteDashboardClient client={client} isMock={isMock} />;
+  return <ClienteDashboardClient client={client} isMock={false} />;
 }

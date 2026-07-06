@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Role } from "@prisma/client";
 import { createColaborador, deleteColaborador } from "@/app/actions/colaboradores";
+import { ADMIN_EMAIL } from "@/lib/constants";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -325,7 +326,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
               month: "short",
               year: "numeric",
             });
-            const isProtected = c.id === "system-admin-mock-id";
+            const isProtected = c.email === ADMIN_EMAIL;
 
             return (
               <Card
