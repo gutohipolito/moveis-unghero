@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logProjectTimeline } from "@/app/actions/timeline";
 import { ensureProjectSla } from "@/app/actions/productionSla";
+import { getCurrentUserId } from "@/lib/currentUser";
 
 export type EnvironmentType = 
   | "COZINHA"
@@ -94,15 +95,11 @@ export async function addEnvironment(projectId: string, nome: string, tipo: Envi
       }
     });
     
-    // Cria um registro automático na timeline do projeto
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        acao: `Ambiente "${nome}" (${tipo}) adicionado ao projeto`,
-        interno_sotamente: false,
-        user_id: "system-admin-mock-id", // mock id
-      }
-    });
+    await logProjectTimeline(
+      projectId,
+      `Ambiente "${nome}" (${tipo}) adicionado ao projeto`,
+      false
+    );
 
     revalidatePath(`/projects/${projectId}`);
     return { success: true, data: newEnv };
@@ -122,18 +119,23 @@ export async function addEnvironment(projectId: string, nome: string, tipo: Envi
 // Adiciona um novo evento/nota de timeline ao projeto
 export async function addTimelineEvent(projectId: string, acao: string, interno: boolean) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
     const newEvent = await prisma.timeline.create({
       data: {
         project_id: projectId,
         acao,
         interno_sotamente: interno,
-        user_id: "system-admin-mock-id", // mock id
+        user_id: userId,
       },
       include: {
         user: {
-          select: { name: true }
-        }
-      }
+          select: { name: true },
+        },
+      },
     });
     
     revalidatePath(`/projects/${projectId}`);
@@ -198,15 +200,11 @@ export async function uploadProjectFile(projectId: string, data: { tipo: FileTyp
       }
     });
 
-    // Registra na timeline
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        acao: `Upload do arquivo "${data.nome_arquivo}" (v${currentVersion}) realizado`,
-        interno_sotamente: true,
-        user_id: "system-admin-mock-id"
-      }
-    });
+    await logProjectTimeline(
+      projectId,
+      `Upload do arquivo "${data.nome_arquivo}" (v${currentVersion}) realizado`,
+      true
+    );
 
     revalidatePath(`/projects/${projectId}`);
     return { success: true, data: newFile };
@@ -252,15 +250,11 @@ export async function updateProjectDetails(
       data: updateData,
     });
 
-    // Registra na timeline
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        acao: `Os detalhes operacionais do projeto (entrega/responsável/observações) foram atualizados`,
-        interno_sotamente: true,
-        user_id: "system-admin-mock-id",
-      },
-    });
+    await logProjectTimeline(
+      projectId,
+      "Os detalhes operacionais do projeto (entrega/responsável/observações) foram atualizados",
+      true
+    );
 
     revalidatePath(`/projects/${projectId}`);
     return { success: true };

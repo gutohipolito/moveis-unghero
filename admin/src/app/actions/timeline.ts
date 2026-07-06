@@ -1,8 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { getSessionSafe } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/currentUser";
 
 export async function logProjectTimeline(
   projectId: string,
@@ -10,11 +9,11 @@ export async function logProjectTimeline(
   interno = true
 ) {
   try {
-    const session = await getSessionSafe(await headers());
-    const userId =
-      session?.user?.id ||
-      (await prisma.user.findFirst({ select: { id: true } }))?.id ||
-      "system-admin-mock-id";
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      console.warn("Timeline não registrada: usuário não identificado.");
+      return { success: false };
+    }
 
     await prisma.timeline.create({
       data: {

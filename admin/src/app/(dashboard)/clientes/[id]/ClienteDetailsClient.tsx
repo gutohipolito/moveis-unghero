@@ -101,6 +101,7 @@ export default function ClienteDetailsClient({
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const docInfo = resolveClientDocument(client);
 
@@ -114,11 +115,14 @@ export default function ClienteDetailsClient({
     if (!newTitle || !newDesc) return;
 
     setIsSubmittingNote(true);
-    const res = await addActivityAction(client.id, newTitle, newDesc, "Administrador");
-    if (res.success) {
+    setNoteError(null);
+    const res = await addActivityAction(client.id, newTitle, newDesc);
+    if (res.success && res.activity) {
       setActivities([res.activity, ...activities]);
       setNewTitle("");
       setNewDesc("");
+    } else if (!res.success) {
+      setNoteError(res.error ?? "Não foi possível salvar a anotação.");
     }
     setIsSubmittingNote(false);
   };
@@ -385,6 +389,10 @@ export default function ClienteDetailsClient({
                       className="w-full h-16 bg-slate-50 border border-border rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
+
+                  {noteError && (
+                    <p className="text-xs text-red-600 font-medium">{noteError}</p>
+                  )}
 
                   <div className="flex justify-end">
                     <Button 

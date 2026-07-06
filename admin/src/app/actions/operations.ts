@@ -17,19 +17,24 @@ export async function createInstallment(projectId: string, data: { valor: number
       }
     });
 
-    // Registra na timeline do projeto
     const tipoLabel = data.tipo === "ENTRADA" ? "Entrada" : "Parcela";
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        user_id: "system-user-id", // mock ou id do usuário ativo se integrado
-        acao: `${tipoLabel} financeira lançada no valor de R$ ${data.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-        interno_sotamente: true
-      }
-    }).catch(() => null);
+    await logProjectTimeline(
+      projectId,
+      `${tipoLabel} financeira lançada no valor de R$ ${data.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      true
+    );
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/financeiro");
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { client_id: true },
+    });
+    if (project?.client_id) {
+      revalidatePath(`/clientes/${project.client_id}`);
+    }
+
     return { success: true, installment };
   } catch (error) {
     console.warn("Banco offline ao criar parcela. Simulando sucesso.");
@@ -74,6 +79,15 @@ export async function payInstallment(projectId: string, installmentId: string) {
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/financeiro");
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { client_id: true },
+    });
+    if (project?.client_id) {
+      revalidatePath(`/clientes/${project.client_id}`);
+    }
+
     return { success: true, installment };
   } catch (error) {
     console.warn("Banco offline ao quitar parcela. Simulando sucesso.");
@@ -95,14 +109,11 @@ export async function createTask(projectId: string, data: { titulo: string; desc
       }
     });
 
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        user_id: "system-user-id",
-        acao: `Compromisso agendado: ${data.titulo} (${data.tipo}) para o dia ${new Date(data.data).toLocaleDateString("pt-BR")} com ${data.responsavel}.`,
-        interno_sotamente: false
-      }
-    }).catch(() => null);
+    await logProjectTimeline(
+      projectId,
+      `Compromisso agendado: ${data.titulo} (${data.tipo}) para o dia ${new Date(data.data).toLocaleDateString("pt-BR")} com ${data.responsavel}.`,
+      false
+    );
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/agenda");

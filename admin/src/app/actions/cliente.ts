@@ -9,6 +9,7 @@ import {
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getCurrentUserId } from "@/lib/currentUser";
 
 type Origin = 
   | "SITE"
@@ -677,6 +678,115 @@ const MOCK_PAYMENTS: Record<string, Payment[]> = {
   ]
 };
 
+function mapTimelineToActivity(entry: {
+  id: string;
+  data: Date;
+  acao: string;
+  user: { name: string };
+}): Activity {
+  const separator = " — ";
+  const idx = entry.acao.indexOf(separator);
+  if (idx === -1) {
+    return {
+      id: entry.id,
+      data: entry.data.toISOString(),
+      titulo: entry.acao,
+      descricao: "",
+      autor: entry.user.name,
+    };
+  }
+
+  return {
+    id: entry.id,
+    data: entry.data.toISOString(),
+    titulo: entry.acao.slice(0, idx),
+    descricao: entry.acao.slice(idx + separator.length),
+    autor: entry.user.name,
+  };
+}
+
+function resolveInstallmentStatus(
+  status: string,
+  dataVencimento: Date
+): Payment["status"] {
+  if (status === "PAGO") return "PAGO";
+  if (status === "ATRASADO") return "ATRASADO";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dataVencimento);
+  due.setHours(0, 0, 0, 0);
+  if (due < today) return "ATRASADO";
+  return "PENDENTE";
+}
+
+function mapInstallmentToPayment(
+  inst: {
+    id: string;
+    tipo: string;
+    valor: { toString(): string } | number;
+    data_vencimento: Date;
+    data_pagamento: Date | null;
+    status: string;
+  },
+  index: number,
+  total: number,
+  multiProject: boolean
+): Payment {
+  const tipoBase = inst.tipo === "ENTRADA" ? "Entrada" : "Parcela";
+  const tipoLabel =
+    total > 1 ? `${tipoBase} (${index + 1}/${total})` : tipoBase;
+  const descricao = multiProject ? `${tipoLabel} · projeto` : tipoLabel;
+
+  return {
+    id: inst.id,
+    descricao,
+    valor: Number(inst.valor),
+    vencimento: inst.data_vencimento.toISOString().split("T")[0],
+    status: resolveInstallmentStatus(inst.status, inst.data_vencimento),
+    pagoEm: inst.data_pagamento
+      ? inst.data_pagamento.toISOString().split("T")[0]
+      : undefined,
+  };
+}
+
+async function loadClientActivitiesAndPayments(clientId: string) {
+  const projects = await prisma.project.findMany({
+    where: { client_id: clientId },
+    select: {
+      id: true,
+      timeline: {
+        include: { user: { select: { name: true } } },
+        orderBy: { data: "desc" },
+      },
+      installments: {
+        orderBy: { data_vencimento: "asc" },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const multiProject = projects.length > 1;
+  const activities = projects
+    .flatMap((project) => project.timeline)
+    .sort((a, b) => b.data.getTime() - a.data.getTime())
+    .map(mapTimelineToActivity);
+
+  const payments = projects
+    .flatMap((project) =>
+      project.installments.map((inst, index) =>
+        mapInstallmentToPayment(
+          inst,
+          index,
+          project.installments.length,
+          multiProject
+        )
+      )
+    )
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+
+  return { activities, payments };
+}
+
 export async function getClientDetailsAction(clientId: string) {
   const isProduction = process.env.NODE_ENV === "production";
 
@@ -722,14 +832,13 @@ export async function getClientDetailsAction(clientId: string) {
     }
 
     const formattedClient = formatClientRecord(client);
+    const { activities, payments } = await loadClientActivitiesAndPayments(clientId);
 
     return {
       success: true,
       client: formattedClient,
-      activities: MOCK_ACTIVITIES[clientId] || [
-        { id: `act-${Date.now()}`, data: new Date().toISOString(), titulo: "Registro de Cadastro", descricao: "Acesso de consulta do perfil do cliente.", autor: "Sistema" }
-      ],
-      payments: MOCK_PAYMENTS[clientId] || []
+      activities,
+      payments,
     };
   } catch (e) {
     if (!isProduction) {
@@ -745,17 +854,66 @@ export async function getClientDetailsAction(clientId: string) {
   }
 }
 
-export async function addActivityAction(clientId: string, titulo: string, descricao: string, autor: string) {
-  const newActivity: Activity = {
-    id: `act-new-${Date.now()}`,
-    data: new Date().toISOString(),
-    titulo,
-    descricao,
-    autor
-  };
-  return {
-    success: true,
-    activity: newActivity
-  };
+export async function addActivityAction(
+  clientId: string,
+  titulo: string,
+  descricao: string
+) {
+  if (isDatabaseOffline()) {
+    const newActivity: Activity = {
+      id: `act-new-${Date.now()}`,
+      data: new Date().toISOString(),
+      titulo,
+      descricao,
+      autor: "Administrador",
+    };
+    return { success: true, activity: newActivity };
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { success: false, error: "Usuário não autenticado." };
+  }
+
+  const project = await prisma.project.findFirst({
+    where: { client_id: clientId },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true },
+  });
+
+  if (!project) {
+    return {
+      success: false,
+      error:
+        "Este cliente ainda não possui projeto. Crie um projeto no funil comercial para registrar atividades.",
+    };
+  }
+
+  const acao = descricao.trim()
+    ? `${titulo.trim()} — ${descricao.trim()}`
+    : titulo.trim();
+
+  try {
+    const entry = await prisma.timeline.create({
+      data: {
+        project_id: project.id,
+        user_id: userId,
+        acao,
+        interno_sotamente: false,
+      },
+      include: { user: { select: { name: true } } },
+    });
+
+    revalidatePath(`/clientes/${clientId}`);
+    revalidatePath(`/projects/${project.id}`);
+
+    return {
+      success: true,
+      activity: mapTimelineToActivity(entry),
+    };
+  } catch (error) {
+    console.error("Erro ao registrar atividade do cliente:", error);
+    return { success: false, error: "Não foi possível salvar a atividade." };
+  }
 }
 

@@ -2,8 +2,7 @@
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { ensureActorUserId } from "@/lib/currentUser";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -72,7 +71,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           project_id: projectId,
           acao: `Orçamento comercial v${nextVersion} criado no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.valor_final)}`,
           interno_sotamente: false,
-          user_id: await getLoggedUserId()
+          user_id: await ensureActorUserId()
         }
       });
 
@@ -136,7 +135,7 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
         project_id: projectId,
         acao: `Proposta comercial v${version} foi APROVADA pelo cliente. Projeto movido para a etapa de Preparação Técnica.`,
         interno_sotamente: false,
-        user_id: await getLoggedUserId()
+        user_id: await ensureActorUserId()
       }
     });
 
@@ -170,7 +169,7 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
           project_id: projectId,
           acao: `Orçamento comercial v${version} foi excluído do sistema`,
           interno_sotamente: true,
-          user_id: await getLoggedUserId()
+          user_id: await ensureActorUserId()
         }
       });
     });
@@ -363,7 +362,7 @@ export async function createProjectForClient(clientId: string, companyId: string
         project_id: project.id,
         acao: `Projeto temporário criado para orçamento comercial de cliente existente`,
         interno_sotamente: true,
-        user_id: await getLoggedUserId()
+        user_id: await ensureActorUserId()
       }
     });
 
@@ -441,7 +440,7 @@ export async function createQuickClientAndProject(data: {
           project_id: project.id,
           acao: `Lead avulso e projeto criados automaticamente para orçamento comercial`,
           interno_sotamente: true,
-          user_id: await getLoggedUserId()
+          user_id: await ensureActorUserId()
         }
       });
 
@@ -459,56 +458,5 @@ export async function createQuickClientAndProject(data: {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao criar cadastro avulso no banco remoto" };
   }
 }
-
-// Auxiliar para buscar dinamicamente o ID do usuário logado real ou fallback
-async function getLoggedUserId(): Promise<string> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    }).catch(() => null);
-
-    if (session?.user?.id) {
-      return session.user.id;
-    }
-
-    const firstUser = await prisma.user.findFirst();
-    if (firstUser?.id) {
-      return firstUser.id;
-    }
-
-    // Se a base do Neon de produção estiver vazia (sem seed nem usuários), 
-    // garantimos a criação física da empresa e usuário de mock dinamicamente
-    // para impedir violações de restrição de chave estrangeira (FK) na Timeline.
-    await prisma.company.upsert({
-      where: { id: "mock-company-id" },
-      update: {},
-      create: {
-        id: "mock-company-id",
-        nome: "Móveis Unghero",
-        cnpj: "13.415.510/0001-71",
-        telefone: "(54) 9 9997-1050",
-        email: "moveisunghero@gmail.com"
-      }
-    });
-
-    const mockUser = await prisma.user.upsert({
-      where: { id: "system-admin-mock-id" },
-      update: {},
-      create: {
-        id: "system-admin-mock-id",
-        name: "Gustavo Hipólito (Demo)",
-        email: "gustavo@moveisunghero.com.br",
-        cargo: "ADMIN",
-        company_id: "mock-company-id"
-      }
-    });
-
-    return mockUser.id;
-  } catch (error) {
-    console.warn("Erro ao obter usuário logado ou fallback, usando mock:", error);
-  }
-  return "system-admin-mock-id";
-}
-
 
 

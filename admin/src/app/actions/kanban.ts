@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getCurrentUserId } from "@/lib/currentUser";
 
 export type ProjectStatus =
   | "LEAD"
@@ -165,12 +166,17 @@ export async function createLead(formData: {
         },
       });
 
+      const actorUserId = await getCurrentUserId();
+      if (!actorUserId) {
+        throw new Error("Usuário não autenticado para registrar o lead.");
+      }
+
       await tx.timeline.create({
         data: {
           project_id: project.id,
           acao: "Lead criado no sistema",
           interno_sotamente: false,
-          user_id: "system-admin-mock-id",
+          user_id: actorUserId,
         },
       });
 
