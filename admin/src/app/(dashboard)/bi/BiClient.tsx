@@ -28,8 +28,16 @@ interface Project {
   };
 }
 
+interface Partner {
+  id: string;
+  nome: string;
+  cidade: string | null;
+  tipo: string;
+}
+
 interface BiClientProps {
   initialProjects: Project[];
+  initialPartners: Partner[];
 }
 
 const COLUMNS_CRM = [
@@ -43,7 +51,7 @@ const COLUMNS_CRM = [
   { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" }
 ];
 
-export default function BiClient({ initialProjects }: BiClientProps) {
+export default function BiClient({ initialProjects, initialPartners }: BiClientProps) {
   const [filterPeriod, setFilterPeriod] = useState<"30" | "90" | "365">("90");
 
   const formatCurrency = (val: number) => {
@@ -96,27 +104,56 @@ export default function BiClient({ initialProjects }: BiClientProps) {
 
   const maxOriginValue = Math.max(...originsData.map(o => o.value), 1);
 
-  // 4. Ranking de Projetistas e Comissões
-  // Mock de projetistas parceiros
-  const designers = [
-    { name: "Patricia Albuquerque (Farroupilha)", city: "Farroupilha", salesIds: ["proj-2", "proj-5"] },
-    { name: "Gustavo Lemos (Caxias)", city: "Caxias do Sul", salesIds: ["proj-1", "proj-6", "proj-8"] },
-    { name: "Fernanda Castoldi (Bento)", city: "Bento Gonçalves", salesIds: ["proj-3", "proj-4", "proj-7"] }
-  ];
-
-  const designerRanking = designers.map(des => {
-    const list = initialProjects.filter(p => des.salesIds.includes(p.id));
-    const totalSold = list.reduce((acc, p) => acc + p.valor_previsto, 0);
-    // Comissão da Unghero para parceiros especificadores é de 5% sobre projetos vendidos
-    const comission = totalSold * 0.05;
+  // 4. Ranking de Projetistas e Comissões reais (ProfessionalPartner)
+  const designerRanking = initialPartners.map(partner => {
+    // Como a modelagem do banco não possui um relacionamento direto ou chave estrangeira conectando
+    // projetos a ProfessionalPartner, as vendas reais registradas no banco de dados são 0.
+    const totalSold = 0;
+    const comission = 0;
     return {
-      name: des.name,
-      city: des.city,
-      count: list.length,
+      name: partner.nome,
+      city: partner.cidade || "Não informada",
+      count: 0,
       totalSold,
       comission
     };
-  }).sort((a, b) => b.totalSold - a.totalSold);
+  });
+
+  // 5. Cálculo Dinâmico do Destaque Comercial Real
+  let highlightText = "";
+  if (activeClosedProjects.length > 0 && grossRevenue > 0) {
+    const ticketMedio = grossRevenue / activeClosedProjects.length;
+    
+    // Calcular faturamento por origem nos projetos fechados
+    const originRevenues: Record<string, number> = {};
+    activeClosedProjects.forEach(p => {
+      const orig = p.client.origem;
+      originRevenues[orig] = (originRevenues[orig] || 0) + p.valor_previsto;
+    });
+    
+    const sortedOrigins = Object.entries(originRevenues)
+      .map(([name, val]) => ({ name, val }))
+      .sort((a, b) => b.val - a.val);
+      
+    if (sortedOrigins.length > 0) {
+      const mainOrigin = sortedOrigins[0];
+      const pct = (mainOrigin.val / grossRevenue) * 100;
+      
+      const originLabels: Record<string, string> = {
+        INSTAGRAM: "Instagram",
+        INDICACAO: "Indicação de Clientes",
+        SITE: "Site institucional",
+        GOOGLE: "Google Search",
+        WHATSAPP: "WhatsApp",
+        FACEBOOK: "Facebook"
+      };
+      const originLabel = originLabels[mainOrigin.name] || mainOrigin.name;
+      
+      highlightText = `Os leads via ${originLabel} são responsáveis por ${pct.toFixed(0)}% da receita aprovada, com ticket médio real de ${formatCurrency(ticketMedio)} por projeto fechado.`;
+    }
+  } else {
+    highlightText = "Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.";
+  }
 
   return (
     <div className="space-y-[var(--space-6)] pb-[var(--space-8)]">
@@ -140,14 +177,12 @@ export default function BiClient({ initialProjects }: BiClientProps) {
           value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
           icon={TrendingUp}
           accent="primary"
-          trend={{ value: "+14,2% este mês", positive: true }}
         />
         <KpiCard
           label="Receita aprovada"
           value={<span className="privacy-value">{formatCurrency(grossRevenue)}</span>}
           icon={DollarSign}
           accent="success"
-          trend={{ value: "+8,7% vs meta", positive: true }}
         />
         <KpiCard
           label="Custo insumos (est.)"
@@ -161,7 +196,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
           value={<span className="privacy-value">{formatCurrency(netProfit)}</span>}
           icon={Award}
           accent="warning"
-          trend={{ value: `Margem ${profitMargin.toFixed(1)}%`, positive: profitMargin > 0 }}
+          trend={grossRevenue > 0 ? { value: `Margem ${profitMargin.toFixed(1)}%`, positive: profitMargin > 0 } : undefined}
         />
       </div>
 
@@ -242,7 +277,7 @@ export default function BiClient({ initialProjects }: BiClientProps) {
             <div className="text-xs">
               <strong className="text-amber-800 font-bold block mb-0.5">Destaque Comercial:</strong>
               <p className="text-amber-700/80 leading-relaxed font-medium">
-                Os leads via <span className="font-bold text-amber-800">Indicação de Clientes e Instagram</span> são responsáveis por 70% do nosso faturamento, com ticket médio superior a R$ 80.000,00 por projeto.
+                {highlightText}
               </p>
             </div>
           </div>
@@ -263,35 +298,41 @@ export default function BiClient({ initialProjects }: BiClientProps) {
 
         {/* Mobile: cards */}
         <div className="md:hidden space-y-[var(--space-3)]">
-          {designerRanking.map((des, index) => (
-            <div key={index} className="surface-compact p-[var(--space-3)] space-y-[var(--space-2)]">
-              <div className="flex items-center gap-[var(--space-3)]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-primary/15">
-                  <Users className="h-4 w-4 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-title text-sm font-semibold truncate">{des.name}</p>
-                  <p className="text-caption text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> {des.city}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-[var(--space-2)] text-center">
-                <div>
-                  <p className="text-label text-muted-foreground">Projetos</p>
-                  <p className="text-title font-bold">{des.count}</p>
-                </div>
-                <div>
-                  <p className="text-label text-muted-foreground">Faturamento</p>
-                  <p className="text-caption font-bold privacy-value">{formatCurrency(des.totalSold)}</p>
-                </div>
-                <div>
-                  <p className="text-label text-muted-foreground">Comissão</p>
-                  <p className="text-caption font-bold text-[hsl(var(--success))] privacy-value">{formatCurrency(des.comission)}</p>
-                </div>
-              </div>
+          {designerRanking.length === 0 ? (
+            <div className="text-center py-8 text-sm text-muted-foreground bg-slate-50/50 border border-dashed rounded-xl">
+              Nenhum parceiro profissional cadastrado.
             </div>
-          ))}
+          ) : (
+            designerRanking.map((des, index) => (
+              <div key={index} className="surface-compact p-[var(--space-3)] space-y-[var(--space-2)]">
+                <div className="flex items-center gap-[var(--space-3)]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-primary/15">
+                    <Users className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-title text-sm font-semibold truncate">{des.name}</p>
+                    <p className="text-caption text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> {des.city}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-[var(--space-2)] text-center">
+                  <div>
+                    <p className="text-label text-muted-foreground">Projetos</p>
+                    <p className="text-title font-bold">{des.count}</p>
+                  </div>
+                  <div>
+                    <p className="text-label text-muted-foreground">Faturamento</p>
+                    <p className="text-caption font-bold privacy-value">{formatCurrency(des.totalSold)}</p>
+                  </div>
+                  <div>
+                    <p className="text-label text-muted-foreground">Comissão</p>
+                    <p className="text-caption font-bold text-[hsl(var(--success))] privacy-value">{formatCurrency(des.comission)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         <div className="hidden md:block overflow-x-auto">
@@ -306,37 +347,45 @@ export default function BiClient({ initialProjects }: BiClientProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20 text-neutral-700">
-              {designerRanking.map((des, index) => (
-                <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
-                        <Users className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5 text-primary" />
-                      {des.city}
-                    </div>
-                  </td>
-                  <td className="p-3 text-center font-bold text-neutral-800">
-                    {des.count}
-                  </td>
-                  <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
-                    {formatCurrency(des.totalSold)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-xs privacy-value">
-                      {formatCurrency(des.comission)}
-                    </span>
+              {designerRanking.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-sm text-muted-foreground">
+                    Nenhum parceiro profissional cadastrado.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                designerRanking.map((des, index) => (
+                  <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 text-primary" />
+                        {des.city}
+                      </div>
+                    </td>
+                    <td className="p-3 text-center font-bold text-neutral-800">
+                      {des.count}
+                    </td>
+                    <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
+                      {formatCurrency(des.totalSold)}
+                    </td>
+                    <td className="p-3 text-right">
+                      <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-xs privacy-value">
+                        {formatCurrency(des.comission)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

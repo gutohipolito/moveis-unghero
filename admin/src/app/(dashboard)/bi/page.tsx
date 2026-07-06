@@ -8,6 +8,7 @@ export default async function BIPage() {
   const userCompanyId = await getSessionCompanyId();
 
   let projects: any[] = [];
+  let partners: any[] = [];
   try {
     projects = await prisma.project.findMany({
       where: { client: { company_id: userCompanyId } },
@@ -27,8 +28,19 @@ export default async function BIPage() {
         },
       },
     });
+
+    partners = await prisma.professionalPartner.findMany({
+      where: { company_id: userCompanyId, ativo: true },
+      select: {
+        id: true,
+        nome: true,
+        cidade: true,
+        tipo: true,
+      },
+      orderBy: { nome: "asc" }
+    });
   } catch (error) {
-    console.warn("Conexão ao banco falhou no carregamento do BI.", error);
+    console.warn("Falha ao se conectar com banco de dados no BI.", error);
   }
 
   const formattedProjects = projects.map((p) => ({
@@ -47,7 +59,7 @@ export default async function BIPage() {
         <PrivacyToggle />
       </PageHeader>
 
-      <BiClient initialProjects={formattedProjects} />
+      <BiClient initialProjects={formattedProjects} initialPartners={partners} />
     </div>
   );
 }
