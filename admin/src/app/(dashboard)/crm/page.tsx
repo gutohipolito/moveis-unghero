@@ -12,6 +12,22 @@ const PROJECT_SELECT = {
   ultimo_contato_em: true,
   createdAt: true,
   motivo_perda: true,
+  observacoes: true,
+  timeline: {
+    select: {
+      id: true,
+      acao: true,
+      data: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      data: "desc" as const,
+    },
+  },
   client: {
     select: {
       id: true,
@@ -49,6 +65,13 @@ export default async function CRMPage() {
       : null,
     createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : null,
     motivo_perda: p.motivo_perda || null,
+    observacoes: p.observacoes || null,
+    timeline: p.timeline ? p.timeline.map((t: any) => ({
+      id: t.id,
+      acao: t.acao,
+      data: t.data ? new Date(t.data).toISOString() : new Date().toISOString(),
+      user: t.user,
+    })) : [],
     client: p.client,
   }));
 

@@ -251,3 +251,66 @@ export async function updateProjectAction(
     return { success: false, error: "Não foi possível atualizar o status do projeto." };
   }
 }
+
+export async function addProjectTimelineAction(projectId: string, text: string) {
+  try {
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    const timelineItem = await prisma.timeline.create({
+      data: {
+        project_id: projectId,
+        acao: text.trim(),
+        interno_sotamente: false,
+        user_id: actorUserId,
+      },
+      include: {
+        user: {
+          select: { name: true }
+        }
+      }
+    });
+
+    revalidateCrmPaths();
+    return { 
+      success: true, 
+      timelineItem: {
+        id: timelineItem.id,
+        acao: timelineItem.acao,
+        data: timelineItem.data.toISOString(),
+        user: { name: timelineItem.user.name }
+      }
+    };
+  } catch (error) {
+    console.error("Erro ao adicionar histórico:", error);
+    return { success: false, error: "Não foi possível registrar a anotação." };
+  }
+}
+
+export async function updateProjectCommercialAction(
+  projectId: string,
+  data: {
+    valor_previsto: number;
+    status_geral: ProjectStatus;
+    observacoes?: string;
+  }
+) {
+  try {
+    const project = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        valor_previsto: data.valor_previsto,
+        status_geral: data.status_geral,
+        observacoes: data.observacoes !== undefined ? data.observacoes : null,
+      },
+    });
+
+    revalidateCrmPaths();
+    return { success: true, project };
+  } catch (error) {
+    console.error("Erro ao atualizar projeto comercial:", error);
+    return { success: false, error: "Não foi possível salvar as alterações comerciais." };
+  }
+}
