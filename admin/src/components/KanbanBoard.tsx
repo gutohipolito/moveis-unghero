@@ -96,99 +96,79 @@ const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
   { id: "FINALIZADO", title: "Finalizados" },
 ];
 
-/** Tema visual por etapa — coluna e cards herdam a mesma cor. */
+/** Tema visual por etapa — cabeçalho colorido; cards filhos só com borda e sombra. */
 const STAGE_THEME: Record<
   string,
   {
     header: string;
-    column: string;
-    card: string;
+    cardBorder: string;
+    cardShadow: string;
     cardHover: string;
-    title: string;
-    innerBorder: string;
-    tag: string;
+    dropRing: string;
   }
 > = {
   LEAD: {
-    header: "border-t-[3px] border-t-amber-500 bg-gradient-to-b from-amber-500/15 to-amber-500/[0.03] text-amber-900",
-    column: "bg-amber-500/[0.04] border-amber-500/20",
-    card: "border-l-[3px] border-l-amber-500 border-amber-500/35 shadow-[0_2px_10px_-3px_rgba(245,158,11,0.35)]",
-    cardHover: "hover:border-amber-500/55 hover:shadow-[0_4px_14px_-3px_rgba(245,158,11,0.4)]",
-    title: "text-amber-800",
-    innerBorder: "border-amber-500/35",
-    tag: "border-amber-500/30 text-amber-800 bg-amber-500/10",
+    header: "border-t-[3px] border-t-amber-500 bg-gradient-to-b from-amber-500/15 to-transparent text-amber-900",
+    cardBorder: "border-amber-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(245,158,11,0.45)]",
+    cardHover: "hover:border-amber-500/75 hover:shadow-[0_4px_14px_-3px_rgba(245,158,11,0.5)]",
+    dropRing: "ring-amber-500/35",
   },
   ORCAMENTO: {
-    header: "border-t-[3px] border-t-orange-500 bg-gradient-to-b from-orange-500/15 to-orange-500/[0.03] text-orange-900",
-    column: "bg-orange-500/[0.04] border-orange-500/20",
-    card: "border-l-[3px] border-l-orange-500 border-orange-500/35 shadow-[0_2px_10px_-3px_rgba(249,115,22,0.35)]",
-    cardHover: "hover:border-orange-500/55 hover:shadow-[0_4px_14px_-3px_rgba(249,115,22,0.4)]",
-    title: "text-orange-800",
-    innerBorder: "border-orange-500/35",
-    tag: "border-orange-500/30 text-orange-800 bg-orange-500/10",
+    header: "border-t-[3px] border-t-orange-500 bg-gradient-to-b from-orange-500/15 to-transparent text-orange-900",
+    cardBorder: "border-orange-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(249,115,22,0.45)]",
+    cardHover: "hover:border-orange-500/75 hover:shadow-[0_4px_14px_-3px_rgba(249,115,22,0.5)]",
+    dropRing: "ring-orange-500/35",
   },
   NEGOCIACAO: {
-    header: "border-t-[3px] border-t-sky-500 bg-gradient-to-b from-sky-500/15 to-sky-500/[0.03] text-sky-900",
-    column: "bg-sky-500/[0.04] border-sky-500/20",
-    card: "border-l-[3px] border-l-sky-500 border-sky-500/35 shadow-[0_2px_10px_-3px_rgba(14,165,233,0.35)]",
-    cardHover: "hover:border-sky-500/55 hover:shadow-[0_4px_14px_-3px_rgba(14,165,233,0.4)]",
-    title: "text-sky-800",
-    innerBorder: "border-sky-500/35",
-    tag: "border-sky-500/30 text-sky-800 bg-sky-500/10",
+    header: "border-t-[3px] border-t-sky-500 bg-gradient-to-b from-sky-500/15 to-transparent text-sky-900",
+    cardBorder: "border-sky-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(14,165,233,0.45)]",
+    cardHover: "hover:border-sky-500/75 hover:shadow-[0_4px_14px_-3px_rgba(14,165,233,0.5)]",
+    dropRing: "ring-sky-500/35",
   },
   CONFERENCIA_TECNICA: {
-    header: "border-t-[3px] border-t-violet-500 bg-gradient-to-b from-violet-500/15 to-violet-500/[0.03] text-violet-900",
-    column: "bg-violet-500/[0.04] border-violet-500/20",
-    card: "border-l-[3px] border-l-violet-500 border-violet-500/35 shadow-[0_2px_10px_-3px_rgba(139,92,246,0.35)]",
-    cardHover: "hover:border-violet-500/55 hover:shadow-[0_4px_14px_-3px_rgba(139,92,246,0.4)]",
-    title: "text-violet-800",
-    innerBorder: "border-violet-500/35",
-    tag: "border-violet-500/30 text-violet-800 bg-violet-500/10",
+    header: "border-t-[3px] border-t-violet-500 bg-gradient-to-b from-violet-500/15 to-transparent text-violet-900",
+    cardBorder: "border-violet-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(139,92,246,0.45)]",
+    cardHover: "hover:border-violet-500/75 hover:shadow-[0_4px_14px_-3px_rgba(139,92,246,0.5)]",
+    dropRing: "ring-violet-500/35",
   },
   APROVADO: {
-    header: "border-t-[3px] border-t-emerald-500 bg-gradient-to-b from-emerald-500/15 to-emerald-500/[0.03] text-emerald-900",
-    column: "bg-emerald-500/[0.04] border-emerald-500/20",
-    card: "border-l-[3px] border-l-emerald-500 border-emerald-500/35 shadow-[0_2px_10px_-3px_rgba(16,185,129,0.35)]",
-    cardHover: "hover:border-emerald-500/55 hover:shadow-[0_4px_14px_-3px_rgba(16,185,129,0.4)]",
-    title: "text-emerald-800",
-    innerBorder: "border-emerald-500/35",
-    tag: "border-emerald-500/30 text-emerald-800 bg-emerald-500/10",
+    header: "border-t-[3px] border-t-emerald-500 bg-gradient-to-b from-emerald-500/15 to-transparent text-emerald-900",
+    cardBorder: "border-emerald-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(16,185,129,0.45)]",
+    cardHover: "hover:border-emerald-500/75 hover:shadow-[0_4px_14px_-3px_rgba(16,185,129,0.5)]",
+    dropRing: "ring-emerald-500/35",
   },
   PRODUCAO: {
-    header: "border-t-[3px] border-t-teal-500 bg-gradient-to-b from-teal-500/15 to-teal-500/[0.03] text-teal-900",
-    column: "bg-teal-500/[0.04] border-teal-500/20",
-    card: "border-l-[3px] border-l-teal-500 border-teal-500/35 shadow-[0_2px_10px_-3px_rgba(20,184,166,0.35)]",
-    cardHover: "hover:border-teal-500/55 hover:shadow-[0_4px_14px_-3px_rgba(20,184,166,0.4)]",
-    title: "text-teal-800",
-    innerBorder: "border-teal-500/35",
-    tag: "border-teal-500/30 text-teal-800 bg-teal-500/10",
+    header: "border-t-[3px] border-t-teal-500 bg-gradient-to-b from-teal-500/15 to-transparent text-teal-900",
+    cardBorder: "border-teal-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(20,184,166,0.45)]",
+    cardHover: "hover:border-teal-500/75 hover:shadow-[0_4px_14px_-3px_rgba(20,184,166,0.5)]",
+    dropRing: "ring-teal-500/35",
   },
   INSTALACAO: {
-    header: "border-t-[3px] border-t-indigo-500 bg-gradient-to-b from-indigo-500/15 to-indigo-500/[0.03] text-indigo-900",
-    column: "bg-indigo-500/[0.04] border-indigo-500/20",
-    card: "border-l-[3px] border-l-indigo-500 border-indigo-500/35 shadow-[0_2px_10px_-3px_rgba(99,102,241,0.35)]",
-    cardHover: "hover:border-indigo-500/55 hover:shadow-[0_4px_14px_-3px_rgba(99,102,241,0.4)]",
-    title: "text-indigo-800",
-    innerBorder: "border-indigo-500/35",
-    tag: "border-indigo-500/30 text-indigo-800 bg-indigo-500/10",
+    header: "border-t-[3px] border-t-indigo-500 bg-gradient-to-b from-indigo-500/15 to-transparent text-indigo-900",
+    cardBorder: "border-indigo-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(99,102,241,0.45)]",
+    cardHover: "hover:border-indigo-500/75 hover:shadow-[0_4px_14px_-3px_rgba(99,102,241,0.5)]",
+    dropRing: "ring-indigo-500/35",
   },
   FINALIZADO: {
-    header: "border-t-[3px] border-t-slate-500 bg-gradient-to-b from-slate-500/15 to-slate-500/[0.03] text-slate-800",
-    column: "bg-slate-500/[0.04] border-slate-500/20",
-    card: "border-l-[3px] border-l-slate-500 border-slate-500/35 shadow-[0_2px_10px_-3px_rgba(100,116,139,0.3)]",
-    cardHover: "hover:border-slate-500/55 hover:shadow-[0_4px_14px_-3px_rgba(100,116,139,0.35)]",
-    title: "text-slate-700",
-    innerBorder: "border-slate-500/35",
-    tag: "border-slate-500/30 text-slate-700 bg-slate-500/10",
+    header: "border-t-[3px] border-t-slate-500 bg-gradient-to-b from-slate-500/15 to-transparent text-slate-800",
+    cardBorder: "border-slate-500/45",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(100,116,139,0.35)]",
+    cardHover: "hover:border-slate-500/65 hover:shadow-[0_4px_14px_-3px_rgba(100,116,139,0.4)]",
+    dropRing: "ring-slate-500/35",
   },
   PERDIDO: {
-    header: "border-t-[3px] border-t-rose-500 bg-gradient-to-b from-rose-500/15 to-rose-500/[0.03] text-rose-900",
-    column: "bg-rose-500/[0.04] border-rose-500/20",
-    card: "border-l-[3px] border-l-rose-500 border-rose-500/35 shadow-[0_2px_10px_-3px_rgba(244,63,94,0.3)]",
-    cardHover: "hover:border-rose-500/55 hover:shadow-[0_4px_14px_-3px_rgba(244,63,94,0.35)]",
-    title: "text-rose-800",
-    innerBorder: "border-rose-500/35",
-    tag: "border-rose-500/30 text-rose-800 bg-rose-500/10",
+    header: "border-t-[3px] border-t-rose-500 bg-gradient-to-b from-rose-500/15 to-transparent text-rose-900",
+    cardBorder: "border-rose-500/50",
+    cardShadow: "shadow-[0_2px_10px_-4px_rgba(244,63,94,0.4)]",
+    cardHover: "hover:border-rose-500/75 hover:shadow-[0_4px_14px_-3px_rgba(244,63,94,0.45)]",
+    dropRing: "ring-rose-500/35",
   },
 };
 
@@ -697,18 +677,18 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(project)}
-        className={`group kanban-card overflow-hidden ${theme.card} ${theme.cardHover} ${
+        className={`group kanban-card kanban-card-stage overflow-hidden border ${theme.cardBorder} ${theme.cardShadow} ${theme.cardHover} ${
           boardView === "funil" ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
-        } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
+        } ${followLevel === "ok" ? "" : FOLLOW_UP_CARD_STYLES[followLevel]}`}
       >
         <div className="space-y-[var(--space-2)]">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border ${theme.tag}`}
+                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border border-border bg-secondary/60 text-muted-foreground"
                 >
                   {labelOrigin(project.client.origem)}
                 </span>
@@ -775,14 +755,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     project.status_geral === "INSTALACAO" ||
                     project.status_geral === "FINALIZADO") && (
                     <div>
-                      <span
-                        className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${theme.title}`}
-                      >
+                      <span className="text-[9px] font-semibold uppercase tracking-wide block mb-1 text-muted-foreground">
                         Fábrica & Montagem
                       </span>
-                      <div
-                        className={`text-[10px] text-muted-foreground bg-white border ${theme.innerBorder} py-1.5 px-2 rounded-lg font-medium`}
-                      >
+                      <div className="text-[10px] text-muted-foreground bg-white border border-border py-1.5 px-2 rounded-lg font-medium">
                         {getProductionProgress(project.id, project.status_geral)}
                       </div>
                     </div>
@@ -790,10 +766,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
                   {project.status_geral === "PERDIDO" && project.motivo_perda && (
                     <div>
-                      <span className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${theme.title}`}>
+                      <span className="text-[9px] font-semibold uppercase tracking-wide block mb-1 text-muted-foreground">
                         Motivo da perda
                       </span>
-                      <p className={`text-[10px] text-muted-foreground bg-white border ${theme.innerBorder} rounded-lg p-2`}>
+                      <p className="text-[10px] text-muted-foreground bg-white border border-border rounded-lg p-2">
                         {project.motivo_perda}
                       </p>
                     </div>
@@ -900,8 +876,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`kanban-column surface-compact flex flex-col transition-all duration-[var(--motion-base)] border ${theme.column} ${
-                isOver ? "ring-2 ring-primary/30 shadow-[var(--shadow-md)] scale-[1.01]" : ""
+              className={`kanban-column surface-compact flex flex-col transition-all duration-[var(--motion-base)] ${
+                isOver ? `ring-2 ${theme.dropRing} shadow-[var(--shadow-md)] scale-[1.01]` : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}

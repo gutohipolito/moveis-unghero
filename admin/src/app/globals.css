@@ -810,10 +810,13 @@ body {
   padding: var(--space-3);
   border-radius: var(--radius-md);
   background: hsl(var(--surface));
-  border: 1px solid hsl(var(--border));
-  box-shadow: var(--shadow-xs);
   transition: border-color var(--motion-fast) var(--ease-out),
     box-shadow var(--motion-fast) var(--ease-out);
+}
+
+.kanban-card-stage {
+  border-width: 1px;
+  border-style: solid;
 }
 
 .kanban-card-action {
