@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
+import { shouldUseOfflineMocks } from "@/lib/devMocks";
 import {
   buildFollowUpNotifications,
   buildInvoiceNotifications,
@@ -31,11 +32,15 @@ export async function getNotifications(companyId: string): Promise<{
   success: boolean;
   notifications: AppNotification[];
 }> {
-  if (isDatabaseOffline()) {
+  if (shouldUseOfflineMocks()) {
     return {
       success: true,
       notifications: buildFollowUpNotifications(MOCK_NOTIFICATION_PROJECTS),
     };
+  }
+
+  if (isDatabaseOffline()) {
+    return { success: true, notifications: [] };
   }
 
   try {

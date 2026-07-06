@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { logoutCliente } from "@/app/actions/cliente";
+import type { ClientPortalData } from "@/lib/clientPortal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -19,52 +20,15 @@ import {
   Smile
 } from "lucide-react";
 
-interface Environment {
-  id: string;
-  nome: string;
-  tipo: string;
-  status: string;
-}
-
-interface ProjectFile {
-  id: string;
-  tipo: string;
-  nome_arquivo: string;
-  url: string;
-}
-
 interface TimelineEvent {
   id: string;
   acao: string;
   data: string;
-}
-
-interface Installment {
-  id: string;
-  valor: number;
-  data_vencimento: string;
-  data_pagamento: string | null;
-  status: string;
-  tipo: string;
-}
-
-interface ClientData {
-  id: string;
-  nome: string;
-  cidade: string;
-  project: {
-    id: string;
-    valor_previsto: number;
-    status_geral: string;
-    environments: Environment[];
-    files: ProjectFile[];
-    timeline: TimelineEvent[];
-    installments: Installment[];
-  } | null;
+  autor?: string;
 }
 
 interface ClienteDashboardClientProps {
-  client: ClientData;
+  client: ClientPortalData;
   isMock: boolean;
 }
 
@@ -217,7 +181,20 @@ export default function ClienteDashboardClient({ client, isMock }: ClienteDashbo
         {/* ================= ABA 1: PROGRESSO DO SONHO ================= */}
         {activeTab === "progress" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-300">
-            
+            {!project ? (
+              <div className="lg:col-span-12">
+                <Card className="p-8 bg-card/20 border-[#2d241f] text-center space-y-3">
+                  <h3 className="text-base font-bold text-foreground">
+                    Seu projeto está sendo preparado
+                  </h3>
+                  <p className="text-sm text-[#b8a090] max-w-lg mx-auto leading-relaxed">
+                    Nossa equipe comercial está organizando as informações do seu atendimento.
+                    Em breve você verá aqui o progresso, renders e o cronograma financeiro.
+                  </p>
+                </Card>
+              </div>
+            ) : (
+            <>
             {/* Bloco de Progresso Linear */}
             <div className="lg:col-span-8 space-y-6">
               <Card className="p-6 bg-card/20 border-[#2d241f]">
@@ -321,6 +298,11 @@ export default function ClienteDashboardClient({ client, isMock }: ClienteDashbo
                           <p className="text-xs text-neutral-300 leading-relaxed pr-2">
                             {event.acao}
                           </p>
+                          {event.autor && (
+                            <span className="text-[10px] text-primary/80 font-semibold">
+                              {event.autor}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))
@@ -328,6 +310,8 @@ export default function ClienteDashboardClient({ client, isMock }: ClienteDashbo
                 </div>
               </Card>
             </div>
+            </>
+            )}
           </div>
         )}
 

@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
+import { allowDevMocks } from "@/lib/devMocks";
 import { getMyTimeCards, getColaboradorMetrics } from "@/app/actions/ponto";
 import PortalColaboradorClient from "@/components/PortalColaboradorClient";
 
@@ -27,9 +29,13 @@ const MOCK_TASKS = [
 export default async function PortalColaboradorPage() {
   const session = await getSessionSafe(await headers()).catch(() => null);
 
-  const userId = session?.user?.id || "zhugccYr8CSUHnP5ARWrpQptplupF2mM";
-  const userName = session?.user?.name || "Colaborador Unghero";
-  const userCargo = session?.user?.cargo || "PRODUCAO";
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const userId = session.user.id;
+  const userName = session.user.name;
+  const userCargo = session.user.cargo;
 
   let tasks: any[] = [];
   let timeCards: any[] = [];
@@ -43,7 +49,7 @@ export default async function PortalColaboradorPage() {
 
   const isProduction = process.env.NODE_ENV === "production";
 
-  if (isDatabaseOffline() && !isProduction) {
+  if (isDatabaseOffline() && allowDevMocks()) {
     tasks = MOCK_TASKS;
     timeCards = [
       {
@@ -100,7 +106,7 @@ export default async function PortalColaboradorPage() {
       }
 
       // Se não tiver tarefas vinculadas de verdade, preenche com mocks para preencher o visual do cliente (apenas fora de produção)
-      if (tasks.length === 0 && !isProduction) {
+      if (tasks.length === 0 && allowDevMocks()) {
         tasks = MOCK_TASKS;
         metrics.ativos += MOCK_TASKS.length;
         metrics.totalGeral += MOCK_TASKS.length;
@@ -108,7 +114,7 @@ export default async function PortalColaboradorPage() {
 
     } catch (error) {
       console.warn("Falha de conexão com banco de dados no Portal do Colaborador.");
-      if (!isProduction) {
+      if (allowDevMocks()) {
         tasks = MOCK_TASKS;
         timeCards = [];
         metrics = {

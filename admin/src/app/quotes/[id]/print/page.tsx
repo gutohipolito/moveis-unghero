@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { resolveClientDocument } from "@/lib/clientDocument";
+import { allowDevMocks } from "@/lib/devMocks";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
 
@@ -117,72 +119,48 @@ function PrintFooter({ version }: { version: number }) {
 
 export default async function PrintQuotePage({ params }: PrintPageProps) {
   const { id } = await params;
-  
+
   let quote = null;
   let isMock = false;
 
   try {
-    // Busca do banco
     const dbQuote = await prisma.quote.findUnique({
       where: { id },
       include: {
         items: true,
         project: {
           include: {
-            client: true
-          }
-        }
-      }
+            client: true,
+          },
+        },
+      },
     });
 
     if (dbQuote) {
-      // Serializa decimais em number para evitar quebras no Intl.NumberFormat do Node.js em produção
       quote = {
         ...dbQuote,
         subtotal: Number(dbQuote.subtotal),
         desconto: Number(dbQuote.desconto),
         valor_final: Number(dbQuote.valor_final),
-        items: dbQuote.items.map(item => ({
+        items: dbQuote.items.map((item) => ({
           ...item,
           valor_unitario: Number(item.valor_unitario),
-          valor_total: Number(item.valor_total)
-        }))
+          valor_total: Number(item.valor_total),
+        })),
       };
-    } else {
-      quote = MOCK_QUOTES[id];
-      isMock = true;
     }
   } catch (error) {
-    console.warn("Banco offline ao gerar impressão de proposta. Usando mock:", error);
-    quote = MOCK_QUOTES[id];
-    isMock = true;
+    console.warn("Falha ao carregar orçamento para impressão:", error);
   }
 
-  // Se não achar em lugar nenhum, monta um mock genérico
   if (!quote) {
-    quote = {
-      id: "q-generic",
-      versao: 1,
-      subtotal: 58000,
-      desconto: 3000,
-      valor_final: 55000,
-      validade: new Date(),
-      observacoes: "Mdf Branco Tx e texturas padrão sob medida. Ferragens telescópicas zincadas padrão com excelente resistência e durabilidade. Garantia de 5 anos da Móveis Unghero.",
-      project: {
-        client: {
-          nome: "Cliente de Demonstração",
-          cidade: "Farroupilha",
-          telefone: "(54) 99999-0000",
-          email: "demo@email.com"
-        }
-      },
-      items: [
-        { descricao: "Móveis planejados em MDF texturizado padrão e Branco TX", quantidade: 1, tipo_custo: "MOVEIS_MDF", valor_unitario: 45000, valor_total: 45000 },
-        { descricao: "Ferragens telescópicas e dobradiças padrão de alta durabilidade", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS", valor_unitario: 5000, valor_total: 5000 },
-        { descricao: "Mão de obra de marcenaria de alto nível e instalação", quantidade: 1, tipo_custo: "MAO_DE_OBRA", valor_unitario: 8000, valor_total: 8000 }
-      ]
-    };
-    isMock = true;
+    if (allowDevMocks()) {
+      quote = MOCK_QUOTES[id];
+      isMock = !!quote;
+    }
+    if (!quote) {
+      notFound();
+    }
   }
 
   // Prepara dados
