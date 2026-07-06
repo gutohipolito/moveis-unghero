@@ -1,0 +1,272 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { prisma, isDatabaseOffline } from "@/lib/prisma";
+import {
+  PRODUCTION_SLA_STAGES,
+  type ProductionSlaStageKey,
+  type ProjectSlaView,
+  getNextStageKey,
+  getStageConfig,
+  isSlaDueToday,
+  isSlaFinished,
+  isSlaOverdue,
+} from "@/lib/productionSla";
+import { logProjectTimeline } from "@/app/actions/timeline";
+
+const MOCK_SLA = new Map<string, ProjectSlaView>();
+
+function mapSlaRow(
+  row: {
+    project_id: string;
+    current_stage: string;
+    stage_started_at: Date;
+    extension_days: number;
+    completed_stages: string[];
+    nota_fiscal_emitida: boolean;
+    project?: { client?: { nome: string } };
+  }
+): ProjectSlaView {
+  return {
+    projectId: row.project_id,
+    clientName: row.project?.client?.nome,
+    currentStage: row.current_stage as ProductionSlaStageKey,
+    stageStartedAt: row.stage_started_at.toISOString(),
+    extensionDays: row.extension_days,
+    completedStages: row.completed_stages as ProductionSlaStageKey[],
+    notaFiscalEmitida: row.nota_fiscal_emitida,
+  };
+}
+
+export async function ensureProjectSla(projectId: string): Promise<ProjectSlaView | null> {
+  if (isDatabaseOffline()) {
+    if (!MOCK_SLA.has(projectId)) {
+      MOCK_SLA.set(projectId, {
+        projectId,
+        currentStage: "MEDICAO",
+        stageStartedAt: new Date().toISOString(),
+        extensionDays: 0,
+        completedStages: [],
+        notaFiscalEmitida: false,
+      });
+    }
+    return MOCK_SLA.get(projectId) ?? null;
+  }
+
+  try {
+    const existing = await prisma.projectSlaState.findUnique({
+      where: { project_id: projectId },
+      include: { project: { include: { client: true } } },
+    });
+    if (existing) return mapSlaRow(existing);
+
+    const created = await prisma.projectSlaState.create({
+      data: {
+        project_id: projectId,
+        current_stage: PRODUCTION_SLA_STAGES[0].key,
+      },
+      include: { project: { include: { client: true } } },
+    });
+
+    await logProjectTimeline(
+      projectId,
+      `Radar de prazos iniciado — etapa "${PRODUCTION_SLA_STAGES[0].name}" (SLA: ${PRODUCTION_SLA_STAGES[0].slaDays} dias).`,
+      true
+    );
+
+    return mapSlaRow(created);
+  } catch (error) {
+    console.error("Erro ao iniciar SLA do projeto:", error);
+    return null;
+  }
+}
+
+export async function getCompanySlaStates(companyId: string): Promise<ProjectSlaView[]> {
+  if (isDatabaseOffline()) {
+    return Array.from(MOCK_SLA.values());
+  }
+
+  try {
+    const rows = await prisma.projectSlaState.findMany({
+      where: {
+        project: {
+          client: { company_id: companyId },
+          files: { some: { aprovado_producao: true } },
+        },
+      },
+      include: { project: { include: { client: true } } },
+    });
+    return rows.map(mapSlaRow);
+  } catch (error) {
+    console.error("Erro ao buscar SLAs:", error);
+    return [];
+  }
+}
+
+export async function getProjectSla(projectId: string): Promise<ProjectSlaView | null> {
+  if (isDatabaseOffline()) {
+    return MOCK_SLA.get(projectId) ?? null;
+  }
+
+  try {
+    const row = await prisma.projectSlaState.findUnique({
+      where: { project_id: projectId },
+      include: { project: { include: { client: true } } },
+    });
+    return row ? mapSlaRow(row) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function verifySlaStage(
+  projectId: string,
+  completed: boolean,
+  extraDays?: number
+): Promise<{ success: boolean; error?: string; sla?: ProjectSlaView }> {
+  const sla = (await getProjectSla(projectId)) ?? (await ensureProjectSla(projectId));
+  if (!sla) return { success: false, error: "SLA não encontrado." };
+
+  const stage = getStageConfig(sla.currentStage);
+
+  if (completed) {
+    const next = getNextStageKey(sla.currentStage);
+    const completedStages = [...sla.completedStages, sla.currentStage];
+    const finished = !next;
+
+    if (isDatabaseOffline()) {
+      const updated: ProjectSlaView = {
+        ...sla,
+        completedStages,
+        currentStage: next ?? sla.currentStage,
+        stageStartedAt: new Date().toISOString(),
+        extensionDays: 0,
+      };
+      MOCK_SLA.set(projectId, updated);
+    } else {
+      await prisma.projectSlaState.update({
+        where: { project_id: projectId },
+        data: {
+          completed_stages: completedStages,
+          current_stage: next ?? sla.currentStage,
+          stage_started_at: new Date(),
+          extension_days: 0,
+        },
+      });
+    }
+
+    const nextConfig = next ? getStageConfig(next) : null;
+    await logProjectTimeline(
+      projectId,
+      finished
+        ? `Etapa "${stage.name}" concluída — todas as etapas do radar de prazos foram finalizadas.`
+        : `Etapa "${stage.name}" concluída. Próxima etapa: "${nextConfig?.name}" (SLA: ${nextConfig?.slaDays} dias, independente).`,
+      true
+    );
+  } else {
+    const days = extraDays ?? 0;
+    if (days < 1) {
+      return { success: false, error: "Informe quantos dias adicionais de SLA são necessários." };
+    }
+
+    if (isDatabaseOffline()) {
+      MOCK_SLA.set(projectId, {
+        ...sla,
+        extensionDays: sla.extensionDays + days,
+      });
+    } else {
+      await prisma.projectSlaState.update({
+        where: { project_id: projectId },
+        data: { extension_days: sla.extensionDays + days },
+      });
+    }
+
+    await logProjectTimeline(
+      projectId,
+      `Etapa "${stage.name}" não concluída no prazo. Acréscimo de ${days} dia${days !== 1 ? "s" : ""} de SLA (total extra: ${sla.extensionDays + days}d).`,
+      true
+    );
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/factory");
+
+  const updated = await getProjectSla(projectId);
+  return { success: true, sla: updated ?? undefined };
+}
+
+export async function markNotaFiscalEmitida(projectId: string) {
+  if (isDatabaseOffline()) {
+    const sla = MOCK_SLA.get(projectId);
+    if (sla) MOCK_SLA.set(projectId, { ...sla, notaFiscalEmitida: true });
+  } else {
+    await prisma.projectSlaState.upsert({
+      where: { project_id: projectId },
+      create: {
+        project_id: projectId,
+        current_stage: PRODUCTION_SLA_STAGES[0].key,
+        nota_fiscal_emitida: true,
+        nota_fiscal_emitida_em: new Date(),
+      },
+      update: {
+        nota_fiscal_emitida: true,
+        nota_fiscal_emitida_em: new Date(),
+      },
+    });
+  }
+
+  await logProjectTimeline(projectId, "Nota fiscal emitida e registrada no projeto.", false);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/factory");
+  return { success: true };
+}
+
+export async function checkProjectPaymentComplete(projectId: string) {
+  if (isDatabaseOffline()) return { fullyPaid: false };
+
+  try {
+    const installments = await prisma.installment.findMany({
+      where: { project_id: projectId },
+    });
+    if (installments.length === 0) return { fullyPaid: false };
+    const fullyPaid = installments.every((i) => i.status === "PAGO");
+    return { fullyPaid };
+  } catch {
+    return { fullyPaid: false };
+  }
+}
+
+export async function getSlaAlertProjects(companyId: string) {
+  const states = await getCompanySlaStates(companyId);
+  return states.filter((s) => !isSlaFinished(s) && (isSlaDueToday(s) || isSlaOverdue(s)));
+}
+
+export async function getInvoicePendingProjects(companyId: string) {
+  if (isDatabaseOffline()) return [];
+
+  try {
+    const projects = await prisma.project.findMany({
+      where: {
+        client: { company_id: companyId },
+        installments: { some: {} },
+        OR: [
+          { slaState: { nota_fiscal_emitida: false } },
+          { slaState: null },
+        ],
+      },
+      include: {
+        client: { select: { nome: true } },
+        installments: true,
+        slaState: true,
+      },
+    });
+
+    return projects.filter((p) => {
+      const allPaid = p.installments.length > 0 && p.installments.every((i) => i.status === "PAGO");
+      const nfPending = !p.slaState?.nota_fiscal_emitida;
+      return allPaid && nfPending;
+    });
+  } catch {
+    return [];
+  }
+}

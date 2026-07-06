@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getColaboradores } from "@/app/actions/colaboradores";
+import { getProjectSla, ensureProjectSla } from "@/app/actions/productionSla";
 import ProjectDetails from "@/components/ProjectDetails";
 import { notFound } from "next/navigation";
 
@@ -376,13 +377,23 @@ export default async function ProjectPage({ params }: RouteParams) {
     })) || []
   };
 
+  const hasProductionApproval = formattedProject.files.some(
+    (f: { aprovado_producao: boolean }) => f.aprovado_producao
+  );
+  let initialSla = null;
+  if (hasProductionApproval && !isMock) {
+    await ensureProjectSla(id);
+    initialSla = await getProjectSla(id);
+  }
+
   return (
     <div className="space-y-6">
       <ProjectDetails 
         initialProject={formattedProject as any} 
         companyId={userCompanyId} 
         colaboradores={colaboradores}
-        isMock={isMock} 
+        isMock={isMock}
+        initialSla={initialSla}
       />
     </div>
   );

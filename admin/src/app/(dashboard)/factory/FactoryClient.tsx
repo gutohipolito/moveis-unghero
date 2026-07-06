@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
+import SlaRadar from "@/components/SlaRadar";
+import SlaVerificationModal from "@/components/SlaVerificationModal";
+import type { ProjectSlaView } from "@/lib/productionSla";
 import {
   Layers,
   ArrowRight,
@@ -43,6 +47,8 @@ interface ColaboradorSelect {
 interface FactoryClientProps {
   initialEnvironments: EnvironmentItem[];
   colaboradores: ColaboradorSelect[];
+  slaByProject: Record<string, ProjectSlaView>;
+  slaCheckProjectId?: string;
 }
 
 const COLUMNS = [
@@ -169,10 +175,47 @@ function TeamSelect({
 const KANBAN_BOARD_HEIGHT =
   "h-[calc(100dvh-32rem)] max-h-[calc(100dvh-32rem)] md:h-[calc(100dvh-23rem)] md:max-h-[calc(100dvh-23rem)]";
 
-export default function FactoryClient({ initialEnvironments, colaboradores }: FactoryClientProps) {
+export default function FactoryClient({
+  initialEnvironments,
+  colaboradores,
+  slaByProject: initialSlaByProject,
+  slaCheckProjectId,
+}: FactoryClientProps) {
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
+  const [slaByProject, setSlaByProject] = useState(initialSlaByProject);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
+  const [slaModal, setSlaModal] = useState<{
+    projectId: string;
+    stageKey: string;
+    clientName?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!slaCheckProjectId) return;
+    const sla = slaByProject[slaCheckProjectId];
+    if (sla) {
+      setSlaModal({
+        projectId: sla.projectId,
+        stageKey: sla.currentStage,
+        clientName: sla.clientName,
+      });
+    }
+  }, [slaCheckProjectId, slaByProject]);
+
+  const openSlaVerify = (projectId: string) => {
+    const sla = slaByProject[projectId];
+    if (!sla) return;
+    setSlaModal({
+      projectId: sla.projectId,
+      stageKey: sla.currentStage,
+      clientName: sla.clientName,
+    });
+  };
+
+  const handleSlaSuccess = () => {
+    window.location.reload();
+  };
 
   const toggleCardCollapse = (id: string) => {
     setCollapsedCards((prev) => {
@@ -400,7 +443,17 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
                             <User className="h-3 w-3 shrink-0" />
-                            <span className="truncate font-medium">{item.clientName}</span>
+                            {item.projectId ? (
+                              <Link
+                                href={`/projects/${item.projectId}`}
+                                className="truncate font-medium hover:text-primary transition-colors"
+                                onPointerDown={(e) => e.stopPropagation()}
+                              >
+                                {item.clientName}
+                              </Link>
+                            ) : (
+                              <span className="truncate font-medium">{item.clientName}</span>
+                            )}
                           </div>
 
                           {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
@@ -424,6 +477,14 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
                             </div>
                           )}
                         </div>
+
+                        {item.projectId && (
+                          <SlaRadar
+                            sla={slaByProject[item.projectId] ?? null}
+                            compact
+                            onVerify={() => openSlaVerify(item.projectId)}
+                          />
+                        )}
 
                         <div
                           className={`grid transition-all duration-200 ease-in-out ${
@@ -466,6 +527,17 @@ export default function FactoryClient({ initialEnvironments, colaboradores }: Fa
           );
         })}
       </div>
+
+      {slaModal && (
+        <SlaVerificationModal
+          projectId={slaModal.projectId}
+          stageKey={slaModal.stageKey}
+          clientName={slaModal.clientName}
+          isOpen
+          onClose={() => setSlaModal(null)}
+          onSuccess={handleSlaSuccess}
+        />
+      )}
     </div>
   );
 }

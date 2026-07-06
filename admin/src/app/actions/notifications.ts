@@ -1,7 +1,14 @@
 "use server";
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
-import { buildFollowUpNotifications, type AppNotification } from "@/lib/notifications";
+import {
+  buildFollowUpNotifications,
+  buildInvoiceNotifications,
+  buildSlaNotifications,
+  mergeNotifications,
+  type AppNotification,
+} from "@/lib/notifications";
+import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
 
 const MOCK_NOTIFICATION_PROJECTS = [
   {
@@ -46,7 +53,7 @@ export async function getNotifications(companyId: string): Promise<{
       },
     });
 
-    const notifications = buildFollowUpNotifications(
+    const followUp = buildFollowUpNotifications(
       projects.map((p) => ({
         id: p.id,
         status_geral: p.status_geral,
@@ -54,6 +61,25 @@ export async function getNotifications(companyId: string): Promise<{
         createdAt: p.createdAt,
         client: p.client,
       }))
+    );
+
+    const slaAlerts = await getSlaAlertProjects(companyId);
+    const slaNotifications = buildSlaNotifications(
+      slaAlerts.map((s) => ({
+        ...s,
+        clientName: s.clientName ?? "Projeto",
+      }))
+    );
+
+    const invoicePending = await getInvoicePendingProjects(companyId);
+    const invoiceNotifications = buildInvoiceNotifications(
+      invoicePending.map((p) => ({ id: p.id, client: p.client }))
+    );
+
+    const notifications = mergeNotifications(
+      followUp,
+      slaNotifications,
+      invoiceNotifications
     );
 
     return { success: true, notifications };

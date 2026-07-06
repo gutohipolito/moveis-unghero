@@ -181,6 +181,7 @@ model Project {
   responsavel_id        String?
   responsavel           User?         @relation("ProjectResponsavel", fields: [responsavel_id], references: [id])
   observacoes           String?
+  slaState              ProjectSlaState?
 }
 
 enum ProjectStatus {
@@ -395,4 +396,18 @@ model OperatorReminder {
   updatedAt  DateTime @updatedAt
 
   @@index([user_id, company_id, done, due_at])
+}
+
+model ProjectSlaState {
+  id                   String   @id @default(uuid())
+  project_id           String   @unique
+  project              Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  current_stage        String
+  stage_started_at     DateTime @default(now())
+  extension_days       Int      @default(0)
+  completed_stages     String[] @default([])
+  nota_fiscal_emitida  Boolean  @default(false)
+  nota_fiscal_emitida_em DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }

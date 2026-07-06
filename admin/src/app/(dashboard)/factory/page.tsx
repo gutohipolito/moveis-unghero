@@ -2,8 +2,10 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { getColaboradores } from "@/app/actions/colaboradores";
+import { getCompanySlaStates, ensureProjectSla } from "@/app/actions/productionSla";
 import FactoryClient from "./FactoryClient";
 import PageHeader from "@/components/PageHeader";
+import type { ProjectSlaView } from "@/lib/productionSla";
 
 // Mock de dados para cômodos na fábrica
 const MOCK_ENVIRONMENTS = [
@@ -69,7 +71,12 @@ const MOCK_ENVIRONMENTS = [
   }
 ];
 
-export default async function FactoryPage() {
+export default async function FactoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ slaCheck?: string }>;
+}) {
+  const params = await searchParams;
   const session = await getSessionSafe(await headers()).catch(() => null);
 
   const userCompanyId = session?.user?.company_id || "mock-company-id";
@@ -148,6 +155,15 @@ export default async function FactoryPage() {
     ajudanteNome: e.ajudante?.name || null
   }));
 
+  const uniqueProjectIds = [...new Set(formattedEnvs.map((e) => e.projectId).filter(Boolean))];
+  await Promise.all(uniqueProjectIds.map((id) => ensureProjectSla(id)));
+
+  const slaStates = await getCompanySlaStates(userCompanyId);
+  const slaByProject: Record<string, ProjectSlaView> = {};
+  for (const sla of slaStates) {
+    slaByProject[sla.projectId] = sla;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -162,7 +178,12 @@ export default async function FactoryPage() {
         }
       />
 
-      <FactoryClient initialEnvironments={formattedEnvs} colaboradores={colaboradores} />
+      <FactoryClient
+        initialEnvironments={formattedEnvs}
+        colaboradores={colaboradores}
+        slaByProject={slaByProject}
+        slaCheckProjectId={params.slaCheck}
+      />
     </div>
   );
 }

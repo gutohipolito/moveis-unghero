@@ -6,8 +6,15 @@ import {
   needsFollowUp,
   type FollowUpInput,
 } from "@/lib/followUp";
+import {
+  type ProjectSlaView,
+  getStageConfig,
+  isSlaDueToday,
+  isSlaOverdue,
+  isSlaFinished,
+} from "@/lib/productionSla";
 
-export type NotificationType = "follow_up" | "info";
+export type NotificationType = "follow_up" | "sla_due" | "invoice_pending" | "info";
 export type NotificationPriority = "normal" | "high";
 
 export interface AppNotification {
@@ -65,6 +72,67 @@ export function buildFollowUpNotifications(projects: NotificationProject[]): App
       return a.priority === "high" ? -1 : 1;
     }
     return (b.meta?.daysSinceContact ?? 0) - (a.meta?.daysSinceContact ?? 0);
+  });
+}
+
+export function buildSlaNotifications(
+  slaStates: (ProjectSlaView & { clientName: string })[]
+): AppNotification[] {
+  const items: AppNotification[] = [];
+
+  for (const sla of slaStates) {
+    if (isSlaFinished(sla)) continue;
+    if (!isSlaDueToday(sla) && !isSlaOverdue(sla)) continue;
+
+    const stage = getStageConfig(sla.currentStage);
+    const overdue = isSlaOverdue(sla);
+
+    items.push({
+      id: `sla-${sla.projectId}-${sla.currentStage}`,
+      type: "sla_due",
+      priority: overdue ? "high" : "normal",
+      title: overdue ? "SLA de produção em atraso" : "SLA no prazo limite hoje",
+      message: `${sla.clientName} — etapa "${stage.name}" precisa de verificação.`,
+      href: `/factory?slaCheck=${sla.projectId}`,
+      createdAt: new Date().toISOString(),
+      meta: {
+        projectId: sla.projectId,
+        clientName: sla.clientName,
+      },
+    });
+  }
+
+  return items;
+}
+
+export function buildInvoiceNotifications(
+  projects: { id: string; client: { nome: string } }[]
+): AppNotification[] {
+  return projects.map((p) => ({
+    id: `invoice-${p.id}`,
+    type: "invoice_pending" as const,
+    priority: "normal" as const,
+    title: "Emitir nota fiscal",
+    message: `${p.client.nome} — pagamento integral recebido. Verifique a emissão da NF.`,
+    href: `/projects/${p.id}?tab=finances`,
+    createdAt: new Date().toISOString(),
+    meta: {
+      projectId: p.id,
+      clientName: p.client.nome,
+    },
+  }));
+}
+
+export function mergeNotifications(...groups: AppNotification[][]): AppNotification[] {
+  const map = new Map<string, AppNotification>();
+  for (const group of groups) {
+    for (const item of group) {
+      map.set(item.id, item);
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority === "high" ? -1 : 1;
+    return 0;
   });
 }
 

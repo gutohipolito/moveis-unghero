@@ -16,7 +16,11 @@ import {
 } from "@/app/actions/project";
 import { approveQuote, deleteQuote } from "@/app/actions/quotes";
 import { createInstallment, payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
+import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import QuoteBuilder from "@/components/QuoteBuilder";
+import SlaRadar from "@/components/SlaRadar";
+import SlaVerificationModal from "@/components/SlaVerificationModal";
+import type { ProjectSlaView } from "@/lib/productionSla";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -143,6 +147,7 @@ interface ProjectDetailsProps {
   companyId: string;
   colaboradores: ColaboradorSelect[];
   isMock: boolean;
+  initialSla?: ProjectSlaView | null;
 }
 
 const ENVIRONMENT_STATUSES: { value: EnvironmentStatus; label: string; bg: string }[] = [
@@ -164,8 +169,10 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
   { value: "PROJETO_TECNICO", label: "Projeto Técnico (CAD/SketchUp)" }
 ];
 
-export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock }: ProjectDetailsProps) {
+export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null }: ProjectDetailsProps) {
   const [project, setProject] = useState<Project>(initialProject);
+  const [sla, setSla] = useState<ProjectSlaView | null>(initialSla);
+  const [slaModalOpen, setSlaModalOpen] = useState(false);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
@@ -902,90 +909,19 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         </div>
       </div>
 
-      {/* Radar de Prazos (SLA) - Inspirado no Planejados Pro */}
-      <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-border pb-3">
-          <div>
-            <h3 className="text-sm font-bold tracking-wider text-foreground uppercase flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              Radar de Prazos (SLA Centralizado)
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Acompanhamento automatizado de prazos e fluxo operacional da loja de planejados.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded font-bold uppercase">
-              SLA Ativo
-            </span>
-          </div>
-        </div>
+      <SlaRadar
+        sla={sla}
+        onVerify={() => setSlaModalOpen(true)}
+      />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-          {(() => {
-            const status = project.status_geral;
-            const steps = [
-              { id: "MEDICAO", name: "Medição Técnica", sla: "2 dias", status: "PENDENTE" },
-              { id: "ENVIO_FABRICA", name: "Envio para Fábrica", sla: "5 dias", status: "PENDENTE" },
-              { id: "MATERIAL", name: "Chegada de Material", sla: "10 dias", status: "PENDENTE" },
-              { id: "MONTAGEM", name: "Montagem", sla: "15 dias", status: "PENDENTE" },
-              { id: "FINALIZACAO", name: "Finalização", sla: "3 dias", status: "PENDENTE" }
-            ];
-
-            if (status === "CONFERENCIA_TECNICA") {
-              steps[0].status = "PROGRESSO";
-            } else if (status === "APROVADO") {
-              steps[0].status = "CONCLUIDO";
-              steps[1].status = "PROGRESSO";
-            } else if (status === "PRODUCAO") {
-              steps[0].status = "CONCLUIDO";
-              steps[1].status = "CONCLUIDO";
-              steps[2].status = "CONCLUIDO";
-              steps[3].status = "PROGRESSO";
-            } else if (status === "INSTALACAO") {
-              steps[0].status = "CONCLUIDO";
-              steps[1].status = "CONCLUIDO";
-              steps[2].status = "CONCLUIDO";
-              steps[3].status = "CONCLUIDO";
-              steps[4].status = "PROGRESSO";
-            } else if (status === "FINALIZADO") {
-              steps.forEach(s => s.status = "CONCLUIDO");
-            }
-
-            return steps.map((step, idx) => {
-              const isCompleted = step.status === "CONCLUIDO";
-              const isProgress = step.status === "PROGRESSO";
-              
-              return (
-                <div key={step.id} className="relative flex flex-col justify-between p-3.5 rounded-lg bg-slate-50 border border-border shadow-xs">
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                      Etapa 0{idx + 1}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-semibold bg-secondary px-2 py-0.5 rounded border border-border">
-                      SLA: {step.sla}
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-xs text-foreground mt-2 mb-1.5 leading-tight">
-                    {step.name}
-                  </h4>
-                  
-                  <div className="mt-auto pt-2 border-t border-border flex items-center justify-between gap-2">
-                    <span className={`text-[10px] font-bold uppercase ${
-                      isCompleted ? "text-emerald-500" : isProgress ? "text-amber-500 animate-pulse" : "text-muted-foreground"
-                    }`}>
-                      {isCompleted ? "✓ Concluído" : isProgress ? "● Em Progresso" : "○ Pendente"}
-                    </span>
-                    <div className={`w-2 h-2 rounded-full ${
-                      isCompleted ? "bg-emerald-500 gold-glow" : isProgress ? "bg-amber-400 animate-pulse" : "bg-neutral-300"
-                    }`} />
-                  </div>
-                </div>
-              );
-            });
-          })()}
-        </div>
-      </div>
+      <SlaVerificationModal
+        projectId={project.id}
+        stageKey={sla?.currentStage ?? "MEDICAO"}
+        clientName={project.client.nome}
+        isOpen={slaModalOpen && !!sla}
+        onClose={() => setSlaModalOpen(false)}
+        onSuccess={() => window.location.reload()}
+      />
 
       <Tabs defaultValue="environments">
         <TabsList>
@@ -1441,6 +1377,32 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </strong>
             </Card>
           </div>
+
+          {project.installments.length > 0 &&
+            project.installments.every((ins) => ins.status === "PAGO") &&
+            !sla?.notaFiscalEmitida && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-amber-900">Emitir nota fiscal</p>
+                  <p className="text-xs text-amber-800/80 mt-0.5">
+                    O pagamento integral deste projeto foi confirmado. Registre quando a NF for emitida.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="shrink-0"
+                  onClick={async () => {
+                    const result = await markNotaFiscalEmitida(project.id);
+                    if (result.success) {
+                      setSla((prev) => (prev ? { ...prev, notaFiscalEmitida: true } : prev));
+                      showSuccess("NF registrada", "Emissão da nota fiscal registrada no histórico.");
+                    }
+                  }}
+                >
+                  Marcar NF como emitida
+                </Button>
+              </div>
+            )}
 
           <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
             {project.installments.length === 0 ? (

@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { logProjectTimeline } from "@/app/actions/timeline";
+import { checkProjectPaymentComplete } from "@/app/actions/productionSla";
 
 export async function createInstallment(projectId: string, data: { valor: number; data_vencimento: string; tipo: "ENTRADA" | "PARCELA" }) {
   try {
@@ -55,14 +57,20 @@ export async function payInstallment(projectId: string, installmentId: string) {
       }
     });
 
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        user_id: "system-user-id",
-        acao: `Parcela recebida no valor de R$ ${Number(installment.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`,
-        interno_sotamente: false
-      }
-    }).catch(() => null);
+    await logProjectTimeline(
+      projectId,
+      `Parcela recebida no valor de R$ ${Number(installment.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`,
+      false
+    );
+
+    const { fullyPaid } = await checkProjectPaymentComplete(projectId);
+    if (fullyPaid) {
+      await logProjectTimeline(
+        projectId,
+        "Pagamento integral do projeto confirmado — verificar emissão da nota fiscal.",
+        true
+      );
+    }
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/financeiro");

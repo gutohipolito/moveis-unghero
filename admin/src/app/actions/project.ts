@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { logProjectTimeline } from "@/app/actions/timeline";
+import { ensureProjectSla } from "@/app/actions/productionSla";
 
 export type EnvironmentType = 
   | "COZINHA"
@@ -45,11 +47,34 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
 // Atualiza o status individual de um ambiente do projeto
 export async function updateEnvironmentStatus(projectId: string, envId: string, newStatus: EnvironmentStatus) {
   try {
+    const env = await prisma.environment.findUnique({
+      where: { id: envId },
+      select: { nome: true, status: true },
+    });
+
     await prisma.environment.update({
       where: { id: envId },
       data: { status: newStatus }
     });
+
+    if (env && env.status !== newStatus) {
+      const labels: Record<string, string> = {
+        PRONTO_PRODUCAO: "Fila de Produção",
+        EM_CORTE: "Corte / Usinagem",
+        MONTAGEM_FABRICA: "Montagem Fábrica",
+        PRONTO_ENTREGA: "Pronto p/ Entrega",
+        EM_INSTALACAO: "Instalação",
+        FINALIZADO: "Finalizado",
+      };
+      await logProjectTimeline(
+        projectId,
+        `Ambiente "${env.nome}" movido para ${labels[newStatus] ?? newStatus} no chão de fábrica.`,
+        true
+      );
+    }
+
     revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/factory");
     return { success: true };
   } catch (error) {
     console.warn("Simulação de alteração de status do ambiente:", error);
@@ -134,15 +159,15 @@ export async function toggleFileApproval(projectId: string, fileId: string, appr
       data: { aprovado_producao: approved }
     });
     
-    // Registra na timeline
-    await prisma.timeline.create({
-      data: {
-        project_id: projectId,
-        acao: `Arquivo técnico foi ${approved ? "APROVADO" : "BLOQUEADO"} para corte/produção`,
-        interno_sotamente: true,
-        user_id: "system-admin-mock-id"
-      }
-    });
+    if (approved) {
+      await ensureProjectSla(projectId);
+    }
+
+    await logProjectTimeline(
+      projectId,
+      `Arquivo técnico foi ${approved ? "APROVADO" : "BLOQUEADO"} para corte/produção`,
+      true
+    );
 
     revalidatePath(`/projects/${projectId}`);
     return { success: true };
