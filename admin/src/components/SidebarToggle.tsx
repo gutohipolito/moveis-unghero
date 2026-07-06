@@ -57,10 +57,7 @@ export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps
           <>
             <button
               type="button"
-              onPointerDown={(event) => {
-                event.preventDefault();
-                closeMenu();
-              }}
+              onClick={closeMenu}
               className="mobile-drawer-backdrop md:hidden"
               aria-label="Fechar menu"
             />
@@ -69,22 +66,17 @@ export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps
               aria-modal="true"
               role="dialog"
               aria-label="Menu de navegação"
-              onPointerDown={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between h-16 px-5 shrink-0 border-b border-[hsl(var(--sidebar-border))]">
+              <div className="mobile-drawer-header">
                 <img
                   src="/logo.png"
                   alt="Móveis Unghero"
-                  className="logo-sidebar h-10 w-auto object-contain"
+                  className="logo-sidebar h-9 w-auto object-contain"
                 />
                 <button
                   type="button"
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    closeMenu();
-                  }}
-                  className="mobile-menu-btn mobile-drawer-close border-[hsl(var(--sidebar-border))] text-[hsl(var(--sidebar-foreground))]"
+                  onClick={closeMenu}
+                  className="mobile-drawer-close-btn"
                   aria-label="Fechar menu"
                 >
                   <X className="h-5 w-5" />
@@ -92,7 +84,7 @@ export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps
               </div>
 
               <SidebarNav onNavigate={closeMenu} />
-              <div className="p-3 shrink-0 border-t border-[hsl(var(--sidebar-border))]">
+              <div className="mobile-drawer-footer">
                 <SidebarUser user={user} />
               </div>
             </aside>
@@ -106,11 +98,12 @@ export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps
       <button
         type="button"
         onClick={() => (isOpen ? closeMenu() : openMenu())}
-        className={`mobile-menu-btn ${isOpen ? "mobile-menu-btn-open" : ""}`}
+        className={`mobile-menu-btn ${isOpen ? "mobile-menu-btn-hidden" : ""}`}
         aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
         aria-expanded={isOpen}
+        tabIndex={isOpen ? -1 : 0}
       >
-        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <Menu className="h-5 w-5" />
       </button>
       {drawer}
     </>
