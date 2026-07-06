@@ -41,14 +41,14 @@ export default function LoginPage() {
   return (
     <div className="login-shell">
       <div className="login-brand-panel">
-        <div>
-          <img src="/logo.png" alt="Móveis Unghero" className="h-12 w-auto mb-8" />
+        <div className="relative z-10">
+          <img src="/logo.png" alt="Móveis Unghero" className="h-12 w-auto mb-8 filter brightness-0 invert" />
           <h1 className="login-brand-title">Feito com afeto.<br />Gerido com precisão.</h1>
           <p className="login-brand-tagline">
             Painel interno para acompanhar clientes, projetos, fábrica e financeiro da marcenaria.
           </p>
         </div>
-        <p className="text-sm text-[hsl(var(--sidebar-muted))]">
+        <p className="text-sm text-white/60 relative z-10">
           Farroupilha · RS · desde 2006
         </p>
       </div>
