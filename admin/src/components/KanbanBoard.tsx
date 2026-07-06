@@ -35,6 +35,7 @@ import {
   MessageCircle,
   ChevronDown,
   ChevronUp,
+  HelpCircle,
 } from "lucide-react";
 
 interface Project {
@@ -181,6 +182,17 @@ const STATUS_OPTIONS = [
   { id: "PERDIDO" as ProjectStatus, title: "Perdido" },
 ];
 
+const COLUMN_DESCRIPTIONS: Record<string, string> = {
+  LEAD: "Prospecção: Cadastro e qualificação de novos contatos interessados em móveis sob medida.",
+  ORCAMENTO: "Orçamentos: Levantamento de necessidades do cliente e formulação de propostas comerciais.",
+  NEGOCIACAO: "Negociação: Apresentação da proposta, rodadas de negociação e termos do contrato comercial.",
+  CONFERENCIA_TECNICA: "Conf. Técnica: Medição final no imóvel do cliente e refinamento técnico do projeto para produção.",
+  APROVADO: "Aprovados: Projetos validados tecnicamente, contratos assinados e prontos para a produção.",
+  PRODUCAO: "Produção: Detalhamento de planos de corte e fabricação das peças na marcenaria.",
+  INSTALACAO: "Instalação: Logística de transporte e montagem dos móveis no endereço do cliente.",
+  FINALIZADO: "Finalizados: Conferência final pós-instalação, termo de encerramento assinado e entrega final realizada.",
+};
+
   const getProductionProgress = (projId: string, status: string) => {
     if (status === "FINALIZADO") return "Entregue e Finalizado 100%";
     if (status === "INSTALACAO") return "Montagem na Obra (Ajustes Finais)";
@@ -193,6 +205,17 @@ const STATUS_OPTIONS = [
 
 export default function KanbanBoard({ initialProjects, companyId, clients = [] }: KanbanBoardProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [isMobile, setIsMobile] = useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -673,7 +696,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     return (
       <div
         key={project.id}
-        draggable={boardView === "funil"}
+        draggable={boardView === "funil" && !isMobile}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(project)}
@@ -876,13 +899,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`kanban-column surface-compact flex flex-col transition-all duration-[var(--motion-base)] ${
+              className={`kanban-column flex flex-col rounded-xl bg-slate-50/40 border border-slate-100/70 transition-all duration-[var(--motion-base)] ${
                 isOver ? `ring-2 ${theme.dropRing} shadow-[var(--shadow-md)] scale-[1.01]` : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
               <div className={`p-3.5 ${theme.header} rounded-t-xl flex items-center justify-between border-b border-border/60`}>
                 <div className="flex items-center space-x-2 min-w-0">
+                  <span title={COLUMN_DESCRIPTIONS[col.id]} className="flex shrink-0">
+                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
+                  </span>
                   <span className="font-bold text-xs uppercase tracking-wide truncate">{col.title}</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                     {colProjects.length}
