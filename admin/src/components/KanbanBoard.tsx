@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, type ProjectStatus, type Origin } from "@/app/actions/kanban";
 import {
   COMMERCIAL_LOSS_STATUSES,
@@ -27,10 +26,8 @@ import {
   MapPin, 
   Phone, 
   DollarSign, 
-  ArrowRight,
   TrendingUp,
   UserCheck,
-  Edit,
   AlertTriangle,
   BellRing,
   RotateCcw,
@@ -88,37 +85,120 @@ interface KanbanBoardProps {
   }>;
 }
 
-const FUNNEL_COLUMNS: { id: ProjectStatus; title: string; color: string }[] = [
-  { id: "LEAD", title: "Prospecção", color: "border-t-amber-500 bg-amber-500/5 text-amber-700" },
-  { id: "ORCAMENTO", title: "Orçamentos", color: "border-t-orange-500 bg-orange-500/5 text-orange-700" },
-  { id: "NEGOCIACAO", title: "Negociação", color: "border-t-blue-500 bg-blue-500/5 text-blue-700" },
-  { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica", color: "border-t-purple-500 bg-purple-500/5 text-purple-700" },
-  { id: "APROVADO", title: "Aprovados", color: "border-t-emerald-500 bg-emerald-500/5 text-emerald-700" },
-  { id: "PRODUCAO", title: "Produção", color: "border-t-cyan-500 bg-cyan-500/5 text-cyan-700" },
-  { id: "INSTALACAO", title: "Instalação", color: "border-t-indigo-500 bg-indigo-500/5 text-indigo-700" },
-  { id: "FINALIZADO", title: "Finalizados", color: "border-t-slate-500 bg-slate-500/5 text-slate-600" },
+const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
+  { id: "LEAD", title: "Prospecção" },
+  { id: "ORCAMENTO", title: "Orçamentos" },
+  { id: "NEGOCIACAO", title: "Negociação" },
+  { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica" },
+  { id: "APROVADO", title: "Aprovados" },
+  { id: "PRODUCAO", title: "Produção" },
+  { id: "INSTALACAO", title: "Instalação" },
+  { id: "FINALIZADO", title: "Finalizados" },
 ];
 
-/** Borda e título dos blocos internos — mesma família de cor da coluna. */
-const COLUMN_INNER_ACCENT: Record<string, { title: string; border: string; tag: string }> = {
-  LEAD: { title: "text-amber-700", border: "border-amber-500/35", tag: "border-amber-500/25 text-amber-700 bg-amber-500/5" },
-  ORCAMENTO: { title: "text-orange-700", border: "border-orange-500/35", tag: "border-orange-500/25 text-orange-700 bg-orange-500/5" },
-  NEGOCIACAO: { title: "text-blue-700", border: "border-blue-500/35", tag: "border-blue-500/25 text-blue-700 bg-blue-500/5" },
-  CONFERENCIA_TECNICA: { title: "text-purple-700", border: "border-purple-500/35", tag: "border-purple-500/25 text-purple-700 bg-purple-500/5" },
-  APROVADO: { title: "text-emerald-700", border: "border-emerald-500/35", tag: "border-emerald-500/25 text-emerald-700 bg-emerald-500/5" },
-  PRODUCAO: { title: "text-cyan-700", border: "border-cyan-500/35", tag: "border-cyan-500/25 text-cyan-700 bg-cyan-500/5" },
-  INSTALACAO: { title: "text-indigo-700", border: "border-indigo-500/35", tag: "border-indigo-500/25 text-indigo-700 bg-indigo-500/5" },
-  FINALIZADO: { title: "text-slate-600", border: "border-slate-500/35", tag: "border-slate-500/25 text-slate-600 bg-slate-500/5" },
-  PERDIDO: { title: "text-slate-600", border: "border-slate-500/35", tag: "border-slate-500/25 text-slate-600 bg-slate-500/5" },
+/** Tema visual por etapa — coluna e cards herdam a mesma cor. */
+const STAGE_THEME: Record<
+  string,
+  {
+    header: string;
+    column: string;
+    card: string;
+    cardHover: string;
+    title: string;
+    innerBorder: string;
+    tag: string;
+  }
+> = {
+  LEAD: {
+    header: "border-t-[3px] border-t-amber-500 bg-gradient-to-b from-amber-500/15 to-amber-500/[0.03] text-amber-900",
+    column: "bg-amber-500/[0.04] border-amber-500/20",
+    card: "border-l-[3px] border-l-amber-500 border-amber-500/35 shadow-[0_2px_10px_-3px_rgba(245,158,11,0.35)]",
+    cardHover: "hover:border-amber-500/55 hover:shadow-[0_4px_14px_-3px_rgba(245,158,11,0.4)]",
+    title: "text-amber-800",
+    innerBorder: "border-amber-500/35",
+    tag: "border-amber-500/30 text-amber-800 bg-amber-500/10",
+  },
+  ORCAMENTO: {
+    header: "border-t-[3px] border-t-orange-500 bg-gradient-to-b from-orange-500/15 to-orange-500/[0.03] text-orange-900",
+    column: "bg-orange-500/[0.04] border-orange-500/20",
+    card: "border-l-[3px] border-l-orange-500 border-orange-500/35 shadow-[0_2px_10px_-3px_rgba(249,115,22,0.35)]",
+    cardHover: "hover:border-orange-500/55 hover:shadow-[0_4px_14px_-3px_rgba(249,115,22,0.4)]",
+    title: "text-orange-800",
+    innerBorder: "border-orange-500/35",
+    tag: "border-orange-500/30 text-orange-800 bg-orange-500/10",
+  },
+  NEGOCIACAO: {
+    header: "border-t-[3px] border-t-sky-500 bg-gradient-to-b from-sky-500/15 to-sky-500/[0.03] text-sky-900",
+    column: "bg-sky-500/[0.04] border-sky-500/20",
+    card: "border-l-[3px] border-l-sky-500 border-sky-500/35 shadow-[0_2px_10px_-3px_rgba(14,165,233,0.35)]",
+    cardHover: "hover:border-sky-500/55 hover:shadow-[0_4px_14px_-3px_rgba(14,165,233,0.4)]",
+    title: "text-sky-800",
+    innerBorder: "border-sky-500/35",
+    tag: "border-sky-500/30 text-sky-800 bg-sky-500/10",
+  },
+  CONFERENCIA_TECNICA: {
+    header: "border-t-[3px] border-t-violet-500 bg-gradient-to-b from-violet-500/15 to-violet-500/[0.03] text-violet-900",
+    column: "bg-violet-500/[0.04] border-violet-500/20",
+    card: "border-l-[3px] border-l-violet-500 border-violet-500/35 shadow-[0_2px_10px_-3px_rgba(139,92,246,0.35)]",
+    cardHover: "hover:border-violet-500/55 hover:shadow-[0_4px_14px_-3px_rgba(139,92,246,0.4)]",
+    title: "text-violet-800",
+    innerBorder: "border-violet-500/35",
+    tag: "border-violet-500/30 text-violet-800 bg-violet-500/10",
+  },
+  APROVADO: {
+    header: "border-t-[3px] border-t-emerald-500 bg-gradient-to-b from-emerald-500/15 to-emerald-500/[0.03] text-emerald-900",
+    column: "bg-emerald-500/[0.04] border-emerald-500/20",
+    card: "border-l-[3px] border-l-emerald-500 border-emerald-500/35 shadow-[0_2px_10px_-3px_rgba(16,185,129,0.35)]",
+    cardHover: "hover:border-emerald-500/55 hover:shadow-[0_4px_14px_-3px_rgba(16,185,129,0.4)]",
+    title: "text-emerald-800",
+    innerBorder: "border-emerald-500/35",
+    tag: "border-emerald-500/30 text-emerald-800 bg-emerald-500/10",
+  },
+  PRODUCAO: {
+    header: "border-t-[3px] border-t-teal-500 bg-gradient-to-b from-teal-500/15 to-teal-500/[0.03] text-teal-900",
+    column: "bg-teal-500/[0.04] border-teal-500/20",
+    card: "border-l-[3px] border-l-teal-500 border-teal-500/35 shadow-[0_2px_10px_-3px_rgba(20,184,166,0.35)]",
+    cardHover: "hover:border-teal-500/55 hover:shadow-[0_4px_14px_-3px_rgba(20,184,166,0.4)]",
+    title: "text-teal-800",
+    innerBorder: "border-teal-500/35",
+    tag: "border-teal-500/30 text-teal-800 bg-teal-500/10",
+  },
+  INSTALACAO: {
+    header: "border-t-[3px] border-t-indigo-500 bg-gradient-to-b from-indigo-500/15 to-indigo-500/[0.03] text-indigo-900",
+    column: "bg-indigo-500/[0.04] border-indigo-500/20",
+    card: "border-l-[3px] border-l-indigo-500 border-indigo-500/35 shadow-[0_2px_10px_-3px_rgba(99,102,241,0.35)]",
+    cardHover: "hover:border-indigo-500/55 hover:shadow-[0_4px_14px_-3px_rgba(99,102,241,0.4)]",
+    title: "text-indigo-800",
+    innerBorder: "border-indigo-500/35",
+    tag: "border-indigo-500/30 text-indigo-800 bg-indigo-500/10",
+  },
+  FINALIZADO: {
+    header: "border-t-[3px] border-t-slate-500 bg-gradient-to-b from-slate-500/15 to-slate-500/[0.03] text-slate-800",
+    column: "bg-slate-500/[0.04] border-slate-500/20",
+    card: "border-l-[3px] border-l-slate-500 border-slate-500/35 shadow-[0_2px_10px_-3px_rgba(100,116,139,0.3)]",
+    cardHover: "hover:border-slate-500/55 hover:shadow-[0_4px_14px_-3px_rgba(100,116,139,0.35)]",
+    title: "text-slate-700",
+    innerBorder: "border-slate-500/35",
+    tag: "border-slate-500/30 text-slate-700 bg-slate-500/10",
+  },
+  PERDIDO: {
+    header: "border-t-[3px] border-t-rose-500 bg-gradient-to-b from-rose-500/15 to-rose-500/[0.03] text-rose-900",
+    column: "bg-rose-500/[0.04] border-rose-500/20",
+    card: "border-l-[3px] border-l-rose-500 border-rose-500/35 shadow-[0_2px_10px_-3px_rgba(244,63,94,0.3)]",
+    cardHover: "hover:border-rose-500/55 hover:shadow-[0_4px_14px_-3px_rgba(244,63,94,0.35)]",
+    title: "text-rose-800",
+    innerBorder: "border-rose-500/35",
+    tag: "border-rose-500/30 text-rose-800 bg-rose-500/10",
+  },
 };
 
-function getColumnAccent(status: string) {
-  return COLUMN_INNER_ACCENT[status] ?? COLUMN_INNER_ACCENT.LEAD;
+function getStageTheme(status: string) {
+  return STAGE_THEME[status] ?? STAGE_THEME.LEAD;
 }
 
 const STATUS_OPTIONS = [
   ...FUNNEL_COLUMNS,
-  { id: "PERDIDO" as ProjectStatus, title: "Perdido", color: "" },
+  { id: "PERDIDO" as ProjectStatus, title: "Perdido" },
 ];
 
   const getProductionProgress = (projId: string, status: string) => {
@@ -140,6 +220,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [statusGeralInicial, setStatusGeralInicial] = useState<ProjectStatus>("LEAD");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
+  const [didDrag, setDidDrag] = useState(false);
   const [boardView, setBoardView] = useState<"funil" | "perdas">("funil");
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
@@ -313,11 +394,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("text/plain", id);
     setActiveDragId(id);
+    setDidDrag(false);
   };
 
   const handleDragEnd = () => {
     setActiveDragId(null);
     setDragOverColumn(null);
+    window.setTimeout(() => setDidDrag(false), 0);
   };
 
   const handleDragOver = (e: React.DragEvent, columnId: ProjectStatus) => {
@@ -339,6 +422,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     // Reseta drag over feedback
     setDragOverColumn(null);
     setActiveDragId(null);
+    setDidDrag(true);
 
     // Persiste no banco de dados via Server Action
     const result = await updateProjectStatus(id, targetStatus);
@@ -349,19 +433,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     }
   };
 
-  const handleMoveRight = async (project: Project) => {
-    const currentIdx = FUNNEL_COLUMNS.findIndex((col) => col.id === project.status_geral);
-    if (currentIdx === -1 || currentIdx === FUNNEL_COLUMNS.length - 1) return;
-
-    const targetStatus = FUNNEL_COLUMNS[currentIdx + 1].id;
-    const originalProjects = [...projects];
-    setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: targetStatus } : p)));
-
-    const result = await updateProjectStatus(project.id, targetStatus);
-    if (!result.success) {
-      setProjects(originalProjects);
-      showError("Falha ao avançar", "Não foi possível avançar o projeto. Tente novamente.");
-    }
+  const handleCardClick = (project: Project) => {
+    if (didDrag || activeDragId) return;
+    openEditModal(project);
   };
 
   const handleMarkContacted = async (project: Project) => {
@@ -565,68 +639,54 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
     const showFollowUp = needsFollowUp(project.status_geral);
     const isCollapsed = collapsedCards.has(project.id);
-    const accent = getColumnAccent(colId ?? project.status_geral);
+    const stageStatus = colId ?? project.status_geral;
+    const theme = getStageTheme(stageStatus);
 
     const actionButtons = (
-      <div className="flex items-center gap-[var(--space-1)] flex-wrap">
+      <div className="kanban-card-actions">
         {showFollowUp && boardView === "funil" && (
           <button
             type="button"
-            onClick={() => handleMarkContacted(project)}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMarkContacted(project);
+            }}
             className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
             title="Registrar que houve contato hoje"
           >
-            <MessageCircle className="h-4 w-4" />
+            <MessageCircle className="h-3.5 w-3.5" />
           </button>
         )}
         {canMarkLoss && boardView === "funil" && (
           <button
             type="button"
-            onClick={() => {
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               setLossModalProject(project);
               setLossMotivo("");
             }}
             className="kanban-card-action bg-red-500/10 text-red-700 border border-red-500/20"
             title="Marcar como perda"
           >
-            <XCircle className="h-4 w-4" />
+            <XCircle className="h-3.5 w-3.5" />
           </button>
         )}
         {project.status_geral === "PERDIDO" && (
           <button
             type="button"
-            onClick={() => handleRestoreLoss(project)}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRestoreLoss(project);
+            }}
             className="kanban-card-action bg-cyan-500/10 text-cyan-700 border border-cyan-500/20"
             title="Reativar lead"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-3.5 w-3.5" />
           </button>
         )}
-        {boardView === "funil" && colId && colId !== "FINALIZADO" && (
-          <button
-            type="button"
-            onClick={() => handleMoveRight(project)}
-            className="kanban-card-action md:hidden bg-amber-500/10 text-amber-800 border border-amber-500/20"
-            title="Avançar etapa"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => openEditModal(project)}
-          className="kanban-card-action bg-slate-500/10 text-slate-700 border border-slate-500/20"
-          title="Editar card"
-        >
-          <Edit className="h-4 w-4" />
-        </button>
-        <Link
-          href={`/projects/${project.id}`}
-          className="kanban-card-action bg-primary/10 text-primary border border-primary/25 group/link"
-          title="Ver detalhes do projeto"
-        >
-          <ArrowRight className="h-4 w-4 group-hover/link:translate-x-0.5 transition-transform" />
-        </Link>
       </div>
     );
 
@@ -636,18 +696,19 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         draggable={boardView === "funil"}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
-        className={`group kanban-card overflow-hidden ${
-          boardView === "funil" ? "cursor-grab active:cursor-grabbing" : ""
-        } hover:border-primary/40 ${
-          isDraggingThis ? "opacity-35 scale-[0.98] border-dashed border-primary" : ""
+        onClick={() => handleCardClick(project)}
+        className={`group kanban-card overflow-hidden ${theme.card} ${theme.cardHover} ${
+          boardView === "funil" ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+        } ${
+          isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
         } ${FOLLOW_UP_CARD_STYLES[followLevel]}`}
       >
         <div className="space-y-[var(--space-2)]">
           <div className="flex items-start justify-between gap-2">
-            <Link href={`/projects/${project.id}`} className="min-w-0 flex-1 space-y-1.5 cursor-pointer">
+            <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border ${accent.tag}`}
+                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border ${theme.tag}`}
                 >
                   {labelOrigin(project.client.origem)}
                 </span>
@@ -663,7 +724,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
                 {project.client.telefone}
               </p>
-            </Link>
+            </div>
 
             <button
               type="button"
@@ -690,7 +751,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           >
             <div className="overflow-hidden">
               <div className="space-y-2 border-t border-border/70 pt-2">
-                <Link href={`/projects/${project.id}`} className="block space-y-2 cursor-pointer">
+                <div className="space-y-2">
                   {followMessage && (
                     <div
                       className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
@@ -715,12 +776,12 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     project.status_geral === "FINALIZADO") && (
                     <div>
                       <span
-                        className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}
+                        className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${theme.title}`}
                       >
                         Fábrica & Montagem
                       </span>
                       <div
-                        className={`text-[10px] text-muted-foreground bg-white border ${accent.border} py-1.5 px-2 rounded-lg font-medium`}
+                        className={`text-[10px] text-muted-foreground bg-white border ${theme.innerBorder} py-1.5 px-2 rounded-lg font-medium`}
                       >
                         {getProductionProgress(project.id, project.status_geral)}
                       </div>
@@ -729,15 +790,15 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
                   {project.status_geral === "PERDIDO" && project.motivo_perda && (
                     <div>
-                      <span className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${accent.title}`}>
+                      <span className={`text-[9px] font-semibold uppercase tracking-wide block mb-1 ${theme.title}`}>
                         Motivo da perda
                       </span>
-                      <p className={`text-[10px] text-muted-foreground bg-white border ${accent.border} rounded-lg p-2`}>
+                      <p className={`text-[10px] text-muted-foreground bg-white border ${theme.innerBorder} rounded-lg p-2`}>
                         {project.motivo_perda}
                       </p>
                     </div>
                   )}
-                </Link>
+                </div>
 
                 <div className="flex items-center text-foreground font-black text-sm">
                   <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary shrink-0" />
@@ -821,7 +882,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {lostProjects.map((project) => renderProjectCard(project))}
+              {lostProjects.map((project) => renderProjectCard(project, "PERDIDO"))}
             </div>
           )}
         </div>
@@ -832,18 +893,19 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           const colProjects = projects.filter((p) => p.status_geral === col.id);
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
           const isOver = dragOverColumn === col.id;
+          const theme = getStageTheme(col.id);
 
           return (
             <div 
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`kanban-column surface-compact flex flex-col transition-all duration-[var(--motion-base)] ${
-                isOver ? "border-primary/30 shadow-[var(--shadow-md)]" : ""
+              className={`kanban-column surface-compact flex flex-col transition-all duration-[var(--motion-base)] border ${theme.column} ${
+                isOver ? "ring-2 ring-primary/30 shadow-[var(--shadow-md)] scale-[1.01]" : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
-              <div className={`p-3.5 border-t-2 ${col.color} rounded-t-xl flex items-center justify-between border-b border-border`}>
+              <div className={`p-3.5 ${theme.header} rounded-t-xl flex items-center justify-between border-b border-border/60`}>
                 <div className="flex items-center space-x-2 min-w-0">
                   <span className="font-bold text-xs uppercase tracking-wide truncate">{col.title}</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">

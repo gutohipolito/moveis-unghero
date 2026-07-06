@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Menu, X } from "lucide-react";
 import SidebarNav from "@/components/SidebarNav";
@@ -19,7 +19,8 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const closeMenu = () => setIsOpen(false);
+  const openMenu = useCallback(() => setIsOpen(true), []);
+  const closeMenu = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     setMounted(true);
@@ -40,22 +41,27 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, closeMenu]);
 
   const drawer =
     mounted && isOpen
       ? createPortal(
           <>
-            <div
-              onClick={closeMenu}
+            <button
+              type="button"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                closeMenu();
+              }}
               className="mobile-drawer-backdrop md:hidden"
-              aria-hidden="true"
+              aria-label="Fechar menu"
             />
             <aside
               className="mobile-drawer app-sidebar md:hidden mobile-drawer-open"
               aria-modal="true"
               role="dialog"
               aria-label="Menu de navegação"
+              onPointerDown={(event) => event.stopPropagation()}
             >
               <div className="flex items-center justify-between h-16 px-5 shrink-0 border-b border-[hsl(var(--sidebar-border))]">
                 <img
@@ -65,8 +71,12 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
                 />
                 <button
                   type="button"
-                  onClick={closeMenu}
-                  className="mobile-menu-btn border-[hsl(var(--sidebar-border))] text-[hsl(var(--sidebar-foreground))]"
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeMenu();
+                  }}
+                  className="mobile-menu-btn mobile-drawer-close border-[hsl(var(--sidebar-border))] text-[hsl(var(--sidebar-foreground))]"
                   aria-label="Fechar menu"
                 >
                   <X className="h-5 w-5" />
@@ -87,8 +97,8 @@ export default function SidebarToggle({ user }: SidebarToggleProps) {
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="mobile-menu-btn"
+        onClick={() => (isOpen ? closeMenu() : openMenu())}
+        className={`mobile-menu-btn ${isOpen ? "mobile-menu-btn-open" : ""}`}
         aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
         aria-expanded={isOpen}
       >

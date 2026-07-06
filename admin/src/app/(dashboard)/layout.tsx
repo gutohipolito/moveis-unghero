@@ -8,7 +8,6 @@ import SidebarNav from "@/components/SidebarNav";
 import DashboardHeader from "@/components/DashboardHeader";
 import MobileTopBar from "@/components/MobileTopBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import PwaInstallBanner from "@/components/PwaInstallBanner";
 import { getNotifications } from "@/app/actions/notifications";
 import {
   getOperatorNotes,
@@ -77,8 +76,6 @@ export default async function DashboardLayout({
               initialReminders={reminders}
             />
           </div>
-
-          <PwaInstallBanner />
 
           <main className="flex-1 px-[var(--space-4)] py-[var(--space-4)] sm:px-[var(--space-5)] md:px-[var(--space-6)] md:py-[var(--space-6)] overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-[var(--space-6)]">
             <div className="w-full space-y-[var(--space-5)]">{children}</div>

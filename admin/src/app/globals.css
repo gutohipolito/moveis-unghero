@@ -382,6 +382,20 @@ body {
   inset: 0;
   z-index: 90;
   background: hsl(24 14% 14% / 0.45);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-menu-btn-open {
+  position: relative;
+  z-index: 110;
+}
+
+.mobile-drawer-close {
+  position: relative;
+  z-index: 1;
 }
 
 .mobile-drawer {
@@ -813,6 +827,27 @@ body {
   transition: background var(--motion-fast) var(--ease-out),
     transform var(--motion-fast) var(--ease-out);
   -webkit-tap-highlight-color: transparent;
+}
+
+.kanban-card-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kanban-card-actions .kanban-card-action {
+  min-width: 1.625rem;
+  min-height: 1.625rem;
+  padding: 0.25rem;
+  flex-shrink: 0;
+}
+
+.kanban-card-actions .kanban-card-action svg {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .kanban-card-action:active {
