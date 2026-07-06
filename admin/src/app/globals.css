@@ -963,7 +963,8 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   color: #ffffff;
   padding: 4.5rem 3.5rem;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
 }
 
@@ -985,25 +986,20 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
 
 .login-brand-content {
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-brand-title {
   font-family: var(--font-display);
-  font-size: 2.5rem;
+  font-size: 3.5rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.15;
   color: #ffffff;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-.login-brand-tagline {
-  font-size: 1.05rem;
-  color: rgba(255, 255, 255, 0.88);
-  margin-top: 1.25rem;
-  max-width: 24rem;
-  line-height: 1.6;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  text-align: center;
 }
 
 .login-brand-badge {
@@ -1021,6 +1017,8 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  bottom: 3.5rem;
 }
 
 .login-form-panel {
@@ -1032,6 +1030,17 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   background-image: 
     radial-gradient(circle at 10% 20%, hsl(42 96% 44% / 0.035) 0%, transparent 40%),
     radial-gradient(circle at 90% 80%, hsl(24 14% 14% / 0.015) 0%, transparent 50%);
+}
+
+.login-form-logo {
+  filter: brightness(0.12) contrast(1.1);
+  opacity: 0.88;
+  transition: all 0.3s ease;
+}
+
+.login-form-logo:hover {
+  filter: brightness(0.18) contrast(1.2);
+  transform: scale(1.03);
 }
 
 .login-card {
@@ -1064,7 +1073,22 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
 }
 
 .login-form-group .relative {
-  transition: transform 0.2s ease;
+  position: relative;
+  width: 100%;
+}
+
+.login-form-group svg {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  left: 0.875rem !important;
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+  margin: 0 !important;
+  transition: color 0.2s ease, transform 0.2s ease !important;
 }
 
 .login-form-group input {
@@ -1073,6 +1097,9 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   border: 1px solid hsl(var(--border) / 0.9) !important;
   padding-left: 2.75rem !important;
   background: hsl(var(--card)) !important;
+  width: 100% !important;
+  position: relative !important;
+  z-index: 5 !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
 }
 
@@ -1087,13 +1114,6 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
 .login-form-group .relative:focus-within svg {
   color: hsl(var(--primary)) !important;
   transform: translateY(-50%) scale(1.08) !important;
-}
-
-.login-form-group svg {
-  transition: color 0.2s ease, transform 0.2s ease !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  left: 0.875rem !important;
 }
 
 .login-submit-btn {
