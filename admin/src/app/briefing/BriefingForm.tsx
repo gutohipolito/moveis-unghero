@@ -17,7 +17,8 @@ import {
   Smartphone,
   Phone,
   Mail,
-  User
+  User,
+  AlertTriangle
 } from "lucide-react";
 import { submitPublicBriefingAction } from "@/app/actions/briefing";
 
@@ -52,6 +53,14 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [startTime] = useState<number>(Date.now());
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   
   // Respostas do formulário
   const [selectedAmbientes, setSelectedAmbientes] = useState<string[]>([]);
@@ -209,54 +218,65 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   };
 
   const nextStep = () => {
+    setError(null);
     if (step === 1) {
       if (selectedAmbientes.length === 0) {
-        alert("Por favor, selecione pelo menos um ambiente.");
+        setError("Por favor, selecione pelo menos um ambiente.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
       // Validar se todas as perguntas condicionais dos ambientes selecionados foram respondidas
       for (const id of selectedAmbientes) {
         const amb = AMBIENTES.find(a => a.id === id);
         if (amb?.perguntaCondicional && !ambienteOpcoes[id]) {
-          alert(`Por favor, responda a pergunta complementar do ambiente: ${amb.nome}`);
+          setError(`Por favor, responda a pergunta complementar do ambiente: ${amb.nome}`);
+          window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
       }
     }
     if (step === 2 && !tipoImovel) {
-      alert("Por favor, selecione o tipo do seu imóvel.");
+      setError("Por favor, selecione o tipo do seu imóvel.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (step === 3 && !faseProjeto) {
-      alert("Por favor, selecione em qual fase você está.");
+      setError("Por favor, selecione em qual fase você está.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (step === 4) {
       if (!cidade.trim() || !bairro.trim()) {
-        alert("Por favor, preencha a cidade e o bairro do imóvel.");
+        setError("Por favor, preencha a cidade e o bairro do imóvel.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
     }
     if (step === 5) {
       if (!pronto) {
-        alert("Por favor, informe se o imóvel está pronto.");
+        setError("Por favor, informe se o imóvel está pronto.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
       if ((pronto === "Está em construção" || pronto === "Será entregue em breve") && !dataChaves.trim()) {
-        alert("Por favor, preencha a data de recebimento das chaves.");
+        setError("Por favor, preencha a data de recebimento das chaves.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
     }
     if (step === 6 && !temProjeto) {
-      alert("Por favor, informe se possui projeto de interiores.");
+      setError("Por favor, informe se possui projeto de interiores.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (step === 7 && !estilo) {
-      alert("Por favor, selecione um estilo estético.");
+      setError("Por favor, selecione um estilo estético.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (step === 9 && !prazoInicio) {
-      alert("Por favor, informe quando pretende iniciar.");
+      setError("Por favor, informe quando pretende iniciar.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -265,14 +285,17 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   };
 
   const prevStep = () => {
+    setError(null);
     setStep(step - 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!nome.trim() || !telefone.trim()) {
-      alert("Por favor, preencha seu nome e seu WhatsApp de contato.");
+      setError("Por favor, preencha seu nome e seu WhatsApp de contato.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -312,7 +335,8 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     if (res.success) {
       setSuccess(true);
     } else {
-      alert(res.error || "Erro ao processar as informações. Tente novamente.");
+      setError(res.error || "Erro ao processar as informações. Tente novamente.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -387,6 +411,19 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
       </div>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300">
+        {error && (
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
+            <span className="flex-1 text-left">{error}</span>
+            <button 
+              type="button" 
+              onClick={() => setError(null)} 
+              className="text-rose-450 hover:text-rose-600 font-extrabold text-sm ml-1 cursor-pointer leading-none"
+            >
+              ×
+            </button>
+          </div>
+        )}
         
         {/* PASSO 1: AMBIENTES */}
         {step === 1 && (

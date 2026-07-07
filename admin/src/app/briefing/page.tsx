@@ -20,7 +20,7 @@ export default function BriefingPage() {
               className="h-9 w-auto object-contain"
             />
           </div>
-          <span className="text-[10px] font-black text-slate-350 uppercase tracking-widest bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+          <span className="text-[10px] font-black text-white uppercase tracking-widest bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700/60 shadow-inner">
             Orçamento
           </span>
         </div>
