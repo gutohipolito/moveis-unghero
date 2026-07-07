@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Home, 
   Building, 
   Briefcase, 
   Sparkles, 
   Clock, 
-  DollarSign, 
   Check, 
   ArrowRight, 
   ArrowLeft, 
@@ -15,7 +14,6 @@ import {
   Link as LinkIcon, 
   CheckCircle,
   FileText,
-  MapPin,
   Smartphone,
   Phone,
   Mail,
@@ -55,20 +53,16 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   
-  // Respostas do Step 1
+  // Respostas do formulário
   const [selectedAmbientes, setSelectedAmbientes] = useState<string[]>([]);
   const [ambienteOpcoes, setAmbienteOpcoes] = useState<Record<string, string>>({});
   const [tipoImovel, setTipoImovel] = useState<string>("");
   const [faseProjeto, setFaseProjeto] = useState<string>("");
-
-  // Respostas do Step 2
   const [cidade, setCidade] = useState("");
   const [bairro, setBairro] = useState("");
   const [pronto, setPronto] = useState("");
   const [dataChaves, setDataChaves] = useState("");
   const [temProjeto, setTemProjeto] = useState("");
-
-  // Respostas do Step 3
   const [estilo, setEstilo] = useState("");
   const [faixaInvestimento, setFaixaInvestimento] = useState("");
   const [prazoInicio, setPrazoInicio] = useState("");
@@ -76,14 +70,14 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [referenciaUrl, setReferenciaUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // Respostas de Contato
+  // Contato
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [origemLead, setOrigemLead] = useState("");
   const [observacoesAdicionais, setObservacoesAdicionais] = useState("");
 
-  // Metadados ocultos coletados automaticamente
+  // Metadados
   const [utmData, setUtmData] = useState({
     utm_source: "",
     utm_medium: "",
@@ -97,17 +91,14 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   });
 
   useEffect(() => {
-    // Coleta de UTMs e GCLID/FBCLID
     const params = new URLSearchParams(window.location.search);
     const width = window.screen.width;
     const height = window.screen.height;
     
-    // Identificar dispositivo
     let device = "Desktop";
     if (window.innerWidth < 768) device = "Mobile";
     else if (window.innerWidth < 1024) device = "Tablet";
 
-    // Identificar SO
     const ua = navigator.userAgent;
     let osName = "Desconhecido";
     if (ua.indexOf("Win") !== -1) osName = "Windows";
@@ -129,7 +120,6 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     });
   }, []);
 
-  // Formatador de telefone (xx) xxxxx-xxxx
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 11) value = value.slice(0, 11);
@@ -147,7 +137,6 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const toggleAmbiente = (id: string) => {
     if (selectedAmbientes.includes(id)) {
       setSelectedAmbientes(selectedAmbientes.filter(a => a !== id));
-      // Remove a opção condicional se desmarcado
       const newOpcoes = { ...ambienteOpcoes };
       delete newOpcoes[id];
       setAmbienteOpcoes(newOpcoes);
@@ -168,55 +157,109 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     setTimeout(() => {
       setUploading(false);
       setReferenciaUrl("https://arquivos-internos.moveisunghero.com.br/upload-" + Date.now() + ".pdf");
-    }, 1500);
+    }, 1200);
+  };
+
+  // Funções de Seleção Rápida com Auto-Avanço
+  const handleSelectTipoImovel = (value: string) => {
+    setTipoImovel(value);
+    autoAdvance(3);
+  };
+
+  const handleSelectFaseProjeto = (value: string) => {
+    setFaseProjeto(value);
+    autoAdvance(4);
+  };
+
+  const handleSelectPronto = (value: string) => {
+    setPronto(value);
+    // Se for em construção ou entrega breve, não auto-avança para que informe a data
+    if (value !== "Está em construção" && value !== "Será entregue em breve") {
+      autoAdvance(6);
+    }
+  };
+
+  const handleSelectTemProjeto = (value: string) => {
+    setTemProjeto(value);
+    if (value !== "Preciso que seja feito um") {
+      autoAdvance(7);
+    }
+  };
+
+  const handleSelectEstilo = (value: string) => {
+    setEstilo(value);
+    autoAdvance(8);
+  };
+
+  const handleSelectFaixaInvestimento = (value: string) => {
+    setFaixaInvestimento(value);
+    autoAdvance(9);
+  };
+
+  const handleSelectPrazoInicio = (value: string) => {
+    setPrazoInicio(value);
+    autoAdvance(10);
+  };
+
+  const autoAdvance = (nextStep: number) => {
+    setTimeout(() => {
+      setStep(nextStep);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 250);
   };
 
   const nextStep = () => {
-    // Validações simples
     if (step === 1) {
       if (selectedAmbientes.length === 0) {
-        alert("Por favor, selecione pelo menos um ambiente que deseja mobiliar.");
+        alert("Por favor, selecione pelo menos um ambiente.");
         return;
       }
-      if (!tipoImovel) {
-        alert("Por favor, selecione o tipo do seu imóvel.");
-        return;
-      }
-      if (!faseProjeto) {
-        alert("Por favor, nos conte em que fase você está.");
-        return;
-      }
-    }
-    if (step === 2) {
-      if (!cidade || !bairro) {
-        alert("Por favor, informe a cidade e o bairro do imóvel.");
-        return;
-      }
-      if (!pronto) {
-        alert("Por favor, selecione se o imóvel já está pronto.");
-        return;
-      }
-      if (pronto === "Está em construção" || pronto === "Será entregue em breve") {
-        if (!dataChaves) {
-          alert("Por favor, informe quando recebe as chaves.");
+      // Validar se todas as perguntas condicionais dos ambientes selecionados foram respondidas
+      for (const id of selectedAmbientes) {
+        const amb = AMBIENTES.find(a => a.id === id);
+        if (amb?.perguntaCondicional && !ambienteOpcoes[id]) {
+          alert(`Por favor, responda a pergunta complementar do ambiente: ${amb.nome}`);
           return;
         }
       }
-      if (!temProjeto) {
-        alert("Por favor, nos informe se você já possui projeto de interiores.");
+    }
+    if (step === 2 && !tipoImovel) {
+      alert("Por favor, selecione o tipo do seu imóvel.");
+      return;
+    }
+    if (step === 3 && !faseProjeto) {
+      alert("Por favor, selecione em qual fase você está.");
+      return;
+    }
+    if (step === 4) {
+      if (!cidade.trim() || !bairro.trim()) {
+        alert("Por favor, preencha a cidade e o bairro do imóvel.");
         return;
       }
     }
-    if (step === 3) {
-      if (!estilo) {
-        alert("Por favor, selecione o estilo que você mais se identifica.");
+    if (step === 5) {
+      if (!pronto) {
+        alert("Por favor, informe se o imóvel está pronto.");
         return;
       }
-      if (!prazoInicio) {
-        alert("Por favor, nos diga quando pretende iniciar.");
+      if ((pronto === "Está em construção" || pronto === "Será entregue em breve") && !dataChaves.trim()) {
+        alert("Por favor, preencha a data de recebimento das chaves.");
         return;
       }
     }
+    if (step === 6 && !temProjeto) {
+      alert("Por favor, informe se possui projeto de interiores.");
+      return;
+    }
+    if (step === 7 && !estilo) {
+      alert("Por favor, selecione um estilo estético.");
+      return;
+    }
+    if (step === 9 && !prazoInicio) {
+      alert("Por favor, informe quando pretende iniciar.");
+      return;
+    }
+
     setStep(step + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -228,13 +271,12 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !telefone) {
-      alert("Por favor, preencha seu nome e telefone de contato.");
+    if (!nome.trim() || !telefone.trim()) {
+      alert("Por favor, preencha seu nome e seu WhatsApp de contato.");
       return;
     }
 
     setLoading(true);
-
     const tempoPreenchimento = Math.round((Date.now() - startTime) / 1000);
     const ambientesPayload = selectedAmbientes.map(a => ({
       nome: a,
@@ -242,10 +284,10 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     }));
 
     const payload = {
-      nome,
-      telefone,
-      email: email || undefined,
-      cidade: `${cidade} - ${bairro}`,
+      nome: nome.trim(),
+      telefone: telefone.trim(),
+      email: email.trim() || undefined,
+      cidade: `${cidade.trim()} - ${bairro.trim()}`,
       origem_lead: origemLead || "SITE",
       ambientes: ambientesPayload,
       tipo_imovel: tipoImovel,
@@ -270,54 +312,57 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     if (res.success) {
       setSuccess(true);
     } else {
-      alert(res.error || "Ocorreu um erro ao enviar suas respostas. Tente novamente.");
+      alert(res.error || "Erro ao processar as informações. Tente novamente.");
     }
   };
 
+  // Barra de progresso dinâmica
+  const progressPercent = Math.round(((step - 1) / 10) * 100);
+
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-12 px-4 space-y-8 animate-in fade-in duration-500">
+      <div className="max-w-xl mx-auto text-center py-16 px-6 space-y-8 animate-in fade-in duration-500">
         <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full">
-          <CheckCircle className="h-16 w-16" />
+          <CheckCircle className="h-14 w-14 animate-bounce" />
         </div>
         <div className="space-y-3">
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Recebemos seu projeto!</h2>
-          <p className="text-slate-650 font-medium max-w-md mx-auto">
-            Nossa equipe comercial e de design já está analisando suas respostas para preparar um atendimento personalizado.
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Recebemos seu projeto!</h2>
+          <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto">
+            Nossa equipe de design e orçamento já está analisando suas escolhas para entrar em contato com uma proposta alinhada.
           </p>
         </div>
 
-        <div className="p-6 bg-slate-50 border border-slate-200/60 rounded-2xl max-w-md mx-auto space-y-4">
-          <p className="text-sm font-bold text-slate-800">O que você pode fazer agora?</p>
-          <div className="grid grid-cols-1 gap-2.5 text-left">
+        <div className="p-6 bg-white border border-slate-200/80 rounded-2xl max-w-sm mx-auto space-y-4 shadow-sm">
+          <p className="text-xs font-bold text-slate-800 uppercase tracking-widest">Ações Recomendadas</p>
+          <div className="grid grid-cols-1 gap-2 text-left">
             <a 
               href="https://instagram.com" 
               target="_blank" 
               rel="noreferrer" 
-              className="flex items-center gap-3 p-3 bg-white hover:bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+              className="flex items-center gap-3 p-3 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5 text-pink-600 shrink-0">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
               </svg>
-              Acompanhar nosso Instagram
+              Nosso Instagram Oficial
             </a>
             <a 
               href="#" 
-              className="flex items-center gap-3 p-3 bg-white hover:bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+              className="flex items-center gap-3 p-3 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
             >
-              <FileText className="h-4.5 w-4.5 text-primary shrink-0" />
-              Baixar Catálogo de Inspirações (PDF)
+              <FileText className="h-4.5 w-4.5 text-amber-600 shrink-0" />
+              Catálogo de Inspirações (PDF)
             </a>
             <a 
               href="https://wa.me/5554999999999" 
               target="_blank" 
               rel="noreferrer" 
-              className="flex items-center gap-3 p-3 bg-white hover:bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+              className="flex items-center gap-3 p-3 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
             >
               <Phone className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-              Chamar no WhatsApp Comercial
+              WhatsApp Comercial Direto
             </a>
           </div>
         </div>
@@ -326,33 +371,32 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-2xl mx-auto px-6 py-6">
       {/* Barra de Progresso */}
-      <div className="mb-8 space-y-3">
-        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-widest">
-          <span>Qualificação de Projeto</span>
-          <span>Etapa {step} de 4</span>
+      <div className="mb-8 space-y-2">
+        <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <span>Orçamento Preliminar</span>
+          <span>{progressPercent}% Concluído</span>
         </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-[hsl(28_85%_45%)] transition-all duration-300 ease-out" 
-            style={{ width: `${(step / 4) * 100}%` }}
+            className="h-full bg-slate-800 transition-all duration-300 ease-out" 
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-300">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300">
         
-        {/* STEP 1: SOBRE O PROJETO */}
+        {/* PASSO 1: AMBIENTES */}
         {step === 1 && (
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Qual ambiente você deseja mobiliar?</h2>
-              <p className="text-sm text-slate-500">Selecione todos os ambientes que fazem parte da sua ideia. Escolha quantos quiser.</p>
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Qual ambiente você deseja mobiliar?</h2>
+              <p className="text-xs text-slate-400 font-semibold">Escolha um ou mais ambientes. Você pode detalhar cada um deles.</p>
             </div>
 
-            {/* Grid de ambientes */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               {AMBIENTES.map((amb) => {
                 const isSelected = selectedAmbientes.includes(amb.id);
                 return (
@@ -360,197 +404,248 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     key={amb.id}
                     type="button"
                     onClick={() => toggleAmbiente(amb.id)}
-                    className={`p-4 rounded-2xl border text-center transition-all cursor-pointer space-y-2 flex flex-col items-center justify-center min-h-[100px] ${
+                    className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[90px] gap-1.5 ${
                       isSelected 
-                        ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
                     }`}
                   >
-                    <span className="text-3xl shrink-0">{amb.icone}</span>
+                    <span className="text-2xl shrink-0">{amb.icone}</span>
                     <span className="text-xs font-bold leading-tight">{amb.nome}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Perguntas Condicionais de Ambientes */}
+            {/* Condicionais na mesma tela */}
             {selectedAmbientes.some(id => AMBIENTES.find(a => a.id === id)?.perguntaCondicional) && (
-              <div className="p-5 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4 animate-in slide-in-from-top duration-300">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Detalhes Adicionais</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedAmbientes.map((id) => {
-                    const amb = AMBIENTES.find(a => a.id === id);
-                    if (!amb || !amb.perguntaCondicional) return null;
-                    return (
-                      <div key={id} className="space-y-2">
-                        <label className="text-xs font-bold text-slate-750 block">
-                          [{amb.nome}] {amb.perguntaCondicional}
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {amb.opcoes?.map((opcao) => {
-                            const isOpSelected = ambienteOpcoes[id] === opcao;
-                            return (
-                              <button
-                                key={opcao}
-                                type="button"
-                                onClick={() => handleOptionSelect(id, opcao)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                                  isOpSelected
-                                    ? "bg-primary text-white border-primary"
-                                    : "bg-white text-slate-750 border-slate-200 hover:border-slate-300"
-                                }`}
-                              >
-                                {opcao}
-                              </button>
-                            );
-                          })}
-                        </div>
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3 animate-in slide-in-from-top duration-200">
+                {selectedAmbientes.map((id) => {
+                  const amb = AMBIENTES.find(a => a.id === id);
+                  if (!amb || !amb.perguntaCondicional) return null;
+                  return (
+                    <div key={id} className="space-y-2">
+                      <label className="text-xs font-bold text-slate-650 block">
+                        [{amb.nome}] {amb.perguntaCondicional}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {amb.opcoes?.map((opcao) => {
+                          const isOpSelected = ambienteOpcoes[id] === opcao;
+                          return (
+                            <button
+                              key={opcao}
+                              type="button"
+                              onClick={() => handleOptionSelect(id, opcao)}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                isOpSelected
+                                  ? "bg-slate-850 text-white border-slate-850"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              {opcao}
+                            </button>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            {/* Tipo do Imóvel */}
-            <div className="space-y-3">
-              <h3 className="text-base font-black text-slate-900">O imóvel é:</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  { id: "Apartamento", nome: "Apartamento", icone: Building },
-                  { id: "Casa", nome: "Casa", icone: Home },
-                  { id: "Comercial", nome: "Comercial", icone: Briefcase }
-                ].map((item) => {
-                  const isSelected = tipoImovel === item.id;
-                  const Icon = item.icone;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setTipoImovel(item.id)}
-                      className={`p-4 rounded-xl border flex items-center gap-3 transition-all cursor-pointer ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 shrink-0" />
-                      <span className="text-xs font-bold">{item.nome}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Fase do Projeto */}
-            <div className="space-y-3">
-              <h3 className="text-base font-black text-slate-900">Em que fase você está?</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { id: "Apenas pesquisando", nome: "Apenas pesquisando" },
-                  { id: "Comparando orçamentos", nome: "Comparando orçamentos" },
-                  { id: "Já tenho o projeto", nome: "Já tenho o projeto" },
-                  { id: "Quero iniciar o quanto antes", nome: "Quero iniciar o quanto antes" }
-                ].map((item) => {
-                  const isSelected = faseProjeto === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setFaseProjeto(item.id)}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                      }`}
-                    >
-                      <span className="text-xs font-bold">{item.nome}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-2">
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-1.5 px-6 py-3 bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
               >
-                Próxima etapa <ArrowRight className="h-4 w-4" />
+                Continuar <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 2: SOBRE O IMÓVEL */}
+        {/* PASSO 2: TIPO DO IMÓVEL */}
         {step === 2 && (
-          <div className="space-y-8 animate-in slide-in-from-right duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Onde fica o imóvel e qual o status atual?</h2>
-              <p className="text-sm text-slate-500">Isso ajuda nosso projetista a mapear a logística e regras de condomínio.</p>
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">O imóvel é:</h2>
+              <p className="text-xs text-slate-400 font-semibold">Selecione uma das opções abaixo.</p>
             </div>
 
-            {/* Cidade e Bairro */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { id: "Apartamento", nome: "Apartamento", icone: Building },
+                { id: "Casa", nome: "Casa", icone: Home },
+                { id: "Comercial", nome: "Comercial", icone: Briefcase }
+              ].map((item) => {
+                const isSelected = tipoImovel === item.id;
+                const Icon = item.icone;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectTipoImovel(item.id)}
+                    className={`p-4 rounded-xl border flex items-center gap-3 transition-all cursor-pointer ${
+                      isSelected 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="text-xs font-bold">{item.nome}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 3: FASE DO PROJETO */}
+        {step === 3 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Em que fase você está?</h2>
+              <p className="text-xs text-slate-400 font-semibold font-bold">Isso define a velocidade do nosso contato.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {[
+                { id: "Apenas pesquisando", nome: "Apenas pesquisando" },
+                { id: "Comparando orçamentos", nome: "Comparando orçamentos" },
+                { id: "Já tenho o projeto", nome: "Já tenho o projeto" },
+                { id: "Quero iniciar o quanto antes", nome: "Quero iniciar o quanto antes" }
+              ].map((item) => {
+                const isSelected = faseProjeto === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectFaseProjeto(item.id)}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{item.nome}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 4: LOCALIZAÇÃO */}
+        {step === 4 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Onde fica o imóvel?</h2>
+              <p className="text-xs text-slate-400 font-semibold font-bold">Informe a cidade e o bairro do imóvel.</p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Cidade</label>
+                <label className="text-xs font-bold text-slate-650">Cidade</label>
                 <input
                   required
                   type="text"
-                  placeholder="Ex: Caxias do Sul"
+                  placeholder="Ex: Bento Gonçalves"
                   value={cidade}
                   onChange={e => setCidade(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                  className="w-full border border-slate-200 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Bairro</label>
+                <label className="text-xs font-bold text-slate-650">Bairro</label>
                 <input
                   required
                   type="text"
-                  placeholder="Ex: Centro"
+                  placeholder="Ex: Imigrante"
                   value={bairro}
                   onChange={e => setBairro(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                  className="w-full border border-slate-200 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                 />
               </div>
             </div>
 
-            {/* Imóvel pronto? */}
-            <div className="space-y-3">
-              <h3 className="text-base font-black text-slate-900">O imóvel já está pronto?</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { id: "Sim", nome: "Sim, pronto para medir/instalar" },
-                  { id: "Não", nome: "Não, sem previsão imediata" },
-                  { id: "Está em construção", nome: "Está em construção" },
-                  { id: "Será entregue em breve", nome: "Será entregue em breve" }
-                ].map((item) => {
-                  const isSelected = pronto === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setPronto(item.id)}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                      }`}
-                    >
-                      <span className="text-xs font-bold">{item.nome}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+              <button
+                type="button"
+                onClick={nextStep}
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+              >
+                Continuar <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 5: STATUS DA OBRA */}
+        {step === 5 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">O imóvel já está pronto?</h2>
+              <p className="text-xs text-slate-400 font-semibold">Escolha a opção que condiz com o estágio atual.</p>
             </div>
 
-            {/* Pergunta condicional: Quando recebe as chaves? */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { id: "Sim", nome: "Sim, pronto para medição" },
+                { id: "Não", nome: "Não, sem previsão imediata" },
+                { id: "Está em construção", nome: "Está em construção" },
+                { id: "Será entregue em breve", nome: "Será entregue em breve" }
+              ].map((item) => {
+                const isSelected = pronto === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectPronto(item.id)}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{item.nome}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Condicional na mesma tela */}
             {(pronto === "Está em construção" || pronto === "Será entregue em breve") && (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-in slide-in-from-top duration-300 max-w-sm">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-in slide-in-from-top duration-300 max-w-xs">
                 <label className="text-xs font-bold text-slate-750 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-primary" /> Quando recebe as chaves?
+                  <Clock className="h-3.5 w-3.5 text-slate-500" /> Quando recebe as chaves?
                 </label>
                 <input
                   required
@@ -558,84 +653,112 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                   placeholder="Ex: Dezembro/2026"
                   value={dataChaves}
                   onChange={e => setDataChaves(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg text-xs p-2.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                  className="w-full border border-slate-200 rounded-lg text-xs p-2.5 bg-white focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                 />
               </div>
             )}
 
-            {/* Possui projeto de interiores? */}
-            <div className="space-y-3">
-              <h3 className="text-base font-black text-slate-900">Você já possui projeto de interiores?</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { id: "Sim", nome: "Sim, já tenho o projeto em mãos" },
-                  { id: "Não", nome: "Não possuo projeto" },
-                  { id: "Está sendo desenvolvido", nome: "Está sendo desenvolvido pelo arquiteto" },
-                  { id: "Preciso que seja feito um", nome: "Preciso que seja feito um *" }
-                ].map((item) => {
-                  const isSelected = temProjeto === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setTemProjeto(item.id)}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                      }`}
-                    >
-                      <span className="text-xs font-bold">{item.nome}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {temProjeto === "Preciso que seja feito um" && (
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  * Desenvolvemos o projeto simples em 3D de modulação sem custo adicional para fechamento.
-                </p>
-              )}
-            </div>
-
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between pt-2">
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-5 py-3 border border-slate-200 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
-              <button
-                type="button"
-                onClick={nextStep}
-                className="flex items-center gap-1.5 px-6 py-3 bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all"
-              >
-                Próxima etapa <ArrowRight className="h-4 w-4" />
-              </button>
+              {/* Só exibe avançar manual se for condicional */}
+              {(pronto === "Está em construção" || pronto === "Será entregue em breve") && (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                >
+                  Continuar <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         )}
 
-        {/* STEP 3: O PROJETO */}
-        {step === 3 && (
-          <div className="space-y-8 animate-in slide-in-from-right duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Qual o estilo que você procura?</h2>
-              <p className="text-sm text-slate-500">Selecione a imagem que mais combina com a casa dos seus sonhos.</p>
+        {/* PASSO 6: POSSE DE PROJETO */}
+        {step === 6 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Você já possui projeto de interiores?</h2>
+              <p className="text-xs text-slate-400 font-semibold">Ajuda a pular etapas de design se já possuir.</p>
             </div>
 
-            {/* Grid de estilos com imagens */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-2.5">
+              {[
+                { id: "Sim", nome: "Sim, já tenho o projeto em mãos" },
+                { id: "Não", nome: "Não possuo projeto" },
+                { id: "Está sendo desenvolvido", nome: "Está sendo desenvolvido pelo arquiteto" },
+                { id: "Preciso que seja feito um", nome: "Preciso que seja feito um *" }
+              ].map((item) => {
+                const isSelected = temProjeto === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectTemProjeto(item.id)}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{item.nome}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {temProjeto === "Preciso que seja feito um" && (
+              <p className="text-[10px] text-slate-400 font-semibold mt-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100 animate-in slide-in-from-top duration-300">
+                * Desenvolvemos o projeto simples em 3D de modulação sem custo adicional no fechamento comercial.
+              </p>
+            )}
+
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+              {temProjeto === "Preciso que seja feito um" && (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                >
+                  Continuar <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 7: ESTILO */}
+        {step === 7 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Qual o estilo que você procura?</h2>
+              <p className="text-xs text-slate-400 font-semibold font-bold font-semibold">Escolha o visual que mais te atrai.</p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {ESTILOS.map((est) => {
                 const isSelected = estilo === est.id;
                 return (
                   <button
                     key={est.id}
                     type="button"
-                    onClick={() => setEstilo(est.id)}
+                    onClick={() => handleSelectEstilo(est.id)}
                     className={`rounded-2xl overflow-hidden border text-left transition-all cursor-pointer flex flex-col group ${
                       isSelected 
-                        ? "border-primary ring-2 ring-primary bg-primary/5" 
+                        ? "border-slate-800 ring-1 ring-slate-800 bg-slate-55 bg-slate-50" 
                         : "border-slate-200 bg-white"
                     }`}
                   >
@@ -647,138 +770,185 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                       />
                     </div>
                     <div className="p-3.5 space-y-1">
-                      <h4 className="text-xs font-black text-slate-900">{est.nome}</h4>
-                      <p className="text-[10px] text-slate-500 leading-normal">{est.desc}</p>
+                      <h4 className="text-xs font-black text-slate-950">{est.nome}</h4>
+                      <p className="text-[9px] text-slate-450 leading-normal">{est.desc}</p>
                     </div>
                   </button>
                 );
               })}
             </div>
 
-            {/* Faixa de Investimento (Opcional) */}
-            <div className="space-y-3">
-              <h3 className="text-base font-black text-slate-900">Qual o investimento estimado previsto para o projeto?</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  "Até R$15 mil",
-                  "R$15 mil a R$30 mil",
-                  "R$30 mil a R$60 mil",
-                  "Acima de R$60 mil",
-                  "Prefiro conversar"
-                ].map((item) => {
-                  const isSelected = faixaInvestimento === item;
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setFaixaInvestimento(item)}
-                      className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                      }`}
-                    >
-                      <span className="text-xs font-bold">{item}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Prazo para Iniciar */}
-            <div className="space-y-3">
-              <h3 className="text-base font-black text-slate-900">Quando pretende iniciar a produção/fabricação?</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                {[
-                  "Este mês",
-                  "Em até 3 meses",
-                  "Entre 3 e 6 meses",
-                  "Mais de 6 meses"
-                ].map((item) => {
-                  const isSelected = prazoInicio === item;
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setPrazoInicio(item)}
-                      className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${
-                        isSelected 
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary" 
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                      }`}
-                    >
-                      <span className="text-xs font-bold">{item}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Referências de imagens / Pinterest */}
-            <div className="p-5 bg-slate-50 border border-slate-250/60 rounded-2xl space-y-4">
-              <h3 className="text-sm font-bold text-slate-800">Referências de Design (Opcional)</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <LinkIcon className="h-3.5 w-3.5 text-primary" /> Link do Pinterest ou referências
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://pinterest.com/..."
-                    value={pinterestLink}
-                    onChange={e => setPinterestLink(e.target.value)}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Upload className="h-3.5 w-3.5 text-primary" /> Arquivo ou Planta do arquiteto
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleUploadFake}
-                    disabled={uploading}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-white hover:bg-slate-100/50 border border-slate-200 border-dashed rounded-xl text-xs font-bold text-slate-650 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {uploading ? "Subindo arquivo..." : referenciaUrl ? "Arquivo adicionado! ✅" : "Clique para anexar (PDF ou PNG)"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between pt-2">
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-5 py-3 border border-slate-200 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 8: INVESTIMENTO */}
+        {step === 8 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Qual a sua expectativa de investimento? (Opcional)</h2>
+              <p className="text-xs text-slate-400 font-semibold font-bold">Fique à vontade, serve apenas de guia inicial.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                "Até R$15 mil",
+                "R$15 mil a R$30 mil",
+                "R$30 mil a R$60 mil",
+                "Acima de R$60 mil",
+                "Prefiro conversar"
+              ].map((item) => {
+                const isSelected = faixaInvestimento === item;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handleSelectFaixaInvestimento(item)}
+                    className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      isSelected 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{item}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 9: PRAZO */}
+        {step === 9 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Quando pretende iniciar a produção/fabricação?</h2>
+              <p className="text-xs text-slate-400 font-semibold">Organizamos nossa fila de produção com base nisso.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                "Este mês",
+                "Em até 3 meses",
+                "Entre 3 e 6 meses",
+                "Mais de 6 meses"
+              ].map((item) => {
+                const isSelected = prazoInicio === item;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handleSelectPrazoInicio(item)}
+                    className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      isSelected 
+                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">{item}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 10: REFERÊNCIAS */}
+        {step === 10 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Referências e Arquivos (Opcional)</h2>
+              <p className="text-xs text-slate-400 font-semibold">Compartilhe ideias visuais ou a planta técnica do imóvel.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <LinkIcon className="h-3.5 w-3.5 text-slate-500" /> Link do Pinterest ou referências
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://pinterest.com/..."
+                  value={pinterestLink}
+                  onChange={e => setPinterestLink(e.target.value)}
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Upload className="h-3.5 w-3.5 text-slate-500" /> Arquivo ou Planta do arquiteto
+                </label>
+                <button
+                  type="button"
+                  onClick={handleUploadFake}
+                  disabled={uploading}
+                  className="w-full flex items-center justify-center gap-2 p-3.5 bg-white hover:bg-slate-50 border border-slate-200 border-dashed rounded-xl text-xs font-bold text-slate-600 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {uploading ? "Subindo arquivo..." : referenciaUrl ? "Arquivo adicionado! ✅" : "Anexar PDF ou imagem"}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-1.5 px-6 py-3 bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
               >
-                Última etapa <ArrowRight className="h-4 w-4" />
+                Continuar <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4: DADOS DE CONTATO */}
-        {step === 4 && (
-          <div className="space-y-8 animate-in slide-in-from-right duration-300 max-w-2xl mx-auto">
-            <div className="space-y-2 text-center">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Quase lá! Como podemos entrar em contato?</h2>
-              <p className="text-sm text-slate-500">Insira suas informações abaixo para agendarmos a nossa conversa.</p>
+        {/* PASSO 11: CONTATO */}
+        {step === 11 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-1.5 text-center">
+              <h2 className="text-lg font-black text-slate-900 leading-tight">Como podemos te retornar?</h2>
+              <p className="text-xs text-slate-400 font-semibold font-bold">Preencha seus dados finais para enviar o orçamento.</p>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="space-y-4 border border-slate-100 rounded-xl p-5 bg-slate-50/50">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
-                  <User className="h-3.5 w-3.5 text-primary shrink-0" /> Nome completo *
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                  <User className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Nome completo *
                 </label>
                 <input
                   required
@@ -786,14 +956,14 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                   placeholder="Ex: João da Silva"
                   value={nome}
                   onChange={e => setNome(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
-                    <Smartphone className="h-3.5 w-3.5 text-primary shrink-0" /> Telefone / WhatsApp *
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Smartphone className="h-3.5 w-3.5 text-slate-400 shrink-0" /> WhatsApp / Telefone *
                   </label>
                   <input
                     required
@@ -801,31 +971,30 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     placeholder="(54) 99999-9999"
                     value={telefone}
                     onChange={handleTelefoneChange}
-                    className="w-full border border-slate-200 rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-755 flex items-center gap-1">
-                    <Mail className="h-3.5 w-3.5 text-primary shrink-0" /> E-mail (Opcional)
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" /> E-mail (Opcional)
                   </label>
                   <input
                     type="email"
                     placeholder="joao@exemplo.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                   />
                 </div>
               </div>
 
-              {/* Como conheceu a empresa */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-750">Como conheceu nossa marcenaria?</label>
+                <label className="text-xs font-bold text-slate-700">Como conheceu a nossa marcenaria?</label>
                 <select
                   value={origemLead}
                   onChange={e => setOrigemLead(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3 bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold cursor-pointer"
                 >
                   <option value="">Selecione uma opção...</option>
                   <option value="INSTAGRAM">Instagram</option>
@@ -837,38 +1006,38 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                 </select>
               </div>
 
-              {/* Informação adicional (textarea) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-750">Alguma informação importante que gostaria de compartilhar? (Opcional)</label>
+                <label className="text-xs font-bold text-slate-700">Informações adicionais (Opcional)</label>
                 <textarea
-                  placeholder="Ex: Gostaria de usar ferragens pretas, tenho urgência por causa da mudança..."
+                  placeholder="Ex: Tenho preferência por tons amadeirados escuros..."
                   value={observacoesAdicionais}
                   onChange={e => setObservacoesAdicionais(e.target.value)}
-                  rows={3}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-medium"
+                  rows={2}
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between pt-2">
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-5 py-3 border border-slate-200 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center justify-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold rounded-xl shadow-lg cursor-pointer transition-all w-48"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50"
               >
                 {loading ? "Processando..." : "Enviar Qualificação"}
               </button>
             </div>
           </div>
         )}
-      </form>
+
+      </div>
     </div>
   );
 }

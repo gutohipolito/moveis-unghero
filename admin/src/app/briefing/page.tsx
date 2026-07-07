@@ -14,12 +14,14 @@ export default function BriefingPage() {
       <header className="w-full bg-white border-b border-slate-200/80 py-4 px-6 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-black text-slate-900 tracking-wider">
-              MÓVEIS <span className="text-[hsl(28_85%_45%)]">UNGHERO</span>
-            </span>
+            <img 
+              src="/logo.png" 
+              alt="Móveis Unghero" 
+              className="h-9 w-auto object-contain"
+            />
           </div>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded">
-            Sob Medida
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200/50">
+            Orçamento
           </span>
         </div>
       </header>
