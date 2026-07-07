@@ -533,9 +533,9 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-6">
+    <div className="max-w-2xl mx-auto px-6 py-6 briefing-container">
       {/* Barra de Progresso */}
-      <div className="mb-8 space-y-2">
+      <div className="mb-8 space-y-2 briefing-progress-wrapper">
         <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
           <span>Orçamento Preliminar</span>
           <span>{progressPercent}% Concluído</span>
@@ -548,7 +548,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 briefing-card">
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />

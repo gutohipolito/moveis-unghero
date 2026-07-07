@@ -224,10 +224,21 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
       }
     });
 
-    // 11. Criar Lembretes para os admins/operadores
+    // 11. Criar Lembretes para os admins/operadores (+1 dia útil)
     const companyUsers = await prisma.user.findMany({
       where: { company_id: companyId }
     });
+
+    const addOneBusinessDay = (date: Date): Date => {
+      const result = new Date(date);
+      result.setDate(result.getDate() + 1);
+      while (result.getDay() === 0 || result.getDay() === 6) {
+        result.setDate(result.getDate() + 1);
+      }
+      return result;
+    };
+
+    const dueAt = addOneBusinessDay(new Date());
 
     if (companyUsers.length > 0) {
       await prisma.operatorReminder.createMany({
@@ -235,7 +246,7 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
           user_id: u.id,
           company_id: companyId,
           title: `Solicitação de Orçamento: ${data.nome.trim()}`,
-          due_at: new Date()
+          due_at: dueAt
         }))
       });
     }

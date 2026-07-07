@@ -706,6 +706,18 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 767px) {
+  .notification-panel {
+    position: fixed !important;
+    top: 3.8rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    width: auto !important;
+    max-width: none !important;
+    box-shadow: 0 16px 48px hsl(24 14% 14% / 0.16) !important;
+  }
+}
+
 .notification-panel-header {
   display: flex;
   align-items: center;
@@ -1264,5 +1276,62 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
 
   .dashboard-main-mobile {
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0) + var(--space-4));
+  }
+}
+
+/* Regras de altura adaptativas para o Briefing */
+.briefing-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-height: 800px) {
+  .briefing-container {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  .briefing-progress-wrapper {
+    margin-bottom: 1rem !important;
+  }
+  .briefing-card {
+    padding: 1.25rem !important;
+  }
+  .briefing-card .space-y-6 > * + * {
+    margin-top: 0.75rem !important;
+  }
+  .briefing-card h2 {
+    font-size: 1.05rem !important;
+  }
+  .briefing-card p {
+    font-size: 0.7rem !important;
+  }
+  .briefing-card select,
+  .briefing-card input,
+  .briefing-card textarea {
+    padding: 0.75rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .briefing-card button {
+    padding: 0.75rem !important;
+  }
+  .briefing-card .grid {
+    gap: 0.5rem !important;
+  }
+}
+
+@media (max-height: 680px) {
+  .briefing-container {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .briefing-progress-wrapper {
+    margin-bottom: 0.5rem !important;
+  }
+  .briefing-card {
+    padding: 1rem !important;
+  }
+  .briefing-card .space-y-6 > * + * {
+    margin-top: 0.5rem !important;
   }
 }
