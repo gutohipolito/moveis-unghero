@@ -83,6 +83,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -90,6 +91,41 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  // Carregar rascunho do localStorage na montagem (client-side)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("moveis_unghero_briefing_draft");
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          if (draft.step) setStep(draft.step);
+          if (draft.selectedAmbientes) setSelectedAmbientes(draft.selectedAmbientes);
+          if (draft.ambienteOpcoes) setAmbienteOpcoes(draft.ambienteOpcoes);
+          if (draft.tipoImovel) setTipoImovel(draft.tipoImovel);
+          if (draft.faseProjeto) setFaseProjeto(draft.faseProjeto);
+          if (draft.cidade) setCidade(draft.cidade);
+          if (draft.bairro) setBairro(draft.bairro);
+          if (draft.pronto) setPronto(draft.pronto);
+          if (draft.dataChaves) setDataChaves(draft.dataChaves);
+          if (draft.temProjeto) setTemProjeto(draft.temProjeto);
+          if (draft.estilo) setEstilo(draft.estilo);
+          if (draft.faixaInvestimento) setFaixaInvestimento(draft.faixaInvestimento);
+          if (draft.prazoInicio) setPrazoInicio(draft.prazoInicio);
+          if (draft.pinterestLink) setPinterestLink(draft.pinterestLink);
+          if (draft.referenciaUrl) setReferenciaUrl(draft.referenciaUrl);
+          if (draft.nome) setNome(draft.nome);
+          if (draft.telefone) setTelefone(draft.telefone);
+          if (draft.email) setEmail(draft.email);
+          if (draft.origemLead) setOrigemLead(draft.origemLead);
+          if (draft.observacoesAdicionais) setObservacoesAdicionais(draft.observacoesAdicionais);
+        } catch (e) {
+          console.error("Erro ao recuperar rascunho:", e);
+        }
+      }
+      setIsLoaded(true);
+    }
+  }, []);
   
   // Respostas do formulário
   const [selectedAmbientes, setSelectedAmbientes] = useState<string[]>([]);
@@ -162,6 +198,57 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     });
   }, []);
 
+  // Salvar rascunho no localStorage apenas após carregar o estado inicial
+  useEffect(() => {
+    if (isLoaded && typeof window !== "undefined") {
+      const draft = {
+        step,
+        selectedAmbientes,
+        ambienteOpcoes,
+        tipoImovel,
+        faseProjeto,
+        cidade,
+        bairro,
+        pronto,
+        dataChaves,
+        temProjeto,
+        estilo,
+        faixaInvestimento,
+        prazoInicio,
+        pinterestLink,
+        referenciaUrl,
+        nome,
+        telefone,
+        email,
+        origemLead,
+        observacoesAdicionais
+      };
+      localStorage.setItem("moveis_unghero_briefing_draft", JSON.stringify(draft));
+    }
+  }, [
+    isLoaded,
+    step,
+    selectedAmbientes,
+    ambienteOpcoes,
+    tipoImovel,
+    faseProjeto,
+    cidade,
+    bairro,
+    pronto,
+    dataChaves,
+    temProjeto,
+    estilo,
+    faixaInvestimento,
+    prazoInicio,
+    pinterestLink,
+    referenciaUrl,
+    nome,
+    telefone,
+    email,
+    origemLead,
+    observacoesAdicionais
+  ]);
+
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 11) value = value.slice(0, 11);
@@ -224,8 +311,9 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const handleSelectTemProjeto = (value: string) => {
     setTemProjeto(value);
     if (value === "Sim" || value === "Está sendo desenvolvido") {
+      setEstilo("");
       autoAdvance(8);
-    } else if (value === "Não possuo projeto") {
+    } else if (value === "Não") {
       autoAdvance(7);
     }
   };
@@ -380,6 +468,9 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     setLoading(false);
 
     if (res.success) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("moveis_unghero_briefing_draft");
+      }
       setSuccess(true);
     } else {
       setError(res.error || "Erro ao processar as informações. Tente novamente.");
