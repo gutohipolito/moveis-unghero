@@ -1,5 +1,8 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
-import { formatGa4CredentialError, normalizeGa4PrivateKey } from "@/lib/ga4-credentials";
+import {
+  formatGa4CredentialError,
+  resolveGa4Credentials,
+} from "@/lib/ga4-credentials";
 import {
   GA4_MEASUREMENT_ID,
   type Ga4ChannelRow,
@@ -11,39 +14,25 @@ import {
   periodToGa4Range,
 } from "@/lib/marketing";
 
-function getPrivateKey() {
-  return normalizeGa4PrivateKey(process.env.GA4_PRIVATE_KEY);
-}
-
 export function isGa4Configured() {
-  return Boolean(
-    process.env.GA4_PROPERTY_ID &&
-      process.env.GA4_CLIENT_EMAIL &&
-      getPrivateKey()
-  );
-}
-
-function getPropertyResource() {
-  const propertyId = process.env.GA4_PROPERTY_ID?.trim();
-  if (!propertyId) {
-    throw new Error("GA4_PROPERTY_ID não configurado.");
-  }
-  return `properties/${propertyId}`;
+  return resolveGa4Credentials() !== null;
 }
 
 function getClient() {
-  const clientEmail = process.env.GA4_CLIENT_EMAIL;
-  const privateKey = getPrivateKey();
-  if (!clientEmail || !privateKey) {
+  const creds = resolveGa4Credentials();
+  if (!creds) {
     throw new Error("Credenciais GA4 incompletas.");
   }
 
-  return new BetaAnalyticsDataClient({
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
-  });
+  return {
+    client: new BetaAnalyticsDataClient({
+      credentials: {
+        client_email: creds.clientEmail,
+        private_key: creds.privateKey,
+      },
+    }),
+    creds,
+  };
 }
 
 function parseNumber(value: string | null | undefined) {
@@ -70,7 +59,8 @@ function parseSummaryRow(
 }
 
 export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<MarketingDashboardData> {
-  if (!isGa4Configured()) {
+  const resolved = resolveGa4Credentials();
+  if (!resolved) {
     return {
       configured: false,
       period,
@@ -78,8 +68,8 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
     };
   }
 
-  const client = getClient();
-  const property = getPropertyResource();
+  const { client, creds } = getClient();
+  const property = `properties/${creds.propertyId}`;
   const dateRange = periodToGa4Range(period);
 
   try {
@@ -159,7 +149,7 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
       configured: true,
       period,
       measurementId: GA4_MEASUREMENT_ID,
-      error: formatGa4CredentialError(error),
+      error: formatGa4CredentialError(error, creds),
     };
   }
 }

@@ -77,10 +77,13 @@ export default function MarketingClient({ initialData }: MarketingClientProps) {
 
         <pre className="text-xs bg-slate-950 text-slate-100 rounded-xl p-4 overflow-x-auto">
 {`GA4_PROPERTY_ID=415410108
-GA4_CLIENT_EMAIL=ga4-reader@....iam.gserviceaccount.com
-GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
 
-# Alternativa: cole o JSON inteiro da service account em GA4_PRIVATE_KEY`}
+# Opção recomendada na Vercel — cole o JSON inteiro:
+GA4_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+
+# Ou separado (e-mail deve bater com a chave):
+GA4_CLIENT_EMAIL=ga4-reader@moveis-unghero-admin.iam.gserviceaccount.com
+GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n`}
         </pre>
         <p className="text-xs text-muted-foreground">
           Na Vercel, <strong>não use aspas</strong> em volta da chave. Use <code className="bg-muted px-1 rounded">\\n</code> literais
