@@ -18,7 +18,8 @@ import {
   Phone,
   Mail,
   User,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown
 } from "lucide-react";
 import { submitPublicBriefingAction } from "@/app/actions/briefing";
 
@@ -48,6 +49,34 @@ const AMBIENTES = [
   { id: "Outro", nome: "Outro", icone: "✨" }
 ];
 
+const BAIRROS_FARROUPILHA = [
+  "América",
+  "Belvedere",
+  "Bela Vista",
+  "Caravaggio",
+  "Centro",
+  "Cinquentenário",
+  "Colonial",
+  "Cruzeiro",
+  "Do Park",
+  "Imigrante",
+  "Industrial",
+  "Ipanema",
+  "Medianeira",
+  "Milano",
+  "Monte Pascoal",
+  "Nova Vicenza",
+  "Pio X",
+  "Planalto",
+  "Primeiro de Maio",
+  "Santa Catarina",
+  "Santo Antônio",
+  "São José",
+  "São Luiz",
+  "Vicentina",
+  "Volta Grande"
+];
+
 export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
   const [startTime] = useState<number>(Date.now());
@@ -67,8 +96,12 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [ambienteOpcoes, setAmbienteOpcoes] = useState<Record<string, string>>({});
   const [tipoImovel, setTipoImovel] = useState<string>("");
   const [faseProjeto, setFaseProjeto] = useState<string>("");
-  const [cidade, setCidade] = useState("");
+  const [cidade, setCidade] = useState("Farroupilha");
   const [bairro, setBairro] = useState("");
+  const [bairroDropdownOpen, setBairroDropdownOpen] = useState(false);
+  const filteredBairros = BAIRROS_FARROUPILHA.filter(b => 
+    b.toLowerCase().includes(bairro.toLowerCase())
+  );
   const [pronto, setPronto] = useState("");
   const [dataChaves, setDataChaves] = useState("");
   const [temProjeto, setTemProjeto] = useState("");
@@ -190,7 +223,9 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
   const handleSelectTemProjeto = (value: string) => {
     setTemProjeto(value);
-    if (value !== "Preciso que seja feito um") {
+    if (value === "Sim" || value === "Está sendo desenvolvido") {
+      autoAdvance(8);
+    } else if (value === "Não possuo projeto") {
       autoAdvance(7);
     }
   };
@@ -264,10 +299,17 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
         return;
       }
     }
-    if (step === 6 && !temProjeto) {
-      setError("Por favor, informe se possui projeto de interiores.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+    if (step === 6) {
+      if (!temProjeto) {
+        setError("Por favor, informe se possui projeto de interiores.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      if (temProjeto === "Sim" || temProjeto === "Está sendo desenvolvido") {
+        setStep(8);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
     }
     if (step === 7 && !estilo) {
       setError("Por favor, selecione um estilo estético.");
@@ -286,6 +328,11 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
   const prevStep = () => {
     setError(null);
+    if (step === 8 && (temProjeto === "Sim" || temProjeto === "Está sendo desenvolvido")) {
+      setStep(6);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     setStep(step - 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -605,24 +652,65 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-650">Cidade</label>
                 <input
-                  required
+                  disabled
                   type="text"
-                  placeholder="Ex: Bento Gonçalves"
-                  value={cidade}
-                  onChange={e => setCidade(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                  value="Farroupilha - RS"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-400 rounded-xl text-xs p-3.5 font-bold cursor-not-allowed border-dashed"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 relative">
                 <label className="text-xs font-bold text-slate-650">Bairro</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="Ex: Imigrante"
-                  value={bairro}
-                  onChange={e => setBairro(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
-                />
+                <div className="relative">
+                  <input
+                    required
+                    type="text"
+                    placeholder="Selecione ou digite o bairro..."
+                    value={bairro}
+                    onChange={e => {
+                      setBairro(e.target.value);
+                      setBairroDropdownOpen(true);
+                    }}
+                    onFocus={() => setBairroDropdownOpen(true)}
+                    className="w-full border border-slate-200 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setBairroDropdownOpen(!bairroDropdownOpen)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                  >
+                    <ChevronDown className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                {bairroDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40 cursor-default" 
+                      onClick={() => setBairroDropdownOpen(false)}
+                    />
+                    <div className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+                      {filteredBairros.length > 0 ? (
+                        filteredBairros.map((b) => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => {
+                              setBairro(b);
+                              setBairroDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-all border-b border-slate-100 last:border-b-0 cursor-pointer"
+                          >
+                            {b}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-[10px] text-slate-400 font-semibold">
+                          Nenhum bairro encontrado. Use o texto digitado.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
