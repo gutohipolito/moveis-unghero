@@ -210,12 +210,12 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
       </div>
 
       <div className="space-y-[var(--space-3)]">
-        <LinkRow
-          label="Link curto da Móveis Unghero"
-          description="Usa o domínio da empresa e redireciona para a avaliação no Google."
-          url={shortUrl}
-          recommended
-        />
+      <LinkRow
+        label="Link curto da Móveis Unghero"
+        description="Redireciona para a avaliação no Google. Hoje usa o domínio do admin (Vercel)."
+        url={shortUrl}
+        recommended
+      />
 
         <LinkRow
           label="Link direto do Google"
@@ -372,8 +372,8 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Dica: prefira o link curto em mensagens ao cliente. Se o Google atualizar o link oficial,
-        basta alterar a configuração no sistema — o endereço curto e o QR Code continuam os mesmos.
+        Dica: o cliente precisa estar logado no Google para avaliar. Quando o site institucional migrar
+        para a Vercel, o link curto poderá usar moveisunghero.com.br/avaliar.
       </p>
     </Card>
   );

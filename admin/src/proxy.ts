@@ -85,6 +85,7 @@ export const config = {
     "/login",
     "/bi/:path*",
     "/marketing/:path*",
+    "/avaliar",
     "/crm/:path*",
     "/quotes/:path*",
     "/clientes/:path*",
