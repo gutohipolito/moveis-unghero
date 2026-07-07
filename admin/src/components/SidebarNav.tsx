@@ -16,7 +16,8 @@ import {
   Clock,
   BookMarked,
   PenTool,
-  Megaphone,
+  Star,
+  BarChart3,
 } from "lucide-react";
 
 export interface NavItem {
@@ -31,6 +32,7 @@ export interface NavItem {
 /** Ordem das seções no menu lateral — agrupamento didático para o operador. */
 export const NAV_SECTIONS = [
   "Visão Geral",
+  "Marketing",
   "Comercial",
   "Produção",
   "Logística",
@@ -39,7 +41,9 @@ export const NAV_SECTIONS = [
 
 export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
-  { name: "Marketing", href: "/marketing", icon: Megaphone, section: "Visão Geral" },
+
+  { name: "Avaliação Google", href: "/marketing", icon: Star, section: "Marketing" },
+  { name: "Tráfego GA4", href: "/marketing/analytics", icon: BarChart3, section: "Marketing" },
 
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
   { name: "Clientes", href: "/clientes", icon: Users, section: "Comercial" },
@@ -62,6 +66,7 @@ export function isNavItemActive(pathname: string, href: string): boolean {
   if (pathname === href) return true;
   if (!pathname.startsWith(`${href}/`)) return false;
   if (href === "/factory" && pathname.startsWith("/factory/portal")) return false;
+  if (href === "/marketing" && pathname.startsWith("/marketing/analytics")) return false;
   return true;
 }
 
@@ -69,6 +74,7 @@ const HEAVY_ROUTES = new Set([
   "/crm",
   "/bi",
   "/marketing",
+  "/marketing/analytics",
   "/factory",
   "/financeiro",
   "/clientes",

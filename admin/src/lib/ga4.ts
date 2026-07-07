@@ -1,4 +1,5 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import { formatGa4CredentialError, normalizeGa4PrivateKey } from "@/lib/ga4-credentials";
 import {
   GA4_MEASUREMENT_ID,
   type Ga4ChannelRow,
@@ -11,9 +12,7 @@ import {
 } from "@/lib/marketing";
 
 function getPrivateKey() {
-  const raw = process.env.GA4_PRIVATE_KEY;
-  if (!raw) return null;
-  return raw.replace(/\\n/g, "\n");
+  return normalizeGa4PrivateKey(process.env.GA4_PRIVATE_KEY);
 }
 
 export function isGa4Configured() {
@@ -160,10 +159,7 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
       configured: true,
       period,
       measurementId: GA4_MEASUREMENT_ID,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível carregar os dados do Google Analytics.",
+      error: formatGa4CredentialError(error),
     };
   }
 }

@@ -212,7 +212,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
       <div className="space-y-[var(--space-3)]">
       <LinkRow
         label="Link curto da Móveis Unghero"
-        description="Redireciona para a avaliação no Google. Hoje usa o domínio do admin (Vercel)."
+        description="Usa moveisunghero.com.br/avaliar e redireciona para a avaliação no Google."
         url={shortUrl}
         recommended
       />

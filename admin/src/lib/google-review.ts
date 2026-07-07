@@ -6,10 +6,10 @@ export const GOOGLE_REVIEW_URL = `https://search.google.com/local/writereview?pl
 
 export const GOOGLE_REVIEW_SHORT_PATH = "/avaliar";
 
-/** Base do link curto — admin na Vercel até o site institucional migrar. */
+/** Base do link curto — site institucional (redirect /avaliar na HostGator). */
 export const REVIEW_SHORT_BASE_URL =
   process.env.NEXT_PUBLIC_REVIEW_SHORT_URL?.replace(/\/$/, "") ??
-  "https://admin.moveisunghero.com.br";
+  "https://moveisunghero.com.br";
 
 export function getGoogleReviewShortUrl() {
   return `${REVIEW_SHORT_BASE_URL}${GOOGLE_REVIEW_SHORT_PATH}`;

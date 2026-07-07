@@ -1,11 +1,9 @@
 import { headers } from "next/headers";
 import { getClients } from "@/app/actions/cliente";
-import { getMarketingDashboard } from "@/app/actions/marketing";
 import PageHeader from "@/components/PageHeader";
 import GoogleReviewLinkCard from "@/components/marketing/GoogleReviewLinkCard";
 import { auth } from "@/lib/auth";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
-import MarketingClient from "./MarketingClient";
 
 export default async function MarketingPage() {
   const session = await auth.api
@@ -15,10 +13,7 @@ export default async function MarketingPage() {
     .catch(() => null);
 
   const companyId = session?.user?.company_id || "mock-company-id";
-  const [data, clientsResponse] = await Promise.all([
-    getMarketingDashboard("30"),
-    getClients(companyId),
-  ]);
+  const clientsResponse = await getClients(companyId);
 
   const clients: GoogleReviewClientOption[] = clientsResponse.success
     ? clientsResponse.clients.map((client) => ({
@@ -31,12 +26,11 @@ export default async function MarketingPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Marketing"
-        description="Ferramentas de divulgação e tráfego do site institucional."
+        title="Avaliação Google"
+        description="Link curto, QR Code e mensagem no WhatsApp para pedir avaliações após a entrega."
       />
 
       <GoogleReviewLinkCard clients={clients} />
-      <MarketingClient initialData={data} />
     </div>
   );
 }
