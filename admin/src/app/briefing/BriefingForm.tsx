@@ -548,7 +548,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300">
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
@@ -1253,7 +1253,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
           </div>
         )}
 
-      </div>
+      </form>
     </div>
   );
 }

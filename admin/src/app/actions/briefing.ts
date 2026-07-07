@@ -224,6 +224,22 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
       }
     });
 
+    // 11. Criar Lembretes para os admins/operadores
+    const companyUsers = await prisma.user.findMany({
+      where: { company_id: companyId }
+    });
+
+    if (companyUsers.length > 0) {
+      await prisma.operatorReminder.createMany({
+        data: companyUsers.map((u) => ({
+          user_id: u.id,
+          company_id: companyId,
+          title: `Solicitação de Orçamento: ${data.nome.trim()}`,
+          due_at: new Date()
+        }))
+      });
+    }
+
     revalidatePath("/crm");
     revalidatePath("/clientes");
     

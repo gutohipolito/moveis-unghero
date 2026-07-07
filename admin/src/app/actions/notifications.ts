@@ -30,7 +30,7 @@ export async function getNotifications(companyId: string): Promise<{
   }
 
   try {
-    const [projects, slaAlerts, invoicePending] = await Promise.all([
+    const [projects, slaAlerts, invoicePending, briefings] = await Promise.all([
       prisma.project.findMany({
         where: {
           status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
@@ -46,6 +46,22 @@ export async function getNotifications(companyId: string): Promise<{
       }),
       getSlaAlertProjects(companyId),
       getInvoicePendingProjects(companyId),
+      prisma.leadBriefing.findMany({
+        where: {
+          project: {
+            status_geral: "LEAD",
+            client: { company_id: companyId }
+          }
+        },
+        include: {
+          project: {
+            include: {
+              client: { select: { nome: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" }
+      })
     ]);
 
     const followUp = buildFollowUpNotifications(
@@ -69,10 +85,21 @@ export async function getNotifications(companyId: string): Promise<{
       invoicePending.map((p) => ({ id: p.id, client: p.client }))
     );
 
+    const briefingNotifications: AppNotification[] = briefings.map((b) => ({
+      id: `briefing-${b.id}`,
+      type: "info" as const,
+      priority: "high" as const,
+      title: "Solicitação de Orçamento",
+      message: `${b.project.client.nome} enviou um novo briefing.`,
+      href: `/crm?briefing=${b.project_id}`,
+      createdAt: b.createdAt.toISOString()
+    }));
+
     const notifications = mergeNotifications(
       followUp,
       slaNotifications,
-      invoiceNotifications
+      invoiceNotifications,
+      briefingNotifications
     );
 
     return { success: true, notifications };
