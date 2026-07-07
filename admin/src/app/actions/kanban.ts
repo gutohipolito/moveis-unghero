@@ -29,28 +29,85 @@ function revalidateCrmPaths() {
 
 export async function updateProjectStatus(projectId: string, newStatus: ProjectStatus) {
   try {
-    await prisma.project.update({
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    const currentProject = await prisma.project.findUniqueOrThrow({
       where: { id: projectId },
-      data: {
-        status_geral: newStatus,
-        ...(newStatus === "PERDIDO" ? {} : { motivo_perda: null }),
-      },
+      select: { status_geral: true }
+    });
+
+    const oldStatus = currentProject.status_geral;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          status_geral: newStatus,
+          ...(newStatus === "PERDIDO" ? {} : { motivo_perda: null }),
+        },
+      });
+
+      if (oldStatus !== newStatus) {
+        await tx.timeline.create({
+          data: {
+            project_id: projectId,
+            acao: `Etapa do funil alterada de ${oldStatus} para ${newStatus}`,
+            interno_sotamente: false,
+            user_id: actorUserId,
+          },
+        });
+      }
+
+      if (newStatus === "PRODUCAO") {
+        const envCount = await tx.environment.count({
+          where: { project_id: projectId },
+        });
+        if (envCount === 0) {
+          await tx.environment.create({
+            data: {
+              project_id: projectId,
+              nome: "Projeto Completo (Ambiente Padrão)",
+              tipo: "OUTROS",
+              status: "PRONTO_PRODUCAO",
+            },
+          });
+        }
+      }
     });
 
     revalidateCrmPaths();
     return { success: true };
   } catch (error) {
-    console.warn("Falha ao atualizar status no banco (usando modo simulação):", error);
+    console.warn("Falha ao atualizar status no banco:", error);
     return { success: false, error: "Não foi possível atualizar o status do projeto." };
   }
 }
 
 export async function markProjectContacted(projectId: string) {
   try {
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
     const now = new Date();
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { ultimo_contato_em: now },
+    await prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: projectId },
+        data: { ultimo_contato_em: now },
+      });
+
+      await tx.timeline.create({
+        data: {
+          project_id: projectId,
+          acao: `Contato de acompanhamento registrado pelo operador`,
+          interno_sotamente: false,
+          user_id: actorUserId,
+        },
+      });
     });
 
     revalidateCrmPaths();
@@ -63,12 +120,30 @@ export async function markProjectContacted(projectId: string) {
 
 export async function markProjectAsLost(projectId: string, motivo?: string) {
   try {
-    await prisma.project.update({
-      where: { id: projectId },
-      data: {
-        status_geral: "PERDIDO",
-        motivo_perda: motivo?.trim() || null,
-      },
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    const motivoStr = motivo?.trim() || "";
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          status_geral: "PERDIDO",
+          motivo_perda: motivoStr || null,
+        },
+      });
+
+      await tx.timeline.create({
+        data: {
+          project_id: projectId,
+          acao: `Negociação marcada como perdida.${motivoStr ? ` Motivo: ${motivoStr}` : ""}`,
+          interno_sotamente: false,
+          user_id: actorUserId,
+        },
+      });
     });
 
     revalidateCrmPaths();
@@ -81,13 +156,29 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
 
 export async function restoreProjectFromLoss(projectId: string, newStatus: ProjectStatus = "LEAD") {
   try {
-    await prisma.project.update({
-      where: { id: projectId },
-      data: {
-        status_geral: newStatus,
-        motivo_perda: null,
-        ultimo_contato_em: new Date(),
-      },
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          status_geral: newStatus,
+          motivo_perda: null,
+          ultimo_contato_em: new Date(),
+        },
+      });
+
+      await tx.timeline.create({
+        data: {
+          project_id: projectId,
+          acao: `Negociação reativada a partir de perdas na etapa ${newStatus}`,
+          interno_sotamente: false,
+          user_id: actorUserId,
+        },
+      });
     });
 
     revalidateCrmPaths();
@@ -298,17 +389,92 @@ export async function updateProjectCommercialAction(
   }
 ) {
   try {
-    const project = await prisma.project.update({
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    const currentProject = await prisma.project.findUniqueOrThrow({
       where: { id: projectId },
-      data: {
-        valor_previsto: data.valor_previsto,
-        status_geral: data.status_geral,
-        observacoes: data.observacoes !== undefined ? data.observacoes : null,
-      },
+      select: { 
+        status_geral: true,
+        valor_previsto: true,
+        observacoes: true
+      }
+    });
+
+    const oldStatus = currentProject.status_geral;
+    const oldValor = Number(currentProject.valor_previsto);
+    const oldObs = currentProject.observacoes || "";
+
+    const newValor = data.valor_previsto;
+    const newStatus = data.status_geral;
+    const newObs = data.observacoes || "";
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          valor_previsto: newValor,
+          status_geral: newStatus,
+          observacoes: newObs,
+        },
+      });
+
+      if (oldStatus !== newStatus) {
+        await tx.timeline.create({
+          data: {
+            project_id: projectId,
+            acao: `Etapa do funil alterada de ${oldStatus} para ${newStatus}`,
+            interno_sotamente: false,
+            user_id: actorUserId,
+          },
+        });
+      }
+
+      if (oldValor !== newValor) {
+        const formatBrl = (val: number) => 
+          new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+        await tx.timeline.create({
+          data: {
+            project_id: projectId,
+            acao: `Valor previsto alterado de ${formatBrl(oldValor)} para ${formatBrl(newValor)}`,
+            interno_sotamente: false,
+            user_id: actorUserId,
+          },
+        });
+      }
+
+      if (oldObs !== newObs) {
+        await tx.timeline.create({
+          data: {
+            project_id: projectId,
+            acao: `Observações da negociação atualizadas`,
+            interno_sotamente: false,
+            user_id: actorUserId,
+          },
+        });
+      }
+
+      if (newStatus === "PRODUCAO") {
+        const envCount = await tx.environment.count({
+          where: { project_id: projectId },
+        });
+        if (envCount === 0) {
+          await tx.environment.create({
+            data: {
+              project_id: projectId,
+              nome: "Projeto Completo (Ambiente Padrão)",
+              tipo: "OUTROS",
+              status: "PRONTO_PRODUCAO",
+            },
+          });
+        }
+      }
     });
 
     revalidateCrmPaths();
-    return { success: true, project };
+    return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar projeto comercial:", error);
     return { success: false, error: "Não foi possível salvar as alterações comerciais." };

@@ -639,7 +639,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           boardView === "funil" ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
-        } ${followLevel === "ok" ? "" : FOLLOW_UP_CARD_STYLES[followLevel]}`}
+        } ${followLevel === "ok" ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${
+          project.status_geral === "PRODUCAO" ? "opacity-45 grayscale-[30%] bg-slate-50/70 border-slate-300" : ""
+        }`}
       >
         <div className="space-y-[var(--space-2)]">
           <div className="flex items-start justify-between gap-2">

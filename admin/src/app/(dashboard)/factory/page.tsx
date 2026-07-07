@@ -21,7 +21,10 @@ export default async function FactoryPage({
         where: {
           project: {
             client: { company_id: userCompanyId },
-            files: { some: { aprovado_producao: true } },
+            OR: [
+              { files: { some: { aprovado_producao: true } } },
+              { status_geral: "PRODUCAO" },
+            ],
           },
         },
         select: {
