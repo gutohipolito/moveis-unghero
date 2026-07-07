@@ -11,7 +11,7 @@ export default function BriefingPage() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col justify-between">
       {/* Cabeçalho Público */}
-      <header className="w-full bg-white border-b border-slate-200/80 py-4 px-6 shadow-sm">
+      <header className="w-full bg-slate-950 border-b border-slate-900 py-4 px-6 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img 
@@ -20,7 +20,7 @@ export default function BriefingPage() {
               className="h-9 w-auto object-contain"
             />
           </div>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200/50">
+          <span className="text-[10px] font-black text-slate-350 uppercase tracking-widest bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
             Orçamento
           </span>
         </div>
@@ -34,9 +34,9 @@ export default function BriefingPage() {
       </div>
 
       {/* Rodapé Público */}
-      <footer className="w-full border-t border-slate-200/80 bg-white py-6 text-center text-xs font-bold text-slate-400">
+      <footer className="w-full border-t border-slate-900 bg-slate-950 py-6 text-center text-xs font-bold text-slate-500">
         <p>© {new Date().getFullYear()} Móveis Unghero — Todos os direitos reservados.</p>
-        <p className="text-[10px] font-semibold text-slate-350 mt-1">Farroupilha · RS · desde 2006</p>
+        <p className="text-[10px] font-semibold text-slate-600 mt-1">Farroupilha · RS · desde 2006</p>
       </footer>
     </main>
   );

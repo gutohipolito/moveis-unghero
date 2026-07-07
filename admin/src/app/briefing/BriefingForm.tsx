@@ -380,7 +380,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
         </div>
         <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-slate-800 transition-all duration-300 ease-out" 
+            className="h-full bg-primary transition-all duration-300 ease-out" 
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -406,7 +406,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => toggleAmbiente(amb.id)}
                     className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[90px] gap-1.5 ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
                     }`}
                   >
@@ -438,7 +438,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                               onClick={() => handleOptionSelect(id, opcao)}
                               className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
                                 isOpSelected
-                                  ? "bg-slate-850 text-white border-slate-850"
+                                  ? "bg-primary text-primary-foreground border-primary"
                                   : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                               }`}
                             >
@@ -457,7 +457,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
               >
                 Continuar <ArrowRight className="h-4 w-4" />
               </button>
@@ -488,7 +488,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectTipoImovel(item.id)}
                     className={`p-4 rounded-xl border flex items-center gap-3 transition-all cursor-pointer ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
                     }`}
                   >
@@ -534,7 +534,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectFaseProjeto(item.id)}
                     className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                     }`}
                   >
@@ -600,7 +600,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
               >
                 Continuar <ArrowRight className="h-4 w-4" />
               </button>
@@ -631,7 +631,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectPronto(item.id)}
                     className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
                     }`}
                   >
@@ -671,7 +671,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
                 >
                   Continuar <ArrowRight className="h-4 w-4" />
                 </button>
@@ -703,8 +703,8 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectTemProjeto(item.id)}
                     className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
-                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-305"
                     }`}
                   >
                     <span className="text-xs font-bold">{item.nome}</span>
@@ -731,7 +731,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
                 >
                   Continuar <ArrowRight className="h-4 w-4" />
                 </button>
@@ -758,8 +758,8 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectEstilo(est.id)}
                     className={`rounded-2xl overflow-hidden border text-left transition-all cursor-pointer flex flex-col group ${
                       isSelected 
-                        ? "border-slate-800 ring-1 ring-slate-800 bg-slate-55 bg-slate-50" 
-                        : "border-slate-200 bg-white"
+                        ? "border-primary ring-1 ring-primary bg-primary/5 font-bold" 
+                        : "border-slate-200 bg-white hover:border-slate-300"
                     }`}
                   >
                     <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100 relative">
@@ -814,7 +814,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectFaixaInvestimento(item)}
                     className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
                     }`}
                   >
@@ -859,7 +859,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                     onClick={() => handleSelectPrazoInicio(item)}
                     className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
                       isSelected 
-                        ? "border-slate-800 bg-slate-900 text-white font-bold" 
+                        ? "border-primary bg-primary text-primary-foreground font-bold" 
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
                     }`}
                   >
@@ -929,7 +929,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
               >
                 Continuar <ArrowRight className="h-4 w-4" />
               </button>

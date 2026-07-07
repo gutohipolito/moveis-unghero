@@ -1267,7 +1267,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     };
                     const tipText = tips[editingStatusGeral] || "💡 Gestão de Projetos: Acompanhe o SLA operacional para assegurar o cumprimento de prazos contratados.";
                     return (
-                      <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800 leading-relaxed font-medium">
+                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary leading-relaxed font-bold">
                         {tipText}
                       </div>
                     );
