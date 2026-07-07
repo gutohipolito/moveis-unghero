@@ -31,11 +31,6 @@ import {
 } from "@/app/actions/cliente";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getClientTab,
-  CLIENT_TAB_LABELS,
-  type ClientTab,
-} from "@/lib/clientLifecycle";
 import { labelOrigin, labelStatus } from "@/lib/navLabels";
 import {
   resolveClientDocument,
@@ -103,8 +98,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
-  const [filterTipoPessoa, setFilterTipoPessoa] = useState<string>("ALL");
-  const [activeTab, setActiveTab] = useState<ClientTab>("leads");
+  const [activeTipoTab, setActiveTipoTab] = useState<"todos" | "PF" | "PJ">("todos");
   
   // Estados para Modais
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -185,14 +179,13 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const tabCounts = useMemo(() => {
-    const counts: Record<ClientTab, number> = {
-      leads: 0,
-      negociacoes: 0,
-      clientes: 0,
-    };
+  const tipoCounts = useMemo(() => {
+    const counts = { todos: 0, PF: 0, PJ: 0 };
     for (const c of clients) {
-      counts[getClientTab(c)]++;
+      const doc = resolveClientDocument(c);
+      counts.todos++;
+      if (doc.tipo_pessoa === "PF") counts.PF++;
+      else counts.PJ++;
     }
     return counts;
   }, [clients]);
@@ -208,9 +201,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       (doc.cnpj || "").includes(search);
     const matchesOrigin = filterOrigin === "ALL" || c.origem === filterOrigin;
     const matchesTipo =
-      filterTipoPessoa === "ALL" || doc.tipo_pessoa === filterTipoPessoa;
-    const matchesTab = getClientTab(c) === activeTab;
-    return matchesSearch && matchesOrigin && matchesTipo && matchesTab;
+      activeTipoTab === "todos" || doc.tipo_pessoa === activeTipoTab;
+    return matchesSearch && matchesOrigin && matchesTipo;
   });
 
   // Salvar Novo Cliente
@@ -481,7 +473,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 <PrivacyToggle />
               </div>
               <p className="page-subtitle">
-                {CLIENT_TAB_LABELS[activeTab].description}
+                Gerencie sua base de clientes — Pessoas Físicas e Jurídicas.
               </p>
             </div>
           </div>
@@ -539,32 +531,23 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               ))}
             </select>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Tipo:
-            </span>
-            <select
-              value={filterTipoPessoa}
-              onChange={(e) => setFilterTipoPessoa(e.target.value)}
-              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="ALL">Todos</option>
-              <option value="PF">Pessoa Física</option>
-              <option value="PJ">Pessoa Jurídica</option>
-            </select>
-          </div>
         </div>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ClientTab)}>
+      <Tabs value={activeTipoTab} onValueChange={(v) => setActiveTipoTab(v as "todos" | "PF" | "PJ")}>
         <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
-          {(["leads", "negociacoes", "clientes"] as ClientTab[]).map((tab) => (
-            <TabsTrigger key={tab} value={tab} className="flex-1 min-w-[7rem] gap-1.5">
-              {CLIENT_TAB_LABELS[tab].title}
-              <span className="text-xs opacity-70 tabular-nums">({tabCounts[tab]})</span>
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="todos" className="flex-1 min-w-[7rem] gap-1.5">
+            Todos
+            <span className="text-xs opacity-70 tabular-nums">({tipoCounts.todos})</span>
+          </TabsTrigger>
+          <TabsTrigger value="PF" className="flex-1 min-w-[7rem] gap-1.5">
+            Pessoa Física – PF
+            <span className="text-xs opacity-70 tabular-nums">({tipoCounts.PF})</span>
+          </TabsTrigger>
+          <TabsTrigger value="PJ" className="flex-1 min-w-[7rem] gap-1.5">
+            Pessoa Jurídica – PJ
+            <span className="text-xs opacity-70 tabular-nums">({tipoCounts.PJ})</span>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -1097,22 +1080,21 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 <p className="text-xs text-muted-foreground">Atualize as informações cadastrais, endereço e imóvel do cliente.</p>
               </div>
               
-              {/* Alternador de abas PF/PJ */}
-              <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-64">
-                <button
-                  type="button"
-                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  onClick={() => { setTipoPessoa("PF"); }}
-                >
-                  Pessoa Física (PF)
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  onClick={() => { setTipoPessoa("PJ"); }}
-                >
-                  Pessoa Jurídica (PJ)
-                </button>
+              {/* Tipo de pessoa — read-only no modo edição */}
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-64">
+                  <div
+                    className={`flex-1 py-1.5 rounded-md text-center ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground"}`}
+                  >
+                    Pessoa Física (PF)
+                  </div>
+                  <div
+                    className={`flex-1 py-1.5 rounded-md text-center ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground"}`}
+                  >
+                    Pessoa Jurídica (PJ)
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground italic">O tipo de pessoa não pode ser alterado após o cadastro.</span>
               </div>
             </div>
 
