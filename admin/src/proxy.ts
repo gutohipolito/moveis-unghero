@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { parseClientSessionToken } from "@/lib/clientSession";
 
-const PUBLIC_PATHS = new Set(["/login", "/cliente/login"]);
+const PUBLIC_PATHS = new Set(["/login", "/cliente/login", "/briefing"]);
 
 const PUBLIC_PREFIXES = ["/api/auth"];
 

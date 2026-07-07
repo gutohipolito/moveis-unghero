@@ -38,6 +38,38 @@ const PROJECT_SELECT = {
       email: true,
     },
   },
+  briefing: {
+    select: {
+      id: true,
+      ambientes: true,
+      tipo_imovel: true,
+      fase_projeto: true,
+      pronto: true,
+      data_chaves: true,
+      tem_projeto: true,
+      estilo: true,
+      faixa_investimento: true,
+      prazo_inicio: true,
+      pinterest_link: true,
+      referencia_url: true,
+      origem_lead: true,
+      utm_source: true,
+      utm_medium: true,
+      utm_campaign: true,
+      gclid: true,
+      fbclid: true,
+      ip: true,
+      user_agent: true,
+      dispositivo: true,
+      os: true,
+      resolution: true,
+      idioma: true,
+      tempo_preenchimento: true,
+      score: true,
+      roteiro_sugerido: true,
+      createdAt: true,
+    }
+  }
 } as const;
 
 export default async function CRMPage() {
@@ -76,6 +108,10 @@ export default async function CRMPage() {
       user: t.user,
     })) : [],
     client: p.client,
+    briefing: p.briefing ? {
+      ...p.briefing,
+      createdAt: p.briefing.createdAt ? new Date(p.briefing.createdAt).toISOString() : null,
+    } : null,
   }));
 
   const clientsList = clientResponse.success ? clientResponse.clients : [];

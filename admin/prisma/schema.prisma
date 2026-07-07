@@ -184,6 +184,7 @@ model Project {
   responsavel           User?         @relation("ProjectResponsavel", fields: [responsavel_id], references: [id])
   observacoes           String?
   slaState              ProjectSlaState?
+  briefing              LeadBriefing?
 }
 
 enum ProjectStatus {
@@ -448,4 +449,46 @@ model InventoryItem {
 
   @@index([company_id])
   @@index([company_id, categoria])
+}
+
+model LeadBriefing {
+  id                 String   @id @default(uuid())
+  project_id         String   @unique
+  project            Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  
+  ambientes          String   // JSON string contendo os ambientes e condicionais (ex: [{"nome":"Cozinha","opcao":"Cozinha + Ilha"}])
+  tipo_imovel        String   // Apartamento, Casa, Comercial
+  fase_projeto       String   // Apenas pesquisando, Comparando, Já tenho o projeto, Quero iniciar
+  pronto             String   // Sim, Não, Em construção, Breve
+  data_chaves        String?  // Mês/Ano
+  tem_projeto        String   // Sim, Não, Em desenvolvimento, Preciso de um
+  estilo             String   // Minimalista, Moderno, etc.
+  faixa_investimento String?
+  prazo_inicio       String   // Este mês, Em até 3 meses, etc.
+  pinterest_link     String?
+  referencia_url     String?  // Arquivo ou referência
+  
+  // Dados do contato
+  origem_lead        String   // Instagram, Google, Indicação, etc.
+  
+  // Metadados ocultos
+  utm_source         String?
+  utm_medium         String?
+  utm_campaign       String?
+  gclid              String?
+  fbclid             String?
+  ip                 String?
+  user_agent         String?
+  dispositivo        String?
+  os                 String?
+  resolution         String?
+  idioma             String?
+  tempo_preenchimento Int?     // Em segundos
+  
+  // Lead Score
+  score              Int      @default(0)
+  roteiro_sugerido   String?  @db.Text
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

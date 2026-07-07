@@ -36,6 +36,8 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 interface Project {
@@ -71,6 +73,36 @@ interface Project {
     obs_imovel?: string | null;
     obs_entrega?: string | null;
   };
+  briefing?: {
+    id: string;
+    ambientes: string;
+    tipo_imovel: string;
+    fase_projeto: string;
+    pronto: string;
+    data_chaves?: string | null;
+    tem_projeto: string;
+    estilo: string;
+    faixa_investimento?: string | null;
+    prazo_inicio: string;
+    pinterest_link?: string | null;
+    referencia_url?: string | null;
+    origem_lead: string;
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    gclid?: string | null;
+    fbclid?: string | null;
+    ip?: string | null;
+    user_agent?: string | null;
+    dispositivo?: string | null;
+    os?: string | null;
+    resolution?: string | null;
+    idioma?: string | null;
+    tempo_preenchimento?: number | null;
+    score: number;
+    roteiro_sugerido?: string | null;
+    createdAt?: string | null;
+  } | null;
 }
 
 interface KanbanBoardProps {
@@ -226,6 +258,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   }, []);
 
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
+  const [activeModalTab, setActiveModalTab] = useState<"negociacao" | "briefing">("negociacao");
   
   // Estados comerciais e de timeline
   const [editingObservacoes, setEditingObservacoes] = useState("");
@@ -324,6 +357,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     setEditingStatusGeral(project.status_geral as ProjectStatus);
     setEditingObservacoes(project.observacoes || "");
     setEditingProjectTimeline(project.timeline || []);
+    setActiveModalTab("negociacao");
     setLeadForm({
       nome: project.client.nome,
       email: project.client.email,
@@ -925,192 +959,456 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       </Dialog>
 
       {/* Modal - Editar Card do Kanban */}
-      <Dialog isOpen={isEditLeadOpen} onClose={() => setIsEditLeadOpen(false)} className="max-w-2xl w-full">
-        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-1">
-          Painel de Negociação & CRM
-        </h3>
-        <p className="text-xs text-muted-foreground mb-4">
-          Acompanhamento e registro da negociação comercial com o cliente.
-        </p>
-        
-        <form onSubmit={handleEditLeadSubmit} className="space-y-4">
-          
-          {/* Visualização de Dados do Cliente - Somente Leitura */}
-          <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-            <div className="col-span-2 sm:col-span-1">
-              <span className="font-semibold text-slate-400 block mb-0.5">Cliente</span>
-              <strong className="text-neutral-900 truncate block">{leadForm.nome}</strong>
-            </div>
-            <div>
-              <span className="font-semibold text-slate-400 block mb-0.5">WhatsApp / Telefone</span>
-              <strong className="text-neutral-900 block">{leadForm.telefone}</strong>
-            </div>
-            <div>
-              <span className="font-semibold text-slate-400 block mb-0.5">E-mail</span>
-              <strong className="text-neutral-900 truncate block">{leadForm.email}</strong>
-            </div>
-            <div>
-              <span className="font-semibold text-slate-400 block mb-0.5">Cidade de Entrega</span>
-              <strong className="text-neutral-900 block">{leadForm.cidade}</strong>
-            </div>
-            <div>
-              <span className="font-semibold text-slate-400 block mb-0.5">Origem do Lead</span>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase mt-0.5">
-                {labelOrigin(leadForm.origem)}
-              </span>
-            </div>
-          </div>
+      <Dialog isOpen={isEditLeadOpen} onClose={() => setIsEditLeadOpen(false)} className="max-w-3xl w-full">
+        {(() => {
+          const currentProject = projects.find(p => p.id === editingProjectId);
+          const hasBriefing = !!currentProject?.briefing;
 
-          {/* Dica de Venda Dinâmica por Etapa */}
-          {(() => {
-            const tips: Record<string, string> = {
-              LEAD: "💡 Qualificação Inicial: Apresente o histórico da Móveis Unghero, entenda as necessidades básicas de ambientes e agende a medição técnica.",
-              ORCAMENTO: "💡 Elaboração de Proposta: Foco em layout funcional. Tente agendar uma reunião presencial para apresentar a proposta e justificar os materiais.",
-              NEGOCIACAO: "💡 Negociação Ativa: Apresente flexibilidade nas parcelas de pagamento e reforce o compromisso de prazo para incentivar a assinatura.",
-              CONFERENCIA_TECNICA: "💡 Conferência e SLA: Revise as restrições de montagem, elevador ou acessos da obra. Fotografe os locais e confirme a planta técnica.",
-              APROVADO: "💡 Fechamento Concluído: Revise e valide todo o memorial descritivo com o cliente. O projeto está prestes a entrar na fila de corte da marcenaria.",
-              PRODUCAO: "💡 Produção em Andamento: Compartilhe o andamento das peças sendo usinadas com o cliente. O pós-venda começa mantendo o cliente seguro!"
-            };
-            const tipText = tips[editingStatusGeral] || "💡 Gestão de Projetos: Acompanhe o SLA operacional para assegurar o cumprimento de prazos contratados.";
-            return (
-              <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800 leading-relaxed font-medium">
-                {tipText}
+          return (
+            <>
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h3 className="text-lg font-bold tracking-tight text-gradient-gold">
+                    Painel de Negociação & CRM
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Acompanhamento e registro da negociação comercial com o cliente.
+                  </p>
+                </div>
+
+                {hasBriefing && currentProject.briefing && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400">Score de Qualificação:</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-black text-white ${
+                      currentProject.briefing.score >= 80 
+                        ? "bg-emerald-600" 
+                        : currentProject.briefing.score >= 50 
+                          ? "bg-amber-500" 
+                          : "bg-rose-500"
+                    }`}>
+                      {currentProject.briefing.score} ({
+                        currentProject.briefing.score >= 80 
+                          ? "Quente" 
+                          : currentProject.briefing.score >= 50 
+                            ? "Morno" 
+                            : "Frio"
+                      })
+                    </span>
+                  </div>
+                )}
               </div>
-            );
-          })()}
 
-          {/* Edição de Dados Comerciais */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Valor Previsto do Projeto (R$)
-              </label>
-              <Input
-                type="number"
-                required
-                value={leadForm.valor_previsto}
-                onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-                className="text-xs h-10 font-bold text-neutral-800"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Etapa do Funil Comercial
-              </label>
-              <select
-                value={editingStatusGeral}
-                onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
-                className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
-              >
-                {(() => {
-                  const opts = [...STATUS_OPTIONS];
-                  if (!opts.some(o => o.id === editingStatusGeral)) {
-                    const allStatuses: Record<string, string> = {
-                      INSTALACAO: "Instalação",
-                      FINALIZADO: "Finalizados",
-                      PERDIDO: "Perdido"
-                    };
-                    opts.push({ id: editingStatusGeral, title: allStatuses[editingStatusGeral] || editingStatusGeral });
-                  }
-                  return opts.map(col => (
-                    <option key={col.id} value={col.id}>{col.title}</option>
-                  ));
-                })()}
-              </select>
-            </div>
-          </div>
+              {/* Seletor de abas se houver briefing */}
+              {hasBriefing && (
+                <div className="flex border-b border-slate-100 my-4 gap-4 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab("negociacao")}
+                    className={`pb-2 transition-all border-b-2 cursor-pointer ${
+                      activeModalTab === "negociacao" 
+                        ? "border-primary text-primary" 
+                        : "border-transparent text-muted-foreground hover:text-slate-700"
+                    }`}
+                  >
+                    Negociação Comercial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab("briefing")}
+                    className={`pb-2 transition-all border-b-2 cursor-pointer flex items-center gap-1 ${
+                      activeModalTab === "briefing" 
+                        ? "border-primary text-primary" 
+                        : "border-transparent text-muted-foreground hover:text-slate-700"
+                    }`}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    Briefing de Qualificação
+                  </button>
+                </div>
+              )}
 
-          {/* Observações Gerais da Negociação */}
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Observações & Anotações da Negociação
-            </label>
-            <textarea
-              value={editingObservacoes}
-              onChange={(e) => setEditingObservacoes(e.target.value)}
-              rows={3}
-              placeholder="Descreva detalhes específicos do cliente, preferências de acabamento e histórico comercial do fechamento..."
-              className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium resize-none leading-relaxed"
-            />
-          </div>
+              {activeModalTab === "briefing" && currentProject?.briefing ? (
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  {/* Roteiro Comercial de Abordagem */}
+                  {currentProject.briefing.roteiro_sugerido && (
+                    <div className="p-4 bg-[hsl(28_85%_97%)] border border-[hsl(28_85%_85%)] rounded-xl space-y-2">
+                      <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[hsl(28_85%_35%)]">
+                        <Sparkles className="h-4 w-4 shrink-0" /> Script de Abordagem WhatsApp Sugerido
+                      </div>
+                      <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line font-medium">
+                        {currentProject.briefing.roteiro_sugerido}
+                      </div>
+                    </div>
+                  )}
 
-          {/* Nova Seção: Linha do Tempo e Histórico de Contato */}
-          <div className="border-t border-border/40 pt-4 space-y-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
-              Linha do Tempo & Histórico da Venda
-            </span>
+                  {/* Respostas do Briefing */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
+                        1. Ambientes & Escopo
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <span className="text-slate-500 font-semibold block">Ambientes desejados:</span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {(() => {
+                              try {
+                                const list = JSON.parse(currentProject.briefing.ambientes);
+                                return list.map((a: any, idx: number) => (
+                                  <span key={idx} className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-800 font-bold">
+                                    {a.nome}{a.opcao ? ` (${a.opcao})` : ""}
+                                  </span>
+                                ));
+                              } catch (e) {
+                                return <span className="text-slate-700 font-bold">{currentProject.briefing.ambientes}</span>;
+                              }
+                            })()}
+                          </div>
+                        </div>
 
-            {/* Novo Registro de Timeline */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newTimelineText}
-                onChange={(e) => setNewTimelineText(e.target.value)}
-                placeholder="Registrar anotação de conversa ou follow-up realizado hoje..."
-                className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddTimeline(e);
-                  }
-                }}
-              />
-              <Button 
-                type="button" 
-                onClick={handleAddTimeline} 
-                disabled={loading || !newTimelineText.trim()}
-                className="px-4 py-2 font-bold text-xs h-9"
-              >
-                Salvar Nota
-              </Button>
-            </div>
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Tipo do imóvel:</span>
+                            <strong className="text-slate-900">{currentProject.briefing.tipo_imovel}</strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Fase da compra:</span>
+                            <strong className="text-slate-900">{currentProject.briefing.fase_projeto}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* Lista Scrollable da Timeline */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 max-h-48 overflow-y-auto space-y-3">
-              {editingProjectTimeline.length === 0 ? (
-                <p className="text-center py-4 text-[11px] text-muted-foreground">
-                  Nenhum histórico de contato registrado ainda.
-                </p>
-              ) : (
-                editingProjectTimeline.map((item, idx) => (
-                  <div key={item.id || idx} className="flex gap-3 text-xs leading-relaxed items-start border-l-2 border-slate-200 pl-3 ml-1.5 py-0.5">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-neutral-800 font-medium">{item.acao}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 mt-0.5">
-                        <span>{new Date(item.data).toLocaleString("pt-BR")}</span>
-                        {item.user?.name && (
-                          <>
-                            <span>•</span>
-                            <span>Por: {item.user.name}</span>
-                          </>
+                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
+                        2. Status do Imóvel & Design
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Imóvel pronto?</span>
+                            <strong className="text-slate-900">{currentProject.briefing.pronto}</strong>
+                          </div>
+                          {currentProject.briefing.data_chaves && (
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Entrega das chaves:</span>
+                              <strong className="text-slate-900">{currentProject.briefing.data_chaves}</strong>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Já possui projeto?</span>
+                            <strong className="text-slate-900">{currentProject.briefing.tem_projeto}</strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Estilo preferido:</span>
+                            <strong className="text-slate-900">{currentProject.briefing.estilo}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
+                        3. Investimento & Cronograma
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Expectativa financeira:</span>
+                            <strong className="text-slate-900">{currentProject.briefing.faixa_investimento || "Não informado"}</strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Pretende iniciar:</span>
+                            <strong className="text-slate-900">{currentProject.briefing.prazo_inicio}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
+                        4. Referências & Mídia
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        {currentProject.briefing.pinterest_link && (
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Painel do Pinterest:</span>
+                            <a 
+                              href={currentProject.briefing.pinterest_link} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-primary hover:underline font-bold inline-flex items-center gap-1"
+                            >
+                              Ver Pinterest <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
                         )}
-                      </p>
+                        {currentProject.briefing.referencia_url && (
+                          <div>
+                            <span className="text-slate-500 font-semibold block">Arquivo de referência / Planta:</span>
+                            <a 
+                              href={currentProject.briefing.referencia_url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-emerald-600 hover:underline font-bold inline-flex items-center gap-1"
+                            >
+                              Baixar arquivo técnico <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
+                        )}
+                        {!currentProject.briefing.pinterest_link && !currentProject.briefing.referencia_url && (
+                          <span className="text-muted-foreground italic">Nenhuma referência compartilhada pelo cliente.</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsEditLeadOpen(false)}
-              disabled={loading}
-              className="text-xs font-bold cursor-pointer"
-            >
-              Fechar sem salvar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={loading} 
-              className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none"
-            >
-              {loading ? "Salvando..." : "Salvar Alterações"}
-            </Button>
-          </div>
-        </form>
+                  {/* Metadados Técnicos de Origem */}
+                  <details className="group border border-slate-100 rounded-xl bg-slate-50/20 overflow-hidden transition-all">
+                    <summary className="p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer list-none flex justify-between items-center group-open:bg-slate-50/60 select-none">
+                      🔍 Detalhes Técnicos de Auditoria (UTMs & Dispositivo)
+                      <span className="transition-transform group-open:rotate-180">▼</span>
+                    </summary>
+                    <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] font-medium text-slate-700 leading-relaxed border-t border-slate-100">
+                      <div>
+                        <span className="text-slate-400 block font-semibold">Dispositivo:</span>
+                        <strong>{currentProject.briefing.dispositivo || "Desktop"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-semibold">Sistema Operacional:</span>
+                        <strong>{currentProject.briefing.os || "Desconhecido"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-semibold">Resolução da Tela:</span>
+                        <strong>{currentProject.briefing.resolution || "Não informada"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-semibold">Idioma:</span>
+                        <strong>{currentProject.briefing.idioma || "Não informado"}</strong>
+                      </div>
+                      {currentProject.briefing.utm_source && (
+                        <div>
+                          <span className="text-slate-400 block font-semibold">UTM Source:</span>
+                          <strong>{currentProject.briefing.utm_source}</strong>
+                        </div>
+                      )}
+                      {currentProject.briefing.utm_medium && (
+                        <div>
+                          <span className="text-slate-400 block font-semibold">UTM Medium:</span>
+                          <strong>{currentProject.briefing.utm_medium}</strong>
+                        </div>
+                      )}
+                      {currentProject.briefing.utm_campaign && (
+                        <div>
+                          <span className="text-slate-400 block font-semibold">UTM Campaign:</span>
+                          <strong>{currentProject.briefing.utm_campaign}</strong>
+                        </div>
+                      )}
+                      {currentProject.briefing.tempo_preenchimento && (
+                        <div>
+                          <span className="text-slate-400 block font-semibold">Tempo de preenchimento:</span>
+                          <strong>{currentProject.briefing.tempo_preenchimento} segundos</strong>
+                        </div>
+                      )}
+                    </div>
+                  </details>
+
+                  <div className="flex justify-end pt-4 border-t border-slate-100">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditLeadOpen(false)}
+                      className="text-xs font-bold cursor-pointer"
+                    >
+                      Fechar Briefing
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleEditLeadSubmit} className="space-y-4">
+                  {/* Visualização de Dados do Cliente - Somente Leitura */}
+                  <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="col-span-2 sm:col-span-1">
+                      <span className="font-semibold text-slate-400 block mb-0.5">Cliente</span>
+                      <strong className="text-neutral-900 truncate block">{leadForm.nome}</strong>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-400 block mb-0.5">WhatsApp / Telefone</span>
+                      <strong className="text-neutral-900 block">{leadForm.telefone}</strong>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-400 block mb-0.5">E-mail</span>
+                      <strong className="text-neutral-900 truncate block">{leadForm.email}</strong>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-400 block mb-0.5">Cidade de Entrega</span>
+                      <strong className="text-neutral-900 block">{leadForm.cidade}</strong>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-400 block mb-0.5">Origem do Lead</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase mt-0.5">
+                        {labelOrigin(leadForm.origem)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dica de Venda Dinâmica por Etapa */}
+                  {(() => {
+                    const tips: Record<string, string> = {
+                      LEAD: "💡 Qualificação Inicial: Apresente o histórico da Móveis Unghero, entenda as necessidades básicas de ambientes e agende a medição técnica.",
+                      ORCAMENTO: "💡 Elaboração de Proposta: Foco em layout funcional. Tente agendar uma reunião presencial para apresentar a proposta e justificar os materiais.",
+                      NEGOCIACAO: "💡 Negociação Ativa: Apresente flexibilidade nas parcelas de pagamento e reforce o compromisso de prazo para incentivar a assinatura.",
+                      CONFERENCIA_TECNICA: "💡 Conferência e SLA: Revise as restrições de montagem, elevador ou acessos da obra. Fotografe os locais e confirme a planta técnica.",
+                      APROVADO: "💡 Fechamento Concluído: Revise e valide todo o memorial descritivo com o cliente. O projeto está prestes a entrar na fila de corte da marcenaria.",
+                      PRODUCAO: "💡 Produção em Andamento: Compartilhe o andamento das peças sendo usinadas com o cliente. O pós-venda começa mantendo o cliente seguro!"
+                    };
+                    const tipText = tips[editingStatusGeral] || "💡 Gestão de Projetos: Acompanhe o SLA operacional para assegurar o cumprimento de prazos contratados.";
+                    return (
+                      <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800 leading-relaxed font-medium">
+                        {tipText}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Edição de Dados Comerciais */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                        Valor Previsto do Projeto (R$)
+                      </label>
+                      <Input
+                        type="number"
+                        required
+                        value={leadForm.valor_previsto}
+                        onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
+                        className="text-xs h-10 font-bold text-neutral-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                        Etapa do Funil Comercial
+                      </label>
+                      <select
+                        value={editingStatusGeral}
+                        onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
+                        className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
+                      >
+                        {(() => {
+                          const opts = [...STATUS_OPTIONS];
+                          if (!opts.some(o => o.id === editingStatusGeral)) {
+                            const allStatuses: Record<string, string> = {
+                              INSTALACAO: "Instalação",
+                              FINALIZADO: "Finalizados",
+                              PERDIDO: "Perdido"
+                            };
+                            opts.push({ id: editingStatusGeral, title: allStatuses[editingStatusGeral] || editingStatusGeral });
+                          }
+                          return opts.map(col => (
+                            <option key={col.id} value={col.id}>{col.title}</option>
+                          ));
+                        })()}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Observações Gerais da Negociação */}
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                      Observações & Anotações da Negociação
+                    </label>
+                    <textarea
+                      value={editingObservacoes}
+                      onChange={(e) => setEditingObservacoes(e.target.value)}
+                      rows={3}
+                      placeholder="Descreva detalhes específicos do cliente, preferências de acabamento e histórico comercial do fechamento..."
+                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Nova Seção: Linha do Tempo e Histórico de Contato */}
+                  <div className="border-t border-border/40 pt-4 space-y-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                      Linha do Tempo & Histórico da Venda
+                    </span>
+
+                    {/* Novo Registro de Timeline */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTimelineText}
+                        onChange={(e) => setNewTimelineText(e.target.value)}
+                        placeholder="Registrar anotação de conversa ou follow-up realizado hoje..."
+                        className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTimeline(e);
+                          }
+                        }}
+                      />
+                      <Button 
+                        type="button" 
+                        onClick={handleAddTimeline} 
+                        disabled={loading || !newTimelineText.trim()}
+                        className="px-4 py-2 font-bold text-xs h-9"
+                      >
+                        Salvar Nota
+                      </Button>
+                    </div>
+
+                    {/* Lista Scrollable da Timeline */}
+                    <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 max-h-48 overflow-y-auto space-y-3">
+                      {editingProjectTimeline.length === 0 ? (
+                        <p className="text-center py-4 text-[11px] text-muted-foreground">
+                          Nenhum histórico de contato registrado ainda.
+                        </p>
+                      ) : (
+                        editingProjectTimeline.map((item, idx) => (
+                          <div key={item.id || idx} className="flex gap-3 text-xs leading-relaxed items-start border-l-2 border-slate-200 pl-3 ml-1.5 py-0.5">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-neutral-800 font-medium">{item.acao}</p>
+                              <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 mt-0.5">
+                                <span>{new Date(item.data).toLocaleString("pt-BR")}</span>
+                                {item.user?.name && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Por: {item.user.name}</span>
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditLeadOpen(false)}
+                      disabled={loading}
+                      className="text-xs font-bold cursor-pointer"
+                    >
+                      Fechar sem salvar
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none"
+                    >
+                      {loading ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </>
+          );
+        })()}
       </Dialog>
       <ActionDialogHost dialog={dialog} />
     </div>
