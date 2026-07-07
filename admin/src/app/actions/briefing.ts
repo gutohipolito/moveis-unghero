@@ -156,28 +156,6 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
       }
     });
 
-    // 8. Criar Orçamento (Quote) Rascunho para poder aparecer no CRM
-    const quote = await prisma.quote.create({
-      data: {
-        project_id: project.id,
-        versao: 1,
-        subtotal: valorPrevisto,
-        desconto: 0,
-        valor_final: valorPrevisto,
-        validade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        observacoes: "Briefing gerado automaticamente pelo formulário de qualificação do cliente.",
-        items: {
-          create: data.ambientes.map((amb) => ({
-            descricao: `${amb.nome}${amb.opcao ? ` (${amb.opcao})` : ""}`,
-            quantidade: 1,
-            tipo_custo: "MOVEIS_MDF",
-            valor_unitario: data.ambientes.length > 0 ? valorPrevisto / data.ambientes.length : 0,
-            valor_total: data.ambientes.length > 0 ? valorPrevisto / data.ambientes.length : 0,
-          }))
-        }
-      }
-    });
-
     // 9. Salvar Briefing Qualificado
     await prisma.leadBriefing.create({
       data: {

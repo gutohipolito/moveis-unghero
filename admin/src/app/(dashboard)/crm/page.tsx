@@ -80,7 +80,10 @@ export default async function CRMPage() {
       .findMany({
         where: { 
           client: { company_id: userCompanyId },
-          quotes: { some: {} }
+          OR: [
+            { quotes: { some: {} } },
+            { briefing: { isNot: null } }
+          ]
         },
         select: PROJECT_SELECT,
       })

@@ -28,6 +28,7 @@ export default async function ProjectPage({ params }: RouteParams) {
         tasks: true,
         installments: true,
         responsavel: true,
+        briefing: true,
         timeline: {
           include: { user: { select: { name: true } } },
           orderBy: { data: "desc" },
@@ -110,6 +111,24 @@ export default async function ProjectPage({ params }: RouteParams) {
       status: ins.status,
       tipo: ins.tipo,
     })),
+    briefing: project.briefing ? {
+      id: project.briefing.id,
+      ambientes: project.briefing.ambientes,
+      tipo_imovel: project.briefing.tipo_imovel,
+      fase_projeto: project.briefing.fase_projeto,
+      pronto: project.briefing.pronto,
+      data_chaves: project.briefing.data_chaves,
+      tem_projeto: project.briefing.tem_projeto,
+      estilo: project.briefing.estilo,
+      faixa_investimento: project.briefing.faixa_investimento,
+      prazo_inicio: project.briefing.prazo_inicio,
+      pinterest_link: project.briefing.pinterest_link,
+      referencia_url: project.briefing.referencia_url,
+      origem_lead: project.briefing.origem_lead,
+      score: project.briefing.score,
+      roteiro_sugerido: project.briefing.roteiro_sugerido,
+      createdAt: project.briefing.createdAt.toISOString()
+    } : null
   };
 
   const hasProductionApproval = formattedProject.files.some((f) => f.aprovado_producao);

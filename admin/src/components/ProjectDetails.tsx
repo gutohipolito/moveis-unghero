@@ -134,6 +134,24 @@ interface Project {
   responsavel_id?: string | null;
   responsavelNome?: string | null;
   observacoes?: string | null;
+  briefing?: {
+    id: string;
+    ambientes: string;
+    tipo_imovel: string;
+    fase_projeto: string;
+    pronto: string;
+    data_chaves?: string | null;
+    tem_projeto: string;
+    estilo: string;
+    faixa_investimento?: string | null;
+    prazo_inicio: string;
+    pinterest_link?: string | null;
+    referencia_url?: string | null;
+    origem_lead: string;
+    score?: number | null;
+    roteiro_sugerido?: string | null;
+    createdAt: string;
+  } | null;
 }
 
 interface ColaboradorSelect {
@@ -931,6 +949,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           <TabsTrigger value="quotes">
             <DollarSign className="h-4 w-4 mr-2" /> Orçamentos ({project.quotes?.length || 0})
           </TabsTrigger>
+          <TabsTrigger value="briefing">
+            <FileText className="h-4 w-4 mr-2" /> Formulário
+          </TabsTrigger>
           <TabsTrigger value="finances">
             <DollarSign className="h-4 w-4 mr-2" /> Financeiro ({project.installments?.length || 0})
           </TabsTrigger>
@@ -1334,6 +1355,54 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </div>
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab: Formulário de Qualificação */}
+        <TabsContent value="briefing" className="space-y-4">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold">Respostas do Formulário de Qualificação</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Consulte as respostas fornecidas pelo cliente no briefing e acesse o PDF de abordagem do lead.
+              </p>
+            </div>
+
+            {project.briefing ? (
+              <div className="p-5 rounded-xl border border-border/50 bg-card/35 backdrop-blur-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-foreground">Formulário de Qualificação de Lead</span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                      project.briefing.score && project.briefing.score >= 80 
+                        ? "bg-rose-50 text-rose-600 border border-rose-200" 
+                        : project.briefing.score && project.briefing.score < 50 
+                        ? "bg-slate-50 text-slate-600 border border-slate-200" 
+                        : "bg-amber-50 text-amber-600 border border-amber-200"
+                    }`}>
+                      Lead {project.briefing.score && project.briefing.score >= 80 ? "Quente" : project.briefing.score && project.briefing.score < 50 ? "Frio" : "Morno"} ({project.briefing.score || 0} pts)
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enviado em {new Date(project.briefing.createdAt).toLocaleDateString("pt-BR")} às {new Date(project.briefing.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <div>
+                  <a
+                    href={`/briefing/${project.id}/print`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center text-xs font-semibold px-4.5 py-2.5 rounded-lg border border-border/60 bg-white hover:bg-slate-50 text-foreground shadow-xs transition-all cursor-pointer"
+                  >
+                    <FileText className="h-4 w-4 mr-2 text-primary" /> Visualizar PDF do Briefing
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-sm text-muted-foreground border border-dashed border-border/60 rounded-xl bg-card/20">
+                Este cliente foi cadastrado de forma manual e não possui formulário de qualificação enviado.
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Tab: Financeiro do Projeto */}
