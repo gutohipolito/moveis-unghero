@@ -4,8 +4,22 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logProjectTimeline } from "@/app/actions/timeline";
 import { checkProjectPaymentComplete } from "@/app/actions/productionSla";
+import { getAuthContext, requireProjectInCompany } from "@/lib/auth-guard";
 
 export async function createInstallment(projectId: string, data: { valor: number; data_vencimento: string; tipo: "ENTRADA" | "PARCELA" }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const installment = await prisma.installment.create({
       data: {
@@ -53,6 +67,19 @@ export async function createInstallment(projectId: string, data: { valor: number
 }
 
 export async function payInstallment(projectId: string, installmentId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const installment = await prisma.installment.update({
       where: { id: installmentId },
@@ -96,6 +123,19 @@ export async function payInstallment(projectId: string, installmentId: string) {
 }
 
 export async function createTask(projectId: string, data: { titulo: string; descricao?: string; responsavel: string; data: string; tipo: "VISITA_COMERCIAL" | "MEDICAO_TECNICA" | "ENTREGA_MOVEIS" | "INSTALACAO" | "OUTROS" }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const task = await prisma.task.create({
       data: {
@@ -137,6 +177,19 @@ export async function createTask(projectId: string, data: { titulo: string; desc
 }
 
 export async function toggleTaskStatus(projectId: string, taskId: string, completed: boolean) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const task = await prisma.task.update({
       where: { id: taskId },

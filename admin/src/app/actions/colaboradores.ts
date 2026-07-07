@@ -5,9 +5,29 @@ import { auth } from "@/lib/auth";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import {
+  assertCompanyAccess,
+  getAuthContext,
+  requireEnvironmentInCompany,
+  requireUserInCompany,
+} from "@/lib/auth-guard";
 
 // Retorna todos os colaboradores ativos da mesma empresa
 export async function getColaboradores(companyId: string) {
+  const authCtx = await getAuthContext();
+  if (!authCtx) {
+    return { success: false, error: "Não autenticado", colaboradores: [] };
+  }
+  try {
+    assertCompanyAccess(authCtx, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+      colaboradores: [],
+    };
+  }
+
   try {
     const colaboradores = await prisma.user.findMany({
       where: {
@@ -21,7 +41,7 @@ export async function getColaboradores(companyId: string) {
     return { success: true, colaboradores };
   } catch (error: any) {
     console.error("Erro ao buscar colaboradores:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, colaboradores: [] };
   }
 }
 
@@ -33,6 +53,14 @@ export async function createColaborador(data: {
   senhaRaw: string;
   companyId: string;
 }) {
+  const authCtx = await getAuthContext();
+  if (!authCtx) {
+    return { success: false, error: "Não autenticado" };
+  }
+  if (authCtx.cargo !== "ADMIN") {
+    return { success: false, error: "Acesso negado" };
+  }
+
   try {
     // 1. Garante que não haja duplicidade de e-mail
     const existing = await prisma.user.findUnique({
@@ -49,7 +77,7 @@ export async function createColaborador(data: {
         email: data.email,
         password: data.senhaRaw,
         name: data.name,
-        company_id: data.companyId,
+        company_id: authCtx.companyId,
         cargo: data.cargo,
       },
     });
@@ -64,6 +92,22 @@ export async function createColaborador(data: {
 
 // Exclui um colaborador e remove sessões e contas associadas
 export async function deleteColaborador(userId: string) {
+  const authCtx = await getAuthContext();
+  if (!authCtx) {
+    return { success: false, error: "Não autenticado" };
+  }
+  if (authCtx.cargo !== "ADMIN") {
+    return { success: false, error: "Acesso negado" };
+  }
+  try {
+    await requireUserInCompany(userId, authCtx.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -104,6 +148,22 @@ export async function deleteColaborador(userId: string) {
 
 // Associa um responsável da fábrica a um cômodo/ambiente
 export async function updateEnvironmentResponsavel(environmentId: string, responsavelId: string | null) {
+  const authCtx = await getAuthContext();
+  if (!authCtx) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireEnvironmentInCompany(environmentId, authCtx.companyId);
+    if (responsavelId) {
+      await requireUserInCompany(responsavelId, authCtx.companyId);
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const updated = await prisma.environment.update({
       where: { id: environmentId },
@@ -122,6 +182,22 @@ export async function updateEnvironmentResponsavel(environmentId: string, respon
 
 // Associa um ajudante opcional da fábrica a um cômodo/ambiente
 export async function updateEnvironmentAjudante(environmentId: string, ajudanteId: string | null) {
+  const authCtx = await getAuthContext();
+  if (!authCtx) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireEnvironmentInCompany(environmentId, authCtx.companyId);
+    if (ajudanteId) {
+      await requireUserInCompany(ajudanteId, authCtx.companyId);
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const updated = await prisma.environment.update({
       where: { id: environmentId },

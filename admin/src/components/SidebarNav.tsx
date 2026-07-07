@@ -16,6 +16,7 @@ import {
   Clock,
   BookMarked,
   PenTool,
+  Megaphone,
 } from "lucide-react";
 
 export interface NavItem {
@@ -38,6 +39,7 @@ export const NAV_SECTIONS = [
 
 export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
+  { name: "Marketing", href: "/marketing", icon: Megaphone, section: "Visão Geral" },
 
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
   { name: "Clientes", href: "/clientes", icon: Users, section: "Comercial" },
@@ -66,6 +68,7 @@ export function isNavItemActive(pathname: string, href: string): boolean {
 const HEAVY_ROUTES = new Set([
   "/crm",
   "/bi",
+  "/marketing",
   "/factory",
   "/financeiro",
   "/clientes",

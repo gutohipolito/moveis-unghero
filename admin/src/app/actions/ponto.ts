@@ -2,9 +2,16 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getAuthContext } from "@/lib/auth-guard";
 
 // Busca os pontos batidos pelo colaborador no mês atual
-export async function getMyTimeCards(userId: string) {
+export async function getMyTimeCards(_userId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  const userId = auth.userId;
+
   try {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -42,9 +49,15 @@ export async function getMyTimeCards(userId: string) {
 
 // Bate o ponto do dia do colaborador
 export async function registerPonto(
-  userId: string,
+  _userId: string,
   tipo: "entrada" | "almoco_in" | "almoco_out" | "saida"
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  const userId = auth.userId;
+
   try {
     const now = new Date();
     
@@ -126,7 +139,13 @@ export async function registerPonto(
 }
 
 // Retorna estatísticas de produtividade do colaborador
-export async function getColaboradorMetrics(userId: string) {
+export async function getColaboradorMetrics(_userId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  const userId = auth.userId;
+
   try {
     // 1. Busca cômodos em andamento sob a responsabilidade dele
     const ativosCount = await prisma.environment.count({

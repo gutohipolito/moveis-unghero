@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ADMIN_EMAIL } from "@/lib/constants";
 
-export async function GET(request: NextRequest) {
+async function handleCreateAdmin(request: NextRequest) {
   const setupSecret = process.env.ADMIN_SETUP_SECRET;
   if (!setupSecret) {
     return NextResponse.json(
@@ -11,8 +12,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { searchParams } = new URL(request.url);
-  const providedSecret = searchParams.get("secret");
+  const body = await request.json().catch(() => null);
+  const providedSecret = body?.secret;
+  const email = body?.email || ADMIN_EMAIL;
+  const password = body?.password;
+
   if (providedSecret !== setupSecret) {
     return NextResponse.json(
       { success: false, error: "Secret inválido." },
@@ -20,12 +24,26 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const email = searchParams.get("email") || "admin@moveisunghero.com.br";
-  const password = searchParams.get("password");
-  if (!password) {
+  if (!password || typeof password !== "string") {
     return NextResponse.json(
-      { success: false, error: "Parâmetro password é obrigatório." },
+      { success: false, error: "Campo password é obrigatório." },
       { status: 400 }
+    );
+  }
+
+  const existingAdmin = await prisma.user.findFirst({
+    where: { cargo: "ADMIN" },
+    select: { id: true, email: true },
+  });
+
+  if (existingAdmin && process.env.ALLOW_ADMIN_RECREATE !== "true") {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Já existe um administrador no sistema. Remova ADMIN_SETUP_SECRET após o bootstrap.",
+      },
+      { status: 403 }
     );
   }
 
@@ -80,4 +98,18 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return handleCreateAdmin(request);
+}
+
+export async function GET() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Use POST com JSON { secret, email, password }. GET desativado por segurança.",
+    },
+    { status: 405 }
+  );
 }

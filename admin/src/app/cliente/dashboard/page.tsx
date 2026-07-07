@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import ClienteDashboardClient from "./ClienteDashboardClient";
 import { loadClientPortalData } from "@/lib/clientPortal";
 
+import { parseClientSessionToken } from "@/lib/clientSession";
+
 export default async function ClienteDashboardPage() {
   const cookieStore = await cookies();
-  const clientId = cookieStore.get("cliente-session")?.value;
+  const clientId = parseClientSessionToken(cookieStore.get("cliente-session")?.value);
 
   if (!clientId) {
     redirect("/cliente/login");

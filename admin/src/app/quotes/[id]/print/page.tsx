@@ -1,7 +1,8 @@
+import { getCachedSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { resolveClientDocument } from "@/lib/clientDocument";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
 
@@ -67,13 +68,22 @@ function PrintFooter({ version }: { version: number }) {
 }
 
 export default async function PrintQuotePage({ params }: PrintPageProps) {
+  const session = await getCachedSession();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const { id } = await params;
+  const companyId = session.user.company_id || "mock-company-id";
 
   let quote = null;
 
   try {
-    const dbQuote = await prisma.quote.findUnique({
-      where: { id },
+    const dbQuote = await prisma.quote.findFirst({
+      where: {
+        id,
+        project: { client: { company_id: companyId } },
+      },
       include: {
         items: true,
         project: {

@@ -9,11 +9,22 @@ import {
   type AppNotification,
 } from "@/lib/notifications";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
+import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 
 export async function getNotifications(companyId: string): Promise<{
   success: boolean;
   notifications: AppNotification[];
 }> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, notifications: [] };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    return { success: false, notifications: [] };
+  }
+
   if (isDatabaseOffline()) {
     return { success: true, notifications: [] };
   }

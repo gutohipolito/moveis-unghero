@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { parseClientSessionToken } from "@/lib/clientSession";
 
 const PUBLIC_PATHS = new Set(["/login", "/cliente/login"]);
 
@@ -7,10 +8,13 @@ const PUBLIC_PREFIXES = ["/api/auth"];
 
 const PROTECTED_PREFIXES = [
   "/bi",
+  "/marketing",
   "/crm",
   "/quotes",
   "/clientes",
   "/colaboradores",
+  "/cadastros",
+  "/parceiros",
   "/agenda",
   "/factory",
   "/estoque",
@@ -59,7 +63,7 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith("/cliente/dashboard")) {
     const clientSession = request.cookies.get("cliente-session")?.value;
-    if (!clientSession) {
+    if (!parseClientSessionToken(clientSession)) {
       return NextResponse.redirect(new URL("/cliente/login", request.url));
     }
     return NextResponse.next();
@@ -80,10 +84,13 @@ export const config = {
     "/",
     "/login",
     "/bi/:path*",
+    "/marketing/:path*",
     "/crm/:path*",
     "/quotes/:path*",
     "/clientes/:path*",
     "/colaboradores/:path*",
+    "/cadastros/:path*",
+    "/parceiros/:path*",
     "/agenda/:path*",
     "/factory/:path*",
     "/estoque/:path*",

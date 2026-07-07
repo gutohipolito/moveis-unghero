@@ -13,6 +13,11 @@ import {
   isSlaOverdue,
 } from "@/lib/productionSla";
 import { logProjectTimeline } from "@/app/actions/timeline";
+import {
+  assertCompanyAccess,
+  getAuthContext,
+  requireProjectInCompany,
+} from "@/lib/auth-guard";
 
 function mapSlaRow(
   row: {
@@ -37,6 +42,14 @@ function mapSlaRow(
 }
 
 export async function ensureProjectSla(projectId: string): Promise<ProjectSlaView | null> {
+  const auth = await getAuthContext();
+  if (!auth) return null;
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch {
+    return null;
+  }
+
   if (isDatabaseOffline()) return null;
 
   try {
@@ -68,6 +81,14 @@ export async function ensureProjectSla(projectId: string): Promise<ProjectSlaVie
 }
 
 export async function getCompanySlaStates(companyId: string): Promise<ProjectSlaView[]> {
+  const auth = await getAuthContext();
+  if (!auth) return [];
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    return [];
+  }
+
   if (isDatabaseOffline()) return [];
 
   try {
@@ -88,6 +109,14 @@ export async function getCompanySlaStates(companyId: string): Promise<ProjectSla
 }
 
 export async function getProjectSla(projectId: string): Promise<ProjectSlaView | null> {
+  const auth = await getAuthContext();
+  if (!auth) return null;
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch {
+    return null;
+  }
+
   if (isDatabaseOffline()) return null;
 
   try {
@@ -106,6 +135,19 @@ export async function verifySlaStage(
   completed: boolean,
   extraDays?: number
 ): Promise<{ success: boolean; error?: string; sla?: ProjectSlaView }> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   const sla = (await getProjectSla(projectId)) ?? (await ensureProjectSla(projectId));
   if (!sla) return { success: false, error: "SLA não encontrado." };
 
@@ -163,6 +205,19 @@ export async function updateProjectSlaStage(
   projectId: string,
   stageKey: ProductionSlaStageKey
 ): Promise<{ success: boolean; sla?: ProjectSlaView; error?: string }> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   const config = getStageConfig(stageKey);
   await ensureProjectSla(projectId);
 
@@ -198,6 +253,19 @@ export async function updateProjectSlaStage(
 }
 
 export async function markNotaFiscalEmitida(projectId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -223,6 +291,14 @@ export async function markNotaFiscalEmitida(projectId: string) {
 }
 
 export async function checkProjectPaymentComplete(projectId: string) {
+  const auth = await getAuthContext();
+  if (!auth) return { fullyPaid: false };
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch {
+    return { fullyPaid: false };
+  }
+
   if (isDatabaseOffline()) return { fullyPaid: false };
 
   try {
@@ -238,11 +314,27 @@ export async function checkProjectPaymentComplete(projectId: string) {
 }
 
 export async function getSlaAlertProjects(companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) return [];
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    return [];
+  }
+
   const states = await getCompanySlaStates(companyId);
   return states.filter((s) => !isSlaFinished(s) && (isSlaDueToday(s) || isSlaOverdue(s)));
 }
 
 export async function getInvoicePendingProjects(companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) return [];
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    return [];
+  }
+
   if (isDatabaseOffline()) return [];
 
   try {

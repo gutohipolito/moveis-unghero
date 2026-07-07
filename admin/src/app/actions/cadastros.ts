@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { CATALOG_GROUP_META } from "@/lib/catalogGroups";
+import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 
 export interface CatalogItemDTO {
   id: string;
@@ -106,6 +107,20 @@ function mapItems(items: {
 }
 
 export async function getCatalogGroups(companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado", groups: buildMockGroups() };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Acesso negado",
+      groups: buildMockGroups(),
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: true as const, groups: buildMockGroups() };
   }
@@ -147,6 +162,18 @@ export async function getCatalogGroups(companyId: string) {
 }
 
 export async function getCatalogItemsBySlug(companyId: string, slug: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    const fallback = buildMockGroups().find((g) => g.slug === slug);
+    return { success: false as const, items: fallback?.items.filter((i) => i.ativo) ?? [] };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    const fallback = buildMockGroups().find((g) => g.slug === slug);
+    return { success: false as const, items: fallback?.items.filter((i) => i.ativo) ?? [] };
+  }
+
   const res = await getCatalogGroups(companyId);
   if (!res.success) {
     const fallback = buildMockGroups().find((g) => g.slug === slug);
@@ -163,6 +190,19 @@ export async function createCatalogItem(
   groupSlug: string,
   data: { label: string; slug?: string; parentId?: string | null }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastros indisponíveis no modo demonstração offline." };
   }
@@ -205,11 +245,23 @@ export async function updateCatalogItem(
   itemId: string,
   data: { label?: string; ativo?: boolean; ordem?: number }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastros indisponíveis no modo demonstração offline." };
   }
 
   try {
+    const existing = await prisma.catalogItem.findFirst({
+      where: { id: itemId, group: { company_id: auth.companyId } },
+    });
+    if (!existing) {
+      return { success: false, error: "Item não encontrado." };
+    }
+
     const item = await prisma.catalogItem.update({
       where: { id: itemId },
       data: {
@@ -228,11 +280,23 @@ export async function updateCatalogItem(
 }
 
 export async function deleteCatalogItem(itemId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastros indisponíveis no modo demonstração offline." };
   }
 
   try {
+    const existing = await prisma.catalogItem.findFirst({
+      where: { id: itemId, group: { company_id: auth.companyId } },
+    });
+    if (!existing) {
+      return { success: false, error: "Item não encontrado." };
+    }
+
     await prisma.catalogItem.delete({ where: { id: itemId } });
     revalidateCatalogPaths();
     return { success: true };

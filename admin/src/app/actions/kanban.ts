@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getCurrentUserId } from "@/lib/currentUser";
+import {
+  assertCompanyAccess,
+  getAuthContext,
+  requireClientInCompany,
+  requireProjectInCompany,
+} from "@/lib/auth-guard";
 
 export type ProjectStatus =
   | "LEAD"
@@ -28,11 +33,21 @@ function revalidateCrmPaths() {
 }
 
 export async function updateProjectStatus(projectId: string, newStatus: ProjectStatus) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const actorUserId = await getCurrentUserId();
-    if (!actorUserId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const actorUserId = auth.userId;
 
     const currentProject = await prisma.project.findUniqueOrThrow({
       where: { id: projectId },
@@ -87,11 +102,21 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
 }
 
 export async function markProjectContacted(projectId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const actorUserId = await getCurrentUserId();
-    if (!actorUserId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const actorUserId = auth.userId;
 
     const now = new Date();
     await prisma.$transaction(async (tx) => {
@@ -119,11 +144,21 @@ export async function markProjectContacted(projectId: string) {
 }
 
 export async function markProjectAsLost(projectId: string, motivo?: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const actorUserId = await getCurrentUserId();
-    if (!actorUserId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const actorUserId = auth.userId;
 
     const motivoStr = motivo?.trim() || "";
 
@@ -155,11 +190,21 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
 }
 
 export async function restoreProjectFromLoss(projectId: string, newStatus: ProjectStatus = "LEAD") {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const actorUserId = await getCurrentUserId();
-    if (!actorUserId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const actorUserId = auth.userId;
 
     await prisma.$transaction(async (tx) => {
       await tx.project.update({
@@ -211,6 +256,22 @@ export async function createLead(formData: {
   obs_imovel?: string;
   obs_entrega?: string;
 }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, formData.company_id);
+    if (formData.client_id) {
+      await requireClientInCompany(formData.client_id, auth.companyId);
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const statusInicial = formData.status_geral || "LEAD";
     const now = new Date();
@@ -256,10 +317,7 @@ export async function createLead(formData: {
         },
       });
 
-      const actorUserId = await getCurrentUserId();
-      if (!actorUserId) {
-        throw new Error("Usuário não autenticado para registrar o lead.");
-      }
+      const actorUserId = auth.userId;
 
       await tx.timeline.create({
         data: {
@@ -303,6 +361,19 @@ export async function updateProjectAction(
     obs_entrega?: string;
   }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const project = await prisma.project.update({
       where: { id: projectId },
@@ -344,11 +415,21 @@ export async function updateProjectAction(
 }
 
 export async function addProjectTimelineAction(projectId: string, text: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const actorUserId = await getCurrentUserId();
-    if (!actorUserId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const actorUserId = auth.userId;
 
     const timelineItem = await prisma.timeline.create({
       data: {
@@ -388,11 +469,21 @@ export async function updateProjectCommercialAction(
     observacoes?: string;
   }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const actorUserId = await getCurrentUserId();
-    if (!actorUserId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const actorUserId = auth.userId;
 
     const currentProject = await prisma.project.findUniqueOrThrow({
       where: { id: projectId },

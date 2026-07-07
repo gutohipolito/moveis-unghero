@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logProjectTimeline } from "@/app/actions/timeline";
 import { ensureProjectSla } from "@/app/actions/productionSla";
-import { getCurrentUserId } from "@/lib/currentUser";
+import {
+  getAuthContext,
+  requireEnvironmentInCompany,
+  requireProjectInCompany,
+} from "@/lib/auth-guard";
 
 export type EnvironmentType = 
   | "COZINHA"
@@ -32,6 +36,19 @@ export type FileType =
 
 // Atualiza o status geral do projeto
 export async function updateProjectGeneralStatus(projectId: string, newStatus: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     await prisma.project.update({
       where: { id: projectId },
@@ -47,6 +64,20 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
 
 // Atualiza o status individual de um ambiente do projeto
 export async function updateEnvironmentStatus(projectId: string, envId: string, newStatus: EnvironmentStatus) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+    await requireEnvironmentInCompany(envId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const env = await prisma.environment.findUnique({
       where: { id: envId },
@@ -85,6 +116,19 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
 
 // Adiciona um novo ambiente ao projeto
 export async function addEnvironment(projectId: string, nome: string, tipo: EnvironmentType) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const newEnv = await prisma.environment.create({
       data: {
@@ -111,11 +155,21 @@ export async function addEnvironment(projectId: string, nome: string, tipo: Envi
 
 // Adiciona um novo evento/nota de timeline ao projeto
 export async function addTimelineEvent(projectId: string, acao: string, interno: boolean) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
   try {
-    const userId = await getCurrentUserId();
-    if (!userId) {
-      return { success: false, error: "Usuário não autenticado." };
-    }
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const userId = auth.userId;
 
     const newEvent = await prisma.timeline.create({
       data: {
@@ -141,6 +195,19 @@ export async function addTimelineEvent(projectId: string, acao: string, interno:
 
 // Altera a liberação do arquivo para produção (Flag de corte na fábrica)
 export async function toggleFileApproval(projectId: string, fileId: string, approved: boolean) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     await prisma.file.update({
       where: { id: fileId },
@@ -167,6 +234,19 @@ export async function toggleFileApproval(projectId: string, fileId: string, appr
 
 // Upload de arquivo simulado (ou real R2 se chaves configuradas)
 export async function uploadProjectFile(projectId: string, data: { tipo: FileType; nome_arquivo: string; url?: string }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     // Incrementa a versão se o arquivo do mesmo tipo já existir
     const existingFiles = await prisma.file.findMany({
@@ -209,6 +289,19 @@ export async function updateProjectDetails(
     observacoes?: string | null;
   }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const updateData: any = {};
     

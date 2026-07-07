@@ -9,7 +9,12 @@ import {
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentUserId } from "@/lib/currentUser";
+import {
+  assertCompanyAccess,
+  getAuthContext,
+  requireClientInCompany,
+} from "@/lib/auth-guard";
+import { createClientSessionToken } from "@/lib/clientSession";
 
 type Origin = 
   | "SITE"
@@ -144,11 +149,17 @@ export async function loginCliente(data: { identificador: string; cpf: string })
 
     const doc = resolveClientDocument(client);
     const storedCpf = cleanCpf(doc.cpf || "");
-    if (storedCpf && storedCpf !== cpfLimpo) {
+    if (!storedCpf) {
+      return {
+        success: false,
+        error: "Portal indisponível para este cadastro. Entre em contato com a loja.",
+      };
+    }
+    if (storedCpf !== cpfLimpo) {
       return { success: false, error: "Cliente não cadastrado no CRM ou dados inválidos." };
     }
 
-    cookieStore.set("cliente-session", client.id, {
+    cookieStore.set("cliente-session", createClientSessionToken(client.id), {
       path: "/",
       httpOnly: true,
       secure: isProduction,
@@ -172,6 +183,20 @@ export async function logoutCliente() {
 
 // 1. Listar Clientes
 export async function getClients(companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado", clients: [] };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+      clients: [],
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Erro de conexão ao banco de dados", clients: [] };
   }
@@ -223,6 +248,19 @@ export async function createClientAction(formData: {
   obs_imovel?: string;
   obs_entrega?: string;
 }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, formData.company_id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   const tipoPessoa = formData.tipo_pessoa || "PF";
   const cpf = tipoPessoa === "PF" ? formData.cpf || null : null;
   const cnpj = tipoPessoa === "PJ" ? formData.cnpj || null : null;
@@ -241,7 +279,7 @@ export async function createClientAction(formData: {
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
-        company_id: formData.company_id,
+        company_id: auth.companyId,
         tipo_pessoa: tipoPessoa,
         cpf,
         cnpj,
@@ -288,6 +326,19 @@ export async function updateClientAction(
     obs_entrega?: string;
   }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   const tipoPessoa = formData.tipo_pessoa || "PF";
   const cpf = tipoPessoa === "PF" ? formData.cpf || null : null;
   const cnpj = tipoPessoa === "PJ" ? formData.cnpj || null : null;
@@ -331,6 +382,19 @@ export async function updateClientAction(
 
 // 4. Excluir Cliente
 export async function deleteClientAction(clientId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -378,6 +442,19 @@ export async function importClientsAction(
   }>,
   companyId: string
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -546,6 +623,19 @@ async function loadClientActivitiesAndPayments(clientId: string) {
 }
 
 export async function getClientDetailsAction(clientId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Erro de conexão ao banco de dados" };
   }
@@ -588,14 +678,24 @@ export async function addActivityAction(
   titulo: string,
   descricao: string
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
 
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    return { success: false, error: "Usuário não autenticado." };
-  }
+  const userId = auth.userId;
 
   const project = await prisma.project.findFirst({
     where: { client_id: clientId },

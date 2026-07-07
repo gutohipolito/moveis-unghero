@@ -3,7 +3,12 @@
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureActorUserId } from "@/lib/currentUser";
-import { getSessionCompanyId } from "@/lib/session";
+import {
+  assertCompanyAccess,
+  getAuthContext,
+  requireClientInCompany,
+  requireProjectInCompany,
+} from "@/lib/auth-guard";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -29,6 +34,19 @@ export interface CreateQuoteInput {
 
 // Cria um novo orçamento com controle de versão
 export async function createQuote(projectId: string, data: CreateQuoteInput) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Busca orçamentos existentes do projeto para determinar a próxima versão
@@ -104,6 +122,19 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
 
 // Atualiza o status do orçamento e, se aprovado, atualiza o status do projeto principal
 export async function approveQuote(projectId: string, quoteId: string, version: number) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     // 1. Atualiza o status geral do projeto para APROVADO
     await prisma.project.update({
@@ -131,6 +162,19 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
 
 // Remove um orçamento
 export async function deleteQuote(projectId: string, quoteId: string, version: number) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       // 1. Remove itens
@@ -162,7 +206,11 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
 
 // Busca orçamentos da empresa do usuário logado
 export async function getQuotes() {
-  const companyId = await getSessionCompanyId();
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado", data: [] };
+  }
+  const companyId = auth.companyId;
 
   try {
     const quotes = await prisma.quote.findMany({
@@ -207,8 +255,16 @@ export async function getQuotes() {
 
 // Busca todos os projetos ativos para seleção no construtor de orçamentos
 export async function getProjectsForQuotes() {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado", data: [] };
+  }
+
   try {
     const projects = await prisma.project.findMany({
+      where: {
+        client: { company_id: auth.companyId },
+      },
       include: {
         client: true
       },
@@ -235,6 +291,20 @@ export async function getProjectsForQuotes() {
 
 // Cria um projeto temporário para um cliente existente
 export async function createProjectForClient(clientId: string, companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -273,6 +343,19 @@ export async function createQuickClientAndProject(data: {
   cidade: string;
   companyId: string;
 }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, data.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }

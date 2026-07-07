@@ -1,21 +1,8 @@
 "use server";
 
-import { headers } from "next/headers";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
-import { getSessionSafe } from "@/lib/auth";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
-import { DEFAULT_COMPANY_ID } from "@/lib/session";
-
-async function requireUser() {
-  const session = await getSessionSafe(await headers());
-  if (!session?.user?.id) {
-    throw new Error("Não autenticado");
-  }
-  return {
-    userId: session.user.id,
-    companyId: session.user.company_id || DEFAULT_COMPANY_ID,
-  };
-}
+import { getAuthContext } from "@/lib/auth-guard";
 
 function mapNote(row: {
   id: string;
@@ -53,6 +40,14 @@ export async function getOperatorNotesForUser(
   userId: string,
   companyId: string
 ): Promise<{ success: boolean; notes: OperatorNote[] }> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, notes: [] };
+  }
+  if (userId !== auth.userId || companyId !== auth.companyId) {
+    return { success: false, notes: [] };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, notes: [] };
   }
@@ -73,6 +68,14 @@ export async function getOperatorRemindersForUser(
   userId: string,
   companyId: string
 ): Promise<{ success: boolean; reminders: OperatorReminder[] }> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, reminders: [] };
+  }
+  if (userId !== auth.userId || companyId !== auth.companyId) {
+    return { success: false, reminders: [] };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, reminders: [] };
   }
@@ -98,8 +101,11 @@ export async function getOperatorNotes(): Promise<{
   }
 
   try {
-    const { userId, companyId } = await requireUser();
-    return getOperatorNotesForUser(userId, companyId);
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false, notes: [] };
+    }
+    return getOperatorNotesForUser(auth.userId, auth.companyId);
   } catch (error) {
     console.error("Erro ao buscar notas:", error);
     return { success: false, notes: [] };
@@ -121,11 +127,14 @@ export async function createOperatorNote(content: string): Promise<{
   }
 
   try {
-    const { userId, companyId } = await requireUser();
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false, error: "Não autenticado" };
+    }
     const row = await prisma.operatorNote.create({
       data: {
-        user_id: userId,
-        company_id: companyId,
+        user_id: auth.userId,
+        company_id: auth.companyId,
         content: trimmed,
       },
     });
@@ -142,9 +151,12 @@ export async function deleteOperatorNote(id: string): Promise<{ success: boolean
   }
 
   try {
-    const { userId } = await requireUser();
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false };
+    }
     await prisma.operatorNote.deleteMany({
-      where: { id, user_id: userId },
+      where: { id, user_id: auth.userId },
     });
     return { success: true };
   } catch (error) {
@@ -159,9 +171,12 @@ export async function toggleOperatorNotePin(id: string): Promise<{ success: bool
   }
 
   try {
-    const { userId } = await requireUser();
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false };
+    }
     const existing = await prisma.operatorNote.findFirst({
-      where: { id, user_id: userId },
+      where: { id, user_id: auth.userId },
     });
     if (!existing) return { success: false };
 
@@ -185,8 +200,11 @@ export async function getOperatorReminders(): Promise<{
   }
 
   try {
-    const { userId, companyId } = await requireUser();
-    return getOperatorRemindersForUser(userId, companyId);
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false, reminders: [] };
+    }
+    return getOperatorRemindersForUser(auth.userId, auth.companyId);
   } catch (error) {
     console.error("Erro ao buscar lembretes:", error);
     return { success: false, reminders: [] };
@@ -212,11 +230,14 @@ export async function createOperatorReminder(
   }
 
   try {
-    const { userId, companyId } = await requireUser();
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false, error: "Não autenticado" };
+    }
     const row = await prisma.operatorReminder.create({
       data: {
-        user_id: userId,
-        company_id: companyId,
+        user_id: auth.userId,
+        company_id: auth.companyId,
         title: trimmed,
         due_at: dueAt,
       },
@@ -234,9 +255,12 @@ export async function toggleOperatorReminderDone(id: string): Promise<{ success:
   }
 
   try {
-    const { userId } = await requireUser();
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false };
+    }
     const existing = await prisma.operatorReminder.findFirst({
-      where: { id, user_id: userId },
+      where: { id, user_id: auth.userId },
     });
     if (!existing) return { success: false };
 
@@ -257,9 +281,12 @@ export async function deleteOperatorReminder(id: string): Promise<{ success: boo
   }
 
   try {
-    const { userId } = await requireUser();
+    const auth = await getAuthContext();
+    if (!auth) {
+      return { success: false };
+    }
     await prisma.operatorReminder.deleteMany({
-      where: { id, user_id: userId },
+      where: { id, user_id: auth.userId },
     });
     return { success: true };
   } catch (error) {

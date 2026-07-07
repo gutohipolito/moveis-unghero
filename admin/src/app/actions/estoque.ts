@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
+import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 
 export interface Supplier {
   id: string;
@@ -77,6 +78,16 @@ function mapInventoryItem(row: DbInventoryItem): InventoryItem {
 }
 
 export async function getInventoryAndSuppliers(companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false as const, suppliers: [] as Supplier[], inventory: [] as InventoryItem[] };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    return { success: false as const, suppliers: [] as Supplier[], inventory: [] as InventoryItem[] };
+  }
+
   if (isDatabaseOffline()) {
     return { success: true as const, suppliers: [] as Supplier[], inventory: [] as InventoryItem[] };
   }
@@ -106,6 +117,19 @@ export async function getInventoryAndSuppliers(companyId: string) {
 }
 
 export async function createSupplierAction(data: Omit<Supplier, "id"> & { company_id: string }) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, data.company_id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -135,6 +159,19 @@ export async function updateSupplierAction(
   companyId: string,
   data: Partial<Supplier>
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -169,6 +206,19 @@ export async function updateSupplierAction(
 }
 
 export async function deleteSupplierAction(id: string, companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -193,6 +243,19 @@ export async function deleteSupplierAction(id: string, companyId: string) {
 export async function createInventoryItemAction(
   data: Omit<InventoryItem, "id" | "supplierName"> & { company_id: string }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, data.company_id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -233,6 +296,19 @@ export async function updateInventoryItemAction(
   companyId: string,
   data: Partial<InventoryItem>
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -280,6 +356,19 @@ export async function updateInventoryItemAction(
 }
 
 export async function deleteInventoryItemAction(id: string, companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
   }
@@ -305,6 +394,19 @@ export async function deductInventoryAction(
   companyId: string,
   itemsToDeduct: Array<{ itemId: string; quantity: number }>
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, message: "Banco de dados indisponível." };
   }
@@ -378,6 +480,19 @@ export async function importInventoryBulkAction(
   rows: InventoryImportRow[],
   options?: { defaultCategoria?: string; skipEmpty?: boolean }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return {
       success: false,

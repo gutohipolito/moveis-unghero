@@ -3,6 +3,7 @@
 import { PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
+import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 
 export interface ParceiroDTO {
   id: string;
@@ -18,6 +19,20 @@ export interface ParceiroDTO {
 }
 
 export async function getParceiros(companyId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado", parceiros: [] as ParceiroDTO[] };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Acesso negado",
+      parceiros: [] as ParceiroDTO[],
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false as const, error: "Banco de dados indisponível.", parceiros: [] as ParceiroDTO[] };
   }
@@ -47,6 +62,19 @@ export async function createParceiro(
     observacoes?: string;
   }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
   }
@@ -86,11 +114,23 @@ export async function updateParceiro(
     ativo?: boolean;
   }
 ) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
   }
 
   try {
+    const existing = await prisma.professionalPartner.findFirst({
+      where: { id, company_id: auth.companyId },
+    });
+    if (!existing) {
+      return { success: false, error: "Parceiro não encontrado." };
+    }
+
     const parceiro = await prisma.professionalPartner.update({
       where: { id },
       data: {
@@ -114,11 +154,23 @@ export async function updateParceiro(
 }
 
 export async function deleteParceiro(id: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
   }
 
   try {
+    const existing = await prisma.professionalPartner.findFirst({
+      where: { id, company_id: auth.companyId },
+    });
+    if (!existing) {
+      return { success: false, error: "Parceiro não encontrado." };
+    }
+
     await prisma.professionalPartner.delete({ where: { id } });
     revalidatePath("/parceiros");
     return { success: true };
