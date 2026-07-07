@@ -250,9 +250,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       setClients([newCli, ...clients]);
       setIsCreateOpen(false);
       resetForm();
-      showSuccess("Contato cadastrado", `${nome} foi adicionado à base de contatos.`);
+      showSuccess("Cliente cadastrado", `${nome} foi adicionado à base de clientes.`);
     } else {
-      showError("Não foi possível cadastrar", "Ocorreu um erro ao salvar o contato. Tente novamente.");
+      showError("Não foi possível cadastrar", "Ocorreu um erro ao salvar o cliente. Tente novamente.");
     }
   };
 
@@ -315,25 +315,25 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       setClients(clients.map(c => c.id === selectedClient.id ? { ...c, ...data } : c));
       setIsEditOpen(false);
       resetForm();
-      showSuccess("Contato atualizado", `As informações de ${nome} foram salvas.`);
+      showSuccess("Cliente atualizado", `As informações de ${nome} foram salvas.`);
     } else {
-      showError("Não foi possível salvar", "Ocorreu um erro ao atualizar o contato. Tente novamente.");
+      showError("Não foi possível salvar", "Ocorreu um erro ao atualizar o cliente. Tente novamente.");
     }
   };
 
   // Excluir Cliente
   const handleDeleteClient = (clientId: string, clientName: string) => {
     confirmAction({
-      title: "Excluir contato?",
+      title: "Excluir cliente?",
       message: `${clientName} e todos os projetos vinculados serão removidos permanentemente do sistema.`,
       confirmLabel: "Sim, excluir",
       onConfirm: async () => {
         const res = await deleteClientAction(clientId);
         if (res.success) {
           setClients(clients.filter(c => c.id !== clientId));
-          showSuccess("Contato excluído", `${clientName} foi removido da base de contatos.`);
+          showSuccess("Cliente excluído", `${clientName} foi removido da base de clientes.`);
         } else {
-          showError("Não foi possível excluir", "Erro ao remover o contato. Tente novamente.");
+          showError("Não foi possível excluir", "Erro ao remover o cliente. Tente novamente.");
         }
       },
     });
@@ -398,7 +398,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     downloadAnchor.remove();
   };
 
-  // Importar contatos via JSON
+  // Importar clientes via JSON
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -412,7 +412,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       try {
         const imported = JSON.parse(evt.target?.result as string);
         if (!Array.isArray(imported)) {
-          showError("Arquivo inválido", "O arquivo importado precisa conter uma lista de contatos em formato JSON.");
+          showError("Arquivo inválido", "O arquivo importado precisa conter uma lista de clientes em formato JSON.");
           return;
         }
 
@@ -434,7 +434,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             projects: []
           }));
           setClients([...processed, ...clients]);
-          showSuccess("Importação concluída", `${validClients.length} contato(s) importado(s) com sucesso.`);
+          showSuccess("Importação concluída", `${validClients.length} cliente(s) importado(s) com sucesso.`);
         }
       } catch (err) {
         showError("Erro na importação", "Erro ao ler arquivo JSON. Verifique a formatação do arquivo.");
@@ -477,7 +477,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="page-title">Contatos</h1>
+                <h1 className="page-title">Clientes</h1>
                 <PrivacyToggle />
               </div>
               <p className="page-subtitle">
@@ -503,7 +503,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           </Button>
 
           <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} className="font-bold btn-metallic gap-1.5">
-            <Plus className="h-4.5 w-4.5" /> Novo contato
+            <Plus className="h-4.5 w-4.5" /> Novo cliente
           </Button>
           </div>
         </div>
@@ -568,11 +568,11 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
         </TabsList>
       </Tabs>
 
-      {/* Lista de contatos — cards no mobile, tabela no desktop */}
+      {/* Lista de clientes — cards no mobile, tabela no desktop */}
       <Card className="glass-card overflow-hidden">
         {filteredClients.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">
-            Nenhum contato nesta aba com os filtros aplicados.
+            Nenhum cliente nesta aba com os filtros aplicados.
           </p>
         ) : (
           <>
@@ -669,7 +669,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           <table className="w-full text-sm text-left border-collapse">
             <thead>
               <tr>
-                <th className="p-4 whitespace-nowrap font-bold">Cliente / Contato</th>
+                <th className="p-4 whitespace-nowrap font-bold">Cliente</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Cidade</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Origem</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Status</th>
@@ -685,7 +685,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
                   return (
                     <tr key={client.id} className="hover:bg-slate-50/50 transition-colors">
-                      {/* Cliente & Contato */}
+                      {/* Cliente */}
                       <td className="p-4">
                         {(() => {
                           const docInfo = resolveClientDocument(client);

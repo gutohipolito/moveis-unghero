@@ -46,7 +46,10 @@ export default async function CRMPage() {
   const [projectsResult, clientResponse] = await Promise.all([
     prisma.project
       .findMany({
-        where: { client: { company_id: userCompanyId } },
+        where: { 
+          client: { company_id: userCompanyId },
+          quotes: { some: {} }
+        },
         select: PROJECT_SELECT,
       })
       .catch((error) => {

@@ -40,7 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
 
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
-  { name: "Contatos", href: "/clientes", icon: Users, section: "Comercial" },
+  { name: "Clientes", href: "/clientes", icon: Users, section: "Comercial" },
   { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Comercial" },
   { name: "Projetistas e Arquitetos", href: "/parceiros", icon: PenTool, section: "Comercial" },
 

@@ -225,7 +225,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
   
   // Estados comerciais e de timeline
@@ -234,7 +233,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [editingProjectTimeline, setEditingProjectTimeline] = useState<any[]>([]);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingStatusGeral, setEditingStatusGeral] = useState<ProjectStatus>("LEAD");
-  const [statusGeralInicial, setStatusGeralInicial] = useState<ProjectStatus>("LEAD");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
   const [didDrag, setDidDrag] = useState(false);
@@ -243,9 +241,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [lossMotivo, setLossMotivo] = useState("");
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   
-  // Estados do formulário de lead
-  const [isExistingClient, setIsExistingClient] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState("");
+
   const [loading, setLoading] = useState(false);
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
@@ -518,8 +514,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
   // resetLeadForm
   const resetLeadForm = () => {
-    setSelectedClientId("");
-    setStatusGeralInicial("LEAD");
     setEditingProjectId(null);
     setLeadForm({
       nome: "",
@@ -540,84 +534,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     });
   };
 
-  const handleSelectClient = (clientId: string) => {
-    setSelectedClientId(clientId);
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      setLeadForm(prev => ({
-        ...prev,
-        nome: client.nome,
-        email: client.email,
-        telefone: client.telefone,
-        cidade: client.cidade,
-        origem: client.origem as Origin,
-        cnpj: client.cnpj || "",
-        cep: client.cep || "",
-        endereco: client.endereco || "",
-        numero: client.numero || "",
-        bairro: client.bairro || "",
-        uf: client.uf || "",
-        tipo_imovel: client.tipo_imovel || "CASA",
-        obs_imovel: client.obs_imovel || "",
-        obs_entrega: client.obs_entrega || ""
-      }));
-    }
-  };
 
-  // Formulário Submit Handler
-  const handleNewLeadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
 
-    const data = {
-      ...leadForm,
-      valor_previsto: Number(leadForm.valor_previsto) || 0,
-      company_id: companyId,
-      client_id: isExistingClient ? selectedClientId : undefined,
-      status_geral: statusGeralInicial
-    };
-
-    const result = await createLead(data);
-
-    if (result.success && result.data) {
-      // Cria o objeto de projeto localmente para atualizar a tela instantaneamente
-      const newProj: Project = {
-        id: result.data.project.id,
-        valor_previsto: Number(result.data.project.valor_previsto),
-        status_geral: statusGeralInicial,
-        ultimo_contato_em: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        client: {
-          id: result.data.client.id,
-          nome: result.data.client.nome,
-          cidade: result.data.client.cidade,
-          origem: result.data.client.origem,
-          telefone: result.data.client.telefone,
-          email: result.data.client.email,
-          cnpj: result.data.client.cnpj,
-          cep: result.data.client.cep,
-          endereco: result.data.client.endereco,
-          numero: result.data.client.numero,
-          bairro: result.data.client.bairro,
-          uf: result.data.client.uf,
-          tipo_imovel: result.data.client.tipo_imovel,
-          obs_imovel: result.data.client.obs_imovel,
-          obs_entrega: result.data.client.obs_entrega
-        }
-      };
-
-      setProjects([newProj, ...projects]);
-      setIsNewLeadOpen(false);
-      setIsExistingClient(false);
-      setSelectedClientId("");
-      setStatusGeralInicial("LEAD");
-      resetLeadForm();
-      showSuccess("Contato adicionado", `${result.data.client.nome} foi incluído no funil comercial.`);
-    } else {
-      showError("Erro ao cadastrar", "Não foi possível cadastrar o contato. Verifique os dados e tente novamente.");
-    }
-    setLoading(false);
-  };
 
   // Helper para formatar moeda
   const formatCurrency = (val: number) => {
@@ -851,10 +769,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             className="lg:min-w-[10rem]"
           />
         </div>
-
-        <Button onClick={() => setIsNewLeadOpen(true)} className="w-full sm:w-auto font-semibold shrink-0">
-          <Plus className="mr-2 h-4 w-4" /> Novo contato
-        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
@@ -1003,328 +917,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </Button>
             <Button type="submit" disabled={loading} className="bg-red-600 hover:bg-red-700 text-white border-none">
               {loading ? "Salvando..." : "Confirmar perda"}
-            </Button>
-          </div>
-        </form>
-      </Dialog>
-
-      {/* Modal - Novo Lead / Cliente */}
-      <Dialog isOpen={isNewLeadOpen} onClose={() => setIsNewLeadOpen(false)}>
-        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
-          Cadastrar Novo Lead & Cliente
-        </h3>
-        
-        <form onSubmit={handleNewLeadSubmit} className="space-y-3">
-          {/* Alternador Novo Cliente / Cliente Existente */}
-          {clients && clients.length > 0 && (
-            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg text-xs font-bold">
-              <button
-                type="button"
-                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${!isExistingClient ? 'bg-white shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                onClick={() => { setIsExistingClient(false); resetLeadForm(); }}
-              >
-                Novo Cliente
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${isExistingClient ? 'bg-white shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                onClick={() => { setIsExistingClient(true); }}
-              >
-                Cliente Cadastrado
-              </button>
-            </div>
-          )}
-
-          {isExistingClient && (
-            <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-              <label className="text-xs font-bold text-slate-500 block mb-1">
-                Selecionar Cliente da Base
-              </label>
-              <select
-                value={selectedClientId}
-                onChange={(e) => handleSelectClient(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg text-xs font-semibold p-2.5 focus:ring-1 focus:ring-primary outline-none cursor-pointer"
-              >
-                <option value="">Selecione o cliente...</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.nome} ({c.email})</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Autopreenchimento de CNPJ no topo com largura total */}
-          {!isExistingClient && (
-            <div className="p-4 rounded-xl border border-[hsl(28_85%_90%)] bg-[hsl(28_85%_98%)] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[hsl(28_85%_45%)] uppercase tracking-wider block">
-                  Autopreenchimento CNPJ (Pessoas Jurídicas)
-                </span>
-                <span className="text-[9px] font-semibold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
-                  BrasilAPI integrada
-                </span>
-              </div>
-              <Input
-                value={leadForm.cnpj}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setLeadForm({ ...leadForm, cnpj: val });
-                  fetchCompanyByCnpj(val);
-                }}
-                className="bg-white border-slate-200 text-xs h-10 font-medium"
-              />
-            </div>
-          )}
-
-          {/* Seção 1: Dados Básicos */}
-          <div className="space-y-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
-              Informações Gerais do Cliente
-            </span>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Nome Completo do Cliente / Razão Social
-              </label>
-              <Input
-                required
-                disabled={isExistingClient}
-                value={leadForm.nome}
-                onChange={(e) => setLeadForm({ ...leadForm, nome: e.target.value })}
-                className="text-xs h-10 font-semibold"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                  E-mail
-                </label>
-                <Input
-                  type="email"
-                  required
-                  disabled={isExistingClient}
-                  value={leadForm.email}
-                  onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
-                  className="text-xs h-10"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                  Telefone / WhatsApp
-                </label>
-                <Input
-                  required
-                  disabled={isExistingClient}
-                  value={leadForm.telefone}
-                  onChange={(e) => setLeadForm({ ...leadForm, telefone: e.target.value })}
-                  className="text-xs h-10 font-semibold"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Seção 2: Localização e Endereço Completo */}
-          {!isExistingClient && (
-            <div className="space-y-3 pt-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
-                Endereço de Entrega & Instalação
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-1">
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    CEP
-                  </label>
-                  <Input
-                    value={leadForm.cep}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setLeadForm({ ...leadForm, cep: val });
-                      fetchAddressByCep(val);
-                    }}
-                    className="text-xs h-10 font-semibold"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Rua / Logradouro
-                  </label>
-                  <Input
-                    value={leadForm.endereco}
-                    onChange={(e) => setLeadForm({ ...leadForm, endereco: e.target.value })}
-                    className="text-xs h-10 font-semibold"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="sm:col-span-1">
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Número
-                  </label>
-                  <Input
-                    value={leadForm.numero}
-                    onChange={(e) => setLeadForm({ ...leadForm, numero: e.target.value })}
-                    className="text-xs h-10 font-semibold"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Bairro
-                  </label>
-                  <Input
-                    value={leadForm.bairro}
-                    onChange={(e) => setLeadForm({ ...leadForm, bairro: e.target.value })}
-                    className="text-xs h-10 font-semibold"
-                  />
-                </div>
-                <div className="sm:col-span-1">
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Estado (UF)
-                  </label>
-                  <Input
-                    value={leadForm.uf}
-                    onChange={(e) => setLeadForm({ ...leadForm, uf: e.target.value })}
-                    className="text-xs h-10 font-semibold uppercase"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Cidade e Origem */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Cidade de Instalação
-              </label>
-              <Input
-                required
-                disabled={isExistingClient}
-                value={leadForm.cidade}
-                onChange={(e) => setLeadForm({ ...leadForm, cidade: e.target.value })}
-                className="text-xs h-10 font-semibold"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Origem do Lead
-              </label>
-              <select
-                disabled={isExistingClient}
-                value={leadForm.origem}
-                onChange={(e) => setLeadForm({ ...leadForm, origem: e.target.value as Origin })}
-                className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
-              >
-                <option value="INSTAGRAM">Instagram</option>
-                <option value="SITE">Site institucional</option>
-                <option value="INDICACAO">Indicação de Cliente</option>
-                <option value="GOOGLE">Google Ads/Orgânico</option>
-                <option value="WHATSAPP">WhatsApp Corporativo</option>
-                <option value="FACEBOOK">Facebook</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Seção 3: Características do Imóvel e Entrega */}
-          {!isExistingClient && (
-            <div className="space-y-3 pt-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
-                Ficha Técnica do Imóvel & Logística
-              </span>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                    Tipo do Imóvel
-                  </label>
-                  <select
-                    value={leadForm.tipo_imovel}
-                    onChange={(e) => setLeadForm({ ...leadForm, tipo_imovel: e.target.value })}
-                    className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none animate-fade-in"
-                  >
-                    <option value="CASA">Casa Residencial</option>
-                    <option value="APARTAMENTO">Apartamento Residencial</option>
-                    <option value="COMERCIAL">Sala Comercial / Escritório</option>
-                    <option value="SOBRADO">Sobrado / Triplex</option>
-                    <option value="OUTRO">Outro / Especial</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                      Observações da Obra / Imóvel
-                    </label>
-                    <textarea
-                      value={leadForm.obs_imovel}
-                      onChange={(e) => setLeadForm({ ...leadForm, obs_imovel: e.target.value })}
-                      rows={2}
-                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-semibold resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                      Restrições de Entrega / Logística
-                    </label>
-                    <textarea
-                      value={leadForm.obs_entrega}
-                      onChange={(e) => setLeadForm({ ...leadForm, obs_entrega: e.target.value })}
-                      rows={2}
-                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-semibold resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Seção 4: Dados do Projeto Comercial */}
-          <div className="space-y-3 pt-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5 mt-2">
-              Detalhes do Projeto & Negócio
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                  Valor Previsto (R$)
-                </label>
-                <Input
-                  type="number"
-                  required
-                  value={leadForm.valor_previsto}
-                  onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-                  className="text-xs h-10 font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                  Etapa / Coluna Inicial
-                </label>
-                <select
-                  value={statusGeralInicial}
-                  onChange={(e) => setStatusGeralInicial(e.target.value as ProjectStatus)}
-                  className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
-                >
-                  {FUNNEL_COLUMNS.map((col) => (
-                    <option key={col.id} value={col.id}>{col.title}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsNewLeadOpen(false)}
-              disabled={loading}
-              className="text-xs font-bold cursor-pointer"
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading} className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none">
-              {loading ? "Cadastrando..." : "Cadastrar Lead"}
             </Button>
           </div>
         </form>

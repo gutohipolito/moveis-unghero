@@ -7,7 +7,7 @@ import { isNavItemActive } from "@/components/SidebarNav";
 
 const MOBILE_NAV = [
   { name: "Funil", href: "/crm", icon: Kanban },
-  { name: "Contatos", href: "/clientes", icon: Users },
+  { name: "Clientes", href: "/clientes", icon: Users },
   { name: "Orçamentos", href: "/quotes", icon: ClipboardList },
   { name: "Fábrica", href: "/factory", icon: Layers },
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard },
