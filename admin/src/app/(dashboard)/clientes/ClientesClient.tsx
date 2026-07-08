@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { 
@@ -9,7 +9,6 @@ import {
   Search, 
   Filter, 
   Download, 
-  Upload, 
   Edit, 
   Trash2, 
   MessageSquare, 
@@ -27,7 +26,6 @@ import {
   createClientAction, 
   updateClientAction, 
   deleteClientAction, 
-  importClientsAction
 } from "@/app/actions/cliente";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +35,7 @@ import {
   type TipoPessoa,
 } from "@/lib/clientDocument";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 
 interface ProjectSummary {
   id: string;
@@ -98,6 +97,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
+  const [filterCidade, setFilterCidade] = useState<string>("ALL");
+  const [filterBairro, setFilterBairro] = useState<string>("ALL");
   const [activeTipoTab, setActiveTipoTab] = useState<"todos" | "PF" | "PJ">("todos");
   
   // Estados para Modais
@@ -177,8 +178,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     }
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const tipoCounts = useMemo(() => {
     const counts = { todos: 0, PF: 0, PJ: 0 };
     for (const c of clients) {
@@ -190,6 +189,26 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     return counts;
   }, [clients]);
 
+  const cidadeOptions = useMemo(() => {
+    const set = new Set(clients.map((c) => c.cidade).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [clients]);
+
+  const bairroOptions = useMemo(() => {
+    const base =
+      filterCidade === "ALL"
+        ? clients
+        : clients.filter((c) => c.cidade === filterCidade);
+    const set = new Set(base.map((c) => c.bairro).filter(Boolean) as string[]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [clients, filterCidade]);
+
+  useEffect(() => {
+    if (filterBairro !== "ALL" && !bairroOptions.includes(filterBairro)) {
+      setFilterBairro("ALL");
+    }
+  }, [filterBairro, bairroOptions]);
+
   const filteredClients = clients.filter((c) => {
     const doc = resolveClientDocument(c);
     const searchLower = search.toLowerCase();
@@ -197,12 +216,16 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       c.nome.toLowerCase().includes(searchLower) ||
       c.email.toLowerCase().includes(searchLower) ||
       c.telefone.includes(search) ||
+      c.cidade.toLowerCase().includes(searchLower) ||
+      (c.bairro || "").toLowerCase().includes(searchLower) ||
       (doc.cpf || "").includes(search) ||
       (doc.cnpj || "").includes(search);
     const matchesOrigin = filterOrigin === "ALL" || c.origem === filterOrigin;
+    const matchesCidade = filterCidade === "ALL" || c.cidade === filterCidade;
+    const matchesBairro = filterBairro === "ALL" || (c.bairro || "") === filterBairro;
     const matchesTipo =
       activeTipoTab === "todos" || doc.tipo_pessoa === activeTipoTab;
-    return matchesSearch && matchesOrigin && matchesTipo;
+    return matchesSearch && matchesOrigin && matchesCidade && matchesBairro && matchesTipo;
   });
 
   // Salvar Novo Cliente
@@ -390,51 +413,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     downloadAnchor.remove();
   };
 
-  // Importar clientes via JSON
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const imported = JSON.parse(evt.target?.result as string);
-        if (!Array.isArray(imported)) {
-          showError("Arquivo inválido", "O arquivo importado precisa conter uma lista de clientes em formato JSON.");
-          return;
-        }
-
-        const validClients = imported.map((c: any) => ({
-          nome: String(c.nome || "Novo Lead Importado"),
-          email: String(c.email || ""),
-          telefone: String(c.telefone || ""),
-          cidade: String(c.cidade || "Caxias do Sul"),
-          origem: (ORIGINS.includes(c.origem) ? c.origem : "INSTAGRAM") as Origin,
-          status: String(c.status || "LEAD"),
-          observacoes: String(c.observacoes || "Importado via arquivo JSON.")
-        }));
-
-        const res = await importClientsAction(validClients, companyId);
-        if (res.success) {
-          const processed = validClients.map((c, i) => ({
-            id: `cli-imported-${Date.now()}-${i}`,
-            ...c,
-            projects: []
-          }));
-          setClients([...processed, ...clients]);
-          showSuccess("Importação concluída", `${validClients.length} cliente(s) importado(s) com sucesso.`);
-        }
-      } catch (err) {
-        showError("Erro na importação", "Erro ao ler arquivo JSON. Verifique a formatação do arquivo.");
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const resetForm = () => {
     setTipoPessoa("PF");
     setDocumento("");
@@ -479,17 +457,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           </div>
 
           <div className="page-header-actions">
-          <Button onClick={handleImportClick} variant="outline" className="text-xs font-bold gap-2">
-            <Upload className="h-4 w-4" /> Importar JSON
-          </Button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept=".json" 
-            className="hidden" 
-          />
-
           <Button onClick={handleExport} variant="outline" className="text-xs font-bold gap-2">
             <Download className="h-4 w-4" /> Exportar Filtro
           </Button>
@@ -513,7 +480,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
               <Filter className="h-3 w-3" /> Origem:
@@ -531,22 +498,56 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">Cidade:</span>
+            <select
+              value={filterCidade}
+              onChange={(e) => setFilterCidade(e.target.value)}
+              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none max-w-[10rem]"
+            >
+              <option value="ALL">Todas</option>
+              {cidadeOptions.map((cidade) => (
+                <option key={cidade} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">Bairro:</span>
+            <select
+              value={filterBairro}
+              onChange={(e) => setFilterBairro(e.target.value)}
+              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none max-w-[10rem]"
+            >
+              <option value="ALL">Todos</option>
+              {bairroOptions.map((bairro) => (
+                <option key={bairro} value={bairro}>
+                  {bairro}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </Card>
 
       <Tabs value={activeTipoTab} onValueChange={(v) => setActiveTipoTab(v as "todos" | "PF" | "PJ")}>
-        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
-          <TabsTrigger value="todos" className="flex-1 min-w-[7rem] gap-1.5">
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
+          <TabsTrigger value="todos" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
             Todos
-            <span className="text-xs opacity-70 tabular-nums">({tipoCounts.todos})</span>
+            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">({tipoCounts.todos})</span>
           </TabsTrigger>
-          <TabsTrigger value="PF" className="flex-1 min-w-[7rem] gap-1.5">
-            Pessoa Física – PF
-            <span className="text-xs opacity-70 tabular-nums">({tipoCounts.PF})</span>
+          <TabsTrigger value="PF" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
+            <span className="sm:hidden">PF</span>
+            <span className="hidden sm:inline">Pessoa Física – PF</span>
+            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">({tipoCounts.PF})</span>
           </TabsTrigger>
-          <TabsTrigger value="PJ" className="flex-1 min-w-[7rem] gap-1.5">
-            Pessoa Jurídica – PJ
-            <span className="text-xs opacity-70 tabular-nums">({tipoCounts.PJ})</span>
+          <TabsTrigger value="PJ" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
+            <span className="sm:hidden">PJ</span>
+            <span className="hidden sm:inline">Pessoa Jurídica – PJ</span>
+            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">({tipoCounts.PJ})</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -600,7 +601,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5 text-primary" /> {client.cidade}
+                        <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                        {client.cidade}
+                        {client.bairro ? ` · ${client.bairro}` : ""}
                       </span>
                       <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
                         {labelOrigin(client.origem)}
@@ -654,6 +657,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               <tr>
                 <th className="p-4 whitespace-nowrap font-bold">Cliente</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Cidade</th>
+                <th className="p-4 text-center whitespace-nowrap font-bold">Bairro</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Origem</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Status</th>
                 <th className="p-4 whitespace-nowrap font-bold">Projetos / Orçamentos Vinculados</th>
@@ -702,9 +706,14 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
                       {/* Cidade */}
                       <td className="p-4 text-center text-xs font-bold text-slate-700">
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                          <MapPin className="h-3.5 w-3.5 text-rose-500" /> {client.cidade}
+                        <span className="inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                          <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0" /> {client.cidade}
                         </span>
+                      </td>
+
+                      {/* Bairro */}
+                      <td className="p-4 text-center text-xs font-semibold text-slate-600">
+                        {client.bairro || "—"}
                       </td>
 
                       {/* Origem */}
@@ -780,14 +789,14 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
           <div className="bg-white border border-border w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="min-w-0">
                 <h3 className="text-lg font-bold text-foreground">Cadastrar Novo Lead / Cliente</h3>
                 <p className="text-xs text-muted-foreground">Preencha os dados cadastrais, endereço e imóvel do cliente.</p>
               </div>
               
               {/* Alternador de abas PF/PJ */}
-              <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-64">
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-full sm:w-64 shrink-0">
                 <button
                   type="button"
                   className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -882,8 +891,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <label className="text-xs font-bold text-slate-750">Telefone / WhatsApp</label>
                     <Input 
                       required 
+                      type="tel"
+                      placeholder={PHONE_PLACEHOLDER}
                       value={telefone} 
-                      onChange={e => setTelefone(e.target.value)} 
+                      onChange={e => setTelefone(formatPhoneInput(e.target.value))} 
                        
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />
@@ -1074,15 +1085,15 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       {isEditOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
           <div className="bg-white border border-border w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="min-w-0">
                 <h3 className="text-lg font-bold text-foreground">Editar Dados de Lead</h3>
                 <p className="text-xs text-muted-foreground">Atualize as informações cadastrais, endereço e imóvel do cliente.</p>
               </div>
               
               {/* Tipo de pessoa — read-only no modo edição */}
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-64">
+              <div className="flex flex-col items-stretch sm:items-end gap-1 w-full sm:w-auto shrink-0">
+                <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-full sm:w-64">
                   <div
                     className={`flex-1 py-1.5 rounded-md text-center ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground"}`}
                   >
@@ -1175,8 +1186,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <label className="text-xs font-bold text-slate-750">Telefone / WhatsApp</label>
                     <Input 
                       required 
+                      type="tel"
+                      placeholder={PHONE_PLACEHOLDER}
                       value={telefone} 
-                      onChange={e => setTelefone(e.target.value)} 
+                      onChange={e => setTelefone(formatPhoneInput(e.target.value))} 
                        
                       className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                     />

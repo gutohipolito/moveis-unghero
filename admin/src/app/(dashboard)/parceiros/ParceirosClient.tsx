@@ -9,6 +9,7 @@ import {
   type ParceiroDTO,
 } from "@/app/actions/parceiros";
 import { PARTNER_TYPE_STYLES, PARTNER_TYPES } from "@/lib/partnerTypes";
+import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -342,7 +343,12 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Telefone</label>
-                <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                <Input
+                  type="tel"
+                  placeholder={PHONE_PLACEHOLDER}
+                  value={telefone}
+                  onChange={(e) => setTelefone(e.target.value)}
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">E-mail</label>

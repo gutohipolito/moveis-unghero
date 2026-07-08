@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { 
   deleteQuote,
   getProjectsForQuotes, 
@@ -657,7 +658,8 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                           <div className="space-y-1">
                             <label className="text-xs font-bold text-slate-500 block">Telefone (Opcional)</label>
                             <Input 
-                              placeholder="DDD + Telefone" 
+                              type="tel"
+                              placeholder={PHONE_PLACEHOLDER}
                               value={quickTelefone}
                               onChange={e => setQuickTelefone(e.target.value)}
                               className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
