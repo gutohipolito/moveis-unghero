@@ -64,6 +64,7 @@ interface Quote {
   observacoes: string | null;
   project: Project;
   items: QuoteItem[];
+  isPending?: boolean;
 }
 
 interface QuotesListProps {
@@ -235,7 +236,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
       q.project.client.cidade.toLowerCase().includes(search.toLowerCase()) ||
       (q.project.client.bairro && q.project.client.bairro.toLowerCase().includes(search.toLowerCase()));
 
-    const expired = isExpired(q.validade);
+    const expired = q.isPending ? false : isExpired(q.validade);
     const matchesStatus = 
       filterStatus === "ALL" ||
       (filterStatus === "ACTIVE" && !expired) ||
@@ -363,6 +364,54 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                 </tr>
               ) : (
                 filteredQuotes.map((q) => {
+                  if (q.isPending) {
+                    return (
+                      <tr key={q.id} className="bg-rose-500/[0.01] hover:bg-rose-500/[0.03] transition-colors border-l-2 border-l-rose-500">
+                        <td className="py-4 px-4 text-sm font-medium text-slate-700">
+                          <span className="font-mono bg-rose-50 border border-rose-200 text-rose-700 px-1.5 py-0.5 rounded text-xs mr-2 uppercase font-black">
+                            Pendente
+                          </span>
+                          <span className="text-slate-400 font-semibold">-</span>
+                        </td>
+                        <td className="py-4 px-4 text-sm text-slate-800 font-semibold">
+                          {q.project.client.nome}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-slate-600">
+                          {q.project.client.cidade}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-slate-600">
+                          {q.project.client.bairro || "Não informado"}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-slate-400 italic font-semibold">
+                          Sem orçamento
+                        </td>
+                        <td className="py-4 px-4 text-sm">
+                          <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-700 px-2.5 py-0.5 rounded-full text-xs font-black uppercase">
+                            🔒 Bloqueado
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-sm text-slate-400 font-semibold">
+                          -
+                        </td>
+                        <td className="py-4 px-4 text-sm text-right">
+                          <div className="flex justify-end items-center gap-2">
+                            <Link href={`/projects/${q.project_id}?createQuote=true`}>
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="bg-emerald-500 hover:bg-emerald-600 border-emerald-600 text-white flex items-center gap-1.5 h-8 font-bold cursor-pointer"
+                                title="Criar orçamento comercial agora"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                Criar Orçamento
+                              </Button>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   const expired = isExpired(q.validade);
                   return (
                     <tr key={q.id} className="hover:bg-slate-50/50 transition-colors">
@@ -452,8 +501,8 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
 
       {/* ─── MODAL: CRIAR NOVO ORÇAMENTO ─── */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className={`bg-white border border-slate-200 w-full rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 transition-all max-h-[90vh] overflow-y-auto ${selectedProjectId ? 'max-w-5xl' : 'max-w-xl'}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
+          <div className={`bg-white border border-slate-200 w-[95vw] sm:w-full rounded-2xl overflow-hidden shadow-2xl p-4 sm:p-6 space-y-4 animate-in fade-in zoom-in-95 transition-all max-h-[92vh] sm:max-h-[90vh] overflow-y-auto ${selectedProjectId ? 'max-w-5xl' : 'max-w-xl'}`}>
             
             {/* Título & Fechar */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -482,7 +531,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
               <div className="space-y-4">
                 
                 {/* Seletor de Modo (Abas) */}
-                <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold">
+                <div className="flex flex-wrap sm:flex-nowrap gap-1.5 p-1 bg-slate-100 rounded-lg text-[11px] sm:text-xs font-bold">
                   <button
                     type="button"
                     className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${creationMode === "PROJECT" ? "bg-white shadow-xs text-slate-800" : "text-slate-500 hover:text-slate-800"}`}

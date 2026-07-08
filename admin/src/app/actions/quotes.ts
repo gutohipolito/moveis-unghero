@@ -229,6 +229,22 @@ export async function getQuotes() {
         validade: "desc"
       }
     });
+
+    const pendingProjects = await prisma.project.findMany({
+      where: {
+        client: {
+          company_id: companyId,
+          origem: "FORMULARIO"
+        },
+        quotes: {
+          none: {}
+        }
+      },
+      include: {
+        client: true
+      }
+    });
+
     // Convertemos campos Decimal para number e datas para ISOString para evitar problemas de serialização nas Server Actions
     const serializedQuotes = quotes.map(q => ({
       ...q,
@@ -236,6 +252,7 @@ export async function getQuotes() {
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),
       validade: q.validade instanceof Date ? q.validade.toISOString() : q.validade,
+      isPending: false,
       project: q.project ? {
         ...q.project,
         valor_previsto: Number(q.project.valor_previsto)
@@ -246,7 +263,25 @@ export async function getQuotes() {
         valor_total: Number(item.valor_total)
       }))
     }));
-    return { success: true, data: serializedQuotes };
+
+    const serializedPending = pendingProjects.map(p => ({
+      id: `pending-${p.id}`,
+      project_id: p.id,
+      versao: 0,
+      subtotal: 0,
+      desconto: 0,
+      valor_final: 0,
+      validade: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
+      observacoes: "Projeto originado por formulário aguardando orçamento.",
+      isPending: true,
+      project: {
+        ...p,
+        valor_previsto: Number(p.valor_previsto)
+      },
+      items: []
+    }));
+
+    return { success: true, data: [...serializedQuotes, ...serializedPending] };
   } catch (error) {
     console.warn("Erro ao buscar orçamentos:", error);
     return { success: false, error: "Erro de conexão ao banco de dados", data: [] };

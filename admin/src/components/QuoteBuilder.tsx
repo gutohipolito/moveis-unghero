@@ -371,7 +371,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Visualização em Tabela para Desktop / Tablet (hidden md:block) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/40 bg-black/5 text-muted-foreground text-xs font-semibold uppercase">
@@ -498,6 +499,148 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Visualização em Lista de Cards para Mobile (block md:hidden) */}
+          <div className="block md:hidden p-3.5 space-y-4.5 bg-slate-50/50 border-t border-border/20">
+            {items.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400 font-medium">
+                Tabela vazia. Adicione um "Item Livre" ou um "Insumo do Estoque" para começar.
+              </div>
+            ) : (
+              items.map((item, idx) => {
+                const isStockItem = !!item.inventoryItemId;
+                return (
+                  <div key={item.id} className="p-4 bg-white border border-slate-200/80 rounded-2xl space-y-4 shadow-sm relative animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Item #{idx + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="p-1.5 rounded-full text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
+                        title="Remover Item"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3.5">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                          Descrição do Insumo / Serviço
+                        </label>
+                        {isStockItem ? (
+                          <div className="space-y-1.5">
+                            <select
+                              value={item.inventoryItemId}
+                              onChange={(e) => handleUpdateItem(item.id, "inventoryItemId", e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-lg text-xs p-2 outline-none font-bold text-slate-800 cursor-pointer"
+                            >
+                              {inventory.map((inv) => (
+                                <option key={inv.id} value={inv.id}>
+                                  {inv.nome}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="text-[9px] text-cyan-600 font-bold flex flex-wrap gap-x-2 px-1">
+                              <span>Custo: R$ {(item.precoCusto || 0).toFixed(2)}</span>
+                              <span>Venda Sugerida: R$ {(item.valor_unitario || 0).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <Input
+                            required
+                            placeholder="Descrição do item ou ambiente"
+                            value={item.descricao}
+                            onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
+                            className="bg-slate-50 border-slate-200 text-xs h-9 font-medium"
+                          />
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                            Categoria
+                          </label>
+                          <Select
+                            disabled={isStockItem}
+                            value={item.tipo_custo}
+                            onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
+                            className="h-9 py-0 px-2 text-xs bg-slate-50 border-slate-200 font-medium"
+                          >
+                            <option value="MOVEIS_MDF">MDF/Marcenaria</option>
+                            <option value="FERRAGENS_ESPECIAIS">Ferragens Esp.</option>
+                            <option value="MAO_DE_OBRA">Mão de Obra</option>
+                            <option value="OUTROS">Outros</option>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                            Quantidade
+                          </label>
+                          <Input
+                            type="number"
+                            min="1"
+                            required
+                            className="bg-slate-50 border-slate-200 text-center h-9 text-xs font-bold"
+                            value={item.quantidade}
+                            onChange={(e) => handleUpdateItem(item.id, "quantidade", Number(e.target.value))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-50">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                            Precificação
+                          </label>
+                          {isStockItem ? (
+                            <div className="flex items-center gap-1.5 h-9 bg-slate-50 border border-slate-200 px-2 rounded-lg">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min="1"
+                                max="10"
+                                required
+                                className="w-12 border-none bg-transparent text-center h-7 text-xs font-black p-0"
+                                value={item.markup || 2.2}
+                                onChange={(e) => handleUpdateItem(item.id, "markup", Number(e.target.value))}
+                              />
+                              <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Markup</span>
+                            </div>
+                          ) : (
+                            <div className="relative flex items-center">
+                              <span className="text-[10px] text-slate-400 absolute left-2.5 font-black">R$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                required
+                                className="bg-slate-50 border-slate-200 pl-7 text-xs h-9 font-bold"
+                                value={item.valor_unitario}
+                                onChange={(e) => handleUpdateItem(item.id, "valor_unitario", Number(e.target.value))}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                            Valor Total
+                          </label>
+                          <div className="h-9 bg-slate-100 border border-slate-200 flex items-center px-3 rounded-lg text-xs font-black text-slate-800">
+                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.valor_total)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
         </div>

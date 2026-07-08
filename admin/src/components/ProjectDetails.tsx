@@ -1710,16 +1710,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </Select>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border/40">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsAddEnvOpen(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic w-full sm:w-auto">
               {loading ? "Adicionando..." : "Adicionar Cômodo"}
             </Button>
           </div>
@@ -1760,16 +1761,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </Select>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border/40">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsUploadOpen(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic w-full sm:w-auto">
               {loading ? "Enviando..." : "Salvar Arquivo"}
             </Button>
           </div>
@@ -1823,16 +1825,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border/40">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsAddInstallmentOpen(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic w-full sm:w-auto">
               {loading ? "Lançando..." : "Confirmar Parcela"}
             </Button>
           </div>
@@ -1923,16 +1926,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border/40">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsAddTaskOpen(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
+            <Button type="submit" disabled={loading} className="font-semibold btn-metallic w-full sm:w-auto">
               {loading ? "Agendando..." : "Confirmar Agendamento"}
             </Button>
           </div>

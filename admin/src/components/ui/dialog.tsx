@@ -60,14 +60,14 @@ export function Dialog({ isOpen, onClose, children, className }: DialogProps) {
       onCancel={handleCancel}
       onClick={handleClick}
       className={cn(
-        "rounded-2xl border border-border/80 bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-xs outline-hidden focus:outline-hidden w-[94vw] max-w-xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 open:animate-in open:fade-in open:zoom-in-95 max-h-[85vh] open:flex open:flex-col",
+        "rounded-2xl border border-border/80 bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-xs outline-hidden focus:outline-hidden w-[95vw] sm:w-[94vw] max-w-xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 open:animate-in open:fade-in open:zoom-in-95 max-h-[92vh] sm:max-h-[85vh] open:flex open:flex-col",
         className
       )}
     >
-      <div className="p-4 md:p-5 relative overflow-y-auto flex-1 max-h-[85vh] break-words">
+      <div className="p-3.5 sm:p-5 relative overflow-y-auto flex-1 max-h-[92vh] sm:max-h-[85vh] break-words">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 cursor-pointer"
+          className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 cursor-pointer p-1 bg-slate-100/50 hover:bg-slate-200/50 rounded-full"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -76,10 +76,10 @@ export function Dialog({ isOpen, onClose, children, className }: DialogProps) {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-4 w-4"
+            className="h-3.5 w-3.5"
           >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />

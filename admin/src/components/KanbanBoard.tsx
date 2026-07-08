@@ -984,7 +984,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none resize-none"
             />
           </div>
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
@@ -993,10 +993,11 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 setLossMotivo("");
               }}
               disabled={loading}
+              className="w-full sm:w-auto text-xs font-bold"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-red-600 hover:bg-red-700 text-white border-none">
+            <Button type="submit" disabled={loading} className="bg-red-600 hover:bg-red-700 text-white border-none w-full sm:w-auto text-xs font-bold">
               {loading ? "Salvando..." : "Confirmar perda"}
             </Button>
           </div>
@@ -1045,7 +1046,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
               {/* Seletor de abas se houver briefing */}
               {hasBriefing && (
-                <div className="flex border-b border-slate-100 my-4 gap-4 text-xs font-bold">
+                <div className="flex flex-wrap border-b border-slate-100 my-4 gap-3 sm:gap-4 text-xs font-bold">
                   <button
                     type="button"
                     onClick={() => setActiveModalTab("negociacao")}
@@ -1371,7 +1372,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                       type="button"
                       variant="outline"
                       onClick={() => setIsEditLeadOpen(false)}
-                      className="text-xs font-bold cursor-pointer"
+                      className="text-xs font-bold cursor-pointer w-full sm:w-auto"
                     >
                       Fechar Briefing
                     </Button>
@@ -1580,20 +1581,20 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-4">
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-4 border-t border-border/40 mt-4">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setIsEditLeadOpen(false)}
                       disabled={loading}
-                      className="text-xs font-bold cursor-pointer"
+                      className="text-xs font-bold cursor-pointer w-full sm:w-auto"
                     >
                       Fechar sem salvar
                     </Button>
                     <Button 
                       type="submit" 
                       disabled={loading} 
-                      className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none"
+                      className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none w-full sm:w-auto"
                     >
                       {loading ? "Salvando..." : "Salvar Alterações"}
                     </Button>
