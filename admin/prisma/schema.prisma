@@ -130,6 +130,7 @@ enum Origin {
   GOOGLE
   WHATSAPP
   FACEBOOK
+  FORMULARIO
 }
 
 enum TipoPessoa {

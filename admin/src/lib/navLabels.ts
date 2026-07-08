@@ -6,6 +6,7 @@ export const ORIGIN_LABELS: Record<string, string> = {
   GOOGLE: "Google",
   WHATSAPP: "WhatsApp",
   FACEBOOK: "Facebook",
+  FORMULARIO: "Formulário",
 };
 
 export const STATUS_LABELS: Record<string, string> = {

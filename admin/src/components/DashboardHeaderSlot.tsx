@@ -5,6 +5,7 @@ import {
   getOperatorNotesForUser,
   getOperatorRemindersForUser,
 } from "@/app/actions/operatorWorkspace";
+import { prisma } from "@/lib/prisma";
 
 interface DashboardHeaderSlotProps {
   user: {
@@ -21,10 +22,18 @@ export default async function DashboardHeaderSlot({
   user,
   companyId,
 }: DashboardHeaderSlotProps) {
+  let isDbOnline = true;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (err) {
+    console.warn("Neon DB offline ou inacessível no cabeçalho:", err);
+    isDbOnline = false;
+  }
+
   const [notificationsRes, notesRes, remindersRes] = await Promise.all([
-    getNotifications(companyId),
-    getOperatorNotesForUser(user.id, companyId),
-    getOperatorRemindersForUser(user.id, companyId),
+    getNotifications(companyId).catch(() => ({ notifications: [] })),
+    getOperatorNotesForUser(user.id, companyId).catch(() => ({ notes: [] })),
+    getOperatorRemindersForUser(user.id, companyId).catch(() => ({ reminders: [] })),
   ]);
 
   const notifications = notificationsRes.notifications;
@@ -49,6 +58,7 @@ export default async function DashboardHeaderSlot({
         initialNotifications={notifications}
         initialNotes={notes}
         initialReminders={reminders}
+        isDbOnline={isDbOnline}
       />
 
       <div className="hidden md:block">
@@ -58,6 +68,7 @@ export default async function DashboardHeaderSlot({
           initialNotifications={notifications}
           initialNotes={notes}
           initialReminders={reminders}
+          isDbOnline={isDbOnline}
         />
       </div>
     </>

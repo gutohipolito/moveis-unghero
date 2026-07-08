@@ -44,6 +44,7 @@ interface Client {
   id: string;
   nome: string;
   cidade: string;
+  bairro?: string | null;
 }
 
 interface Project {
@@ -230,7 +231,9 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
     const matchesSearch = 
       q.project.client.nome.toLowerCase().includes(search.toLowerCase()) ||
       q.id.toLowerCase().includes(search.toLowerCase()) ||
-      `orc-${q.id.substring(0, 5)}`.toLowerCase().includes(search.toLowerCase());
+      `orc-${q.id.substring(0, 5)}`.toLowerCase().includes(search.toLowerCase()) ||
+      q.project.client.cidade.toLowerCase().includes(search.toLowerCase()) ||
+      (q.project.client.bairro && q.project.client.bairro.toLowerCase().includes(search.toLowerCase()));
 
     const expired = isExpired(q.validade);
     const matchesStatus = 
@@ -252,17 +255,6 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
       <PageHeader
         title="Orçamentos"
         description="Propostas comerciais e orçamentos emitidos para clientes."
-        badge={
-          isDbOffline ? (
-            <span className="badge-meta px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
-              Simulação
-            </span>
-          ) : (
-            <span className="badge-meta px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
-              Neon ativo
-            </span>
-          )
-        }
         actions={
           <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
             <Plus className="h-4 w-4" />
@@ -355,6 +347,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cód / Versão</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cidade</th>
+                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Bairro</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Validade</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status Validade</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Valor Final</th>
@@ -364,7 +357,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
             <tbody className="divide-y divide-slate-100">
               {filteredQuotes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 text-sm">
+                  <td colSpan={8} className="py-8 text-center text-slate-400 text-sm">
                     Nenhum orçamento encontrado.
                   </td>
                 </tr>
@@ -384,6 +377,9 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-600">
                         {q.project.client.cidade}
+                      </td>
+                      <td className="py-4 px-4 text-sm text-slate-600">
+                        {q.project.client.bairro || "Não informado"}
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-600">
                         {formatDate(q.validade)}

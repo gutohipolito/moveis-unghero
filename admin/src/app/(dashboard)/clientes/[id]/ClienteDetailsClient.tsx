@@ -65,7 +65,8 @@ const ORIGIN_LABELS: Record<string, string> = {
   INDICACAO: "Indicação",
   GOOGLE: "Busca Google",
   WHATSAPP: "WhatsApp Comercial",
-  FACEBOOK: "Campanha Facebook"
+  FACEBOOK: "Campanha Facebook",
+  FORMULARIO: "Formulário de Qualificação"
 };
 
 const STATUS_LABELS: Record<string, string> = {

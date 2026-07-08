@@ -22,6 +22,7 @@ interface DashboardHeaderProps {
   initialNotifications?: AppNotification[];
   initialNotes?: OperatorNote[];
   initialReminders?: OperatorReminder[];
+  isDbOnline?: boolean;
 }
 
 function formatLocalTime(date: Date) {
@@ -47,6 +48,7 @@ export default function DashboardHeader({
   initialNotifications = [],
   initialNotes = [],
   initialReminders = [],
+  isDbOnline = true,
 }: DashboardHeaderProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [temperature, setTemperature] = useState<number | null>(null);
@@ -133,6 +135,21 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Status do Banco de Dados Desktop */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-250/20 rounded-xl select-none mr-1">
+          <span className="relative flex h-2 w-2">
+            {isDbOnline ? (
+              <>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </>
+            ) : (
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            )}
+          </span>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">banco de dados</span>
+        </div>
+
         <HeaderQuickActions
           companyId={companyId}
           initialNotifications={initialNotifications}
