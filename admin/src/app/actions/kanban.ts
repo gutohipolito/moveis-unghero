@@ -26,7 +26,8 @@ export type Origin =
   | "INDICACAO"
   | "GOOGLE"
   | "WHATSAPP"
-  | "FACEBOOK";
+  | "FACEBOOK"
+  | "FORMULARIO";
 
 function revalidateCrmPaths() {
   revalidatePath("/crm");

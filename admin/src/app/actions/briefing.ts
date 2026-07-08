@@ -163,7 +163,7 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
     const project = await prisma.project.create({
       data: {
         client_id: client.id,
-        valor_previsto: valorPrevisto,
+        valor_previsto: 0,
         status_geral: statusInicial,
         ultimo_contato_em: new Date(),
         observacoes: data.observacoes_adicionais || null

@@ -22,7 +22,8 @@ type Origin =
   | "INDICACAO"
   | "GOOGLE"
   | "WHATSAPP"
-  | "FACEBOOK";
+  | "FACEBOOK"
+  | "FORMULARIO";
 
 
 // Limpa caracteres não numéricos do CPF

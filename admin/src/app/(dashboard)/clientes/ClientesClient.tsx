@@ -72,7 +72,7 @@ interface ClientesClientProps {
   companyId: string;
 }
 
-const ORIGINS: Origin[] = ["SITE", "INSTAGRAM", "INDICACAO", "GOOGLE", "WHATSAPP", "FACEBOOK"];
+const ORIGINS: Origin[] = ["SITE", "INSTAGRAM", "INDICACAO", "GOOGLE", "WHATSAPP", "FACEBOOK", "FORMULARIO"];
 const STATUS_OPTIONS = ["LEAD", "EM_CONTATO", "NEGOCIACAO", "APROVADO", "INATIVO"];
 
 const ORIGIN_BADGES: Record<Origin, { bg: string; text: string }> = {
@@ -81,7 +81,8 @@ const ORIGIN_BADGES: Record<Origin, { bg: string; text: string }> = {
   INDICACAO: { bg: "bg-purple-500/10", text: "text-purple-600" },
   GOOGLE: { bg: "bg-cyan-500/10", text: "text-cyan-600" },
   WHATSAPP: { bg: "bg-emerald-500/10", text: "text-emerald-600" },
-  FACEBOOK: { bg: "bg-indigo-500/10", text: "text-indigo-600" }
+  FACEBOOK: { bg: "bg-indigo-500/10", text: "text-indigo-600" },
+  FORMULARIO: { bg: "bg-orange-500/10", text: "text-orange-600" }
 };
 
 const STATUS_BADGES: Record<string, { bg: string; text: string }> = {

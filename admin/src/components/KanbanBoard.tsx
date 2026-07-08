@@ -277,7 +277,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
   const [loading, setLoading] = useState(false);
   const dialog = useActionDialog();
-  const { showSuccess, showError } = dialog;
+  const { showSuccess, showError, confirmAction } = dialog;
   const [leadForm, setLeadForm] = useState({
     nome: "",
     email: "",
@@ -622,7 +622,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              handleMarkContacted(project);
+              confirmAction({
+                title: "Registrar Contato",
+                message: "Deseja confirmar que um novo contato de follow-up foi realizado hoje com este lead?",
+                confirmLabel: "Confirmar",
+                cancelLabel: "Cancelar",
+                onConfirm: () => handleMarkContacted(project)
+              });
             }}
             className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
             title="Registrar que houve contato hoje"
@@ -636,8 +642,16 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              setLossModalProject(project);
-              setLossMotivo("");
+              confirmAction({
+                title: "Descartar Lead",
+                message: "Tem certeza que deseja marcar este projeto comercial como perdido/descartado?",
+                confirmLabel: "Sim, descartar",
+                cancelLabel: "Cancelar",
+                onConfirm: () => {
+                  setLossModalProject(project);
+                  setLossMotivo("");
+                }
+              });
             }}
             className="kanban-card-action bg-red-500/10 text-red-700 border border-red-500/20"
             title="Marcar como perda"
@@ -651,7 +665,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              handleRestoreLoss(project);
+              confirmAction({
+                title: "Reativar Lead",
+                message: "Deseja restaurar este lead descartado de volta para o funil comercial ativo?",
+                confirmLabel: "Reativar",
+                cancelLabel: "Cancelar",
+                onConfirm: () => handleRestoreLoss(project)
+              });
             }}
             className="kanban-card-action bg-cyan-500/10 text-cyan-700 border border-cyan-500/20"
             title="Reativar lead"
@@ -770,12 +790,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   )}
                 </div>
 
-                <div className="flex items-center text-foreground font-black text-sm">
-                  <DollarSign className="h-3.5 w-3.5 -mr-0.5 opacity-80 text-primary shrink-0" />
-                  <span className="privacy-value truncate">
-                    {formatCurrency(project.valor_previsto).replace("R$", "")}
-                  </span>
-                </div>
                 {actionButtons}
               </div>
             </div>
