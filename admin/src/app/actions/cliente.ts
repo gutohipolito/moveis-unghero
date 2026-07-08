@@ -682,6 +682,12 @@ export async function getClientDetailsAction(clientId: string) {
             id: true,
             status_geral: true,
             valor_previsto: true,
+            quotes: {
+              select: {
+                id: true,
+                valor_final: true,
+              }
+            }
           },
         },
       },

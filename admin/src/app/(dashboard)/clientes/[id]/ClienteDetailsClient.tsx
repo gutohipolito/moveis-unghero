@@ -35,6 +35,7 @@ interface ProjectSummary {
   id: string;
   status_geral: string;
   valor_previsto: number;
+  quotes?: { id: string; valor_final: number }[];
 }
 
 interface ClientDetails {
@@ -274,33 +275,66 @@ export default function ClienteDetailsClient({
                     Nenhum projeto ou orçamento ativo foi lançado para este cliente ainda.
                   </div>
                 ) : (
-                  client.projects.map(p => (
-                    <div 
-                      key={p.id}
-                      className="p-4 rounded-xl border border-border/60 bg-slate-50 hover:bg-slate-100/50 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-                    >
-                      <div className="space-y-1">
-                        <strong className="text-sm font-bold text-foreground">Projeto Código: {p.id.toUpperCase()}</strong>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Atualizado recentemente</span>
-                          <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> Previsto: <span className="privacy-value">{p.valor_previsto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></span>
+                  client.projects.map(p => {
+                    const isFormLead = client.origem === "FORMULARIO";
+                    const hasNoQuote = !p.quotes || p.quotes.length === 0;
+                    const isBlocked = isFormLead && hasNoQuote;
+
+                    return (
+                      <div 
+                        key={p.id}
+                        className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+                          isBlocked 
+                            ? "border-rose-200 bg-rose-50/20 hover:bg-rose-50/40" 
+                            : "border-border/60 bg-slate-50 hover:bg-slate-100/50"
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <strong className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                            Projeto Código: {p.id.toUpperCase()}
+                            {isBlocked && (
+                              <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5">
+                                🔒 Bloqueado
+                              </span>
+                            )}
+                          </strong>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Atualizado recentemente</span>
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-3.5 w-3.5" /> 
+                              {isBlocked ? (
+                                <span className="text-rose-600 font-bold">Orçamento pendente (sem valor)</span>
+                              ) : (
+                                <>Previsto: <span className="privacy-value">{p.valor_previsto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                          <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                            isBlocked
+                              ? "bg-rose-500/10 text-rose-700"
+                              : "bg-amber-500/10 text-amber-700"
+                          }`}>
+                            {isBlocked ? "Aguardando Orçamento" : p.status_geral.replace("_", " ")}
+                          </span>
+                          
+                          <Link 
+                            href={isBlocked ? `/projects/${p.id}?createQuote=true` : `/projects/${p.id}`}
+                            className={`text-xs font-bold border rounded-lg py-1.5 px-3 flex items-center gap-1 shadow-xs transition-all cursor-pointer ${
+                              isBlocked
+                                ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 shadow-emerald-500/10"
+                                : "bg-white hover:bg-slate-50 text-foreground border-border"
+                            }`}
+                          >
+                            {isBlocked ? "Criar Orçamento" : "Acessar Projeto"} 
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                        <span className="text-[10px] font-bold uppercase px-2.5 py-1 bg-amber-500/10 text-amber-700 rounded-full">
-                          {p.status_geral.replace("_", " ")}
-                        </span>
-                        
-                        <Link 
-                          href={`/projects/${p.id}`}
-                          className="text-xs font-bold bg-white hover:bg-slate-50 text-foreground border border-border rounded-lg py-1.5 px-3 flex items-center gap-1 shadow-xs transition-all cursor-pointer"
-                        >
-                          Acessar Projeto <ExternalLink className="h-3 w-3" />
-                        </Link>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </Card>

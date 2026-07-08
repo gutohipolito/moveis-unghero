@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { createQuote, type ItemType } from "@/app/actions/quotes";
+import { createQuote, getProjectBriefingAction, type ItemType } from "@/app/actions/quotes";
 import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Plus, Trash2, ShieldCheck, DollarSign, Calculator, Percent } from "lucide-react";
+import { Plus, Trash2, ShieldCheck, DollarSign, Calculator, Percent, Sparkles, ExternalLink, FileText, Layers } from "lucide-react";
 
 interface QuoteBuilderProps {
   projectId: string;
@@ -80,6 +80,20 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [briefingData, setBriefingData] = useState<any | null>(null);
+  const [clientOrigem, setClientOrigem] = useState<string>("");
+  const [activeBuilderTab, setActiveBuilderTab] = useState<"items" | "briefing">("items");
+
+  useEffect(() => {
+    async function loadBriefing() {
+      const res = await getProjectBriefingAction(projectId);
+      if (res.success) {
+        setBriefingData(res.briefing);
+        setClientOrigem(res.clientOrigem || "");
+      }
+    }
+    loadBriefing();
+  }, [projectId]);
 
   useEffect(() => {
     async function loadInventory() {
@@ -279,7 +293,38 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Abas opcionais para leads vindo de formulário */}
+      {clientOrigem === "FORMULARIO" && (
+        <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-fit select-none">
+          <button
+            type="button"
+            onClick={() => setActiveBuilderTab("items")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeBuilderTab === "items" 
+                ? "bg-white text-slate-800 shadow-xs" 
+                : "text-muted-foreground hover:text-slate-700"
+            }`}
+          >
+            <Layers className="h-4 w-4 text-amber-500" />
+            1. Tabela Comercial do Orçamento
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveBuilderTab("briefing")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeBuilderTab === "briefing" 
+                ? "bg-white text-slate-800 shadow-xs" 
+                : "text-muted-foreground hover:text-slate-700"
+            }`}
+          >
+            <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
+            2. Respostas do Formulário (Briefing)
+          </button>
+        </div>
+      )}
+
+      {activeBuilderTab === "items" && (
+        <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* Bloco 1: Escolha do Modelo de Proposta */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -540,6 +585,164 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         </div>
 
       </form>
+      )}
+
+      {activeBuilderTab === "briefing" && briefingData && (
+        <div className="space-y-5 animate-in fade-in duration-200 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+          <div className="flex items-center gap-2 border-b border-slate-200/60 pb-3">
+            <Sparkles className="h-5 w-5 text-emerald-500" />
+            <div>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">
+                Ficha Técnica do Lead de Formulário
+              </h3>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Use estas respostas e especificações inseridas pelo cliente para desenhar a proposta comercial ideal.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Card 1: Ambientes e Escopo */}
+            <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-xs space-y-3.5">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+                📋 1. Ambientes & Escopo
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <span className="text-slate-500 font-semibold block mb-1">Ambientes desejados:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(() => {
+                      try {
+                        const list = JSON.parse(briefingData.ambientes);
+                        return list.map((a: any, idx: number) => (
+                          <span key={idx} className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[11px]">
+                            {a.nome}{a.opcao ? ` (${a.opcao})` : ""}
+                          </span>
+                        ));
+                      } catch (e) {
+                        return <span className="text-slate-700 font-bold">{briefingData.ambientes}</span>;
+                      }
+                    })()}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Tipo do imóvel:</span>
+                    <strong className="text-slate-900">{briefingData.tipo_imovel}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Fase da compra:</span>
+                    <strong className="text-slate-900">{briefingData.fase_projeto}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Status e Design */}
+            <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-xs space-y-3.5">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+                🏠 2. Status do Imóvel & Design
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Imóvel pronto?</span>
+                    <strong className="text-slate-900">{briefingData.pronto}</strong>
+                  </div>
+                  {briefingData.data_chaves && (
+                    <div>
+                      <span className="text-slate-500 font-semibold block">Entrega das chaves:</span>
+                      <strong className="text-slate-900">{briefingData.data_chaves}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Já possui projeto?</span>
+                    <strong className="text-slate-900">{briefingData.tem_projeto}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Estilo preferido:</span>
+                    <strong className="text-slate-900">{briefingData.estilo}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Investimento */}
+            <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-xs space-y-3.5">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+                ⏳ 3. Expectativa de Orçamento & Prazos
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Pretende gastar (Investimento):</span>
+                    <strong className="text-slate-900 text-emerald-600 font-black">{briefingData.faixa_investimento || "Não informado"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Pretende iniciar:</span>
+                    <strong className="text-slate-900 font-bold">{briefingData.prazo_inicio}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Links de Referências */}
+            <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-xs space-y-3.5">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">
+                🔗 4. Arquivos & Referências Anexadas
+              </h4>
+              <div className="space-y-2 text-xs">
+                {briefingData.pinterest_link && (
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Painel do Pinterest:</span>
+                    <a 
+                      href={briefingData.pinterest_link} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-primary hover:underline font-bold inline-flex items-center gap-1"
+                    >
+                      Ver Pinterest <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+                {briefingData.referencia_url && (
+                  <div>
+                    <span className="text-slate-500 font-semibold block">Arquivo de referência / Planta:</span>
+                    <a 
+                      href={briefingData.referencia_url} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-emerald-600 hover:underline font-bold inline-flex items-center gap-1"
+                    >
+                      Baixar arquivo técnico <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+                {!briefingData.pinterest_link && !briefingData.referencia_url && (
+                  <span className="text-muted-foreground italic">Nenhuma referência compartilhada pelo cliente.</span>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="flex justify-end pt-3 border-t border-slate-200/50">
+            <Button
+              type="button"
+              onClick={() => setActiveBuilderTab("items")}
+              className="text-xs font-bold cursor-pointer bg-slate-900 text-white hover:bg-slate-800"
+            >
+              ← Ir para a Tabela Comercial
+            </Button>
+          </div>
+        </div>
+      )}
+
       <ActionDialogHost dialog={dialog} />
     </div>
   );

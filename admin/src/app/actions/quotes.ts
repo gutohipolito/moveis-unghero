@@ -423,4 +423,55 @@ export async function createQuickClientAndProject(data: {
   }
 }
 
+export async function getProjectBriefingAction(projectId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    const project = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        client: { company_id: auth.companyId }
+      },
+      include: {
+        client: {
+          select: {
+            origem: true,
+            nome: true
+          }
+        },
+        briefing: true
+      }
+    });
+
+    if (!project) {
+      return { success: false, error: "Projeto não encontrado" };
+    }
+
+    return {
+      success: true,
+      briefing: project.briefing ? {
+        id: project.briefing.id,
+        ambientes: project.briefing.ambientes,
+        tipo_imovel: project.briefing.tipo_imovel,
+        fase_projeto: project.briefing.fase_projeto,
+        pronto: project.briefing.pronto,
+        data_chaves: project.briefing.data_chaves,
+        tem_projeto: project.briefing.tem_projeto,
+        estilo: project.briefing.estilo,
+        faixa_investimento: project.briefing.faixa_investimento,
+        prazo_inicio: project.briefing.prazo_inicio,
+        pinterest_link: project.briefing.pinterest_link,
+        referencia_url: project.briefing.referencia_url,
+      } : null,
+      clientOrigem: project.client.origem,
+      clientNome: project.client.nome
+    };
+  } catch (error) {
+    console.error("Erro na Server Action getProjectBriefingAction:", error);
+    return { success: false, error: "Erro ao buscar briefing do projeto" };
+  }
+}
+
 

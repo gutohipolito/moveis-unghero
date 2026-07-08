@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { 
   updateProjectGeneralStatus, 
   updateEnvironmentStatus, 
@@ -189,11 +190,21 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null }: ProjectDetailsProps) {
   const [project, setProject] = useState<Project>(initialProject);
+  const isFormLead = project.client.origem === "FORMULARIO";
+  const hasNoQuote = !project.quotes || project.quotes.length === 0;
+  const isBlocked = isFormLead && hasNoQuote;
   const [sla, setSla] = useState<ProjectSlaView | null>(initialSla);
   const [slaModalOpen, setSlaModalOpen] = useState(false);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams?.get("createQuote") === "true") {
+      setIsCreatingQuote(true);
+    }
+  }, [searchParams]);
 
   // Estados para Controle Operacional do Projeto (Responsável, Entrega e Observações)
   const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
@@ -746,6 +757,31 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         )}
       </div>
 
+      {/* Banner de Projeto Bloqueado por Falta de Orçamento */}
+      {isBlocked && (
+        <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-rose-100 text-rose-600 rounded-xl">
+              <Lock className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-rose-900 uppercase tracking-wider">
+                🔒 Projeto Comercial Bloqueado (Aguardando Orçamento)
+              </h3>
+              <p className="text-xs text-rose-700 font-medium leading-relaxed max-w-2xl mt-0.5">
+                Este projeto foi originado através do formulário de qualificação (Briefing). Por regra comercial, ele está bloqueado e sem valor financeiro definido até que o primeiro orçamento seja gerado pelo construtor.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setIsCreatingQuote(true)}
+            className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 px-5 rounded-xl cursor-pointer shadow-sm active:scale-95 transition-all"
+          >
+            Gerar Primeiro Orçamento
+          </Button>
+        </div>
+      )}
+
       {/* Card Principal - Cabeçalho e Informações Básicas */}
       <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -900,18 +936,28 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             <div>
               <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
               <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
-                {formatCurrency(project.valor_previsto)}
+                {isBlocked ? (
+                  <span className="text-rose-600 font-bold text-sm block leading-normal">🔒 Bloqueado (Sem Orçamento)</span>
+                ) : (
+                  formatCurrency(project.valor_previsto)
+                )}
               </span>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider">
+              <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider flex items-center gap-1.5">
                 Status Operacional Geral
+                {isBlocked && (
+                  <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1 rounded uppercase">
+                    Bloqueado
+                  </span>
+                )}
               </label>
               <Select 
                 value={project.status_geral} 
                 onChange={(e) => handleStatusChange(e.target.value)}
                 className="w-full text-xs"
+                disabled={isBlocked}
               >
                 <option value="LEAD">Lead</option>
                 <option value="ORCAMENTO">Orçamento</option>
