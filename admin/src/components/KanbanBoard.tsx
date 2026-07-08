@@ -38,6 +38,9 @@ import {
   HelpCircle,
   Sparkles,
   ExternalLink,
+  Copy,
+  Check,
+  Send,
 } from "lucide-react";
 
 interface Project {
@@ -273,6 +276,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
+  const [copiedScript, setCopiedScript] = useState(false);
   
 
   const [loading, setLoading] = useState(false);
@@ -744,8 +748,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             }`}
           >
             <div className="overflow-hidden">
-              <div className="space-y-2 border-t border-border/70 pt-2">
-                <div className="space-y-2">
+              <div className="border-t border-border/70 pt-2 space-y-3">
+                <div className="space-y-2 px-3">
                   {followMessage && (
                     <div
                       className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
@@ -790,7 +794,25 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   )}
                 </div>
 
-                {actionButtons}
+                {/* Rodapé com Ações e WhatsApp */}
+                <div className="border-t border-border/40 p-3 bg-slate-50/50 rounded-b-xl flex items-center justify-between gap-3 select-none -mx-4 -mb-4 mt-2">
+                  <div className="flex-1">
+                    {actionButtons}
+                  </div>
+                  <a
+                    href={`https://api.whatsapp.com/send?phone=55${project.client.telefone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center justify-center p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm hover:shadow transition-all shrink-0 cursor-pointer"
+                    title="Iniciar conversa no WhatsApp"
+                  >
+                    <svg className="h-4.5 w-4.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
+                    </svg>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
