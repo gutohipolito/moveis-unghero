@@ -120,6 +120,27 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
 
   return (
     <div className={`space-y-[var(--space-6)] pb-[var(--space-8)] ${isPending ? "opacity-70" : ""}`}>
+      {/* Banner Informativo - moveisunghero.com.br */}
+      <div className="p-5 bg-gradient-to-r from-primary/10 via-amber-500/5 to-transparent border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-800">Origem de Dados Ativa</h4>
+          </div>
+          <p className="text-sm font-bold text-slate-900">
+            Monitorando dados de acesso em tempo real do site <span className="text-primary underline font-extrabold">moveisunghero.com.br</span>
+          </p>
+          <p className="text-[10px] font-semibold text-slate-400">
+            A integração GA4 capta todas as sessões, origens e interações de leads no domínio público da marcenaria.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 self-end sm:self-center">
+          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200/65 px-2.5 py-1 rounded-lg">
+            Google Analytics 4
+          </span>
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="overflow-x-auto -mx-[var(--space-1)] px-[var(--space-1)]">
           <SegmentControl
@@ -183,22 +204,26 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
             Nenhuma sessão registrada neste período. Os dados aparecerão após a tag GA4 estar ativa no site publicado.
           </p>
         ) : (
-          <div className="flex items-end gap-1 h-40 overflow-x-auto pb-1">
+          <div className="flex items-end gap-1.5 h-44 overflow-x-auto pb-2 scrollbar-thin">
             {daily.map((point) => {
               const height = Math.max(4, (point.sessions / maxSessions) * 100);
               return (
                 <div
                   key={point.date}
-                  className="flex flex-col items-center gap-1 min-w-[28px] flex-1"
+                  className="flex flex-col items-center gap-2 min-w-[32px] flex-1 group cursor-pointer"
                   title={`${formatGa4Date(point.date)}: ${point.sessions} sessões`}
                 >
-                  <div className="w-full flex items-end justify-center h-32">
+                  <div className="w-full flex items-end justify-center h-32 relative">
+                    {/* Hover Sessions Tooltip */}
+                    <div className="absolute bottom-[calc(height%+4px)] bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      {point.sessions}
+                    </div>
                     <div
-                      className="w-full max-w-6 rounded-t-md bg-gradient-to-t from-primary/80 to-primary/40 transition-all"
+                      className="w-full max-w-5 rounded-t-lg bg-gradient-to-t from-primary to-primary/45 group-hover:from-primary/95 group-hover:to-primary/65 transition-all duration-300 shadow-xs"
                       style={{ height: `${height}%` }}
                     />
                   </div>
-                  <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                  <span className="text-[9px] font-bold text-slate-400 group-hover:text-primary transition-colors whitespace-nowrap">
                     {formatGa4Date(point.date).replace(".", "")}
                   </span>
                 </div>
@@ -220,18 +245,21 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
           {channels.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sem dados de canal.</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4.5">
               {channels.map((row) => {
                 const pct = (row.sessions / maxChannelSessions) * 100;
                 return (
-                  <div key={row.channel} className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold text-neutral-800">
-                      <span>{channelLabel(row.channel)}</span>
-                      <span>{formatNumber(row.sessions)} sessões</span>
+                  <div key={row.channel} className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        {channelLabel(row.channel)}
+                      </span>
+                      <span className="text-slate-900 font-extrabold">{formatNumber(row.sessions)} visitas</span>
                     </div>
-                    <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-sky-400 to-sky-600"
+                        className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary"
                         style={{ width: `${Math.max(2, pct)}%` }}
                       />
                     </div>
@@ -257,22 +285,25 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
             <p className="text-sm text-muted-foreground">Sem dados de páginas.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs text-left">
                 <thead>
-                  <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                    <th className="pb-2 font-semibold">Página</th>
-                    <th className="pb-2 font-semibold text-right">Views</th>
-                    <th className="pb-2 font-semibold text-right">Usuários</th>
+                  <tr className="text-slate-400 font-black uppercase tracking-widest text-[9px] border-b border-slate-100 pb-2">
+                    <th className="pb-2">Página</th>
+                    <th className="pb-2 text-right">Views</th>
+                    <th className="pb-2 text-right">Usuários</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {pages.map((row) => (
-                    <tr key={row.path} className="border-b border-border/50 last:border-0">
-                      <td className="py-2.5 pr-2 font-mono text-xs truncate max-w-[200px]" title={row.path}>
+                <tbody className="divide-y divide-slate-100 font-semibold text-slate-750">
+                  {pages.map((row, idx) => (
+                    <tr key={row.path} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3.5 pr-2 font-mono text-[11px] text-slate-800 truncate max-w-[240px] flex items-center gap-2" title={row.path}>
+                        <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded bg-slate-100 text-[10px] text-slate-500 font-bold shrink-0">
+                          {idx + 1}
+                        </span>
                         {row.path}
                       </td>
-                      <td className="py-2.5 text-right font-semibold">{formatNumber(row.views)}</td>
-                      <td className="py-2.5 text-right text-muted-foreground">
+                      <td className="py-3.5 text-right font-black text-slate-950">{formatNumber(row.views)}</td>
+                      <td className="py-3.5 text-right text-slate-400">
                         {formatNumber(row.activeUsers)}
                       </td>
                     </tr>
