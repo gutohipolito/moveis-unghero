@@ -748,8 +748,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             }`}
           >
             <div className="overflow-hidden">
-              <div className="border-t border-border/70 pt-2 space-y-3">
-                <div className="space-y-2 px-3">
+              <div className="space-y-2 border-t border-border/70 pt-2">
+                <div className="space-y-2">
                   {followMessage && (
                     <div
                       className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
@@ -794,25 +794,33 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   )}
                 </div>
 
-                {/* Rodapé com Ações e WhatsApp com design padronizado */}
-                <div className="border-t border-border/40 p-2.5 bg-slate-50/50 rounded-b-xl flex items-center justify-between gap-3 select-none -mx-4 -mb-4 mt-2">
+                {/* Div Flex simples para alinhar botões sem margens negativas que quebrem as bordas */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40 select-none">
                   {actionButtons}
                   
-                  <div className="kanban-card-actions">
-                    <a
-                      href={`https://api.whatsapp.com/send?phone=55${project.client.telefone.replace(/\D/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer"
-                      title="Iniciar conversa no WhatsApp"
+                  <a
+                    href={`https://api.whatsapp.com/send?phone=55${project.client.telefone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer rounded"
+                    style={{
+                      minWidth: "1.625rem",
+                      minHeight: "1.625rem",
+                      padding: "0.25rem",
+                    }}
+                    title="Iniciar conversa no WhatsApp"
+                  >
+                    <svg 
+                      className="fill-current" 
+                      style={{ width: "0.875rem", height: "0.875rem" }} 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <svg className="fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
-                      </svg>
-                    </a>
-                  </div>
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
+                    </svg>
+                  </a>
                 </div>
               </div>
             </div>
@@ -1066,140 +1074,245 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
               {activeModalTab === "briefing" && currentProject?.briefing ? (
                 <div className="space-y-5 animate-in fade-in duration-200">
-                  {/* Roteiro Comercial de Abordagem */}
-                  {currentProject.briefing.roteiro_sugerido && (
-                    <div className="p-4 bg-[hsl(28_85%_97%)] border border-[hsl(28_85%_85%)] rounded-xl space-y-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[hsl(28_85%_35%)]">
-                        <Sparkles className="h-4 w-4 shrink-0" /> Script de Abordagem WhatsApp Sugerido
-                      </div>
-                      <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line font-medium">
-                        {currentProject.briefing.roteiro_sugerido}
-                      </div>
-                    </div>
-                  )}
+                  {/* Grid de duas colunas assimétricas para UX Copilot */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                    
+                    {/* Coluna da Esquerda: Inteligência de Perfil & Script AI (lg:col-span-5) */}
+                    <div className="lg:col-span-5 space-y-4">
+                      {/* Cartão de Perfil AI Diagnostics */}
+                      <div className="bg-gradient-to-br from-amber-500/[0.03] to-amber-600/[0.08] border border-amber-500/20 rounded-2xl p-4.5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">
+                              Unghero AI Diagnostics
+                            </span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 text-[9px] font-black uppercase">
+                            Perfil Qualificado
+                          </span>
+                        </div>
 
-                  {/* Respostas do Briefing */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
-                        1. Ambientes & Escopo
-                      </h4>
-                      <div className="space-y-2 text-xs">
-                        <div>
-                          <span className="text-slate-500 font-semibold block">Ambientes desejados:</span>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {(() => {
-                              try {
-                                const list = JSON.parse(currentProject.briefing.ambientes);
-                                return list.map((a: any, idx: number) => (
-                                  <span key={idx} className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-800 font-bold">
-                                    {a.nome}{a.opcao ? ` (${a.opcao})` : ""}
-                                  </span>
-                                ));
-                              } catch (e) {
-                                return <span className="text-slate-700 font-bold">{currentProject.briefing.ambientes}</span>;
-                              }
-                            })()}
+                        <div className="grid grid-cols-2 gap-2.5 pt-1">
+                          <div className="bg-white/80 border border-slate-100 rounded-xl p-2.5 text-center space-y-0.5 shadow-sm">
+                            <span className="text-[9px] text-slate-400 font-semibold block uppercase tracking-wider">Afinidade</span>
+                            <strong className="text-base text-slate-800 font-black">
+                              {currentProject.briefing.tem_projeto === "Sim" ? "95%" : "80%"}
+                            </strong>
+                          </div>
+                          <div className="bg-white/80 border border-slate-100 rounded-xl p-2.5 text-center space-y-0.5 shadow-sm">
+                            <span className="text-[9px] text-slate-400 font-semibold block uppercase tracking-wider">Temperatura</span>
+                            <strong className={`text-base font-black ${
+                              currentProject.briefing.prazo_inicio === "Imediato" || currentProject.briefing.prazo_inicio === "Menos de 3 meses"
+                                ? "text-orange-600"
+                                : "text-emerald-600"
+                            }`}>
+                              {currentProject.briefing.prazo_inicio === "Imediato" || currentProject.briefing.prazo_inicio === "Menos de 3 meses"
+                                ? "Quente 🔥"
+                                : "Morno ⚡"}
+                            </strong>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Tipo do imóvel:</span>
-                            <strong className="text-slate-900">{currentProject.briefing.tipo_imovel}</strong>
+                        <div className="space-y-2 text-xs pt-0.5">
+                          <div className="flex justify-between items-center bg-white/40 px-2.5 py-1.5 rounded-lg border border-slate-200/20">
+                            <span className="text-slate-500 font-medium">Estilo Principal:</span>
+                            <strong className="text-slate-800 font-bold">{currentProject.briefing.estilo || "Não especificado"}</strong>
                           </div>
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Fase da compra:</span>
-                            <strong className="text-slate-900">{currentProject.briefing.fase_projeto}</strong>
+                          <div className="flex justify-between items-center bg-white/40 px-2.5 py-1.5 rounded-lg border border-slate-200/20">
+                            <span className="text-slate-500 font-medium">Investimento:</span>
+                            <strong className="text-slate-800 font-bold">{currentProject.briefing.faixa_investimento || "Não informado"}</strong>
+                          </div>
+                          <div className="flex justify-between items-center bg-white/40 px-2.5 py-1.5 rounded-lg border border-slate-200/20">
+                            <span className="text-slate-500 font-medium">Início Pretendido:</span>
+                            <strong className="text-slate-800 font-bold">{currentProject.briefing.prazo_inicio || "Não especificado"}</strong>
                           </div>
                         </div>
                       </div>
+
+                      {/* Script de Abordagem AI */}
+                      {currentProject.briefing.roteiro_sugerido && (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4.5 space-y-3.5 shadow-sm">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                Roteiro de Abordagem
+                              </span>
+                            </div>
+
+                            <div className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (currentProject.briefing?.roteiro_sugerido) {
+                                    navigator.clipboard.writeText(currentProject.briefing.roteiro_sugerido);
+                                    setCopiedScript(true);
+                                    setTimeout(() => setCopiedScript(false), 2000);
+                                  }
+                                }}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                                  copiedScript
+                                    ? "bg-emerald-500 border-emerald-600 text-white shadow-sm"
+                                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95"
+                                }`}
+                              >
+                                {copiedScript ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                {copiedScript ? "Copiado!" : "Copiar"}
+                              </button>
+
+                              <a
+                                href={`https://api.whatsapp.com/send?phone=55${currentProject.client.telefone.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 border border-emerald-600 text-white text-[10px] font-bold shadow-sm active:scale-95 transition-all duration-200 cursor-pointer"
+                              >
+                                <Send className="h-3 w-3" />
+                                WhatsApp
+                              </a>
+                            </div>
+                          </div>
+
+                          <div className="relative bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-medium">
+                            <div className="absolute top-2.5 left-3.5 text-[8px] font-black text-emerald-600 uppercase tracking-wider">
+                              Abordagem WhatsApp:
+                            </div>
+                            <div className="pt-4 text-slate-700 leading-relaxed whitespace-pre-line select-all font-semibold">
+                              {currentProject.briefing.roteiro_sugerido}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
-                        2. Status do Imóvel & Design
-                      </h4>
-                      <div className="space-y-2 text-xs">
-                        <div className="grid grid-cols-2 gap-2">
+                    {/* Coluna da Direita: Ficha Técnica do Briefing (lg:col-span-7) */}
+                    <div className="lg:col-span-7 space-y-4">
+                      
+                      <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3.5">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                          📋 1. Ambientes & Escopo
+                        </h4>
+                        <div className="space-y-3 text-xs">
                           <div>
-                            <span className="text-slate-500 font-semibold block">Imóvel pronto?</span>
-                            <strong className="text-slate-900">{currentProject.briefing.pronto}</strong>
+                            <span className="text-slate-500 font-semibold block mb-1">Ambientes desejados:</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(() => {
+                                try {
+                                  const list = JSON.parse(currentProject.briefing.ambientes);
+                                  return list.map((a: any, idx: number) => (
+                                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[11px]">
+                                      {a.nome}{a.opcao ? ` (${a.opcao})` : ""}
+                                    </span>
+                                  ));
+                                } catch (e) {
+                                  return <span className="text-slate-800 font-bold">{currentProject.briefing.ambientes}</span>;
+                                }
+                              })()}
+                            </div>
                           </div>
-                          {currentProject.briefing.data_chaves && (
+
+                          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-50">
                             <div>
-                              <span className="text-slate-500 font-semibold block">Entrega das chaves:</span>
-                              <strong className="text-slate-900">{currentProject.briefing.data_chaves}</strong>
+                              <span className="text-slate-500 font-semibold block">Tipo do imóvel:</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.tipo_imovel}</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Fase da compra:</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.fase_projeto}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3.5">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                          🏠 2. Status do Imóvel & Design
+                        </h4>
+                        <div className="space-y-3 text-xs">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Imóvel pronto?</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.pronto}</strong>
+                            </div>
+                            {currentProject.briefing.data_chaves && (
+                              <div>
+                                <span className="text-slate-500 font-semibold block">Entrega das chaves:</span>
+                                <strong className="text-slate-900 text-[12px]">{currentProject.briefing.data_chaves}</strong>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-50">
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Já possui projeto?</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.tem_projeto}</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Estilo preferido:</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.estilo}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3.5">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                          ⏳ 3. Investimento & Cronograma
+                        </h4>
+                        <div className="space-y-3 text-xs">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Expectativa financeira:</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.faixa_investimento || "Não informado"}</strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 font-semibold block">Pretende iniciar:</span>
+                              <strong className="text-slate-900 text-[12px]">{currentProject.briefing.prazo_inicio}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3.5">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                          🔗 4. Referências & Mídia
+                        </h4>
+                        <div className="space-y-3 text-xs">
+                          {currentProject.briefing.pinterest_link && (
+                            <div>
+                              <span className="text-slate-500 font-semibold block mb-0.5">Painel do Pinterest:</span>
+                              <a 
+                                href={currentProject.briefing.pinterest_link} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-primary hover:underline font-bold inline-flex items-center gap-1 text-[12px]"
+                              >
+                                Ver Pinterest <ExternalLink className="h-3 w-3" />
+                              </a>
                             </div>
                           )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Já possui projeto?</span>
-                            <strong className="text-slate-900">{currentProject.briefing.tem_projeto}</strong>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Estilo preferido:</span>
-                            <strong className="text-slate-900">{currentProject.briefing.estilo}</strong>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
-                        3. Investimento & Cronograma
-                      </h4>
-                      <div className="space-y-2 text-xs">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Expectativa financeira:</span>
-                            <strong className="text-slate-900">{currentProject.briefing.faixa_investimento || "Não informado"}</strong>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Pretende iniciar:</span>
-                            <strong className="text-slate-900">{currentProject.briefing.prazo_inicio}</strong>
-                          </div>
+                          {currentProject.briefing.referencia_url && (
+                            <div>
+                              <span className="text-slate-500 font-semibold block mb-0.5">Arquivo de referência / Planta:</span>
+                              <a 
+                                href={currentProject.briefing.referencia_url} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-emerald-600 hover:underline font-bold inline-flex items-center gap-1 text-[12px]"
+                              >
+                                Baixar arquivo técnico <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          )}
+                          {!currentProject.briefing.pinterest_link && !currentProject.briefing.referencia_url && (
+                            <span className="text-muted-foreground italic block">Nenhuma referência compartilhada pelo cliente.</span>
+                          )}
                         </div>
                       </div>
-                    </div>
 
-                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200/60 pb-1">
-                        4. Referências & Mídia
-                      </h4>
-                      <div className="space-y-2 text-xs">
-                        {currentProject.briefing.pinterest_link && (
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Painel do Pinterest:</span>
-                            <a 
-                              href={currentProject.briefing.pinterest_link} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="text-primary hover:underline font-bold inline-flex items-center gap-1"
-                            >
-                              Ver Pinterest <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        )}
-                        {currentProject.briefing.referencia_url && (
-                          <div>
-                            <span className="text-slate-500 font-semibold block">Arquivo de referência / Planta:</span>
-                            <a 
-                              href={currentProject.briefing.referencia_url} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="text-emerald-600 hover:underline font-bold inline-flex items-center gap-1"
-                            >
-                              Baixar arquivo técnico <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        )}
-                        {!currentProject.briefing.pinterest_link && !currentProject.briefing.referencia_url && (
-                          <span className="text-muted-foreground italic">Nenhuma referência compartilhada pelo cliente.</span>
-                        )}
-                      </div>
                     </div>
                   </div>
 
