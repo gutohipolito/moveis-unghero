@@ -84,15 +84,20 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
           dimensions: [{ name: "minutesAgo" }],
           metrics: [{ name: "activeUsers" }],
         }),
-        client.runRealtimeReport({
+        client.runReport({
           property,
-          dimensions: [{ name: "sessionMedium" }],
-          metrics: [{ name: "activeUsers" }],
+          dateRanges: [{ startDate: "today", endDate: "today" }],
+          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          metrics: [{ name: "sessions" }, { name: "activeUsers" }],
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: 8,
         }),
-        client.runRealtimeReport({
+        client.runReport({
           property,
+          dateRanges: [{ startDate: "today", endDate: "today" }],
           dimensions: [{ name: "pagePath" }],
-          metrics: [{ name: "activeUsers" }],
+          metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+          orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
           limit: 8,
         }),
       ]);
@@ -102,7 +107,7 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
         sessions: activeUsers30m,
         activeUsers: activeUsers30m,
         newUsers: activeUsers30m,
-        engagementRate: 1.0, // 100%
+        engagementRate: 100, // 100%
         avgSessionDurationSeconds: 0,
       };
 
@@ -127,26 +132,17 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
       }
 
       const channels: Ga4ChannelRow[] =
-        channelsRes[0]?.rows?.map((row) => {
-          const med = row.dimensionValues?.[0]?.value ?? "Direct";
-          const val = parseNumber(row.metricValues?.[0]?.value);
-          let chName = med;
-          if (med === "(none)") chName = "Direct";
-          else if (med === "organic") chName = "Organic Search";
-          else if (med === "cpc") chName = "Paid Search";
-          else if (med === "referral") chName = "Referral";
-          return {
-            channel: chName,
-            sessions: val,
-            activeUsers: val,
-          };
-        }) ?? [];
+        channelsRes[0]?.rows?.map((row) => ({
+          channel: row.dimensionValues?.[0]?.value ?? "Desconhecido",
+          sessions: parseNumber(row.metricValues?.[0]?.value),
+          activeUsers: parseNumber(row.metricValues?.[1]?.value),
+        })) ?? [];
 
       const pages: Ga4PageRow[] =
         pagesRes[0]?.rows?.map((row) => ({
           path: row.dimensionValues?.[0]?.value ?? "/",
           views: parseNumber(row.metricValues?.[0]?.value),
-          activeUsers: parseNumber(row.metricValues?.[0]?.value),
+          activeUsers: parseNumber(row.metricValues?.[1]?.value),
         })) ?? [];
 
       return {
