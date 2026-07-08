@@ -8,6 +8,7 @@ export interface BriefingSubmitData {
   telefone: string;
   email?: string;
   cidade: string;
+  bairro?: string;
   origem_lead: string;
   
   ambientes: { nome: string; opcao?: string }[];
@@ -80,10 +81,22 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
           email: cleanEmail || `${cleanTelefone.replace(/\D/g, "")}@unghero.com.br`,
           telefone: cleanTelefone,
           cidade: data.cidade.trim(),
+          bairro: data.bairro?.trim() || null,
+          tipo_imovel: data.tipo_imovel || null,
           origem: (data.origem_lead || "SITE") as any,
           status: "LEAD",
           company_id: companyId,
         }
+      });
+    } else if (data.bairro?.trim() && !client.bairro) {
+      client = await prisma.client.update({
+        where: { id: client.id },
+        data: {
+          bairro: data.bairro.trim(),
+          ...(client.cidade.includes(" - ") || client.cidade.includes(" – ")
+            ? { cidade: data.cidade.trim() }
+            : {}),
+        },
       });
     }
 

@@ -17,3 +17,10 @@ export function formatPhoneInput(value: string): string {
   }
   return "";
 }
+
+/** Formata telefone salvo (só dígitos ou parcial) para exibição. */
+export function formatPhoneDisplay(telefone: string): string {
+  const digits = telefone.replace(/\D/g, "");
+  if (!digits) return telefone;
+  return formatPhoneInput(digits) || telefone;
+}

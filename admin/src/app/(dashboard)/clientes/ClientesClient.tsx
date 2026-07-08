@@ -35,7 +35,8 @@ import {
   type TipoPessoa,
 } from "@/lib/clientDocument";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
-import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { formatPhoneInput, formatPhoneDisplay, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { resolveClientLocation } from "@/lib/clientLocation";
 
 interface ProjectSummary {
   id: string;
@@ -190,7 +191,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   }, [clients]);
 
   const cidadeOptions = useMemo(() => {
-    const set = new Set(clients.map((c) => c.cidade).filter(Boolean));
+    const set = new Set(
+      clients.map((c) => resolveClientLocation(c).cidade).filter(Boolean)
+    );
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [clients]);
 
@@ -198,8 +201,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     const base =
       filterCidade === "ALL"
         ? clients
-        : clients.filter((c) => c.cidade === filterCidade);
-    const set = new Set(base.map((c) => c.bairro).filter(Boolean) as string[]);
+        : clients.filter((c) => resolveClientLocation(c).cidade === filterCidade);
+    const set = new Set(
+      base.map((c) => resolveClientLocation(c).bairro).filter(Boolean)
+    );
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [clients, filterCidade]);
 
@@ -211,18 +216,19 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
   const filteredClients = clients.filter((c) => {
     const doc = resolveClientDocument(c);
+    const location = resolveClientLocation(c);
     const searchLower = search.toLowerCase();
     const matchesSearch =
       c.nome.toLowerCase().includes(searchLower) ||
       c.email.toLowerCase().includes(searchLower) ||
       c.telefone.includes(search) ||
-      c.cidade.toLowerCase().includes(searchLower) ||
-      (c.bairro || "").toLowerCase().includes(searchLower) ||
+      location.cidade.toLowerCase().includes(searchLower) ||
+      location.bairro.toLowerCase().includes(searchLower) ||
       (doc.cpf || "").includes(search) ||
       (doc.cnpj || "").includes(search);
     const matchesOrigin = filterOrigin === "ALL" || c.origem === filterOrigin;
-    const matchesCidade = filterCidade === "ALL" || c.cidade === filterCidade;
-    const matchesBairro = filterBairro === "ALL" || (c.bairro || "") === filterBairro;
+    const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
+    const matchesBairro = filterBairro === "ALL" || location.bairro === filterBairro;
     const matchesTipo =
       activeTipoTab === "todos" || doc.tipo_pessoa === activeTipoTab;
     return matchesSearch && matchesOrigin && matchesCidade && matchesBairro && matchesTipo;
@@ -470,7 +476,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
       {/* Barra de Filtros e Busca */}
       <Card className="p-4 glass-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 w-full md:max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome, e-mail ou telefone..."
@@ -480,15 +486,15 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 w-full md:flex-row md:flex-wrap md:items-center md:justify-end">
+          <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
               <Filter className="h-3 w-3" /> Origem:
             </span>
             <select
               value={filterOrigin}
               onChange={(e) => setFilterOrigin(e.target.value)}
-              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+              className="w-full md:w-auto md:min-w-[8rem] bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="ALL">Todas</option>
               {ORIGINS.map((o) => (
@@ -499,12 +505,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
             <span className="text-xs font-semibold text-muted-foreground">Cidade:</span>
             <select
               value={filterCidade}
               onChange={(e) => setFilterCidade(e.target.value)}
-              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none max-w-[10rem]"
+              className="w-full md:w-auto md:min-w-[8rem] md:max-w-[10rem] bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="ALL">Todas</option>
               {cidadeOptions.map((cidade) => (
@@ -515,12 +521,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
             <span className="text-xs font-semibold text-muted-foreground">Bairro:</span>
             <select
               value={filterBairro}
               onChange={(e) => setFilterBairro(e.target.value)}
-              className="bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none max-w-[10rem]"
+              className="w-full md:w-auto md:min-w-[8rem] md:max-w-[10rem] bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="ALL">Todos</option>
               {bairroOptions.map((bairro) => (
@@ -553,22 +559,27 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       </Tabs>
 
       {/* Lista de clientes — cards no mobile, tabela no desktop */}
-      <Card className="glass-card overflow-hidden">
-        {filteredClients.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">
+      {filteredClients.length === 0 ? (
+        <Card className="glass-card p-8">
+          <p className="text-center text-sm text-muted-foreground">
             Nenhum cliente nesta aba com os filtros aplicados.
           </p>
-        ) : (
-          <>
-            <div className="md:hidden divide-y divide-border">
-              {filteredClients.map((client) => {
-                const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
-                const statBadge = STATUS_BADGES[client.status] || { bg: "bg-muted", text: "text-muted-foreground" };
-                const projectList = client.projects || [];
-                const docInfo = resolveClientDocument(client);
+        </Card>
+      ) : (
+        <>
+          <div className="md:hidden space-y-3">
+            {filteredClients.map((client) => {
+              const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
+              const statBadge = STATUS_BADGES[client.status] || { bg: "bg-muted", text: "text-muted-foreground" };
+              const projectList = client.projects || [];
+              const docInfo = resolveClientDocument(client);
+              const location = resolveClientLocation(client);
 
-                return (
-                  <article key={client.id} className="p-4 space-y-3">
+              return (
+                <article
+                  key={client.id}
+                  className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm"
+                >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -592,7 +603,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
                     <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
-                        <Phone className="h-3.5 w-3.5" /> {client.telefone}
+                        <Phone className="h-3.5 w-3.5" /> {formatPhoneDisplay(client.telefone)}
                       </span>
                       <span className="inline-flex items-center gap-1 min-w-0 truncate">
                         <Mail className="h-3.5 w-3.5 shrink-0" /> {client.email}
@@ -602,8 +613,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
-                        {client.cidade}
-                        {client.bairro ? ` · ${client.bairro}` : ""}
+                        {location.cidade}
+                        {location.bairro ? ` · ${location.bairro}` : ""}
                       </span>
                       <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
                         {labelOrigin(client.origem)}
@@ -651,7 +662,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               })}
             </div>
 
-            <div className="hidden md:block overflow-x-auto">
+            <Card className="hidden md:block glass-card overflow-hidden">
+            <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead>
               <tr>
@@ -669,6 +681,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                   const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-slate-100", text: "text-slate-600" };
                   const statBadge = STATUS_BADGES[client.status] || { bg: "bg-slate-100", text: "text-slate-600" };
                   const projectList = client.projects || [];
+                  const location = resolveClientLocation(client);
 
                   return (
                     <tr key={client.id} className="hover:bg-slate-50/50 transition-colors">
@@ -693,7 +706,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                               )}
                               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                  <Phone className="h-3 w-3 text-slate-500" /> {client.telefone}
+                                  <Phone className="h-3 w-3 text-slate-500" /> {formatPhoneDisplay(client.telefone)}
                                 </span>
                                 <span className="flex items-center gap-1 whitespace-nowrap">
                                   <Mail className="h-3 w-3 text-slate-500" /> {client.email}
@@ -707,13 +720,13 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       {/* Cidade */}
                       <td className="p-4 text-center text-xs font-bold text-slate-700">
                         <span className="inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                          <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0" /> {client.cidade}
+                          <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0" /> {location.cidade}
                         </span>
                       </td>
 
                       {/* Bairro */}
                       <td className="p-4 text-center text-xs font-semibold text-slate-600">
-                        {client.bairro || "—"}
+                        {location.bairro || "—"}
                       </td>
 
                       {/* Origem */}
@@ -781,9 +794,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             </tbody>
           </table>
             </div>
-          </>
-        )}
-      </Card>
+            </Card>
+        </>
+      )}
 
       {/* ─── MODAL: CADASTRAR CLIENTE ─── */}
       {isCreateOpen && (
