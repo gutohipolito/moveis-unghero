@@ -28,8 +28,11 @@ import {
   Layers,
   Send,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  ImageIcon,
 } from "lucide-react";
+import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
+import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 
 interface ProjectSummary {
   id: string;
@@ -57,6 +60,7 @@ interface ClienteDetailsClientProps {
   initialClient: ClientDetails;
   initialActivities: Activity[];
   initialPayments: Payment[];
+  initialAttachments: ClientAttachmentDTO[];
   companyId: string;
 }
 
@@ -90,14 +94,16 @@ export default function ClienteDetailsClient({
   initialClient, 
   initialActivities, 
   initialPayments,
+  initialAttachments,
   companyId 
 }: ClienteDetailsClientProps) {
   const [client] = useState<ClientDetails>(initialClient);
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [payments] = useState<Payment[]>(initialPayments);
+  const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
   
-  // Abas: "overview", "finance", "timeline"
-  const [activeTab, setActiveTab] = useState<"overview" | "finance" | "timeline">("overview");
+  // Abas: overview, finance, timeline, documents
+  const [activeTab, setActiveTab] = useState<"overview" | "finance" | "timeline" | "documents">("overview");
 
   // Notas da Timeline
   const [newTitle, setNewTitle] = useState("");
@@ -187,25 +193,34 @@ export default function ClienteDetailsClient({
       </Card>
 
       {/* ─── SELETOR DE ABAS INTERNAS ─── */}
-      <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-fit">
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-max min-w-full sm:w-fit">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Layers className="h-4 w-4" /> Visão Geral & Projetos
+          <Layers className="h-4 w-4 shrink-0" /> Visão Geral
+        </button>
+        <button
+          onClick={() => setActiveTab("documents")}
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "documents" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
+          <span className="text-[10px] opacity-70 tabular-nums">({attachments.length})</span>
         </button>
         <button
           onClick={() => setActiveTab("finance")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <CreditCard className="h-4 w-4" /> Pagamentos & Financeiro
+          <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
         </button>
         <button
           onClick={() => setActiveTab("timeline")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Clock className="h-4 w-4" /> Linha do Tempo & Notas
+          <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
         </button>
+        </div>
       </div>
 
       {/* ─── CONTEÚDO DAS ABAS ─── */}
@@ -395,6 +410,15 @@ export default function ClienteDetailsClient({
                 )}
               </div>
             </Card>
+          )}
+
+          {/* ABA: FOTOS & DOCUMENTOS */}
+          {activeTab === "documents" && (
+            <ClienteDocumentsTab
+              clientId={client.id}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+            />
           )}
 
           {/* ABA 3: LINHA DO TEMPO & NOTAS */}

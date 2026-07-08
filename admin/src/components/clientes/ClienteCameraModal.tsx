@@ -1,0 +1,146 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Camera, Loader2, X } from "lucide-react";
+
+interface ClienteCameraModalProps {
+  open: boolean;
+  onClose: () => void;
+  onCapture: (file: File) => void | Promise<void>;
+}
+
+export default function ClienteCameraModal({
+  open,
+  onClose,
+  onCapture,
+}: ClienteCameraModalProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [ready, setReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    let active = true;
+    setError(null);
+    setReady(false);
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setReady(true);
+        }
+      } catch {
+        setError("Não foi possível acessar a câmera. Verifique as permissões do navegador.");
+      }
+    }
+
+    startCamera();
+
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [open]);
+
+  async function handleCapture() {
+    const video = videoRef.current;
+    if (!video || !ready) return;
+
+    setCapturing(true);
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas indisponível");
+      ctx.drawImage(video, 0, 0);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.88)
+      );
+      if (!blob) throw new Error("Falha ao capturar imagem");
+
+      const file = new File([blob], `foto-${Date.now()}.jpg`, { type: "image/jpeg" });
+      await onCapture(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao capturar foto");
+    } finally {
+      setCapturing(false);
+    }
+  }
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+      <div className="w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Camera className="h-4 w-4 text-primary" /> Capturar foto
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"
+            aria-label="Fechar câmera"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="relative aspect-[4/3] bg-black">
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className="h-full w-full object-cover"
+          />
+          {!ready && !error ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-white/70" />
+            </div>
+          ) : null}
+        </div>
+
+        {error ? (
+          <p className="px-4 py-3 text-xs text-destructive font-medium">{error}</p>
+        ) : null}
+
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-border">
+          <Button type="button" variant="outline" className="text-xs font-bold" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            className="text-xs font-bold gap-1.5 btn-metallic"
+            disabled={!ready || capturing}
+            onClick={handleCapture}
+          >
+            {capturing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Camera className="h-4 w-4" />
+            )}
+            Salvar foto
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

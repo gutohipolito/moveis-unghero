@@ -15,6 +15,7 @@ import {
   requireClientInCompany,
 } from "@/lib/auth-guard";
 import { createClientSessionToken } from "@/lib/clientSession";
+import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 
 type Origin = 
   | "SITE"
@@ -632,6 +633,25 @@ async function loadClientActivitiesAndPayments(clientId: string) {
   return { activities, payments, earliestProjectAt };
 }
 
+async function loadClientAttachments(clientId: string): Promise<ClientAttachmentDTO[]> {
+  const rows = await prisma.clientAttachment.findMany({
+    where: { client_id: clientId },
+    orderBy: { createdAt: "desc" },
+    include: { uploaded_by: { select: { name: true } } },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    nome: row.nome,
+    mime_type: row.mime_type,
+    url: row.url,
+    tipo: row.tipo,
+    size_bytes: row.size_bytes,
+    createdAt: row.createdAt.toISOString(),
+    uploaded_by: row.uploaded_by?.name ?? null,
+  }));
+}
+
 function buildRegistrationActivity(
   clientId: string,
   cadastroEm: Date,
@@ -700,6 +720,7 @@ export async function getClientDetailsAction(clientId: string) {
     const formattedClient = formatClientRecord(client);
     const { activities, payments, earliestProjectAt } =
       await loadClientActivitiesAndPayments(clientId);
+    const attachments = await loadClientAttachments(clientId);
 
     const cadastroEm = client.createdAt ?? earliestProjectAt;
     const originLabels: Record<string, string> = {
@@ -724,6 +745,7 @@ export async function getClientDetailsAction(clientId: string) {
       client: formattedClient,
       activities: activitiesWithRegistration,
       payments,
+      attachments,
     };
   } catch (e) {
     console.warn("Erro ao carregar detalhes do cliente:", e);

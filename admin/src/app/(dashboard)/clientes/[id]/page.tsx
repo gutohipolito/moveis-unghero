@@ -23,6 +23,7 @@ export default async function ClienteDetailsPage({ params }: RouteParams) {
       initialClient={res.client}
       initialActivities={res.activities}
       initialPayments={res.payments}
+      initialAttachments={res.attachments ?? []}
       companyId={companyId}
     />
   );
