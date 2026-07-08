@@ -120,6 +120,7 @@ model Client {
   tipo_imovel  String?   // Casa, Apartamento, Comercial, etc.
   obs_imovel   String?   // Observações do imóvel/obra
   obs_entrega  String?   // Restrições/observações de entrega
+  createdAt    DateTime  @default(now())
 }
 
 enum Origin {

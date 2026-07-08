@@ -50,6 +50,7 @@ function formatClientRecord(c: {
   tipo_imovel?: string | null;
   obs_imovel?: string | null;
   obs_entrega?: string | null;
+  createdAt?: Date | null;
   projects?: { id: string; status_geral: string; valor_previsto: number | { toNumber?: () => number } }[];
 }) {
   const doc = resolveClientDocument(c);
@@ -73,6 +74,7 @@ function formatClientRecord(c: {
     tipo_imovel: c.tipo_imovel || "",
     obs_imovel: c.obs_imovel || "",
     obs_entrega: c.obs_entrega || "",
+    createdAt: c.createdAt?.toISOString() ?? null,
     projects: (c.projects ?? []).map((p) => ({
       id: p.id,
       status_geral: p.status_geral,
@@ -500,6 +502,7 @@ export interface Activity {
   titulo: string;
   descricao: string;
   autor: string;
+  tipo?: "cadastro" | "nota";
 }
 
 export interface Payment {
@@ -589,6 +592,7 @@ async function loadClientActivitiesAndPayments(clientId: string) {
     where: { client_id: clientId },
     select: {
       id: true,
+      createdAt: true,
       timeline: {
         include: { user: { select: { name: true } } },
         orderBy: { data: "desc" },
@@ -619,7 +623,35 @@ async function loadClientActivitiesAndPayments(clientId: string) {
     )
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 
-  return { activities, payments };
+  const earliestProjectAt = projects.reduce<Date | null>((min, project) => {
+    if (!min || project.createdAt < min) return project.createdAt;
+    return min;
+  }, null);
+
+  return { activities, payments, earliestProjectAt };
+}
+
+function buildRegistrationActivity(
+  clientId: string,
+  cadastroEm: Date,
+  origem: string
+): Activity {
+  const formatted = cadastroEm.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return {
+    id: `registration-${clientId}`,
+    data: cadastroEm.toISOString(),
+    titulo: "Cadastro criado",
+    descricao: `Cliente registrado na base em ${formatted}. Origem: ${origem}.`,
+    autor: "Sistema",
+    tipo: "cadastro",
+  };
 }
 
 export async function getClientDetailsAction(clientId: string) {
@@ -659,12 +691,31 @@ export async function getClientDetailsAction(clientId: string) {
     }
 
     const formattedClient = formatClientRecord(client);
-    const { activities, payments } = await loadClientActivitiesAndPayments(clientId);
+    const { activities, payments, earliestProjectAt } =
+      await loadClientActivitiesAndPayments(clientId);
+
+    const cadastroEm = client.createdAt ?? earliestProjectAt;
+    const originLabels: Record<string, string> = {
+      SITE: "Site Institucional",
+      INSTAGRAM: "Instagram",
+      INDICACAO: "Indicação",
+      GOOGLE: "Busca Google",
+      WHATSAPP: "WhatsApp Comercial",
+      FACEBOOK: "Campanha Facebook",
+    };
+    const origemLabel = originLabels[client.origem] ?? client.origem;
+
+    const activitiesWithRegistration = cadastroEm
+      ? [
+          ...activities,
+          buildRegistrationActivity(clientId, cadastroEm, origemLabel),
+        ]
+      : activities;
 
     return {
       success: true,
       client: formattedClient,
-      activities,
+      activities: activitiesWithRegistration,
       payments,
     };
   } catch (e) {

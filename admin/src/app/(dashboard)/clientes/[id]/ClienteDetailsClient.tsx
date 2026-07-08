@@ -411,31 +411,60 @@ export default function ClienteDetailsClient({
                 <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Histórico de Eventos</h3>
 
                 <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
-                  {activities.map(act => (
+                  {activities.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum evento registrado no histórico deste cliente.
+                    </p>
+                  ) : (
+                    activities.map((act) => {
+                      const isRegistration = act.tipo === "cadastro";
+                      return (
                     <div key={act.id} className="relative group">
                       {/* Ponto indicador da timeline */}
-                      <span className="absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-primary shadow-xs transition-transform group-hover:scale-125" />
+                      <span
+                        className={`absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs transition-transform group-hover:scale-125 ${
+                          isRegistration ? "bg-emerald-500" : "bg-primary"
+                        }`}
+                      />
 
                       <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <strong className="text-sm font-bold text-slate-800">{act.titulo}</strong>
-                          <span className="text-[10px] font-semibold text-muted-foreground">
+                        <div className="flex items-center justify-between gap-3">
+                          <strong className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            {isRegistration ? (
+                              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                            ) : null}
+                            {act.titulo}
+                          </strong>
+                          <span className="text-[10px] font-semibold text-muted-foreground shrink-0 tabular-nums">
                             {new Date(act.data).toLocaleDateString("pt-BR", {
                               day: "2-digit",
                               month: "2-digit",
                               year: "numeric",
                               hour: "2-digit",
-                              minute: "2-digit"
+                              minute: "2-digit",
                             })}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-600 leading-relaxed">{act.descricao}</p>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary/70 bg-primary/5 px-2 py-0.5 rounded-md">
-                          <User className="h-2.5 w-2.5" /> Registrado por: {act.autor}
+                        {act.descricao ? (
+                          <p className="text-xs text-slate-600 leading-relaxed">{act.descricao}</p>
+                        ) : null}
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                          isRegistration
+                            ? "text-emerald-700 bg-emerald-50"
+                            : "text-primary/70 bg-primary/5"
+                        }`}>
+                          {isRegistration ? (
+                            <ShieldCheck className="h-2.5 w-2.5" />
+                          ) : (
+                            <User className="h-2.5 w-2.5" />
+                          )}
+                          {isRegistration ? "Registro automático" : `Registrado por: ${act.autor}`}
                         </span>
                       </div>
                     </div>
-                  ))}
+                      );
+                    })
+                  )}
                 </div>
               </Card>
             </div>
