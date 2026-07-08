@@ -1,4 +1,4 @@
-export type MarketingPeriod = "7" | "30" | "90";
+export type MarketingPeriod = "live" | "7" | "30" | "90";
 
 export interface Ga4Summary {
   sessions: number;
@@ -42,6 +42,9 @@ export interface MarketingDashboardData {
 export const GA4_MEASUREMENT_ID = "G-2M5NMQ84HK";
 
 export function periodToGa4Range(period: MarketingPeriod) {
+  if (period === "live") {
+    return { startDate: "today", endDate: "today" };
+  }
   const days = period === "7" ? 7 : period === "30" ? 30 : 90;
   return {
     startDate: `${days}daysAgo`,
@@ -50,6 +53,7 @@ export function periodToGa4Range(period: MarketingPeriod) {
 }
 
 export function formatGa4Date(yyyymmdd: string) {
+  if (yyyymmdd.endsWith("m")) return yyyymmdd;
   if (yyyymmdd.length !== 8) return yyyymmdd;
   const year = yyyymmdd.slice(0, 4);
   const month = yyyymmdd.slice(4, 6);

@@ -19,5 +19,8 @@ export async function getMarketingDashboard(
   if (!auth) {
     return { configured: false, period };
   }
+  if (period === "live") {
+    return fetchGa4Dashboard("live");
+  }
   return getCachedGa4Dashboard(period);
 }

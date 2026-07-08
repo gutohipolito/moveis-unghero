@@ -119,88 +119,160 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
   const maxChannelSessions = Math.max(...channels.map((c) => c.sessions), 1);
 
   return (
-    <div className={`space-y-[var(--space-6)] pb-[var(--space-8)] ${isPending ? "opacity-70" : ""}`}>
-      {/* Banner Informativo - moveisunghero.com.br */}
-      <div className="p-5 bg-gradient-to-r from-primary/10 via-amber-500/5 to-transparent border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-        <div className="space-y-1">
+    <div className={`space-y-6 pb-8 ${isPending ? "opacity-70" : ""}`}>
+      {/* Banner Informativo Premium - moveisunghero.com.br */}
+      <div className="p-6 bg-gradient-to-r from-primary/10 via-amber-500/5 to-transparent border border-primary/20 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs relative overflow-hidden">
+        <div className="space-y-1.5 z-10">
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-800">Origem de Dados Ativa</h4>
+            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-800">Canal de Origem Ativo</h4>
           </div>
-          <p className="text-sm font-bold text-slate-900">
-            Monitorando dados de acesso em tempo real do site <span className="text-primary underline font-extrabold">moveisunghero.com.br</span>
+          <p className="text-base font-extrabold text-slate-900 leading-tight">
+            Análise de tráfego do site institucional <span className="text-primary underline decoration-2 font-black">moveisunghero.com.br</span>
           </p>
-          <p className="text-[10px] font-semibold text-slate-400">
-            A integração GA4 capta todas as sessões, origens e interações de leads no domínio público da marcenaria.
+          <p className="text-xs font-semibold text-slate-450 max-w-xl leading-relaxed">
+            Métricas de captação de leads e visualizações do site principal da Móveis Unghero via Google Analytics 4.
           </p>
         </div>
-        <div className="flex items-center gap-1.5 self-end sm:self-center">
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200/65 px-2.5 py-1 rounded-lg">
-            Google Analytics 4
+        <div className="flex items-center gap-2 shrink-0 z-10">
+          <span className="text-[10px] font-bold text-slate-500 bg-white/80 border border-slate-200/80 px-3 py-1.5 rounded-xl shadow-xs">
+            Google Analytics 4 API
           </span>
         </div>
+        <div className="absolute right-0 top-0 h-32 w-32 bg-primary/5 rounded-full blur-2xl -z-10" />
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="overflow-x-auto -mx-[var(--space-1)] px-[var(--space-1)]">
+      {/* Filtros e Horário de Atualização */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="overflow-x-auto pb-1 -mb-1">
           <SegmentControl
             value={period}
             onChange={handlePeriodChange}
             aria-label="Período do relatório"
             className="min-w-max"
             options={[
+              { value: "live", label: "Ao vivo" },
               { value: "7", label: "7 dias" },
               { value: "30", label: "30 dias" },
               { value: "90", label: "90 dias" },
             ]}
           />
         </div>
-        <p className="text-xs text-muted-foreground">
-          {data.measurementId}
+        <p className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200/40 px-3 py-1.5 rounded-xl w-fit">
+          Property ID: {data.measurementId}
           {data.cachedAt
-            ? ` · atualizado ${new Date(data.cachedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+            ? ` • Atualizado em ${new Date(data.cachedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
             : ""}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
-        <KpiCard
-          label="Sessões"
-          value={formatNumber(summary.sessions)}
-          icon={MousePointerClick}
-          accent="primary"
-        />
-        <KpiCard
-          label="Usuários ativos"
-          value={formatNumber(summary.activeUsers)}
-          icon={Users}
-          accent="info"
-          trend={{ value: `${formatNumber(summary.newUsers)} novos` }}
-        />
-        <KpiCard
-          label="Taxa de engajamento"
-          value={`${summary.engagementRate.toFixed(1)}%`}
-          icon={Activity}
-          accent="success"
-        />
-        <KpiCard
-          label="Tempo médio"
-          value={formatDuration(summary.avgSessionDurationSeconds)}
-          icon={Clock}
-          accent="warning"
-        />
+      {/* KPI GRID PERSONALIZADO E ULTRA MODERNO */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Sessões / Usuários em tempo real */}
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-primary/10 text-primary shrink-0">
+            <MousePointerClick className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">
+              {period === "live" ? "Visitas (30 min)" : "Sessões Totais"}
+            </span>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+              {formatNumber(summary.sessions)}
+            </h3>
+            <p className="text-[10px] text-slate-450 font-bold leading-normal">
+              {period === "live" ? "Sessões ativas no site" : "Cliques e visitas na home"}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: Visitantes Ativos */}
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-sky-100 text-sky-600 shrink-0">
+            <Users className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">
+              {period === "live" ? "Visitantes Únicos" : "Usuários Ativos"}
+            </span>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+              {formatNumber(summary.activeUsers)}
+            </h3>
+            <p className="text-[10px] text-slate-450 font-bold leading-normal">
+              {period === "live" ? "Acessos individuais" : `${formatNumber(summary.newUsers)} novos usuários`}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Engajamento */}
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-emerald-100 text-emerald-600 shrink-0">
+            <Activity className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">
+              {period === "live" ? "Status do GA4" : "Taxa de Engajamento"}
+            </span>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+              {period === "live" ? "Conectado" : `${summary.engagementRate.toFixed(1)}%`}
+            </h3>
+            <p className="text-[10px] text-slate-450 font-bold leading-normal">
+              {period === "live" ? "Monitorando em tempo real" : "Leads altamente engajados"}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 4: Tempo da Sessão */}
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-amber-100 text-amber-600 shrink-0">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">
+              {period === "live" ? "Tempo de Resposta" : "Tempo Médio da Sessão"}
+            </span>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+              {period === "live" ? "Sub-segundo" : formatDuration(summary.avgSessionDurationSeconds)}
+            </h3>
+            <p className="text-[10px] text-slate-450 font-bold leading-normal">
+              {period === "live" ? "Integração via Cloud" : "Duração média no site"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
-        <div>
-          <h3 className="text-headline text-foreground">Sessões por dia</h3>
-          <p className="text-caption text-muted-foreground mt-1">
-            Volume diário de visitas no período selecionado.
-          </p>
+      {/* GRÁFICO DIÁRIO E REALTIME */}
+      <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 rounded-2xl shadow-xs space-y-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+              {period === "live" ? (
+                <>
+                  <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                  Tempo Real: Usuários por Minuto
+                </>
+              ) : (
+                <>
+                  <Activity className="h-4 w-4 text-primary shrink-0" />
+                  Sessões Diárias
+                </>
+              )}
+            </h3>
+            <p className="text-[11px] text-slate-450 font-semibold mt-1">
+              {period === "live"
+                ? "Volume de usuários navegando nas páginas do site minuto a minuto nos últimos 30 minutos."
+                : "Volume diário de visitas consolidadas no período selecionado."}
+            </p>
+          </div>
+          {period === "live" && (
+            <span className="text-[9px] font-black uppercase text-red-600 bg-red-50 border border-red-200/50 px-2 py-0.5 rounded-md tracking-wider animate-pulse shrink-0">
+              Ao Vivo
+            </span>
+          )}
         </div>
 
         {daily.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">
+          <p className="text-xs text-slate-400 font-semibold py-12 text-center">
             Nenhuma sessão registrada neste período. Os dados aparecerão após a tag GA4 estar ativa no site publicado.
           </p>
         ) : (
@@ -211,7 +283,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
                 <div
                   key={point.date}
                   className="flex flex-col items-center gap-2 min-w-[32px] flex-1 group cursor-pointer"
-                  title={`${formatGa4Date(point.date)}: ${point.sessions} sessões`}
+                  title={`${formatGa4Date(point.date)}: ${point.sessions} usuários`}
                 >
                   <div className="w-full flex items-end justify-center h-32 relative">
                     {/* Hover Sessions Tooltip */}
@@ -223,7 +295,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
                       style={{ height: `${height}%` }}
                     />
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400 group-hover:text-primary transition-colors whitespace-nowrap">
+                  <span className="text-[9px] font-bold text-slate-450 group-hover:text-primary transition-colors whitespace-nowrap">
                     {formatGa4Date(point.date).replace(".", "")}
                   </span>
                 </div>
@@ -233,17 +305,22 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
         )}
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--space-4)]">
-        <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
+      {/* ORIGENS DE TRÁFEGO E PÁGINAS MAIS VISITADAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Origem / Canal */}
+        <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 rounded-2xl shadow-xs space-y-6">
           <div>
-            <h3 className="text-headline text-foreground">Origem / canal</h3>
-            <p className="text-caption text-muted-foreground mt-1">
-              De onde vêm as sessões do site.
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Canais de Origem {period === "live" && "Ao Vivo"}
+            </h3>
+            <p className="text-[11px] text-slate-450 font-semibold mt-1">
+              De onde vêm os visitantes navegando nas páginas da marcenaria.
             </p>
           </div>
 
           {channels.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sem dados de canal.</p>
+            <p className="text-xs text-slate-450 font-semibold py-4">Nenhum canal ativo registrado no momento.</p>
           ) : (
             <div className="space-y-4.5">
               {channels.map((row) => {
@@ -257,9 +334,9 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
                       </span>
                       <span className="text-slate-900 font-extrabold">{formatNumber(row.sessions)} visitas</span>
                     </div>
-                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary"
+                        className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary animate-pulse-once"
                         style={{ width: `${Math.max(2, pct)}%` }}
                       />
                     </div>
@@ -270,30 +347,33 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
           )}
         </Card>
 
-        <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
+        {/* Páginas Mais Visitadas */}
+        <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 rounded-2xl shadow-xs space-y-6">
           <div className="flex items-start gap-2">
             <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
             <div>
-              <h3 className="text-headline text-foreground">Páginas mais visitadas</h3>
-              <p className="text-caption text-muted-foreground mt-1">
-                URLs com maior volume de visualizações.
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+                Páginas Populares {period === "live" && "Ao Vivo"}
+              </h3>
+              <p className="text-[11px] text-slate-450 font-semibold mt-1">
+                URLs públicas do site institucional com maior volume de acessos.
               </p>
             </div>
           </div>
 
           {pages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sem dados de páginas.</p>
+            <p className="text-xs text-slate-450 font-semibold py-4">Nenhuma página visitada no momento.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead>
-                  <tr className="text-slate-400 font-black uppercase tracking-widest text-[9px] border-b border-slate-100 pb-2">
-                    <th className="pb-2">Página</th>
-                    <th className="pb-2 text-right">Views</th>
+                  <tr className="text-slate-400 font-black uppercase tracking-widest text-[9px] border-b border-slate-100 pb-2.5">
+                    <th className="pb-2">URL / Página</th>
+                    <th className="pb-2 text-right">Visualizações</th>
                     <th className="pb-2 text-right">Usuários</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-semibold text-slate-750">
+                <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                   {pages.map((row, idx) => (
                     <tr key={row.path} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-3.5 pr-2 font-mono text-[11px] text-slate-800 truncate max-w-[240px] flex items-center gap-2" title={row.path}>

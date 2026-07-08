@@ -73,6 +73,94 @@ export async function fetchGa4Dashboard(period: MarketingPeriod): Promise<Market
   const dateRange = periodToGa4Range(period);
 
   try {
+    if (period === "live") {
+      const [summaryRes, minutesRes, channelsRes, pagesRes] = await Promise.all([
+        client.runRealtimeReport({
+          property,
+          metrics: [{ name: "activeUsers" }],
+        }),
+        client.runRealtimeReport({
+          property,
+          dimensions: [{ name: "minutesAgo" }],
+          metrics: [{ name: "activeUsers" }],
+        }),
+        client.runRealtimeReport({
+          property,
+          dimensions: [{ name: "sessionMedium" }],
+          metrics: [{ name: "activeUsers" }],
+        }),
+        client.runRealtimeReport({
+          property,
+          dimensions: [{ name: "pagePath" }],
+          metrics: [{ name: "activeUsers" }],
+          limit: 8,
+        }),
+      ]);
+
+      const activeUsers30m = parseNumber(summaryRes[0]?.rows?.[0]?.metricValues?.[0]?.value);
+      const summary = {
+        sessions: activeUsers30m,
+        activeUsers: activeUsers30m,
+        newUsers: activeUsers30m,
+        engagementRate: 1.0, // 100%
+        avgSessionDurationSeconds: 0,
+      };
+
+      const minutesMap: Record<string, number> = {};
+      for (let i = 0; i < 30; i++) {
+        minutesMap[i.toString()] = 0;
+      }
+      minutesRes[0]?.rows?.forEach((row) => {
+        const min = row.dimensionValues?.[0]?.value ?? "0";
+        const val = parseNumber(row.metricValues?.[0]?.value);
+        minutesMap[min] = val;
+      });
+
+      const daily: Ga4DailyPoint[] = [];
+      for (let i = 29; i >= 0; i--) {
+        const minStr = i.toString();
+        daily.push({
+          date: `${minStr}m`,
+          sessions: minutesMap[minStr] ?? 0,
+          activeUsers: minutesMap[minStr] ?? 0,
+        });
+      }
+
+      const channels: Ga4ChannelRow[] =
+        channelsRes[0]?.rows?.map((row) => {
+          const med = row.dimensionValues?.[0]?.value ?? "Direct";
+          const val = parseNumber(row.metricValues?.[0]?.value);
+          let chName = med;
+          if (med === "(none)") chName = "Direct";
+          else if (med === "organic") chName = "Organic Search";
+          else if (med === "cpc") chName = "Paid Search";
+          else if (med === "referral") chName = "Referral";
+          return {
+            channel: chName,
+            sessions: val,
+            activeUsers: val,
+          };
+        }) ?? [];
+
+      const pages: Ga4PageRow[] =
+        pagesRes[0]?.rows?.map((row) => ({
+          path: row.dimensionValues?.[0]?.value ?? "/",
+          views: parseNumber(row.metricValues?.[0]?.value),
+          activeUsers: parseNumber(row.metricValues?.[0]?.value),
+        })) ?? [];
+
+      return {
+        configured: true,
+        period,
+        measurementId: GA4_MEASUREMENT_ID,
+        summary,
+        daily,
+        channels,
+        pages,
+        cachedAt: new Date().toISOString(),
+      };
+    }
+
     const [summaryRes, dailyRes, channelsRes, pagesRes] = await Promise.all([
       client.runReport({
         property,

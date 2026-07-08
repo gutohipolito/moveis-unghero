@@ -3,13 +3,13 @@ import PageHeader from "@/components/PageHeader";
 import MarketingClient from "../MarketingClient";
 
 export default async function MarketingAnalyticsPage() {
-  const data = await getMarketingDashboard("30");
+  const data = await getMarketingDashboard("live");
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tráfego GA4"
-        description="Sessões, canais e páginas do site institucional via Google Analytics 4."
+        title="Analytics do Site"
+        description="Análise em tempo real e histórico de acessos do site institucional moveisunghero.com.br."
       />
 
       <MarketingClient initialData={data} />
