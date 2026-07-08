@@ -475,18 +475,18 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <Card className="p-4 glass-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative flex-1 w-full md:max-w-md">
+      <Card className="p-4 glass-card flex flex-col md:flex-row md:items-center gap-4">
+        <div className="relative w-full md:flex-1 md:min-w-[12rem] md:max-w-md shrink-0">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome, e-mail ou telefone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-muted/40 border-border text-sm"
+            className="w-full pl-9 bg-muted/40 border-border text-sm"
           />
         </div>
 
-        <div className="flex flex-col gap-3 w-full md:flex-row md:flex-wrap md:items-center md:justify-end">
+        <div className="flex flex-col gap-3 w-full md:flex-row md:flex-wrap md:items-center md:gap-3 md:w-auto md:ml-auto">
           <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
               <Filter className="h-3 w-3" /> Origem:
