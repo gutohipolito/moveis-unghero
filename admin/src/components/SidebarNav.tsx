@@ -32,10 +32,10 @@ export interface NavItem {
 /** Ordem das seções no menu lateral — agrupamento didático para o operador. */
 export const NAV_SECTIONS = [
   "Visão Geral",
-  "Marketing",
   "Comercial",
   "Produção",
   "Logística",
+  "Marketing",
   "Administração",
 ] as const;
 

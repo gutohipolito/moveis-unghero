@@ -11,8 +11,12 @@ export const REVIEW_SHORT_BASE_URL =
   process.env.NEXT_PUBLIC_REVIEW_SHORT_URL?.replace(/\/$/, "") ??
   "https://moveisunghero.com.br";
 
+export const GOOGLE_REVIEW_SHORT_URL = "https://moveisunghero.com.br/avaliar";
+
 export function getGoogleReviewShortUrl() {
-  return `${REVIEW_SHORT_BASE_URL}${GOOGLE_REVIEW_SHORT_PATH}`;
+  const fromEnv = process.env.NEXT_PUBLIC_REVIEW_SHORT_URL?.replace(/\/$/, "");
+  if (fromEnv) return `${fromEnv}${GOOGLE_REVIEW_SHORT_PATH}`;
+  return GOOGLE_REVIEW_SHORT_URL;
 }
 
 export function getFirstName(nome: string) {
