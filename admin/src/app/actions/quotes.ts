@@ -3,6 +3,7 @@
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureActorUserId } from "@/lib/currentUser";
+import { capitalizeText } from "@/lib/utils";
 import {
   assertCompanyAccess,
   getAuthContext,
@@ -366,10 +367,10 @@ export async function createQuickClientAndProject(data: {
       // 1. Cria o cliente
       const client = await tx.client.create({
         data: {
-          nome: data.nome,
-          email: data.email || `${data.nome.toLowerCase().replace(/\s+/g, '')}@avulso.com`,
+          nome: capitalizeText(data.nome),
+          email: data.email || `${capitalizeText(data.nome).toLowerCase().replace(/\s+/g, '')}@avulso.com`,
           telefone: data.telefone || "(54) 99999-9999",
-          cidade: data.cidade,
+          cidade: capitalizeText(data.cidade),
           origem: "WHATSAPP",
           status: "LEAD",
           company_id: data.companyId

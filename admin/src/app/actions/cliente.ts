@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
+import { capitalizeText } from "@/lib/utils";
 import {
   parseLegacyDocumentFromObs,
   resolveClientDocument,
@@ -303,10 +304,10 @@ export async function createClientAction(formData: {
   try {
     const client = await prisma.client.create({
       data: {
-        nome: formData.nome,
+        nome: capitalizeText(formData.nome),
         email: formData.email,
         telefone: formData.telefone,
-        cidade: formData.cidade,
+        cidade: capitalizeText(formData.cidade),
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
@@ -315,9 +316,9 @@ export async function createClientAction(formData: {
         cpf,
         cnpj,
         cep: formData.cep || null,
-        endereco: formData.endereco || null,
+        endereco: formData.endereco ? capitalizeText(formData.endereco) : null,
         numero: formData.numero || null,
-        bairro: formData.bairro || null,
+        bairro: formData.bairro ? capitalizeText(formData.bairro) : null,
         uf: formData.uf || null,
         tipo_imovel: formData.tipo_imovel || null,
         obs_imovel: formData.obs_imovel || null,
@@ -382,10 +383,10 @@ export async function updateClientAction(
     await prisma.client.update({
       where: { id: clientId },
       data: {
-        nome: formData.nome,
+        nome: capitalizeText(formData.nome),
         email: formData.email,
         telefone: formData.telefone,
-        cidade: formData.cidade,
+        cidade: capitalizeText(formData.cidade),
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
@@ -393,9 +394,9 @@ export async function updateClientAction(
         cpf,
         cnpj,
         cep: formData.cep !== undefined ? formData.cep : undefined,
-        endereco: formData.endereco !== undefined ? formData.endereco : undefined,
+        endereco: formData.endereco !== undefined ? (formData.endereco ? capitalizeText(formData.endereco) : null) : undefined,
         numero: formData.numero !== undefined ? formData.numero : undefined,
-        bairro: formData.bairro !== undefined ? formData.bairro : undefined,
+        bairro: formData.bairro !== undefined ? (formData.bairro ? capitalizeText(formData.bairro) : null) : undefined,
         uf: formData.uf !== undefined ? formData.uf : undefined,
         tipo_imovel: formData.tipo_imovel !== undefined ? formData.tipo_imovel : undefined,
         obs_imovel: formData.obs_imovel !== undefined ? formData.obs_imovel : undefined,
@@ -501,10 +502,10 @@ export async function importClientsAction(
 
         return prisma.client.create({
           data: {
-            nome: c.nome,
+            nome: capitalizeText(c.nome),
             email: c.email,
             telefone: c.telefone,
-            cidade: c.cidade,
+            cidade: capitalizeText(c.cidade),
             origem: c.origem,
             status: c.status,
             observacoes,

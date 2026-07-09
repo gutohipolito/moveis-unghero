@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { capitalizeText } from "@/lib/utils";
 
 export interface BriefingSubmitData {
   nome: string;
@@ -77,11 +78,11 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
     if (!client) {
       client = await prisma.client.create({
         data: {
-          nome: data.nome.trim(),
+          nome: capitalizeText(data.nome),
           email: cleanEmail || `${cleanTelefone.replace(/\D/g, "")}@unghero.com.br`,
           telefone: cleanTelefone,
-          cidade: data.cidade.trim(),
-          bairro: data.bairro?.trim() || null,
+          cidade: capitalizeText(data.cidade),
+          bairro: data.bairro ? capitalizeText(data.bairro) : null,
           tipo_imovel: data.tipo_imovel || null,
           origem: "FORMULARIO",
           status: "LEAD",
@@ -93,9 +94,9 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
         where: { id: client.id },
         data: {
           origem: "FORMULARIO",
-          ...(data.bairro?.trim() && !client.bairro ? { bairro: data.bairro.trim() } : {}),
+          ...(data.bairro?.trim() && !client.bairro ? { bairro: capitalizeText(data.bairro) } : {}),
           ...(client.cidade.includes(" - ") || client.cidade.includes(" – ")
-            ? { cidade: data.cidade.trim() }
+            ? { cidade: capitalizeText(data.cidade) }
             : {}),
         },
       });
