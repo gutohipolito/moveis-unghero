@@ -333,3 +333,62 @@ export async function updateProjectDetails(
     return { success: false, error: error.message };
   }
 }
+
+export async function getProjectDetailsAction(projectId: string) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const { projectInclude, formatProjectDetails } = await import("@/lib/formatProjectDetails");
+    const { getColaboradores } = await import("@/app/actions/colaboradores");
+    const { ensureProjectSla, getProjectSla } = await import("@/app/actions/productionSla");
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, client: { company_id: auth.companyId } },
+      include: projectInclude,
+    });
+
+    if (!project) {
+      return { success: false, error: "Projeto não encontrado" };
+    }
+
+    const formattedProject = formatProjectDetails(project);
+    const colaboradoresRes = await getColaboradores(auth.companyId);
+    const colaboradores =
+      colaboradoresRes.success && colaboradoresRes.colaboradores
+        ? colaboradoresRes.colaboradores.map((c: { id: string; name: string; cargo: string }) => ({
+            id: c.id,
+            name: c.name,
+            cargo: c.cargo,
+          }))
+        : [];
+
+    const hasProductionApproval = formattedProject.files.some((f) => f.aprovado_producao);
+    let sla = null;
+    if (hasProductionApproval) {
+      await ensureProjectSla(projectId);
+      sla = await getProjectSla(projectId);
+    }
+
+    return {
+      success: true,
+      project: formattedProject,
+      colaboradores,
+      sla,
+    };
+  } catch (error) {
+    console.warn("Erro ao carregar detalhes do projeto:", error);
+    return { success: false, error: "Não foi possível carregar o projeto." };
+  }
+}

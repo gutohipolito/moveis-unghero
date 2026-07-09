@@ -53,7 +53,16 @@ function formatClientRecord(c: {
   obs_imovel?: string | null;
   obs_entrega?: string | null;
   createdAt?: Date | null;
-  projects?: { id: string; status_geral: string; valor_previsto: number | { toNumber?: () => number } }[];
+  projects?: {
+    id: string;
+    status_geral: string;
+    valor_previsto: number | { toNumber?: () => number };
+    createdAt?: Date;
+    updatedAt?: Date;
+    quotes?: { id: string; valor_final: number | { toNumber?: () => number }; versao: number }[];
+    briefing?: { score: number | null; estilo: string; faixa_investimento: string | null } | null;
+    _count?: { environments: number };
+  }[];
 }) {
   const doc = resolveClientDocument(c);
   return {
@@ -84,6 +93,22 @@ function formatClientRecord(c: {
         typeof p.valor_previsto === "number"
           ? p.valor_previsto
           : Number(p.valor_previsto),
+      createdAt: p.createdAt?.toISOString() ?? null,
+      updatedAt: p.updatedAt?.toISOString() ?? null,
+      quotes: (p.quotes ?? []).map((q) => ({
+        id: q.id,
+        versao: q.versao,
+        valor_final:
+          typeof q.valor_final === "number" ? q.valor_final : Number(q.valor_final),
+      })),
+      briefing: p.briefing
+        ? {
+            score: p.briefing.score,
+            estilo: p.briefing.estilo,
+            faixa_investimento: p.briefing.faixa_investimento,
+          }
+        : null,
+      environments_count: p._count?.environments ?? 0,
     })),
   };
 }
@@ -702,13 +727,27 @@ export async function getClientDetailsAction(clientId: string) {
             id: true,
             status_geral: true,
             valor_previsto: true,
+            createdAt: true,
+            updatedAt: true,
             quotes: {
               select: {
                 id: true,
                 valor_final: true,
-              }
-            }
+                versao: true,
+              },
+            },
+            briefing: {
+              select: {
+                score: true,
+                estilo: true,
+                faixa_investimento: true,
+              },
+            },
+            _count: {
+              select: { environments: true },
+            },
           },
+          orderBy: { updatedAt: "desc" },
         },
       },
     });

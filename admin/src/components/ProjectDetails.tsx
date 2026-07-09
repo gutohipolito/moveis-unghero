@@ -167,6 +167,11 @@ interface ProjectDetailsProps {
   colaboradores: ColaboradorSelect[];
   isMock: boolean;
   initialSla?: ProjectSlaView | null;
+  embedded?: boolean;
+  backHref?: string;
+  backLabel?: string;
+  onClose?: () => void;
+  initialOpenCreateQuote?: boolean;
 }
 
 const ENVIRONMENT_STATUSES: { value: EnvironmentStatus; label: string; bg: string }[] = [
@@ -188,7 +193,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
   { value: "PROJETO_TECNICO", label: "Projeto Técnico (CAD/SketchUp)" }
 ];
 
-export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null }: ProjectDetailsProps) {
+export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false }: ProjectDetailsProps) {
   const [project, setProject] = useState<Project>(initialProject);
   const isFormLead = project.client.origem === "FORMULARIO";
   const hasNoQuote = !project.quotes || project.quotes.length === 0;
@@ -201,10 +206,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (searchParams?.get("createQuote") === "true") {
+    if (initialOpenCreateQuote || searchParams?.get("createQuote") === "true") {
       setIsCreatingQuote(true);
     }
-  }, [searchParams]);
+  }, [searchParams, initialOpenCreateQuote]);
 
   // Estados para Controle Operacional do Projeto (Responsável, Entrega e Observações)
   const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
@@ -742,20 +747,33 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   return (
     <div className="space-y-6">
       {/* Botão de Voltar e Banner de Mock */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <Link 
-          href="/crm" 
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
-          Voltar para o CRM Kanban
-        </Link>
-        {isMock && (
-          <span className="text-[11px] font-semibold bg-accent border border-primary/20 text-primary px-3 py-1 rounded-full">
-            Modo de Demonstração / Dados Mockados
-          </span>
-        )}
-      </div>
+      {!embedded ? (
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+              {backLabel}
+            </button>
+          ) : (
+            <Link
+              href={backHref}
+              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+              {backLabel}
+            </Link>
+          )}
+          {isMock && (
+            <span className="text-[11px] font-semibold bg-accent border border-primary/20 text-primary px-3 py-1 rounded-full">
+              Modo de Demonstração / Dados Mockados
+            </span>
+          )}
+        </div>
+      ) : null}
 
       {/* Banner de Projeto Bloqueado por Falta de Orçamento */}
       {isBlocked && (

@@ -17,29 +17,21 @@ import {
   Phone, 
   Mail, 
   MapPin, 
-  Calendar, 
-  DollarSign, 
   FileText, 
-  PlusCircle, 
   MessageCircle, 
   Clock, 
   User, 
   CreditCard, 
   Layers,
   Send,
-  ExternalLink,
   ShieldCheck,
   ImageIcon,
 } from "lucide-react";
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
+import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 
-interface ProjectSummary {
-  id: string;
-  status_geral: string;
-  valor_previsto: number;
-  quotes?: { id: string; valor_final: number }[];
-}
+interface ProjectSummary extends ClientProjectSummary {}
 
 interface ClientDetails {
   id: string;
@@ -102,8 +94,8 @@ export default function ClienteDetailsClient({
   const [payments] = useState<Payment[]>(initialPayments);
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
   
-  // Abas: overview, finance, timeline, documents
-  const [activeTab, setActiveTab] = useState<"overview" | "finance" | "timeline" | "documents">("overview");
+  // Abas: overview, projects, documents, finance, timeline
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "finance" | "timeline" | "documents">("overview");
 
   // Notas da Timeline
   const [newTitle, setNewTitle] = useState("");
@@ -199,7 +191,14 @@ export default function ClienteDetailsClient({
           onClick={() => setActiveTab("overview")}
           className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Layers className="h-4 w-4 shrink-0" /> Visão Geral
+          <User className="h-4 w-4 shrink-0" /> Visão Geral
+        </button>
+        <button
+          onClick={() => setActiveTab("projects")}
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Layers className="h-4 w-4 shrink-0" /> Projetos
+          <span className="text-[10px] opacity-70 tabular-nums">({client.projects?.length || 0})</span>
         </button>
         <button
           onClick={() => setActiveTab("documents")}
@@ -274,88 +273,54 @@ export default function ClienteDetailsClient({
         {/* Lado Direito: Conteúdo Dinâmico */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* ABA 1: VISÃO GERAL & PROJETOS */}
+          {/* ABA: VISÃO GERAL — resumo rápido */}
           {activeTab === "overview" && (
             <Card className="p-5 glass-card space-y-4">
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                <h3 className="text-base font-bold text-foreground flex items-center gap-1.5"><Layers className="h-4.5 w-4.5 text-primary" /> Projetos sob Medida Associados</h3>
-                <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full">
-                  {client.projects?.length || 0} vinculados
-                </span>
+              <h3 className="text-base font-bold text-foreground">Resumo do cliente</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Projetos</p>
+                  <p className="text-xl font-black text-foreground mt-1">{client.projects?.length || 0}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Anexos</p>
+                  <p className="text-xl font-black text-foreground mt-1">{attachments.length}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Parcelas</p>
+                  <p className="text-xl font-black text-foreground mt-1">{payments.length}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Eventos</p>
+                  <p className="text-xl font-black text-foreground mt-1">{activities.length}</p>
+                </div>
               </div>
-
-              <div className="space-y-4">
-                {!client.projects || client.projects.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl">
-                    Nenhum projeto ou orçamento ativo foi lançado para este cliente ainda.
-                  </div>
-                ) : (
-                  client.projects.map(p => {
-                    const isFormLead = client.origem === "FORMULARIO";
-                    const hasNoQuote = !p.quotes || p.quotes.length === 0;
-                    const isBlocked = isFormLead && hasNoQuote;
-
-                    return (
-                      <div 
-                        key={p.id}
-                        className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
-                          isBlocked 
-                            ? "border-rose-200 bg-rose-50/20 hover:bg-rose-50/40" 
-                            : "border-border/60 bg-slate-50 hover:bg-slate-100/50"
-                        }`}
-                      >
-                        <div className="space-y-1">
-                          <strong className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                            Projeto Código: {p.id.toUpperCase()}
-                            {isBlocked && (
-                              <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5">
-                                🔒 Bloqueado
-                              </span>
-                            )}
-                          </strong>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Atualizado recentemente</span>
-                            <span className="flex items-center gap-1">
-                              <DollarSign className="h-3.5 w-3.5" /> 
-                              {isBlocked ? (
-                                <span className="text-rose-600 font-bold">Orçamento pendente (sem valor)</span>
-                              ) : (
-                                <>Previsto: <span className="privacy-value">{p.valor_previsto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                          <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
-                            isBlocked
-                              ? "bg-rose-500/10 text-rose-700"
-                              : "bg-amber-500/10 text-amber-700"
-                          }`}>
-                            {isBlocked ? "Aguardando Orçamento" : p.status_geral.replace("_", " ")}
-                          </span>
-                          
-                          <Link 
-                            href={isBlocked ? `/projects/${p.id}?createQuote=true` : `/projects/${p.id}`}
-                            className={`text-xs font-bold border rounded-lg py-1.5 px-3 flex items-center gap-1 shadow-xs transition-all cursor-pointer ${
-                              isBlocked
-                                ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 shadow-emerald-500/10"
-                                : "bg-white hover:bg-slate-50 text-foreground border-border"
-                            }`}
-                          >
-                            {isBlocked ? "Criar Orçamento" : "Acessar Projeto"} 
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+              {(client.projects?.length ?? 0) > 0 ? (
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-xs font-bold gap-1.5"
+                    onClick={() => setActiveTab("projects")}
+                  >
+                    <Layers className="h-4 w-4" /> Ver todos os projetos
+                  </Button>
+                </div>
+              ) : null}
             </Card>
           )}
 
-          {/* ABA 2: PAGAMENTOS & FINANCEIRO */}
+          {/* ABA: PROJETOS */}
+          {activeTab === "projects" && (
+            <ClienteProjectsTab
+              clientId={client.id}
+              clientOrigem={client.origem}
+              companyId={companyId}
+              projects={client.projects ?? []}
+            />
+          )}
+
+          {/* ABA: PAGAMENTOS & FINANCEIRO */}
           {activeTab === "finance" && (
             <Card className="p-5 glass-card space-y-4">
               <div className="flex items-center justify-between border-b border-border/40 pb-3">
