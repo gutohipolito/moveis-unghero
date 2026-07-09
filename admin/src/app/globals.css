@@ -820,6 +820,36 @@ body {
     0 2px 8px hsl(24 14% 14% / 0.06);
 }
 
+.in-app-toast[data-accent="briefing"] .in-app-toast-icon-badge {
+  background: hsl(var(--primary));
+}
+
+.in-app-toast[data-accent="follow_up"] .in-app-toast-icon-badge {
+  background: hsl(0 72% 46%);
+}
+
+.in-app-toast[data-accent="sla"] .in-app-toast-icon-badge {
+  background: hsl(262 55% 52%);
+}
+
+.in-app-toast[data-accent="invoice"] .in-app-toast-icon-badge {
+  background: hsl(152 45% 38%);
+}
+
+.in-app-toast[data-accent="follow_up"][data-priority="high"] {
+  box-shadow:
+    0 0 0 1px hsl(0 72% 46% / 0.14),
+    0 10px 32px hsl(0 40% 30% / 0.12),
+    0 2px 8px hsl(24 14% 14% / 0.06);
+}
+
+.in-app-toast[data-accent="sla"] {
+  box-shadow:
+    0 0 0 1px hsl(262 55% 52% / 0.12),
+    0 10px 32px hsl(262 30% 30% / 0.1),
+    0 2px 8px hsl(24 14% 14% / 0.06);
+}
+
 @keyframes in-app-toast-enter {
   from {
     opacity: 0;

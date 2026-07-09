@@ -164,9 +164,38 @@ export function buildBriefingNotifications(
   }));
 }
 
-/** Alertas visuais no painel (toast estilo macOS) — cadastros via formulário. */
+/** Alertas visuais no painel (toast estilo macOS). */
 export function isInAppToastNotification(notification: AppNotification): boolean {
-  return notification.type === "new_briefing" || notification.id.startsWith("briefing-");
+  switch (notification.type) {
+    case "new_briefing":
+    case "sla_due":
+    case "invoice_pending":
+      return true;
+    case "follow_up":
+      return notification.priority === "high";
+    default:
+      return false;
+  }
+}
+
+export type InAppToastAccent = "briefing" | "follow_up" | "sla" | "invoice";
+
+export function getInAppToastMeta(notification: AppNotification): {
+  actionLabel: string;
+  accent: InAppToastAccent;
+} {
+  switch (notification.type) {
+    case "new_briefing":
+      return { actionLabel: "Ver briefing", accent: "briefing" };
+    case "follow_up":
+      return { actionLabel: "Retomar contato", accent: "follow_up" };
+    case "sla_due":
+      return { actionLabel: "Ver produção", accent: "sla" };
+    case "invoice_pending":
+      return { actionLabel: "Emitir NF", accent: "invoice" };
+    default:
+      return { actionLabel: "Abrir", accent: "briefing" };
+  }
 }
 
 export function countUnreadStyle(notifications: AppNotification[]): number {

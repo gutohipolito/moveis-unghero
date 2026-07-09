@@ -101,7 +101,7 @@ export function NotificationProvider({
       if (fresh.length === 0) return;
 
       if (prefs.sound) {
-        playNotificationChime({ urgent: true });
+        playNotificationChime({ urgent: fresh.some((n) => n.priority === "high") });
       }
 
       setToasts((prev) => {
