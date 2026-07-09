@@ -1307,7 +1307,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 <div>
                   <h3 className="text-lg font-bold">Propostas & Orçamentos Comerciais</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Gere orçamentos e envie propostas em PDF de 5 páginas.
+                    Gere orçamentos e envie propostas em PDF com itens e valores.
                   </p>
                 </div>
                 <Button onClick={() => setIsCreatingQuote(true)} size="sm" className="btn-metallic">

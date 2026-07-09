@@ -7,7 +7,8 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Plus, Trash2, ShieldCheck, DollarSign, Calculator, Percent, Sparkles, ExternalLink, FileText, Layers } from "lucide-react";
+import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers } from "lucide-react";
+import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
 
 interface QuoteBuilderProps {
   projectId: string;
@@ -29,46 +30,13 @@ interface QuoteItemInput {
 }
 
 
-// Modelos pré-definidos de Propostas
-const TEMPLATES = {
-  PREMIUM: {
-    nome: "Template Premium (Luxo)",
-    observacoes: "Mdf Lacca e texturas especiais com corrediças invisíveis e amortecimento Blum. Detalhes em vidro Reflecta e iluminação em fitas de LED embutidas. Garantia estendida de 10 anos da Móveis Unghero. Montagem com equipe própria especializada.",
-    prazo: "45 dias úteis",
-    items: [
-      { descricao: "Móveis planejados em MDF Lacca e texturas amadeiradas nobres", quantidade: 1, tipo_custo: "MOVEIS_MDF" as ItemType, valor_unitario: 42000 },
-      { descricao: "Ferragens de alta tecnologia invisíveis com amortecedores Blum/Hettich", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS" as ItemType, valor_unitario: 12000 },
-      { descricao: "Fitas de LED de alto brilho embutidas em perfis de alumínio com sensores de toque", quantidade: 1, tipo_custo: "OUTROS" as ItemType, valor_unitario: 3500 },
-      { descricao: "Mão de obra qualificada para projeto técnico detalhado e montagem fina", quantidade: 1, tipo_custo: "MAO_DE_OBRA" as ItemType, valor_unitario: 8000 }
-    ]
-  },
-  ECONOMICO: {
-    nome: "Template Essencial (Custo-Benefício)",
-    observacoes: "Mdf Branco Tx e texturas padrão sob medida. Ferragens telescópicas zincadas padrão com excelente resistência e durabilidade. Garantia de 5 anos da Móveis Unghero.",
-    prazo: "30 dias úteis",
-    items: [
-      { descricao: "Móveis planejados em MDF texturizado padrão e Branco TX", quantidade: 1, tipo_custo: "MOVEIS_MDF" as ItemType, valor_unitario: 22000 },
-      { descricao: "Ferragens telescópicas e dobradiças padrão de alta durabilidade", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS" as ItemType, valor_unitario: 3000 },
-      { descricao: "Mão de obra de marcenaria de alto nível e instalação", quantidade: 1, tipo_custo: "MAO_DE_OBRA" as ItemType, valor_unitario: 5000 }
-    ]
-  },
-  CORPORATIVO: {
-    nome: "Template Corporativo (Escritórios)",
-    observacoes: "Móveis ergonômicos e duráveis para escritórios comerciais em MDF de alta densidade 18mm e 25mm. Prazos de montagem especiais fora do horário comercial (noturno/sábados). Garantia contratual de 3 anos.",
-    prazo: "25 dias úteis",
-    items: [
-      { descricao: "Estações de trabalho, mesas e divisórias em MDF texturizado 25mm", quantidade: 1, tipo_custo: "MOVEIS_MDF" as ItemType, valor_unitario: 28000 },
-      { descricao: "Sistemas de gerenciamento de fiação e tomadas embutidas", quantidade: 1, tipo_custo: "FERRAGENS_ESPECIAIS" as ItemType, valor_unitario: 4500 },
-      { descricao: "Serviço de montagem noturna especial para não interromper a operação comercial", quantidade: 1, tipo_custo: "MAO_DE_OBRA" as ItemType, valor_unitario: 7500 }
-    ]
-  }
-};
+// Template único ativo no sistema
+const ACTIVE_TEMPLATE = QUOTE_TEMPLATE_BASICO;
 
 export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel }: QuoteBuilderProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
-  const [template, setTemplate] = useState<"CUSTOM" | "PREMIUM" | "ECONOMICO" | "CORPORATIVO">("PREMIUM");
-  const [observacoes, setObservacoes] = useState(TEMPLATES.PREMIUM.observacoes);
+  const [observacoes, setObservacoes] = useState(ACTIVE_TEMPLATE.observacoes);
   const [validade, setValidade] = useState(() => {
     // Validade padrão: 15 dias a partir de hoje
     const date = new Date();
@@ -105,24 +73,6 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     loadInventory();
   }, [companyId]);
 
-
-  // Carrega itens do template inicial
-  useEffect(() => {
-    if (template !== "CUSTOM") {
-      const templateData = TEMPLATES[template];
-      setObservacoes(templateData.observacoes);
-      const newItems = templateData.items.map((item, idx) => ({
-        id: `temp-${idx}-${Date.now()}`,
-        descricao: item.descricao,
-        quantidade: item.quantidade,
-        tipo_custo: item.tipo_custo,
-        valor_unitario: item.valor_unitario,
-        valor_total: item.quantidade * item.valor_unitario
-      }));
-      setItems(newItems);
-    }
-  }, [template]);
-
   // Adicionar uma nova linha de item vazia (Item Livre)
   const handleAddItem = () => {
     const newItem: QuoteItemInput = {
@@ -134,7 +84,6 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       valor_total: 0
     };
     setItems([...items, newItem]);
-    setTemplate("CUSTOM");
   };
 
   // Adicionar item do estoque
@@ -156,13 +105,11 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       markup: 2.2
     };
     setItems([...items, newItem]);
-    setTemplate("CUSTOM");
   };
 
   // Remover uma linha de item
   const handleRemoveItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
-    setTemplate("CUSTOM");
   };
 
   // Atualizar campo do item na tabela
@@ -214,7 +161,6 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       return item;
     });
     setItems(updated);
-    setTemplate("CUSTOM");
   };
 
 
@@ -238,6 +184,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       valor_final: valorFinal,
       validade,
       observacoes,
+      template_tipo: QUOTE_TEMPLATE_ID,
       items: items.map(item => ({
         descricao: item.descricao,
         quantidade: item.quantidade,
@@ -288,7 +235,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             Construtor Visual de Proposta Comercial
           </h2>
           <p className="text-xs text-muted-foreground">
-            Crie tabelas comerciais detalhadas e exporte capas e conceitos elegantes para o cliente.
+            Monte a tabela comercial e exporte o PDF com itens e valores.
           </p>
         </div>
       </div>
@@ -326,21 +273,15 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       {activeBuilderTab === "items" && (
         <form onSubmit={handleSubmit} className="space-y-6">
         
-        {/* Bloco 1: Escolha do Modelo de Proposta */}
+        {/* Bloco 1: Template e validade */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Modelo de Proposta Base (Template)
+              Template de Proposta
             </label>
-            <Select
-              value={template}
-              onChange={(e) => setTemplate(e.target.value as any)}
-            >
-              <option value="PREMIUM">Template Premium (Luxo)</option>
-              <option value="ECONOMICO">Template Essencial (Custo-Benefício)</option>
-              <option value="CORPORATIVO">Template Corporativo (Escritórios)</option>
-              <option value="CUSTOM">Orçamento Livre (Personalizado)</option>
-            </Select>
+            <div className="h-10 flex items-center px-3 rounded-lg border border-border/40 bg-secondary/30 text-sm font-semibold text-foreground">
+              {QUOTE_TEMPLATE_LABEL}
+            </div>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
@@ -645,20 +586,16 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
 
         </div>
 
-        {/* Bloco 3: Observações / Detalhamento do Projeto */}
+        {/* Bloco 3: Observações internas */}
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground block">
-            Descritivo Técnico & Condições Gerais (Será impresso na Página 2 e 4)
+            Observações internas (opcional, não impressas no PDF)
           </label>
           <textarea
-            required
-            className="w-full min-h-[100px] rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+            className="w-full min-h-[80px] rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
             value={observacoes}
-            onChange={(e) => {
-              setObservacoes(e.target.value);
-              setTemplate("CUSTOM");
-            }}
-            placeholder="Descreva detalhes de acabamento do MDF, sistemas, condições de instalação, garantia..."
+            onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Anotações internas sobre o orçamento..."
           />
         </div>
 

@@ -3,23 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { resolveClientDocument } from "@/lib/clientDocument";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Componentes padrões para o cabeçalho e rodapé do PDF comercial
 function PrintHeader({ pageNum, title }: { pageNum: string; title: string }) {
   return (
     <div className="w-full border-b-2 border-amber-500/20 pb-4 mb-6">
       <div className="flex justify-between items-start">
-        {/* Lado Esquerdo: Logo & Nome */}
         <div className="flex items-center gap-3">
-          <img 
-            src="/logo.png" 
-            alt="Móveis Unghero" 
+          <img
+            src="/logo.png"
+            alt="Móveis Unghero"
             className="h-10 w-auto object-contain"
             style={{ filter: "sepia(1) saturate(1.5) hue-rotate(340deg) brightness(0.6)" }}
           />
@@ -33,7 +31,6 @@ function PrintHeader({ pageNum, title }: { pageNum: string; title: string }) {
           </div>
         </div>
 
-        {/* Lado Direito: Informações da Empresa */}
         <div className="text-[8px] text-neutral-500 text-right leading-relaxed font-medium">
           <p><strong>Móveis Unghero LTDA</strong> // CNPJ 13.415.510/0001-71</p>
           <p>Rua Cenira Cambruzzi, 155 - Planalto - Farroupilha - RS</p>
@@ -41,7 +38,6 @@ function PrintHeader({ pageNum, title }: { pageNum: string; title: string }) {
         </div>
       </div>
 
-      {/* Título da Seção Atual do PDF */}
       <div className="flex justify-between items-center mt-3 pt-2 border-t border-neutral-100">
         <h4 className="text-xs font-black text-neutral-800 uppercase tracking-widest">
           {title}
@@ -115,7 +111,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     notFound();
   }
 
-  // Prepara dados
   const client = quote.project.client;
   const formattedValidade = new Date(quote.validade).toLocaleDateString("pt-BR");
   const formattedDataEmissao = new Date().toLocaleDateString("pt-BR");
@@ -168,102 +163,47 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           }
         }
       `}} />
-      
-      {/* Barra superior de controle (Oculta na impressão) */}
+
       <div className="print:hidden sticky top-0 bg-neutral-900 text-white p-4 flex items-center justify-between shadow-md z-50">
-        <Link 
+        <Link
           href={`/projects/${quote.project_id || "proj-1"}`}
           className="inline-flex items-center text-sm text-neutral-300 hover:text-white transition-colors cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
         </Link>
         <div className="flex items-center gap-3">
-          {/* Botão que aciona a impressão nativa do navegador */}
           <PrintButton />
         </div>
       </div>
 
-      {/* Container de Páginas A4 */}
       <div className="max-w-[800px] mx-auto p-4 md:p-8 space-y-8 print:p-0 print:space-y-0">
+        <div className="print-page flex flex-col justify-between">
+          <div className="space-y-6">
+            <PrintHeader pageNum="01" title="Detalhamento Comercial" />
 
-        {/* ================= PÁGINA 1: CAPA ================= */}
-        <div className="print-page flex flex-col justify-between items-center bg-radial-gradient from-neutral-50 to-white">
-          <div className="text-center pt-16">
-            <div className="inline-flex p-4 rounded-3xl bg-amber-50 border border-amber-200 text-amber-600 mb-6">
-              <Sparkles className="h-10 w-10" />
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-widest text-neutral-900">
-              MÓVEIS UNGHERO
-            </h1>
-            <span className="text-xs uppercase tracking-widest text-neutral-500 font-semibold block mt-1">
-              Móveis Sob Medida & Design Fino
-            </span>
-          </div>
-
-          <div className="text-center space-y-4">
-            <div className="h-0.5 w-16 bg-amber-500 mx-auto" />
-            <h2 className="text-3xl font-black text-neutral-900 uppercase tracking-wide leading-tight">
-              Proposta Comercial
-            </h2>
-            <p className="text-sm text-neutral-500">
-              Projeto Completo de Interiores Residencial
-            </p>
-          </div>
-
-          <div className="w-full bg-neutral-50 border border-neutral-100 rounded-xl p-8 space-y-2 text-sm text-neutral-700">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 text-sm text-neutral-700 border border-neutral-100 rounded-lg p-4 bg-neutral-50/50">
               <div>
-                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cliente / Contratante</span>
-                <strong className="text-neutral-900 text-base">{client.nome}</strong>
+                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cliente</span>
+                <strong className="text-neutral-900">{client.nome}</strong>
                 {doc.documento && (
-                  <span className="text-xs text-neutral-500 block font-bold mt-0.5">{doc.tipo_pessoa}: {doc.documento}</span>
+                  <span className="text-xs text-neutral-500 block font-semibold mt-0.5">
+                    {doc.tipo_pessoa}: {doc.documento}
+                  </span>
                 )}
               </div>
               <div>
-                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cidade de Instalação</span>
-                <strong className="text-neutral-900 text-base">{client.cidade}</strong>
+                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Cidade</span>
+                <strong className="text-neutral-900">{client.cidade}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Data Emissão</span>
-                <strong className="text-neutral-900 block">{formattedDataEmissao}</strong>
+                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Emissão</span>
+                <strong className="text-neutral-900">{formattedDataEmissao}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Validade Proposta</span>
-                <strong className="text-neutral-900 block">{formattedValidade}</strong>
+                <span className="text-[10px] text-neutral-400 font-bold block uppercase tracking-wider">Validade</span>
+                <strong className="text-neutral-900">{formattedValidade}</strong>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* ================= PÁGINA 2: CONCEITO & DESCRITIVO ================= */}
-        <div className="print-page flex flex-col justify-between">
-          <div className="space-y-6">
-            <PrintHeader pageNum="02" title="Memorial Conceitual" />
-
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Conceito do Projeto</h3>
-              <div className="h-0.5 w-10 bg-amber-500" />
-            </div>
-
-            <p className="text-sm text-neutral-600 leading-relaxed text-justify">
-              O presente projeto foi elaborado visando a otimização máxima dos espaços, aliando ergonomia, sofisticação estética e funcionalidade operacional no cotidiano. O desenvolvimento sob medida atende perfeitamente a cada ângulo do imóvel, garantindo acabamentos impecáveis de marcenaria de alto padrão.
-            </p>
-
-            <div className="space-y-4 mt-8">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900">Descritivo Técnico dos Materiais</h4>
-              <div className="p-6 rounded-lg bg-neutral-50 border border-neutral-100 text-sm text-neutral-700 leading-relaxed">
-                {quote.observacoes || "Nenhum descritivo de materiais especificado para esta proposta."}
-              </div>
-            </div>
-          </div>
-
-          <PrintFooter version={quote.versao} />
-        </div>
-
-        {/* ================= PÁGINA 3: TABELA COMERCIAL ================= */}
-        <div className="print-page flex flex-col justify-between">
-          <div className="space-y-6">
-            <PrintHeader pageNum="03" title="Detalhamento Comercial" />
 
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Valores e Itens do Projeto</h3>
@@ -280,7 +220,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 text-neutral-700">
-                {quote.items.map((item: any, idx: number) => (
+                {quote.items.map((item, idx) => (
                   <tr key={idx}>
                     <td className="p-3 font-medium text-neutral-950">{item.descricao}</td>
                     <td className="p-3 text-center">{item.quantidade}</td>
@@ -291,7 +231,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
               </tbody>
             </table>
 
-            {/* Fechamento Comercial */}
             <div className="mt-8 border-t border-neutral-200 pt-6 space-y-2 max-w-sm ml-auto">
               <div className="flex justify-between text-sm text-neutral-600">
                 <span>Subtotal dos Itens:</span>
@@ -312,82 +251,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
 
           <PrintFooter version={quote.versao} />
         </div>
-
-        {/* ================= PÁGINA 4: CONDIÇÕES & GARANTIA ================= */}
-        <div className="print-page flex flex-col justify-between">
-          <div className="space-y-6">
-            <PrintHeader pageNum="04" title="Condições Gerais" />
-
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Condições Comerciais e Garantia</h3>
-              <div className="h-0.5 w-10 bg-amber-500" />
-            </div>
-
-            <div className="space-y-6 text-sm text-neutral-700 leading-relaxed mt-4">
-              <div className="space-y-1">
-                <strong className="text-neutral-950 block">1. Formas de Pagamento</strong>
-                <p>O pagamento do valor acordado poderá ser efetuado através de:</p>
-                <ul className="list-disc list-inside pl-2 space-y-1 text-neutral-600">
-                  <li>50% de entrada (na assinatura) + 50% na data de entrega física dos módulos.</li>
-                  <li>Parcelamento em até 10x sem juros em cartões de crédito aceitos.</li>
-                  <li>Financiamento via boleto bancário (sujeito a análise de crédito).</li>
-                </ul>
-              </div>
-
-              <div className="space-y-1">
-                <strong className="text-neutral-950 block">2. Prazo de Fabricação e Montagem</strong>
-                <p>
-                  O prazo estimado para início da entrega é de 30 a 45 dias úteis a contar a partir da aprovação final do projeto executivo técnico e medição em loco feita pela equipe de projetistas. A montagem será efetuada por técnicos próprios da empresa.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <strong className="text-neutral-950 block">3. Termos de Garantia do Mobiliário</strong>
-                <p>
-                  Garantimos a qualidade estrutural e de painéis MDF contra defeitos de fabricação pelo período de 5 anos (ou 10 anos para a linha Premium) contados a partir da data de término da montagem técnica. Ferragens especiais contam com garantia adicional de fabricante.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <PrintFooter version={quote.versao} />
-        </div>
-
-        {/* ================= PÁGINA 5: ASSINATURA ================= */}
-        <div className="print-page flex flex-col justify-between">
-          <div className="space-y-6">
-            <PrintHeader pageNum="05" title="Termo de Aceite" />
-
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-neutral-900 tracking-tight">Aceite da Proposta Comercial</h3>
-              <div className="h-0.5 w-10 bg-amber-500" />
-            </div>
-
-            <p className="text-sm text-neutral-600 leading-relaxed text-justify mt-4">
-              Estando em perfeita concordância com os valores descritos na tabela comercial, especificações de materiais, prazos de entrega e termos gerais desta proposta, as partes firmam o presente termo para início da elaboração do memorial executivo de fábrica.
-            </p>
-
-            {/* Linhas de Assinatura */}
-            <div className="grid grid-cols-2 gap-12 pt-24 text-sm text-center text-neutral-700">
-              <div className="space-y-2">
-                <div className="border-t border-neutral-300 w-full pt-2" />
-                <strong className="text-neutral-950 block">{client.nome}</strong>
-                {doc.documento && (
-                  <span className="text-xs text-neutral-500 block font-semibold">{doc.tipo_pessoa}: {doc.documento}</span>
-                )}
-                <span className="text-xs text-neutral-400">Contratante (Cliente)</span>
-              </div>
-              <div className="space-y-2">
-                <div className="border-t border-neutral-300 w-full pt-2" />
-                <strong className="text-neutral-950 block">Móveis Unghero LTDA</strong>
-                <span className="text-xs text-neutral-400">Contratada</span>
-              </div>
-            </div>
-          </div>
-
-          <PrintFooter version={quote.versao} />
-        </div>
-
       </div>
     </div>
   );
