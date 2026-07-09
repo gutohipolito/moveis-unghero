@@ -813,7 +813,8 @@ body {
 .modal-panel {
   pointer-events: auto;
   position: relative;
-  width: min(100%, 36rem);
+  width: 100%;
+  max-width: 36rem;
   max-height: min(
     90dvh,
     calc(
