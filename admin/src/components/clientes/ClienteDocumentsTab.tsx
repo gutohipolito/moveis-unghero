@@ -10,7 +10,6 @@ import {
   Loader2,
   Trash2,
   Upload,
-  X,
 } from "lucide-react";
 import {
   type ClientAttachmentDTO,
@@ -18,6 +17,7 @@ import {
   isImageMime,
 } from "@/lib/clientAttachments";
 import ClienteCameraModal from "@/components/clientes/ClienteCameraModal";
+import { ModalShell } from "@/components/ui/modal-shell";
 
 interface ClienteDocumentsTabProps {
   clientId: string;
@@ -286,28 +286,21 @@ export default function ClienteDocumentsTab({
         )}
       </Card>
 
-      {previewUrl ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
-          onClick={() => setPreviewUrl(null)}
-        >
-          <button
-            type="button"
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
-            onClick={() => setPreviewUrl(null)}
-            aria-label="Fechar visualização"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      <ModalShell
+        open={!!previewUrl}
+        onClose={() => setPreviewUrl(null)}
+        panelClassName="max-w-4xl w-full bg-transparent border-none shadow-none"
+        bodyClassName="flex items-center justify-center p-0 min-h-[12rem]"
+      >
+        {previewUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={previewUrl}
             alt="Visualização ampliada"
-            className="max-h-[90vh] max-w-full rounded-lg object-contain"
-            onClick={(e) => e.stopPropagation()}
+            className="max-h-[min(80dvh,calc(100dvh-6rem))] max-w-full rounded-lg object-contain"
           />
-        </div>
-      ) : null}
+        ) : null}
+      </ModalShell>
 
       <ClienteCameraModal
         open={cameraOpen}

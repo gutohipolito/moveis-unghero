@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { Dialog } from "@/components/ui/dialog";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { 
   deleteQuote,
@@ -500,11 +501,12 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
       </div>
 
       {/* ─── MODAL: CRIAR NOVO ORÇAMENTO ─── */}
-      {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className={`bg-white border border-slate-200 w-[95vw] sm:w-full rounded-2xl overflow-hidden shadow-2xl p-4 sm:p-6 space-y-4 animate-in fade-in zoom-in-95 transition-all max-h-[92vh] sm:max-h-[90vh] overflow-y-auto ${selectedProjectId ? 'max-w-5xl' : 'max-w-xl'}`}>
-            
-            {/* Título & Fechar */}
+      <Dialog
+        isOpen={isCreateOpen}
+        onClose={handleCancelCreate}
+        className={`w-full ${selectedProjectId ? "max-w-5xl" : "max-w-xl"}`}
+      >
+          <div className="space-y-4 pr-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">
@@ -518,12 +520,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                     : "Selecione uma das opções abaixo para iniciar a proposta."}
                 </p>
               </div>
-              <button 
-                onClick={handleCancelCreate} 
-                className="text-slate-400 hover:text-slate-600 text-sm font-semibold cursor-pointer"
-              >
-                Cancelar
-              </button>
+              <p className="sr-only">Use o botão no canto superior para fechar</p>
             </div>
 
             {/* FASE 1: Configuração / Seleção de Alvo */}
@@ -740,8 +737,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
             )}
 
           </div>
-        </div>
-      )}
+      </Dialog>
       <ActionDialogHost dialog={dialog} />
     </div>
   );

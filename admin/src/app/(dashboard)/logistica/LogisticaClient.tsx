@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { updateProjectStatus } from "@/app/actions/kanban";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { Dialog } from "@/components/ui/dialog";
 
 interface Project {
   id: string;
@@ -481,9 +482,12 @@ export default function LogisticaClient({ initialProjects, veiculos }: Logistica
       )}
 
       {/* Modal - Assinatura Eletrônica e Encerramento */}
-      {signatureModalProjId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <Card className="bg-white p-6 max-w-md w-full rounded-2xl space-y-4 shadow-2xl border-primary/20 animate-in fade-in duration-300">
+      <Dialog
+        isOpen={!!signatureModalProjId}
+        onClose={() => setSignatureModalProjId(null)}
+        className="max-w-md w-full"
+      >
+        <div className="space-y-4 pr-6">
             <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-1">
               Termo de Encerramento e Entrega Fina
             </h3>
@@ -550,9 +554,8 @@ export default function LogisticaClient({ initialProjects, veiculos }: Logistica
                 </Button>
               </div>
             </form>
-          </Card>
         </div>
-      )}
+      </Dialog>
 
       <ActionDialogHost dialog={dialog} />
     </div>

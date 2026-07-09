@@ -35,6 +35,7 @@ import {
   type TipoPessoa,
 } from "@/lib/clientDocument";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { Dialog } from "@/components/ui/dialog";
 import { formatPhoneInput, formatPhoneDisplay, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { resolveClientLocation } from "@/lib/clientLocation";
 
@@ -800,9 +801,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       )}
 
       {/* ─── MODAL: CADASTRAR CLIENTE ─── */}
-      {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+      <Dialog isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} className="max-w-4xl w-full">
+        <div className="space-y-4 pr-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="min-w-0">
                 <h3 className="text-lg font-bold text-foreground">Cadastrar Novo Lead / Cliente</h3>
@@ -1091,14 +1091,12 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 </Button>
               </div>
             </form>
-          </div>
         </div>
-      )}
+      </Dialog>
 
       {/* ─── MODAL: EDITAR CLIENTE ─── */}
-      {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+      <Dialog isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} className="max-w-4xl w-full">
+        <div className="space-y-4 pr-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="min-w-0">
                 <h3 className="text-lg font-bold text-foreground">Editar Dados de Lead</h3>
@@ -1386,14 +1384,17 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 </Button>
               </div>
             </form>
-          </div>
         </div>
-      )}
+      </Dialog>
 
       {/* ─── MODAL: INICIAR PROJETO NO CRM ─── */}
-      {isProjectModalOpen && selectedClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+      <Dialog
+        isOpen={isProjectModalOpen && !!selectedClient}
+        onClose={() => setIsProjectModalOpen(false)}
+        className="max-w-md w-full"
+      >
+        {selectedClient ? (
+        <div className="space-y-4 pr-6">
             <div>
               <h3 className="text-lg font-bold text-foreground">Iniciar Novo Projeto</h3>
               <p className="text-xs text-muted-foreground">Inicie um projeto de marcenaria fina no CRM para <strong>{selectedClient.nome}</strong>.</p>
@@ -1421,9 +1422,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                 </Button>
               </div>
             </form>
-          </div>
         </div>
-      )}
+        ) : null}
+      </Dialog>
 
       <ActionDialogHost dialog={dialog} />
     </div>

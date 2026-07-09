@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import { labelProjectStatus } from "@/lib/navLabels";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Input } from "@/components/ui/input";
+import { Dialog } from "@/components/ui/dialog";
 import ProjectDetails from "@/components/ProjectDetails";
 import type { ProjectDetailsPayload } from "@/lib/formatProjectDetails";
 import type { ProjectSlaView } from "@/lib/productionSla";
@@ -293,12 +295,12 @@ export default function ClienteProjectsTab({
         />
       ) : null}
 
-      {isCreateModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}
-        >
-          <div className="bg-card border border-border w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+      <Dialog
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        className="max-w-md w-full"
+      >
+        <div className="space-y-4 pr-6">
             <div>
               <h3 className="text-lg font-bold text-foreground">Novo projeto</h3>
               <p className="text-xs text-muted-foreground mt-1">
@@ -347,9 +349,8 @@ export default function ClienteProjectsTab({
                 </Button>
               </div>
             </form>
-          </div>
         </div>
-      ) : null}
+      </Dialog>
     </>
   );
 }
@@ -409,9 +410,9 @@ function ClienteProjectDrawer({
     };
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur px-4 py-3">
+  return createPortal(
+    <div className="fixed inset-0 z-[150] flex flex-col bg-background h-[100dvh] max-h-[100dvh] overflow-hidden">
+      <div className="shrink-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-muted-foreground">Projeto do cliente</p>
           <p className="text-sm font-bold text-foreground truncate">
@@ -439,7 +440,7 @@ function ClienteProjectDrawer({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -467,6 +468,7 @@ function ClienteProjectDrawer({
           />
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

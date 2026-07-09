@@ -17,6 +17,7 @@ import {
   type InventoryItem 
 } from "@/app/actions/estoque";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { Dialog } from "@/components/ui/dialog";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { 
   Package, 
@@ -582,9 +583,12 @@ export default function EstoqueClient({
       )}
 
       {/* ─── MODAL: FORNECEDOR (CADASTRAR / EDITAR) ─── */}
-      {isSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+      <Dialog
+        isOpen={isSupplierModalOpen}
+        onClose={() => setIsSupplierModalOpen(false)}
+        className="max-w-md w-full"
+      >
+        <div className="space-y-4 pr-6">
             <div>
               <h3 className="text-lg font-bold text-foreground">{editingSupplier ? "Editar Fornecedor" : "Cadastrar Novo Fornecedor"}</h3>
               <p className="text-xs text-muted-foreground">Cadastre novos parceiros e marcas na base da Móveis Unghero.</p>
@@ -627,14 +631,16 @@ export default function EstoqueClient({
                 </Button>
               </div>
             </form>
-          </div>
         </div>
-      )}
+      </Dialog>
 
       {/* ─── MODAL: INSUMO (CADASTRAR / EDITAR) ─── */}
-      {isItemModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white border border-border w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+      <Dialog
+        isOpen={isItemModalOpen}
+        onClose={() => setIsItemModalOpen(false)}
+        className="max-w-lg w-full"
+      >
+        <div className="space-y-4 pr-6">
             <div>
               <h3 className="text-lg font-bold text-foreground">{editingItem ? "Editar Insumo" : "Cadastrar Insumo no Estoque"}</h3>
               <p className="text-xs text-muted-foreground">Registre novos materiais para controle de marcenaria sob medida.</p>
@@ -707,9 +713,8 @@ export default function EstoqueClient({
                 </Button>
               </div>
             </form>
-          </div>
         </div>
-      )}
+      </Dialog>
 
       <ActionDialogHost dialog={dialog} />
     </div>
