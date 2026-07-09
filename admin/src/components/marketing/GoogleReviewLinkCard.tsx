@@ -125,11 +125,16 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [manualName, setManualName] = useState("");
+  const [manualPhone, setManualPhone] = useState("");
 
   const selectedClient = useMemo(
     () => clients.find((client) => client.id === selectedClientId) ?? null,
     [clients, selectedClientId]
   );
+
+  const personalizedName = selectedClient?.nome ?? (manualName.trim() || undefined);
+  const personalizedPhone = selectedClient?.telefone ?? manualPhone.trim();
 
   const filteredClients = useMemo(() => {
     const query = clientSearch.trim().toLowerCase();
@@ -147,20 +152,18 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   const whatsappMessage = useMemo(
     () =>
       buildGoogleReviewWhatsAppMessage({
-        clientName: selectedClient?.nome,
+        clientName: personalizedName,
         reviewUrl: shortUrl,
       }),
-    [selectedClient?.nome, shortUrl]
+    [personalizedName, shortUrl]
   );
 
   const whatsappUrl = useMemo(() => {
-    if (!selectedClient?.telefone) return "";
-    return buildWhatsAppUrl(selectedClient.telefone, whatsappMessage);
-  }, [selectedClient?.telefone, whatsappMessage]);
+    if (!personalizedPhone) return "";
+    return buildWhatsAppUrl(personalizedPhone, whatsappMessage);
+  }, [personalizedPhone, whatsappMessage]);
 
-  const formattedPhone = selectedClient
-    ? formatPhoneForWhatsApp(selectedClient.telefone)
-    : "";
+  const formattedPhone = personalizedPhone ? formatPhoneForWhatsApp(personalizedPhone) : "";
 
   useEffect(() => {
     let active = true;
@@ -185,11 +188,30 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   function handleSelectClient(client: GoogleReviewClientOption) {
     setSelectedClientId(client.id);
     setClientSearch("");
+    setManualName("");
+    setManualPhone("");
   }
 
   function handleClearClient() {
     setSelectedClientId(null);
     setClientSearch("");
+    setManualName("");
+    setManualPhone("");
+  }
+
+  function handleManualNameChange(value: string) {
+    setManualName(value);
+    if (value.trim()) {
+      setSelectedClientId(null);
+      setClientSearch("");
+    }
+  }
+
+  function handleManualPhoneChange(value: string) {
+    setManualPhone(value);
+    if (value.trim()) {
+      setSelectedClientId(null);
+    }
   }
 
   function handleDownloadQr() {
@@ -239,7 +261,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
             <div>
               <h3 className="text-sm font-semibold text-foreground">Mensagem no WhatsApp</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Selecione um cliente para preencher o número e personalizar a mensagem.
+                Selecione um cliente cadastrado ou informe nome e telefone manualmente para clientes antigos.
               </p>
             </div>
           </div>
@@ -260,43 +282,85 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="search"
-                  value={clientSearch}
-                  onChange={(event) => setClientSearch(event.target.value)}
-                  placeholder="Buscar cliente por nome ou telefone..."
-                  className="w-full rounded-lg border border-input bg-card py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
-                />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="search"
+                    value={clientSearch}
+                    onChange={(event) => setClientSearch(event.target.value)}
+                    placeholder="Buscar cliente por nome ou telefone..."
+                    className="w-full rounded-lg border border-input bg-card py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+
+                {filteredClients.length > 0 ? (
+                  <ul className="max-h-44 overflow-y-auto rounded-lg border border-border bg-card divide-y divide-border">
+                    {filteredClients.map((client) => (
+                      <li key={client.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectClient(client)}
+                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                        >
+                          <div className="rounded-full bg-muted p-1.5 text-muted-foreground">
+                            <User className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{client.nome}</p>
+                            <p className="text-xs text-muted-foreground">{client.telefone}</p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : clientSearch.trim() ? (
+                  <p className="text-xs text-muted-foreground px-1">
+                    Nenhum cliente encontrado. Use o nome manual abaixo ou cadastre em Clientes.
+                  </p>
+                ) : null}
               </div>
 
-              {filteredClients.length > 0 ? (
-                <ul className="max-h-44 overflow-y-auto rounded-lg border border-border bg-card divide-y divide-border">
-                  {filteredClients.map((client) => (
-                    <li key={client.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectClient(client)}
-                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
-                      >
-                        <div className="rounded-full bg-muted p-1.5 text-muted-foreground">
-                          <User className="h-3.5 w-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{client.nome}</p>
-                          <p className="text-xs text-muted-foreground">{client.telefone}</p>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground px-1">
-                  Nenhum cliente encontrado. Cadastre em Clientes ou refine a busca.
-                </p>
-              )}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-muted/20 px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    ou cliente antigo
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label htmlFor="manual-review-name" className="text-[11px] font-semibold text-muted-foreground">
+                    Nome manual
+                  </label>
+                  <input
+                    id="manual-review-name"
+                    type="text"
+                    value={manualName}
+                    onChange={(event) => handleManualNameChange(event.target.value)}
+                    placeholder="Ex.: Maria Silva"
+                    className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="manual-review-phone" className="text-[11px] font-semibold text-muted-foreground">
+                    Telefone (opcional)
+                  </label>
+                  <input
+                    id="manual-review-phone"
+                    type="tel"
+                    value={manualPhone}
+                    onChange={(event) => handleManualPhoneChange(event.target.value)}
+                    placeholder="(54) 99999-9999"
+                    className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -327,14 +391,14 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366]/50 px-4 py-2 text-xs font-semibold text-white cursor-not-allowed"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
-                Selecione um cliente
+                {personalizedName ? "Informe o telefone" : "Selecione ou informe o cliente"}
               </button>
             )}
           </div>
 
-          {selectedClient && !formattedPhone ? (
+          {personalizedPhone && !formattedPhone ? (
             <p className="text-xs text-destructive">
-              O telefone deste cliente é inválido. Atualize o cadastro em Clientes.
+              O telefone informado é inválido. Verifique o número ou atualize o cadastro em Clientes.
             </p>
           ) : null}
         </div>
