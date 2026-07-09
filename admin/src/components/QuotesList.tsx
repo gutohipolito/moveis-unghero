@@ -454,7 +454,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
       <Dialog
         isOpen={isCreateOpen}
         onClose={handleCancelCreate}
-        className={`w-full ${selectedProjectId ? "max-w-5xl" : "max-w-xl"}`}
+        className={`w-[95vw] ${selectedProjectId ? "sm:w-[94vw] max-w-7xl" : "sm:w-[94vw] max-w-xl"}`}
       >
           <div className="space-y-4 pr-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">

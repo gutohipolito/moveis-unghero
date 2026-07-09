@@ -342,14 +342,14 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                     const isStockItem = !!item.inventoryItemId;
 
                     return (
-                      <tr key={item.id} className="hover:bg-card/20 transition-colors">
-                        <td className="p-2">
+                      <tr key={item.id} className="hover:bg-slate-50/60 transition-colors border-b border-slate-100">
+                        <td className="p-3">
                           {isStockItem ? (
                             <div className="space-y-1">
                               <select
                                 value={item.inventoryItemId}
                                 onChange={(e) => handleUpdateItem(item.id, "inventoryItemId", e.target.value)}
-                                className="w-full bg-slate-50 border border-border/50 rounded-lg text-sm p-1.5 focus:ring-1 focus:ring-primary outline-none font-semibold text-foreground"
+                                className="w-full bg-white border border-slate-200 rounded-lg text-xs p-2 outline-none font-bold text-slate-800 focus:ring-1 focus:ring-[hsl(28_85%_45%)] focus:border-[hsl(28_85%_45%)] cursor-pointer transition-all"
                               >
                                 {inventory.map((inv) => (
                                   <option key={inv.id} value={inv.id}>
@@ -369,16 +369,16 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               placeholder="Descrição do item ou ambiente"
                               value={item.descricao}
                               onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
-                              className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-0.5 h-8 text-sm"
+                              className="bg-white border border-slate-200 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] px-3 py-1.5 h-9 text-xs font-semibold rounded-lg transition-all"
                             />
                           )}
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           <Select
                             disabled={isStockItem}
                             value={item.tipo_custo}
                             onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
-                            className="h-8 py-0 px-2 text-xs bg-transparent border-none focus:ring-0"
+                            className="h-9 py-1 px-3 text-xs bg-white border border-slate-200 focus:ring-1 focus:ring-[hsl(28_85%_45%)] rounded-lg transition-all cursor-pointer font-semibold text-slate-700 disabled:opacity-60"
                           >
                             <option value="MOVEIS_MDF">MDF/Marcenaria</option>
                             <option value="FERRAGENS_ESPECIAIS">Ferragens Esp.</option>
@@ -386,51 +386,51 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             <option value="OUTROS">Outros</option>
                           </Select>
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           <Input
                             type="number"
                             min="1"
                             required
-                            className="bg-transparent border-none text-center focus-visible:ring-0 focus-visible:ring-offset-0 h-8 text-sm p-1"
+                            className="bg-white border border-slate-200 text-center focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] h-9 text-xs font-bold p-2 rounded-lg transition-all"
                             value={item.quantidade}
                             onChange={(e) => handleUpdateItem(item.id, "quantidade", Number(e.target.value))}
                           />
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           {isStockItem ? (
-                            <div className="flex items-center gap-1 px-1">
-                              <span className="text-[10px] text-muted-foreground">x</span>
+                            <div className="flex items-center gap-1.5 px-1">
+                              <span className="text-[10px] text-muted-foreground font-bold">x</span>
                               <Input
                                 type="number"
                                 step="0.1"
                                 min="1"
                                 max="10"
                                 required
-                                className="w-16 bg-slate-50 border border-border/50 rounded-lg text-center h-8 text-sm font-bold"
+                                className="w-16 bg-white border border-slate-200 text-center h-9 text-xs font-black rounded-lg focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] transition-all"
                                 value={item.markup || 2.2}
                                 onChange={(e) => handleUpdateItem(item.id, "markup", Number(e.target.value))}
                                 title="Markup Multiplicador"
                               />
-                              <span className="text-[10px] text-muted-foreground font-semibold">Markup</span>
+                              <span className="text-[9px] text-muted-foreground font-extrabold uppercase tracking-wider">Markup</span>
                             </div>
                           ) : (
                             <div className="flex items-center relative">
-                              <span className="text-[10px] text-muted-foreground absolute left-1">R$</span>
+                              <span className="text-xs text-neutral-400 font-bold absolute left-3">R$</span>
                               <Input
                                 type="number"
                                 min="0"
                                 required
-                                className="bg-transparent border-none pl-6 focus-visible:ring-0 focus-visible:ring-offset-0 h-8 text-sm"
+                                className="bg-white border border-slate-200 pl-8 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] h-9 text-xs font-bold rounded-lg transition-all"
                                 value={item.valor_unitario}
                                 onChange={(e) => handleUpdateItem(item.id, "valor_unitario", Number(e.target.value))}
                               />
                             </div>
                           )}
                         </td>
-                        <td className="p-2 font-semibold text-foreground">
+                        <td className="p-3 font-extrabold text-xs text-neutral-950">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.valor_total)}
                         </td>
-                        <td className="p-2 text-center">
+                        <td className="p-3 text-center">
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(item.id)}
