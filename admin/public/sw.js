@@ -1,4 +1,36 @@
-const CACHE_VERSION = "mu-admin-v2";
+const CACHE_VERSION = "mu-admin-v3";
+
+self.addEventListener("push", (event) => {
+  let payload = {
+    title: "Móveis Unghero",
+    body: "Você tem um novo alerta no painel.",
+    icon: "/pwa-icon/192",
+    badge: "/pwa-icon/192",
+    tag: "mu-push",
+    requireInteraction: false,
+    data: { href: "/crm", notificationId: "mu-push" },
+  };
+
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed, data: { ...payload.data, ...parsed.data } };
+    }
+  } catch {
+    // mantém payload padrão
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      tag: payload.tag,
+      requireInteraction: payload.requireInteraction,
+      data: payload.data,
+    })
+  );
+});
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

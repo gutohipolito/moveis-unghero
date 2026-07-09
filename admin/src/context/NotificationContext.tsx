@@ -35,6 +35,15 @@ import {
   type NotificationPreferences,
 } from "@/lib/notificationChannels";
 import { playNotificationChime, primeNotificationSound } from "@/lib/notificationSound";
+import {
+  getPushSubscription,
+  isPushNotificationSupported,
+  registerPushSubscriptionOnServer,
+  subscribeToWebPush,
+  testPushOnServer,
+  unsubscribeFromWebPush,
+  getVapidPublicKeyFromEnv,
+} from "@/lib/pushClient";
 import InAppNotificationStack from "@/components/InAppNotificationStack";
 
 const POLL_VISIBLE_MS = 30 * 1000;
@@ -52,10 +61,17 @@ interface NotificationContextValue {
   browserPermission: BrowserPermission;
   browserSupported: boolean;
   enablingBrowser: boolean;
+  pushSupported: boolean;
+  pushConfigured: boolean;
+  pushActive: boolean;
+  enablingPush: boolean;
   enableBrowserNotifications: () => Promise<boolean>;
   disableBrowserNotifications: () => void;
+  enablePushNotifications: () => Promise<boolean>;
+  disablePushNotifications: () => Promise<void>;
   toggleNotificationSound: () => void;
   testBrowserNotification: () => Promise<boolean>;
+  testPushNotification: () => Promise<boolean>;
   dismissToast: (id: string) => void;
   openToast: (id: string, href: string) => void;
   refreshNotifications: () => void;
@@ -82,6 +98,11 @@ export function NotificationProvider({
     typeof window !== "undefined" ? getBrowserPermission() : "default"
   );
   const [enablingBrowser, setEnablingBrowser] = useState(false);
+  const [pushActive, setPushActive] = useState(false);
+  const [enablingPush, setEnablingPush] = useState(false);
+
+  const pushSupported = isPushNotificationSupported();
+  const pushConfigured = Boolean(getVapidPublicKeyFromEnv());
 
   const deliveredRef = useRef<Set<string>>(loadDeliveredNotificationIds());
   const dismissedToastRef = useRef<Set<string>>(loadDismissedToastIds());
@@ -176,6 +197,17 @@ export function NotificationProvider({
   }, []);
 
   useEffect(() => {
+    if (!pushSupported || !prefs.push) {
+      setPushActive(false);
+      return;
+    }
+
+    void getPushSubscription().then((sub) => {
+      setPushActive(Boolean(sub));
+    });
+  }, [pushSupported, prefs.push]);
+
+  useEffect(() => {
     setNotifications(initialNotifications);
     knownIdsRef.current = new Set(initialNotifications.map((n) => n.id));
   }, [initialNotifications]);
@@ -264,6 +296,55 @@ export function NotificationProvider({
     saveNotificationPrefs(nextPrefs);
   }, [prefs]);
 
+  const enablePushNotifications = useCallback(async () => {
+    if (!pushSupported || !pushConfigured) return false;
+
+    setEnablingPush(true);
+    await primeNotificationSound();
+
+    const subResult = await subscribeToWebPush();
+    if (!subResult.success || !subResult.subscription) {
+      setEnablingPush(false);
+      const nextPrefs = { ...prefs, push: false };
+      setPrefs(nextPrefs);
+      saveNotificationPrefs(nextPrefs);
+      setPushActive(false);
+      return false;
+    }
+
+    const registered = await registerPushSubscriptionOnServer(subResult.subscription);
+    setEnablingPush(false);
+
+    if (!registered) {
+      const nextPrefs = { ...prefs, push: false };
+      setPrefs(nextPrefs);
+      saveNotificationPrefs(nextPrefs);
+      setPushActive(false);
+      return false;
+    }
+
+    const nextPrefs = { ...prefs, push: true, browser: true };
+    setPrefs(nextPrefs);
+    saveNotificationPrefs(nextPrefs);
+    setBrowserPermission(getBrowserPermission());
+    setPushActive(true);
+    return true;
+  }, [prefs, pushConfigured, pushSupported]);
+
+  const disablePushNotifications = useCallback(async () => {
+    await unsubscribeFromWebPush();
+    const nextPrefs = { ...prefs, push: false };
+    setPrefs(nextPrefs);
+    saveNotificationPrefs(nextPrefs);
+    setPushActive(false);
+  }, [prefs]);
+
+  const testPushNotification = useCallback(async (): Promise<boolean> => {
+    if (!pushActive) return false;
+    await primeNotificationSound();
+    return testPushOnServer();
+  }, [pushActive]);
+
   const toggleNotificationSound = useCallback(() => {
     const nextPrefs = { ...prefs, sound: !prefs.sound };
     setPrefs(nextPrefs);
@@ -312,10 +393,17 @@ export function NotificationProvider({
     browserPermission,
     browserSupported: isBrowserNotificationSupported(),
     enablingBrowser,
+    pushSupported,
+    pushConfigured,
+    pushActive,
+    enablingPush,
     enableBrowserNotifications,
     disableBrowserNotifications,
+    enablePushNotifications,
+    disablePushNotifications,
     toggleNotificationSound,
     testBrowserNotification,
+    testPushNotification,
     dismissToast,
     openToast,
     refreshNotifications: () => syncNotifications({ deliverNew: false }),

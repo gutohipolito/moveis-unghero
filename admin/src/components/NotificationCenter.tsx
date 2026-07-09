@@ -16,6 +16,7 @@ export default function NotificationCenter({
 }: NotificationCenterProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "ok" | "fail">("idle");
+  const [pushTestStatus, setPushTestStatus] = useState<"idle" | "ok" | "fail">("idle");
   const panelRef = useRef<HTMLDivElement>(null);
 
   const open = isOpen ?? internalOpen;
@@ -34,6 +35,13 @@ export default function NotificationCenter({
     disableBrowserNotifications,
     toggleNotificationSound,
     testBrowserNotification,
+    pushSupported,
+    pushConfigured,
+    pushActive,
+    enablingPush,
+    enablePushNotifications,
+    disablePushNotifications,
+    testPushNotification,
   } = useNotificationContext();
 
   const notifCount = notifications.length;
@@ -53,6 +61,7 @@ export default function NotificationCenter({
 
   const browserActive = prefs.browser && browserPermission === "granted";
   const browserBlocked = browserPermission === "denied";
+  const pushBlocked = browserPermission === "denied";
 
   return (
     <div className="relative" ref={panelRef}>
@@ -167,9 +176,77 @@ export default function NotificationCenter({
               </div>
             </div>
 
+            <div className="flex items-start gap-2 pt-1 border-t border-border/50">
+              <Smartphone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <p className="text-xs font-bold text-foreground">Push mobile</p>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Receba alertas com o app fechado. No iPhone, adicione o painel à tela inicial antes de ativar.
+                </p>
+                {!pushConfigured ? (
+                  <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                    Push ainda não configurado no servidor (chaves VAPID).
+                  </p>
+                ) : !pushSupported ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Seu navegador não suporta push. Use Chrome no Android ou Safari com o app instalado no iPhone.
+                  </p>
+                ) : pushBlocked ? (
+                  <p className="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+                    Permissão bloqueada. Libere notificações nas configurações do dispositivo.
+                  </p>
+                ) : pushActive ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
+                        <BellRing className="h-3 w-3" /> Push ativo
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setPushTestStatus("idle");
+                          const ok = await testPushNotification();
+                          setPushTestStatus(ok ? "ok" : "fail");
+                        }}
+                        className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        Testar push
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => disablePushNotifications()}
+                        className="text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Desativar
+                      </button>
+                    </div>
+                    {pushTestStatus === "ok" ? (
+                      <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
+                        Push enviado — confira a central de notificações do celular.
+                      </p>
+                    ) : null}
+                    {pushTestStatus === "fail" ? (
+                      <p className="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+                        Não foi possível enviar o push de teste.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={enablingPush}
+                    onClick={() => enablePushNotifications()}
+                    className="text-[10px] font-bold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    {enablingPush ? "Aguardando permissão..." : "Ativar push mobile"}
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="flex items-center gap-2 opacity-50 pt-1 border-t border-border/50">
               <Smartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <p className="text-[10px] text-muted-foreground">Push mobile e e-mail — em breve</p>
+              <p className="text-[10px] text-muted-foreground">E-mail transacional — em breve</p>
             </div>
           </div>
 

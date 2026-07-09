@@ -110,6 +110,6 @@ export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {
   in_app: "No painel",
   browser: "Navegador",
-  push: "Push (em breve)",
+  push: "Push mobile",
   email: "E-mail (em breve)",
 };

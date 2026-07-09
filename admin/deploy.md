@@ -38,6 +38,20 @@ Durante a configuração do deploy na Vercel, você precisará adicionar as segu
 | `BETTER_AUTH_URL` | URL de produção do seu admin: `https://admin.moveisunghero.com.br` | Domínio final |
 | `NEXT_PUBLIC_BETTER_AUTH_URL` | Mesma URL pública descrita acima: `https://admin.moveisunghero.com.br` | Domínio final |
 | `ADMIN_SETUP_SECRET` | Secret para criar o primeiro administrador via `/api/create-admin-prod` | Gerado via terminal |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Chave pública VAPID para push mobile (Web Push) | `npm run generate-vapid` |
+| `VAPID_PRIVATE_KEY` | Chave privada VAPID — **nunca commitar** | `npm run generate-vapid` |
+| `VAPID_SUBJECT` | Contato do remetente push (ex: `mailto:contato@moveisunghero.com.br`) | E-mail da empresa |
+| `CRON_SECRET` | Protege o cron de push (`/api/cron/push-notifications`) | `npm run generate-vapid` |
+
+### Push mobile (opcional)
+
+1. No diretório `admin`, gere as chaves:
+   ```bash
+   npm run generate-vapid
+   ```
+2. Copie as variáveis para `.env.local` (dev) e para **Settings → Environment Variables** na Vercel (produção).
+3. O cron roda a cada 15 minutos (`vercel.json`) e envia alertas para dispositivos inscritos.
+4. No iPhone: instale o painel na tela inicial (PWA) antes de ativar push no sino de notificações.
 
 ---
 
