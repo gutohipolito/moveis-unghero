@@ -16,6 +16,7 @@ import {
 } from "@/lib/auth-guard";
 import { createClientSessionToken } from "@/lib/clientSession";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
+import { labelProjectStatus } from "@/lib/navLabels";
 
 type Origin = 
   | "SITE"
@@ -534,12 +535,15 @@ export interface Activity {
 
 export interface Payment {
   id: string;
+  projectId: string;
+  projectStatus: string;
   descricao: string;
   valor: number;
   vencimento: string;
   status: "PAGO" | "PENDENTE" | "ATRASADO";
   pagoEm?: string;
   metodo?: string;
+  tipo: "ENTRADA" | "PARCELA";
 }
 
 
@@ -595,22 +599,25 @@ function mapInstallmentToPayment(
   },
   index: number,
   total: number,
-  multiProject: boolean
+  project: { id: string; status_geral: string }
 ): Payment {
   const tipoBase = inst.tipo === "ENTRADA" ? "Entrada" : "Parcela";
   const tipoLabel =
     total > 1 ? `${tipoBase} (${index + 1}/${total})` : tipoBase;
-  const descricao = multiProject ? `${tipoLabel} · projeto` : tipoLabel;
+  const projectRef = `#${project.id.slice(0, 8).toUpperCase()} · ${labelProjectStatus(project.status_geral)}`;
 
   return {
     id: inst.id,
-    descricao,
+    projectId: project.id,
+    projectStatus: project.status_geral,
+    descricao: `${tipoLabel} — ${projectRef}`,
     valor: Number(inst.valor),
     vencimento: inst.data_vencimento.toISOString().split("T")[0],
     status: resolveInstallmentStatus(inst.status, inst.data_vencimento),
     pagoEm: inst.data_pagamento
       ? inst.data_pagamento.toISOString().split("T")[0]
       : undefined,
+    tipo: inst.tipo === "ENTRADA" ? "ENTRADA" : "PARCELA",
   };
 }
 
@@ -619,6 +626,7 @@ async function loadClientActivitiesAndPayments(clientId: string) {
     where: { client_id: clientId },
     select: {
       id: true,
+      status_geral: true,
       createdAt: true,
       timeline: {
         include: { user: { select: { name: true } } },
@@ -631,7 +639,6 @@ async function loadClientActivitiesAndPayments(clientId: string) {
     orderBy: { updatedAt: "desc" },
   });
 
-  const multiProject = projects.length > 1;
   const activities = projects
     .flatMap((project) => project.timeline)
     .sort((a, b) => b.data.getTime() - a.data.getTime())
@@ -640,12 +647,10 @@ async function loadClientActivitiesAndPayments(clientId: string) {
   const payments = projects
     .flatMap((project) =>
       project.installments.map((inst, index) =>
-        mapInstallmentToPayment(
-          inst,
-          index,
-          project.installments.length,
-          multiProject
-        )
+        mapInstallmentToPayment(inst, index, project.installments.length, {
+          id: project.id,
+          status_geral: project.status_geral,
+        })
       )
     )
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
@@ -656,6 +661,38 @@ async function loadClientActivitiesAndPayments(clientId: string) {
   }, null);
 
   return { activities, payments, earliestProjectAt };
+}
+
+export async function getClientPaymentsAction(clientId: string): Promise<{
+  success: boolean;
+  payments: Payment[];
+  error?: string;
+}> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, payments: [], error: "Não autenticado" };
+  }
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      payments: [],
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  if (isDatabaseOffline()) {
+    return { success: false, payments: [], error: "Banco indisponível" };
+  }
+
+  try {
+    const { payments } = await loadClientActivitiesAndPayments(clientId);
+    return { success: true, payments };
+  } catch (error) {
+    console.error("Erro ao carregar parcelas do cliente:", error);
+    return { success: false, payments: [], error: "Não foi possível carregar as parcelas." };
+  }
 }
 
 async function loadClientAttachments(clientId: string): Promise<ClientAttachmentDTO[]> {

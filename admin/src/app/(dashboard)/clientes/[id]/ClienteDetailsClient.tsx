@@ -28,6 +28,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
+import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
 import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 
@@ -94,7 +95,7 @@ export default function ClienteDetailsClient({
     initialClient.projects ?? []
   );
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
-  const [payments] = useState<Payment[]>(initialPayments);
+  const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
   
   // Abas: overview, projects, documents, finance, timeline
@@ -328,61 +329,14 @@ export default function ClienteDetailsClient({
             />
           )}
 
-          {/* ABA: PAGAMENTOS & FINANCEIRO */}
           {activeTab === "finance" && (
-            <Card className="p-5 glass-card space-y-4">
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                <h3 className="text-base font-bold text-foreground flex items-center gap-1.5"><CreditCard className="h-4.5 w-4.5 text-primary" /> Histórico de Faturamento e Parcelas</h3>
-                <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full">
-                  {payments.length} parcelas registradas
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {payments.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl">
-                    Nenhum lançamento financeiro ou parcela foi gerada para este cliente.
-                  </div>
-                ) : (
-                  payments.map(pay => {
-                    const isPaid = pay.status === "PAGO";
-                    const isLate = pay.status === "ATRASADO";
-                    return (
-                      <div 
-                        key={pay.id}
-                        className="p-4 rounded-xl border border-border/50 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50 transition-all"
-                      >
-                        <div className="space-y-1">
-                          <strong className="text-sm font-bold text-foreground">{pay.descricao}</strong>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>Vencimento: {new Date(pay.vencimento).toLocaleDateString("pt-BR")}</span>
-                            {pay.metodo && <span>Método: {pay.metodo}</span>}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                          <div className="text-right">
-                            <span className="text-xs font-medium text-muted-foreground block">Valor da Parcela</span>
-                            <strong className="text-sm font-black text-foreground privacy-value">{pay.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
-                          </div>
-
-                          <div>
-                            <span className={`text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full border block text-center ${isPaid ? "bg-emerald-50 text-emerald-600 border-emerald-200" : isLate ? "bg-rose-50 text-rose-600 border-rose-200 animate-pulse" : "bg-amber-50 text-amber-600 border-amber-200"}`}>
-                              {pay.status}
-                            </span>
-                            {pay.pagoEm && (
-                              <span className="text-[9px] font-semibold text-emerald-600 block mt-1 text-center">
-                                Pago em: {new Date(pay.pagoEm).toLocaleDateString("pt-BR")}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </Card>
+            <ClienteFinanceTab
+              clientId={client.id}
+              projects={projects}
+              payments={payments}
+              onPaymentsChange={setPayments}
+              onGoToProjects={() => setActiveTab("projects")}
+            />
           )}
 
           {/* ABA: FOTOS & DOCUMENTOS */}
