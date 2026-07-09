@@ -9,11 +9,14 @@ import {
   Printer, 
   DollarSign, 
   Calculator, 
-  FileText,
   Clock,
   AlertTriangle,
   Plus,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  FolderKanban,
+  UserRound,
+  UserPlus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -188,6 +191,16 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     setQuickTelefone("");
     setQuickCidade("");
   };
+
+  const handleBackToSelection = () => {
+    setSelectedProjectId(null);
+  };
+
+  const creationModes = [
+    { id: "PROJECT" as const, label: "Projeto", icon: FolderKanban },
+    { id: "CLIENT" as const, label: "Cliente", icon: UserRound },
+    { id: "QUICK" as const, label: "Avulso", icon: UserPlus },
+  ];
 
   const handleDeleteQuote = (projectId: string, quoteId: string, version: number) => {
     confirmAction({
@@ -454,239 +467,254 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
       <Dialog
         isOpen={isCreateOpen}
         onClose={handleCancelCreate}
-        className={`w-[95vw] ${selectedProjectId ? "sm:w-[94vw] max-w-7xl" : "sm:w-[94vw] max-w-xl"}`}
+        className={selectedProjectId ? "max-w-5xl modal-panel-quote" : "max-w-lg"}
+        viewportClassName={selectedProjectId ? "modal-viewport-quote" : undefined}
+        bodyClassName="px-4 py-4 sm:px-5 sm:py-5"
       >
-          <div className="space-y-4 pr-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">
-                  {selectedProjectId 
-                    ? "Montar Proposta Comercial" 
-                    : "Como deseja criar o orçamento?"}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  {selectedProjectId 
-                    ? "Preencha as especificações, ambientes e adicione itens ao orçamento" 
-                    : "Selecione uma das opções abaixo para iniciar a proposta."}
-                </p>
-              </div>
-              <p className="sr-only">Use o botão no canto superior para fechar</p>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 border-b border-slate-100 pb-4 pr-8">
+            {selectedProjectId ? (
+              <button
+                type="button"
+                onClick={handleBackToSelection}
+                className="mt-0.5 shrink-0 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 transition-colors"
+                aria-label="Voltar para seleção"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            ) : null}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-tight">
+                {selectedProjectId ? "Montar proposta comercial" : "Novo orçamento"}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                {selectedProjectId
+                  ? "Adicione itens, defina validade e salve para gerar o PDF."
+                  : "Escolha como vincular o orçamento antes de montar a proposta."}
+              </p>
             </div>
+          </div>
 
-            {/* FASE 1: Configuração / Seleção de Alvo */}
-            {!selectedProjectId && (
-              <div className="space-y-4">
-                
-                {/* Seletor de Modo (Abas) */}
-                <div className="flex flex-wrap sm:flex-nowrap gap-1.5 p-1 bg-slate-100 rounded-lg text-[11px] sm:text-xs font-bold">
+          {!selectedProjectId && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2">
+                {creationModes.map(({ id, label, icon: Icon }) => (
                   <button
+                    key={id}
                     type="button"
-                    className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${creationMode === "PROJECT" ? "bg-white shadow-xs text-slate-800" : "text-slate-500 hover:text-slate-800"}`}
-                    onClick={() => handleModeChange("PROJECT")}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-all cursor-pointer ${
+                      creationMode === id
+                        ? "border-primary/30 bg-primary/5 text-foreground shadow-xs"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800"
+                    }`}
+                    onClick={() => handleModeChange(id)}
                     disabled={isGeneratingProject}
                   >
-                    Projeto Existente
+                    <Icon className={`h-4 w-4 ${creationMode === id ? "text-primary" : ""}`} />
+                    <span className="text-[11px] font-bold leading-tight">{label}</span>
                   </button>
-                  <button
-                    type="button"
-                    className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${creationMode === "CLIENT" ? "bg-white shadow-xs text-slate-800" : "text-slate-500 hover:text-slate-800"}`}
-                    onClick={() => handleModeChange("CLIENT")}
-                    disabled={isGeneratingProject}
-                  >
-                    Apenas Cliente
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${creationMode === "QUICK" ? "bg-white shadow-xs text-slate-800" : "text-slate-500 hover:text-slate-800"}`}
-                    onClick={() => handleModeChange("QUICK")}
-                    disabled={isGeneratingProject}
-                  >
-                    Orçamento Avulso
-                  </button>
+                ))}
+              </div>
+
+              {isGeneratingProject ? (
+                <div className="py-10 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  <span className="text-sm font-semibold">Preparando orçamento...</span>
                 </div>
-
-                {isGeneratingProject ? (
-                  <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
-                    <Loader2 className="h-8 w-8 animate-spin text-[hsl(28_85%_45%)]" />
-                    <span className="text-sm font-semibold">Inicializando ambiente de orçamento...</span>
-                  </div>
-                ) : (
-                  <>
-                    {/* Modo 1: Projeto Existente */}
-                    {creationMode === "PROJECT" && (
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                          <Input 
-                            placeholder="Filtrar projetos por cliente..." 
-                            className="pl-9 bg-slate-50 border-slate-200 text-sm"
-                            value={searchProject}
-                            onChange={(e) => setSearchProject(e.target.value)}
-                          />
-                        </div>
-
-                        {loadingProjects ? (
-                          <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
-                            <Loader2 className="h-6 w-6 animate-spin text-[hsl(28_85%_45%)]" />
-                            <span className="text-sm">Carregando projetos...</span>
-                          </div>
-                        ) : (
-                          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-lg">
-                            {projects.filter(p => 
-                              p.client.nome.toLowerCase().includes(searchProject.toLowerCase())
-                            ).length === 0 ? (
-                              <p className="p-4 text-center text-sm text-slate-400">Nenhum projeto ativo encontrado.</p>
-                            ) : (
-                              projects.filter(p => 
-                                p.client.nome.toLowerCase().includes(searchProject.toLowerCase())
-                              ).map(p => (
-                                <div 
-                                  key={p.id} 
-                                  onClick={() => setSelectedProjectId(p.id)}
-                                  className="p-3 flex justify-between items-center hover:bg-slate-50 cursor-pointer transition-colors"
-                                >
-                                  <div>
-                                    <strong className="text-sm text-slate-800 block">{p.client.nome}</strong>
-                                    <span className="text-xs text-slate-400 font-mono">ID: {p.id.substring(0, 8).toUpperCase()} // {p.client.cidade}</span>
-                                  </div>
-                                  <span className="text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    {p.status_geral}
-                                  </span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        )}
+              ) : (
+                <>
+                  {creationMode === "PROJECT" && (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          placeholder="Buscar projeto por cliente..."
+                          className="pl-9 bg-slate-50 border-slate-200 text-sm h-10"
+                          value={searchProject}
+                          onChange={(e) => setSearchProject(e.target.value)}
+                        />
                       </div>
-                    )}
 
-                    {/* Modo 2: Apenas Cliente */}
-                    {creationMode === "CLIENT" && (
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                          <Input 
-                            placeholder="Buscar cliente na base..." 
-                            className="pl-9 bg-slate-50 border-slate-200 text-sm"
-                            value={searchClient}
-                            onChange={(e) => setSearchClient(e.target.value)}
-                          />
+                      {loadingProjects ? (
+                        <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="text-sm">Carregando projetos...</span>
                         </div>
+                      ) : (
+                        <ul className="max-h-56 sm:max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+                          {projects.filter((p) =>
+                            p.client.nome.toLowerCase().includes(searchProject.toLowerCase())
+                          ).length === 0 ? (
+                            <li className="p-4 text-center text-sm text-slate-400">
+                              Nenhum projeto encontrado.
+                            </li>
+                          ) : (
+                            projects
+                              .filter((p) =>
+                                p.client.nome.toLowerCase().includes(searchProject.toLowerCase())
+                              )
+                              .map((p) => (
+                                <li key={p.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedProjectId(p.id)}
+                                    className="w-full p-3 sm:p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-50 transition-colors"
+                                  >
+                                    <div className="min-w-0">
+                                      <strong className="text-sm text-slate-800 block truncate">
+                                        {p.client.nome}
+                                      </strong>
+                                      <span className="text-xs text-slate-400">
+                                        {p.client.cidade}
+                                      </span>
+                                    </div>
+                                    <span className="shrink-0 text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase">
+                                      {p.status_geral}
+                                    </span>
+                                  </button>
+                                </li>
+                              ))
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  )}
 
-                        {loadingClients ? (
-                          <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
-                            <Loader2 className="h-6 w-6 animate-spin text-[hsl(28_85%_45%)]" />
-                            <span className="text-sm">Carregando clientes...</span>
-                          </div>
-                        ) : (
-                          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-lg">
-                            {clientsList.filter(c => 
+                  {creationMode === "CLIENT" && (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          placeholder="Buscar cliente..."
+                          className="pl-9 bg-slate-50 border-slate-200 text-sm h-10"
+                          value={searchClient}
+                          onChange={(e) => setSearchClient(e.target.value)}
+                        />
+                      </div>
+
+                      {loadingClients ? (
+                        <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="text-sm">Carregando clientes...</span>
+                        </div>
+                      ) : (
+                        <ul className="max-h-56 sm:max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+                          {clientsList.filter(
+                            (c) =>
                               c.nome.toLowerCase().includes(searchClient.toLowerCase()) ||
                               c.email.toLowerCase().includes(searchClient.toLowerCase())
-                            ).length === 0 ? (
-                              <p className="p-4 text-center text-sm text-slate-400">Nenhum cliente encontrado.</p>
-                            ) : (
-                              clientsList.filter(c => 
-                                c.nome.toLowerCase().includes(searchClient.toLowerCase()) ||
-                                c.email.toLowerCase().includes(searchClient.toLowerCase())
-                              ).map(c => (
-                                <div 
-                                  key={c.id} 
-                                  onClick={() => handleSelectClient(c.id)}
-                                  className="p-3 flex justify-between items-center hover:bg-slate-50 cursor-pointer transition-colors"
-                                >
-                                  <div>
-                                    <strong className="text-sm text-slate-800 block">{c.nome}</strong>
-                                    <span className="text-xs text-slate-400">{c.cidade} {c.telefone && `// ${c.telefone}`}</span>
-                                  </div>
-                                  <span className="text-[10px] font-semibold text-slate-400">
-                                    Selecionar
-                                  </span>
-                                </div>
+                          ).length === 0 ? (
+                            <li className="p-4 text-center text-sm text-slate-400">
+                              Nenhum cliente encontrado.
+                            </li>
+                          ) : (
+                            clientsList
+                              .filter(
+                                (c) =>
+                                  c.nome.toLowerCase().includes(searchClient.toLowerCase()) ||
+                                  c.email.toLowerCase().includes(searchClient.toLowerCase())
+                              )
+                              .map((c) => (
+                                <li key={c.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectClient(c.id)}
+                                    className="w-full p-3 sm:p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-50 transition-colors"
+                                  >
+                                    <div className="min-w-0">
+                                      <strong className="text-sm text-slate-800 block truncate">
+                                        {c.nome}
+                                      </strong>
+                                      <span className="text-xs text-slate-400 truncate block">
+                                        {c.cidade}
+                                        {c.telefone ? ` · ${c.telefone}` : ""}
+                                      </span>
+                                    </div>
+                                    <span className="shrink-0 text-[10px] font-semibold text-primary">
+                                      Selecionar
+                                    </span>
+                                  </button>
+                                </li>
                               ))
-                            )}
-                          </div>
-                        )}
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {creationMode === "QUICK" && (
+                    <form
+                      onSubmit={handleCreateQuickClient}
+                      className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-500">Nome *</label>
+                          <Input
+                            required
+                            placeholder="Nome do cliente"
+                            value={quickNome}
+                            onChange={(e) => setQuickNome(e.target.value)}
+                            className="bg-white border-slate-200 text-sm h-10"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-500">Cidade *</label>
+                          <Input
+                            required
+                            placeholder="Cidade"
+                            value={quickCidade}
+                            onChange={(e) => setQuickCidade(e.target.value)}
+                            className="bg-white border-slate-200 text-sm h-10"
+                          />
+                        </div>
                       </div>
-                    )}
 
-                    {/* Modo 3: Orçamento Avulso */}
-                    {creationMode === "QUICK" && (
-                      <form onSubmit={handleCreateQuickClient} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 block">Nome do Cliente *</label>
-                            <Input 
-                              required 
-                              placeholder="Nome completo do cliente" 
-                              value={quickNome}
-                              onChange={e => setQuickNome(e.target.value)}
-                              className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 block">Cidade *</label>
-                            <Input 
-                              required 
-                              placeholder="Cidade" 
-                              value={quickCidade}
-                              onChange={e => setQuickCidade(e.target.value)}
-                              className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
-                            />
-                          </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-500">E-mail</label>
+                          <Input
+                            type="email"
+                            placeholder="Opcional"
+                            value={quickEmail}
+                            onChange={(e) => setQuickEmail(e.target.value)}
+                            className="bg-white border-slate-200 text-sm h-10"
+                          />
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 block">E-mail (Opcional)</label>
-                            <Input 
-                              type="email"
-                              placeholder="E-mail do cliente" 
-                              value={quickEmail}
-                              onChange={e => setQuickEmail(e.target.value)}
-                              className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 block">Telefone (Opcional)</label>
-                            <Input 
-                              type="tel"
-                              placeholder={PHONE_PLACEHOLDER}
-                              value={quickTelefone}
-                              onChange={e => setQuickTelefone(e.target.value)}
-                              className="border-slate-200 bg-slate-50 text-sm h-9 focus:bg-white"
-                            />
-                          </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-500">Telefone</label>
+                          <Input
+                            type="tel"
+                            placeholder={PHONE_PLACEHOLDER}
+                            value={quickTelefone}
+                            onChange={(e) => setQuickTelefone(e.target.value)}
+                            className="bg-white border-slate-200 text-sm h-10"
+                          />
                         </div>
+                      </div>
 
-                        <div className="flex justify-end pt-2">
-                          <Button 
-                            type="submit" 
-                            className="bg-[hsl(28_85%_45%)] hover:bg-[hsl(28_85%_40%)] text-white text-xs font-bold h-9 px-4"
-                          >
-                            Avançar para o Construtor
-                          </Button>
-                        </div>
-                      </form>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+                      <div className="flex justify-end pt-1">
+                        <Button type="submit" className="w-full sm:w-auto font-semibold">
+                          Continuar para o construtor
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
-            {/* FASE 2: Construtor do Orçamento */}
-            {selectedProjectId && (
-              <div className="pt-2">
-                <QuoteBuilder 
-                  projectId={selectedProjectId}
-                  companyId={companyId}
-                  onSuccess={handleCreateSuccess}
-                  onCancel={handleCancelCreate}
-                />
-              </div>
-            )}
-
-          </div>
+          {selectedProjectId && (
+            <QuoteBuilder
+              embedded
+              projectId={selectedProjectId}
+              companyId={companyId}
+              onSuccess={handleCreateSuccess}
+              onCancel={handleCancelCreate}
+            />
+          )}
+        </div>
       </Dialog>
       <ActionDialogHost dialog={dialog} />
     </div>

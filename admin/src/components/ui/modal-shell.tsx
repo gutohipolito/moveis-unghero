@@ -11,6 +11,7 @@ export interface ModalShellProps {
   children: React.ReactNode;
   panelClassName?: string;
   bodyClassName?: string;
+  viewportClassName?: string;
   showClose?: boolean;
   closeOnBackdrop?: boolean;
   fullscreen?: boolean;
@@ -22,6 +23,7 @@ export function ModalShell({
   children,
   panelClassName,
   bodyClassName,
+  viewportClassName,
   showClose = true,
   closeOnBackdrop = true,
   fullscreen = false,
@@ -60,7 +62,7 @@ export function ModalShell({
         tabIndex={-1}
         onClick={closeOnBackdrop ? onClose : undefined}
       />
-      <div className={cn("modal-viewport", fullscreen && "modal-viewport-fullscreen")}>
+      <div className={cn("modal-viewport", fullscreen && "modal-viewport-fullscreen", viewportClassName)}>
         <div
           className={cn(
             "modal-panel",

@@ -7,6 +7,8 @@ export interface DialogProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  bodyClassName?: string;
+  viewportClassName?: string;
   showClose?: boolean;
   closeOnBackdrop?: boolean;
 }
@@ -16,6 +18,8 @@ export function Dialog({
   onClose,
   children,
   className,
+  bodyClassName,
+  viewportClassName,
   showClose = true,
   closeOnBackdrop = true,
 }: DialogProps) {
@@ -26,6 +30,8 @@ export function Dialog({
       showClose={showClose}
       closeOnBackdrop={closeOnBackdrop}
       panelClassName={cn("w-full max-w-xl", className)}
+      bodyClassName={bodyClassName}
+      viewportClassName={viewportClassName}
     >
       {children}
     </ModalShell>
