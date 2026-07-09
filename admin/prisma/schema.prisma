@@ -327,14 +327,28 @@ enum TaskType {
 }
 
 model Installment {
-  id              String            @id @default(uuid())
-  project_id      String
-  project         Project           @relation(fields: [project_id], references: [id])
-  valor           Decimal           @db.Decimal(12, 2)
-  data_vencimento DateTime
-  data_pagamento  DateTime?
-  status          InstallmentStatus @default(PENDENTE)
-  tipo            InstallmentType   @default(PARCELA)
+  id                String            @id @default(uuid())
+  project_id        String
+  project           Project           @relation(fields: [project_id], references: [id])
+  valor             Decimal           @db.Decimal(12, 2)
+  data_vencimento   DateTime
+  data_pagamento    DateTime?
+  status            InstallmentStatus @default(PENDENTE)
+  tipo              InstallmentType   @default(PARCELA)
+  metodo_pagamento  PaymentMethod     @default(PIX)
+  numero_parcela    Int?
+  total_parcelas    Int?
+  grupo_id          String?
+}
+
+enum PaymentMethod {
+  PIX
+  BOLETO
+  CARTAO
+  DINHEIRO
+  TRANSFERENCIA
+  CHEQUE
+  OUTRO
 }
 
 enum InstallmentStatus {

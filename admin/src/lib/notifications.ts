@@ -19,6 +19,7 @@ export type NotificationType =
   | "sla_due"
   | "invoice_pending"
   | "new_briefing"
+  | "installment_due"
   | "info";
 export type NotificationPriority = "normal" | "high";
 
@@ -171,6 +172,8 @@ export function isInAppToastNotification(notification: AppNotification): boolean
     case "sla_due":
     case "invoice_pending":
       return true;
+    case "installment_due":
+      return true;
     case "follow_up":
       return notification.priority === "high";
     default:
@@ -178,7 +181,7 @@ export function isInAppToastNotification(notification: AppNotification): boolean
   }
 }
 
-export type InAppToastAccent = "briefing" | "follow_up" | "sla" | "invoice";
+export type InAppToastAccent = "briefing" | "follow_up" | "sla" | "invoice" | "payment";
 
 export function getInAppToastMeta(notification: AppNotification): {
   actionLabel: string;
@@ -193,6 +196,8 @@ export function getInAppToastMeta(notification: AppNotification): {
       return { actionLabel: "Ver produção", accent: "sla" };
     case "invoice_pending":
       return { actionLabel: "Emitir NF", accent: "invoice" };
+    case "installment_due":
+      return { actionLabel: "Ver financeiro", accent: "payment" };
     default:
       return { actionLabel: "Abrir", accent: "briefing" };
   }

@@ -4,15 +4,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Dialog } from "@/components/ui/dialog";
 import {
   type Payment,
   getClientPaymentsAction,
 } from "@/app/actions/cliente";
-import { createInstallment, payInstallment } from "@/app/actions/operations";
-import { labelProjectStatus } from "@/lib/navLabels";
+import { payInstallment } from "@/app/actions/operations";
+import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
 import type { ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import {
   CheckCircle2,
@@ -30,12 +27,6 @@ interface ClienteFinanceTabProps {
   onGoToProjects?: () => void;
 }
 
-function defaultDueDate(): string {
-  const date = new Date();
-  date.setDate(date.getDate() + 30);
-  return date.toISOString().split("T")[0];
-}
-
 export default function ClienteFinanceTab({
   clientId,
   projects,
@@ -44,48 +35,11 @@ export default function ClienteFinanceTab({
   onGoToProjects,
 }: ClienteFinanceTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    projectId: projects[0]?.id ?? "",
-    valor: "",
-    data_vencimento: defaultDueDate(),
-    tipo: "PARCELA" as "ENTRADA" | "PARCELA",
-  });
 
   async function refreshPayments() {
     const res = await getClientPaymentsAction(clientId);
     if (res.success) onPaymentsChange(res.payments);
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!form.projectId || !form.valor || !form.data_vencimento) return;
-
-    setSubmitting(true);
-    setError(null);
-
-    const res = await createInstallment(form.projectId, {
-      valor: Number(form.valor),
-      data_vencimento: form.data_vencimento,
-      tipo: form.tipo,
-    });
-
-    setSubmitting(false);
-
-    if (res.success) {
-      setIsModalOpen(false);
-      setForm({
-        projectId: projects[0]?.id ?? "",
-        valor: "",
-        data_vencimento: defaultDueDate(),
-        tipo: "PARCELA",
-      });
-      await refreshPayments();
-    } else {
-      setError(res.error ?? "Não foi possível lançar a parcela.");
-    }
   }
 
   async function handleMarkPaid(payment: Payment) {
@@ -106,8 +60,8 @@ export default function ClienteFinanceTab({
               <CreditCard className="h-4.5 w-4.5 text-primary" /> Histórico de Faturamento e Parcelas
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-              Lance entradas e parcelas após a <strong>aprovação do orçamento</strong> ou assinatura do contrato.
-              Cada lançamento fica vinculado a um projeto e aparece também no módulo Financeiro.
+              Cadastre o plano com forma de pagamento (PIX, boleto, cartão, dinheiro…). O painel avisa
+              antes do vencimento para você preparar cobrança ou recebimento.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -118,16 +72,9 @@ export default function ClienteFinanceTab({
               type="button"
               className="text-xs font-bold gap-1.5 btn-metallic"
               disabled={!canAdd}
-              onClick={() => {
-                setError(null);
-                setForm((prev) => ({
-                  ...prev,
-                  projectId: prev.projectId || projects[0]?.id || "",
-                }));
-                setIsModalOpen(true);
-              }}
+              onClick={() => setIsModalOpen(true)}
             >
-              <Plus className="h-4 w-4" /> Lançar parcela
+              <Plus className="h-4 w-4" /> Lançar parcelas
             </Button>
           </div>
         </div>
@@ -144,16 +91,12 @@ export default function ClienteFinanceTab({
         ) : payments.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl space-y-3">
             <p>Nenhuma parcela lançada ainda.</p>
-            <p className="text-xs">
-              Você também pode cadastrar em{" "}
-              <strong>Projetos → abrir projeto → Financeiro → Lançar Parcela</strong>.
-            </p>
             <Button
               type="button"
               className="text-xs font-bold gap-1.5 btn-metallic"
               onClick={() => setIsModalOpen(true)}
             >
-              <Plus className="h-4 w-4" /> Lançar primeira parcela
+              <Plus className="h-4 w-4" /> Criar plano de parcelas
             </Button>
           </div>
         ) : (
@@ -171,6 +114,7 @@ export default function ClienteFinanceTab({
                     <strong className="text-sm font-bold text-foreground block">{pay.descricao}</strong>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>Vencimento: {new Date(pay.vencimento).toLocaleDateString("pt-BR")}</span>
+                      {pay.metodo ? <span>Método: {pay.metodo}</span> : null}
                       <Link
                         href={`/projects/${pay.projectId}`}
                         className="inline-flex items-center gap-1 text-primary font-semibold hover:underline"
@@ -231,96 +175,12 @@ export default function ClienteFinanceTab({
         )}
       </Card>
 
-      <Dialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} className="max-w-md w-full">
-        <div className="space-y-4 pr-6">
-          <div>
-            <h3 className="text-lg font-bold text-foreground">Lançar parcela</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Vincule a um projeto do cliente. Ideal após fechamento comercial (status Aprovado ou posterior).
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground block">Projeto</label>
-              <Select
-                required
-                value={form.projectId}
-                onChange={(e) => setForm({ ...form, projectId: e.target.value })}
-                className="border-border bg-slate-50 text-sm w-full"
-              >
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    #{project.id.slice(0, 8).toUpperCase()} · {labelProjectStatus(project.status_geral)} ·{" "}
-                    {Number(project.valor_previsto).toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                      maximumFractionDigits: 0,
-                    })}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground block">Valor (R$)</label>
-              <Input
-                required
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={form.valor}
-                onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                className="border-border bg-slate-50 text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground block">Vencimento</label>
-                <Input
-                  required
-                  type="date"
-                  value={form.data_vencimento}
-                  onChange={(e) => setForm({ ...form, data_vencimento: e.target.value })}
-                  className="border-border bg-slate-50 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground block">Tipo</label>
-                <Select
-                  value={form.tipo}
-                  onChange={(e) =>
-                    setForm({ ...form, tipo: e.target.value as "ENTRADA" | "PARCELA" })
-                  }
-                  className="border-border bg-slate-50 text-sm w-full"
-                >
-                  <option value="PARCELA">Parcela</option>
-                  <option value="ENTRADA">Entrada / Sinal</option>
-                </Select>
-              </div>
-            </div>
-
-            {error ? <p className="text-xs text-destructive font-medium">{error}</p> : null}
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="text-xs font-bold"
-                disabled={submitting}
-                onClick={() => setIsModalOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={submitting} className="font-bold btn-metallic gap-1.5">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {submitting ? "Lançando..." : "Confirmar"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Dialog>
+      <InstallmentLaunchDialog
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        projects={projects}
+        onSuccess={refreshPayments}
+      />
     </>
   );
 }

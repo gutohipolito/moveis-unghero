@@ -29,6 +29,9 @@ export default async function FinanceiroPage() {
     data_pagamento: ins.data_pagamento ? ins.data_pagamento.toISOString() : null,
     status: ins.status,
     tipo: ins.tipo,
+    metodo_pagamento: ins.metodo_pagamento,
+    numero_parcela: ins.numero_parcela,
+    total_parcelas: ins.total_parcelas,
     projectId: ins.project.id,
     clientName: ins.project.client.nome,
   }));

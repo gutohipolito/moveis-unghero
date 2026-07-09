@@ -9,6 +9,7 @@ import {
   mergeNotifications,
   type AppNotification,
 } from "@/lib/notifications";
+import { buildInstallmentDueNotifications } from "@/lib/installmentDueAlerts";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 
@@ -31,7 +32,8 @@ export async function getNotifications(companyId: string): Promise<{
   }
 
   try {
-    const [projects, slaAlerts, invoicePending, briefings] = await Promise.all([
+    const [projects, slaAlerts, invoicePending, briefings, pendingInstallments] =
+      await Promise.all([
       prisma.project.findMany({
         where: {
           status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
@@ -61,8 +63,20 @@ export async function getNotifications(companyId: string): Promise<{
             }
           }
         },
-        orderBy: { createdAt: "desc" }
-      })
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.installment.findMany({
+        where: {
+          status: { in: ["PENDENTE", "ATRASADO"] },
+          project: { client: { company_id: companyId } },
+        },
+        include: {
+          project: {
+            include: { client: { select: { id: true, nome: true } } },
+          },
+        },
+        orderBy: { data_vencimento: "asc" },
+      }),
     ]);
 
     const followUp = buildFollowUpNotifications(
@@ -88,11 +102,28 @@ export async function getNotifications(companyId: string): Promise<{
 
     const briefingNotifications = buildBriefingNotifications(briefings);
 
+    const installmentNotifications = buildInstallmentDueNotifications(
+      pendingInstallments.map((inst) => ({
+        id: inst.id,
+        valor: Number(inst.valor),
+        data_vencimento: inst.data_vencimento,
+        status: inst.status,
+        metodo_pagamento: inst.metodo_pagamento,
+        numero_parcela: inst.numero_parcela,
+        total_parcelas: inst.total_parcelas,
+        project: {
+          id: inst.project.id,
+          client: inst.project.client,
+        },
+      }))
+    );
+
     const notifications = mergeNotifications(
       followUp,
       slaNotifications,
       invoiceNotifications,
-      briefingNotifications
+      briefingNotifications,
+      installmentNotifications
     );
 
     return { success: true, notifications };

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { payInstallment } from "@/app/actions/operations";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import {
   User,
   ArrowUpRight
 } from "lucide-react";
-import Link from "next/link";
+import { labelPaymentMethod } from "@/lib/paymentMethods";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface InstallmentItem {
@@ -27,6 +28,9 @@ interface InstallmentItem {
   data_pagamento: string | null;
   status: string;
   tipo: string;
+  metodo_pagamento?: string;
+  numero_parcela?: number | null;
+  total_parcelas?: number | null;
   projectId: string;
   clientName: string;
 }
@@ -185,6 +189,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
               <tr className="border-b border-border/50 text-muted-foreground text-xs uppercase font-bold bg-slate-50">
                 <th className="p-4">Cliente / Contratante</th>
                 <th className="p-4 text-center">Tipo</th>
+                <th className="p-4 text-center">Método</th>
                 <th className="p-4 text-right">Valor Parcela</th>
                 <th className="p-4 text-center">Vencimento</th>
                 <th className="p-4 text-center">Pagamento</th>
@@ -195,7 +200,7 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
             <tbody className="divide-y divide-border/20 text-foreground">
               {filteredInstallments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
                     Nenhuma parcela ou faturamento correspondente encontrado.
                   </td>
                 </tr>
@@ -223,8 +228,13 @@ export default function FinanceiroClient({ initialInstallments }: FinanceiroClie
                             ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
                             : "bg-secondary text-muted-foreground"
                         }`}>
-                          {item.tipo}
+                          {item.numero_parcela && item.total_parcelas
+                            ? `${item.tipo} ${item.numero_parcela}/${item.total_parcelas}`
+                            : item.tipo}
                         </span>
+                      </td>
+                      <td className="p-4 text-center text-xs text-muted-foreground">
+                        {item.metodo_pagamento ? labelPaymentMethod(item.metodo_pagamento) : "—"}
                       </td>
                       <td className="p-4 text-right font-black text-foreground privacy-value">
                         {formatCurrency(item.valor)}

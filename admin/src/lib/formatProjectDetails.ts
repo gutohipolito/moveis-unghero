@@ -58,6 +58,9 @@ export type ProjectDetailsPayload = {
     data_pagamento: string | null;
     status: string;
     tipo: string;
+    metodo_pagamento?: string;
+    numero_parcela?: number | null;
+    total_parcelas?: number | null;
   }>;
   briefing: {
     id: string;
@@ -156,6 +159,9 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       data_pagamento: ins.data_pagamento ? ins.data_pagamento.toISOString() : null,
       status: ins.status,
       tipo: ins.tipo,
+      metodo_pagamento: ins.metodo_pagamento,
+      numero_parcela: ins.numero_parcela,
+      total_parcelas: ins.total_parcelas,
     })),
     briefing: project.briefing
       ? {

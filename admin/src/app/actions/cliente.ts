@@ -17,6 +17,7 @@ import {
 import { createClientSessionToken } from "@/lib/clientSession";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { labelProjectStatus } from "@/lib/navLabels";
+import { labelPaymentMethod } from "@/lib/paymentMethods";
 
 type Origin = 
   | "SITE"
@@ -544,6 +545,8 @@ export interface Payment {
   pagoEm?: string;
   metodo?: string;
   tipo: "ENTRADA" | "PARCELA";
+  numeroParcela?: number;
+  totalParcelas?: number;
 }
 
 
@@ -596,28 +599,35 @@ function mapInstallmentToPayment(
     data_vencimento: Date;
     data_pagamento: Date | null;
     status: string;
+    metodo_pagamento: string;
+    numero_parcela: number | null;
+    total_parcelas: number | null;
   },
-  index: number,
-  total: number,
   project: { id: string; status_geral: string }
 ): Payment {
   const tipoBase = inst.tipo === "ENTRADA" ? "Entrada" : "Parcela";
-  const tipoLabel =
-    total > 1 ? `${tipoBase} (${index + 1}/${total})` : tipoBase;
+  const parcelRef =
+    inst.numero_parcela && inst.total_parcelas
+      ? `${tipoBase} ${inst.numero_parcela}/${inst.total_parcelas}`
+      : tipoBase;
+  const metodo = labelPaymentMethod(inst.metodo_pagamento);
   const projectRef = `#${project.id.slice(0, 8).toUpperCase()} · ${labelProjectStatus(project.status_geral)}`;
 
   return {
     id: inst.id,
     projectId: project.id,
     projectStatus: project.status_geral,
-    descricao: `${tipoLabel} — ${projectRef}`,
+    descricao: `${parcelRef} (${metodo}) — ${projectRef}`,
     valor: Number(inst.valor),
     vencimento: inst.data_vencimento.toISOString().split("T")[0],
     status: resolveInstallmentStatus(inst.status, inst.data_vencimento),
     pagoEm: inst.data_pagamento
       ? inst.data_pagamento.toISOString().split("T")[0]
       : undefined,
+    metodo,
     tipo: inst.tipo === "ENTRADA" ? "ENTRADA" : "PARCELA",
+    numeroParcela: inst.numero_parcela ?? undefined,
+    totalParcelas: inst.total_parcelas ?? undefined,
   };
 }
 
@@ -646,8 +656,8 @@ async function loadClientActivitiesAndPayments(clientId: string) {
 
   const payments = projects
     .flatMap((project) =>
-      project.installments.map((inst, index) =>
-        mapInstallmentToPayment(inst, index, project.installments.length, {
+      project.installments.map((inst) =>
+        mapInstallmentToPayment(inst, {
           id: project.id,
           status_geral: project.status_geral,
         })

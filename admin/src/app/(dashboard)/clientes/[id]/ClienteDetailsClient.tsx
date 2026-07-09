@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -99,7 +100,15 @@ export default function ClienteDetailsClient({
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
   
   // Abas: overview, projects, documents, finance, timeline
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<"overview" | "projects" | "finance" | "timeline" | "documents">("overview");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "finance" || tab === "projects" || tab === "documents" || tab === "timeline" || tab === "overview") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Notas da Timeline
   const [newTitle, setNewTitle] = useState("");

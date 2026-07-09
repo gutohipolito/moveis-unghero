@@ -16,7 +16,9 @@ import {
   type FileType
 } from "@/app/actions/project";
 import { approveQuote, deleteQuote } from "@/app/actions/quotes";
-import { createInstallment, payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
+import { getProjectDetailsAction } from "@/app/actions/project";
+import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
+import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
@@ -29,8 +31,9 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
+import { labelPaymentMethod } from "@/lib/paymentMethods";
+import {
+  ArrowLeft,
   User, 
   Phone, 
   Mail, 
@@ -98,6 +101,9 @@ interface Installment {
   data_pagamento: string | null;
   status: string;
   tipo: string;
+  metodo_pagamento?: string;
+  numero_parcela?: number | null;
+  total_parcelas?: number | null;
 }
 
 interface Task {
@@ -255,13 +261,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-
-  // Estados dos formulários
-  const [newInstallmentForm, setNewInstallmentForm] = useState({
-    valor: "",
-    data_vencimento: "2026-07-01",
-    tipo: "PARCELA" as "ENTRADA" | "PARCELA"
-  });
 
   const [newTaskForm, setNewTaskForm] = useState({
     titulo: "",
@@ -639,39 +638,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     });
   };
 
-  const handleAddInstallmentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newInstallmentForm.valor || !newInstallmentForm.data_vencimento) return;
-
-    setLoading(true);
-    const valueNum = parseFloat(newInstallmentForm.valor);
-    const result = await createInstallment(project.id, {
-      valor: valueNum,
-      data_vencimento: newInstallmentForm.data_vencimento,
-      tipo: newInstallmentForm.tipo
-    });
-
-    if (result.success && result.installment) {
-      const added: Installment = {
-        id: result.installment.id,
-        valor: Number(result.installment.valor),
-        data_vencimento: result.installment.data_vencimento.toISOString ? result.installment.data_vencimento.toISOString() : new Date(result.installment.data_vencimento).toISOString(),
-        data_pagamento: null,
-        status: "PENDENTE",
-        tipo: result.installment.tipo
-      };
-
-      setProject(prev => ({
-        ...prev,
-        installments: [...prev.installments, added]
-      }));
-      setIsAddInstallmentOpen(false);
-      setNewInstallmentForm({ valor: "", data_vencimento: "2026-07-01", tipo: "PARCELA" });
-      showSuccess("Parcela adicionada", "Nova parcela registrada no financeiro do projeto.");
-    }
-    setLoading(false);
-  };
-
   const handleToggleTask = async (taskId: string, completed: boolean) => {
     setProject(prev => ({
       ...prev,
@@ -683,6 +649,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
     await toggleTaskStatus(project.id, taskId, completed);
   };
+
+  async function refreshInstallmentsFromServer() {
+    const res = await getProjectDetailsAction(project.id);
+    if (res.success && res.project) {
+      setProject((prev) => ({
+        ...prev,
+        installments: res.project!.installments as Installment[],
+      }));
+      showSuccess("Financeiro atualizado", "Parcelas sincronizadas com o servidor.");
+    }
+  }
 
   const handleAddTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1549,6 +1526,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   <thead>
                     <tr className="border-b border-border/30 text-muted-foreground text-xs uppercase font-bold bg-black/10">
                       <th className="p-4">Tipo</th>
+                      <th className="p-4">Pagamento</th>
                       <th className="p-4 text-right">Valor</th>
                       <th className="p-4 text-center">Vencimento</th>
                       <th className="p-4 text-center">Pagamento</th>
@@ -1567,8 +1545,15 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                                 ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
                                 : "bg-secondary text-muted-foreground"
                             }`}>
-                              {ins.tipo}
+                              {ins.numero_parcela && ins.total_parcelas
+                                ? `${ins.tipo} ${ins.numero_parcela}/${ins.total_parcelas}`
+                                : ins.tipo}
                             </span>
+                          </td>
+                          <td className="p-4 text-xs text-muted-foreground">
+                            {ins.metodo_pagamento
+                              ? labelPaymentMethod(ins.metodo_pagamento)
+                              : "—"}
                           </td>
                           <td className="p-4 text-right font-black text-foreground">
                             {formatCurrency(ins.valor)}
@@ -1796,69 +1781,18 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         </form>
       </Dialog>
 
-      {/* Modal - Novo Recebível / Parcela */}
-      <Dialog isOpen={isAddInstallmentOpen} onClose={() => setIsAddInstallmentOpen(false)}>
-        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
-          Lançar Parcela / Entrada Financeira
-        </h3>
-        <form onSubmit={handleAddInstallmentSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Valor da Parcela (R$)
-            </label>
-            <Input
-              required
-              type="number"
-              step="0.01"
-              
-              value={newInstallmentForm.valor}
-              onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, valor: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Data de Vencimento
-              </label>
-              <Input
-                required
-                type="date"
-                value={newInstallmentForm.data_vencimento}
-                onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, data_vencimento: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Tipo
-              </label>
-              <Select
-                value={newInstallmentForm.tipo}
-                onChange={(e) => setNewInstallmentForm({ ...newInstallmentForm, tipo: e.target.value as any })}
-              >
-                <option value="PARCELA">Parcela Padrão</option>
-                <option value="ENTRADA">Entrada / Sinal</option>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border/40">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsAddInstallmentOpen(false)}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading} className="font-semibold btn-metallic w-full sm:w-auto">
-              {loading ? "Lançando..." : "Confirmar Parcela"}
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+      <InstallmentLaunchDialog
+        open={isAddInstallmentOpen}
+        onClose={() => setIsAddInstallmentOpen(false)}
+        projects={[
+          {
+            id: project.id,
+            status_geral: project.status_geral,
+            valor_previsto: project.valor_previsto,
+          },
+        ]}
+        onSuccess={refreshInstallmentsFromServer}
+      />
 
       {/* Modal - Novo Agendamento / Tarefa */}
       <Dialog isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)}>

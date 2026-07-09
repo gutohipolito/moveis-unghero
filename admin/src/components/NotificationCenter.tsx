@@ -90,7 +90,7 @@ export default function NotificationCenter({
               <div className="flex-1 min-w-0 space-y-1.5">
                 <p className="text-xs font-bold text-foreground">Alertas no navegador</p>
                 <p className="text-[10px] text-muted-foreground leading-snug">
-                  Briefings, follow-ups urgentes, SLA e NF pendente aparecem como alerta visual no painel.
+                  Briefings, parcelas a vencer, follow-ups urgentes, SLA e NF pendente aparecem como alerta visual.
                   Alertas do sistema operacional são opcionais abaixo.
                 </p>
                 {browserBlocked ? (
