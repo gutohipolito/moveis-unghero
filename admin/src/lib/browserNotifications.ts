@@ -1,4 +1,5 @@
 import type { AppNotification } from "@/lib/notifications";
+import { playNotificationChime } from "@/lib/notificationSound";
 
 export type BrowserPermission = NotificationPermission | "unsupported";
 
@@ -19,44 +20,119 @@ export async function requestBrowserPermission(): Promise<BrowserPermission> {
   return result;
 }
 
-export function showBrowserNotification(
+function getNotificationIconUrl(): string {
+  if (typeof window === "undefined") return "/pwa-icon/192";
+  return `${window.location.origin}/pwa-icon/192`;
+}
+
+function buildNotificationOptions(
   notification: AppNotification,
-  options?: { onClick?: () => void }
-) {
+  options?: { playSound?: boolean }
+): NotificationOptions {
+  const urgent = notification.priority === "high";
+  return {
+    body: notification.message,
+    icon: getNotificationIconUrl(),
+    badge: getNotificationIconUrl(),
+    tag: notification.id,
+    requireInteraction: urgent,
+    silent: options?.playSound === false,
+    data: {
+      href: notification.href,
+      notificationId: notification.id,
+    },
+  };
+}
+
+async function showViaServiceWorker(
+  title: string,
+  options: NotificationOptions
+): Promise<boolean> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return false;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    await registration.showNotification(title, options);
+    return true;
+  } catch (error) {
+    console.warn("Falha ao exibir notificação via service worker:", error);
+    return false;
+  }
+}
+
+function showViaConstructor(
+  title: string,
+  options: NotificationOptions,
+  onClick?: () => void
+): Notification | null {
   if (!isBrowserNotificationSupported() || Notification.permission !== "granted") {
     return null;
   }
 
-  const n = new Notification(notification.title, {
-    body: notification.message,
-    icon: "/pwa-icon/192",
-    badge: "/pwa-icon/192",
-    tag: notification.id,
-    requireInteraction: notification.priority === "high",
-    silent: notification.priority !== "high",
-  });
+  try {
+    const n = new Notification(title, options);
 
-  n.onclick = (event) => {
-    event.preventDefault();
-    window.focus();
+    n.onclick = (event) => {
+      event.preventDefault();
+      window.focus();
+      onClick?.();
+      n.close();
+    };
+
+    if (!options.requireInteraction) {
+      setTimeout(() => n.close(), 8000);
+    }
+
+    return n;
+  } catch (error) {
+    console.warn("Falha ao exibir notificação nativa:", error);
+    return null;
+  }
+}
+
+export async function showBrowserNotification(
+  notification: AppNotification,
+  options?: { onClick?: () => void; playSound?: boolean }
+): Promise<boolean> {
+  if (!isBrowserNotificationSupported() || Notification.permission !== "granted") {
+    return false;
+  }
+
+  const playSound = options?.playSound !== false;
+  if (playSound) {
+    playNotificationChime({ urgent: notification.priority === "high" });
+  }
+
+  const payload = buildNotificationOptions(notification, { playSound });
+
+  const viaSw = await showViaServiceWorker(notification.title, payload);
+  if (viaSw) return true;
+
+  const fallback = showViaConstructor(notification.title, payload, () => {
     if (options?.onClick) {
       options.onClick();
     } else if (notification.href) {
       window.location.href = notification.href;
     }
-    n.close();
-  };
+  });
 
-  if (notification.priority !== "high") {
-    setTimeout(() => n.close(), 8000);
-  }
-
-  return n;
+  return fallback !== null;
 }
 
-export function showBrowserNotificationSummary(count: number, urgentCount: number) {
+export async function showBrowserNotificationSummary(
+  count: number,
+  urgentCount: number,
+  options?: { playSound?: boolean }
+): Promise<boolean> {
   if (!isBrowserNotificationSupported() || Notification.permission !== "granted") {
-    return null;
+    return false;
+  }
+
+  const playSound = options?.playSound !== false;
+  if (playSound) {
+    playNotificationChime({ urgent: urgentCount > 0 });
   }
 
   const title =
@@ -69,18 +145,18 @@ export function showBrowserNotificationSummary(count: number, urgentCount: numbe
       ? "Leads sem resposta há mais de 7 dias — retome o contato no funil comercial."
       : "Confira os follow-ups pendentes no funil comercial.";
 
-  const n = new Notification(title, {
+  const payload: NotificationOptions = {
     body,
-    icon: "/pwa-icon/192",
+    icon: getNotificationIconUrl(),
     tag: "mu-notification-summary",
-  });
-
-  n.onclick = () => {
-    window.focus();
-    window.location.href = "/crm";
-    n.close();
+    silent: !playSound,
+    data: { href: "/crm", notificationId: "mu-notification-summary" },
   };
 
-  setTimeout(() => n.close(), 10000);
-  return n;
+  const viaSw = await showViaServiceWorker(title, payload);
+  if (viaSw) return true;
+
+  return showViaConstructor(title, payload, () => {
+    window.location.href = "/crm";
+  }) !== null;
 }

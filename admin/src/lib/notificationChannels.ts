@@ -3,6 +3,8 @@ export type NotificationChannel = "in_app" | "browser" | "push" | "email";
 
 export interface NotificationPreferences {
   browser: boolean;
+  /** Som ao receber alerta no navegador */
+  sound: boolean;
   /** Web Push (aba fechada) — futuro */
   push: boolean;
   /** E-mail transacional — futuro */
@@ -14,6 +16,7 @@ const DELIVERED_KEY = "mu_notification_delivered";
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   browser: false,
+  sound: true,
   push: false,
   email: false,
 };

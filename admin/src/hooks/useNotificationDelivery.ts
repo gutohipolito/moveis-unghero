@@ -20,6 +20,7 @@ import {
   saveNotificationPrefs,
   type NotificationPreferences,
 } from "@/lib/notificationChannels";
+import { primeNotificationSound } from "@/lib/notificationSound";
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -35,34 +36,42 @@ export function useNotificationDelivery({
   const router = useRouter();
   const [notifications, setNotifications] = useState(initialNotifications);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPrefs());
-  const [browserPermission, setBrowserPermission] = useState<BrowserPermission>("default");
+  const [browserPermission, setBrowserPermission] = useState<BrowserPermission>(() =>
+    typeof window !== "undefined" ? getBrowserPermission() : "default"
+  );
   const [enablingBrowser, setEnablingBrowser] = useState(false);
   const deliveredRef = useRef<Set<string>>(loadDeliveredNotificationIds());
   const knownIdsRef = useRef<Set<string>>(new Set(initialNotifications.map((n) => n.id)));
   const isFirstPollRef = useRef(true);
 
   const deliverToBrowser = useCallback(
-    (items: AppNotification[], { summaryOnly = false }: { summaryOnly?: boolean } = {}) => {
+    async (
+      items: AppNotification[],
+      { summaryOnly = false }: { summaryOnly?: boolean } = {}
+    ) => {
       if (!prefs.browser || browserPermission !== "granted") return;
 
       const undelivered = items.filter((n) => !deliveredRef.current.has(n.id));
       if (undelivered.length === 0) return;
 
+      const playSound = prefs.sound;
+
       if (summaryOnly && undelivered.length > 1) {
         const urgent = undelivered.filter((n) => n.priority === "high").length;
-        showBrowserNotificationSummary(undelivered.length, urgent);
+        await showBrowserNotificationSummary(undelivered.length, urgent, { playSound });
         undelivered.forEach((n) => markNotificationDelivered(n.id, deliveredRef.current));
         return;
       }
 
       for (const item of undelivered) {
-        showBrowserNotification(item, {
+        await showBrowserNotification(item, {
           onClick: () => router.push(item.href),
+          playSound,
         });
         markNotificationDelivered(item.id, deliveredRef.current);
       }
     },
-    [browserPermission, prefs.browser, router]
+    [browserPermission, prefs.browser, prefs.sound, router]
   );
 
   const syncNotifications = useCallback(
@@ -78,7 +87,7 @@ export function useNotificationDelivery({
       if (options?.deliverNew && prefs.browser && browserPermission === "granted") {
         const newItems = next.filter((n) => !knownIdsRef.current.has(n.id));
         if (newItems.length > 0) {
-          deliverToBrowser(newItems);
+          await deliverToBrowser(newItems);
         }
       }
 
@@ -93,6 +102,19 @@ export function useNotificationDelivery({
   }, []);
 
   useEffect(() => {
+    function onSwNavigate(event: MessageEvent) {
+      if (event.data?.type === "notification-navigate" && typeof event.data.href === "string") {
+        router.push(event.data.href);
+      }
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", onSwNavigate);
+      return () => navigator.serviceWorker.removeEventListener("message", onSwNavigate);
+    }
+  }, [router]);
+
+  useEffect(() => {
     setNotifications(initialNotifications);
     knownIdsRef.current = new Set(initialNotifications.map((n) => n.id));
   }, [initialNotifications]);
@@ -104,12 +126,12 @@ export function useNotificationDelivery({
     }
 
     const interval = setInterval(() => {
-      syncNotifications({ deliverNew: true });
+      void syncNotifications({ deliverNew: true });
     }, POLL_INTERVAL_MS);
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        syncNotifications({ deliverNew: true });
+        void syncNotifications({ deliverNew: true });
       }
     };
 
@@ -124,6 +146,7 @@ export function useNotificationDelivery({
     if (!isBrowserNotificationSupported()) return false;
 
     setEnablingBrowser(true);
+    await primeNotificationSound();
     const permission = await requestBrowserPermission();
     setBrowserPermission(permission);
     setEnablingBrowser(false);
@@ -145,7 +168,7 @@ export function useNotificationDelivery({
     knownIdsRef.current = new Set(pending.map((n) => n.id));
 
     if (pending.length > 0) {
-      deliverToBrowser(pending, { summaryOnly: pending.length > 1 });
+      await deliverToBrowser(pending, { summaryOnly: pending.length > 1 });
     }
 
     return true;
@@ -157,18 +180,37 @@ export function useNotificationDelivery({
     saveNotificationPrefs(nextPrefs);
   }, [prefs]);
 
-  const testBrowserNotification = useCallback(() => {
-    if (browserPermission !== "granted") return;
-    showBrowserNotification({
-      id: "test-notification",
-      type: "info",
-      priority: "normal",
-      title: "Alertas ativos",
-      message: "Você receberá avisos do Móveis Unghero neste navegador.",
-      href: "/crm",
-      createdAt: new Date().toISOString(),
-    });
-  }, [browserPermission]);
+  const toggleNotificationSound = useCallback(() => {
+    const nextPrefs = { ...prefs, sound: !prefs.sound };
+    setPrefs(nextPrefs);
+    saveNotificationPrefs(nextPrefs);
+  }, [prefs]);
+
+  const testBrowserNotification = useCallback(async (): Promise<boolean> => {
+    const permission = getBrowserPermission();
+    setBrowserPermission(permission);
+
+    if (permission !== "granted") {
+      return false;
+    }
+
+    await primeNotificationSound();
+
+    const ok = await showBrowserNotification(
+      {
+        id: `test-notification-${Date.now()}`,
+        type: "info",
+        priority: "normal",
+        title: "Alertas ativos",
+        message: "Você receberá avisos do Móveis Unghero neste navegador.",
+        href: "/crm",
+        createdAt: new Date().toISOString(),
+      },
+      { playSound: prefs.sound }
+    );
+
+    return ok;
+  }, [prefs.sound]);
 
   return {
     notifications,
@@ -178,6 +220,7 @@ export function useNotificationDelivery({
     enablingBrowser,
     enableBrowserNotifications,
     disableBrowserNotifications,
+    toggleNotificationSound,
     testBrowserNotification,
     refreshNotifications: () => syncNotifications({ deliverNew: false }),
   };

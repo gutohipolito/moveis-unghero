@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { Bell, BellRing, Monitor, Smartphone } from "lucide-react";
+import { Bell, BellRing, Monitor, Smartphone, Volume2, VolumeX } from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
 import { useNotificationDelivery } from "@/hooks/useNotificationDelivery";
 
@@ -20,6 +20,7 @@ export default function NotificationCenter({
   onOpenChange,
 }: NotificationCenterProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "ok" | "fail">("idle");
   const panelRef = useRef<HTMLDivElement>(null);
 
   const open = isOpen ?? internalOpen;
@@ -36,6 +37,7 @@ export default function NotificationCenter({
     enablingBrowser,
     enableBrowserNotifications,
     disableBrowserNotifications,
+    toggleNotificationSound,
     testBrowserNotification,
   } = useNotificationDelivery({ companyId, initialNotifications });
 
@@ -104,24 +106,57 @@ export default function NotificationCenter({
                     Seu navegador não suporta notificações.
                   </p>
                 ) : browserActive ? (
-                  <div className="flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
-                      <BellRing className="h-3 w-3" /> Ativo
-                    </span>
-                    <button
-                      type="button"
-                      onClick={testBrowserNotification}
-                      className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
-                    >
-                      Testar alerta
-                    </button>
-                    <button
-                      type="button"
-                      onClick={disableBrowserNotifications}
-                      className="text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      Desativar
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
+                        <BellRing className="h-3 w-3" /> Ativo
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setTestStatus("idle");
+                          const ok = await testBrowserNotification();
+                          setTestStatus(ok ? "ok" : "fail");
+                        }}
+                        className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        Testar alerta
+                      </button>
+                      <button
+                        type="button"
+                        onClick={disableBrowserNotifications}
+                        className="text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Desativar
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleNotificationSound}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        {prefs.sound ? (
+                          <>
+                            <Volume2 className="h-3 w-3" /> Som ativo
+                          </>
+                        ) : (
+                          <>
+                            <VolumeX className="h-3 w-3" /> Som desligado
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {testStatus === "ok" ? (
+                      <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
+                        Alerta enviado — confira o canto da tela ou a central de notificações do sistema.
+                      </p>
+                    ) : null}
+                    {testStatus === "fail" ? (
+                      <p className="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+                        Não foi possível exibir o alerta. Verifique a permissão do site nas configurações do navegador.
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <button
