@@ -4,6 +4,8 @@ import Link from "next/link";
 import { getCachedSession } from "@/lib/session";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { getNotifications } from "@/app/actions/notifications";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import DashboardHeaderSlot from "@/components/DashboardHeaderSlot";
@@ -22,9 +24,17 @@ export default async function DashboardLayout({
 
   const user = session.user;
   const companyId = user.company_id || DEFAULT_COMPANY_ID;
+  const notificationsRes = await getNotifications(companyId).catch(() => ({
+    success: false as const,
+    notifications: [],
+  }));
 
   return (
     <PrivacyProvider>
+      <NotificationProvider
+        companyId={companyId}
+        initialNotifications={notificationsRes.notifications}
+      >
       <div className="flex min-h-screen bg-background">
         <aside className="app-sidebar hidden md:flex md:w-[17.5rem] lg:w-[19rem] md:flex-col md:fixed md:inset-y-0 z-30">
           <div className="flex flex-col flex-1 min-h-0">
@@ -63,6 +73,7 @@ export default async function DashboardLayout({
 
         <MobileBottomNav />
       </div>
+      </NotificationProvider>
     </PrivacyProvider>
   );
 }

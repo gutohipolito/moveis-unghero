@@ -37,8 +37,6 @@ export default function HeaderQuickActions({
         onOpenChange={(open) => setOpenMenu(open ? "reminders" : null)}
       />
       <NotificationCenter
-        companyId={companyId}
-        initialNotifications={initialNotifications}
         isOpen={openMenu === "notifications"}
         onOpenChange={(open) => setOpenMenu(open ? "notifications" : null)}
       />

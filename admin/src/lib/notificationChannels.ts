@@ -13,6 +13,7 @@ export interface NotificationPreferences {
 
 const PREFS_KEY = "mu_notification_prefs";
 const DELIVERED_KEY = "mu_notification_delivered";
+const TOAST_DISMISSED_KEY = "mu_toast_dismissed";
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   browser: false,
@@ -70,6 +71,40 @@ export function pruneDeliveredIds(delivered: Set<string>, activeIds: string[]) {
     }
   }
   if (changed) saveDeliveredNotificationIds(delivered);
+}
+
+export function loadDismissedToastIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = sessionStorage.getItem(TOAST_DISMISSED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveDismissedToastIds(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  const list = [...ids].slice(-100);
+  sessionStorage.setItem(TOAST_DISMISSED_KEY, JSON.stringify(list));
+}
+
+export function markToastDismissed(id: string, dismissed: Set<string>) {
+  dismissed.add(id);
+  saveDismissedToastIds(dismissed);
+}
+
+export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string[]) {
+  const active = new Set(activeIds);
+  let changed = false;
+  for (const id of dismissed) {
+    if (!active.has(id)) {
+      dismissed.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) saveDismissedToastIds(dismissed);
 }
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

@@ -3,19 +3,14 @@
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { Bell, BellRing, Monitor, Smartphone, Volume2, VolumeX } from "lucide-react";
-import type { AppNotification } from "@/lib/notifications";
-import { useNotificationDelivery } from "@/hooks/useNotificationDelivery";
+import { useNotificationContext } from "@/context/NotificationContext";
 
 interface NotificationCenterProps {
-  companyId: string;
-  initialNotifications: AppNotification[];
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export default function NotificationCenter({
-  companyId,
-  initialNotifications,
   isOpen,
   onOpenChange,
 }: NotificationCenterProps) {
@@ -39,7 +34,7 @@ export default function NotificationCenter({
     disableBrowserNotifications,
     toggleNotificationSound,
     testBrowserNotification,
-  } = useNotificationDelivery({ companyId, initialNotifications });
+  } = useNotificationContext();
 
   const notifCount = notifications.length;
   const urgentCount = notifications.filter((n) => n.priority === "high").length;
@@ -95,7 +90,7 @@ export default function NotificationCenter({
               <div className="flex-1 min-w-0 space-y-1.5">
                 <p className="text-xs font-bold text-foreground">Alertas no navegador</p>
                 <p className="text-[10px] text-muted-foreground leading-snug">
-                  Avisos enquanto o painel estiver aberto. Push com aba fechada e e-mail em breve.
+                  Cadastros via formulário aparecem como alerta visual no painel. Alertas do sistema operacional são opcionais abaixo.
                 </p>
                 {browserBlocked ? (
                   <p className="text-[10px] text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1">

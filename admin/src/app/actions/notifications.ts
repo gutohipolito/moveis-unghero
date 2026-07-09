@@ -5,6 +5,7 @@ import {
   buildFollowUpNotifications,
   buildInvoiceNotifications,
   buildSlaNotifications,
+  buildBriefingNotifications,
   mergeNotifications,
   type AppNotification,
 } from "@/lib/notifications";
@@ -85,15 +86,7 @@ export async function getNotifications(companyId: string): Promise<{
       invoicePending.map((p) => ({ id: p.id, client: p.client }))
     );
 
-    const briefingNotifications: AppNotification[] = briefings.map((b) => ({
-      id: `briefing-${b.id}`,
-      type: "info" as const,
-      priority: "high" as const,
-      title: "Solicitação de Orçamento",
-      message: `${b.project.client.nome} enviou um novo briefing.`,
-      href: `/crm?briefing=${b.project_id}`,
-      createdAt: b.createdAt.toISOString()
-    }));
+    const briefingNotifications = buildBriefingNotifications(briefings);
 
     const notifications = mergeNotifications(
       followUp,

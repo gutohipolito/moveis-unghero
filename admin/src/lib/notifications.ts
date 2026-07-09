@@ -14,7 +14,12 @@ import {
   isSlaFinished,
 } from "@/lib/productionSla";
 
-export type NotificationType = "follow_up" | "sla_due" | "invoice_pending" | "info";
+export type NotificationType =
+  | "follow_up"
+  | "sla_due"
+  | "invoice_pending"
+  | "new_briefing"
+  | "info";
 export type NotificationPriority = "normal" | "high";
 
 export interface AppNotification {
@@ -134,6 +139,34 @@ export function mergeNotifications(...groups: AppNotification[][]): AppNotificat
     if (a.priority !== b.priority) return a.priority === "high" ? -1 : 1;
     return 0;
   });
+}
+
+export function buildBriefingNotifications(
+  briefings: {
+    id: string;
+    project_id: string;
+    createdAt: Date;
+    project: { client: { nome: string } };
+  }[]
+): AppNotification[] {
+  return briefings.map((b) => ({
+    id: `briefing-${b.id}`,
+    type: "new_briefing" as const,
+    priority: "high" as const,
+    title: "Novo cadastro via formulário",
+    message: `${b.project.client.nome} enviou um briefing de orçamento.`,
+    href: `/crm?briefing=${b.project_id}`,
+    createdAt: b.createdAt.toISOString(),
+    meta: {
+      projectId: b.project_id,
+      clientName: b.project.client.nome,
+    },
+  }));
+}
+
+/** Alertas visuais no painel (toast estilo macOS) — cadastros via formulário. */
+export function isInAppToastNotification(notification: AppNotification): boolean {
+  return notification.type === "new_briefing" || notification.id.startsWith("briefing-");
 }
 
 export function countUnreadStyle(notifications: AppNotification[]): number {
