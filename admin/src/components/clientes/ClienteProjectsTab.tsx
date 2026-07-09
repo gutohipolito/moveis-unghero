@@ -10,11 +10,14 @@ import {
   Layers,
   Loader2,
   Lock,
+  Plus,
   Sparkles,
   X,
 } from "lucide-react";
 import { labelProjectStatus } from "@/lib/navLabels";
 import { getProjectDetailsAction } from "@/app/actions/project";
+import { createLead, type Origin } from "@/app/actions/kanban";
+import { Input } from "@/components/ui/input";
 import ProjectDetails from "@/components/ProjectDetails";
 import type { ProjectDetailsPayload } from "@/lib/formatProjectDetails";
 import type { ProjectSlaView } from "@/lib/productionSla";
@@ -36,9 +39,14 @@ export interface ClientProjectSummary {
 
 interface ClienteProjectsTabProps {
   clientId: string;
+  clientName: string;
+  clientEmail: string;
+  clientTelefone: string;
+  clientCidade: string;
   clientOrigem: string;
   companyId: string;
   projects: ClientProjectSummary[];
+  onProjectsChange: (projects: ClientProjectSummary[]) => void;
   initialProjectId?: string | null;
   initialCreateQuote?: boolean;
 }
@@ -76,19 +84,75 @@ function ProjectStatusBadge({ status, blocked }: { status: string; blocked?: boo
 
 export default function ClienteProjectsTab({
   clientId,
+  clientName,
+  clientEmail,
+  clientTelefone,
+  clientCidade,
   clientOrigem,
   companyId,
   projects,
+  onProjectsChange,
   initialProjectId = null,
   initialCreateQuote = false,
 }: ClienteProjectsTabProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);
   const [openCreateQuote, setOpenCreateQuote] = useState(initialCreateQuote);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [valorPrevisto, setValorPrevisto] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  async function handleCreateProject(event: React.FormEvent) {
+    event.preventDefault();
+    const valor = Number(valorPrevisto);
+    if (!valorPrevisto || Number.isNaN(valor) || valor <= 0) {
+      setCreateError("Informe um valor previsto válido.");
+      return;
+    }
+
+    setCreating(true);
+    setCreateError(null);
+
+    const res = await createLead({
+      nome: clientName,
+      email: clientEmail,
+      telefone: clientTelefone,
+      cidade: clientCidade,
+      origem: clientOrigem as Origin,
+      valor_previsto: valor,
+      company_id: companyId,
+      client_id: clientId,
+    });
+
+    setCreating(false);
+
+    if (res.success && res.data?.project) {
+      const project = res.data.project;
+      const now = new Date().toISOString();
+      const newSummary: ClientProjectSummary = {
+        id: project.id,
+        status_geral: project.status_geral,
+        valor_previsto: Number(project.valor_previsto),
+        createdAt: now,
+        updatedAt: now,
+        quotes: [],
+        briefing: null,
+        environments_count: 0,
+      };
+      onProjectsChange([newSummary, ...projects]);
+      setIsCreateModalOpen(false);
+      setValorPrevisto("");
+      setSelectedProjectId(project.id);
+      setOpenCreateQuote(false);
+    } else {
+      setCreateError(res.error ?? "Não foi possível criar o projeto.");
+    }
+  }
 
   return (
     <>
       <Card className="p-5 glass-card space-y-4">
-        <div className="flex items-center justify-between border-b border-border/40 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
           <div>
             <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
               <Layers className="h-4.5 w-4.5 text-primary" /> Projetos do cliente
@@ -97,14 +161,34 @@ export default function ClienteProjectsTab({
               Clique em um projeto para ver briefing, orçamentos, arquivos e produção.
             </p>
           </div>
-          <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full shrink-0">
-            {projects.length} projeto{projects.length === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full">
+              {projects.length} projeto{projects.length === 1 ? "" : "s"}
+            </span>
+            <Button
+              type="button"
+              className="text-xs font-bold gap-1.5 btn-metallic"
+              onClick={() => {
+                setCreateError(null);
+                setValorPrevisto("");
+                setIsCreateModalOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Novo projeto
+            </Button>
+          </div>
         </div>
 
         {projects.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl">
-            Nenhum projeto vinculado a este cliente ainda.
+          <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl space-y-4">
+            <p>Nenhum projeto vinculado a este cliente ainda.</p>
+            <Button
+              type="button"
+              className="text-xs font-bold gap-1.5 btn-metallic"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="h-4 w-4" /> Criar primeiro projeto
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -207,6 +291,64 @@ export default function ClienteProjectsTab({
             setOpenCreateQuote(false);
           }}
         />
+      ) : null}
+
+      {isCreateModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="bg-card border border-border w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Novo projeto</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Inicie um projeto para <strong>{clientName}</strong>. Ele entrará no funil comercial como Lead.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateProject} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground block">
+                  Valor previsto do fechamento (R$)
+                </label>
+                <Input
+                  required
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="Ex: 35000"
+                  value={valorPrevisto}
+                  onChange={(e) => setValorPrevisto(e.target.value)}
+                  className="border-border bg-slate-50 text-sm"
+                />
+              </div>
+
+              {createError ? (
+                <p className="text-xs text-destructive font-medium">{createError}</p>
+              ) : null}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-xs font-bold"
+                  disabled={creating}
+                  onClick={() => setIsCreateModalOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={creating} className="font-bold btn-metallic gap-1.5">
+                  {creating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {creating ? "Criando..." : "Criar projeto"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       ) : null}
     </>
   );

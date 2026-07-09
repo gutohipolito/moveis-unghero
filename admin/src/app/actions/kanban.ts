@@ -333,6 +333,10 @@ export async function createLead(formData: {
     });
 
     revalidateCrmPaths();
+    if (formData.client_id) {
+      revalidatePath(`/clientes/${formData.client_id}`);
+      revalidatePath("/clientes");
+    }
     return { success: true, data: result };
   } catch (error) {
     console.warn("Falha ao criar lead no banco:", error);

@@ -90,6 +90,9 @@ export default function ClienteDetailsClient({
   companyId 
 }: ClienteDetailsClientProps) {
   const [client] = useState<ClientDetails>(initialClient);
+  const [projects, setProjects] = useState<ClientProjectSummary[]>(
+    initialClient.projects ?? []
+  );
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [payments] = useState<Payment[]>(initialPayments);
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
@@ -198,7 +201,7 @@ export default function ClienteDetailsClient({
           className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Layers className="h-4 w-4 shrink-0" /> Projetos
-          <span className="text-[10px] opacity-70 tabular-nums">({client.projects?.length || 0})</span>
+          <span className="text-[10px] opacity-70 tabular-nums">({projects.length})</span>
         </button>
         <button
           onClick={() => setActiveTab("documents")}
@@ -280,7 +283,7 @@ export default function ClienteDetailsClient({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Projetos</p>
-                  <p className="text-xl font-black text-foreground mt-1">{client.projects?.length || 0}</p>
+                  <p className="text-xl font-black text-foreground mt-1">{projects.length}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Anexos</p>
@@ -295,7 +298,7 @@ export default function ClienteDetailsClient({
                   <p className="text-xl font-black text-foreground mt-1">{activities.length}</p>
                 </div>
               </div>
-              {(client.projects?.length ?? 0) > 0 ? (
+              {(projects.length ?? 0) > 0 ? (
                 <div className="pt-2">
                   <Button
                     type="button"
@@ -314,9 +317,14 @@ export default function ClienteDetailsClient({
           {activeTab === "projects" && (
             <ClienteProjectsTab
               clientId={client.id}
+              clientName={client.nome}
+              clientEmail={client.email}
+              clientTelefone={client.telefone}
+              clientCidade={client.cidade}
               clientOrigem={client.origem}
               companyId={companyId}
-              projects={client.projects ?? []}
+              projects={projects}
+              onProjectsChange={setProjects}
             />
           )}
 
