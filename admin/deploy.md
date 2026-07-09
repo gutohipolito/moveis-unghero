@@ -50,7 +50,7 @@ Durante a configuração do deploy na Vercel, você precisará adicionar as segu
    npm run generate-vapid
    ```
 2. Copie as variáveis para `.env.local` (dev) e para **Settings → Environment Variables** na Vercel (produção).
-3. O cron roda a cada 15 minutos (`vercel.json`) e envia alertas para dispositivos inscritos.
+3. O cron roda 1x por dia às 12:00 UTC / 9h BRT (`vercel.json`) e envia alertas para dispositivos inscritos. No plano Hobby da Vercel, cron só pode ser diário; para intervalos menores, use o plano Pro.
 4. No iPhone: instale o painel na tela inicial (PWA) antes de ativar push no sino de notificações.
 
 ---
