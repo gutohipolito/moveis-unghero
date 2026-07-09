@@ -11,7 +11,6 @@ import {
   MessageCircle,
   QrCode,
   Search,
-  Star,
   User,
   X,
 } from "lucide-react";
@@ -224,19 +223,6 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
 
   return (
     <div className="space-y-[var(--space-5)]">
-      <div className="flex items-start gap-3">
-        <div className="rounded-xl bg-amber-500/10 p-2.5 text-amber-600">
-          <Star className="h-5 w-5 fill-current" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-headline text-foreground">Avaliação no Google</h2>
-          <p className="text-caption text-muted-foreground max-w-2xl">
-            Envie para clientes após a entrega ou instalação. O link abre direto na tela de
-            comentário e estrelas do Google.
-          </p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--space-4)] items-stretch">
         <LinkCard
           icon={<Link2 className="h-4 w-4" />}
