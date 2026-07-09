@@ -65,16 +65,14 @@ interface Quote {
   observacoes: string | null;
   project: Project;
   items: QuoteItem[];
-  isPending?: boolean;
 }
 
 interface QuotesListProps {
   initialQuotes: Quote[];
   companyId: string;
-  isDbOffline?: boolean;
 }
 
-export default function QuotesList({ initialQuotes, companyId, isDbOffline = false }: QuotesListProps) {
+export default function QuotesList({ initialQuotes, companyId }: QuotesListProps) {
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -237,7 +235,7 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
       q.project.client.cidade.toLowerCase().includes(search.toLowerCase()) ||
       (q.project.client.bairro && q.project.client.bairro.toLowerCase().includes(search.toLowerCase()));
 
-    const expired = q.isPending ? false : isExpired(q.validade);
+    const expired = isExpired(q.validade);
     const matchesStatus = 
       filterStatus === "ALL" ||
       (filterStatus === "ACTIVE" && !expired) ||
@@ -365,54 +363,6 @@ export default function QuotesList({ initialQuotes, companyId, isDbOffline = fal
                 </tr>
               ) : (
                 filteredQuotes.map((q) => {
-                  if (q.isPending) {
-                    return (
-                      <tr key={q.id} className="bg-rose-500/[0.01] hover:bg-rose-500/[0.03] transition-colors border-l-2 border-l-rose-500">
-                        <td className="py-4 px-4 text-sm font-medium text-slate-700">
-                          <span className="font-mono bg-rose-50 border border-rose-200 text-rose-700 px-1.5 py-0.5 rounded text-xs mr-2 uppercase font-black">
-                            Pendente
-                          </span>
-                          <span className="text-slate-400 font-semibold">-</span>
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-800 font-semibold">
-                          {q.project.client.nome}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-600">
-                          {q.project.client.cidade}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-600">
-                          {q.project.client.bairro || "Não informado"}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-400 italic font-semibold">
-                          Sem orçamento
-                        </td>
-                        <td className="py-4 px-4 text-sm">
-                          <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-700 px-2.5 py-0.5 rounded-full text-xs font-black uppercase">
-                            🔒 Bloqueado
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-400 font-semibold">
-                          -
-                        </td>
-                        <td className="py-4 px-4 text-sm text-right">
-                          <div className="flex justify-end items-center gap-2">
-                            <Link href={`/projects/${q.project_id}?createQuote=true`}>
-                              <Button 
-                                variant="default" 
-                                size="sm" 
-                                className="bg-emerald-500 hover:bg-emerald-600 border-emerald-600 text-white flex items-center gap-1.5 h-8 font-bold cursor-pointer"
-                                title="Criar orçamento comercial agora"
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                                Criar Orçamento
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }
-
                   const expired = isExpired(q.validade);
                   return (
                     <tr key={q.id} className="hover:bg-slate-50/50 transition-colors">

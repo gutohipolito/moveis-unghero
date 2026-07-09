@@ -230,29 +230,12 @@ export async function getQuotes() {
       }
     });
 
-    const pendingProjects = await prisma.project.findMany({
-      where: {
-        client: {
-          company_id: companyId,
-          origem: "FORMULARIO"
-        },
-        quotes: {
-          none: {}
-        }
-      },
-      include: {
-        client: true
-      }
-    });
-
-    // Convertemos campos Decimal para number e datas para ISOString para evitar problemas de serialização nas Server Actions
     const serializedQuotes = quotes.map(q => ({
       ...q,
       subtotal: Number(q.subtotal),
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),
       validade: q.validade instanceof Date ? q.validade.toISOString() : q.validade,
-      isPending: false,
       project: q.project ? {
         ...q.project,
         valor_previsto: Number(q.project.valor_previsto)
@@ -264,24 +247,7 @@ export async function getQuotes() {
       }))
     }));
 
-    const serializedPending = pendingProjects.map(p => ({
-      id: `pending-${p.id}`,
-      project_id: p.id,
-      versao: 0,
-      subtotal: 0,
-      desconto: 0,
-      valor_final: 0,
-      validade: p.createdAt instanceof Date ? p.createdAt.toISOString() : new Date().toISOString(),
-      observacoes: "Projeto originado por formulário aguardando orçamento.",
-      isPending: true,
-      project: {
-        ...p,
-        valor_previsto: Number(p.valor_previsto)
-      },
-      items: []
-    }));
-
-    return { success: true, data: [...serializedQuotes, ...serializedPending] };
+    return { success: true, data: serializedQuotes };
   } catch (error) {
     console.warn("Erro ao buscar orçamentos:", error);
     return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
@@ -393,24 +359,6 @@ export async function createQuickClientAndProject(data: {
 
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
-  }
-
-  if (data.companyId === "mock-company-id") {
-    try {
-      await prisma.company.upsert({
-        where: { id: "mock-company-id" },
-        update: {},
-        create: {
-          id: "mock-company-id",
-          nome: "Móveis Unghero",
-          cnpj: "13.415.510/0001-71",
-          telefone: "(54) 9 9997-1050",
-          email: "moveisunghero@gmail.com"
-        }
-      });
-    } catch (e) {
-      console.warn("Erro ao garantir empresa mock no banco real:", e);
-    }
   }
 
   try {

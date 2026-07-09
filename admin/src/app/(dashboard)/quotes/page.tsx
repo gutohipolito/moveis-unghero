@@ -16,7 +16,6 @@ export default async function QuotesPage() {
     <QuotesList 
       initialQuotes={quotes as any} 
       companyId={companyId} 
-      isDbOffline={false}
     />
   );
 }

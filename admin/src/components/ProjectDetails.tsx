@@ -381,42 +381,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     }, 1500);
   };
 
-  // Simula o fluxo de assinatura digital jurídicamente válida via link
-  const handleSimulateDigitalSignature = (quoteId: string) => {
-    setProject(prev => {
-      const updatedQuotes = prev.quotes.map(q => {
-        if (q.id === quoteId) {
-          return {
-            ...q,
-            observacoes: (q.observacoes || "") + " [Assinatura Digital Realizada]"
-          };
-        }
-        return q;
-      });
-
-      return {
-        ...prev,
-        quotes: updatedQuotes,
-        status_geral: "APROVADO", // Auto-aprova o projeto quando assinado!
-        timeline: [
-          {
-            id: "sig-time-" + Date.now(),
-            acao: "Contrato Assinado Digitalmente. Status do projeto alterado para APROVADO.",
-            data: new Date().toISOString(),
-            interno_sotamente: false,
-            user: { name: "Assinatura Digital" }
-          },
-          ...prev.timeline
-        ]
-      };
-    });
-
-    showSuccess(
-      "Contrato assinado",
-      "Assinatura digital registrada. O projeto foi alterado para Aprovado."
-    );
-  };
-
   // Helper de Moeda
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
@@ -1337,8 +1301,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <span>Subtotal: <strong className="text-foreground">{formatCurrency(q.subtotal)}</strong></span>
                             {q.desconto > 0 && <span className="text-amber-500 font-medium">Desconto: -{formatCurrency(q.desconto)}</span>}
                             <span>Valor Final: <strong className="text-primary font-bold">{formatCurrency(q.valor_final)}</strong></span>
-                            <span>VPL (Lucro Real): <strong className="text-emerald-400 font-bold">{formatCurrency(q.valor_final * 0.88)}</strong></span>
-                            <span>Comissão (5% VPL): <strong className="text-amber-500 font-semibold">{formatCurrency((q.valor_final * 0.88) * 0.05)}</strong></span>
                           </div>
                           {q.observacoes && (
                             <p className="text-xs text-muted-foreground/80 line-clamp-1 italic">
@@ -1348,24 +1310,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
-                          {/* Status de Assinatura Jurídica Digital */}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                            q.observacoes?.includes("Assinatura Digital Realizada")
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse"
-                          }`}>
-                            {q.observacoes?.includes("Assinatura Digital Realizada") ? "✓ Assinado Digitalmente" : "⏳ Assinatura Pendente"}
-                          </span>
-
-                          {!q.observacoes?.includes("Assinatura Digital Realizada") && (
-                            <button
-                              onClick={() => handleSimulateDigitalSignature(q.id)}
-                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-border bg-slate-50 text-muted-foreground hover:text-foreground hover:bg-secondary/20 transition-all cursor-pointer flex items-center gap-1"
-                            >
-                              ✍️ Assinar Digitalmente
-                            </button>
-                          )}
-
                           <button
                             onClick={() => handleApproveQuote(q)}
                             className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
@@ -1378,7 +1322,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             target="_blank"
                             className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-border/60 bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-all cursor-pointer"
                           >
-                            <FileText className="h-4 w-4 mr-1.5" /> Gerar PDF (5 Págs)
+                            <FileText className="h-4 w-4 mr-1.5" /> Gerar PDF
                           </Link>
 
                           <button

@@ -88,7 +88,12 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
 
   // Adicionar item do estoque
   const handleAddItemFromStock = () => {
-    const defaultItem = inventory[0] || { id: "inv-1", nome: "Chapa MDF Guararapes Freijó Puro 18mm", precoCusto: 280.0, categoria: "CHAPAS_MDF" };
+    if (inventory.length === 0) {
+      showError("Estoque vazio", "Cadastre insumos no estoque antes de vincular ao orçamento.");
+      return;
+    }
+
+    const defaultItem = inventory[0];
     const mappedType: ItemType = 
       defaultItem.categoria === "CHAPAS_MDF" ? "MOVEIS_MDF" :
       defaultItem.categoria === "FERRAGENS" ? "FERRAGENS_ESPECIAIS" : "OUTROS";
