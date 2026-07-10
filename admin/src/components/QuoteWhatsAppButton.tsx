@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
+import html2canvas from "html2canvas-pro";
 import { Button } from "@/components/ui/button";
 import {
   buildQuoteWhatsAppMessage,
@@ -9,7 +10,6 @@ import {
   slugifyFileName,
 } from "@/lib/quoteWhatsApp";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
-import { createPrintPageHtml2CanvasOptions } from "@/lib/html2canvasColorFix";
 
 interface QuoteWhatsAppButtonProps {
   quoteId: string;
@@ -19,26 +19,51 @@ interface QuoteWhatsAppButtonProps {
   validade: string;
 }
 
-async function generateQuotePdfBlob(clientName: string) {
+async function generateQuotePdfBlob() {
   const element = document.querySelector<HTMLElement>(".print-page");
   if (!element) {
     throw new Error("Não foi possível localizar o conteúdo do orçamento.");
   }
 
-  const html2pdf = (await import("html2pdf.js")).default;
-  const fileName = `orcamento-${slugifyFileName(clientName)}.pdf`;
+  const { jsPDF } = await import("jspdf");
 
-  return html2pdf()
-    .set({
-      margin: 0,
-      filename: fileName,
-      image: { type: "jpeg", quality: 0.96 },
-      html2canvas: createPrintPageHtml2CanvasOptions(".print-page"),
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] },
-    })
-    .from(element)
-    .outputPdf("blob");
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: "#ffffff",
+    width: element.scrollWidth,
+    height: element.scrollHeight,
+    windowWidth: element.scrollWidth,
+  });
+
+  const pdf = new jsPDF({
+    unit: "mm",
+    format: "a4",
+    orientation: "portrait",
+    compress: true,
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+  let heightLeft = imgHeight;
+  let position = 0;
+
+  pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
+  return pdf.output("blob");
 }
 
 async function uploadQuotePdf(quoteId: string, blob: Blob, fileName: string) {
@@ -101,7 +126,7 @@ export default function QuoteWhatsAppButton({
 
     try {
       const fileName = `orcamento-${slugifyFileName(clientName)}.pdf`;
-      const pdfBlob = await generateQuotePdfBlob(clientName);
+      const pdfBlob = await generateQuotePdfBlob();
       const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
 
       let pdfUrl: string | undefined;

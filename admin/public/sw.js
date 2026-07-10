@@ -1,4 +1,4 @@
-const CACHE_VERSION = "mu-admin-v3";
+const CACHE_VERSION = "mu-admin-v4";
 
 self.addEventListener("push", (event) => {
   let payload = {
@@ -79,6 +79,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
+  // Deixa o navegador gerenciar assets Next, páginas dinâmicas e PDF
+  if (url.pathname.startsWith("/_next/")) return;
+  if (url.pathname.startsWith("/quotes/")) return;
 
   if (event.request.mode === "navigate") {
     event.respondWith(
@@ -87,5 +90,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    fetch(event.request).catch(() =>
+      caches.match(event.request).then((cached) => cached || Response.error())
+    )
+  );
 });
