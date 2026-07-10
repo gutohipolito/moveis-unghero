@@ -93,6 +93,57 @@ Equipe Móveis Unghero`,
     ],
   },
   {
+    id: "cliente-cadastro",
+    title: "Cadastro — Cliente Completo",
+    description:
+      "Formulário de cadastro completo para clientes preencherem dados pessoais, endereço e informações do imóvel. Gera lead no funil com perfil completo.",
+    audience: "Cliente final",
+    shortPath: "/cadastro",
+    adminPath: "/cadastro",
+    messages: [
+      {
+        id: "whatsapp-cadastro",
+        label: "WhatsApp — Solicitar cadastro",
+        template: `Olá, tudo bem?
+
+Para darmos sequência ao seu projeto de móveis planejados, precisamos que você complete seu cadastro com seus dados pessoais e endereço:
+
+{link}
+
+Leva poucos minutos e nos ajuda a preparar um atendimento mais personalizado!
+
+Equipe Móveis Unghero`,
+      },
+      {
+        id: "whatsapp-pos-orcamento",
+        label: "WhatsApp — Após orçamento inicial",
+        template: `Olá! Obrigado pelo interesse na Móveis Unghero.
+
+Para avançarmos com seu orçamento, complete seu cadastro com os dados abaixo:
+
+{link}
+
+Assim que recebermos, nossa equipe entra em contato para os próximos passos.
+
+Equipe Móveis Unghero`,
+      },
+      {
+        id: "email-cadastro",
+        label: "E-mail — Solicitação de cadastro",
+        template: `Prezado(a),
+
+Para darmos continuidade ao seu projeto de móveis planejados, solicitamos o preenchimento do formulário de cadastro completo no link abaixo:
+
+{link}
+
+Após o envio, nossa equipe comercial entrará em contato para alinhar os próximos passos.
+
+Atenciosamente,
+Equipe Móveis Unghero`,
+      },
+    ],
+  },
+  {
     id: "projetistas-arquitetos",
     title: "Cadastro — Projetistas e Arquitetos",
     description:
