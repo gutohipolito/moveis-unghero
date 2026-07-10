@@ -265,6 +265,7 @@ model QuoteItem {
   tipo_custo    ItemType // MOVEIS_MDF, FERRAGENS_ESPECIAIS, MAO_DE_OBRA, OUTROS
   valor_unitario Decimal  @db.Decimal(12, 2)
   valor_total   Decimal  @db.Decimal(12, 2)
+  subitens      Json?
 }
 
 enum ItemType {

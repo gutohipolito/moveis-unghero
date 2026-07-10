@@ -28,6 +28,49 @@ interface QuoteItemInput {
   inventoryItemId?: string;
   precoCusto?: number;
   markup?: number;
+  subitens?: string[];
+}
+
+function SubItemsEditor({
+  subitens,
+  onChange,
+}: {
+  subitens: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div className="mt-2 space-y-1.5">
+      {subitens.map((subitem, index) => (
+        <div key={`${index}-${subitem}`} className="flex items-center gap-1.5">
+          <Input
+            placeholder="Sub-item (ex: Puxador cromado)"
+            value={subitem}
+            onChange={(e) => {
+              const next = [...subitens];
+              next[index] = e.target.value;
+              onChange(next);
+            }}
+            className="h-7 bg-white border border-slate-200 text-[10px] font-medium rounded-md"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(subitens.filter((_, i) => i !== index))}
+            className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer shrink-0"
+            title="Remover sub-item"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChange([...subitens, ""])}
+        className="text-[10px] font-bold text-slate-500 hover:text-slate-800 inline-flex items-center gap-1 cursor-pointer"
+      >
+        <Plus className="h-3 w-3" /> Sub-item
+      </button>
+    </div>
+  );
 }
 
 
@@ -82,7 +125,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       quantidade: 1,
       tipo_custo: "MOVEIS_MDF",
       valor_unitario: 0,
-      valor_total: 0
+      valor_total: 0,
+      subitens: [],
     };
     setItems([...items, newItem]);
   };
@@ -169,6 +213,9 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     setItems(updated);
   };
 
+  const handleUpdateSubitens = (id: string, subitens: string[]) => {
+    setItems(items.map((item) => (item.id === id ? { ...item, subitens } : item)));
+  };
 
   // Cálculos comerciais
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
@@ -191,13 +238,14 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       validade,
       observacoes,
       template_tipo: QUOTE_TEMPLATE_ID,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         descricao: item.descricao,
         quantidade: item.quantidade,
         tipo_custo: item.tipo_custo,
         valor_unitario: item.valor_unitario,
-        valor_total: item.valor_total
-      }))
+        valor_total: item.valor_total,
+        subitens: (item.subitens || []).map((s) => s.trim()).filter(Boolean),
+      })),
     };
 
     const result = await createQuote(projectId, inputData);
@@ -367,13 +415,19 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               </div>
                             </div>
                           ) : (
-                            <Input
-                              required
-                              placeholder="Descrição do item ou ambiente"
-                              value={item.descricao}
-                              onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
-                              className="bg-white border border-slate-200 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] px-3 py-1.5 h-9 text-xs font-semibold rounded-lg transition-all"
-                            />
+                            <div>
+                              <Input
+                                required
+                                placeholder="Descrição do item ou ambiente"
+                                value={item.descricao}
+                                onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
+                                className="bg-white border border-slate-200 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] px-3 py-1.5 h-9 text-xs font-semibold rounded-lg transition-all"
+                              />
+                              <SubItemsEditor
+                                subitens={item.subitens || []}
+                                onChange={(next) => handleUpdateSubitens(item.id, next)}
+                              />
+                            </div>
                           )}
                         </td>
                         <td className="p-3">
@@ -499,13 +553,19 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             </div>
                           </div>
                         ) : (
-                          <Input
-                            required
-                            placeholder="Descrição do item ou ambiente"
-                            value={item.descricao}
-                            onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
-                            className="bg-slate-50 border-slate-200 text-xs h-9 font-medium"
-                          />
+                          <div>
+                            <Input
+                              required
+                              placeholder="Descrição do item ou ambiente"
+                              value={item.descricao}
+                              onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
+                              className="bg-slate-50 border-slate-200 text-xs h-9 font-medium"
+                            />
+                            <SubItemsEditor
+                              subitens={item.subitens || []}
+                              onChange={(next) => handleUpdateSubitens(item.id, next)}
+                            />
+                          </div>
                         )}
                       </div>
 

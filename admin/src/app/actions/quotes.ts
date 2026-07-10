@@ -31,6 +31,7 @@ export interface CreateQuoteInput {
     tipo_custo: ItemType;
     valor_unitario: number;
     valor_total: number;
+    subitens?: string[];
   }[];
 }
 
@@ -75,14 +76,16 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
       // 3. Cria os QuoteItems
       if (data.items.length > 0) {
         await tx.quoteItem.createMany({
-          data: data.items.map(item => ({
+          data: data.items.map((item) => ({
             quote_id: quote.id,
             descricao: item.descricao,
             quantidade: item.quantidade,
             tipo_custo: item.tipo_custo,
             valor_unitario: item.valor_unitario,
-            valor_total: item.valor_total
-          }))
+            valor_total: item.valor_total,
+            subitens:
+              item.subitens && item.subitens.length > 0 ? item.subitens : undefined,
+          })),
         });
       }
 

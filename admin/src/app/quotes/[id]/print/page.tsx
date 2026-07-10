@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import QuotePrintToolbar from "@/components/QuotePrintToolbar";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
+import { formatQuoteSubitensLine, parseQuoteSubitens } from "@/lib/quoteItems";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -163,6 +164,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           ...item,
           valor_unitario: Number(item.valor_unitario),
           valor_total: Number(item.valor_total),
+          subitens: parseQuoteSubitens(item.subitens),
         })),
       };
     }
@@ -343,10 +345,21 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-150 text-neutral-800">
-                  {quote.items.map((item, idx) => (
+                  {quote.items.map((item, idx) => {
+                    const subitensLine =
+                      item.subitens && item.subitens.length > 0
+                        ? formatQuoteSubitensLine(item.subitens)
+                        : "";
+
+                    return (
                     <tr key={idx}>
-                      <td className="py-3.5 px-4 font-semibold text-neutral-950 leading-relaxed">
-                        {item.descricao}
+                      <td className="py-3.5 px-4 leading-relaxed">
+                        <p className="font-semibold text-neutral-950">{item.descricao}</p>
+                        {subitensLine ? (
+                          <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
+                            {subitensLine}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
                         {item.quantidade}
@@ -358,7 +371,8 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                         {formatCurrency(item.valor_total)}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
