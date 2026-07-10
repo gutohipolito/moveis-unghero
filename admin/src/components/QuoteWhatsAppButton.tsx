@@ -9,6 +9,7 @@ import {
   slugifyFileName,
 } from "@/lib/quoteWhatsApp";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
+import { createPrintPageHtml2CanvasOptions } from "@/lib/html2canvasColorFix";
 
 interface QuoteWhatsAppButtonProps {
   quoteId: string;
@@ -32,12 +33,7 @@ async function generateQuotePdfBlob(clientName: string) {
       margin: 0,
       filename: fileName,
       image: { type: "jpeg", quality: 0.96 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-      },
+      html2canvas: createPrintPageHtml2CanvasOptions(".print-page"),
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     })
