@@ -154,7 +154,7 @@ export function buildBriefingNotifications(
     id: `briefing-${b.id}`,
     type: "new_briefing" as const,
     priority: "high" as const,
-    title: "Novo cadastro via formulário",
+    title: "Nova solicitação via formulário",
     message: `${b.project.client.nome} enviou um briefing de orçamento.`,
     href: `/crm?briefing=${b.project_id}`,
     createdAt: b.createdAt.toISOString(),

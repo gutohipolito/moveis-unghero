@@ -19,6 +19,7 @@ import { createClientSessionToken } from "@/lib/clientSession";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { labelProjectStatus } from "@/lib/navLabels";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
+import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 
 type Origin = 
   | "SITE"
@@ -302,11 +303,30 @@ export async function createClientAction(formData: {
   }
 
   try {
+    const existing = await findExistingClient({
+      companyId: auth.companyId,
+      telefone: formData.telefone,
+      email: formData.email,
+      cpf: cpf || undefined,
+      cnpj: cnpj || undefined,
+    });
+
+    if (existing) {
+      return {
+        success: false,
+        error: "Já existe um cliente com este telefone, e-mail ou documento.",
+        existingClientId: existing.id,
+      };
+    }
+
+    const contact = resolveClientContactFields(formData.telefone, formData.email);
+
     const client = await prisma.client.create({
       data: {
         nome: capitalizeText(formData.nome),
-        email: formData.email,
-        telefone: formData.telefone,
+        email: contact.email || formData.email,
+        telefone: contact.telefone,
+        telefone_digits: contact.phoneDigits || null,
         cidade: capitalizeText(formData.cidade),
         origem: formData.origem,
         status: formData.status,

@@ -4,6 +4,7 @@ import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ensureActorUserId } from "@/lib/currentUser";
 import { capitalizeText } from "@/lib/utils";
+import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import {
   assertCompanyAccess,
   getAuthContext,
@@ -364,39 +365,54 @@ export async function createQuickClientAndProject(data: {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Cria o cliente
-      const client = await tx.client.create({
-        data: {
-          nome: capitalizeText(data.nome),
-          email: data.email || `${capitalizeText(data.nome).toLowerCase().replace(/\s+/g, '')}@avulso.com`,
-          telefone: data.telefone || "(54) 99999-9999",
-          cidade: capitalizeText(data.cidade),
-          origem: "WHATSAPP",
-          status: "LEAD",
-          company_id: data.companyId
-        }
+      const contact = resolveClientContactFields(
+        data.telefone || "(54) 99999-9999",
+        data.email
+      );
+
+      let client = await findExistingClient({
+        companyId: data.companyId,
+        telefone: data.telefone || "(54) 99999-9999",
+        email: data.email,
       });
 
-      // 2. Cria o projeto associado
+      const isExistingClient = Boolean(client);
+
+      if (!client) {
+        client = await tx.client.create({
+          data: {
+            nome: capitalizeText(data.nome),
+            email: data.email || `${capitalizeText(data.nome).toLowerCase().replace(/\s+/g, "")}@avulso.com`,
+            telefone: contact.telefone,
+            telefone_digits: contact.phoneDigits || null,
+            cidade: capitalizeText(data.cidade),
+            origem: "WHATSAPP",
+            status: "LEAD",
+            company_id: data.companyId,
+          },
+        });
+      }
+
       const project = await tx.project.create({
         data: {
           client_id: client.id,
           valor_previsto: 0,
-          status_geral: "ORCAMENTO"
-        }
+          status_geral: "ORCAMENTO",
+        },
       });
 
-      // 3. Cria o registro na timeline
       await tx.timeline.create({
         data: {
           project_id: project.id,
-          acao: `Lead avulso e projeto criados automaticamente para orçamento comercial`,
+          acao: isExistingClient
+            ? "Nova solicitação de orçamento vinculada ao cadastro existente"
+            : "Lead avulso e projeto criados automaticamente para orçamento comercial",
           interno_sotamente: true,
-          user_id: await ensureActorUserId()
-        }
+          user_id: await ensureActorUserId(),
+        },
       });
 
-      return { projectId: project.id };
+      return { projectId: project.id, clientId: client.id };
     });
 
     revalidatePath("/quotes");

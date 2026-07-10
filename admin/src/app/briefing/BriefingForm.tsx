@@ -82,6 +82,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [startTime] = useState<number>(Date.now());
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [existingClientLinked, setExistingClientLinked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -473,6 +474,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
         localStorage.removeItem("moveis_unghero_briefing_draft");
       }
       setSuccess(true);
+      setExistingClientLinked(Boolean(res.isExistingClient));
     } else {
       setError(res.error || "Erro ao processar as informações. Tente novamente.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -489,9 +491,13 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
           <CheckCircle className="h-14 w-14 animate-bounce" />
         </div>
         <div className="space-y-3">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Recebemos seu projeto!</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            {existingClientLinked ? "Nova solicitação recebida!" : "Recebemos seu projeto!"}
+          </h2>
           <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto">
-            Nossa equipe de design e orçamento já está analisando suas escolhas para entrar em contato com uma proposta alinhada.
+            {existingClientLinked
+              ? "Identificamos seu cadastro e registramos uma nova solicitação de orçamento. Nossa equipe entrará em contato em breve."
+              : "Nossa equipe de design e orçamento já está analisando suas escolhas para entrar em contato com uma proposta alinhada."}
           </p>
         </div>
 

@@ -3,6 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { capitalizeText } from "@/lib/utils";
+import {
+  findExistingClient,
+  isPlaceholderClientEmail,
+  normalizeClientEmail,
+  resolveClientContactFields,
+} from "@/lib/clientMatch";
 
 export interface BriefingSubmitData {
   nome: string;
@@ -61,39 +67,41 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
       return { success: false, error: "Nenhum usuário comercial disponível para receber o lead." };
     }
 
-    // 3. Criar ou atualizar o Cliente
-    const cleanEmail = (data.email || "").trim().toLowerCase();
-    const cleanTelefone = data.telefone.trim();
+    // 3. Localizar cliente existente ou criar novo cadastro
+    const cleanEmail = normalizeClientEmail(data.email);
+    const contact = resolveClientContactFields(data.telefone, data.email);
 
-    let client = await prisma.client.findFirst({
-      where: {
-        company_id: companyId,
-        OR: [
-          ...(cleanEmail ? [{ email: cleanEmail }] : []),
-          { telefone: cleanTelefone }
-        ]
-      }
+    let client = await findExistingClient({
+      companyId,
+      telefone: data.telefone,
+      email: data.email,
     });
+
+    const isExistingClient = Boolean(client);
 
     if (!client) {
       client = await prisma.client.create({
         data: {
           nome: capitalizeText(data.nome),
-          email: cleanEmail || `${cleanTelefone.replace(/\D/g, "")}@unghero.com.br`,
-          telefone: cleanTelefone,
+          email: contact.email,
+          telefone: contact.telefone,
+          telefone_digits: contact.phoneDigits || null,
           cidade: capitalizeText(data.cidade),
           bairro: data.bairro ? capitalizeText(data.bairro) : null,
           tipo_imovel: data.tipo_imovel || null,
           origem: "FORMULARIO",
           status: "LEAD",
           company_id: companyId,
-        }
+        },
       });
     } else {
       client = await prisma.client.update({
         where: { id: client.id },
         data: {
           origem: "FORMULARIO",
+          telefone_digits: contact.phoneDigits || client.telefone_digits,
+          telefone: contact.phoneDigits ? contact.telefone : client.telefone,
+          ...(cleanEmail && !isPlaceholderClientEmail(cleanEmail) ? { email: cleanEmail } : {}),
           ...(data.bairro?.trim() && !client.bairro ? { bairro: capitalizeText(data.bairro) } : {}),
           ...(client.cidade.includes(" - ") || client.cidade.includes(" – ")
             ? { cidade: capitalizeText(data.cidade) }
@@ -211,10 +219,12 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
     await prisma.timeline.create({
       data: {
         project_id: project.id,
-        acao: `Briefing de Qualificação preenchido pelo cliente. Score: ${score} (Classificação: ${classificacao})`,
+        acao: isExistingClient
+          ? `Nova solicitação de orçamento vinculada ao cadastro existente. Score: ${score} (Classificação: ${classificacao})`
+          : `Briefing de Qualificação preenchido pelo cliente. Score: ${score} (Classificação: ${classificacao})`,
         interno_sotamente: false,
-        user_id: commercialUser.id
-      }
+        user_id: commercialUser.id,
+      },
     });
 
     // 11. Criar Lembretes para os admins/operadores (+1 dia útil)
@@ -238,7 +248,9 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
         data: companyUsers.map((u) => ({
           user_id: u.id,
           company_id: companyId,
-          title: `Solicitação de Orçamento: ${data.nome.trim()}`,
+          title: isExistingClient
+            ? `Nova solicitação: ${data.nome.trim()}`
+            : `Solicitação de Orçamento: ${data.nome.trim()}`,
           due_at: dueAt
         }))
       });
@@ -247,7 +259,14 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
     revalidatePath("/crm");
     revalidatePath("/clientes");
     
-    return { success: true, projectId: project.id, score, classification: classificacao };
+    return {
+      success: true,
+      projectId: project.id,
+      clientId: client.id,
+      isExistingClient,
+      score,
+      classification: classificacao,
+    };
   } catch (error) {
     console.error("Erro ao salvar briefing de qualificação:", error);
     return { success: false, error: "Ocorreu um erro interno ao processar suas informações." };

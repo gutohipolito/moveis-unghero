@@ -103,6 +103,7 @@ model Client {
   company      Company    @relation(fields: [company_id], references: [id])
   nome         String
   telefone     String
+  telefone_digits String?
   email        String
   cidade       String
   origem       Origin     // SITE, INSTAGRAM, INDICACAO, GOOGLE, WHATSAPP, FACEBOOK
@@ -124,6 +125,8 @@ model Client {
   obs_entrega  String?   // Restrições/observações de entrega
   createdAt    DateTime  @default(now())
   attachments  ClientAttachment[]
+
+  @@index([company_id, telefone_digits])
 }
 
 enum Origin {

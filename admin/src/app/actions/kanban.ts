@@ -8,6 +8,7 @@ import {
   requireClientInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
+import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 
 export type ProjectStatus =
   | "LEAD"
@@ -279,34 +280,50 @@ export async function createLead(formData: {
 
     const result = await prisma.$transaction(async (tx) => {
       let client;
+      let linkedExistingClient = false;
 
       if (formData.client_id) {
         client = await tx.client.findFirstOrThrow({
           where: { id: formData.client_id },
         });
       } else {
-        client = await tx.client.create({
-          data: {
-            nome: formData.nome,
-            email: formData.email,
-            telefone: formData.telefone,
-            cidade: formData.cidade,
-            origem: formData.origem,
-            status: statusInicial,
-            company_id: formData.company_id,
-            tipo_pessoa: formData.tipo_pessoa || "PF",
-            cpf: formData.tipo_pessoa === "PJ" ? null : formData.cpf || null,
-            cnpj: formData.tipo_pessoa === "PJ" ? formData.cnpj || null : null,
-            cep: formData.cep || null,
-            endereco: formData.endereco || null,
-            numero: formData.numero || null,
-            bairro: formData.bairro || null,
-            uf: formData.uf || null,
-            tipo_imovel: formData.tipo_imovel || null,
-            obs_imovel: formData.obs_imovel || null,
-            obs_entrega: formData.obs_entrega || null,
-          },
+        const existing = await findExistingClient({
+          companyId: formData.company_id,
+          telefone: formData.telefone,
+          email: formData.email,
+          cpf: formData.tipo_pessoa === "PJ" ? undefined : formData.cpf,
+          cnpj: formData.tipo_pessoa === "PJ" ? formData.cnpj : undefined,
         });
+
+        if (existing) {
+          client = existing;
+          linkedExistingClient = true;
+        } else {
+          const contact = resolveClientContactFields(formData.telefone, formData.email);
+          client = await tx.client.create({
+            data: {
+              nome: formData.nome,
+              email: formData.email,
+              telefone: contact.telefone,
+              telefone_digits: contact.phoneDigits || null,
+              cidade: formData.cidade,
+              origem: formData.origem,
+              status: statusInicial,
+              company_id: formData.company_id,
+              tipo_pessoa: formData.tipo_pessoa || "PF",
+              cpf: formData.tipo_pessoa === "PJ" ? null : formData.cpf || null,
+              cnpj: formData.tipo_pessoa === "PJ" ? formData.cnpj || null : null,
+              cep: formData.cep || null,
+              endereco: formData.endereco || null,
+              numero: formData.numero || null,
+              bairro: formData.bairro || null,
+              uf: formData.uf || null,
+              tipo_imovel: formData.tipo_imovel || null,
+              obs_imovel: formData.obs_imovel || null,
+              obs_entrega: formData.obs_entrega || null,
+            },
+          });
+        }
       }
 
       const project = await tx.project.create({
@@ -323,7 +340,9 @@ export async function createLead(formData: {
       await tx.timeline.create({
         data: {
           project_id: project.id,
-          acao: "Lead criado no sistema",
+          acao: linkedExistingClient
+            ? "Nova solicitação vinculada ao cadastro existente"
+            : "Lead criado no sistema",
           interno_sotamente: false,
           user_id: actorUserId,
         },
