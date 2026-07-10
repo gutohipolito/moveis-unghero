@@ -27,6 +27,11 @@ interface QuotePrintToolbarProps {
 
 type PdfLinkStatus = "idle" | "preparing" | "ready" | "unavailable";
 
+function isMobileDevice() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 async function tryNativeShare(file: File, message: string) {
   if (typeof navigator === "undefined" || !navigator.share || !navigator.canShare) {
     return false;
@@ -129,9 +134,21 @@ export default function QuotePrintToolbar({
         pdfUrl: url ?? undefined,
       });
 
-      const sharedNatively = await tryNativeShare(pdfFile, message);
-      if (sharedNatively) {
-        return;
+      // No Mac/desktop o share nativo abre o menu do sistema (AirDrop etc.) e trava a UI.
+      // Com link do PDF pronto, o fluxo ideal é abrir o WhatsApp direto.
+      if (isMobileDevice()) {
+        setBusyAction(null);
+        try {
+          const sharedNatively = await tryNativeShare(pdfFile, message);
+          if (sharedNatively) {
+            return;
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return;
+          }
+        }
+        setBusyAction("whatsapp");
       }
 
       if (!url) {
@@ -156,7 +173,7 @@ export default function QuotePrintToolbar({
     }
   }
 
-  const isBusy = busyAction !== null || pdfStatus === "preparing";
+  const isBusy = busyAction !== null;
 
   return (
     <div className="flex items-center gap-2">

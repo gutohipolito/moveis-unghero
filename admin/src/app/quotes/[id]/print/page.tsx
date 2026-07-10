@@ -41,7 +41,10 @@ const COMMERCIAL_NOTES = [
 
 function PrintTopHeader() {
   return (
-    <header className="print-quote-header bg-neutral-900 text-white px-[20mm] py-5 flex items-center justify-between gap-6">
+    <header
+      className="print-quote-header bg-neutral-900 text-white px-[20mm] py-5 flex items-center justify-between gap-6"
+      style={{ backgroundColor: "#171717" }}
+    >
       <img
         src="/logo.png"
         alt="Móveis Unghero"
@@ -56,7 +59,10 @@ function PrintTopHeader() {
 
 function PrintBottomFooter() {
   return (
-    <footer className="print-quote-footer bg-neutral-900 text-neutral-300 px-[20mm] py-4 mt-auto">
+    <footer
+      className="print-quote-footer bg-neutral-900 text-neutral-300 px-[20mm] py-4 mt-auto"
+      style={{ backgroundColor: "#171717" }}
+    >
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 text-[9px] leading-relaxed">
         <div className="space-y-0.5">
           <p className="text-white font-bold text-[10px]">{FACTORY.name}</p>
@@ -183,9 +189,11 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           margin: 0;
         }
         @media print {
-          body {
+          html, body {
             background-color: #ffffff !important;
             color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .print-page {
             height: 297mm !important;
@@ -199,6 +207,25 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             border: none !important;
             box-shadow: none !important;
             background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-quote-header {
+            background-color: #171717 !important;
+            color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-quote-footer {
+            background-color: #171717 !important;
+            color: #d4d4d4 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-quote-header img {
+            filter: brightness(0) invert(1) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .print\\:hidden {
             display: none !important;
