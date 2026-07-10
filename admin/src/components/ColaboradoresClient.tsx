@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Role } from "@prisma/client";
 import { createColaborador, deleteColaborador } from "@/app/actions/colaboradores";
+import { getColaboradoresLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
@@ -135,6 +137,18 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<Role>("PRODUCAO");
   const [password, setPassword] = useState("");
+
+  const syncColaboradores = useCallback(async () => {
+    const result = await getColaboradoresLiveSnapshot(companyId);
+    if (result.success && result.colaboradores) {
+      setColaboradores(result.colaboradores as ColaboradorItem[]);
+    }
+  }, [companyId]);
+
+  useLiveEntity("colaboradores", {
+    sync: syncColaboradores,
+    enabled: !loading && !isCreateOpen,
+  });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

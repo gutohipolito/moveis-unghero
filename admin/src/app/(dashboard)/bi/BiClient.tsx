@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { SegmentControl } from "@/components/ui/segment-control";
+import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { 
   TrendingUp, 
   DollarSign, 
@@ -38,6 +40,7 @@ interface Partner {
 interface BiClientProps {
   initialProjects: Project[];
   initialPartners: Partner[];
+  companyId: string;
 }
 
 const COLUMNS_CRM = [
@@ -51,8 +54,20 @@ const COLUMNS_CRM = [
   { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" }
 ];
 
-export default function BiClient({ initialProjects, initialPartners }: BiClientProps) {
+export default function BiClient({ initialProjects, initialPartners, companyId }: BiClientProps) {
+  const [projects, setProjects] = useState(initialProjects);
+  const [partners, setPartners] = useState(initialPartners);
   const [filterPeriod, setFilterPeriod] = useState<"30" | "90" | "365">("90");
+
+  const syncBi = useCallback(async () => {
+    const result = await getBiLiveSnapshot(companyId);
+    if (result.success) {
+      if (result.projects) setProjects(result.projects);
+      if (result.partners) setPartners(result.partners);
+    }
+  }, [companyId]);
+
+  useLiveEntity("bi", { sync: syncBi });
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -62,9 +77,9 @@ export default function BiClient({ initialProjects, initialPartners }: BiClientP
   };
 
   // 1. Cálculos de CRM e Funil
-  const totalPipeline = initialProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
+  const totalPipeline = projects.reduce((acc, p) => acc + p.valor_previsto, 0);
   const statusCounts = COLUMNS_CRM.map(col => {
-    const list = initialProjects.filter(p => p.status_geral === col.id);
+    const list = projects.filter(p => p.status_geral === col.id);
     const sum = list.reduce((acc, p) => acc + p.valor_previsto, 0);
     return {
       id: col.id,
@@ -79,7 +94,7 @@ export default function BiClient({ initialProjects, initialPartners }: BiClientP
 
   // 2. Receitas vs Custos (Margem de marcenaria de luxo)
   // Projetos aprovados, em produção, instalação ou finalizados representam faturamento real
-  const activeClosedProjects = initialProjects.filter(p => 
+  const activeClosedProjects = projects.filter(p =>
     ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"].includes(p.status_geral)
   );
   
@@ -93,7 +108,7 @@ export default function BiClient({ initialProjects, initialPartners }: BiClientP
 
   // 3. Origens de Leads Rentáveis
   const originsData = ["INSTAGRAM", "INDICACAO", "SITE", "GOOGLE", "WHATSAPP"].map(orig => {
-    const list = initialProjects.filter(p => p.client.origem === orig);
+    const list = projects.filter(p => p.client.origem === orig);
     const sum = list.reduce((acc, p) => acc + p.valor_previsto, 0);
     return {
       name: orig,
@@ -105,7 +120,7 @@ export default function BiClient({ initialProjects, initialPartners }: BiClientP
   const maxOriginValue = Math.max(...originsData.map(o => o.value), 1);
 
   // 4. Ranking de Projetistas e Comissões reais (ProfessionalPartner)
-  const designerRanking = initialPartners.map(partner => {
+  const designerRanking = partners.map(partner => {
     // Como a modelagem do banco não possui um relacionamento direto ou chave estrangeira conectando
     // projetos a ProfessionalPartner, as vendas reais registradas no banco de dados são 0.
     const totalSold = 0;

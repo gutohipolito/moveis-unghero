@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useTransition } from "react";
+import React, { useRef, useState, useEffect, useTransition, useCallback } from "react";
 import { StickyNote, Pin, Trash2 } from "lucide-react";
 import type { OperatorNote } from "@/lib/operatorWorkspace";
 import { formatNoteDate } from "@/lib/operatorWorkspace";
@@ -9,14 +9,18 @@ import {
   deleteOperatorNote,
   toggleOperatorNotePin,
 } from "@/app/actions/operatorWorkspace";
+import { getWorkspaceLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 
 interface NotesCenterProps {
+  companyId: string;
   initialNotes: OperatorNote[];
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export default function NotesCenter({
+  companyId,
   initialNotes,
   isOpen,
   onOpenChange,
@@ -27,12 +31,23 @@ export default function NotesCenter({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
-
   const open = isOpen ?? internalOpen;
   const setOpen = (value: boolean) => {
     if (onOpenChange) onOpenChange(value);
     else setInternalOpen(value);
   };
+
+  const syncWorkspace = useCallback(async () => {
+    const result = await getWorkspaceLiveSnapshot(companyId);
+    if (result.success && result.notes) {
+      setNotes(result.notes);
+    }
+  }, [companyId]);
+
+  useLiveEntity("workspace", {
+    sync: syncWorkspace,
+    enabled: !pending && !open,
+  });
 
   useEffect(() => {
     setNotes(initialNotes);

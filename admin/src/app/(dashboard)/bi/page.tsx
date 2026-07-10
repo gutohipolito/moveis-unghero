@@ -59,7 +59,7 @@ export default async function BIPage() {
         <PrivacyToggle />
       </PageHeader>
 
-      <BiClient initialProjects={formattedProjects} initialPartners={partners} />
+      <BiClient initialProjects={formattedProjects} initialPartners={partners} companyId={userCompanyId} />
     </div>
   );
 }

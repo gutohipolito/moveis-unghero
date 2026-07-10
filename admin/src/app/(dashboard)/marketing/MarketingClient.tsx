@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import {
   Activity,
   AlertCircle,
@@ -21,6 +21,7 @@ import {
   type MarketingDashboardData,
   type MarketingPeriod,
 } from "@/lib/marketing";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 interface MarketingClientProps {
   initialData: MarketingDashboardData;
@@ -34,6 +35,18 @@ export default function MarketingClient({ initialData }: MarketingClientProps) {
   const [data, setData] = useState(initialData);
   const [period, setPeriod] = useState<MarketingPeriod>(initialData.period);
   const [isPending, startTransition] = useTransition();
+
+  const syncMarketing = useCallback(async () => {
+    const next = await getMarketingDashboard(period);
+    setData(next);
+  }, [period]);
+
+  useLiveSync({
+    sync: syncMarketing,
+    enabled: !isPending,
+    pollVisibleMs: 60_000,
+    pollHiddenMs: 5 * 60_000,
+  });
 
   function handlePeriodChange(next: MarketingPeriod) {
     setPeriod(next);

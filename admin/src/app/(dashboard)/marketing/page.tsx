@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { getClients } from "@/app/actions/cliente";
 import PageHeader from "@/components/PageHeader";
-import GoogleReviewLinkCard from "@/components/marketing/GoogleReviewLinkCard";
+import MarketingReviewClients from "./MarketingReviewClients";
 import { auth } from "@/lib/auth";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
 
@@ -30,7 +30,7 @@ export default async function MarketingPage() {
         description="Link curto, QR Code e mensagem no WhatsApp para pedir avaliações após a entrega."
       />
 
-      <GoogleReviewLinkCard clients={clients} />
+      <MarketingReviewClients initialClients={clients} companyId={companyId} />
     </div>
   );
 }

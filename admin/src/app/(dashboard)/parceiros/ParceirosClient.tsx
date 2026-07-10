@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { PartnerType } from "@prisma/client";
 import {
   createParceiro,
@@ -8,6 +8,8 @@ import {
   updateParceiro,
   type ParceiroDTO,
 } from "@/app/actions/parceiros";
+import { getParceirosLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { PARTNER_TYPE_STYLES, PARTNER_TYPES } from "@/lib/partnerTypes";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -58,6 +60,18 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [cidade, setCidade] = useState("");
   const [escritorio, setEscritorio] = useState("");
   const [observacoes, setObservacoes] = useState("");
+
+  const syncParceiros = useCallback(async () => {
+    const result = await getParceirosLiveSnapshot(companyId);
+    if (result.success && result.parceiros) {
+      setParceiros(result.parceiros);
+    }
+  }, [companyId]);
+
+  useLiveEntity("parceiros", {
+    sync: syncParceiros,
+    enabled: !loading && !isCreateOpen,
+  });
 
   const resetForm = () => {
     setNome("");

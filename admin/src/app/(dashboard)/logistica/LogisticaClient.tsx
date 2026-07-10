@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getLogisticaLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { 
   Truck, 
   Wrench, 
@@ -46,6 +48,7 @@ interface VeiculoOption {
 interface LogisticaClientProps {
   initialProjects: Project[];
   veiculos: VeiculoOption[];
+  companyId: string;
 }
 
 interface ExpedicaoCarga {
@@ -57,10 +60,15 @@ interface ExpedicaoCarga {
   status: "PENDENTE" | "CARREGADO" | "EM_TRANSITO" | "ENTREGUE";
 }
 
-export default function LogisticaClient({ initialProjects, veiculos }: LogisticaClientProps) {
+export default function LogisticaClient({
+  initialProjects,
+  veiculos: initialVeiculos,
+  companyId,
+}: LogisticaClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [veiculos, setVeiculos] = useState(initialVeiculos);
   const [activeTab, setActiveTab] = useState<"expedicao" | "montagem">("expedicao");
   const [loading, setLoading] = useState(false);
 
@@ -110,6 +118,19 @@ export default function LogisticaClient({ initialProjects, veiculos }: Logistica
     recebedorNome: "",
     recebedorDoc: "",
     assinaturaDesenhada: false
+  });
+
+  const syncLogistica = useCallback(async () => {
+    const result = await getLogisticaLiveSnapshot(companyId);
+    if (result.success && result.projects) {
+      setProjects(result.projects);
+      if (result.veiculos) setVeiculos(result.veiculos);
+    }
+  }, [companyId]);
+
+  useLiveEntity("logistica", {
+    sync: syncLogistica,
+    enabled: !loading && !isAddingExp && !signatureModalProjId,
   });
 
   const formatCurrency = (val: number) => {

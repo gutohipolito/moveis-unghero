@@ -47,7 +47,11 @@ export default async function LogisticaPage() {
         description="Planejamento de rotas de expedição, equipes de montagem e controle de qualidade técnica."
       />
 
-      <LogisticaClient initialProjects={formattedProjects} veiculos={veiculos} />
+      <LogisticaClient
+        initialProjects={formattedProjects}
+        veiculos={veiculos}
+        companyId={userCompanyId}
+      />
     </div>
   );
 }

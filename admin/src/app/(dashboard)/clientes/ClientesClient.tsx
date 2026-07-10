@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { 
@@ -38,6 +38,8 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Dialog } from "@/components/ui/dialog";
 import { formatPhoneInput, formatPhoneDisplay, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { resolveClientLocation } from "@/lib/clientLocation";
+import { getClientsLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 
 interface ProjectSummary {
   id: string;
@@ -132,6 +134,18 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [obsImovel, setObsImovel] = useState("");
   const [obsEntrega, setObsEntrega] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const syncClients = useCallback(async () => {
+    const result = await getClientsLiveSnapshot(companyId);
+    if (result.success && result.clients) {
+      setClients(result.clients as Client[]);
+    }
+  }, [companyId]);
+
+  useLiveEntity("clients", {
+    sync: syncClients,
+    enabled: !loading && !isCreateOpen && !isEditOpen && !isProjectModalOpen,
+  });
 
   // Funções de autocompletar via API
   const fetchAddressByCep = async (cepValue: string) => {

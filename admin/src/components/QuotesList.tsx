@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { 
   Search, 
@@ -31,8 +31,8 @@ import {
   createProjectForClient,
   createQuickClientAndProject
 } from "@/app/actions/quotes";
-import { hasLiveSnapshotChanged, buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
-import { useLiveSync } from "@/hooks/useLiveSync";
+import { getQuotesLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import PageHeader from "@/components/PageHeader";
@@ -103,27 +103,15 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
   const [quickEmail, setQuickEmail] = useState("");
   const [quickTelefone, setQuickTelefone] = useState("");
   const [quickCidade, setQuickCidade] = useState("");
-  const liveVersionRef = useRef("");
 
   const syncQuotes = useCallback(async () => {
-    const result = await getQuotes();
-    if (!result.success || !result.data) return;
-
-    const version = buildLiveSnapshotVersion(
-      result.data.map((quote) => ({
-        id: quote.id,
-        valor_final: quote.valor_final,
-        validade: String(quote.validade),
-        items: quote.items?.length ?? 0,
-      }))
-    );
-
-    if (!hasLiveSnapshotChanged(liveVersionRef.current, version)) return;
-    liveVersionRef.current = version;
-    setQuotes(result.data as Quote[]);
+    const result = await getQuotesLiveSnapshot();
+    if (result.success && result.quotes) {
+      setQuotes(result.quotes as Quote[]);
+    }
   }, []);
 
-  useLiveSync({
+  useLiveEntity("quotes", {
     sync: syncQuotes,
     enabled: !isCreateOpen && !isGeneratingProject,
   });

@@ -1,5 +1,5 @@
 export function buildLiveSnapshotVersion(
-  rows: Array<Record<string, string | number | null | undefined>>
+  rows: Array<Record<string, string | number | boolean | null | undefined>>
 ): string {
   return rows
     .map((row) =>

@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { getAgendaLiveSnapshot } from "@/app/actions/liveSnapshots";
-import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
-import { useLiveSync } from "@/hooks/useLiveSync";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -78,17 +77,15 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
   });
 
   const [loading, setLoading] = useState(false);
-  const liveVersionRef = useRef("");
 
   const syncAgenda = useCallback(async () => {
     const result = await getAgendaLiveSnapshot(companyId);
-    if (!result.success || !result.events) return;
-    if (!hasLiveSnapshotChanged(liveVersionRef.current, result.version)) return;
-    liveVersionRef.current = result.version;
-    setEvents(result.events);
+    if (result.success && result.events) {
+      setEvents(result.events);
+    }
   }, [companyId]);
 
-  useLiveSync({
+  useLiveEntity("agenda", {
     sync: syncAgenda,
     enabled: !loading && !isAddEventOpen && !selectedEvent,
   });

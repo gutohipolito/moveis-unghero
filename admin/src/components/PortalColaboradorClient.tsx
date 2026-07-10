@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { registerPonto } from "@/app/actions/ponto";
 import { updateEnvironmentStatus } from "@/app/actions/project";
+import { getPortalLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,13 +80,28 @@ export default function PortalColaboradorClient({
   userCargo,
   initialTimeCards,
   initialTasks,
-  metrics,
+  metrics: initialMetrics,
 }: PortalColaboradorClientProps) {
   const [timeCards, setTimeCards] = useState<TimeCardItem[]>(initialTimeCards);
   const [tasks, setTasks] = useState<EnvironmentItem[]>(initialTasks);
+  const [metrics, setMetrics] = useState(initialMetrics);
   const [loading, setLoading] = useState(false);
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
+
+  const syncPortal = useCallback(async () => {
+    const result = await getPortalLiveSnapshot(userId);
+    if (result.success) {
+      if (result.tasks) setTasks(result.tasks);
+      if (result.timeCards) setTimeCards(result.timeCards);
+      if (result.metrics) setMetrics(result.metrics);
+    }
+  }, [userId]);
+
+  useLiveEntity("portal", {
+    sync: syncPortal,
+    enabled: !loading,
+  });
 
   // Calcula o cartão de ponto de hoje (se existir)
   const todayDateStr = new Date().toDateString();

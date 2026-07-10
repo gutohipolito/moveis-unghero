@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
@@ -12,6 +12,8 @@ import {
   type Payment, 
   addActivityAction 
 } from "@/app/actions/cliente";
+import { getClientDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { resolveClientDocument } from "@/lib/clientDocument";
 import { 
   ArrowLeft, 
@@ -91,7 +93,7 @@ export default function ClienteDetailsClient({
   initialAttachments,
   companyId 
 }: ClienteDetailsClientProps) {
-  const [client] = useState<ClientDetails>(initialClient);
+  const [client, setClient] = useState<ClientDetails>(initialClient);
   const [projects, setProjects] = useState<ClientProjectSummary[]>(
     initialClient.projects ?? []
   );
@@ -115,6 +117,24 @@ export default function ClienteDetailsClient({
   const [newDesc, setNewDesc] = useState("");
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
+
+  const syncClientDetails = useCallback(async () => {
+    const result = await getClientDetailsLiveSnapshot(client.id);
+    if (result.success && result.client) {
+      setClient(result.client as ClientDetails);
+      if (result.activities) setActivities(result.activities);
+      if (result.payments) setPayments(result.payments);
+      if (result.attachments) setAttachments(result.attachments);
+      if (result.client.projects) {
+        setProjects(result.client.projects as ClientProjectSummary[]);
+      }
+    }
+  }, [client.id]);
+
+  useLiveEntity("clients", {
+    sync: syncClientDetails,
+    enabled: !isSubmittingNote,
+  });
 
   const docInfo = resolveClientDocument(client);
 

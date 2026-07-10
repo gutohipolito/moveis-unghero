@@ -45,7 +45,7 @@ export default async function FinanceiroPage() {
         <PrivacyToggle />
       </PageHeader>
 
-      <FinanceiroClient initialInstallments={formattedInsts} />
+      <FinanceiroClient initialInstallments={formattedInsts} companyId={userCompanyId} />
     </div>
   );
 }

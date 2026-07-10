@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { payInstallment } from "@/app/actions/operations";
+import { getFinanceiroLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,14 +39,27 @@ interface InstallmentItem {
 
 interface FinanceiroClientProps {
   initialInstallments: InstallmentItem[];
+  companyId: string;
 }
 
-export default function FinanceiroClient({ initialInstallments }: FinanceiroClientProps) {
+export default function FinanceiroClient({ initialInstallments, companyId }: FinanceiroClientProps) {
   const [installments, setInstallments] = useState<InstallmentItem[]>(initialInstallments);
   const dialog = useActionDialog();
   const { showSuccess, confirmAction } = dialog;
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const syncFinanceiro = useCallback(async () => {
+    const result = await getFinanceiroLiveSnapshot(companyId);
+    if (result.success && result.installments) {
+      setInstallments(result.installments);
+    }
+  }, [companyId]);
+
+  useLiveEntity("financeiro", {
+    sync: syncFinanceiro,
+    enabled: true,
+  });
 
   // Ação de Quitar Parcela
   const handlePay = (item: InstallmentItem) => {

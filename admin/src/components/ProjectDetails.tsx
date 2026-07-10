@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { 
@@ -17,8 +17,8 @@ import {
 } from "@/app/actions/project";
 import { approveQuote, deleteQuote } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
-import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
-import { useLiveSync } from "@/hooks/useLiveSync";
+import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
@@ -211,7 +211,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
-  const liveProjectVersionRef = useRef("");
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -285,28 +284,16 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [isRenderingPro, setIsRenderingPro] = useState(false);
 
   const syncProject = useCallback(async () => {
-    const result = await getProjectDetailsAction(project.id);
-    if (!result.success || !result.project) return;
-
-    const version = JSON.stringify({
-      status: result.project.status_geral,
-      environments: result.project.environments?.map((env) => `${env.id}:${env.status}`).join(","),
-      quotes: result.project.quotes?.map((quote) => `${quote.id}:${quote.valor_final}`).join(","),
-      tasks: result.project.tasks?.map((task) => `${task.id}:${task.status}`).join(","),
-      installments: result.project.installments?.map((item) => `${item.id}:${item.status}`).join(","),
-      files: result.project.files?.map((file) => `${file.id}:${file.aprovado_producao}`).join(","),
-    });
-
-    if (!hasLiveSnapshotChanged(liveProjectVersionRef.current, version)) return;
-    liveProjectVersionRef.current = version;
-
-    setProject(result.project as Project);
-    if (result.sla) {
-      setSla(result.sla);
+    const result = await getProjectLiveSnapshot(project.id);
+    if (result.success && result.project) {
+      setProject(result.project as Project);
+      if (result.sla) {
+        setSla(result.sla);
+      }
     }
   }, [project.id]);
 
-  useLiveSync({
+  useLiveEntity("projects", {
     sync: syncProject,
     enabled:
       !loading &&

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   createCatalogItem,
@@ -9,6 +9,8 @@ import {
   type CatalogGroupDTO,
   type CatalogItemDTO,
 } from "@/app/actions/cadastros";
+import { getCadastrosLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { FIXED_CATALOG_REFERENCES, getCatalogGroupMeta } from "@/lib/catalogGroups";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +61,18 @@ export default function CadastrosClient({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const syncCadastros = useCallback(async () => {
+    const result = await getCadastrosLiveSnapshot(companyId);
+    if (result.success && result.groups) {
+      setGroups(result.groups);
+    }
+  }, [companyId]);
+
+  useLiveEntity("cadastros", {
+    sync: syncCadastros,
+    enabled: !loading && !editingId,
+  });
 
   const activeGroup = useMemo(
     () => groups.find((g) => g.slug === activeSlug),

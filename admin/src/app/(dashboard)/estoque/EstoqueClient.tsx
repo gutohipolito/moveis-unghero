@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
   type Supplier,
   type InventoryItem 
 } from "@/app/actions/estoque";
+import { getEstoqueLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
@@ -99,6 +101,19 @@ export default function EstoqueClient({
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+
+  const syncEstoque = useCallback(async () => {
+    const result = await getEstoqueLiveSnapshot(companyId);
+    if (result.success) {
+      if (result.suppliers) setSuppliers(result.suppliers);
+      if (result.inventory) setInventory(result.inventory);
+    }
+  }, [companyId]);
+
+  useLiveEntity("estoque", {
+    sync: syncEstoque,
+    enabled: !isSupplierModalOpen && !isItemModalOpen,
+  });
 
   // Estados de Formulário - Fornecedor
   const [supplierNome, setSupplierNome] = useState("");

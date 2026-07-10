@@ -5,6 +5,7 @@ import { getCachedSession } from "@/lib/session";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { LiveSyncProvider } from "@/context/LiveSyncContext";
 import { getNotifications } from "@/app/actions/notifications";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -35,6 +36,7 @@ export default async function DashboardLayout({
         companyId={companyId}
         initialNotifications={notificationsRes.notifications}
       >
+      <LiveSyncProvider companyId={companyId}>
       <div className="flex min-h-screen bg-background">
         <aside className="app-sidebar hidden md:flex md:w-[17.5rem] lg:w-[19rem] md:flex-col md:fixed md:inset-y-0 z-30">
           <div className="flex flex-col flex-1 min-h-0">
@@ -73,6 +75,7 @@ export default async function DashboardLayout({
 
         <MobileBottomNav />
       </div>
+      </LiveSyncProvider>
       </NotificationProvider>
     </PrivacyProvider>
   );

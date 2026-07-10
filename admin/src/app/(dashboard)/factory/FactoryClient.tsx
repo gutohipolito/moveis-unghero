@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
 import { getFactoryLiveSnapshot } from "@/app/actions/liveSnapshots";
-import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
-import { useLiveSync } from "@/hooks/useLiveSync";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import SlaRadar from "@/components/SlaRadar";
@@ -193,7 +192,6 @@ export default function FactoryClient({
   const [didDrag, setDidDrag] = useState(false);
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
-  const liveVersionRef = useRef("");
   const [slaModal, setSlaModal] = useState<{
     projectId: string;
     stageKey: string;
@@ -202,14 +200,13 @@ export default function FactoryClient({
 
   const syncFactory = useCallback(async () => {
     const result = await getFactoryLiveSnapshot(companyId);
-    if (!result.success || !result.environments) return;
-    if (!hasLiveSnapshotChanged(liveVersionRef.current, result.version)) return;
-    liveVersionRef.current = result.version;
-    setEnvironments(result.environments);
-    setSlaByProject(result.slaByProject);
+    if (result.success && result.environments) {
+      setEnvironments(result.environments);
+      setSlaByProject(result.slaByProject);
+    }
   }, [companyId]);
 
-  useLiveSync({
+  useLiveEntity("factory", {
     sync: syncFactory,
     enabled: !draggedId && !detailItem && !slaModal,
   });

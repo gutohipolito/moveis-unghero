@@ -27,11 +27,13 @@ export default function HeaderQuickActions({
   return (
     <div className="flex items-center gap-1">
       <NotesCenter
+        companyId={companyId}
         initialNotes={initialNotes}
         isOpen={openMenu === "notes"}
         onOpenChange={(open) => setOpenMenu(open ? "notes" : null)}
       />
       <RemindersCenter
+        companyId={companyId}
         initialReminders={initialReminders}
         isOpen={openMenu === "reminders"}
         onOpenChange={(open) => setOpenMenu(open ? "reminders" : null)}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useTransition } from "react";
+import React, { useRef, useState, useEffect, useTransition, useCallback } from "react";
 import { AlarmClock, Check, Trash2 } from "lucide-react";
 import type { OperatorReminder } from "@/lib/operatorWorkspace";
 import {
@@ -16,14 +16,18 @@ import {
   deleteOperatorReminder,
   toggleOperatorReminderDone,
 } from "@/app/actions/operatorWorkspace";
+import { getWorkspaceLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
 
 interface RemindersCenterProps {
+  companyId: string;
   initialReminders: OperatorReminder[];
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export default function RemindersCenter({
+  companyId,
   initialReminders,
   isOpen,
   onOpenChange,
@@ -35,12 +39,23 @@ export default function RemindersCenter({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
-
   const open = isOpen ?? internalOpen;
   const setOpen = (value: boolean) => {
     if (onOpenChange) onOpenChange(value);
     else setInternalOpen(value);
   };
+
+  const syncWorkspace = useCallback(async () => {
+    const result = await getWorkspaceLiveSnapshot(companyId);
+    if (result.success && result.reminders) {
+      setReminders(result.reminders);
+    }
+  }, [companyId]);
+
+  useLiveEntity("workspace", {
+    sync: syncWorkspace,
+    enabled: !pending && !open,
+  });
 
   const activeCount = countActiveReminders(reminders);
   const urgentCount = countUrgentReminders(reminders);
