@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { createTask, toggleTaskStatus } from "@/app/actions/operations";
+import { getAgendaLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -42,6 +45,7 @@ interface ProjectOption {
 interface AgendaClientProps {
   initialEvents: AgendaEvent[];
   projects: ProjectOption[];
+  companyId: string;
 }
 
 const TIPO_COMPROMISSO: Record<string, { label: string; color: string; border: string; bg: string }> = {
@@ -52,7 +56,7 @@ const TIPO_COMPROMISSO: Record<string, { label: string; color: string; border: s
   OUTROS: { label: "Outros", color: "text-slate-400", border: "border-slate-500/20", bg: "bg-slate-500/10" }
 };
 
-export default function AgendaClient({ initialEvents, projects }: AgendaClientProps) {
+export default function AgendaClient({ initialEvents, projects, companyId }: AgendaClientProps) {
   const [events, setEvents] = useState<AgendaEvent[]>(initialEvents);
   const [currentDate, setCurrentDate] = useState(new Date("2026-07-01T00:00:00Z")); // Fixado em julho/2026 para os mocks
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
@@ -74,6 +78,20 @@ export default function AgendaClient({ initialEvents, projects }: AgendaClientPr
   });
 
   const [loading, setLoading] = useState(false);
+  const liveVersionRef = useRef("");
+
+  const syncAgenda = useCallback(async () => {
+    const result = await getAgendaLiveSnapshot(companyId);
+    if (!result.success || !result.events) return;
+    if (!hasLiveSnapshotChanged(liveVersionRef.current, result.version)) return;
+    liveVersionRef.current = result.version;
+    setEvents(result.events);
+  }, [companyId]);
+
+  useLiveSync({
+    sync: syncAgenda,
+    enabled: !loading && !isAddEventOpen && !selectedEvent,
+  });
 
   // Lógica do Calendário (Mês)
   const year = currentDate.getFullYear();

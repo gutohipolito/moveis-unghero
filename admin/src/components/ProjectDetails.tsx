@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { 
@@ -17,6 +17,8 @@ import {
 } from "@/app/actions/project";
 import { approveQuote, deleteQuote } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
+import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
@@ -209,6 +211,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
+  const liveProjectVersionRef = useRef("");
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -280,6 +283,41 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [loading, setLoading] = useState(false);
   const [isImportingPromob, setIsImportingPromob] = useState(false);
   const [isRenderingPro, setIsRenderingPro] = useState(false);
+
+  const syncProject = useCallback(async () => {
+    const result = await getProjectDetailsAction(project.id);
+    if (!result.success || !result.project) return;
+
+    const version = JSON.stringify({
+      status: result.project.status_geral,
+      environments: result.project.environments?.map((env) => `${env.id}:${env.status}`).join(","),
+      quotes: result.project.quotes?.map((quote) => `${quote.id}:${quote.valor_final}`).join(","),
+      tasks: result.project.tasks?.map((task) => `${task.id}:${task.status}`).join(","),
+      installments: result.project.installments?.map((item) => `${item.id}:${item.status}`).join(","),
+      files: result.project.files?.map((file) => `${file.id}:${file.aprovado_producao}`).join(","),
+    });
+
+    if (!hasLiveSnapshotChanged(liveProjectVersionRef.current, version)) return;
+    liveProjectVersionRef.current = version;
+
+    setProject(result.project as Project);
+    if (result.sla) {
+      setSla(result.sla);
+    }
+  }, [project.id]);
+
+  useLiveSync({
+    sync: syncProject,
+    enabled:
+      !loading &&
+      !isEditingMeta &&
+      !isCreatingQuote &&
+      !isAddEnvOpen &&
+      !slaModalOpen &&
+      !isUploadOpen &&
+      !isAddTaskOpen &&
+      !isAddInstallmentOpen,
+  });
 
   // Simula a importação inteligente de arquivos XML/TXT do Promob via IA
   const handleSimulatePromobImport = () => {

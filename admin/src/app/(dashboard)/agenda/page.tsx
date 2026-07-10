@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { fetchAgendaEvents } from "@/lib/factoryBoard";
 import { getSessionCompanyId } from "@/lib/session";
 import AgendaClient from "./AgendaClient";
 import PageHeader from "@/components/PageHeader";
@@ -6,41 +7,26 @@ import PageHeader from "@/components/PageHeader";
 export default async function AgendaPage() {
   const userCompanyId = await getSessionCompanyId();
 
-  let tasks: any[] = [];
-  let projects: any[] = [];
+  let projects: Array<{ id: string; clientName: string }> = [];
+  let agendaSnapshot = { events: [] as Awaited<ReturnType<typeof fetchAgendaEvents>>["events"], version: "" };
 
   try {
-    [tasks, projects] = await Promise.all([
-      prisma.task.findMany({
-        where: { project: { client: { company_id: userCompanyId } } },
-        include: { project: { include: { client: true } } },
-        orderBy: { data: "asc" },
-      }),
+    const [snapshot, projectsResult] = await Promise.all([
+      fetchAgendaEvents(userCompanyId),
       prisma.project.findMany({
         where: { client: { company_id: userCompanyId } },
         include: { client: true },
       }),
     ]);
+
+    agendaSnapshot = snapshot;
+    projects = projectsResult.map((project) => ({
+      id: project.id,
+      clientName: project.client.nome,
+    }));
   } catch (error) {
     console.warn("Falha de conexão com banco de dados na busca da agenda.", error);
   }
-
-  const formattedEvents = tasks.map((t) => ({
-    id: t.id,
-    titulo: t.titulo || "Compromisso Técnico",
-    descricao: t.descricao || "",
-    responsavel: t.responsavel,
-    data: t.data.toISOString(),
-    status: t.status,
-    tipo: t.tipo || "OUTROS",
-    projectName: t.project?.client?.nome || "Sem Projeto Associado",
-    projectId: t.project?.id || "",
-  }));
-
-  const formattedProjects = projects.map((p) => ({
-    id: p.id,
-    clientName: p.client.nome,
-  }));
 
   return (
     <div className="space-y-6">
@@ -49,7 +35,11 @@ export default async function AgendaPage() {
         description="Visitas comerciais, medições, entregas e instalações."
       />
 
-      <AgendaClient initialEvents={formattedEvents} projects={formattedProjects} />
+      <AgendaClient
+        initialEvents={agendaSnapshot.events}
+        projects={projects}
+        companyId={userCompanyId}
+      />
     </div>
   );
 }

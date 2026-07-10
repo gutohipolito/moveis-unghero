@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
@@ -280,6 +283,21 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   
 
   const [loading, setLoading] = useState(false);
+  const liveVersionRef = useRef("");
+
+  const syncCrm = useCallback(async () => {
+    const result = await getCrmLiveSnapshot(companyId);
+    if (!result.success || !result.projects) return;
+    if (!hasLiveSnapshotChanged(liveVersionRef.current, result.version)) return;
+    liveVersionRef.current = result.version;
+    setProjects(result.projects as Project[]);
+  }, [companyId]);
+
+  useLiveSync({
+    sync: syncCrm,
+    enabled: !activeDragId && !loading && !isEditLeadOpen && !lossModalProject,
+  });
+
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [leadForm, setLeadForm] = useState({

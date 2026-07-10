@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
+import { getFactoryLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { hasLiveSnapshotChanged } from "@/lib/liveSnapshot";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import SlaRadar from "@/components/SlaRadar";
@@ -49,6 +52,7 @@ interface FactoryClientProps {
   initialEnvironments: EnvironmentItem[];
   colaboradores: ColaboradorSelect[];
   slaByProject: Record<string, ProjectSlaView>;
+  companyId: string;
   slaCheckProjectId?: string;
 }
 
@@ -180,6 +184,7 @@ export default function FactoryClient({
   initialEnvironments,
   colaboradores,
   slaByProject: initialSlaByProject,
+  companyId,
   slaCheckProjectId,
 }: FactoryClientProps) {
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
@@ -188,11 +193,26 @@ export default function FactoryClient({
   const [didDrag, setDidDrag] = useState(false);
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
+  const liveVersionRef = useRef("");
   const [slaModal, setSlaModal] = useState<{
     projectId: string;
     stageKey: string;
     clientName?: string;
   } | null>(null);
+
+  const syncFactory = useCallback(async () => {
+    const result = await getFactoryLiveSnapshot(companyId);
+    if (!result.success || !result.environments) return;
+    if (!hasLiveSnapshotChanged(liveVersionRef.current, result.version)) return;
+    liveVersionRef.current = result.version;
+    setEnvironments(result.environments);
+    setSlaByProject(result.slaByProject);
+  }, [companyId]);
+
+  useLiveSync({
+    sync: syncFactory,
+    enabled: !draggedId && !detailItem && !slaModal,
+  });
 
   useEffect(() => {
     if (!slaCheckProjectId) return;
