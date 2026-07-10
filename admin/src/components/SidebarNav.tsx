@@ -18,6 +18,7 @@ import {
   PenTool,
   Star,
   BarChart3,
+  NotebookPen,
 } from "lucide-react";
 
 export interface NavItem {
@@ -43,6 +44,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
 
   { name: "Avaliação Google", href: "/marketing", icon: Star, section: "Marketing" },
+  { name: "Formulários", href: "/marketing/formularios", icon: NotebookPen, section: "Marketing" },
   { name: "Tráfego GA4", href: "/marketing/analytics", icon: BarChart3, section: "Marketing" },
 
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
@@ -67,6 +69,7 @@ export function isNavItemActive(pathname: string, href: string): boolean {
   if (!pathname.startsWith(`${href}/`)) return false;
   if (href === "/factory" && pathname.startsWith("/factory/portal")) return false;
   if (href === "/marketing" && pathname.startsWith("/marketing/analytics")) return false;
+  if (href === "/marketing" && pathname.startsWith("/marketing/formularios")) return false;
   return true;
 }
 
@@ -75,6 +78,7 @@ const HEAVY_ROUTES = new Set([
   "/bi",
   "/marketing",
   "/marketing/analytics",
+  "/marketing/formularios",
   "/factory",
   "/financeiro",
   "/clientes",
