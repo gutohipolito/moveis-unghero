@@ -41,6 +41,7 @@ export type ProjectDetailsPayload = {
     valor_final: number;
     validade: string;
     observacoes: string | null;
+    aprovado_em: string | null;
   }>;
   tasks: Array<{
     id: string;
@@ -88,7 +89,7 @@ const projectInclude = {
   client: true,
   environments: true,
   files: true,
-  quotes: true,
+  quotes: { orderBy: { versao: "desc" as const } },
   tasks: true,
   installments: true,
   responsavel: true,
@@ -142,6 +143,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       valor_final: Number(q.valor_final),
       validade: q.validade.toISOString(),
       observacoes: q.observacoes,
+      aprovado_em: q.aprovado_em ? q.aprovado_em.toISOString() : null,
     })),
     tasks: project.tasks.map((t) => ({
       id: t.id,

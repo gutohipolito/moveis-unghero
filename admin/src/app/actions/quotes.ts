@@ -141,13 +141,37 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
   }
 
   try {
-    // 1. Atualiza o status geral do projeto para APROVADO
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { status_geral: "APROVADO" }
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, project_id: projectId },
+      select: { valor_final: true },
+    });
+    if (!quote) {
+      return { success: false, error: "Orçamento não encontrado" };
+    }
+
+    const approvedAt = new Date();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.quote.updateMany({
+        where: { project_id: projectId, id: { not: quoteId } },
+        data: { aprovado_em: null },
+      });
+
+      await tx.quote.update({
+        where: { id: quoteId },
+        data: { aprovado_em: approvedAt },
+      });
+
+      await tx.project.update({
+        where: { id: projectId },
+        data: {
+          status_geral: "APROVADO",
+          valor_previsto: quote.valor_final,
+        },
+      });
     });
 
-    // 2. Registra o evento de aprovação de proposta na timeline
+    // Registra o evento de aprovação de proposta na timeline
     await prisma.timeline.create({
       data: {
         project_id: projectId,
@@ -158,6 +182,7 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
     });
 
     revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/clientes", "layout");
     return { success: true };
   } catch (error) {
     console.error("Erro na Server Action approveQuote:", error);

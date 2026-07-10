@@ -94,6 +94,7 @@ interface Quote {
   valor_final: number;
   validade: string;
   observacoes: string;
+  aprovado_em: string | null;
 }
 
 interface Installment {
@@ -261,6 +262,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   };
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
+  const [approvingQuoteId, setApprovingQuoteId] = useState<string | null>(null);
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
@@ -588,28 +590,48 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     });
   };
 
-  const handleApproveQuote = (quote: { id: string; versao: number }) => {
+  const handleApproveQuote = (quote: Quote) => {
+    if (quote.aprovado_em || approvingQuoteId) return;
+    if (project.quotes.some((q) => q.aprovado_em)) return;
+
     confirmAction({
       title: "Aprovar proposta?",
       message: `A versão ${quote.versao} será aprovada e o projeto passará para o status Aprovado.`,
       confirmLabel: "Sim, aprovar",
       onConfirm: async () => {
-        setProject(prev => ({ ...prev, status_geral: "APROVADO" }));
-        await approveQuote(project.id, quote.id, quote.versao);
-        setProject(prev => ({
+        const approvedAt = new Date().toISOString();
+        setApprovingQuoteId(quote.id);
+        setProject((prev) => ({
           ...prev,
+          status_geral: "APROVADO",
+          valor_previsto: quote.valor_final,
+          quotes: prev.quotes.map((q) =>
+            q.id === quote.id ? { ...q, aprovado_em: approvedAt } : { ...q, aprovado_em: null }
+          ),
           timeline: [
             {
               id: `local-time-${Date.now()}`,
               acao: `Proposta comercial v${quote.versao} foi APROVADA pelo cliente.`,
-              data: new Date().toISOString(),
+              data: approvedAt,
               interno_sotamente: false,
-              user: { name: "Vendas" }
+              user: { name: "Vendas" },
             },
-            ...prev.timeline
-          ]
+            ...prev.timeline,
+          ],
         }));
-        showSuccess("Proposta aprovada", `Versão ${quote.versao} aprovada com sucesso.`);
+
+        const res = await approveQuote(project.id, quote.id, quote.versao);
+        setApprovingQuoteId(null);
+
+        if (res.success) {
+          showSuccess("Proposta aprovada", `Versão ${quote.versao} aprovada com sucesso.`);
+        } else {
+          showError("Erro ao aprovar", res.error ?? "Não foi possível aprovar a proposta.");
+          const refreshed = await getProjectDetailsAction(project.id);
+          if (refreshed.success && refreshed.project) {
+            setProject(refreshed.project as Project);
+          }
+        }
       },
     });
   };
@@ -1270,7 +1292,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   desconto: newQuoteData.quote.desconto,
                   valor_final: newQuoteData.quote.valor_final,
                   validade: newQuoteData.quote.validade.toISOString ? newQuoteData.quote.validade.toISOString() : new Date(newQuoteData.quote.validade).toISOString(),
-                  observacoes: newQuoteData.quote.observacoes
+                  observacoes: newQuoteData.quote.observacoes,
+                  aprovado_em: null,
                 };
                 
                 setProject({
@@ -1311,13 +1334,36 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   </div>
                 ) : (
                   <div className="divide-y divide-border/30">
-                    {project.quotes.map((q) => (
-                      <div key={q.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-100 transition-colors">
+                    {project.quotes.map((q) => {
+                      const isApproved =
+                        !!q.aprovado_em ||
+                        (project.status_geral === "APROVADO" &&
+                          project.quotes.length === 1 &&
+                          !project.quotes.some((item) => item.aprovado_em));
+                      const isApproving = approvingQuoteId === q.id;
+                      const hasOtherApproved = project.quotes.some(
+                        (item) => item.id !== q.id && item.aprovado_em
+                      );
+
+                      return (
+                      <div
+                        key={q.id}
+                        className={`p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
+                          isApproved
+                            ? "border-2 border-emerald-500 bg-emerald-50/60 shadow-sm shadow-emerald-500/10"
+                            : "hover:bg-slate-100"
+                        }`}
+                      >
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2.5">
                             <h4 className="font-bold text-base text-foreground leading-none">
                               Proposta Comercial v{q.versao}
                             </h4>
+                            {isApproved ? (
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                                Aprovada
+                              </span>
+                            ) : null}
                             <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
                               Validade: {new Date(q.validade).toLocaleDateString("pt-BR")}
                             </span>
@@ -1335,12 +1381,21 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
-                          <button
-                            onClick={() => handleApproveQuote(q)}
-                            className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovar Proposta
-                          </button>
+                          {isApproved ? (
+                            <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-600 text-white cursor-default select-none shadow-sm">
+                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovado
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleApproveQuote(q)}
+                              disabled={!!approvingQuoteId || hasOtherApproved}
+                              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <CheckCircle2 className={`h-4 w-4 mr-1.5 ${isApproving ? "animate-pulse" : ""}`} />
+                              {isApproving ? "Aprovando..." : "Aprovar Proposta"}
+                            </button>
+                          )}
 
                           <Link
                             href={`/quotes/${q.id}/print`}
@@ -1359,7 +1414,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

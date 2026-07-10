@@ -254,6 +254,7 @@ model Quote {
   pdf_share_url String?
   pdf_share_code String? @unique
   pdf_shared_at DateTime?
+  aprovado_em   DateTime?
   items       QuoteItem[]
 }
 

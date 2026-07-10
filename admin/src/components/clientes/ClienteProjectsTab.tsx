@@ -199,6 +199,7 @@ export default function ClienteProjectsTab({
               const hasNoQuote = !project.quotes || project.quotes.length === 0;
               const isBlocked = isFormLead && hasNoQuote;
               const latestQuote = project.quotes?.[0];
+              const isApproved = project.status_geral === "APROVADO";
 
               return (
                 <button
@@ -211,7 +212,9 @@ export default function ClienteProjectsTab({
                   className={`text-left p-4 rounded-xl border transition-all hover:shadow-md ${
                     isBlocked
                       ? "border-rose-200 bg-rose-50/30 hover:bg-rose-50/50"
-                      : "border-border/60 bg-slate-50 hover:bg-slate-100/70"
+                      : isApproved
+                        ? "border-2 border-emerald-500 bg-emerald-50/50 hover:bg-emerald-50/70 shadow-sm shadow-emerald-500/10"
+                        : "border-border/60 bg-slate-50 hover:bg-slate-100/70"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
