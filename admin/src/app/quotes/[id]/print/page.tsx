@@ -6,6 +6,7 @@ import { ArrowLeft, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import QuotePrintToolbar from "@/components/QuotePrintToolbar";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuoteSubitensLine, parseQuoteSubitens } from "@/lib/quoteItems";
+import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePdfShare";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -155,11 +156,22 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     });
 
     if (dbQuote) {
+      let pdfShareCode = dbQuote.pdf_share_code;
+      if (dbQuote.pdf_share_url && !pdfShareCode) {
+        pdfShareCode = await ensureQuotePdfShareCode(dbQuote.id);
+      }
+
+      const pdfPublicUrl = resolveQuotePdfPublicUrl({
+        pdf_share_code: pdfShareCode,
+        pdf_share_url: dbQuote.pdf_share_url,
+      });
+
       quote = {
         ...dbQuote,
         subtotal: Number(dbQuote.subtotal),
         desconto: Number(dbQuote.desconto),
         valor_final: Number(dbQuote.valor_final),
+        pdfPublicUrl,
         items: dbQuote.items.map((item) => ({
           ...item,
           valor_unitario: Number(item.valor_unitario),
@@ -282,7 +294,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           clientPhone={client.telefone}
           valorFinal={formatCurrency(quote.valor_final)}
           validade={formattedValidade}
-          initialPdfShareUrl={quote.pdf_share_url}
+          initialPdfShareUrl={quote.pdfPublicUrl}
         />
       </div>
 

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext } from "@/lib/auth-guard";
+import {
+  buildQuotePdfShortUrl,
+  generateUniqueQuotePdfShareCode,
+} from "@/lib/quotePdfShare";
 
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
 
@@ -21,7 +25,7 @@ export async function POST(
       id: quoteId,
       project: { client: { company_id: auth.companyId } },
     },
-    select: { id: true },
+    select: { id: true, pdf_share_code: true },
   });
 
   if (!quote) {
@@ -62,11 +66,15 @@ export async function POST(
       contentType: "application/pdf",
     });
 
+    const shareCode = quote.pdf_share_code ?? (await generateUniqueQuotePdfShareCode());
+    const publicUrl = buildQuotePdfShortUrl(shareCode);
+
     try {
       await prisma.quote.update({
         where: { id: quoteId },
         data: {
           pdf_share_url: blob.url,
+          pdf_share_code: shareCode,
           pdf_shared_at: new Date(),
         },
       });
@@ -76,7 +84,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      url: blob.url,
+      url: publicUrl,
       filename: safeName,
     });
   } catch (error) {

@@ -1,0 +1,5 @@
+RewriteEngine On
+RewriteBase /o/
+
+# moveisunghero.com.br/o/abc123 → admin (handler do PDF)
+RewriteRule ^([a-zA-Z0-9]+)/?$ https://admin.moveisunghero.com.br/o/$1 [R=302,L]

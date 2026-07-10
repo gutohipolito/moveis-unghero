@@ -252,6 +252,7 @@ model Quote {
   validade    DateTime
   observacoes String?
   pdf_share_url String?
+  pdf_share_code String? @unique
   pdf_shared_at DateTime?
   items       QuoteItem[]
 }
