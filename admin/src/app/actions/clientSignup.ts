@@ -24,24 +24,92 @@ export interface ClientSignupData {
   cidade: string;
   uf?: string;
   tipo_imovel?: string;
-  origem_lead?: string;
   obs_imovel?: string;
   obs_entrega?: string;
-  observacoes?: string;
   company_id?: string;
 }
+
+export type PublicClientLookupResult = {
+  found: boolean;
+  client?: {
+    nome: string;
+    email: string;
+    telefone: string;
+    tipo_pessoa: TipoPessoa;
+    cpf: string | null;
+    cnpj: string | null;
+    cep: string | null;
+    endereco: string | null;
+    numero: string | null;
+    bairro: string | null;
+    cidade: string;
+    uf: string | null;
+    tipo_imovel: string | null;
+    obs_imovel: string | null;
+    obs_entrega: string | null;
+  };
+};
 
 function cleanDigits(value?: string) {
   return (value || "").replace(/\D/g, "");
 }
 
-function addOneBusinessDay(date: Date): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + 1);
-  while (result.getDay() === 0 || result.getDay() === 6) {
-    result.setDate(result.getDate() + 1);
+async function resolveCompanyId(companyId?: string) {
+  if (companyId) return companyId;
+  const firstCompany = await prisma.company.findFirst();
+  return firstCompany?.id ?? null;
+}
+
+export async function lookupPublicClientAction(params: {
+  tipo_pessoa: TipoPessoa;
+  cpf?: string;
+  cnpj?: string;
+  company_id?: string;
+}): Promise<PublicClientLookupResult> {
+  try {
+    const companyId = await resolveCompanyId(params.company_id);
+    if (!companyId) return { found: false };
+
+    const tipoPessoa = params.tipo_pessoa || "PF";
+    const cpfDigits = tipoPessoa === "PF" ? cleanDigits(params.cpf) : "";
+    const cnpjDigits = tipoPessoa === "PJ" ? cleanDigits(params.cnpj) : "";
+
+    if (tipoPessoa === "PF" && cpfDigits.length !== 11) return { found: false };
+    if (tipoPessoa === "PJ" && cnpjDigits.length !== 14) return { found: false };
+
+    const client = await prisma.client.findFirst({
+      where: {
+        company_id: companyId,
+        ...(tipoPessoa === "PF" ? { cpf: cpfDigits } : { cnpj: cnpjDigits }),
+      },
+    });
+
+    if (!client) return { found: false };
+
+    return {
+      found: true,
+      client: {
+        nome: client.nome,
+        email: client.email,
+        telefone: client.telefone,
+        tipo_pessoa: client.tipo_pessoa,
+        cpf: client.cpf,
+        cnpj: client.cnpj,
+        cep: client.cep,
+        endereco: client.endereco,
+        numero: client.numero,
+        bairro: client.bairro,
+        cidade: client.cidade,
+        uf: client.uf,
+        tipo_imovel: client.tipo_imovel,
+        obs_imovel: client.obs_imovel,
+        obs_entrega: client.obs_entrega,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao buscar cliente para cadastro público:", error);
+    return { found: false };
   }
-  return result;
 }
 
 export async function submitPublicClientSignupAction(data: ClientSignupData) {
@@ -76,20 +144,9 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
       return { success: false, error: "Informe um CNPJ válido (14 dígitos)." };
     }
 
-    let companyId = data.company_id;
+    const companyId = await resolveCompanyId(data.company_id);
     if (!companyId) {
-      const firstCompany = await prisma.company.findFirst();
-      if (!firstCompany) {
-        return { success: false, error: "Nenhuma empresa cadastrada no sistema." };
-      }
-      companyId = firstCompany.id;
-    }
-
-    const commercialUser = await prisma.user.findFirst({
-      where: { company_id: companyId },
-    });
-    if (!commercialUser) {
-      return { success: false, error: "Nenhum usuário disponível para receber o cadastro." };
+      return { success: false, error: "Nenhuma empresa cadastrada no sistema." };
     }
 
     const contact = resolveClientContactFields(telefone, email);
@@ -105,7 +162,7 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
 
     const isExistingClient = Boolean(client);
 
-    const clientData = {
+    const sharedData = {
       nome: capitalizeText(nome),
       email: contact.email || cleanEmail,
       telefone: contact.telefone,
@@ -122,83 +179,31 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
       tipo_imovel: data.tipo_imovel || null,
       obs_imovel: data.obs_imovel?.trim() || null,
       obs_entrega: data.obs_entrega?.trim() || null,
-      observacoes: data.observacoes?.trim() || "",
-      origem: "FORMULARIO" as Origin,
-      status: "LEAD",
     };
 
     if (!client) {
       client = await prisma.client.create({
         data: {
-          ...clientData,
+          ...sharedData,
+          observacoes: "",
+          origem: "FORMULARIO" as Origin,
+          status: "LEAD",
           company_id: companyId,
         },
       });
     } else {
       client = await prisma.client.update({
         where: { id: client.id },
-        data: {
-          ...clientData,
-          observacoes: [client.observacoes, clientData.observacoes]
-            .filter(Boolean)
-            .join("\n\n"),
-        },
+        data: sharedData,
       });
     }
 
-    const origemNote = data.origem_lead?.trim()
-      ? `Como nos conheceu: ${data.origem_lead.trim()}`
-      : null;
-    const projectObs = [origemNote, data.observacoes?.trim()].filter(Boolean).join("\n") || null;
-
-    const project = await prisma.project.create({
-      data: {
-        client_id: client.id,
-        valor_previsto: 0,
-        status_geral: "LEAD",
-        ultimo_contato_em: new Date(),
-        observacoes: projectObs,
-      },
-    });
-
-    await prisma.timeline.create({
-      data: {
-        project_id: project.id,
-        acao: isExistingClient
-          ? "Cadastro completo atualizado pelo cliente (formulário público)."
-          : "Cadastro completo preenchido pelo cliente (formulário público).",
-        interno_sotamente: false,
-        user_id: commercialUser.id,
-      },
-    });
-
-    const companyUsers = await prisma.user.findMany({
-      where: { company_id: companyId },
-    });
-
-    const dueAt = addOneBusinessDay(new Date());
-
-    if (companyUsers.length > 0) {
-      await prisma.operatorReminder.createMany({
-        data: companyUsers.map((u) => ({
-          user_id: u.id,
-          company_id: companyId,
-          title: isExistingClient
-            ? `Cadastro atualizado: ${nome}`
-            : `Novo cadastro completo: ${nome}`,
-          due_at: dueAt,
-        })),
-      });
-    }
-
-    revalidatePath("/crm");
     revalidatePath("/clientes");
     revalidatePath("/marketing/formularios");
 
     return {
       success: true,
       clientId: client.id,
-      projectId: project.id,
       isExistingClient,
     };
   } catch (error) {

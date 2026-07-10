@@ -96,7 +96,7 @@ Equipe Móveis Unghero`,
     id: "cliente-cadastro",
     title: "Cadastro — Cliente Completo",
     description:
-      "Formulário de cadastro completo para clientes preencherem dados pessoais, endereço e informações do imóvel. Gera lead no funil com perfil completo.",
+      "Formulário de cadastro completo para clientes preencherem dados pessoais, endereço e informações do imóvel. Cria ou atualiza o cadastro do cliente.",
     audience: "Cliente final",
     shortPath: "/cadastro",
     adminPath: "/cadastro",

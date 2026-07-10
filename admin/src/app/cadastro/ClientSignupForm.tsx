@@ -3,18 +3,11 @@
 import React, { useState } from "react";
 import { TipoPessoa } from "@prisma/client";
 import { CheckCircle, Loader2, Send, UserPlus } from "lucide-react";
-import { submitPublicClientSignupAction } from "@/app/actions/clientSignup";
-import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
-
-const ORIGEM_LEAD_OPTIONS = [
-  "Instagram",
-  "Google",
-  "Indicação",
-  "Facebook",
-  "Site",
-  "WhatsApp",
-  "Outros",
-] as const;
+import {
+  lookupPublicClientAction,
+  submitPublicClientSignupAction,
+} from "@/app/actions/clientSignup";
+import { formatPhoneDisplay, formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 
 const TIPO_IMOVEL_OPTIONS = [
   { value: "CASA", label: "Casa Residencial" },
@@ -82,14 +75,73 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [tipoImovel, setTipoImovel] = useState("CASA");
-  const [origemLead, setOrigemLead] = useState<string>(ORIGEM_LEAD_OPTIONS[0]);
   const [obsImovel, setObsImovel] = useState("");
   const [obsEntrega, setObsEntrega] = useState("");
-  const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchingCnpj, setFetchingCnpj] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [wasUpdate, setWasUpdate] = useState(false);
+
+  function applyClientData(data: {
+    nome: string;
+    email: string;
+    telefone: string;
+    tipo_pessoa: TipoPessoa;
+    cpf: string | null;
+    cnpj: string | null;
+    cep: string | null;
+    endereco: string | null;
+    numero: string | null;
+    bairro: string | null;
+    cidade: string;
+    uf: string | null;
+    tipo_imovel: string | null;
+    obs_imovel: string | null;
+    obs_entrega: string | null;
+  }) {
+    setNome(data.nome);
+    setEmail(data.email);
+    setTelefone(formatPhoneDisplay(data.telefone));
+    setCep(data.cep ? formatCepInput(data.cep) : "");
+    setEndereco(data.endereco || "");
+    setNumero(data.numero || "");
+    setBairro(data.bairro || "");
+    setCidade(data.cidade);
+    setUf(data.uf || "");
+    setTipoImovel(data.tipo_imovel || "CASA");
+    setObsImovel(data.obs_imovel || "");
+    setObsEntrega(data.obs_entrega || "");
+  }
+
+  async function lookupExistingClient(tipo: TipoPessoa, docValue: string): Promise<boolean> {
+    const digits = docValue.replace(/\D/g, "");
+    const isComplete = tipo === "PF" ? digits.length === 11 : digits.length === 14;
+    if (!isComplete) {
+      setIsUpdate(false);
+      return false;
+    }
+
+    setLookingUp(true);
+    const result = await lookupPublicClientAction({
+      tipo_pessoa: tipo,
+      cpf: tipo === "PF" ? docValue : undefined,
+      cnpj: tipo === "PJ" ? docValue : undefined,
+      company_id: companyId,
+    });
+    setLookingUp(false);
+
+    if (result.found && result.client) {
+      applyClientData(result.client);
+      setIsUpdate(true);
+      return true;
+    }
+
+    setIsUpdate(false);
+    return false;
+  }
 
   async function fetchAddressByCep(cepValue: string) {
     const cleanCep = cepValue.replace(/\D/g, "");
@@ -116,21 +168,25 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
       const data = await res.json();
       if (data && !data.message) {
-        setNome(data.nome_fantasia || data.razao_social || "");
-        if (data.email) setEmail(data.email);
-        if (data.ddd_telefone_1 || data.telefone) {
-          setTelefone(formatPhoneInput(data.ddd_telefone_1 || data.telefone));
+        if (!isUpdate) {
+          setNome(data.nome_fantasia || data.razao_social || "");
+          if (data.email) setEmail(data.email);
+          if (data.ddd_telefone_1 || data.telefone) {
+            setTelefone(formatPhoneInput(data.ddd_telefone_1 || data.telefone));
+          }
         }
         if (data.cep) {
           const formattedCep = formatCepInput(data.cep);
           setCep(formattedCep);
           fetchAddressByCep(formattedCep);
         }
-        if (data.logradouro) setEndereco(data.logradouro);
-        if (data.numero) setNumero(data.numero);
-        if (data.bairro) setBairro(data.bairro);
-        if (data.municipio) setCidade(data.municipio);
-        if (data.uf) setUf(data.uf);
+        if (!isUpdate) {
+          if (data.logradouro) setEndereco(data.logradouro);
+          if (data.numero) setNumero(data.numero);
+          if (data.bairro) setBairro(data.bairro);
+          if (data.municipio) setCidade(data.municipio);
+          if (data.uf) setUf(data.uf);
+        }
       }
     } catch (err) {
       console.error("Erro ao buscar CNPJ:", err);
@@ -138,12 +194,18 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
     setFetchingCnpj(false);
   }
 
-  function handleDocumentoChange(value: string) {
+  async function handleDocumentoChange(value: string) {
     if (tipoPessoa === "PF") {
-      setDocumento(formatCpfInput(value));
-    } else {
-      const formatted = formatCnpjInput(value);
+      const formatted = formatCpfInput(value);
       setDocumento(formatted);
+      await lookupExistingClient("PF", formatted);
+      return;
+    }
+
+    const formatted = formatCnpjInput(value);
+    setDocumento(formatted);
+    const found = await lookupExistingClient("PJ", formatted);
+    if (!found) {
       fetchCompanyByCnpj(formatted);
     }
   }
@@ -151,6 +213,19 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   function handleTipoPessoaChange(next: TipoPessoa) {
     setTipoPessoa(next);
     setDocumento("");
+    setIsUpdate(false);
+    setNome("");
+    setEmail("");
+    setTelefone("");
+    setCep("");
+    setEndereco("");
+    setNumero("");
+    setBairro("");
+    setCidade("");
+    setUf("");
+    setTipoImovel("CASA");
+    setObsImovel("");
+    setObsEntrega("");
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -172,16 +247,15 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       cidade,
       uf,
       tipo_imovel: tipoImovel,
-      origem_lead: origemLead,
       obs_imovel: obsImovel,
       obs_entrega: obsEntrega,
-      observacoes,
       company_id: companyId,
     });
 
     setLoading(false);
 
     if (res.success) {
+      setWasUpdate(res.isExistingClient ?? isUpdate);
       setSuccess(true);
       return;
     }
@@ -195,10 +269,13 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 text-emerald-600">
           <CheckCircle className="h-8 w-8" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900">Cadastro enviado!</h2>
+        <h2 className="text-2xl font-black text-slate-900">
+          {wasUpdate ? "Cadastro atualizado!" : "Cadastro enviado!"}
+        </h2>
         <p className="text-sm text-slate-600 leading-relaxed">
-          Obrigado por se cadastrar na Móveis Unghero. Nossa equipe comercial analisará
-          suas informações e entrará em contato em breve para dar sequência ao seu projeto.
+          {wasUpdate
+            ? "Seus dados foram atualizados com sucesso na Móveis Unghero."
+            : "Obrigado por se cadastrar na Móveis Unghero. Seus dados foram registrados com sucesso."}
         </p>
       </div>
     );
@@ -214,13 +291,12 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           Cadastro de Cliente
         </h1>
         <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-          Preencha seus dados completos para se cadastrar e receber atendimento personalizado
-          da Móveis Unghero.
+          Preencha seus dados pessoais, endereço e informações do imóvel.
+          Se já estiver cadastrado, informe seu CPF ou CNPJ para atualizar.
         </p>
       </div>
 
       <div className="space-y-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        {/* PF / PJ */}
         <div className="flex gap-2 p-1 bg-slate-100 rounded-xl text-xs font-bold">
           <button
             type="button"
@@ -246,13 +322,21 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           </button>
         </div>
 
-        {/* Seção 1: Dados do Cliente */}
+        {isUpdate ? (
+          <p className="text-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+            Cadastro encontrado — você pode revisar e atualizar seus dados abaixo.
+          </p>
+        ) : null}
+
         <div className="space-y-4">
-          <p className={sectionClass}>1. Dados do Cliente</p>
+          <p className={sectionClass}>1. Dados Pessoais</p>
 
           <div className="space-y-1.5">
             <label className={labelClass}>
               {tipoPessoa === "PF" ? "CPF *" : "CNPJ *"}
+              {lookingUp ? (
+                <span className="ml-2 text-[10px] font-semibold text-primary">Buscando cadastro...</span>
+              ) : null}
               {fetchingCnpj ? (
                 <span className="ml-2 text-[10px] font-semibold text-primary">Buscando dados...</span>
               ) : null}
@@ -305,9 +389,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           </div>
         </div>
 
-        {/* Seção 2: Endereço */}
         <div className="space-y-4">
-          <p className={sectionClass}>2. Localização & Entrega</p>
+          <p className={sectionClass}>2. Endereço</p>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
@@ -379,39 +462,22 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           </div>
         </div>
 
-        {/* Seção 3: Imóvel */}
         <div className="space-y-4">
-          <p className={sectionClass}>3. Imóvel & Projeto</p>
+          <p className={sectionClass}>3. Imóvel</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className={labelClass}>Tipo de imóvel</label>
-              <select
-                value={tipoImovel}
-                onChange={(e) => setTipoImovel(e.target.value)}
-                className={inputClass}
-              >
-                {TIPO_IMOVEL_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className={labelClass}>Como nos conheceu?</label>
-              <select
-                value={origemLead}
-                onChange={(e) => setOrigemLead(e.target.value)}
-                className={inputClass}
-              >
-                {ORIGEM_LEAD_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>Tipo de imóvel</label>
+            <select
+              value={tipoImovel}
+              onChange={(e) => setTipoImovel(e.target.value)}
+              className={inputClass}
+            >
+              {TIPO_IMOVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">
@@ -435,17 +501,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
               placeholder="Acesso ao imóvel, elevador, horários de entrega..."
             />
           </div>
-
-          <div className="space-y-1.5">
-            <label className={labelClass}>Observações gerais / briefing</label>
-            <textarea
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              rows={3}
-              className={`${inputClass} h-auto py-2 resize-none`}
-              placeholder="Ambientes desejados, estilo, preferências de cores..."
-            />
-          </div>
         </div>
 
         {error ? (
@@ -456,7 +511,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
         <button
           type="submit"
-          disabled={loading || fetchingCnpj}
+          disabled={loading || fetchingCnpj || lookingUp}
           className="w-full h-12 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors disabled:opacity-60"
         >
           {loading ? (
@@ -467,7 +522,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           ) : (
             <>
               <Send className="h-4 w-4" />
-              Enviar cadastro
+              {isUpdate ? "Atualizar cadastro" : "Enviar cadastro"}
             </>
           )}
         </button>

@@ -3,7 +3,7 @@ import ClientSignupForm from "./ClientSignupForm";
 export const metadata = {
   title: "Cadastro de Cliente | Móveis Unghero",
   description:
-    "Cadastre-se na Móveis Unghero com seus dados completos para receber atendimento personalizado em móveis planejados.",
+    "Cadastre-se na Móveis Unghero com seus dados pessoais, endereço e informações do imóvel. Atualize seu cadastro se já for cliente.",
 };
 
 export default function CadastroClientePage() {
