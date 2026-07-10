@@ -1,6 +1,5 @@
 import { getCachedSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { resolveClientDocument } from "@/lib/clientDocument";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -10,56 +9,68 @@ interface PrintPageProps {
   params: Promise<{ id: string }>;
 }
 
-function PrintHeader({ pageNum, title }: { pageNum: string; title: string }) {
+const FACTORY = {
+  name: "Móveis Unghero LTDA",
+  cnpj: "13.415.510/0001-71",
+  address: "Rua Cenira Cambruzzi, 155 — Planalto",
+  city: "Farroupilha — RS",
+  phone: "(54) 9 9997-1050",
+  whatsapp: "(54) 9 9997-1050",
+  email: "moveisunghero@gmail.com",
+  site: "moveisunghero.com.br",
+};
+
+function PrintTopHeader() {
   return (
-    <div className="w-full border-b-2 border-amber-500/20 pb-4 mb-6">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          <img
-            src="/logo.png"
-            alt="Móveis Unghero"
-            className="h-10 w-auto object-contain"
-            style={{ filter: "sepia(1) saturate(1.5) hue-rotate(340deg) brightness(0.6)" }}
-          />
-          <div>
-            <h1 className="text-sm font-extrabold tracking-wider text-neutral-900 leading-tight">
-              MÓVEIS UNGHERO
-            </h1>
-            <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-semibold block">
-              Marcenaria Fina & Design Sob Medida
-            </span>
-          </div>
-        </div>
-
-        <div className="text-[8px] text-neutral-500 text-right leading-relaxed font-medium">
-          <p><strong>Móveis Unghero LTDA</strong> // CNPJ 13.415.510/0001-71</p>
-          <p>Rua Cenira Cambruzzi, 155 - Planalto - Farroupilha - RS</p>
-          <p>Fone: (54) 9 9997-1050 // moveisunghero@gmail.com</p>
-        </div>
+    <header className="print-quote-header bg-neutral-900 text-white px-[20mm] py-5 flex items-center justify-between gap-6">
+      <img
+        src="/logo.png"
+        alt="Móveis Unghero"
+        className="h-11 w-auto object-contain brightness-0 invert"
+      />
+      <div className="text-right">
+        <p className="text-sm sm:text-base font-bold tracking-wide uppercase">
+          Orçamento Comercial detalhado
+        </p>
+        <p className="text-[9px] text-neutral-400 mt-0.5 tracking-widest uppercase">
+          Marcenaria fina & design sob medida
+        </p>
       </div>
-
-      <div className="flex justify-between items-center mt-3 pt-2 border-t border-neutral-100">
-        <h4 className="text-xs font-black text-neutral-800 uppercase tracking-widest">
-          {title}
-        </h4>
-        <span className="text-[9px] font-black text-amber-700 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10 tracking-widest">
-          FOLHA {pageNum}
-        </span>
-      </div>
-    </div>
+    </header>
   );
 }
 
-function PrintFooter({ version }: { version: number }) {
+function PrintBottomFooter({ version }: { version: number }) {
   return (
-    <div className="w-full border-t border-neutral-100 pt-3 mt-6 flex justify-between items-center text-[9px] text-neutral-400 font-medium">
-      <div>
-        Este documento é uma proposta comercial sujeita a alteração sem aviso prévio.
+    <footer className="print-quote-footer bg-neutral-900 text-neutral-300 px-[20mm] py-4 mt-auto">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 text-[9px] leading-relaxed">
+        <div className="space-y-0.5">
+          <p className="text-white font-bold text-[10px]">{FACTORY.name}</p>
+          <p>CNPJ {FACTORY.cnpj}</p>
+          <p>{FACTORY.address}</p>
+          <p>{FACTORY.city}</p>
+        </div>
+        <div className="sm:text-right space-y-0.5">
+          <p>
+            <span className="text-neutral-500">WhatsApp:</span>{" "}
+            <span className="text-white font-semibold">{FACTORY.whatsapp}</span>
+          </p>
+          <p>
+            <span className="text-neutral-500">Telefone:</span>{" "}
+            <span className="text-white font-semibold">{FACTORY.phone}</span>
+          </p>
+          <p>
+            <span className="text-neutral-500">E-mail:</span>{" "}
+            <span className="text-white font-semibold">{FACTORY.email}</span>
+          </p>
+          <p>
+            <span className="text-neutral-500">Site:</span>{" "}
+            <span className="text-white font-semibold">{FACTORY.site}</span>
+          </p>
+          <p className="text-neutral-500 pt-1">Proposta v{version}</p>
+        </div>
       </div>
-      <div>
-        Proposta Comercial v{version} — moveisunghero.com.br
-      </div>
-    </div>
+    </footer>
   );
 }
 
@@ -118,10 +129,8 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
-  const doc = resolveClientDocument(client);
-
   return (
-    <div className="bg-slate-50 text-black min-h-screen font-sans print:bg-white">
+    <div className="bg-slate-100 text-black min-h-screen font-sans print:bg-white">
       <style dangerouslySetInnerHTML={{ __html: `
         @page {
           size: A4 portrait;
@@ -138,7 +147,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             max-height: 297mm !important;
             page-break-after: always !important;
             break-after: page !important;
-            padding: 20mm !important;
+            padding: 0 !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             border: none !important;
@@ -152,15 +161,22 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         @media screen {
           .print-page {
             width: 210mm;
-            height: 297mm;
+            min-height: 297mm;
             margin: 20px auto;
-            padding: 20mm;
             box-sizing: border-box;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             background-color: #ffffff;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
           }
+        }
+        .print-quote-header {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .print-quote-footer {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
       `}} />
 
@@ -171,53 +187,54 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         >
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
         </Link>
-        <div className="flex items-center gap-3">
-          <PrintButton />
-        </div>
+        <PrintButton />
       </div>
 
-      <div className="max-w-[840px] mx-auto p-4 md:p-8 space-y-8 print:p-0 print:space-y-0">
-        <div className="print-page flex flex-col justify-between shadow-lg border border-slate-100 rounded-2xl bg-white p-12 print:shadow-none print:border-none print:p-0">
-          <div className="space-y-8">
-            <PrintHeader pageNum="01" title="Orçamento Comercial Detalhado" />
+      <div className="max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
+        <div className="print-page flex flex-col">
+          <PrintTopHeader />
 
-            {/* Informações Cadastrais Premium */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs text-neutral-700 border border-neutral-200/80 rounded-xl p-5 bg-neutral-50/50">
-              <div className="space-y-1">
-                <span className="text-[9px] text-neutral-400 font-extrabold block uppercase tracking-widest">Cliente</span>
-                <strong className="text-neutral-900 text-sm">{client.nome}</strong>
-                {doc.documento && (
-                  <span className="text-[10px] text-neutral-500 block font-semibold">
-                    {doc.tipo_pessoa}: {doc.documento}
+          <main className="flex-1 px-[20mm] py-6 space-y-5">
+            {/* Informações do cliente */}
+            <section className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
+              <div className="space-y-2 min-w-0">
+                <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
+                  Cliente
+                </span>
+                <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
+                <div className="text-xs text-neutral-600 space-y-0.5">
+                  <p>
+                    <span className="font-semibold text-neutral-700">Cidade:</span>{" "}
+                    {client.cidade}
+                  </p>
+                  {client.bairro ? (
+                    <p className="text-neutral-500 pl-0 sm:pl-1">{client.bairro}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex sm:flex-col gap-4 sm:gap-3 sm:text-right shrink-0">
+                <div>
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 block">
+                    Emissão
                   </span>
-                )}
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-neutral-400 font-extrabold block uppercase tracking-widest">Cidade de Destino</span>
-                <strong className="text-neutral-900 text-sm block">{client.cidade}</strong>
-                {client.bairro && (
-                  <span className="text-[10px] text-neutral-500 block font-semibold">
-                    Bairro: {client.bairro}
+                  <p className="text-sm font-bold text-emerald-800">{formattedDataEmissao}</p>
+                </div>
+                <div>
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-rose-700 block">
+                    Validade
                   </span>
-                )}
+                  <p className="text-sm font-bold text-rose-800">{formattedValidade}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-neutral-400 font-extrabold block uppercase tracking-widest">Data de Emissão</span>
-                <strong className="text-neutral-900 text-sm block">{formattedDataEmissao}</strong>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-neutral-400 font-extrabold block uppercase tracking-widest">Validade Comercial</span>
-                <strong className="text-neutral-900 text-sm block">{formattedValidade}</strong>
-              </div>
-            </div>
+            </section>
 
-            {/* Título da Seção Comercial */}
-            <div className="space-y-2 border-b border-neutral-100 pb-3">
-              <h3 className="text-lg font-bold text-neutral-950 tracking-tight uppercase">Tabela Comercial de Insumos & Serviços</h3>
-              <p className="text-[11px] text-neutral-500">Relação completa de marcenaria sob medida, ferragens e serviços.</p>
-            </div>
+            {/* Subtítulo (sem título "Tabela comercial") */}
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
+              Relação completa de marcenaria sob medida, ferragens e serviços.
+            </p>
 
-            {/* Tabela de Itens Ultra-Clean */}
+            {/* Tabela — mantida */}
             <div className="overflow-hidden border border-neutral-200 rounded-xl">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
@@ -230,45 +247,84 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                 </thead>
                 <tbody className="divide-y divide-neutral-150 text-neutral-800">
                   {quote.items.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-neutral-50/30 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-neutral-950 leading-relaxed">{item.descricao}</td>
-                      <td className="py-3.5 px-4 text-center font-bold text-neutral-700">{item.quantidade}</td>
-                      <td className="py-3.5 px-4 text-right font-medium text-neutral-600">{formatCurrency(item.valor_unitario)}</td>
-                      <td className="py-3.5 px-4 text-right font-extrabold text-neutral-950">{formatCurrency(item.valor_total)}</td>
+                    <tr key={idx}>
+                      <td className="py-3.5 px-4 font-semibold text-neutral-950 leading-relaxed">
+                        {item.descricao}
+                      </td>
+                      <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
+                        {item.quantidade}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-medium text-neutral-600">
+                        {formatCurrency(item.valor_unitario)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-extrabold text-neutral-950">
+                        {formatCurrency(item.valor_total)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Fechamento e Totais */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pt-4">
-              <div className="text-[10px] text-neutral-400 font-medium leading-relaxed max-w-md">
-                <p className="font-bold uppercase tracking-wider text-neutral-500 mb-1">Notas Comerciais:</p>
-                <p>• O prazo de entrega estimado é acordado individualmente por projeto técnico.</p>
-                <p>• Garantia estrutural de 5 anos nos painéis de MDF contra defeitos de fabricação.</p>
-                <p>• A montagem é executada por técnicos especializados da própria fábrica.</p>
-              </div>
-              <div className="border border-neutral-200 rounded-xl p-5 space-y-3 bg-neutral-50/30 ml-auto w-full max-w-sm">
-                <div className="flex justify-between text-xs text-neutral-600 font-semibold">
-                  <span>Subtotal Comercial:</span>
-                  <span>{formatCurrency(quote.subtotal)}</span>
-                </div>
-                {quote.desconto > 0 && (
-                  <div className="flex justify-between text-xs text-emerald-600 font-bold">
-                    <span>Desconto Concedido:</span>
-                    <span>-{formatCurrency(quote.desconto)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-neutral-200 pt-3 text-sm font-black text-neutral-950 uppercase tracking-wide">
-                  <span>Valor Total Líquido:</span>
-                  <span className="text-neutral-950 font-black text-base">{formatCurrency(quote.valor_final)}</span>
+            {/* Investimento total — card à direita, colado na tabela */}
+            <div className="flex justify-end -mt-1">
+              <div className="border border-neutral-200 rounded-xl px-5 py-3.5 bg-neutral-50/80 min-w-[240px] space-y-1">
+                {quote.desconto > 0 ? (
+                  <p className="text-[10px] text-emerald-700 font-semibold text-right">
+                    Desconto: -{formatCurrency(quote.desconto)}
+                  </p>
+                ) : null}
+                <div className="flex items-baseline justify-end gap-2">
+                  <span className="text-xs font-bold text-neutral-600 uppercase tracking-wide">
+                    Investimento total:
+                  </span>
+                  <span className="text-lg font-black text-neutral-950">
+                    {formatCurrency(quote.valor_final)}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
 
-          <PrintFooter version={quote.versao} />
+            {/* Notas comerciais */}
+            <section className="rounded-xl border border-neutral-200 bg-neutral-50/40 p-4 space-y-2.5">
+              <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-500">
+                Notas comerciais
+              </h4>
+              <ul className="text-[10px] text-neutral-600 leading-relaxed space-y-1.5 list-none">
+                <li className="flex gap-2">
+                  <span className="text-amber-600 font-bold shrink-0">•</span>
+                  <span>O prazo de entrega estimado é acordado individualmente por projeto técnico.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amber-600 font-bold shrink-0">•</span>
+                  <span>Garantia estrutural de 5 anos nos painéis de MDF contra defeitos de fabricação.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amber-600 font-bold shrink-0">•</span>
+                  <span>A montagem é executada por técnicos especializados da própria fábrica.</span>
+                </li>
+              </ul>
+            </section>
+
+            {/* Condições de pagamento */}
+            <section className="rounded-xl border border-neutral-200 p-4 space-y-2">
+              <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-500">
+                Condições de pagamento
+              </h4>
+              <div className="text-[10px] text-neutral-700 leading-relaxed space-y-2">
+                <p>
+                  <span className="font-bold text-neutral-900">À vista:</span> 5% de desconto no PIX ou
+                  transferência.
+                </p>
+                <p>
+                  <span className="font-bold text-neutral-900">Parcelado:</span> Entrada de 40% (confirmação
+                  do pedido) + 60% parcelado em até 6x no cartão de crédito ou boleto (mediante análise).
+                </p>
+              </div>
+            </section>
+          </main>
+
+          <PrintBottomFooter version={quote.versao} />
         </div>
       </div>
     </div>
