@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
-import PrintButton from "@/components/PrintButton";
-import QuoteWhatsAppButton from "@/components/QuoteWhatsAppButton";
+import QuotePrintToolbar from "@/components/QuotePrintToolbar";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 
 interface PrintPageProps {
@@ -248,16 +247,14 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         >
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
         </Link>
-        <div className="flex items-center gap-2">
-          <QuoteWhatsAppButton
-            quoteId={quote.id}
-            clientName={client.nome}
-            clientPhone={client.telefone}
-            valorFinal={formatCurrency(quote.valor_final)}
-            validade={formattedValidade}
-          />
-          <PrintButton />
-        </div>
+        <QuotePrintToolbar
+          quoteId={quote.id}
+          clientName={client.nome}
+          clientPhone={client.telefone}
+          valorFinal={formatCurrency(quote.valor_final)}
+          validade={formattedValidade}
+          initialPdfShareUrl={quote.pdf_share_url}
+        />
       </div>
 
       <div className="max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
@@ -357,6 +354,17 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                 </div>
               </div>
             </div>
+
+            {quote.observacoes?.trim() ? (
+              <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">
+                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">
+                  Observações
+                </h4>
+                <p className="text-[10px] text-neutral-700 leading-relaxed whitespace-pre-line">
+                  {quote.observacoes.trim()}
+                </p>
+              </section>
+            ) : null}
 
             {/* Notas comerciais */}
             <section className="space-y-3">

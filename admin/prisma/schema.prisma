@@ -248,6 +248,8 @@ model Quote {
   valor_final Decimal     @db.Decimal(12, 2)
   validade    DateTime
   observacoes String?
+  pdf_share_url String?
+  pdf_shared_at DateTime?
   items       QuoteItem[]
 }
 

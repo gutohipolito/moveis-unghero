@@ -29,13 +29,12 @@ export async function POST(
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Armazenamento não configurado (BLOB_READ_WRITE_TOKEN).",
-      },
-      { status: 503 }
-    );
+    return NextResponse.json({
+      success: false,
+      code: "BLOB_NOT_CONFIGURED",
+      error:
+        "Armazenamento de PDF não configurado. Adicione BLOB_READ_WRITE_TOKEN na Vercel (Storage → Blob).",
+    });
   }
 
   const formData = await request.formData();
@@ -62,6 +61,18 @@ export async function POST(
       token: process.env.BLOB_READ_WRITE_TOKEN,
       contentType: "application/pdf",
     });
+
+    try {
+      await prisma.quote.update({
+        where: { id: quoteId },
+        data: {
+          pdf_share_url: blob.url,
+          pdf_shared_at: new Date(),
+        },
+      });
+    } catch (dbError) {
+      console.warn("PDF publicado, mas não foi possível salvar o link no orçamento:", dbError);
+    }
 
     return NextResponse.json({
       success: true,
