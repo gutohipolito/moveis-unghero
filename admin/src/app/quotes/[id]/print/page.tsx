@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
+import QuoteWhatsAppButton from "@/components/QuoteWhatsAppButton";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 
 interface PrintPageProps {
@@ -247,7 +248,16 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         >
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
         </Link>
-        <PrintButton />
+        <div className="flex items-center gap-2">
+          <QuoteWhatsAppButton
+            quoteId={quote.id}
+            clientName={client.nome}
+            clientPhone={client.telefone}
+            valorFinal={formatCurrency(quote.valor_final)}
+            validade={formattedValidade}
+          />
+          <PrintButton />
+        </div>
       </div>
 
       <div className="max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
