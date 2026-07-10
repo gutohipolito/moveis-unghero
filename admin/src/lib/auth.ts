@@ -2,8 +2,30 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 
-const authSecret = process.env.BETTER_AUTH_SECRET;
-if (!authSecret && process.env.NODE_ENV === "production") {
+const DEV_AUTH_SECRET = "dev-only-secret-min-32-characters-long";
+const BUILD_AUTH_SECRET = "build-only-placeholder-secret-32chars-min";
+
+function isNextProductionBuild() {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.NEXT_PHASE === "phase-export"
+  );
+}
+
+function resolveAuthSecret() {
+  const authSecret = process.env.BETTER_AUTH_SECRET;
+  if (authSecret) return authSecret;
+
+  if (process.env.NODE_ENV !== "production") {
+    return DEV_AUTH_SECRET;
+  }
+
+  // Vercel Preview builds run with NODE_ENV=production but may not have
+  // preview-scoped env vars during page data collection.
+  if (isNextProductionBuild()) {
+    return BUILD_AUTH_SECRET;
+  }
+
   throw new Error("BETTER_AUTH_SECRET é obrigatório em produção.");
 }
 
@@ -15,7 +37,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  secret: authSecret || "dev-only-secret-min-32-characters-long",
+  secret: resolveAuthSecret(),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
