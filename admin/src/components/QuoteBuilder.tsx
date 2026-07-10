@@ -38,37 +38,23 @@ function SubItemsEditor({
   subitens: string[];
   onChange: (next: string[]) => void;
 }) {
+  const text = subitens.join("\n");
+
   return (
-    <div className="mt-2 space-y-1.5">
-      {subitens.map((subitem, index) => (
-        <div key={`${index}-${subitem}`} className="flex items-center gap-1.5">
-          <Input
-            placeholder="Sub-item (ex: Puxador cromado)"
-            value={subitem}
-            onChange={(e) => {
-              const next = [...subitens];
-              next[index] = e.target.value;
-              onChange(next);
-            }}
-            className="h-7 bg-white border border-slate-200 text-[10px] font-medium rounded-md"
-          />
-          <button
-            type="button"
-            onClick={() => onChange(subitens.filter((_, i) => i !== index))}
-            className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer shrink-0"
-            title="Remover sub-item"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...subitens, ""])}
-        className="text-[10px] font-bold text-slate-500 hover:text-slate-800 inline-flex items-center gap-1 cursor-pointer"
-      >
-        <Plus className="h-3 w-3" /> Sub-item
-      </button>
+    <div className="mt-2">
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+        Detalhes do item (opcional)
+      </label>
+      <textarea
+        placeholder="Um detalhe por linha. Ex: Puxador cromado"
+        value={text}
+        onChange={(e) => onChange(e.target.value.split("\n"))}
+        rows={2}
+        className="w-full resize-y min-h-[52px] bg-slate-50 md:bg-white border border-slate-200 text-[10px] font-medium rounded-md px-2.5 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)]"
+      />
+      <p className="mt-1 text-[9px] text-slate-400">
+        Apenas texto informativo — sem quantidade nem valor. No PDF aparece abaixo do item, separado por •.
+      </p>
     </div>
   );
 }
