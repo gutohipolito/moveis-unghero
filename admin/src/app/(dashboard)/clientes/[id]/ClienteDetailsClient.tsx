@@ -183,9 +183,6 @@ export default function ClienteDetailsClient({
       {/* ─── PERFIL DO CLIENTE — HEADER ─── */}
       <Card className="p-6 glass-card flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-start gap-4">
-          <div className="p-4 bg-primary/10 text-primary rounded-2xl">
-            <User className="h-8 w-8" />
-          </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>

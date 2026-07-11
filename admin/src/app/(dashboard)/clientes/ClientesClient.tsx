@@ -9,7 +9,7 @@ import {
   Plus, 
   Search, 
   Filter, 
-  Download, 
+  ChevronDown, 
   Edit, 
   Trash2, 
   MessageSquare, 
@@ -116,6 +116,14 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const [filterCidade, setFilterCidade] = useState<string>("ALL");
   const [filterBairro, setFilterBairro] = useState<string>("ALL");
   const [activeTipoTab, setActiveTipoTab] = useState<"todos" | "PF" | "PJ">("todos");
+  // Mobile: busca e filtros começam minimizados
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = [
+    search.trim() !== "",
+    filterOrigin !== "ALL",
+    filterCidade !== "ALL",
+    filterBairro !== "ALL",
+  ].filter(Boolean).length;
 
   // Paginação (pageSize salvo na conta do usuário)
   const [page, setPage] = useState(1);
@@ -463,17 +471,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     }
   };
 
-  // Exportar Filtro atual para JSON
-  const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredClients, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `leads_moveis_unghero_${Date.now()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
   const resetForm = () => {
     setTipoPessoa("PF");
     setDocumento("");
@@ -557,35 +554,48 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       {/* Topbar e Ações Gerais */}
       <div className="page-header">
         <div className="page-header-main">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl shrink-0">
-              <Users className="h-6 w-6 text-primary" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="page-title">Clientes</h1>
+              <SensitiveToggle />
             </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="page-title">Clientes</h1>
-                <SensitiveToggle />
-              </div>
-              <p className="page-subtitle">
-                Gerencie sua base de clientes — Pessoas Físicas e Jurídicas.
-              </p>
-            </div>
+            <p className="page-subtitle">
+              Gerencie sua base de clientes — Pessoas Físicas e Jurídicas.
+            </p>
           </div>
 
-          <div className="page-header-actions">
-          <Button onClick={handleExport} variant="outline" className="text-xs font-bold gap-2">
-            <Download className="h-4 w-4" /> Exportar Filtro
-          </Button>
-
-          <Button onClick={openCreateModal} className="font-bold btn-metallic gap-1.5">
-            <Plus className="h-4.5 w-4.5" /> Novo cliente
-          </Button>
+          <div className="page-header-actions w-full sm:w-auto">
+            <Button
+              onClick={openCreateModal}
+              className="font-bold btn-metallic gap-2 w-full sm:w-auto justify-center h-11 px-5 rounded-xl shadow-sm"
+            >
+              <Plus className="h-5 w-5" /> Novo cliente
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <Card className="p-4 glass-card flex flex-col md:flex-row md:items-center gap-4">
+      <Card className="p-4 glass-card">
+        {/* Mobile: alternar exibição de busca e filtros */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="md:hidden w-full flex items-center justify-between gap-2 text-sm font-bold text-foreground cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            Buscar e filtrar
+            {activeFilterCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-white text-[10px] font-black tabular-nums">
+                {activeFilterCount}
+              </span>
+            )}
+          </span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        <div className={`${filtersOpen ? "flex" : "hidden"} md:flex flex-col md:flex-row md:items-center gap-4 mt-4 md:mt-0`}>
         <div className="relative w-full md:flex-1 md:min-w-[12rem] md:max-w-md shrink-0">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -646,6 +656,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
               ))}
             </select>
           </div>
+        </div>
         </div>
       </Card>
 

@@ -316,8 +316,8 @@ export default function EstoqueClient({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
-              <Boxes className="h-7 w-7 text-primary" /> Estoque & Fornecedores
+            <h1 className="text-2xl font-black text-foreground tracking-tight">
+              Estoque & Fornecedores
             </h1>
             <PrivacyToggle />
           </div>

@@ -46,13 +46,8 @@ export function Pagination({
     "inline-flex items-center justify-center h-8 min-w-8 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
-    <div className="grid grid-cols-1 gap-3 pt-4 sm:grid-cols-3 sm:items-center">
-      {/* Esquerda: contador */}
-      <p className="order-3 sm:order-1 text-[11px] font-semibold text-muted-foreground text-center sm:text-left">
-        Mostrando {start}–{end} de {total} {itemLabel}
-      </p>
-
-      {/* Centro: navegação de páginas */}
+    <div className="flex flex-col gap-3 pt-4 sm:grid sm:grid-cols-3 sm:items-center sm:gap-3">
+      {/* Navegação de páginas — centralizada, em linha própria no mobile */}
       <div className="order-1 sm:order-2 flex items-center justify-center gap-1">
         <button
           type="button"
@@ -96,20 +91,26 @@ export function Pagination({
         </button>
       </div>
 
-      {/* Direita: itens por página */}
-      <div className="order-2 sm:order-3 flex items-center justify-center sm:justify-end gap-2">
-        <span className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap">Itens por página</span>
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="h-8 bg-white border border-border rounded-lg text-xs font-bold px-2 text-slate-700 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-        >
-          {pageSizeOptions.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+      {/* Mobile: contador (esq) + itens por página (dir) na mesma linha.
+          Desktop: viram colunas separadas do grid via `sm:contents`. */}
+      <div className="order-2 flex items-center justify-between gap-3 sm:contents">
+        <p className="min-w-0 truncate text-[11px] font-semibold text-muted-foreground sm:order-1 sm:text-left">
+          Mostrando {start}–{end} de {total} {itemLabel}
+        </p>
+        <div className="shrink-0 flex items-center gap-2 sm:order-3 sm:justify-end">
+          <span className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap">Itens por página</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            className="h-8 bg-white border border-border rounded-lg text-xs font-bold px-2 text-slate-700 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+          >
+            {pageSizeOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );
