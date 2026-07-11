@@ -222,37 +222,43 @@ export default function ClienteDetailsClient({
       </Card>
 
       {/* ─── SELETOR DE ABAS INTERNAS ─── */}
-      <div className="overflow-x-auto -mx-1 px-1">
-        <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-max min-w-full sm:w-fit">
+      {/* Mobile: grade com todas as abas visíveis/clicáveis. Desktop: faixa horizontal. */}
+      <div className="sm:overflow-x-auto sm:-mx-1 sm:px-1">
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl sm:flex sm:w-max sm:min-w-full md:w-fit">
         <button
+          type="button"
           onClick={() => setActiveTab("overview")}
-          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
           <User className="h-4 w-4 shrink-0" /> Visão Geral
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("projects")}
-          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Layers className="h-4 w-4 shrink-0" /> Projetos
           <span className="text-[10px] opacity-70 tabular-nums">({projects.length})</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("documents")}
-          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "documents" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "documents" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
           <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
           <span className="text-[10px] opacity-70 tabular-nums">({attachments.length})</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("finance")}
-          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
           <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("timeline")}
-          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+          className={`col-span-2 sm:col-span-1 flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
         </button>
