@@ -4,6 +4,7 @@ import { PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
+import { capitalizeText } from "@/lib/utils";
 
 export interface ParceiroDTO {
   id: string;
@@ -111,12 +112,12 @@ export async function createParceiro(
     const parceiro = await prisma.professionalPartner.create({
       data: {
         company_id: companyId,
-        nome: data.nome.trim(),
+        nome: capitalizeText(data.nome),
         tipo: data.tipo,
         email: data.email?.trim() || null,
         telefone: data.telefone?.trim() || null,
-        cidade: data.cidade?.trim() || null,
-        escritorio: data.escritorio?.trim() || null,
+        cidade: data.cidade ? capitalizeText(data.cidade) : null,
+        escritorio: data.escritorio ? capitalizeText(data.escritorio) : null,
         observacoes: data.observacoes?.trim() || null,
         fotoUrl: data.fotoUrl?.trim() || null,
         imagens: data.imagens?.trim() || null,
@@ -168,12 +169,12 @@ export async function updateParceiro(
     const parceiro = await prisma.professionalPartner.update({
       where: { id },
       data: {
-        ...(data.nome !== undefined ? { nome: data.nome.trim() } : {}),
+        ...(data.nome !== undefined ? { nome: capitalizeText(data.nome) } : {}),
         ...(data.tipo !== undefined ? { tipo: data.tipo } : {}),
         ...(data.email !== undefined ? { email: data.email.trim() || null } : {}),
         ...(data.telefone !== undefined ? { telefone: data.telefone.trim() || null } : {}),
-        ...(data.cidade !== undefined ? { cidade: data.cidade.trim() || null } : {}),
-        ...(data.escritorio !== undefined ? { escritorio: data.escritorio.trim() || null } : {}),
+        ...(data.cidade !== undefined ? { cidade: data.cidade ? capitalizeText(data.cidade) : null } : {}),
+        ...(data.escritorio !== undefined ? { escritorio: data.escritorio ? capitalizeText(data.escritorio) : null } : {}),
         ...(data.observacoes !== undefined ? { observacoes: data.observacoes.trim() || null } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         ...(data.fotoUrl !== undefined ? { fotoUrl: data.fotoUrl?.trim() || null } : {}),

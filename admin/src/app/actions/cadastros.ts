@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { CATALOG_GROUP_META } from "@/lib/catalogGroups";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
+import { capitalizeText } from "@/lib/utils";
 
 export interface CatalogItemDTO {
   id: string;
@@ -226,7 +227,7 @@ export async function createCatalogItem(
     const item = await prisma.catalogItem.create({
       data: {
         group_id: group.id,
-        label: data.label.trim(),
+        label: capitalizeText(data.label),
         slug: data.slug?.trim() || null,
         parent_id: data.parentId ?? null,
         ordem: (maxOrdem._max.ordem ?? 0) + 1,
@@ -265,7 +266,7 @@ export async function updateCatalogItem(
     const item = await prisma.catalogItem.update({
       where: { id: itemId },
       data: {
-        ...(data.label !== undefined ? { label: data.label.trim() } : {}),
+        ...(data.label !== undefined ? { label: capitalizeText(data.label) } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         ...(data.ordem !== undefined ? { ordem: data.ordem } : {}),
       },

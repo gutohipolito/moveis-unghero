@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
+import { capitalizeText } from "@/lib/utils";
 
 export interface Supplier {
   id: string;
@@ -138,11 +139,11 @@ export async function createSupplierAction(data: Omit<Supplier, "id"> & { compan
     const supplier = await prisma.supplier.create({
       data: {
         company_id: data.company_id,
-        nome: data.nome.trim(),
+        nome: capitalizeText(data.nome),
         cnpj: data.cnpj.trim(),
         telefone: data.telefone.trim(),
         email: data.email.trim(),
-        principal_material: data.principalMaterial.trim(),
+        principal_material: capitalizeText(data.principalMaterial),
       },
     });
 
@@ -187,12 +188,12 @@ export async function updateSupplierAction(
     const supplier = await prisma.supplier.update({
       where: { id },
       data: {
-        ...(data.nome !== undefined ? { nome: data.nome.trim() } : {}),
+        ...(data.nome !== undefined ? { nome: capitalizeText(data.nome) } : {}),
         ...(data.cnpj !== undefined ? { cnpj: data.cnpj.trim() } : {}),
         ...(data.telefone !== undefined ? { telefone: data.telefone.trim() } : {}),
         ...(data.email !== undefined ? { email: data.email.trim() } : {}),
         ...(data.principalMaterial !== undefined
-          ? { principal_material: data.principalMaterial.trim() }
+          ? { principal_material: capitalizeText(data.principalMaterial) }
           : {}),
       },
     });
@@ -273,7 +274,7 @@ export async function createInventoryItemAction(
     const item = await prisma.inventoryItem.create({
       data: {
         company_id: data.company_id,
-        nome: data.nome.trim(),
+        nome: capitalizeText(data.nome),
         categoria: data.categoria,
         quantidade: Math.max(0, Math.round(Number(data.quantidade))),
         minima: Math.max(0, Math.round(Number(data.minima))),
@@ -333,7 +334,7 @@ export async function updateInventoryItemAction(
     const item = await prisma.inventoryItem.update({
       where: { id },
       data: {
-        ...(data.nome !== undefined ? { nome: data.nome.trim() } : {}),
+        ...(data.nome !== undefined ? { nome: capitalizeText(data.nome) } : {}),
         ...(data.categoria !== undefined ? { categoria: data.categoria } : {}),
         ...(data.quantidade !== undefined
           ? { quantidade: Math.max(0, Math.round(Number(data.quantidade))) }

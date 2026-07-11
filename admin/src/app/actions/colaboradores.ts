@@ -11,6 +11,7 @@ import {
   requireEnvironmentInCompany,
   requireUserInCompany,
 } from "@/lib/auth-guard";
+import { capitalizeText } from "@/lib/utils";
 
 // Retorna todos os colaboradores ativos da mesma empresa
 export async function getColaboradores(companyId: string) {
@@ -78,7 +79,7 @@ export async function createColaborador(data: {
       body: {
         email: data.email,
         password: data.senhaRaw,
-        name: data.name,
+        name: capitalizeText(data.name),
         company_id: authCtx.companyId,
         cargo: data.cargo,
       },
@@ -91,7 +92,8 @@ export async function createColaborador(data: {
     const dbUser = await prisma.user.update({
       where: { id: newUser.user.id },
       data: {
-        ...(data.areaAtuacao ? { areaAtuacao: data.areaAtuacao.trim() } : {}),
+        name: capitalizeText(data.name),
+        ...(data.areaAtuacao ? { areaAtuacao: capitalizeText(data.areaAtuacao) } : {}),
         ...(data.image ? { image: data.image.trim() } : {}),
       }
     });
@@ -145,10 +147,10 @@ export async function updateColaborador(
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+        ...(data.name !== undefined ? { name: capitalizeText(data.name) } : {}),
         ...(data.email !== undefined ? { email: data.email.trim() } : {}),
         ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
-        ...(data.areaAtuacao !== undefined ? { areaAtuacao: data.areaAtuacao?.trim() || null } : {}),
+        ...(data.areaAtuacao !== undefined ? { areaAtuacao: data.areaAtuacao ? capitalizeText(data.areaAtuacao) : null } : {}),
         ...(data.image !== undefined ? { image: data.image?.trim() || null } : {}),
       },
     });

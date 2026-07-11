@@ -108,6 +108,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   
   // Estados para Modais
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // Etapa do cadastro: primeiro escolhe PF/PJ (cards), depois preenche o formulário
+  const [createStep, setCreateStep] = useState<"select" | "form">("select");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -457,6 +459,20 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setObsEntrega("");
   };
 
+  // Abre o modal de cadastro na etapa de seleção PF/PJ
+  const openCreateModal = () => {
+    resetForm();
+    setCreateStep("select");
+    setIsCreateOpen(true);
+  };
+
+  // Seleciona o tipo (PF/PJ) e avança para o formulário, garantindo dados limpos
+  const selectTipoPessoa = (tipo: TipoPessoa) => {
+    resetForm();
+    setTipoPessoa(tipo);
+    setCreateStep("form");
+  };
+
   return (
     <div className="space-y-6">
       
@@ -483,7 +499,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             <Download className="h-4 w-4" /> Exportar Filtro
           </Button>
 
-          <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} className="font-bold btn-metallic gap-1.5">
+          <Button onClick={openCreateModal} className="font-bold btn-metallic gap-1.5">
             <Plus className="h-4.5 w-4.5" /> Novo cliente
           </Button>
           </div>
@@ -818,28 +834,81 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
       {/* ─── MODAL: CADASTRAR CLIENTE ─── */}
       <Dialog isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} className="max-w-4xl w-full">
+        {createStep === "select" ? (
+          /* Etapa 1: escolha do tipo de cliente (PF ou PJ) */
+          <div className="space-y-5 pr-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-foreground">Novo Lead / Cliente</h3>
+              <p className="text-xs text-muted-foreground">Selecione o tipo de cadastro para começar.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => selectTipoPessoa("PF")}
+                className="group text-left rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-primary hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 group-hover:bg-blue-500/15">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Pessoa Física</p>
+                    <p className="text-[11px] font-semibold text-muted-foreground">PF — CPF</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-slate-500 leading-relaxed">
+                  Cliente pessoa física, identificado por CPF e nome completo.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => selectTipoPessoa("PJ")}
+                className="group text-left rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-primary hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 group-hover:bg-purple-500/15">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Pessoa Jurídica</p>
+                    <p className="text-[11px] font-semibold text-muted-foreground">PJ — CNPJ</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-slate-500 leading-relaxed">
+                  Empresa identificada por CNPJ. Preenche os dados automaticamente pela Receita.
+                </p>
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs font-bold cursor-pointer h-9 px-4">
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-4 pr-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-foreground">Cadastrar Novo Lead / Cliente</h3>
+                <h3 className="text-lg font-bold text-foreground">
+                  Cadastrar {tipoPessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+                </h3>
                 <p className="text-xs text-muted-foreground">Preencha os dados cadastrais, endereço e imóvel do cliente.</p>
               </div>
-              
-              {/* Alternador de abas PF/PJ */}
-              <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-xs font-bold w-full sm:w-64 shrink-0">
+
+              {/* Tipo selecionado + opção de trocar */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${tipoPessoa === "PF" ? "bg-blue-500/10 text-blue-600" : "bg-purple-500/10 text-purple-600"}`}>
+                  {tipoPessoa === "PF" ? "Pessoa Física (PF)" : "Pessoa Jurídica (PJ)"}
+                </span>
                 <button
                   type="button"
-                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PF" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  onClick={() => { setTipoPessoa("PF"); setDocumento(""); }}
+                  onClick={() => { resetForm(); setCreateStep("select"); }}
+                  className="text-xs font-bold text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
                 >
-                  Pessoa Física (PF)
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${tipoPessoa === "PJ" ? "bg-white shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  onClick={() => { setTipoPessoa("PJ"); setDocumento(""); }}
-                >
-                  Pessoa Jurídica (PJ)
+                  Trocar tipo
                 </button>
               </div>
             </div>
@@ -1106,6 +1175,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               </div>
             </form>
         </div>
+        )}
       </Dialog>
 
       {/* ─── MODAL: EDITAR CLIENTE ─── */}

@@ -9,6 +9,7 @@ import {
   requireEnvironmentInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
+import { capitalizeText } from "@/lib/utils";
 
 export type EnvironmentType = 
   | "COZINHA"
@@ -115,7 +116,8 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
 }
 
 // Adiciona um novo ambiente ao projeto
-export async function addEnvironment(projectId: string, nome: string, tipo: EnvironmentType) {
+export async function addEnvironment(projectId: string, nomeInput: string, tipo: EnvironmentType) {
+  const nome = capitalizeText(nomeInput);
   const auth = await getAuthContext();
   if (!auth) {
     return { success: false, error: "Não autenticado" };
