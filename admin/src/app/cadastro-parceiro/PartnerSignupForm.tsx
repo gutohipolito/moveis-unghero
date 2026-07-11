@@ -218,30 +218,30 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             </p>
           </div>
 
-          <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-4 shadow-inner">
+          <div className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-3.5 shadow-inner">
             <p className="text-xs font-bold text-slate-800 uppercase tracking-widest text-center">Canais Oficiais</p>
-            <div className="grid grid-cols-1 gap-2 text-left">
+            <div className="grid grid-cols-2 gap-3 text-center">
               <a 
                 href="https://www.instagram.com/moveisunghero/" 
                 target="_blank" 
                 rel="noreferrer" 
-                className="flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+                className="flex flex-col items-center justify-center p-4 aspect-square bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5 text-pink-600 shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-pink-600 shrink-0">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                 </svg>
-                Instagram da Unghero
+                <span>Instagram</span>
               </a>
               <a 
                 href="https://wa.me/5554999971050" 
                 target="_blank" 
                 rel="noreferrer" 
-                className="flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+                className="flex flex-col items-center justify-center p-4 aspect-square bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
               >
-                <Smartphone className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                WhatsApp de Parcerias
+                <Smartphone className="h-6 w-6 text-emerald-600 shrink-0" />
+                <span>WhatsApp</span>
               </a>
             </div>
           </div>
