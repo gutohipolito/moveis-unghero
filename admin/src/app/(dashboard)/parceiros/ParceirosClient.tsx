@@ -17,6 +17,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { getColaboradores } from "@/app/actions/colaboradores";
+import { getProjectDetailsAction } from "@/app/actions/project";
+import ProjectDetails from "@/components/ProjectDetails";
 import {
   Search,
   UserPlus,
@@ -59,6 +62,30 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ParceiroDTO | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [colaboradores, setColaboradores] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    async function loadColabs() {
+      const res = await getColaboradores(companyId);
+      if (res.success && res.colaboradores) {
+        setColaboradores(res.colaboradores);
+      }
+    }
+    loadColabs();
+  }, [companyId]);
+
+  const handleViewProject = async (projectId: string) => {
+    setActiveProjectId(projectId);
+    const res = await getProjectDetailsAction(projectId);
+    if (res.success && res.project) {
+      setSelectedProject(res.project);
+    } else {
+      showError("Erro ao carregar", "Não foi possível carregar os detalhes do projeto.");
+    }
+  };
 
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState<PartnerType>("PROJETISTA");
@@ -470,6 +497,48 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       </div>
                     </div>
 
+                    {/* Projetos Integrados no CRM */}
+                    <div className="border-t border-border/50 pt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Projetos no CRM</span>
+                        <span className="text-[9px] font-black bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">
+                          {p.projects?.length || 0}
+                        </span>
+                      </div>
+                      {p.projects && p.projects.length > 0 ? (
+                        <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                          {p.projects.map((proj) => {
+                            let statusBg = "bg-slate-100 text-slate-700";
+                            if (proj.status_geral === "APROVADO" || proj.status_geral === "FINALIZADO") statusBg = "bg-emerald-50 text-emerald-700 border-emerald-250";
+                            else if (proj.status_geral === "LEAD" || proj.status_geral === "ORCAMENTO") statusBg = "bg-blue-50 text-blue-700 border-blue-250";
+                            else if (proj.status_geral === "PRODUCAO" || proj.status_geral === "INSTALACAO") statusBg = "bg-orange-50 text-orange-700 border-orange-250";
+                            
+                            return (
+                              <div 
+                                key={proj.id} 
+                                onClick={() => handleViewProject(proj.id)}
+                                className="flex items-center justify-between p-2 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-[10px]"
+                              >
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <p className="font-bold text-slate-800 truncate">{proj.client.nome}</p>
+                                  <p className="text-[9px] text-slate-400 font-semibold">
+                                    {proj.valor_previsto ? Number(proj.valor_previsto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00"}
+                                  </p>
+                                </div>
+                                <span className={`inline-flex items-center text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${statusBg}`}>
+                                  {proj.status_geral}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="py-2.5 rounded-lg border border-dashed border-border/40 text-center">
+                          <span className="text-[9px] text-muted-foreground font-semibold">Nenhum projeto vinculado</span>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Ações de Edição e Exclusão do Parceiro */}
                     <div className="flex gap-2 pt-2 border-t border-border/30 mt-1">
                       <Button
@@ -596,6 +665,48 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </Button>
             </div>
           </form>
+        </div>
+      </Dialog>
+
+      {/* Dialog de Visualização de Detalhes do Projeto */}
+      <Dialog
+        isOpen={!!activeProjectId}
+        onClose={() => {
+          setActiveProjectId(null);
+          setSelectedProject(null);
+        }}
+        className="max-w-5xl"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-border/40 pb-2">
+            <div>
+              <h3 className="text-lg font-bold">Ficha de Controle do Projeto</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Visualização e gerenciamento de ambientes, tarefas e financeiro.</p>
+            </div>
+            <button 
+              onClick={() => { setActiveProjectId(null); setSelectedProject(null); }}
+              className="p-1 hover:bg-slate-100 rounded-md text-muted-foreground transition-colors cursor-pointer"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+          </div>
+          {selectedProject ? (
+            <div className="max-h-[75vh] overflow-y-auto pr-2">
+              <ProjectDetails 
+                initialProject={selectedProject} 
+                companyId={companyId} 
+                colaboradores={colaboradores} 
+                isMock={false}
+                embedded={true}
+                onClose={() => { setActiveProjectId(null); setSelectedProject(null); }}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-sm font-semibold text-slate-500">Carregando detalhes do projeto...</p>
+            </div>
+          )}
         </div>
       </Dialog>
 

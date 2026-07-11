@@ -167,6 +167,7 @@ model ProfessionalPartner {
   fotoUrl     String?
   imagens     String?
   portfolioUrl String?
+  projects     Project[]          @relation("PartnerProjects")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -193,6 +194,8 @@ model Project {
   data_entrega_prevista DateTime?
   responsavel_id        String?
   responsavel           User?         @relation("ProjectResponsavel", fields: [responsavel_id], references: [id])
+  partner_id            String?
+  partner               ProfessionalPartner? @relation("PartnerProjects", fields: [partner_id], references: [id])
   observacoes           String?
   slaState              ProjectSlaState?
   briefing              LeadBriefing?

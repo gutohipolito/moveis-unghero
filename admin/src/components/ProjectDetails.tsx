@@ -20,6 +20,7 @@ import { getProjectDetailsAction } from "@/app/actions/project";
 import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
+import { getParceiros } from "@/app/actions/parceiros";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import QuoteBuilder from "@/components/QuoteBuilder";
@@ -143,6 +144,11 @@ interface Project {
   data_entrega_prevista?: string | null;
   responsavel_id?: string | null;
   responsavelNome?: string | null;
+  partner_id?: string | null;
+  partner?: {
+    nome: string;
+    tipo: string;
+  } | null;
   observacoes?: string | null;
   briefing?: {
     id: string;
@@ -220,32 +226,48 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     }
   }, [searchParams, initialOpenCreateQuote]);
 
-  // Estados para Controle Operacional do Projeto (Responsável, Entrega e Observações)
+  // Estados para Controle Operacional do Projeto (Responsável, Entrega, Parceiro e Observações)
   const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
   const [dataEntrega, setDataEntrega] = useState(project.data_entrega_prevista ? project.data_entrega_prevista.split("T")[0] : "");
   const [observacoesProj, setObservacoesProj] = useState(project.observacoes || "");
   const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [partnerId, setPartnerId] = useState(project.partner_id || "none");
+
+  useEffect(() => {
+    async function loadPartners() {
+      const res = await getParceiros(companyId);
+      if (res.success && res.parceiros) {
+         setPartners(res.parceiros);
+      }
+    }
+    loadPartners();
+  }, [companyId]);
 
   const handleSaveProjectDetails = async () => {
     setLoading(true);
     const res = await updateProjectDetails(project.id, {
       data_entrega_prevista: dataEntrega || null,
       responsavel_id: responsavelId,
-      observacoes: observacoesProj
+      observacoes: observacoesProj,
+      partner_id: partnerId
     });
 
     if (res.success) {
       const selected = colaboradores.find(c => c.id === responsavelId);
+      const selectedPartner = partners.find(p => p.id === partnerId);
       setProject(prev => ({
         ...prev,
         responsavel_id: responsavelId === "none" ? null : responsavelId,
         responsavelNome: selected ? selected.name : null,
+        partner_id: partnerId === "none" ? null : partnerId,
+        partner: selectedPartner ? { nome: selectedPartner.nome, tipo: selectedPartner.tipo } : null,
         data_entrega_prevista: dataEntrega ? new Date(dataEntrega).toISOString() : null,
         observacoes: observacoesProj,
         timeline: [
           {
             id: `local-meta-${Date.now()}`,
-            acao: `Detalhes operacionais atualizados (Responsável: ${selected ? selected.name : "Nenhum"}, Entrega: ${dataEntrega ? new Date(dataEntrega).toLocaleDateString("pt-BR") : "não definida"})`,
+            acao: `Detalhes operacionais atualizados (Responsável: ${selected ? selected.name : "Nenhum"}, Parceiro: ${selectedPartner ? selectedPartner.nome : "Nenhum"}, Entrega: ${dataEntrega ? new Date(dataEntrega).toLocaleDateString("pt-BR") : "não definida"})`,
             data: new Date().toISOString(),
             interno_sotamente: true,
             user: { name: "Sistema" }
@@ -864,7 +886,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </div>
 
               {!isEditingMeta ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2">
                     <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
                       <User className="h-3.5 w-3.5 text-primary" />
@@ -887,15 +909,25 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     </strong>
                   </div>
 
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2">
+                    <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      Parceiro Externo:
+                    </div>
+                    <strong className="text-sm text-slate-800 font-bold block truncate">
+                      {project.partner ? `${project.partner.nome} (${project.partner.tipo})` : "Nenhum"}
+                    </strong>
+                  </div>
+
                   {project.observacoes && (
-                    <div className="md:col-span-2 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1 text-slate-600">
+                    <div className="sm:col-span-3 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1 text-slate-600">
                       <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">Observações do Projeto:</span>
                       <p className="text-slate-700 font-medium whitespace-pre-wrap">{project.observacoes}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Responsável Geral</label>
                     <select
@@ -922,7 +954,23 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     />
                   </div>
 
-                  <div className="md:col-span-2 space-y-1">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Parceiro Externo</label>
+                    <select
+                      value={partnerId}
+                      onChange={(e) => setPartnerId(e.target.value)}
+                      className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs px-3 font-semibold cursor-pointer outline-none"
+                    >
+                      <option value="none">Nenhum</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.nome} ({p.tipo})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-3 space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Observações do Projeto</label>
                     <textarea
                       

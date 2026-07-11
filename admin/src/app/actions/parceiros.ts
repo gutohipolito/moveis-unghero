@@ -18,6 +18,14 @@ export interface ParceiroDTO {
   fotoUrl: string | null;
   imagens: string | null;
   portfolioUrl: string | null;
+  projects?: {
+    id: string;
+    valor_previsto: any;
+    status_geral: string;
+    client: {
+      nome: string;
+    };
+  }[];
   createdAt: Date;
 }
 
@@ -43,10 +51,24 @@ export async function getParceiros(companyId: string) {
   try {
     const parceiros = await prisma.professionalPartner.findMany({
       where: { company_id: companyId },
+      include: {
+        projects: {
+          select: {
+            id: true,
+            valor_previsto: true,
+            status_geral: true,
+            client: {
+              select: {
+                nome: true,
+              }
+            }
+          }
+        }
+      },
       orderBy: [{ ativo: "desc" }, { nome: "asc" }],
     });
 
-    return { success: true as const, parceiros };
+    return { success: true as const, parceiros: parceiros as unknown as ParceiroDTO[] };
   } catch (error) {
     console.error("Erro ao buscar parceiros:", error);
     return { success: false as const, error: "Falha ao carregar parceiros.", parceiros: [] as ParceiroDTO[] };

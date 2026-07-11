@@ -287,6 +287,7 @@ export async function updateProjectDetails(
     data_entrega_prevista?: string | null;
     responsavel_id?: string | null;
     observacoes?: string | null;
+    partner_id?: string | null;
   }
 ) {
   const auth = await getAuthContext();
@@ -310,6 +311,9 @@ export async function updateProjectDetails(
     }
     if (data.responsavel_id !== undefined) {
       updateData.responsavel_id = data.responsavel_id === "none" ? null : data.responsavel_id;
+    }
+    if (data.partner_id !== undefined) {
+      updateData.partner_id = data.partner_id === "none" ? null : data.partner_id;
     }
     if (data.observacoes !== undefined) {
       updateData.observacoes = data.observacoes;
