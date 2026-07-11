@@ -68,6 +68,7 @@ interface Project {
     origem: string;
     telefone: string;
     email: string;
+    tipo_pessoa?: string | null;
     cnpj?: string | null;
     cep?: string | null;
     endereco?: string | null;
@@ -120,6 +121,7 @@ interface KanbanBoardProps {
     telefone: string;
     cidade: string;
     origem: Origin;
+    tipo_pessoa?: string | null;
     cnpj?: string | null;
     cep?: string | null;
     endereco?: string | null;
@@ -708,7 +710,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(project)}
-        className={`group kanban-card kanban-card-stage overflow-hidden border ${theme.cardBorder} ${theme.cardShadow} ${theme.cardHover} ${
+        className={`group kanban-card kanban-card-stage overflow-hidden border ${
+          project.client.tipo_pessoa === "PJ" ? "border-indigo-500/50 shadow-xs ring-1 ring-indigo-50" : theme.cardBorder
+        } ${theme.cardShadow} ${theme.cardHover} ${
           boardView === "funil" ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""

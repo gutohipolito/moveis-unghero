@@ -594,7 +594,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               return (
                 <article
                   key={client.id}
-                  className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm"
+                  className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm transition-all ${
+                    docInfo.tipo_pessoa === "PJ" ? "border-indigo-400/40 shadow-xs" : "border-border"
+                  }`}
                 >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -702,7 +704,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                   return (
                     <tr key={client.id} className="hover:bg-slate-50/50 transition-colors">
                       {/* Cliente */}
-                      <td className="p-4">
+                      <td className={`p-4 ${resolveClientDocument(client).tipo_pessoa === "PJ" ? "border-l-4 border-l-indigo-500/80 bg-indigo-50/10" : ""}`}>
                         {(() => {
                           const docInfo = resolveClientDocument(client);
                           return (
@@ -853,7 +855,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                   
                   {/* CNPJ se for PJ ou CPF se for PF */}
                   {tipoPessoa === "PJ" ? (
-                    <div className="p-3 bg-[hsl(28_85%_98%)] border border-[hsl(28_85%_85%)] rounded-xl space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
                         CNPJ da Empresa
                         <span title="Digite o CNPJ para preencher os dados cadastrais da empresa no ato.">
@@ -868,8 +870,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           setDocumento(val);
                           fetchCompanyByCnpj(val);
                         }} 
-                         
-                        className="border-slate-350 bg-white text-xs h-9 font-semibold text-slate-900 focus:border-primary" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
                   ) : (
@@ -884,7 +885,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         required 
                         value={documento} 
                         onChange={e => setDocumento(e.target.value)} 
-                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
@@ -1146,7 +1146,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                   
                   {/* CNPJ se for PJ ou CPF se for PF */}
                   {tipoPessoa === "PJ" ? (
-                    <div className="p-3 bg-[hsl(28_85%_98%)] border border-[hsl(28_85%_85%)] rounded-xl space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-750 flex items-center gap-1">
                         CNPJ da Empresa
                         <span title="Digite o CNPJ para puxar dados da empresa automaticamente.">
@@ -1161,8 +1161,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           setDocumento(val);
                           fetchCompanyByCnpj(val);
                         }} 
-                         
-                        className="border-slate-350 bg-white text-xs h-9 font-semibold text-slate-900 focus:border-primary" 
+                        className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
                   ) : (
@@ -1177,7 +1176,6 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                         required 
                         value={documento} 
                         onChange={e => setDocumento(e.target.value)} 
-                         
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
                       />
                     </div>
