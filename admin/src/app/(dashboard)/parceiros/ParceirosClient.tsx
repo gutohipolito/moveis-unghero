@@ -27,6 +27,12 @@ import {
   MapPin,
   Building2,
   Pencil,
+  Camera,
+  Plus,
+  X,
+  Image as ImageIcon,
+  ExternalLink,
+  Globe
 } from "lucide-react";
 
 interface ParceirosClientProps {
@@ -52,6 +58,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ParceiroDTO | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState<PartnerType>("PROJETISTA");
@@ -60,6 +67,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [cidade, setCidade] = useState("");
   const [escritorio, setEscritorio] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [fotoUrl, setFotoUrl] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
 
   const syncParceiros = useCallback(async () => {
     const result = await getParceirosLiveSnapshot(companyId);
@@ -70,7 +79,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
   useLiveEntity("parceiros", {
     sync: syncParceiros,
-    enabled: !loading && !isCreateOpen,
+    enabled: !loading && !isCreateOpen && uploadingId === null,
   });
 
   const resetForm = () => {
@@ -81,6 +90,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setCidade("");
     setEscritorio("");
     setObservacoes("");
+    setFotoUrl("");
+    setPortfolioUrl("");
     setEditing(null);
   };
 
@@ -98,6 +109,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setCidade(p.cidade || "");
     setEscritorio(p.escritorio || "");
     setObservacoes(p.observacoes || "");
+    setFotoUrl(p.fotoUrl || "");
+    setPortfolioUrl(p.portfolioUrl || "");
     setIsCreateOpen(true);
   };
 
@@ -130,6 +143,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       cidade,
       escritorio,
       observacoes,
+      fotoUrl,
+      portfolioUrl,
     };
 
     if (editing) {
@@ -173,6 +188,69 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         }
         setParceiros((prev) => prev.filter((p) => p.id !== target.id));
         showSuccess("Parceiro removido", "Cadastro excluído da base.");
+      },
+    });
+  };
+
+  // Upload/Exclusão direta no Card
+  const handleUploadImage = async (partnerId: string, file: File, type: "avatar" | "galeria") => {
+    setUploadingId(`${partnerId}-${type}`);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+
+    try {
+      const response = await fetch(`/api/partners/${partnerId}/images`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const res = await response.json();
+      if (res.success && res.partner) {
+        setParceiros((prev) =>
+          prev.map((p) => (p.id === partnerId ? { ...p, ...res.partner } : p))
+        );
+        showSuccess(
+          type === "avatar" ? "Foto de perfil atualizada" : "Projeto adicionado",
+          type === "avatar" ? "O avatar do parceiro foi salvo." : "A foto foi adicionada à galeria."
+        );
+      } else {
+        showError("Erro no upload", res.error || "Não foi possível enviar o arquivo.");
+      }
+    } catch (err) {
+      console.error(err);
+      showError("Erro de conexão", "Falha de rede ao tentar subir a imagem.");
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  const handleDeleteImage = async (partnerId: string, imageUrl: string, isAvatar: boolean) => {
+    confirmAction({
+      title: "Excluir imagem?",
+      message: "Tem certeza que deseja remover esta imagem permanentemente?",
+      confirmLabel: "Sim, remover",
+      onConfirm: async () => {
+        try {
+          const response = await fetch(
+            `/api/partners/${partnerId}/images?url=${encodeURIComponent(imageUrl)}&avatar=${isAvatar}`,
+            {
+              method: "DELETE",
+            }
+          );
+          const res = await response.json();
+          if (res.success && res.partner) {
+            setParceiros((prev) =>
+              prev.map((p) => (p.id === partnerId ? { ...p, ...res.partner } : p))
+            );
+            showSuccess("Imagem removida", "A imagem foi excluída com sucesso.");
+          } else {
+            showError("Erro ao remover", res.error || "Não foi possível excluir a imagem.");
+          }
+        } catch (err) {
+          console.error(err);
+          showError("Erro de conexão", "Falha ao tentar excluir a imagem.");
+        }
       },
     });
   };
@@ -221,80 +299,194 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             {filtered.map((p) => {
               const style = PARTNER_TYPE_STYLES[p.tipo];
               const Icon = style.icon;
+              const hasImages = p.imagens && p.imagens.split(",").filter(Boolean).length > 0;
+              const imagesList = p.imagens ? p.imagens.split(",").filter(Boolean) : [];
 
               return (
                 <Card
                   key={p.id}
                   className="glass-card glass-card-hover overflow-hidden flex flex-col border-border/80"
                 >
-                  <div className={`h-1 ${style.accent}`} />
+                  <div className={`h-1.5 ${style.accent}`} />
                   <div className="p-4 flex flex-col gap-3 flex-1">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${style.avatar}`}
-                      >
-                        {getInitials(p.nome)}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 min-w-0">
+                        {/* Avatar com upload rápido hover */}
+                        <div className="relative group/avatar flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border text-sm font-bold bg-muted overflow-hidden">
+                          {p.fotoUrl ? (
+                            <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className={`h-full w-full flex items-center justify-center font-black ${style.avatar}`}>
+                              {getInitials(p.nome)}
+                            </div>
+                          )}
+                          <label
+                            htmlFor={`avatar-upload-${p.id}`}
+                            className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            {uploadingId === `${p.id}-avatar` ? (
+                              <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                            ) : (
+                              <Camera className="h-4 w-4" />
+                            )}
+                          </label>
+                          <input
+                            id={`avatar-upload-${p.id}`}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadImage(p.id, file, "avatar");
+                            }}
+                            disabled={uploadingId !== null}
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-foreground text-sm leading-snug truncate">{p.nome}</h3>
+                          <span
+                            className={`inline-flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${style.bg} ${style.text} ${style.border}`}
+                          >
+                            <Icon className="h-3 w-3" />
+                            {style.label}
+                          </span>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-foreground leading-snug">{p.nome}</h3>
-                        <span
-                          className={`inline-flex items-center gap-1 mt-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${style.bg} ${style.text} ${style.border}`}
+
+                      {/* Botão de Excluir Foto do perfil, se houver */}
+                      {p.fotoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteImage(p.id, p.fotoUrl!, true)}
+                          title="Remover foto de perfil"
+                          className="p-1 hover:bg-slate-100 rounded-md text-muted-foreground hover:text-red-500 transition-colors"
                         >
-                          <Icon className="h-3 w-3" />
-                          {style.label}
-                        </span>
-                      </div>
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                    {/* Informações Básicas */}
+                    <div className="space-y-1.5 text-[11px] text-muted-foreground/90 border-t border-border/40 pt-2.5">
                       {p.escritorio && (
                         <p className="flex items-center gap-1.5">
-                          <Building2 className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{p.escritorio}</span>
+                          <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <span className="font-semibold text-foreground/80 truncate">{p.escritorio}</span>
                         </p>
                       )}
                       {p.cidade && (
                         <p className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 shrink-0" />
-                          {p.cidade}
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <span>{p.cidade}</span>
                         </p>
                       )}
                       {p.telefone && (
                         <p className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 shrink-0" />
-                          {p.telefone}
+                          <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <span>{p.telefone}</span>
                         </p>
                       )}
                       {p.email && (
                         <p className="flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 shrink-0" />
+                          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                           <span className="truncate">{p.email}</span>
+                        </p>
+                      )}
+                      {p.portfolioUrl && (
+                        <p className="flex items-center gap-1.5">
+                          <Globe className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <a
+                            href={p.portfolioUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary font-semibold hover:underline flex items-center gap-0.5 truncate"
+                          >
+                            Portfolio / Social <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
                         </p>
                       )}
                     </div>
 
                     {p.observacoes && (
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 border-t border-border/50 pt-2">
-                        {p.observacoes}
+                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed italic bg-slate-50 border border-slate-100 rounded-lg p-2 line-clamp-2">
+                        "{p.observacoes}"
                       </p>
                     )}
 
-                    <div className="flex gap-2 pt-1 mt-auto">
+                    {/* Galeria de Fotos / Projetos */}
+                    <div className="border-t border-border/50 pt-3 space-y-2 mt-auto">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Projetos / Fotos</span>
+                        <label
+                          htmlFor={`gallery-upload-${p.id}`}
+                          className="text-[9px] font-black text-primary hover:underline cursor-pointer flex items-center gap-0.5"
+                        >
+                          {uploadingId === `${p.id}-galeria` ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          ) : (
+                            <Plus className="h-3 w-3 text-primary" />
+                          )}
+                          Adicionar Foto
+                        </label>
+                        <input
+                          id={`gallery-upload-${p.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadImage(p.id, file, "galeria");
+                          }}
+                          disabled={uploadingId !== null}
+                        />
+                      </div>
+
+                      {/* Lista de Imagens */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {imagesList.map((img, idx) => (
+                          <div key={img} className="relative aspect-square rounded-lg overflow-hidden border border-border/80 group/img bg-slate-100 shadow-sm">
+                            <img src={img} alt={`Projeto ${idx + 1}`} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300" />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteImage(p.id, img, false)}
+                              className="absolute top-0.5 right-0.5 p-0.5 bg-black/70 hover:bg-red-650 rounded-md text-white opacity-0 group-hover/img:opacity-100 transition-opacity"
+                              title="Excluir imagem"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {!hasImages && (
+                          <label
+                            htmlFor={`gallery-upload-${p.id}`}
+                            className="col-span-4 py-4 rounded-xl border border-dashed border-border/60 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 transition-colors"
+                          >
+                            <ImageIcon className="h-5 w-5 text-slate-400 mb-1" />
+                            <span className="text-[10px] text-muted-foreground font-semibold">Suba imagens de projetos</span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ações de Edição e Exclusão do Parceiro */}
+                    <div className="flex gap-2 pt-2 border-t border-border/30 mt-1">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 text-[11px] font-bold h-8"
                         onClick={() => openEdit(p)}
                       >
-                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        <Pencil className="h-3 w-3 mr-1" />
                         Editar
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive h-8 px-2.5"
                         onClick={() => handleDelete(p)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -367,6 +559,14 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">E-mail</label>
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Link do Portfolio ou Instagram</label>
+                <Input type="url" placeholder="https://..." value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">URL da Foto de Perfil (Avatar)</label>
+                <Input type="url" placeholder="https://..." value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} />
               </div>
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Observações</label>

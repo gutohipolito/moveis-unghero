@@ -15,6 +15,9 @@ export interface ParceiroDTO {
   escritorio: string | null;
   observacoes: string | null;
   ativo: boolean;
+  fotoUrl: string | null;
+  imagens: string | null;
+  portfolioUrl: string | null;
   createdAt: Date;
 }
 
@@ -60,6 +63,9 @@ export async function createParceiro(
     cidade?: string;
     escritorio?: string;
     observacoes?: string;
+    fotoUrl?: string;
+    imagens?: string;
+    portfolioUrl?: string;
   }
 ) {
   const auth = await getAuthContext();
@@ -90,6 +96,9 @@ export async function createParceiro(
         cidade: data.cidade?.trim() || null,
         escritorio: data.escritorio?.trim() || null,
         observacoes: data.observacoes?.trim() || null,
+        fotoUrl: data.fotoUrl?.trim() || null,
+        imagens: data.imagens?.trim() || null,
+        portfolioUrl: data.portfolioUrl?.trim() || null,
       },
     });
 
@@ -112,6 +121,9 @@ export async function updateParceiro(
     escritorio?: string;
     observacoes?: string;
     ativo?: boolean;
+    fotoUrl?: string;
+    imagens?: string;
+    portfolioUrl?: string;
   }
 ) {
   const auth = await getAuthContext();
@@ -142,6 +154,9 @@ export async function updateParceiro(
         ...(data.escritorio !== undefined ? { escritorio: data.escritorio.trim() || null } : {}),
         ...(data.observacoes !== undefined ? { observacoes: data.observacoes.trim() || null } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
+        ...(data.fotoUrl !== undefined ? { fotoUrl: data.fotoUrl?.trim() || null } : {}),
+        ...(data.imagens !== undefined ? { imagens: data.imagens?.trim() || null } : {}),
+        ...(data.portfolioUrl !== undefined ? { portfolioUrl: data.portfolioUrl?.trim() || null } : {}),
       },
     });
 

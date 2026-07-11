@@ -164,6 +164,9 @@ model ProfessionalPartner {
   escritorio  String?
   observacoes String?
   ativo       Boolean     @default(true)
+  fotoUrl     String?
+  imagens     String?
+  portfolioUrl String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
