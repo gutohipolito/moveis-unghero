@@ -266,6 +266,7 @@ export async function getQuotes() {
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),
       validade: q.validade instanceof Date ? q.validade.toISOString() : q.validade,
+      aprovado_em: q.aprovado_em instanceof Date ? q.aprovado_em.toISOString() : q.aprovado_em,
       project: q.project ? {
         ...q.project,
         valor_previsto: Number(q.project.valor_previsto)

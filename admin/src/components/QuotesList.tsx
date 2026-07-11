@@ -17,6 +17,8 @@ import {
   FolderKanban,
   UserRound,
   UserPlus,
+  ArrowUpAZ,
+  ArrowDownZA,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -67,6 +69,7 @@ interface Quote {
   desconto: number;
   valor_final: number;
   validade: Date | string;
+  aprovado_em?: string | Date | null;
   observacoes: string | null;
   project: Project;
   items: QuoteItem[];
@@ -82,7 +85,9 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "APPROVED">("ALL");
+  const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor">("validade");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Estados para criação direta de Orçamento
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -265,17 +270,55 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     const expired = isExpired(q.validade);
     const matchesStatus = 
       filterStatus === "ALL" ||
-      (filterStatus === "ACTIVE" && !expired) ||
-      (filterStatus === "EXPIRED" && expired);
+      (filterStatus === "APPROVED" && q.aprovado_em !== null && q.aprovado_em !== undefined) ||
+      (filterStatus === "ACTIVE" && !expired && !q.aprovado_em) ||
+      (filterStatus === "EXPIRED" && expired && !q.aprovado_em);
 
     return matchesSearch && matchesStatus;
   });
 
+  // Ordenação
+  const sortedQuotes = [...filteredQuotes].sort((a, b) => {
+    let valA: any = "";
+    let valB: any = "";
+
+    if (sortBy === "client") {
+      valA = a.project.client.nome.toLowerCase();
+      valB = b.project.client.nome.toLowerCase();
+    } else if (sortBy === "bairro") {
+      valA = (a.project.client.bairro || "").toLowerCase();
+      valB = (b.project.client.bairro || "").toLowerCase();
+    } else if (sortBy === "validade") {
+      valA = new Date(a.validade).getTime();
+      valB = new Date(b.validade).getTime();
+    } else if (sortBy === "status") {
+      const getStatusPriority = (q: Quote) => {
+        if (q.aprovado_em) return 3;
+        if (isExpired(q.validade)) return 1;
+        return 2;
+      };
+      valA = getStatusPriority(a);
+      valB = getStatusPriority(b);
+    } else if (sortBy === "valor") {
+      valA = a.valor_final;
+      valB = b.valor_final;
+    }
+
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
   // Métricas
   const totalValue = filteredQuotes.reduce((acc, q) => acc + q.valor_final, 0);
-  const averageValue = filteredQuotes.length > 0 ? totalValue / filteredQuotes.length : 0;
-  const expiredCount = filteredQuotes.filter(q => isExpired(q.validade)).length;
-  const activeCount = filteredQuotes.length - expiredCount;
+  
+  const approvedQuotes = filteredQuotes.filter(q => q.aprovado_em !== null && q.aprovado_em !== undefined);
+  const totalApprovedValue = approvedQuotes.reduce((acc, q) => acc + q.valor_final, 0);
+  
+  const averageValue = approvedQuotes.length > 0 ? totalApprovedValue / approvedQuotes.length : 0;
+  const expiredCount = filteredQuotes.filter(q => isExpired(q.validade) && !q.aprovado_em).length;
+  const activeCount = filteredQuotes.filter(q => !isExpired(q.validade) && !q.aprovado_em).length;
+  const approvedCount = approvedQuotes.length;
 
   return (
     <div className="space-y-6">
@@ -291,7 +334,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
       />
 
       {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 flex items-center gap-4 bg-white border border-slate-100 shadow-sm">
           <div className="p-3 bg-amber-500/10 rounded-lg text-amber-600">
             <Calculator className="h-6 w-6" />
@@ -299,7 +342,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Emitido</p>
             <p className="text-xl font-bold text-slate-800">{filteredQuotes.length} orçamentos</p>
-            <p className="text-xs text-slate-400">{activeCount} ativos / {expiredCount} vencidos</p>
+            <p className="text-xs text-slate-400">{activeCount} ativos / {expiredCount} vencidos / {approvedCount} aprovados</p>
           </div>
         </Card>
 
@@ -310,7 +353,18 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor Total</p>
             <p className="text-xl font-bold text-slate-800">{formatCurrency(totalValue)}</p>
-            <p className="text-xs text-emerald-600">Soma de orçamentos filtrados</p>
+            <p className="text-xs text-emerald-650">Soma de propostas filtradas</p>
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center gap-4 bg-white border border-slate-100 shadow-sm">
+          <div className="p-3 bg-indigo-500/10 rounded-lg text-indigo-650">
+            <DollarSign className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor Aprovados</p>
+            <p className="text-xl font-bold text-slate-800">{formatCurrency(totalApprovedValue)}</p>
+            <p className="text-xs text-indigo-600 font-medium">Soma de propostas fechadas</p>
           </div>
         </Card>
 
@@ -319,49 +373,93 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
             <Clock className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket Médio</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket Médio (Aprovados)</p>
             <p className="text-xl font-bold text-slate-800">{formatCurrency(averageValue)}</p>
-            <p className="text-xs text-slate-400">Média por proposta comercial</p>
+            <p className="text-xs text-slate-400">Média por proposta aprovada</p>
           </div>
         </Card>
       </div>
 
       {/* Filtros e Busca */}
-      <div className="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Buscar por cliente ou ID do orçamento..." 
-            className="pl-9 bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="flex flex-col gap-3 bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input 
+              placeholder="Buscar por cliente ou ID do orçamento..." 
+              className="pl-9 bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant={filterStatus === "ALL" ? "default" : "outline"} 
+              className={filterStatus === "ALL" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
+              size="sm"
+              onClick={() => setFilterStatus("ALL")}
+            >
+              Todos
+            </Button>
+            <Button 
+              variant={filterStatus === "ACTIVE" ? "default" : "outline"} 
+              className={filterStatus === "ACTIVE" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
+              size="sm"
+              onClick={() => setFilterStatus("ACTIVE")}
+            >
+              Ativos
+            </Button>
+            <Button 
+              variant={filterStatus === "EXPIRED" ? "default" : "outline"} 
+              className={filterStatus === "EXPIRED" ? "bg-rose-600 hover:bg-rose-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
+              size="sm"
+              onClick={() => setFilterStatus("EXPIRED")}
+            >
+              Vencidos
+            </Button>
+            <Button 
+              variant={filterStatus === "APPROVED" ? "default" : "outline"} 
+              className={filterStatus === "APPROVED" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "border-slate-200 text-indigo-600 hover:bg-indigo-50"}
+              size="sm"
+              onClick={() => setFilterStatus("APPROVED")}
+            >
+              Aprovados
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant={filterStatus === "ALL" ? "default" : "outline"} 
-            className={filterStatus === "ALL" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
-            size="sm"
-            onClick={() => setFilterStatus("ALL")}
-          >
-            Todos
-          </Button>
-          <Button 
-            variant={filterStatus === "ACTIVE" ? "default" : "outline"} 
-            className={filterStatus === "ACTIVE" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
-            size="sm"
-            onClick={() => setFilterStatus("ACTIVE")}
-          >
-            Ativos
-          </Button>
-          <Button 
-            variant={filterStatus === "EXPIRED" ? "default" : "outline"} 
-            className={filterStatus === "EXPIRED" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
-            size="sm"
-            onClick={() => setFilterStatus("EXPIRED")}
-          >
-            Vencidos
-          </Button>
+
+        {/* Ordenação */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Organizar por:</span>
+          {([
+            { key: "client", label: "Cliente" },
+            { key: "bairro", label: "Bairro" },
+            { key: "validade", label: "Validade" },
+            { key: "status", label: "Status" },
+            { key: "valor", label: "Valor" },
+          ] as const).map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => {
+                if (sortBy === opt.key) {
+                  setSortOrder(prev => prev === "asc" ? "desc" : "asc");
+                } else {
+                  setSortBy(opt.key);
+                  setSortOrder("asc");
+                }
+              }}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
+                sortBy === opt.key
+                  ? "bg-[hsl(28_85%_45%)]/10 border-[hsl(28_85%_45%)]/40 text-[hsl(28_85%_30%)]"
+                  : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+              }`}
+            >
+              {opt.label}
+              {sortBy === opt.key ? (
+                sortOrder === "asc" ? <ArrowUpAZ className="h-3 w-3" /> : <ArrowDownZA className="h-3 w-3" />
+              ) : null}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -371,7 +469,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cód / Versão</th>
+                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">COD</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cidade</th>
                 <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Bairro</th>
@@ -382,22 +480,21 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredQuotes.length === 0 ? (
+              {sortedQuotes.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400 text-sm">
                     Nenhum orçamento encontrado.
                   </td>
                 </tr>
               ) : (
-                filteredQuotes.map((q) => {
+                sortedQuotes.map((q) => {
                   const expired = isExpired(q.validade);
                   return (
                     <tr key={q.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-4 px-4 text-sm font-medium text-slate-700">
-                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-xs mr-2">
+                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-xs">
                           ORC-{q.id.substring(0, 5).toUpperCase()}
                         </span>
-                        <span className="text-slate-500">v{q.versao}</span>
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-800 font-semibold">
                         {q.project.client.nome}
@@ -412,7 +509,11 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                         {formatDate(q.validade)}
                       </td>
                       <td className="py-4 px-4 text-sm">
-                        {expired ? (
+                        {q.aprovado_em ? (
+                          <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                            ✓ Aprovado
+                          </span>
+                        ) : expired ? (
                           <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full text-xs font-medium">
                             <AlertTriangle className="h-3 w-3" />
                             Vencido
