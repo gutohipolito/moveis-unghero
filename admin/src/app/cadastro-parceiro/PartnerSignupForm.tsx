@@ -203,45 +203,47 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
   if (success) {
     return (
-      <div className="max-w-xl mx-auto text-center py-16 px-6 space-y-8 animate-in fade-in duration-500">
-        <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full">
-          <CheckCircle className="h-14 w-14 animate-bounce" />
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            Cadastro enviado!
-          </h2>
-          <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-            Obrigado pelo interesse em fazer parceria com a Móveis Unghero.
-            Nossa equipe analisará seu perfil e entrará em contato em breve para alinharmos os detalhes.
-          </p>
-        </div>
+      <div className="max-w-2xl mx-auto px-6 py-6 partner-container">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm text-center py-12 px-6 space-y-8 animate-in fade-in duration-500 partner-card flex flex-col items-center">
+          <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full mx-auto">
+            <CheckCircle className="h-14 w-14 animate-bounce" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              Cadastro enviado!
+            </h2>
+            <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
+              Obrigado pelo interesse em fazer parceria com a Móveis Unghero.
+              Nossa equipe analisará seu perfil e entrará em contato em breve para alinharmos os detalhes.
+            </p>
+          </div>
 
-        <div className="p-6 bg-white border border-slate-200/80 rounded-2xl max-w-sm mx-auto space-y-4 shadow-sm">
-          <p className="text-xs font-bold text-slate-800 uppercase tracking-widest">Canais Oficiais</p>
-          <div className="grid grid-cols-1 gap-2 text-left">
-            <a 
-              href="https://instagram.com" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="flex items-center gap-3 p-3 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5 text-pink-600 shrink-0">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-              </svg>
-              Instagram da Unghero
-            </a>
-            <a 
-              href="https://wa.me/5554999999999" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="flex items-center gap-3 p-3 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
-            >
-              <Smartphone className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-              WhatsApp de Parcerias
-            </a>
+          <div className="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-4 shadow-inner">
+            <p className="text-xs font-bold text-slate-800 uppercase tracking-widest text-center">Canais Oficiais</p>
+            <div className="grid grid-cols-1 gap-2 text-left">
+              <a 
+                href="https://www.instagram.com/moveisunghero/" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5 text-pink-600 shrink-0">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+                Instagram da Unghero
+              </a>
+              <a 
+                href="https://wa.me/5554999971050" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all"
+              >
+                <Smartphone className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                WhatsApp de Parcerias
+              </a>
+            </div>
           </div>
         </div>
       </div>
