@@ -54,38 +54,42 @@ export default function DashboardLayoutWrapper({
         }`}
       >
         <div className="flex flex-col flex-1 min-h-0 relative">
-          {/* Cabeçalho do Sidebar com Logo / Símbolo */}
+          {/* Cabeçalho do Sidebar com Logo / Símbolo e Toggle Integrado */}
           <div
-            className={`flex items-center h-16 shrink-0 transition-all duration-300 ${
-              isCollapsed ? "px-4 justify-center" : "px-5"
+            className={`flex items-center h-16 shrink-0 transition-all duration-300 border-b border-slate-100 ${
+              isCollapsed ? "px-4 justify-center" : "px-5 justify-between"
             }`}
           >
-            <Link href="/crm" aria-label="Móveis Unghero" className="flex items-center">
-              {isCollapsed ? (
-                <span className="text-sm font-black text-indigo-650 bg-indigo-50/80 border border-indigo-150 h-10 w-10 flex items-center justify-center rounded-xl shadow-inner select-none transition-all hover:scale-105">
-                  MU
-                </span>
-              ) : (
-                <img
-                  src="/logo.png"
-                  alt="Móveis Unghero"
-                  className="logo-sidebar h-10 w-auto object-contain transition-all"
-                />
-              )}
-            </Link>
+            {isCollapsed ? (
+              <button
+                onClick={handleToggle}
+                className="text-xs font-black text-indigo-650 bg-indigo-50 border border-indigo-100 h-10 w-10 flex items-center justify-center rounded-xl shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title="Expandir menu lateral"
+              >
+                MU
+              </button>
+            ) : (
+              <>
+                <Link href="/crm" aria-label="Móveis Unghero" className="flex items-center">
+                  <img
+                    src="/logo.png"
+                    alt="Móveis Unghero"
+                    className="logo-sidebar h-9 w-auto object-contain transition-all"
+                  />
+                </Link>
+                <button
+                  onClick={handleToggle}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
+                  title="Recolher menu lateral"
+                >
+                  <ChevronLeft className="h-4.5 w-4.5" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Navegação Principal */}
           <SidebarNav compact={isCollapsed} />
-
-          {/* Botão de Toggle do Sidebar Desktop */}
-          <button
-            onClick={handleToggle}
-            className="absolute -right-4 top-20 h-8 w-8 rounded-full bg-indigo-650 hover:bg-indigo-750 shadow-lg shadow-indigo-650/15 flex items-center justify-center text-white ring-4 ring-indigo-50 transition-all duration-300 cursor-pointer z-50 hover:scale-110 active:scale-95"
-            title={isCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-          >
-            {isCollapsed ? <ChevronRight className="h-4.5 w-4.5" /> : <ChevronLeft className="h-4.5 w-4.5" />}
-          </button>
         </div>
       </aside>
 
