@@ -35,7 +35,11 @@ import {
   X,
   Image as ImageIcon,
   ExternalLink,
-  Globe
+  Globe,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 interface ParceirosClientProps {
@@ -66,6 +70,13 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [colaboradores, setColaboradores] = useState<any[]>([]);
+  
+  const [privacyMode, setPrivacyMode] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   React.useEffect(() => {
     async function loadColabs() {
@@ -284,35 +295,57 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
   return (
     <>
-      <div className="space-y-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome, escritório ou cidade..."
-                className="pl-9 bg-card"
-              />
+      <div className="space-y-6">
+        {/* Cabeçalho da Página com Modo Privacidade */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-black tracking-tight text-slate-800">Projetistas e Arquitetos</h1>
+              <button
+                onClick={() => setPrivacyMode(!privacyMode)}
+                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-650 transition-colors cursor-pointer border border-slate-200 bg-white shadow-sm"
+                title={privacyMode ? "Mostrar nomes e fotos" : "Ocultar nomes e fotos (Modo Privacidade)"}
+              >
+                {privacyMode ? <EyeOff className="h-4 w-4 text-indigo-600" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
-            <select
-              value={filterTipo}
-              onChange={(e) => setFilterTipo(e.target.value)}
-              className="h-10 px-3 rounded-md border border-border bg-card text-sm"
-            >
-              <option value="ALL">Todos os tipos</option>
-              {PARTNER_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {PARTNER_TYPE_STYLES[t].label}
-                </option>
-              ))}
-            </select>
+            <p className="text-xs text-muted-foreground">
+              Cadastre parceiros profissionais — arquitetos, projetistas, decoradores e engenheiros — que indicam clientes ou co-projetam com a marcenaria.
+            </p>
           </div>
-          <Button onClick={openCreate} className="font-bold shrink-0">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Novo parceiro
+
+          <Button 
+            onClick={openCreate} 
+            className="font-extrabold bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl h-10 px-4 border-none shadow-sm cursor-pointer flex items-center gap-2 shrink-0 self-start md:self-auto"
+          >
+            <UserPlus className="h-4 w-4" />
+            Cadastrar Parceiro
           </Button>
+        </div>
+
+        {/* Barra de Filtros e Busca */}
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome, escritório ou cidade..."
+              className="pl-9 bg-card"
+            />
+          </div>
+          <select
+            value={filterTipo}
+            onChange={(e) => setFilterTipo(e.target.value)}
+            className="h-10 px-3 rounded-md border border-border bg-card text-sm cursor-pointer"
+          >
+            <option value="ALL">Todos os tipos</option>
+            {PARTNER_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {PARTNER_TYPE_STYLES[t].label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {filtered.length === 0 ? (
@@ -340,7 +373,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     {/* Perfil & Cabeçalho */}
                     <div className="flex items-center gap-3.5 relative">
                       {/* Avatar com upload rápido e bordas premium */}
-                      <div className="relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100">
+                      <div className={`relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 transition-all duration-300 ${privacyMode ? "blur-md select-none" : ""}`}>
                         {p.fotoUrl ? (
                           <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover group-hover/avatar:scale-105 transition-transform duration-500" />
                         ) : (
@@ -375,7 +408,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-600 transition-colors truncate">{p.nome}</h3>
+                        <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-600 transition-colors truncate transition-all duration-300 ${privacyMode ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                           <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
                             <Icon className="h-2.5 w-2.5" />
@@ -470,12 +503,33 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       )}
                     </div>
 
-                    {/* Observações */}
-                    {p.observacoes && (
-                      <p className="text-[10px] text-slate-500 leading-relaxed italic bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-3 line-clamp-2">
-                        "{p.observacoes}"
-                      </p>
-                    )}
+                    {/* Botão de Minimizar / Expandir */}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(p.id)}
+                      className="w-full py-1.5 flex items-center justify-center gap-1.5 text-[9px] font-black text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-dashed border-slate-200 hover:border-slate-350 rounded-xl transition-all uppercase tracking-widest cursor-pointer mt-1"
+                    >
+                      {expandedIds[p.id] ? (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          <span>Ocultar Detalhes</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          <span>Mostrar Detalhes</span>
+                        </>
+                      )}
+                    </button>
+
+                    {expandedIds[p.id] && (
+                      <>
+                        {/* Observações */}
+                        {p.observacoes && (
+                          <p className="text-[10px] text-slate-500 leading-relaxed italic bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-3 line-clamp-2">
+                            "{p.observacoes}"
+                          </p>
+                        )}
 
                     {/* Galeria de Fotos / Projetos */}
                     <div className="border-t border-slate-100 pt-3.5 space-y-2 mt-auto">
@@ -589,6 +643,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                         </div>
                       )}
                     </div>
+                      </>
+                    )}
 
                     {/* Ações de Edição e Exclusão do Parceiro */}
                     <div className="flex gap-2 pt-3 border-t border-slate-100 mt-1">

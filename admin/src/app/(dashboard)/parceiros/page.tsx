@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { getParceiros } from "@/app/actions/parceiros";
-import PageHeader from "@/components/PageHeader";
 import ParceirosClient from "./ParceirosClient";
 
 export default async function ParceirosPage() {
@@ -15,13 +14,6 @@ export default async function ParceirosPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Projetistas e Arquitetos"
-        description="Cadastre parceiros profissionais — arquitetos, projetistas, decoradores e engenheiros — que indicam clientes ou co-projetam com a marcenaria."
-      />
-
-      <ParceirosClient initialParceiros={parceiros} companyId={companyId} />
-    </div>
+    <ParceirosClient initialParceiros={parceiros} companyId={companyId} />
   );
 }

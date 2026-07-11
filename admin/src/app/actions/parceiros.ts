@@ -180,10 +180,24 @@ export async function updateParceiro(
         ...(data.imagens !== undefined ? { imagens: data.imagens?.trim() || null } : {}),
         ...(data.portfolioUrl !== undefined ? { portfolioUrl: data.portfolioUrl?.trim() || null } : {}),
       },
+      include: {
+        projects: {
+          select: {
+            id: true,
+            valor_previsto: true,
+            status_geral: true,
+            client: {
+              select: {
+                nome: true,
+              }
+            }
+          }
+        }
+      }
     });
 
     revalidatePath("/parceiros");
-    return { success: true, parceiro };
+    return { success: true, parceiro: parceiro as unknown as ParceiroDTO };
   } catch (error: unknown) {
     console.error("Erro ao atualizar parceiro:", error);
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar." };
