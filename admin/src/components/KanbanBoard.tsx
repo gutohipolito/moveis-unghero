@@ -43,6 +43,7 @@ import {
   Copy,
   Check,
   Send,
+  ArrowRight,
 } from "lucide-react";
 
 interface Project {
@@ -138,10 +139,18 @@ const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
   { id: "LEAD", title: "Prospecção" },
   { id: "ORCAMENTO", title: "Orçamentos" },
   { id: "NEGOCIACAO", title: "Negociação" },
-  { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica" },
   { id: "APROVADO", title: "Aprovados" },
+  { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica" },
   { id: "PRODUCAO", title: "Produção" },
 ];
+
+/** Avanço rápido: próxima etapa segue a ordem visual das colunas do funil. */
+const FUNNEL_ORDER = FUNNEL_COLUMNS.map((c) => c.id);
+function getNextFunnelStatus(current: string): ProjectStatus | null {
+  const idx = FUNNEL_ORDER.indexOf(current as ProjectStatus);
+  if (idx < 0 || idx >= FUNNEL_ORDER.length - 1) return null;
+  return FUNNEL_ORDER[idx + 1];
+}
 
 /** Tema visual por etapa — cabeçalho colorido; cards filhos só com borda e sombra. */
 const STAGE_THEME: Record<
@@ -509,6 +518,24 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     openEditModal(project);
   };
 
+  // Avança o projeto para a próxima etapa do funil (usado no mobile, onde não há drag & drop)
+  const handleAdvanceStage = async (project: Project) => {
+    const next = getNextFunnelStatus(project.status_geral);
+    if (!next) return;
+
+    const originalProjects = [...projects];
+    setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: next } : p)));
+
+    const result = await updateProjectStatus(project.id, next);
+    if (!result.success) {
+      setProjects(originalProjects);
+      showError("Falha ao avançar", "Não foi possível mover o projeto para a próxima etapa.");
+    } else {
+      const nextTitle = FUNNEL_COLUMNS.find((c) => c.id === next)?.title || "próxima etapa";
+      showSuccess("Projeto avançado", `${project.client.nome} → ${nextTitle}.`);
+    }
+  };
+
   const handleMarkContacted = async (project: Project) => {
     const now = new Date().toISOString();
     setProjects(
@@ -816,30 +843,53 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 {/* Div Flex simples para alinhar botões sem margens negativas que quebrem as bordas */}
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40 select-none">
                   {actionButtons}
-                  
-                  <a
-                    href={`https://api.whatsapp.com/send?phone=55${project.client.telefone.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer rounded"
-                    style={{
-                      minWidth: "1.625rem",
-                      minHeight: "1.625rem",
-                      padding: "0.25rem",
-                    }}
-                    title="Iniciar conversa no WhatsApp"
-                  >
-                    <svg 
-                      className="fill-current" 
-                      style={{ width: "0.875rem", height: "0.875rem" }} 
-                      viewBox="0 0 24 24" 
-                      xmlns="http://www.w3.org/2000/svg"
+
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`https://api.whatsapp.com/send?phone=55${project.client.telefone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer rounded"
+                      style={{
+                        minWidth: "1.625rem",
+                        minHeight: "1.625rem",
+                        padding: "0.25rem",
+                      }}
+                      title="Iniciar conversa no WhatsApp"
                     >
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
-                    </svg>
-                  </a>
+                      <svg 
+                        className="fill-current" 
+                        style={{ width: "0.875rem", height: "0.875rem" }} 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
+                      </svg>
+                    </a>
+
+                    {/* Avançar etapa — só no mobile, onde não há drag & drop */}
+                    {isMobile && boardView === "funil" && getNextFunnelStatus(project.status_geral) && (
+                      <button
+                        type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAdvanceStage(project);
+                        }}
+                        className="kanban-card-action bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer rounded flex items-center justify-center"
+                        style={{
+                          minWidth: "1.625rem",
+                          minHeight: "1.625rem",
+                          padding: "0.25rem",
+                        }}
+                        title={`Avançar para ${FUNNEL_COLUMNS.find((c) => c.id === getNextFunnelStatus(project.status_geral))?.title || "próxima etapa"}`}
+                      >
+                        <ArrowRight style={{ width: "0.875rem", height: "0.875rem" }} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
