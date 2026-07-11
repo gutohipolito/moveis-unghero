@@ -81,10 +81,10 @@ export default function DashboardLayoutWrapper({
           {/* Botão de Toggle do Sidebar Desktop */}
           <button
             onClick={handleToggle}
-            className="absolute -right-3.5 top-20 h-7 w-7 rounded-full bg-white hover:bg-slate-50 border border-slate-200 shadow-md flex items-center justify-center text-slate-550 hover:text-indigo-650 transition-all cursor-pointer z-50 hover:scale-110 active:scale-95"
+            className="absolute -right-4 top-20 h-8 w-8 rounded-full bg-indigo-650 hover:bg-indigo-750 shadow-lg shadow-indigo-650/15 flex items-center justify-center text-white ring-4 ring-indigo-50 transition-all duration-300 cursor-pointer z-50 hover:scale-110 active:scale-95"
             title={isCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
           >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {isCollapsed ? <ChevronRight className="h-4.5 w-4.5" /> : <ChevronLeft className="h-4.5 w-4.5" />}
           </button>
         </div>
       </aside>

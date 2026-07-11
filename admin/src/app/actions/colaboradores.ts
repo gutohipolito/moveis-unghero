@@ -53,6 +53,7 @@ export async function createColaborador(data: {
   senhaRaw: string;
   companyId: string;
   areaAtuacao?: string;
+  image?: string;
 }) {
   const authCtx = await getAuthContext();
   if (!authCtx) {
@@ -90,7 +91,8 @@ export async function createColaborador(data: {
     const dbUser = await prisma.user.update({
       where: { id: newUser.user.id },
       data: {
-        ...(data.areaAtuacao ? { areaAtuacao: data.areaAtuacao.trim() } : {})
+        ...(data.areaAtuacao ? { areaAtuacao: data.areaAtuacao.trim() } : {}),
+        ...(data.image ? { image: data.image.trim() } : {}),
       }
     });
 
@@ -110,6 +112,7 @@ export async function updateColaborador(
     email?: string;
     cargo?: Role;
     areaAtuacao?: string | null;
+    image?: string | null;
   }
 ) {
   const authCtx = await getAuthContext();
@@ -146,6 +149,7 @@ export async function updateColaborador(
         ...(data.email !== undefined ? { email: data.email.trim() } : {}),
         ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
         ...(data.areaAtuacao !== undefined ? { areaAtuacao: data.areaAtuacao?.trim() || null } : {}),
+        ...(data.image !== undefined ? { image: data.image?.trim() || null } : {}),
       },
     });
 

@@ -34,6 +34,7 @@ interface ColaboradorItem {
   email: string;
   cargo: Role;
   areaAtuacao?: string | null;
+  image?: string | null;
   createdAt: Date;
 }
 
@@ -120,13 +121,15 @@ function resetCreateForm(
   setEmail: (v: string) => void,
   setPassword: (v: string) => void,
   setCargo: (v: Role) => void,
-  setAreaAtuacao: (v: string) => void
+  setAreaAtuacao: (v: string) => void,
+  setImage: (v: string) => void
 ) {
   setName("");
   setEmail("");
   setPassword("");
   setCargo("PRODUCAO");
   setAreaAtuacao("");
+  setImage("");
 }
 
 export default function ColaboradoresClient({ initialColaboradores, companyId }: ColaboradoresClientProps) {
@@ -144,6 +147,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<Role>("PRODUCAO");
   const [areaAtuacao, setAreaAtuacao] = useState("");
+  const [image, setImage] = useState("");
   const [password, setPassword] = useState("");
 
   const openCreate = () => {
@@ -153,6 +157,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
     setPassword("");
     setCargo("PRODUCAO");
     setAreaAtuacao("");
+    setImage("");
     setIsCreateOpen(true);
   };
 
@@ -162,6 +167,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
     setEmail(c.email);
     setCargo(c.cargo);
     setAreaAtuacao(c.areaAtuacao || "");
+    setImage(c.image || "");
     setPassword("");
     setIsCreateOpen(true);
   };
@@ -197,6 +203,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         email,
         cargo,
         areaAtuacao,
+        image,
       });
 
       if (res.success && res.user) {
@@ -209,12 +216,13 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                   email: res.user.email,
                   cargo: res.user.cargo as Role,
                   areaAtuacao: res.user.areaAtuacao,
+                  image: res.user.image,
                 }
               : c
           )
         );
         setIsCreateOpen(false);
-        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
+        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
         showSuccess(
           "Cadastro atualizado",
           `Os dados de ${res.user.name} foram salvos com sucesso.`
@@ -234,6 +242,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         senhaRaw: password,
         companyId,
         areaAtuacao,
+        image,
       });
 
       if (res.success && res.user) {
@@ -246,11 +255,12 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             email: res.user.email,
             cargo: res.user.cargo as Role,
             areaAtuacao: res.user.areaAtuacao,
+            image: res.user.image,
             createdAt: new Date(res.user.createdAt),
           },
         ]);
         setIsCreateOpen(false);
-        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
+        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
         showSuccess(
           "Colaborador cadastrado",
           `${res.user.name} foi adicionado à equipe como ${cargoLabel}.`
@@ -422,8 +432,12 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                   {/* Cabeçalho do Card */}
                   <div className="flex items-center justify-between gap-3">
                     {/* Avatar robusto e premium */}
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg border shrink-0 ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 shadow-inner ${badge.avatar}`}>
-                      {getInitials(c.name)}
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg border shrink-0 ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 shadow-inner overflow-hidden ${badge.avatar}`}>
+                      {c.image ? (
+                        <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                      ) : (
+                        getInitials(c.name)
+                      )}
                     </div>
                     {/* Badge do Cargo (User Role) */}
                     <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}>
@@ -497,7 +511,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
           if (loading) return;
           setIsCreateOpen(false);
           setEditing(null);
-          resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
+          resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
         }}
         className="max-w-md"
       >
@@ -528,6 +542,16 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Foto de perfil (URL)</label>
+              <Input
+                type="url"
+                placeholder="https://exemplo.com/foto.jpg"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
               />
             </div>
 
@@ -590,7 +614,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                 onClick={() => {
                   setIsCreateOpen(false);
                   setEditing(null);
-                  resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
+                  resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
                 }}
                 disabled={loading}
               >
