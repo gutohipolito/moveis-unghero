@@ -19,6 +19,7 @@ import {
   Star,
   BarChart3,
   NotebookPen,
+  Settings,
 } from "lucide-react";
 
 export interface NavItem {
@@ -62,6 +63,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Administração" },
   { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Administração" },
   { name: "Cadastros do Sistema", href: "/cadastros", icon: BookMarked, section: "Administração" },
+  { name: "Configurações", href: "/settings", icon: Settings, section: "Administração" },
 ];
 
 export function isNavItemActive(pathname: string, href: string): boolean {
@@ -102,8 +104,8 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
         if (items.length === 0) return null;
 
         return (
-          <div key={section}>
-            <p className="sidebar-section-label px-2 mb-1.5">{section}</p>
+          <div key={section} className="space-y-1">
+            {!compact && <p className="sidebar-section-label px-2 mb-1.5">{section}</p>}
             <div className="space-y-0.5">
               {items.map((item) => {
                 const isActive = isNavItemActive(pathname, item.href);
@@ -115,17 +117,21 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                     href={item.href}
                     prefetch={!HEAVY_ROUTES.has(item.href)}
                     onClick={onNavigate}
-                    className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""}`}
+                    className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""} ${
+                      compact ? "justify-center px-1" : ""
+                    }`}
+                    title={compact ? item.name : undefined}
                   >
                     <span className="sidebar-nav-icon">
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-4.5 w-4.5" />
                     </span>
-                    <span className="sidebar-nav-label">{label}</span>
-                    {item.badge && <span className="sidebar-nav-badge shrink-0">{item.badge}</span>}
+                    {!compact && <span className="sidebar-nav-label">{label}</span>}
+                    {!compact && item.badge && <span className="sidebar-nav-badge shrink-0">{item.badge}</span>}
                   </Link>
                 );
               })}
             </div>
+            {compact && <div className="border-b border-slate-700/20 my-2 mx-2" />}
           </div>
         );
       })}
