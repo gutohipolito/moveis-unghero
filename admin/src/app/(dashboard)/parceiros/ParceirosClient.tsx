@@ -332,130 +332,194 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               return (
                 <Card
                   key={p.id}
-                  className="glass-card glass-card-hover overflow-hidden flex flex-col border-border/80"
+                  className="bg-white border border-slate-100 hover:border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative"
                 >
-                  <div className={`h-1.5 ${style.accent}`} />
-                  <div className="p-4 flex flex-col gap-3 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-3 min-w-0">
-                        {/* Avatar com upload rápido hover */}
-                        <div className="relative group/avatar flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border text-sm font-bold bg-muted overflow-hidden">
-                          {p.fotoUrl ? (
-                            <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover" />
+                  <div className={`h-1.5 w-full ${style.accent}`} />
+                  
+                  <div className="p-5 flex flex-col gap-4 flex-1">
+                    {/* Perfil & Cabeçalho */}
+                    <div className="flex items-center gap-3.5 relative">
+                      {/* Avatar com upload rápido e bordas premium */}
+                      <div className="relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100">
+                        {p.fotoUrl ? (
+                          <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover group-hover/avatar:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className={`h-full w-full flex items-center justify-center text-lg font-black ${style.avatar}`}>
+                            {getInitials(p.nome)}
+                          </div>
+                        )}
+                        <label
+                          htmlFor={`avatar-upload-${p.id}`}
+                          className="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer text-[9px] font-bold gap-1"
+                        >
+                          {uploadingId === `${p.id}-avatar` ? (
+                            <Loader2 className="h-4.5 w-4.5 animate-spin" />
                           ) : (
-                            <div className={`h-full w-full flex items-center justify-center font-black ${style.avatar}`}>
-                              {getInitials(p.nome)}
-                            </div>
-                          )}
-                          <label
-                            htmlFor={`avatar-upload-${p.id}`}
-                            className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            {uploadingId === `${p.id}-avatar` ? (
-                              <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                            ) : (
+                            <>
                               <Camera className="h-4 w-4" />
-                            )}
-                          </label>
-                          <input
-                            id={`avatar-upload-${p.id}`}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleUploadImage(p.id, file, "avatar");
-                            }}
-                            disabled={uploadingId !== null}
-                          />
-                        </div>
+                              <span>Alterar</span>
+                            </>
+                          )}
+                        </label>
+                        <input
+                          id={`avatar-upload-${p.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadImage(p.id, file, "avatar");
+                          }}
+                          disabled={uploadingId !== null}
+                        />
+                      </div>
 
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-foreground text-sm leading-snug truncate">{p.nome}</h3>
-                          <span
-                            className={`inline-flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${style.bg} ${style.text} ${style.border}`}
-                          >
-                            <Icon className="h-3 w-3" />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-600 transition-colors truncate">{p.nome}</h3>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
+                            <Icon className="h-2.5 w-2.5" />
                             {style.label}
                           </span>
+                          
+                          {p.cidade && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                              <MapPin className="h-2.5 w-2.5 text-slate-350" />
+                              {p.cidade}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Botão de Excluir Foto do perfil, se houver */}
+                      {/* Ações Rápidas de Foto do perfil */}
                       {p.fotoUrl && (
                         <button
                           type="button"
                           onClick={() => handleDeleteImage(p.id, p.fotoUrl!, true)}
                           title="Remover foto de perfil"
-                          className="p-1 hover:bg-slate-100 rounded-md text-muted-foreground hover:text-red-500 transition-colors"
+                          className="absolute top-0 right-0 p-1 bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 transition-colors shadow-sm cursor-pointer"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </div>
 
-                    {/* Informações Básicas */}
-                    <div className="space-y-1.5 text-[11px] text-muted-foreground/90 border-t border-border/40 pt-2.5">
-                      {p.escritorio && (
-                        <p className="flex items-center gap-1.5">
-                          <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span className="font-semibold text-foreground/80 truncate">{p.escritorio}</span>
-                        </p>
+                    {/* Dados Comerciais / Escritório */}
+                    {p.escritorio && (
+                      <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+                        <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">Escritório / Studio</span>
+                          <span className="text-[10px] font-bold text-slate-700 truncate block mt-0.5">{p.escritorio}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contatos Rápidos em Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {p.telefone ? (
+                        <a
+                          href={`https://wa.me/${p.telefone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-100 hover:border-emerald-250 text-slate-500 hover:text-emerald-600 transition-all gap-1 cursor-pointer"
+                          title={`Falar no WhatsApp: ${p.telefone}`}
+                        >
+                          <Phone className="h-4 w-4 shrink-0" />
+                          <span className="text-[9px] font-bold">WhatsApp</span>
+                        </a>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 text-slate-300 opacity-60">
+                          <Phone className="h-4 w-4 shrink-0" />
+                          <span className="text-[9px] font-bold">WhatsApp</span>
+                        </div>
                       )}
-                      {p.cidade && (
-                        <p className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span>{p.cidade}</span>
-                        </p>
+
+                      {p.email ? (
+                        <a
+                          href={`mailto:${p.email}`}
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 border border-slate-100 hover:border-blue-250 text-slate-500 hover:text-blue-600 transition-all gap-1 cursor-pointer"
+                          title={`Enviar e-mail: ${p.email}`}
+                        >
+                          <Mail className="h-4 w-4 shrink-0" />
+                          <span className="text-[9px] font-bold">E-mail</span>
+                        </a>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 text-slate-300 opacity-60">
+                          <Mail className="h-4 w-4 shrink-0" />
+                          <span className="text-[9px] font-bold">E-mail</span>
+                        </div>
                       )}
-                      {p.telefone && (
-                        <p className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span>{p.telefone}</span>
-                        </p>
-                      )}
-                      {p.email && (
-                        <p className="flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span className="truncate">{p.email}</span>
-                        </p>
-                      )}
-                      {p.portfolioUrl && (
-                        <p className="flex items-center gap-1.5">
-                          <Globe className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <a
-                            href={p.portfolioUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary font-semibold hover:underline flex items-center gap-0.5 truncate"
-                          >
-                            Portfolio / Social <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
-                        </p>
+
+                      {p.portfolioUrl ? (
+                        <a
+                          href={p.portfolioUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-pink-50 border border-slate-100 hover:border-pink-250 text-slate-500 hover:text-pink-600 transition-all gap-1 cursor-pointer"
+                          title="Acessar Portfólio / Instagram"
+                        >
+                          <Globe className="h-4 w-4 shrink-0" />
+                          <span className="text-[9px] font-bold">Portfólio</span>
+                        </a>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 text-slate-300 opacity-60">
+                          <Globe className="h-4 w-4 shrink-0" />
+                          <span className="text-[9px] font-bold">Portfólio</span>
+                        </div>
                       )}
                     </div>
 
+                    {/* Observações */}
                     {p.observacoes && (
-                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed italic bg-slate-50 border border-slate-100 rounded-lg p-2 line-clamp-2">
+                      <p className="text-[10px] text-slate-500 leading-relaxed italic bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-3 line-clamp-2">
                         "{p.observacoes}"
                       </p>
                     )}
 
                     {/* Galeria de Fotos / Projetos */}
-                    <div className="border-t border-border/50 pt-3 space-y-2 mt-auto">
+                    <div className="border-t border-slate-100 pt-3.5 space-y-2 mt-auto">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Projetos / Fotos</span>
-                        <label
-                          htmlFor={`gallery-upload-${p.id}`}
-                          className="text-[9px] font-black text-primary hover:underline cursor-pointer flex items-center gap-0.5"
-                        >
-                          {uploadingId === `${p.id}-galeria` ? (
-                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                          ) : (
-                            <Plus className="h-3 w-3 text-primary" />
-                          )}
-                          Adicionar Foto
-                        </label>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Portfólio de Fotos</span>
+                        <span className="text-[8px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                          {imagesList.length} fotos
+                        </span>
+                      </div>
+
+                      {/* Grid de Imagens com botão "+ Adicionar" inline */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {imagesList.map((img, idx) => (
+                          <div key={img} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group/img bg-slate-50 shadow-inner">
+                            <img src={img} alt={`Projeto ${idx + 1}`} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500" />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteImage(p.id, img, false)}
+                              className="absolute top-1 right-1 p-0.5 bg-black/60 hover:bg-red-650 rounded-lg text-white opacity-0 group-hover/img:opacity-100 transition-opacity shadow-sm cursor-pointer"
+                              title="Excluir imagem"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Botão de Adicionar Foto inline na Galeria */}
+                        {imagesList.length < 8 && (
+                          <label
+                            htmlFor={`gallery-upload-${p.id}`}
+                            className="aspect-square rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 hover:border-slate-350 transition-all group/add shadow-sm"
+                            title="Adicionar imagem ao portfólio"
+                          >
+                            {uploadingId === `${p.id}-galeria` ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-slate-450" />
+                            ) : (
+                              <>
+                                <Plus className="h-4 w-4 text-slate-450 group-hover/add:text-indigo-650 transition-colors" />
+                                <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider mt-1 group-hover/add:text-indigo-650 transition-colors">Subir</span>
+                              </>
+                            )}
+                          </label>
+                        )}
+                        
                         <input
                           id={`gallery-upload-${p.id}`}
                           type="file"
@@ -467,65 +531,52 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                           }}
                           disabled={uploadingId !== null}
                         />
-                      </div>
 
-                      {/* Lista de Imagens */}
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {imagesList.map((img, idx) => (
-                          <div key={img} className="relative aspect-square rounded-lg overflow-hidden border border-border/80 group/img bg-slate-100 shadow-sm">
-                            <img src={img} alt={`Projeto ${idx + 1}`} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300" />
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteImage(p.id, img, false)}
-                              className="absolute top-0.5 right-0.5 p-0.5 bg-black/70 hover:bg-red-650 rounded-md text-white opacity-0 group-hover/img:opacity-100 transition-opacity"
-                              title="Excluir imagem"
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          </div>
-                        ))}
-
-                        {!hasImages && (
+                        {imagesList.length === 0 && (
                           <label
                             htmlFor={`gallery-upload-${p.id}`}
-                            className="col-span-4 py-4 rounded-xl border border-dashed border-border/60 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 transition-colors"
+                            className="col-span-3 py-4 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 transition-colors"
                           >
-                            <ImageIcon className="h-5 w-5 text-slate-400 mb-1" />
-                            <span className="text-[10px] text-muted-foreground font-semibold">Suba imagens de projetos</span>
+                            <ImageIcon className="h-4 w-4 text-slate-400 mb-1" />
+                            <span className="text-[9px] text-slate-400 font-bold">Nenhuma imagem enviada</span>
                           </label>
                         )}
                       </div>
                     </div>
 
                     {/* Projetos Integrados no CRM */}
-                    <div className="border-t border-border/50 pt-3 space-y-2">
+                    <div className="border-t border-slate-100 pt-3.5 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Projetos no CRM</span>
-                        <span className="text-[9px] font-black bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Projetos no CRM</span>
+                        <span className="text-[8px] font-black bg-slate-50 border border-slate-100 text-slate-650 px-2 py-0.5 rounded-full">
                           {p.projects?.length || 0}
                         </span>
                       </div>
                       {p.projects && p.projects.length > 0 ? (
                         <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                           {p.projects.map((proj) => {
-                            let statusBg = "bg-slate-100 text-slate-700";
-                            if (proj.status_geral === "APROVADO" || proj.status_geral === "FINALIZADO") statusBg = "bg-emerald-50 text-emerald-700 border-emerald-250";
-                            else if (proj.status_geral === "LEAD" || proj.status_geral === "ORCAMENTO") statusBg = "bg-blue-50 text-blue-700 border-blue-250";
-                            else if (proj.status_geral === "PRODUCAO" || proj.status_geral === "INSTALACAO") statusBg = "bg-orange-50 text-orange-700 border-orange-250";
+                            let statusBg = "bg-slate-50 text-slate-700 border-slate-200";
+                            if (proj.status_geral === "APROVADO" || proj.status_geral === "FINALIZADO") {
+                              statusBg = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                            } else if (proj.status_geral === "LEAD" || proj.status_geral === "ORCAMENTO" || proj.status_geral === "NEGOCIACAO") {
+                              statusBg = "bg-blue-50 text-blue-700 border-blue-100";
+                            } else if (proj.status_geral === "PRODUCAO" || proj.status_geral === "INSTALACAO" || proj.status_geral === "CONFERENCIA_TECNICA") {
+                              statusBg = "bg-amber-50/70 text-amber-700 border-amber-100";
+                            }
                             
                             return (
                               <div 
                                 key={proj.id} 
                                 onClick={() => handleViewProject(proj.id)}
-                                className="flex items-center justify-between p-2 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-[10px]"
+                                className="flex items-center justify-between p-2 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer text-[10px] group/project"
                               >
                                 <div className="min-w-0 flex-1 pr-2">
-                                  <p className="font-bold text-slate-800 truncate">{proj.client.nome}</p>
-                                  <p className="text-[9px] text-slate-400 font-semibold">
+                                  <p className="font-bold text-slate-700 group-hover/project:text-indigo-650 transition-colors truncate">{proj.client.nome}</p>
+                                  <p className="text-[9px] text-slate-400 font-bold mt-0.5">
                                     {proj.valor_previsto ? Number(proj.valor_previsto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00"}
                                   </p>
                                 </div>
-                                <span className={`inline-flex items-center text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${statusBg}`}>
+                                <span className={`inline-flex items-center text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusBg}`}>
                                   {proj.status_geral}
                                 </span>
                               </div>
@@ -533,32 +584,32 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                           })}
                         </div>
                       ) : (
-                        <div className="py-2.5 rounded-lg border border-dashed border-border/40 text-center">
-                          <span className="text-[9px] text-muted-foreground font-semibold">Nenhum projeto vinculado</span>
+                        <div className="py-3 rounded-xl border border-dashed border-slate-200 text-center bg-slate-50/30">
+                          <span className="text-[9px] text-slate-450 font-bold">Nenhum projeto vinculado</span>
                         </div>
                       )}
                     </div>
 
                     {/* Ações de Edição e Exclusão do Parceiro */}
-                    <div className="flex gap-2 pt-2 border-t border-border/30 mt-1">
+                    <div className="flex gap-2 pt-3 border-t border-slate-100 mt-1">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="flex-1 text-[11px] font-bold h-8"
+                        className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all"
                         onClick={() => openEdit(p)}
                       >
-                        <Pencil className="h-3 w-3 mr-1" />
-                        Editar
+                        <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
+                        Editar Cadastro
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-destructive hover:text-destructive h-8 px-2.5"
+                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl transition-all"
                         onClick={() => handleDelete(p)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
