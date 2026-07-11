@@ -65,7 +65,6 @@
 }
 
 * {
-  border-color: hsl(var(--border));
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--border)) transparent;
 }
