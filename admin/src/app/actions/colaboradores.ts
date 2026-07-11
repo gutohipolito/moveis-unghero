@@ -52,6 +52,7 @@ export async function createColaborador(data: {
   cargo: Role;
   senhaRaw: string;
   companyId: string;
+  areaAtuacao?: string;
 }) {
   const authCtx = await getAuthContext();
   if (!authCtx) {
@@ -82,10 +83,76 @@ export async function createColaborador(data: {
       },
     });
 
+    if (!newUser?.user?.id) {
+      return { success: false, error: "Erro ao registrar credenciais" };
+    }
+
+    const dbUser = await prisma.user.update({
+      where: { id: newUser.user.id },
+      data: {
+        ...(data.areaAtuacao ? { areaAtuacao: data.areaAtuacao.trim() } : {})
+      }
+    });
+
     revalidatePath("/colaboradores");
-    return { success: true, user: newUser.user };
+    return { success: true, user: dbUser };
   } catch (error: any) {
     console.error("Erro ao cadastrar colaborador:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Atualiza os dados de um colaborador existente
+export async function updateColaborador(
+  userId: string,
+  data: {
+    name?: string;
+    email?: string;
+    cargo?: Role;
+    areaAtuacao?: string | null;
+  }
+) {
+  const authCtx = await getAuthContext();
+  if (!authCtx) {
+    return { success: false, error: "Não autenticado" };
+  }
+  if (authCtx.cargo !== "ADMIN") {
+    return { success: false, error: "Acesso negado" };
+  }
+  
+  try {
+    await requireUserInCompany(userId, authCtx.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    if (data.email) {
+      const existing = await prisma.user.findFirst({
+        where: { email: data.email, NOT: { id: userId } },
+      });
+      if (existing) {
+        return { success: false, error: "Este e-mail já está sendo utilizado por outro colaborador." };
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+        ...(data.email !== undefined ? { email: data.email.trim() } : {}),
+        ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
+        ...(data.areaAtuacao !== undefined ? { areaAtuacao: data.areaAtuacao?.trim() || null } : {}),
+      },
+    });
+
+    revalidatePath("/colaboradores");
+    return { success: true, user: updated };
+  } catch (error: any) {
+    console.error("Erro ao atualizar colaborador:", error);
     return { success: false, error: error.message };
   }
 }

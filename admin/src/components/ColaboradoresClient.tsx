@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Role } from "@prisma/client";
-import { createColaborador, deleteColaborador } from "@/app/actions/colaboradores";
+import { createColaborador, deleteColaborador, updateColaborador } from "@/app/actions/colaboradores";
 import { getColaboradoresLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ADMIN_EMAIL } from "@/lib/constants";
@@ -24,6 +24,8 @@ import {
   Wallet,
   Mail,
   Calendar,
+  Pencil,
+  Briefcase,
 } from "lucide-react";
 
 interface ColaboradorItem {
@@ -31,6 +33,7 @@ interface ColaboradorItem {
   name: string;
   email: string;
   cargo: Role;
+  areaAtuacao?: string | null;
   createdAt: Date;
 }
 
@@ -116,12 +119,14 @@ function resetCreateForm(
   setName: (v: string) => void,
   setEmail: (v: string) => void,
   setPassword: (v: string) => void,
-  setCargo: (v: Role) => void
+  setCargo: (v: Role) => void,
+  setAreaAtuacao: (v: string) => void
 ) {
   setName("");
   setEmail("");
   setPassword("");
   setCargo("PRODUCAO");
+  setAreaAtuacao("");
 }
 
 export default function ColaboradoresClient({ initialColaboradores, companyId }: ColaboradoresClientProps) {
@@ -130,13 +135,36 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
   const [filterCargo, setFilterCargo] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<ColaboradorItem | null>(null);
+  
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<Role>("PRODUCAO");
+  const [areaAtuacao, setAreaAtuacao] = useState("");
   const [password, setPassword] = useState("");
+
+  const openCreate = () => {
+    setEditing(null);
+    setName("");
+    setEmail("");
+    setPassword("");
+    setCargo("PRODUCAO");
+    setAreaAtuacao("");
+    setIsCreateOpen(true);
+  };
+
+  const openEdit = (c: ColaboradorItem) => {
+    setEditing(c);
+    setName(c.name);
+    setEmail(c.email);
+    setCargo(c.cargo);
+    setAreaAtuacao(c.areaAtuacao || "");
+    setPassword("");
+    setIsCreateOpen(true);
+  };
 
   const syncColaboradores = useCallback(async () => {
     const result = await getColaboradoresLiveSnapshot(companyId);
@@ -150,48 +178,89 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
     enabled: !loading && !isCreateOpen,
   });
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) {
+    if (!name || !email || (!editing && !password)) {
       showError(
         "Campos obrigatórios",
-        "Preencha nome, e-mail e senha provisória para cadastrar o colaborador."
+        "Preencha nome, e-mail e senha para prosseguir."
       );
       return;
     }
 
     setLoading(true);
-    const res = await createColaborador({
-      name,
-      email,
-      cargo,
-      senhaRaw: password,
-      companyId,
-    });
 
-    if (res.success && res.user) {
-      const cargoLabel = CARGO_BADGES[res.user.cargo as Role]?.label || res.user.cargo;
-      setColaboradores([
-        ...colaboradores,
-        {
-          id: res.user.id,
-          name: res.user.name,
-          email: res.user.email,
-          cargo: res.user.cargo as Role,
-          createdAt: new Date(res.user.createdAt),
-        },
-      ]);
-      setIsCreateOpen(false);
-      resetCreateForm(setName, setEmail, setPassword, setCargo);
-      showSuccess(
-        "Colaborador cadastrado",
-        `${res.user.name} foi adicionado à equipe como ${cargoLabel}.`
-      );
+    if (editing) {
+      // Modo Edição
+      const res = await updateColaborador(editing.id, {
+        name,
+        email,
+        cargo,
+        areaAtuacao,
+      });
+
+      if (res.success && res.user) {
+        setColaboradores((prev) =>
+          prev.map((c) =>
+            c.id === editing.id
+              ? {
+                  ...c,
+                  name: res.user.name,
+                  email: res.user.email,
+                  cargo: res.user.cargo as Role,
+                  areaAtuacao: res.user.areaAtuacao,
+                }
+              : c
+          )
+        );
+        setIsCreateOpen(false);
+        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
+        showSuccess(
+          "Cadastro atualizado",
+          `Os dados de ${res.user.name} foram salvos com sucesso.`
+        );
+      } else {
+        showError(
+          "Não foi possível atualizar",
+          res.error || "Ocorreu um erro ao atualizar os dados."
+        );
+      }
     } else {
-      showError(
-        "Não foi possível cadastrar",
-        res.error || "Ocorreu um erro ao salvar o colaborador. Tente novamente."
-      );
+      // Modo Criação
+      const res = await createColaborador({
+        name,
+        email,
+        cargo,
+        senhaRaw: password,
+        companyId,
+        areaAtuacao,
+      });
+
+      if (res.success && res.user) {
+        const cargoLabel = CARGO_BADGES[res.user.cargo as Role]?.label || res.user.cargo;
+        setColaboradores([
+          ...colaboradores,
+          {
+            id: res.user.id,
+            name: res.user.name,
+            email: res.user.email,
+            cargo: res.user.cargo as Role,
+            areaAtuacao: res.user.areaAtuacao,
+            createdAt: new Date(res.user.createdAt),
+          },
+        ]);
+        setIsCreateOpen(false);
+        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
+        showSuccess(
+          "Colaborador cadastrado",
+          `${res.user.name} foi adicionado à equipe como ${cargoLabel}.`
+        );
+      } else {
+        showError(
+          "Não foi possível cadastrar",
+          res.error || "Ocorreu um erro ao salvar o colaborador. Tente novamente."
+        );
+      }
     }
     setLoading(false);
   };
@@ -306,8 +375,8 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         </div>
 
         <Button
-          onClick={() => setIsCreateOpen(true)}
-          className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic"
+          onClick={openCreate}
+          className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
         >
           <UserPlus className="h-4 w-4" />
           Adicionar Colaborador
@@ -345,52 +414,74 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             return (
               <Card
                 key={c.id}
-                className="glass-card glass-card-hover overflow-hidden flex flex-col border-border/80"
+                className="bg-white border border-slate-100 hover:border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative"
               >
                 <div className={`h-1.5 w-full ${badge.accent}`} />
 
                 <div className="p-5 flex flex-col flex-1 gap-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg border shrink-0 ${badge.avatar}`}
-                    >
+                  {/* Cabeçalho do Card */}
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Avatar robusto e premium */}
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg border shrink-0 ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 shadow-inner ${badge.avatar}`}>
                       {getInitials(c.name)}
                     </div>
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}
-                    >
+                    {/* Badge do Cargo (User Role) */}
+                    <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}>
                       <BadgeIcon className="h-3 w-3" />
                       {badge.shortLabel}
                     </span>
                   </div>
 
-                  <div className="min-w-0 space-y-1">
-                    <h3 className="text-base font-bold text-foreground leading-tight truncate">{c.name}</h3>
-                    <p className="text-xs text-muted-foreground font-medium">{badge.label}</p>
+                  {/* Nome e Cargo */}
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-650 transition-colors truncate">{c.name}</h3>
+                    <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{badge.label}</span>
                   </div>
 
-                  <div className="space-y-2 text-sm text-muted-foreground">
+                  {/* Área de Atuação em Destaque */}
+                  <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                    <Briefcase className="h-3.5 w-3.5 text-slate-450 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[8px] font-black text-slate-450 uppercase tracking-widest block leading-none">Área de Atuação</span>
+                      <span className="text-[10px] font-bold text-slate-700 truncate block mt-1">
+                        {c.areaAtuacao || <span className="text-slate-400 font-normal italic">Operação Geral</span>}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* E-mail e Admissão */}
+                  <div className="space-y-1.5 text-xs text-slate-500">
                     <p className="flex items-center gap-2 min-w-0">
-                      <Mail className="h-4 w-4 shrink-0 text-primary/70" />
-                      <span className="truncate">{c.email}</span>
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <span className="truncate font-semibold">{c.email}</span>
                     </p>
                     <p className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 shrink-0 text-primary/70" />
-                      <span>Desde {formattedDate}</span>
+                      <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <span className="font-medium">Admitido em {formattedDate}</span>
                     </p>
                   </div>
 
-                  <div className="mt-auto pt-3 border-t border-border/60 flex justify-end">
+                  {/* Ações no Rodapé */}
+                  <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEdit(c)}
+                      className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all cursor-pointer"
+                      disabled={loading}
+                    >
+                      <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => requestDelete(c)}
-                      className="h-8 px-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors gap-1.5"
+                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl transition-all cursor-pointer"
                       disabled={isProtected || loading}
                       title="Remover colaborador"
                     >
                       <Trash2 className="h-4 w-4" />
-                      <span className="text-xs font-semibold">Remover</span>
                     </Button>
                   </div>
                 </div>
@@ -405,17 +496,20 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
         onClose={() => {
           if (loading) return;
           setIsCreateOpen(false);
-          resetCreateForm(setName, setEmail, setPassword, setCargo);
+          setEditing(null);
+          resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
         }}
         className="max-w-md"
       >
         <div className="space-y-4 pr-6">
           <div className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-lg text-foreground">Novo Colaborador</h3>
+            <UserPlus className="h-5 w-5 text-indigo-650" />
+            <h3 className="font-bold text-lg text-foreground">
+              {editing ? "Editar Colaborador" : "Novo Colaborador"}
+            </h3>
           </div>
 
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-muted-foreground">Nome completo</label>
               <Input
@@ -437,29 +531,53 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Cargo / função</label>
-              <select
-                value={cargo}
-                onChange={(e) => setCargo(e.target.value as Role)}
-                className="w-full h-10 rounded-lg border border-border bg-muted/40 text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
-              >
-                <option value="PRODUCAO">Fábrica</option>
-                <option value="COMERCIAL">Comercial</option>
-                <option value="PROJETISTA">Projetista</option>
-                <option value="FINANCEIRO">Financeiro</option>
-                <option value="ADMIN">Diretoria</option>
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground">Cargo (User Role)</label>
+                <select
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value as Role)}
+                  className="w-full h-10 rounded-lg border border-border bg-card text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
+                >
+                  <option value="PRODUCAO">Fábrica</option>
+                  <option value="COMERCIAL">Comercial</option>
+                  <option value="PROJETISTA">Projetista</option>
+                  <option value="FINANCEIRO">Financeiro</option>
+                  <option value="ADMIN">Diretoria</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground">Área de Atuação</label>
+                <select
+                  value={areaAtuacao}
+                  onChange={(e) => setAreaAtuacao(e.target.value)}
+                  className="w-full h-10 rounded-lg border border-border bg-card text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
+                >
+                  <option value="">Selecione uma área...</option>
+                  <option value="Fábrica / Marcenaria">Fábrica / Marcenaria</option>
+                  <option value="Projetos 3D / Design">Projetos 3D / Design</option>
+                  <option value="Comercial / Vendas">Comercial / Vendas</option>
+                  <option value="Administrativo">Administrativo</option>
+                  <option value="Financeiro">Financeiro</option>
+                  <option value="Montagem Externa">Montagem Externa</option>
+                  <option value="Instalação e Logística">Instalação e Logística</option>
+                  <option value="Diretoria">Diretoria</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Senha provisória</label>
+              <label className="text-xs font-semibold text-muted-foreground">
+                {editing ? "Senha provisória (Deixe em branco para não alterar)" : "Senha provisória"}
+              </label>
               <Input
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={editing ? "Manter senha atual" : "Mínimo 6 caracteres"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                required={!editing}
                 minLength={6}
               />
             </div>
@@ -471,14 +589,15 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                 className="flex-1 font-semibold"
                 onClick={() => {
                   setIsCreateOpen(false);
-                  resetCreateForm(setName, setEmail, setPassword, setCargo);
+                  setEditing(null);
+                  resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao);
                 }}
                 disabled={loading}
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 font-semibold btn-metallic" disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cadastrar"}
+              <Button type="submit" className="flex-1 font-semibold btn-metallic cursor-pointer" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? "Salvar" : "Cadastrar"}
               </Button>
             </div>
           </form>

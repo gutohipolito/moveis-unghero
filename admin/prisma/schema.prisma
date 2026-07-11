@@ -36,6 +36,7 @@ model User {
   company       Company    @relation(fields: [company_id], references: [id])
   senha         String?    // Opcional pois o login social/Better Auth usa senha na tabela Account
   cargo         Role       // ADMIN, COMERCIAL, PROJETISTA, PRODUCAO, FINANCEIRO
+  areaAtuacao   String?
   
   // Relations
   sessions      Session[]

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getCachedSession } from "@/lib/session";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
@@ -6,6 +7,8 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { LiveSyncProvider } from "@/context/LiveSyncContext";
 import { getNotifications } from "@/app/actions/notifications";
 import DashboardLayoutWrapper from "@/components/DashboardLayoutWrapper";
+import DashboardHeaderSlot from "@/components/DashboardHeaderSlot";
+import HeaderSkeleton from "@/components/HeaderSkeleton";
 
 export default async function DashboardLayout({
   children,
@@ -41,6 +44,20 @@ export default async function DashboardLayout({
             cargo: user.cargo,
           }}
           companyId={companyId}
+          header={
+            <Suspense fallback={<HeaderSkeleton />}>
+              <DashboardHeaderSlot
+                user={{
+                  id: user.id,
+                  name: user.name,
+                  email: user.email,
+                  image: user.image,
+                  cargo: user.cargo,
+                }}
+                companyId={companyId}
+              />
+            </Suspense>
+          }
         >
           {children}
         </DashboardLayoutWrapper>

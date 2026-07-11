@@ -4,8 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import DashboardHeaderSlot from "@/components/DashboardHeaderSlot";
-import HeaderSkeleton from "@/components/HeaderSkeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DashboardLayoutWrapperProps {
@@ -18,12 +16,14 @@ interface DashboardLayoutWrapperProps {
     cargo?: string;
   };
   companyId: string;
+  header: React.ReactNode;
 }
 
 export default function DashboardLayoutWrapper({
   children,
   user,
   companyId,
+  header,
 }: DashboardLayoutWrapperProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -95,12 +95,7 @@ export default function DashboardLayoutWrapper({
           isCollapsed ? "md:pl-20" : "md:pl-[17.5rem] lg:pl-[19rem]"
         }`}
       >
-        <React.Suspense fallback={<HeaderSkeleton />}>
-          <DashboardHeaderSlot
-            user={user}
-            companyId={companyId}
-          />
-        </React.Suspense>
+        {header}
 
         <main className="flex-1 px-[var(--space-4)] py-[var(--space-4)] sm:px-[var(--space-5)] md:px-[var(--space-6)] md:py-[var(--space-6)] overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-[var(--space-6)]">
           <div className="w-full space-y-[var(--space-5)]">{children}</div>
