@@ -2,9 +2,10 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import SidebarNav from "@/components/SidebarNav";
 import SidebarUser from "@/components/SidebarUser";
+import { useSidebarSections } from "@/lib/useSidebarSections";
 
 interface SidebarToggleProps {
   user: {
@@ -19,6 +20,7 @@ interface SidebarToggleProps {
 export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { allCollapsed, collapseAll, expandAll } = useSidebarSections();
 
   const openMenu = useCallback(() => {
     setIsOpen(true);
@@ -73,14 +75,29 @@ export default function SidebarToggle({ user, onOpenChange }: SidebarToggleProps
                   alt="Móveis Unghero"
                   className="logo-sidebar h-9 w-auto object-contain"
                 />
-                <button
-                  type="button"
-                  onClick={closeMenu}
-                  className="mobile-drawer-close-btn"
-                  aria-label="Fechar menu"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={allCollapsed ? expandAll : collapseAll}
+                    className="mobile-drawer-close-btn"
+                    aria-label={allCollapsed ? "Abrir todos os menus" : "Fechar todos os menus"}
+                    title={allCollapsed ? "Abrir todos os menus" : "Fechar todos os menus"}
+                  >
+                    {allCollapsed ? (
+                      <ChevronsUpDown className="h-5 w-5" />
+                    ) : (
+                      <ChevronsDownUp className="h-5 w-5" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeMenu}
+                    className="mobile-drawer-close-btn"
+                    aria-label="Fechar menu"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
               <SidebarNav onNavigate={closeMenu} />

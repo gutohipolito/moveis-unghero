@@ -20,7 +20,9 @@ import {
   BarChart3,
   NotebookPen,
   Settings,
+  ChevronDown,
 } from "lucide-react";
+import { useSidebarSections } from "@/lib/useSidebarSections";
 
 export interface NavItem {
   name: string;
@@ -96,6 +98,7 @@ interface SidebarNavProps {
 
 export default function SidebarNav({ onNavigate, compact = false }: SidebarNavProps) {
   const pathname = usePathname();
+  const { isSectionCollapsed, toggleSection } = useSidebarSections();
 
   return (
     <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
@@ -103,9 +106,28 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
         const items = NAV_ITEMS.filter((i) => i.section === section);
         if (items.length === 0) return null;
 
+        // O recolhimento por seção só se aplica ao sidebar expandido.
+        const sectionCollapsed = !compact && isSectionCollapsed(section);
+
         return (
           <div key={section} className="space-y-1">
-            {!compact && <p className="sidebar-section-label px-2 mb-1.5">{section}</p>}
+            {!compact && (
+              <button
+                type="button"
+                onClick={() => toggleSection(section)}
+                className="w-full flex items-center justify-between gap-2 px-2 mb-1.5 rounded-md py-1 hover:bg-slate-700/10 transition-colors cursor-pointer group"
+                aria-expanded={!sectionCollapsed}
+                title={sectionCollapsed ? `Mostrar ${section}` : `Ocultar ${section}`}
+              >
+                <span className="sidebar-section-label">{section}</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 group-hover:text-slate-500 ${
+                    sectionCollapsed ? "-rotate-90" : ""
+                  }`}
+                />
+              </button>
+            )}
+            {!sectionCollapsed && (
             <div className="space-y-0.5">
               {items.map((item) => {
                 const isActive = isNavItemActive(pathname, item.href);
@@ -131,6 +153,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                 );
               })}
             </div>
+            )}
             {compact && <div className="border-b border-slate-700/20 my-2 mx-2" />}
           </div>
         );

@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { useSidebarSections } from "@/lib/useSidebarSections";
 
 interface DashboardLayoutWrapperProps {
   children: React.ReactNode;
@@ -27,6 +28,7 @@ export default function DashboardLayoutWrapper({
 }: DashboardLayoutWrapperProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { allCollapsed, collapseAll, expandAll } = useSidebarSections();
 
   // Carrega a preferência de colapso do localStorage no client-side
   useEffect(() => {
@@ -77,13 +79,27 @@ export default function DashboardLayoutWrapper({
                     className="logo-sidebar h-9 w-auto object-contain transition-all"
                   />
                 </Link>
-                <button
-                  onClick={handleToggle}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
-                  title="Recolher menu lateral"
-                >
-                  <ChevronLeft className="h-4.5 w-4.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={allCollapsed ? expandAll : collapseAll}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
+                    title={allCollapsed ? "Abrir todos os menus" : "Fechar todos os menus"}
+                    aria-label={allCollapsed ? "Abrir todos os menus" : "Fechar todos os menus"}
+                  >
+                    {allCollapsed ? (
+                      <ChevronsUpDown className="h-4.5 w-4.5" />
+                    ) : (
+                      <ChevronsDownUp className="h-4.5 w-4.5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleToggle}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
+                    title="Recolher menu lateral"
+                  >
+                    <ChevronLeft className="h-4.5 w-4.5" />
+                  </button>
+                </div>
               </>
             )}
           </div>
