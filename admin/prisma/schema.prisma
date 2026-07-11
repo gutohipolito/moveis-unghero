@@ -37,6 +37,7 @@ model User {
   senha         String?    // Opcional pois o login social/Better Auth usa senha na tabela Account
   cargo         Role       // ADMIN, COMERCIAL, PROJETISTA, PRODUCAO, FINANCEIRO
   areaAtuacao   String?
+  preferences   Json?      // Preferências de UI por usuário (ex.: itens por página nas listas)
   
   // Relations
   sessions      Session[]

@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import SensitiveToggle from "@/components/SensitiveToggle";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Users, 
   Plus, 
@@ -43,6 +44,10 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
+import { Pagination } from "@/components/ui/pagination";
+import { updateUserPreference } from "@/app/actions/preferences";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
 interface ProjectSummary {
   id: string;
@@ -76,6 +81,7 @@ interface Client {
 interface ClientesClientProps {
   initialClients: Client[];
   companyId: string;
+  initialPageSize?: number;
 }
 
 const ORIGINS: Origin[] = ["SITE", "INSTAGRAM", "INDICACAO", "GOOGLE", "WHATSAPP", "FACEBOOK", "FORMULARIO"];
@@ -99,9 +105,10 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
   INATIVO: { bg: "bg-rose-500/10", text: "text-rose-600" }
 };
 
-export default function ClientesClient({ initialClients, companyId }: ClientesClientProps) {
+export default function ClientesClient({ initialClients, companyId, initialPageSize = 20 }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const { sensitiveHidden } = usePrivacy();
+  const router = useRouter();
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
@@ -109,6 +116,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   const [filterCidade, setFilterCidade] = useState<string>("ALL");
   const [filterBairro, setFilterBairro] = useState<string>("ALL");
   const [activeTipoTab, setActiveTipoTab] = useState<"todos" | "PF" | "PJ">("todos");
+
+  // Paginação (pageSize salvo na conta do usuário)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
   
   // Estados para Modais
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -255,6 +266,28 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       activeTipoTab === "todos" || doc.tipo_pessoa === activeTipoTab;
     return matchesSearch && matchesOrigin && matchesCidade && matchesBairro && matchesTipo;
   });
+
+  // Paginação: volta para a página 1 quando filtros/busca mudam
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterOrigin, filterCidade, filterBairro, activeTipoTab]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredClients.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedClients = filteredClients.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+    // Persiste na conta do usuário (não bloqueia a UI)
+    void updateUserPreference("clientesPageSize", size);
+  };
+
+  // Abre a tela do cliente ao clicar na linha (exceto em áreas interativas)
+  const openClient = (id: string) => router.push(`/clientes/${id}`);
 
   // Salvar Novo Cliente
   const handleCreateClient = async (e: React.FormEvent) => {
@@ -484,7 +517,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   // Telefone: oculto por padrão; quando liberado, vira link do WhatsApp com saudação
   const renderPhone = (client: Client) => {
     if (sensitiveHidden) {
-      return <span className="tracking-wide select-none">{maskPhone(client.telefone)}</span>;
+      return <span onClick={(e) => e.stopPropagation()} className="tracking-wide select-none">{maskPhone(client.telefone)}</span>;
     }
     const url = buildWhatsAppUrl(client.telefone, buildGreeting(client.nome));
     const display = formatPhoneDisplay(client.telefone);
@@ -505,7 +538,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
   // E-mail: oculto por padrão; quando liberado, vira link mailto
   const renderEmail = (client: Client) => {
     if (sensitiveHidden) {
-      return <span className="select-none">{maskEmail(client.email)}</span>;
+      return <span onClick={(e) => e.stopPropagation()} className="select-none">{maskEmail(client.email)}</span>;
     }
     return (
       <a
@@ -645,7 +678,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
       ) : (
         <>
           <div className="md:hidden space-y-3">
-            {filteredClients.map((client) => {
+            {pagedClients.map((client) => {
               const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
               const statBadge = STATUS_BADGES[client.status] || { bg: "bg-muted", text: "text-muted-foreground" };
               const projectList = client.projects || [];
@@ -655,16 +688,17 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               return (
                 <article
                   key={client.id}
-                  className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm transition-all ${
+                  onClick={() => openClient(client.id)}
+                  className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm transition-all cursor-pointer select-none hover:border-primary/40 hover:shadow-md active:scale-[0.998] ${
                     docInfo.tipo_pessoa === "PJ" ? "border-indigo-400/40 shadow-xs" : "border-border"
                   }`}
                 >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/clientes/${client.id}`} className="font-semibold text-foreground hover:text-primary truncate">
+                          <span className="font-semibold text-foreground truncate">
                             {client.nome}
-                          </Link>
+                          </span>
                           <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                             {docInfo.tipo_pessoa}
                           </span>
@@ -706,6 +740,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           <Link
                             key={p.id}
                             href={`/projects/${p.id}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="badge-meta px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20"
                           >
                             {p.status_geral}
@@ -714,7 +749,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => openProjectModal(client)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10 text-emerald-700 text-sm font-medium cursor-pointer"
@@ -756,14 +791,14 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
-              {filteredClients.map((client) => {
+              {pagedClients.map((client) => {
                   const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-slate-100", text: "text-slate-600" };
                   const statBadge = STATUS_BADGES[client.status] || { bg: "bg-slate-100", text: "text-slate-600" };
                   const projectList = client.projects || [];
                   const location = resolveClientLocation(client);
 
                   return (
-                    <tr key={client.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={client.id} onClick={() => openClient(client.id)} className="hover:bg-primary/5 transition-colors cursor-pointer select-none">
                       {/* Cliente */}
                       <td className={`p-4 ${resolveClientDocument(client).tipo_pessoa === "PJ" ? "border-l-4 border-l-indigo-500/80 bg-indigo-50/10" : ""}`}>
                         {(() => {
@@ -771,9 +806,9 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           return (
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <Link href={`/clientes/${client.id}`} className="text-sm font-bold text-slate-900 hover:underline hover:text-primary transition-all">
+                                <span className="text-sm font-bold text-slate-900 hover:text-primary transition-all">
                                   {client.nome}
-                                </Link>
+                                </span>
                                 <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
                                   {docInfo.tipo_pessoa}
                                 </span>
@@ -832,6 +867,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                               <Link 
                                 key={p.id}
                                 href={`/projects/${p.id}`}
+                                onClick={(e) => e.stopPropagation()}
                                 className="text-[10px] bg-primary/5 hover:bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1 font-extrabold transition-all whitespace-nowrap"
                               >
                                 {p.status_geral} <ExternalLink className="h-2 w-2" />
@@ -843,7 +879,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
                       {/* Ações */}
                       <td className="p-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => openProjectModal(client)}
                             className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-all cursor-pointer"
@@ -874,6 +910,16 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
           </table>
             </div>
             </Card>
+
+            <Pagination
+              page={currentPage}
+              pageSize={pageSize}
+              total={filteredClients.length}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+              itemLabel="clientes"
+            />
         </>
       )}
 
