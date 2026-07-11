@@ -72,10 +72,12 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
   const toggleExpand = (id: string) => {
-    setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   React.useEffect(() => {
@@ -509,7 +511,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       onClick={() => toggleExpand(p.id)}
                       className="w-full py-1.5 flex items-center justify-center gap-1.5 text-[9px] font-black text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-dashed border-slate-200 hover:border-slate-350 rounded-xl transition-all uppercase tracking-widest cursor-pointer mt-1"
                     >
-                      {expandedIds[p.id] ? (
+                      {expandedIds.includes(p.id) ? (
                         <>
                           <ChevronUp className="h-3 w-3" />
                           <span>Ocultar Detalhes</span>
@@ -522,7 +524,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       )}
                     </button>
 
-                    {expandedIds[p.id] && (
+                    {expandedIds.includes(p.id) && (
                       <>
                         {/* Observações */}
                         {p.observacoes && (
