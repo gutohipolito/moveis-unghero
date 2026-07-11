@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { getAuthContext } from "@/lib/auth-guard";
 
@@ -46,7 +47,7 @@ export async function updateUserPreference(
 
     await prisma.user.update({
       where: { id: auth.userId },
-      data: { preferences: next },
+      data: { preferences: next as Prisma.InputJsonValue },
     });
     return { success: true };
   } catch (error) {
