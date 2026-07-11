@@ -33,6 +33,7 @@ import {
   Send,
   ShieldCheck,
   ImageIcon,
+  ChevronDown,
 } from "lucide-react";
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
@@ -221,55 +222,75 @@ export default function ClienteDetailsClient({
         </div>
       </Card>
 
-      {/* ─── SELETOR DE ABAS INTERNAS ─── */}
-      {/* Mobile: grade com todas as abas visíveis/clicáveis. Desktop: faixa horizontal. */}
-      <div className="sm:overflow-x-auto sm:-mx-1 sm:px-1">
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl sm:flex sm:w-max sm:min-w-full md:w-fit">
-        <button
-          type="button"
-          onClick={() => setActiveTab("overview")}
-          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          <User className="h-4 w-4 shrink-0" /> Visão Geral
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("projects")}
-          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          <Layers className="h-4 w-4 shrink-0" /> Projetos
-          <span className="text-[10px] opacity-70 tabular-nums">({projects.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("documents")}
-          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "documents" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
-          <span className="text-[10px] opacity-70 tabular-nums">({attachments.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("finance")}
-          className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("timeline")}
-          className={`col-span-2 sm:col-span-1 flex items-center justify-center sm:justify-start gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-        >
-          <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
-        </button>
-        </div>
-      </div>
-
-      {/* ─── CONTEÚDO DAS ABAS ─── */}
+      {/* ─── CONTEÚDO ─── */}
+      {/* Mobile: cards de informações/notas primeiro, depois o seletor de abas e o conteúdo.
+          Desktop: seletor no topo (full-width), cards à esquerda e conteúdo à direita. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        
+
+        {/* ─── SELETOR DE ABAS ─── */}
+        <div className="order-2 lg:order-1 lg:col-span-3">
+          {/* Mobile: dropdown de seção */}
+          <div className="relative sm:hidden">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as "overview" | "projects" | "finance" | "timeline" | "documents")}
+              className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+            >
+              <option value="overview">Visão Geral</option>
+              <option value="projects">Projetos ({projects.length})</option>
+              <option value="documents">Fotos &amp; Docs ({attachments.length})</option>
+              <option value="finance">Financeiro</option>
+              <option value="timeline">Linha do Tempo</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+
+          {/* Desktop/tablet: faixa de abas */}
+          <div className="hidden sm:block sm:overflow-x-auto sm:-mx-1 sm:px-1">
+            <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-max min-w-full md:w-fit">
+              <button
+                type="button"
+                onClick={() => setActiveTab("overview")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <User className="h-4 w-4 shrink-0" /> Visão Geral
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("projects")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Layers className="h-4 w-4 shrink-0" /> Projetos
+                <span className="text-[10px] opacity-70 tabular-nums">({projects.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("documents")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "documents" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
+                <span className="text-[10px] opacity-70 tabular-nums">({attachments.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("finance")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("timeline")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Lado Esquerdo: Cards Cadastrais (presente em quase todas as telas) */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="order-1 lg:order-2 lg:col-span-1 space-y-6">
           <Card className="p-5 glass-card space-y-4">
             <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Informações de Contato</h3>
             <div className="space-y-3.5">
@@ -322,7 +343,7 @@ export default function ClienteDetailsClient({
         </div>
 
         {/* Lado Direito: Conteúdo Dinâmico */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="order-3 lg:col-span-2 space-y-6">
 
           {/* ABA: VISÃO GERAL — resumo rápido */}
           {activeTab === "overview" && (
