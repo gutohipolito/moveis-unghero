@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import PrivacyToggle from "@/components/PrivacyToggle";
+import SensitiveToggle from "@/components/SensitiveToggle";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,10 @@ import {
 import { getClientDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { resolveClientDocument } from "@/lib/clientDocument";
+import { usePrivacy } from "@/context/PrivacyContext";
+import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
+import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
+import { formatPhoneDisplay } from "@/lib/phone";
 import { 
   ArrowLeft, 
   Phone, 
@@ -137,10 +141,13 @@ export default function ClienteDetailsClient({
   });
 
   const docInfo = resolveClientDocument(client);
+  const { sensitiveHidden } = usePrivacy();
 
-  // Link formatado para WhatsApp
-  const numLimpo = client.telefone.replace(/\D/g, "");
-  const whatsappUrl = `https://wa.me/55${numLimpo}?text=Olá%20${encodeURIComponent(client.nome)},%20tudo%20bem?%20Gostaríamos%20de%20falar%20sobre%20o%20seu%20projeto%20de%20móveis%20planejados...`;
+  // Link formatado para WhatsApp com saudação
+  const greeting = `Olá ${getFirstName(client.nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
+  const whatsappUrl =
+    buildWhatsAppUrl(client.telefone, greeting) ||
+    `https://wa.me/?text=${encodeURIComponent(greeting)}`;
 
   // Adicionar Anotação na Timeline
   const handleAddNote = async (e: React.FormEvent) => {
@@ -182,15 +189,15 @@ export default function ClienteDetailsClient({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
-              <PrivacyToggle />
+              <SensitiveToggle />
               <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
                 {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
               </span>
             </div>
 
             {docInfo.documento && (
-              <span className="text-xs font-semibold text-slate-500 block mt-0.5 privacy-value">
-                {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {docInfo.documento}
+              <span className="text-xs font-semibold text-slate-500 block mt-0.5 select-none">
+                {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
               </span>
             )}
 
@@ -269,7 +276,11 @@ export default function ClienteDetailsClient({
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
-                  <a href={`tel:${numLimpo}`} className="text-sm font-semibold text-foreground hover:underline">{client.telefone}</a>
+                  {sensitiveHidden ? (
+                    <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
+                  ) : (
+                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
+                  )}
                 </div>
               </div>
 
@@ -279,7 +290,11 @@ export default function ClienteDetailsClient({
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
-                  <a href={`mailto:${client.email}`} className="text-sm font-semibold text-foreground hover:underline break-all">{client.email}</a>
+                  {sensitiveHidden ? (
+                    <span className="text-sm font-semibold text-foreground select-none break-all">{maskEmail(client.email)}</span>
+                  ) : (
+                    <a href={`mailto:${client.email}`} className="text-sm font-semibold text-primary hover:underline break-all">{client.email}</a>
+                  )}
                 </div>
               </div>
 

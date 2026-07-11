@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import PrivacyToggle from "@/components/PrivacyToggle";
+import SensitiveToggle from "@/components/SensitiveToggle";
 import Link from "next/link";
 import { 
   Users, 
@@ -40,6 +40,9 @@ import { formatPhoneInput, formatPhoneDisplay, PHONE_PLACEHOLDER } from "@/lib/p
 import { resolveClientLocation } from "@/lib/clientLocation";
 import { getClientsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { usePrivacy } from "@/context/PrivacyContext";
+import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
+import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 
 interface ProjectSummary {
   id: string;
@@ -98,6 +101,7 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
 
 export default function ClientesClient({ initialClients, companyId }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const { sensitiveHidden } = usePrivacy();
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
@@ -473,6 +477,47 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
     setCreateStep("form");
   };
 
+  // Mensagem de saudação para abrir a conversa no WhatsApp
+  const buildGreeting = (nome: string) =>
+    `Olá ${getFirstName(nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
+
+  // Telefone: oculto por padrão; quando liberado, vira link do WhatsApp com saudação
+  const renderPhone = (client: Client) => {
+    if (sensitiveHidden) {
+      return <span className="tracking-wide select-none">{maskPhone(client.telefone)}</span>;
+    }
+    const url = buildWhatsAppUrl(client.telefone, buildGreeting(client.nome));
+    const display = formatPhoneDisplay(client.telefone);
+    if (!url) return <span>{display}</span>;
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="text-emerald-600 hover:text-emerald-700 hover:underline"
+      >
+        {display}
+      </a>
+    );
+  };
+
+  // E-mail: oculto por padrão; quando liberado, vira link mailto
+  const renderEmail = (client: Client) => {
+    if (sensitiveHidden) {
+      return <span className="select-none">{maskEmail(client.email)}</span>;
+    }
+    return (
+      <a
+        href={`mailto:${client.email}`}
+        onClick={(e) => e.stopPropagation()}
+        className="text-primary hover:underline"
+      >
+        {client.email}
+      </a>
+    );
+  };
+
   return (
     <div className="space-y-6">
       
@@ -486,7 +531,7 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="page-title">Clientes</h1>
-                <PrivacyToggle />
+                <SensitiveToggle />
               </div>
               <p className="page-subtitle">
                 Gerencie sua base de clientes — Pessoas Físicas e Jurídicas.
@@ -625,8 +670,8 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                           </span>
                         </div>
                         {docInfo.documento && (
-                          <p className="detail-text mt-0.5">
-                            {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {docInfo.documento}
+                          <p className="detail-text mt-0.5 select-none">
+                            {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                           </p>
                         )}
                       </div>
@@ -637,10 +682,10 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
 
                     <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
-                        <Phone className="h-3.5 w-3.5" /> {formatPhoneDisplay(client.telefone)}
+                        <Phone className="h-3.5 w-3.5" /> {renderPhone(client)}
                       </span>
                       <span className="inline-flex items-center gap-1 min-w-0 truncate">
-                        <Mail className="h-3.5 w-3.5 shrink-0" /> {client.email}
+                        <Mail className="h-3.5 w-3.5 shrink-0" /> {renderEmail(client)}
                       </span>
                     </div>
 
@@ -734,16 +779,16 @@ export default function ClientesClient({ initialClients, companyId }: ClientesCl
                                 </span>
                               </div>
                               {docInfo.documento && (
-                                <span className="text-[11px] font-bold text-slate-600 mt-0.5">
-                                  {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {docInfo.documento}
+                                <span className="text-[11px] font-bold text-slate-600 mt-0.5 select-none">
+                                  {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                                 </span>
                               )}
                               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                  <Phone className="h-3 w-3 text-slate-500" /> {formatPhoneDisplay(client.telefone)}
+                                  <Phone className="h-3 w-3 text-slate-500" /> {renderPhone(client)}
                                 </span>
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                  <Mail className="h-3 w-3 text-slate-500" /> {client.email}
+                                  <Mail className="h-3 w-3 text-slate-500" /> {renderEmail(client)}
                                 </span>
                               </div>
                             </div>
