@@ -258,6 +258,15 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     return d.getTime() < today.getTime();
   };
 
+  // Dias restantes até a validade (0 = vence hoje, negativo = vencido)
+  const getDaysUntilExpiry = (dateInput: Date | string) => {
+    const d = new Date(dateInput);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
   // Filtragem
   const filteredQuotes = quotes.filter(q => {
     const matchesSearch = 
@@ -489,8 +498,25 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
               ) : (
                 sortedQuotes.map((q) => {
                   const expired = isExpired(q.validade);
+                  const daysLeft = getDaysUntilExpiry(q.validade);
+                  const isApproved = !!q.aprovado_em;
+                  // Alerta de validade apenas para orçamentos ainda em aberto
+                  const rowExpired = expired && !isApproved;
+                  const nearDanger = !isApproved && !expired && daysLeft <= 3;
+                  const nearWarning = !isApproved && !expired && daysLeft > 3 && daysLeft <= 7;
+
+                  let dateClass = "text-slate-600";
+                  if (rowExpired) dateClass = "text-rose-700 font-bold";
+                  else if (nearDanger) dateClass = "text-rose-600 font-bold";
+                  else if (nearWarning) dateClass = "text-amber-600 font-bold";
+
                   return (
-                    <tr key={q.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr
+                      key={q.id}
+                      className={`transition-colors ${
+                        rowExpired ? "bg-rose-500/10 hover:bg-rose-500/15" : "hover:bg-slate-50/50"
+                      }`}
+                    >
                       <td className="py-4 px-4 text-sm font-medium text-slate-700">
                         <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-xs">
                           ORC-{q.id.substring(0, 5).toUpperCase()}
@@ -505,8 +531,20 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                       <td className="py-4 px-4 text-sm text-slate-600">
                         {q.project.client.bairro || "Não informado"}
                       </td>
-                      <td className="py-4 px-4 text-sm text-slate-600">
-                        {formatDate(q.validade)}
+                      <td className={`py-4 px-4 text-sm ${dateClass}`}>
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatDate(q.validade)}
+                          {nearWarning && (
+                            <span className="text-[11px] font-semibold text-amber-600">
+                              ({daysLeft}d)
+                            </span>
+                          )}
+                          {nearDanger && (
+                            <span className="text-[11px] font-semibold text-rose-600">
+                              ({daysLeft <= 0 ? "hoje" : `${daysLeft}d`})
+                            </span>
+                          )}
+                        </span>
                       </td>
                       <td className="py-4 px-4 text-sm">
                         {q.aprovado_em ? (
