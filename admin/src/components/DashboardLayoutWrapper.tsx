@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import { ChevronLeft, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 
 interface DashboardLayoutWrapperProps {
@@ -63,13 +63,23 @@ export default function DashboardLayoutWrapper({
             }`}
           >
             {isCollapsed ? (
-              <button
-                onClick={handleToggle}
-                className="text-xs font-black text-indigo-650 bg-indigo-50 border border-indigo-100 h-10 w-10 flex items-center justify-center rounded-xl shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                title="Expandir menu lateral"
-              >
-                MU
-              </button>
+              <div className="flex flex-col items-center gap-1.5">
+                <Link
+                  href="/crm"
+                  aria-label="Móveis Unghero"
+                  className="text-[11px] font-black text-indigo-650 bg-indigo-50 border border-indigo-100 h-8 w-8 flex items-center justify-center rounded-lg shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  MU
+                </Link>
+                <button
+                  onClick={handleToggle}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
+                  title="Expandir menu lateral"
+                  aria-label="Expandir menu lateral"
+                >
+                  <ChevronRight className="h-4.5 w-4.5" />
+                </button>
+              </div>
             ) : (
               <>
                 <Link href="/crm" aria-label="Móveis Unghero" className="flex items-center">
