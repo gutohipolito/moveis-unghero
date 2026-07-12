@@ -241,8 +241,11 @@ body {
 }
 
 .app-sidebar {
-  background: hsl(var(--sidebar));
-  border-right: 1px solid hsl(var(--sidebar-border));
+  /* Fundo preto com gradiente no estilo do favicon (charcoal levemente azulado -> preto) */
+  background:
+    radial-gradient(115% 55% at 50% 0%, hsl(220 22% 18% / 0.6), transparent 70%),
+    linear-gradient(180deg, hsl(222 24% 10%) 0%, hsl(224 28% 6%) 55%, hsl(226 30% 4%) 100%);
+  border-right: 1px solid hsl(224 20% 14%);
   color: hsl(var(--sidebar-foreground));
 }
 
@@ -440,7 +443,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: hsl(var(--sidebar));
+  background:
+    radial-gradient(115% 45% at 50% 0%, hsl(220 22% 18% / 0.6), transparent 70%),
+    linear-gradient(180deg, hsl(222 24% 10%) 0%, hsl(224 28% 6%) 55%, hsl(226 30% 4%) 100%);
   transform: translateX(-100%);
   transition: transform var(--motion-base) var(--ease-out);
   color: hsl(var(--sidebar-foreground));
