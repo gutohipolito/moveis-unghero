@@ -4,6 +4,7 @@ import {
   buildInvoiceNotifications,
   buildSlaNotifications,
   buildBriefingNotifications,
+  buildSupplyTicketNotifications,
   mergeNotifications,
   type AppNotification,
 } from "@/lib/notifications";
@@ -11,11 +12,33 @@ import { buildInstallmentDueNotifications } from "@/lib/installmentDueAlerts";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
 
 export async function fetchCompanyNotifications(
-  companyId: string
+  companyId: string,
+  viewerRole?: string
 ): Promise<AppNotification[]> {
   if (isDatabaseOffline()) {
     return [];
   }
+
+  // Chamados de insumos são direcionados à Diretoria (ADMIN).
+  const supplyTickets =
+    viewerRole === "ADMIN"
+      ? await prisma.supplyTicket
+          .findMany({
+            where: {
+              company_id: companyId,
+              status: { in: ["ABERTO", "EM_ANDAMENTO"] },
+            },
+            select: {
+              id: true,
+              titulo: true,
+              prioridade: true,
+              createdAt: true,
+              requester: { select: { name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+          })
+          .catch(() => [])
+      : [];
 
   const [projects, slaAlerts, invoicePending, briefings, pendingInstallments] =
     await Promise.all([
@@ -103,11 +126,22 @@ export async function fetchCompanyNotifications(
     }))
   );
 
+  const supplyNotifications = buildSupplyTicketNotifications(
+    supplyTickets.map((t) => ({
+      id: t.id,
+      titulo: t.titulo,
+      prioridade: t.prioridade,
+      requesterName: t.requester?.name ?? "Colaborador",
+      createdAt: t.createdAt,
+    }))
+  );
+
   return mergeNotifications(
     followUp,
     slaNotifications,
     invoiceNotifications,
     briefingNotifications,
-    installmentNotifications
+    installmentNotifications,
+    supplyNotifications
   );
 }

@@ -986,6 +986,10 @@ body {
   background: hsl(199 55% 42%);
 }
 
+.in-app-toast[data-accent="supply"] .in-app-toast-icon-badge {
+  background: hsl(28 80% 48%);
+}
+
 .in-app-toast[data-accent="follow_up"][data-priority="high"] {
   box-shadow:
     0 0 0 1px hsl(0 72% 46% / 0.14),

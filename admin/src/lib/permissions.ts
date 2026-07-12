@@ -20,6 +20,7 @@ export const CONFIGURABLE_MODULES: ModuleDef[] = [
   { key: "parceiros", label: "Projetistas e Arquitetos", section: "Comercial" },
   { key: "agenda", label: "Agenda", section: "Produção" },
   { key: "factory", label: "Chão de Fábrica e Portal", section: "Produção" },
+  { key: "chamados", label: "Chamados (Insumos)", section: "Produção" },
   { key: "estoque", label: "Estoque e Fornecedores", section: "Logística" },
   { key: "logistica", label: "Logística e Entrega", section: "Logística" },
   { key: "financeiro", label: "Financeiro", section: "Administração" },

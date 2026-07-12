@@ -16,6 +16,7 @@ model Company {
   email    String
   permissions Json?  // Permissões de acesso por cargo (mapa cargo -> módulos permitidos)
   users    User[]
+  supplyTickets SupplyTicket[]
   clients  Client[]
   catalogGroups CatalogGroup[]
   professionalPartners ProfessionalPartner[]
@@ -52,6 +53,8 @@ model User {
   operatorReminders OperatorReminder[]
   clientAttachments ClientAttachment[] @relation("ClientAttachmentUploader")
   pushSubscriptions PushSubscription[]
+  supplyTicketsRequested SupplyTicket[] @relation("SupplyTicketRequester")
+  supplyTicketsResolved  SupplyTicket[] @relation("SupplyTicketResolver")
 }
 
 enum Role {
@@ -203,6 +206,7 @@ model Project {
   slaState              ProjectSlaState?
   briefing              LeadBriefing?
   attachments           ClientAttachment[] @relation("ProjectAttachments")
+  supplyTickets         SupplyTicket[]
 }
 
 enum ProjectStatus {
@@ -327,6 +331,41 @@ model ClientAttachment {
   uploaded_by    User?                @relation("ClientAttachmentUploader", fields: [uploaded_by_id], references: [id])
 
   @@index([project_id])
+}
+
+enum SupplyTicketStatus {
+  ABERTO
+  EM_ANDAMENTO
+  RESOLVIDO
+  CANCELADO
+}
+
+enum SupplyTicketPriority {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+model SupplyTicket {
+  id           String               @id @default(uuid())
+  company_id   String
+  company      Company              @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  titulo       String
+  descricao    String
+  status       SupplyTicketStatus   @default(ABERTO)
+  prioridade   SupplyTicketPriority @default(MEDIA)
+  project_id   String?
+  project      Project?             @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  requested_by String
+  requester    User                 @relation("SupplyTicketRequester", fields: [requested_by], references: [id])
+  resolved_by  String?
+  resolver     User?                @relation("SupplyTicketResolver", fields: [resolved_by], references: [id])
+  resolucao    String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  resolvedAt   DateTime?
+
+  @@index([company_id, status])
 }
 
 model Task {

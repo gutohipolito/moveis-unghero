@@ -7,6 +7,7 @@ import {
   PhoneCall,
   Receipt,
   Wallet,
+  PackageOpen,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const TOAST_ICONS: Partial<Record<NotificationType, LucideIcon>> = {
   sla_due: Clock,
   invoice_pending: Receipt,
   installment_due: Wallet,
+  supply_ticket: PackageOpen,
 };
 
 function formatTimeAgo(iso: string): string {

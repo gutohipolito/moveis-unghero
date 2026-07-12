@@ -15,6 +15,7 @@ import {
   ClipboardList,
   BookMarked,
   PenTool,
+  PackageOpen,
   Star,
   BarChart3,
   NotebookPen,
@@ -59,6 +60,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   { name: "Agenda", href: "/agenda", icon: Calendar, section: "Produção" },
   { name: "Chão de Fábrica", shortName: "Fábrica", href: "/factory", icon: Layers, section: "Produção" },
+  { name: "Chamados", href: "/chamados", icon: PackageOpen, section: "Produção" },
 
   { name: "Estoque e Fornecedores", href: "/estoque", icon: Package, section: "Logística" },
   { name: "Logística e Entrega", href: "/logistica", icon: Truck, section: "Logística" },

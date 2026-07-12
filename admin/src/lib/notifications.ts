@@ -20,6 +20,7 @@ export type NotificationType =
   | "invoice_pending"
   | "new_briefing"
   | "installment_due"
+  | "supply_ticket"
   | "info";
 export type NotificationPriority = "normal" | "high";
 
@@ -165,6 +166,26 @@ export function buildBriefingNotifications(
   }));
 }
 
+export function buildSupplyTicketNotifications(
+  tickets: {
+    id: string;
+    titulo: string;
+    prioridade: "BAIXA" | "MEDIA" | "ALTA";
+    requesterName: string;
+    createdAt: Date;
+  }[]
+): AppNotification[] {
+  return tickets.map((t) => ({
+    id: `supply-${t.id}`,
+    type: "supply_ticket" as const,
+    priority: t.prioridade === "ALTA" ? ("high" as const) : ("normal" as const),
+    title: t.prioridade === "ALTA" ? "Chamado de insumo urgente" : "Chamado de insumo",
+    message: `${t.requesterName} solicitou: ${t.titulo}`,
+    href: `/chamados?ticket=${t.id}`,
+    createdAt: t.createdAt.toISOString(),
+  }));
+}
+
 /** Alertas visuais no painel (toast estilo macOS). */
 export function isInAppToastNotification(notification: AppNotification): boolean {
   switch (notification.type) {
@@ -174,6 +195,8 @@ export function isInAppToastNotification(notification: AppNotification): boolean
       return true;
     case "installment_due":
       return true;
+    case "supply_ticket":
+      return true;
     case "follow_up":
       return notification.priority === "high";
     default:
@@ -181,7 +204,7 @@ export function isInAppToastNotification(notification: AppNotification): boolean
   }
 }
 
-export type InAppToastAccent = "briefing" | "follow_up" | "sla" | "invoice" | "payment";
+export type InAppToastAccent = "briefing" | "follow_up" | "sla" | "invoice" | "payment" | "supply";
 
 export function getInAppToastMeta(notification: AppNotification): {
   actionLabel: string;
@@ -198,6 +221,8 @@ export function getInAppToastMeta(notification: AppNotification): {
       return { actionLabel: "Emitir NF", accent: "invoice" };
     case "installment_due":
       return { actionLabel: "Ver financeiro", accent: "payment" };
+    case "supply_ticket":
+      return { actionLabel: "Ver chamado", accent: "supply" };
     default:
       return { actionLabel: "Abrir", accent: "briefing" };
   }

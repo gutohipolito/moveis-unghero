@@ -26,7 +26,7 @@ export async function getNotifications(companyId: string): Promise<{
   }
 
   try {
-    const notifications = await fetchCompanyNotifications(companyId);
+    const notifications = await fetchCompanyNotifications(companyId, auth.cargo);
     return { success: true, notifications };
   } catch (error) {
     console.error("Erro ao buscar notificações:", error);
