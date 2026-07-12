@@ -13,7 +13,6 @@ import {
   Package,
   Truck,
   ClipboardList,
-  Clock,
   BookMarked,
   PenTool,
   Star,
@@ -60,7 +59,6 @@ export const NAV_ITEMS: NavItem[] = [
 
   { name: "Agenda", href: "/agenda", icon: Calendar, section: "Produção" },
   { name: "Chão de Fábrica", shortName: "Fábrica", href: "/factory", icon: Layers, section: "Produção" },
-  { name: "Portal do Colaborador", href: "/factory/portal", icon: Clock, section: "Produção" },
 
   { name: "Estoque e Fornecedores", href: "/estoque", icon: Package, section: "Logística" },
   { name: "Logística e Entrega", href: "/logistica", icon: Truck, section: "Logística" },
