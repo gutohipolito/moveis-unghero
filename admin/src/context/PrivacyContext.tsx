@@ -27,7 +27,9 @@ export function PrivacyProvider({ children }: { children: React.ReactNode }) {
 
   // Carrega estado inicial do localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("unghero_privacy_mode");
+    // Chave versionada: o padrão "oculto" passa a valer mesmo para quem
+    // tinha um valor antigo salvo (unghero_privacy_mode).
+    const stored = localStorage.getItem("unghero_privacy_v2");
     // Só fica visível se o operador tiver liberado explicitamente ("false")
     const active = stored !== "false";
     setPrivacyMode(active);
@@ -44,7 +46,7 @@ export function PrivacyProvider({ children }: { children: React.ReactNode }) {
   const togglePrivacy = () => {
     setPrivacyMode((prev) => {
       const nextValue = !prev;
-      localStorage.setItem("unghero_privacy_mode", String(nextValue));
+      localStorage.setItem("unghero_privacy_v2", String(nextValue));
       if (nextValue) {
         document.body.classList.add("privacy-active");
       } else {

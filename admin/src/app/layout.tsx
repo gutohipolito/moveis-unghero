@@ -39,7 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-gradient-premium text-foreground selection:bg-primary/25">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-gradient-premium text-foreground selection:bg-primary/25"
+      >
         <PwaRegister />
         {children}
       </body>
