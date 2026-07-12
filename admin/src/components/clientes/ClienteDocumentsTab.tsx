@@ -16,6 +16,7 @@ import {
   type ClientAttachmentDTO,
   formatAttachmentSize,
   isImageMime,
+  CLIENT_ATTACHMENT_MAX_BYTES,
 } from "@/lib/clientAttachments";
 import { labelProjectStatus } from "@/lib/navLabels";
 import ClienteCameraModal from "@/components/clientes/ClienteCameraModal";
@@ -284,6 +285,11 @@ export default function ClienteDocumentsTab({
             Tirar foto
           </Button>
         </div>
+
+        <p className="text-[11px] text-muted-foreground">
+          Formatos aceitos: <span className="font-semibold text-foreground">JPG, PNG, WEBP, HEIC/HEIF e PDF</span>{" "}
+          · até <span className="font-semibold text-foreground">{Math.round(CLIENT_ATTACHMENT_MAX_BYTES / (1024 * 1024))} MB</span> por arquivo.
+        </p>
 
         <input
           ref={fileInputRef}
