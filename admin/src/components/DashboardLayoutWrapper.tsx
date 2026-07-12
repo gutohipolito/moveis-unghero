@@ -58,8 +58,8 @@ export default function DashboardLayoutWrapper({
         <div className="flex flex-col flex-1 min-h-0 relative">
           {/* Cabeçalho do Sidebar com Logo / Símbolo e Toggle Integrado */}
           <div
-            className={`flex items-center h-16 shrink-0 transition-all duration-300 border-b border-slate-100 ${
-              isCollapsed ? "px-4 justify-center" : "px-5 justify-between"
+            className={`flex items-center shrink-0 transition-all duration-300 ${
+              isCollapsed ? "px-4 pt-5 pb-3 justify-center" : "px-5 pt-5 pb-3 h-auto justify-between"
             }`}
           >
             {isCollapsed ? (
