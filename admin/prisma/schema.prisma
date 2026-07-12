@@ -18,6 +18,7 @@ model Company {
   users    User[]
   supplyTickets SupplyTicket[]
   quoteItemPresets QuoteItemPreset[]
+  quoteDetailPresets QuoteDetailPreset[]
   clients  Client[]
   catalogGroups CatalogGroup[]
   professionalPartners ProfessionalPartner[]
@@ -353,6 +354,17 @@ model QuoteItemPreset {
   company     Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
   descricao   String
   detalhes    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([company_id])
+}
+
+model QuoteDetailPreset {
+  id          String   @id @default(uuid())
+  company_id  String
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  texto       String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

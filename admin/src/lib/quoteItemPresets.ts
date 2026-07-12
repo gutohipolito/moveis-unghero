@@ -4,6 +4,11 @@ export interface QuoteItemPresetDTO {
   detalhes: string[];
 }
 
+export interface QuoteDetailPresetDTO {
+  id: string;
+  texto: string;
+}
+
 /** Normaliza a lista de detalhes: trim, remove vazios e duplicados. */
 export function cleanDetalhes(detalhes: string[] | null | undefined): string[] {
   if (!detalhes) return [];

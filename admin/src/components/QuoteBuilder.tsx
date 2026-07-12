@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers } from "lucide-react";
 import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
-import { listQuoteItemPresets } from "@/app/actions/quoteItemPresets";
+import { listQuoteItemPresets, listQuoteDetailPresets } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 import { DescriptionCombobox, DetailsEditor } from "@/components/quotes/QuoteItemInputs";
 
@@ -32,6 +32,7 @@ interface QuoteItemInput {
   precoCusto?: number;
   markup?: number;
   subitens?: string[];
+  optionals?: string[];
 }
 
 // Template único ativo no sistema
@@ -51,6 +52,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [desconto, setDesconto] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [presets, setPresets] = useState<QuoteItemPresetDTO[]>([]);
+  const [globalDetails, setGlobalDetails] = useState<string[]>([]);
   const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
   const [briefingData, setBriefingData] = useState<any | null>(null);
@@ -80,25 +82,31 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
 
   useEffect(() => {
     async function loadPresets() {
-      const res = await listQuoteItemPresets();
-      if (res.success) setPresets(res.presets);
+      const [itemsRes, detailsRes] = await Promise.all([
+        listQuoteItemPresets(),
+        listQuoteDetailPresets(),
+      ]);
+      if (itemsRes.success) setPresets(itemsRes.presets);
+      if (detailsRes.success) setGlobalDetails(detailsRes.details.map((d) => d.texto));
     }
     loadPresets();
   }, []);
 
-  // Sugestões de detalhes: união de todos os detalhes dos itens salvos.
+  // Detalhes globais (avulsos) + todos os opcionais já cadastrados nos itens.
   const detailSuggestions = React.useMemo(() => {
     const set = new Set<string>();
+    for (const d of globalDetails) set.add(d);
     for (const p of presets) for (const d of p.detalhes) set.add(d);
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [presets]);
+  }, [presets, globalDetails]);
 
-  // Aplica um item salvo: preenche descrição e detalhes.
+  // Aplica um ambiente salvo: preenche a descrição e disponibiliza os opcionais
+  // do item (sem forçar sua adição — o operador escolhe quais usar).
   const applyPreset = (id: string, preset: QuoteItemPresetDTO) => {
     setItems((prev) =>
       prev.map((item) =>
         item.id === id
-          ? { ...item, descricao: preset.descricao, subitens: [...preset.detalhes] }
+          ? { ...item, descricao: preset.descricao, optionals: [...preset.detalhes] }
           : item
       )
     );
@@ -412,6 +420,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               <DetailsEditor
                                 subitens={item.subitens || []}
                                 suggestions={detailSuggestions}
+                                itemOptionals={item.optionals || []}
                                 onChange={(next) => handleUpdateSubitens(item.id, next)}
                               />
                             </div>
@@ -551,6 +560,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             <DetailsEditor
                               subitens={item.subitens || []}
                               suggestions={detailSuggestions}
+                              itemOptionals={item.optionals || []}
                               onChange={(next) => handleUpdateSubitens(item.id, next)}
                             />
                           </div>
