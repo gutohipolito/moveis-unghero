@@ -12,23 +12,29 @@ interface PrivacyContextType {
 }
 
 const PrivacyContext = createContext<PrivacyContextType>({
-  privacyMode: false,
+  privacyMode: true,
   togglePrivacy: () => {},
   sensitiveHidden: true,
   toggleSensitive: () => {},
 });
 
 export function PrivacyProvider({ children }: { children: React.ReactNode }) {
-  const [privacyMode, setPrivacyMode] = useState(false);
+  // Padrão: valores financeiros começam OCULTOS (modo apresentação).
+  // O operador libera pelo ícone de olho; a escolha fica salva.
+  const [privacyMode, setPrivacyMode] = useState(true);
   // Padrão: dados sensíveis SEMPRE começam ocultos
   const [sensitiveHidden, setSensitiveHidden] = useState(true);
 
   // Carrega estado inicial do localStorage
   useEffect(() => {
     const stored = localStorage.getItem("unghero_privacy_mode");
-    if (stored === "true") {
-      setPrivacyMode(true);
+    // Só fica visível se o operador tiver liberado explicitamente ("false")
+    const active = stored !== "false";
+    setPrivacyMode(active);
+    if (active) {
       document.body.classList.add("privacy-active");
+    } else {
+      document.body.classList.remove("privacy-active");
     }
     // Dados sensíveis: só ficam visíveis se o operador tiver liberado explicitamente
     const storedSensitive = localStorage.getItem("unghero_sensitive_hidden");

@@ -30,6 +30,12 @@ export default async function DashboardLayout({
 
   return (
     <PrivacyProvider>
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "(function(){try{if(localStorage.getItem('unghero_privacy_mode')!=='false'){document.body.classList.add('privacy-active');}}catch(e){}})();",
+        }}
+      />
       <NotificationProvider
         companyId={companyId}
         initialNotifications={notificationsRes.notifications}

@@ -645,12 +645,15 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     (p) => getFollowUpLevel(p) === "warning"
   );
 
-  const totalPipeline = funnelProjects
-    .filter((p) => !["FINALIZADO", "PERDIDO"].includes(p.status_geral))
-    .reduce((acc, curr) => acc + curr.valor_previsto, 0);
-  const activeProjectsCount = funnelProjects.filter(
-    (p) => !["FINALIZADO", "PERDIDO"].includes(p.status_geral)
-  ).length;
+  // Total em negociação = soma de TODOS os cards exibidos no funil (as 6 colunas).
+  const boardProjects = funnelProjects.filter((p) =>
+    FUNNEL_ORDER.includes(p.status_geral as ProjectStatus)
+  );
+  const totalPipeline = boardProjects.reduce(
+    (acc, curr) => acc + (Number(curr.valor_previsto) || 0),
+    0
+  );
+  const activeProjectsCount = boardProjects.length;
 
   const renderProjectCard = (project: Project, colId?: ProjectStatus) => {
     const isDraggingThis = activeDragId === project.id;
@@ -1000,7 +1003,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                     {colProjects.length}
                   </span>
                 </div>
-                <span className="text-xs font-bold text-foreground privacy-value shrink-0 ml-2">{formatCurrency(colSum)}</span>
+                {colSum > 0 && (
+                  <span className="text-xs font-bold text-foreground privacy-value shrink-0 ml-2">{formatCurrency(colSum)}</span>
+                )}
               </div>
 
               {/* Lista de Cards */}
