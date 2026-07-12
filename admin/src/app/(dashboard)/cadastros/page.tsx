@@ -1,3 +1,4 @@
+import { guardModule } from "@/lib/moduleAccess";
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { getCatalogGroups } from "@/app/actions/cadastros";
@@ -9,6 +10,7 @@ interface CadastrosPageProps {
 }
 
 export default async function CadastrosPage({ searchParams }: CadastrosPageProps) {
+  await guardModule("cadastros");
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
   const params = await searchParams;

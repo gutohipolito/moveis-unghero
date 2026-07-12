@@ -1,3 +1,4 @@
+import { guardModule } from "@/lib/moduleAccess";
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { getInventoryAndSuppliers } from "@/app/actions/estoque";
@@ -5,6 +6,7 @@ import { getCatalogItemsBySlug } from "@/app/actions/cadastros";
 import EstoqueClient from "./EstoqueClient";
 
 export default async function EstoquePage() {
+  await guardModule("estoque");
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
 

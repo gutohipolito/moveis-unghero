@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { guardModule } from "@/lib/moduleAccess";
 import { getClients } from "@/app/actions/cliente";
 import PageHeader from "@/components/PageHeader";
 import MarketingReviewClients from "./MarketingReviewClients";
@@ -6,6 +7,7 @@ import { auth } from "@/lib/auth";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
 
 export default async function MarketingPage() {
+  await guardModule("marketing");
   const session = await auth.api
     .getSession({
       headers: await headers(),

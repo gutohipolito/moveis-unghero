@@ -14,6 +14,7 @@ model Company {
   cnpj     String   @unique
   telefone String
   email    String
+  permissions Json?  // Permissões de acesso por cargo (mapa cargo -> módulos permitidos)
   users    User[]
   clients  Client[]
   catalogGroups CatalogGroup[]

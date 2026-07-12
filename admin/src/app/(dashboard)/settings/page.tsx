@@ -11,10 +11,12 @@ import {
   Info,
   HardDrive,
   ImageIcon,
-  FileText
+  FileText,
+  ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getStorageUsageAction, type StorageUsage } from "@/app/actions/storage";
+import { usePermissions } from "@/context/PermissionsContext";
 
 // Referência do plano Vercel Blob (armazenamento incluído) para o medidor de uso.
 const STORAGE_REFERENCE_BYTES = 5 * 1024 * 1024 * 1024;
@@ -30,6 +32,8 @@ function formatBytes(bytes: number): string {
 }
 
 export default function SettingsPage() {
+  const { isAdmin } = usePermissions();
+
   // Estados de Dados da Empresa
   const [razaoSocial, setRazaoSocial] = useState("Móveis Unghero Ltda");
   const [cnpj, setCnpj] = useState("12.345.678/0001-90");
@@ -113,6 +117,22 @@ export default function SettingsPage() {
       }, 3000);
     }, 800);
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center space-y-3">
+          <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
+            <ShieldAlert className="h-6 w-6 text-amber-600" />
+          </div>
+          <h1 className="text-lg font-black text-slate-800">Acesso restrito</h1>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            As configurações do sistema estão disponíveis apenas para a Diretoria. Fale com um administrador se precisar de acesso.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">

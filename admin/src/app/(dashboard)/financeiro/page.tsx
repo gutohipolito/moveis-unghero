@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
+import { guardModule } from "@/lib/moduleAccess";
 import FinanceiroClient from "./FinanceiroClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 
 export default async function FinanceiroPage() {
+  await guardModule("financeiro");
   const userCompanyId = await getSessionCompanyId();
 
   let installments: any[] = [];

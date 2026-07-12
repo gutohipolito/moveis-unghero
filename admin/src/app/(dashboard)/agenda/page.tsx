@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { guardModule } from "@/lib/moduleAccess";
 import { fetchAgendaEvents, fetchAgendaDerivedEvents } from "@/lib/factoryBoard";
 import { getSessionCompanyId } from "@/lib/session";
 import type { DerivedAgendaEvent } from "@/lib/agendaEvents";
@@ -6,6 +7,7 @@ import AgendaClient from "./AgendaClient";
 import PageHeader from "@/components/PageHeader";
 
 export default async function AgendaPage() {
+  await guardModule("agenda");
   const userCompanyId = await getSessionCompanyId();
 
   let projects: Array<{ id: string; clientName: string }> = [];

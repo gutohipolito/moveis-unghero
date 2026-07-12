@@ -5,6 +5,10 @@ import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { LiveSyncProvider } from "@/context/LiveSyncContext";
+import { PermissionsProvider } from "@/context/PermissionsContext";
+import { getCompanyPermissions } from "@/lib/moduleAccess";
+import { resolveAllowedModules } from "@/lib/permissions";
+import type { Role } from "@prisma/client";
 import { getNotifications } from "@/app/actions/notifications";
 import DashboardLayoutWrapper from "@/components/DashboardLayoutWrapper";
 import DashboardHeaderSlot from "@/components/DashboardHeaderSlot";
@@ -23,6 +27,9 @@ export default async function DashboardLayout({
 
   const user = session.user;
   const companyId = user.company_id || DEFAULT_COMPANY_ID;
+  const role = (user.cargo as Role) || "PRODUCAO";
+  const permissions = await getCompanyPermissions(companyId);
+  const allowedModules = resolveAllowedModules(permissions, role);
   const notificationsRes = await getNotifications(companyId).catch(() => ({
     success: false as const,
     notifications: [],
@@ -41,6 +48,7 @@ export default async function DashboardLayout({
         initialNotifications={notificationsRes.notifications}
       >
       <LiveSyncProvider companyId={companyId}>
+        <PermissionsProvider role={role} allowedModules={allowedModules}>
         <DashboardLayoutWrapper
           user={{
             id: user.id,
@@ -67,6 +75,7 @@ export default async function DashboardLayout({
         >
           {children}
         </DashboardLayoutWrapper>
+        </PermissionsProvider>
       </LiveSyncProvider>
       </NotificationProvider>
     </PrivacyProvider>

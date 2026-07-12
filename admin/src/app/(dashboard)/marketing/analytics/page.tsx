@@ -1,8 +1,10 @@
+import { guardModule } from "@/lib/moduleAccess";
 import { getMarketingDashboard } from "@/app/actions/marketing";
 import PageHeader from "@/components/PageHeader";
 import MarketingClient from "../MarketingClient";
 
 export default async function MarketingAnalyticsPage() {
+  await guardModule("marketing");
   const data = await getMarketingDashboard("live");
 
   return (

@@ -1,5 +1,6 @@
 import { fetchColaboradoresSelect, fetchFactoryBoard } from "@/lib/factoryBoard";
 import { getSessionCompanyId } from "@/lib/session";
+import { guardModule } from "@/lib/moduleAccess";
 import FactoryClient from "./FactoryClient";
 import PageHeader from "@/components/PageHeader";
 
@@ -8,6 +9,7 @@ export default async function FactoryPage({
 }: {
   searchParams: Promise<{ slaCheck?: string }>;
 }) {
+  await guardModule("factory");
   const params = await searchParams;
   const userCompanyId = await getSessionCompanyId();
 

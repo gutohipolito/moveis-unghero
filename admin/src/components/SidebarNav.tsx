@@ -20,9 +20,12 @@ import {
   BarChart3,
   NotebookPen,
   Settings,
+  ShieldCheck,
   ChevronDown,
 } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
+import { usePermissions } from "@/context/PermissionsContext";
+import { moduleKeyForHref } from "@/lib/permissions";
 
 export interface NavItem {
   name: string;
@@ -64,6 +67,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Administração" },
   { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Administração" },
+  { name: "Permissões", href: "/permissoes", icon: ShieldCheck, section: "Administração" },
   { name: "Cadastros do Sistema", href: "/cadastros", icon: BookMarked, section: "Administração" },
   { name: "Configurações", href: "/settings", icon: Settings, section: "Administração" },
 ];
@@ -99,11 +103,14 @@ interface SidebarNavProps {
 export default function SidebarNav({ onNavigate, compact = false }: SidebarNavProps) {
   const pathname = usePathname();
   const { isSectionCollapsed, toggleSection } = useSidebarSections();
+  const { can } = usePermissions();
 
   return (
     <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
       {NAV_SECTIONS.map((section) => {
-        const items = NAV_ITEMS.filter((i) => i.section === section);
+        const items = NAV_ITEMS.filter(
+          (i) => i.section === section && can(moduleKeyForHref(i.href))
+        );
         if (items.length === 0) return null;
 
         // O recolhimento por seção só se aplica ao sidebar expandido.

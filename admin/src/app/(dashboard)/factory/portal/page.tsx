@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import { getSessionSafe } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getMyTimeCards, getColaboradorMetrics } from "@/app/actions/ponto";
+import { guardModule } from "@/lib/moduleAccess";
 import PortalColaboradorClient from "@/components/PortalColaboradorClient";
 
 export default async function PortalColaboradorPage() {
+  await guardModule("factory");
   const session = await getSessionSafe(await headers()).catch(() => null);
 
   if (!session?.user?.id) {

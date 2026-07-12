@@ -1,9 +1,11 @@
+import { guardModule } from "@/lib/moduleAccess";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getQuotes } from "@/app/actions/quotes";
 import QuotesList from "@/components/QuotesList";
 
 export default async function QuotesPage() {
+  await guardModule("quotes");
   const session = await auth.api.getSession({
     headers: await headers()
   }).catch(() => null);

@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
+import { guardModule } from "@/lib/moduleAccess";
 import BiClient from "./BiClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 
 export default async function BIPage() {
+  await guardModule("bi");
   const userCompanyId = await getSessionCompanyId();
 
   let projects: any[] = [];

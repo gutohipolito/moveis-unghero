@@ -1,9 +1,11 @@
+import { guardModule } from "@/lib/moduleAccess";
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { getParceiros } from "@/app/actions/parceiros";
 import ParceirosClient from "./ParceirosClient";
 
 export default async function ParceirosPage() {
+  await guardModule("parceiros");
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
 

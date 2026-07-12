@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
+import { guardModule } from "@/lib/moduleAccess";
 import { getClientDetailsAction } from "@/app/actions/cliente";
 import { redirect } from "next/navigation";
 import ClienteDetailsClient from "./ClienteDetailsClient";
@@ -9,6 +10,7 @@ interface RouteParams {
 }
 
 export default async function ClienteDetailsPage({ params }: RouteParams) {
+  await guardModule("clientes");
   const { id } = await params;
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";

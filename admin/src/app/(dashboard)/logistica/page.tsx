@@ -1,10 +1,12 @@
 import { getCatalogItemsBySlug } from "@/app/actions/cadastros";
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
+import { guardModule } from "@/lib/moduleAccess";
 import LogisticaClient from "./LogisticaClient";
 import PageHeader from "@/components/PageHeader";
 
 export default async function LogisticaPage() {
+  await guardModule("logistica");
   const userCompanyId = await getSessionCompanyId();
 
   let projects: any[] = [];

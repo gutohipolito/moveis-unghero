@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { guardModule } from "@/lib/moduleAccess";
 import { getClients } from "@/app/actions/cliente";
 import { getUserPreferences } from "@/app/actions/preferences";
 import ClientesClient from "./ClientesClient";
@@ -8,6 +9,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 const DEFAULT_PAGE_SIZE = 20;
 
 export default async function ClientesPage() {
+  await guardModule("clientes");
   const session = await auth.api.getSession({
     headers: await headers()
   }).catch(() => null);

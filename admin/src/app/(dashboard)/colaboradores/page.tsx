@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
+import { guardModule } from "@/lib/moduleAccess";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import ColaboradoresClient from "@/components/ColaboradoresClient";
 import PageHeader from "@/components/PageHeader";
 
 export default async function ColaboradoresPage() {
+  await guardModule("colaboradores");
   // Obtém a sessão de administrador real ou bypass
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";

@@ -1,7 +1,9 @@
 import PageHeader from "@/components/PageHeader";
 import MarketingFormsPanel from "@/components/marketing/MarketingFormsPanel";
+import { guardModule } from "@/lib/moduleAccess";
 
-export default function MarketingFormulariosPage() {
+export default async function MarketingFormulariosPage() {
+  await guardModule("marketing");
   return (
     <div className="space-y-6">
       <PageHeader
