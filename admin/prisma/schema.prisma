@@ -17,6 +17,7 @@ model Company {
   permissions Json?  // Permissões de acesso por cargo (mapa cargo -> módulos permitidos)
   users    User[]
   supplyTickets SupplyTicket[]
+  quoteItemPresets QuoteItemPreset[]
   clients  Client[]
   catalogGroups CatalogGroup[]
   professionalPartners ProfessionalPartner[]
@@ -344,6 +345,18 @@ enum SupplyTicketPriority {
   BAIXA
   MEDIA
   ALTA
+}
+
+model QuoteItemPreset {
+  id          String   @id @default(uuid())
+  company_id  String
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  descricao   String
+  detalhes    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([company_id])
 }
 
 model SupplyTicket {

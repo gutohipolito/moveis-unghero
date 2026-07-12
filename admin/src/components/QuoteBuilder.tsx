@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers } from "lucide-react";
 import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
+import { listQuoteItemPresets } from "@/app/actions/quoteItemPresets";
+import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
+import { DescriptionCombobox, DetailsEditor } from "@/components/quotes/QuoteItemInputs";
 
 interface QuoteBuilderProps {
   projectId: string;
@@ -31,35 +34,6 @@ interface QuoteItemInput {
   subitens?: string[];
 }
 
-function SubItemsEditor({
-  subitens,
-  onChange,
-}: {
-  subitens: string[];
-  onChange: (next: string[]) => void;
-}) {
-  const text = subitens.join("\n");
-
-  return (
-    <div className="mt-2">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-        Detalhes do item (opcional)
-      </label>
-      <textarea
-        placeholder="Um detalhe por linha. Ex: Puxador cromado"
-        value={text}
-        onChange={(e) => onChange(e.target.value.split("\n"))}
-        rows={2}
-        className="w-full resize-y min-h-[52px] bg-slate-50 md:bg-white border border-slate-200 text-[10px] font-medium rounded-md px-2.5 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)]"
-      />
-      <p className="mt-1 text-[9px] text-slate-400">
-        Apenas texto informativo — sem quantidade nem valor. No PDF aparece abaixo do item, separado por •.
-      </p>
-    </div>
-  );
-}
-
-
 // Template único ativo no sistema
 const ACTIVE_TEMPLATE = QUOTE_TEMPLATE_BASICO;
 
@@ -76,6 +50,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [items, setItems] = useState<QuoteItemInput[]>([]);
   const [desconto, setDesconto] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [presets, setPresets] = useState<QuoteItemPresetDTO[]>([]);
   const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
   const [briefingData, setBriefingData] = useState<any | null>(null);
@@ -102,6 +77,32 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     }
     loadInventory();
   }, [companyId]);
+
+  useEffect(() => {
+    async function loadPresets() {
+      const res = await listQuoteItemPresets();
+      if (res.success) setPresets(res.presets);
+    }
+    loadPresets();
+  }, []);
+
+  // Sugestões de detalhes: união de todos os detalhes dos itens salvos.
+  const detailSuggestions = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const p of presets) for (const d of p.detalhes) set.add(d);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [presets]);
+
+  // Aplica um item salvo: preenche descrição e detalhes.
+  const applyPreset = (id: string, preset: QuoteItemPresetDTO) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, descricao: preset.descricao, subitens: [...preset.detalhes] }
+          : item
+      )
+    );
+  };
 
   // Adicionar uma nova linha de item vazia (Item Livre)
   const handleAddItem = () => {
@@ -402,15 +403,15 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             </div>
                           ) : (
                             <div>
-                              <Input
-                                required
-                                placeholder="Descrição do item ou ambiente"
+                              <DescriptionCombobox
                                 value={item.descricao}
-                                onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
-                                className="bg-white border border-slate-200 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] px-3 py-1.5 h-9 text-xs font-semibold rounded-lg transition-all"
+                                presets={presets}
+                                onChangeText={(text) => handleUpdateItem(item.id, "descricao", text)}
+                                onSelectPreset={(preset) => applyPreset(item.id, preset)}
                               />
-                              <SubItemsEditor
+                              <DetailsEditor
                                 subitens={item.subitens || []}
+                                suggestions={detailSuggestions}
                                 onChange={(next) => handleUpdateSubitens(item.id, next)}
                               />
                             </div>
@@ -540,15 +541,16 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                           </div>
                         ) : (
                           <div>
-                            <Input
-                              required
-                              placeholder="Descrição do item ou ambiente"
+                            <DescriptionCombobox
                               value={item.descricao}
-                              onChange={(e) => handleUpdateItem(item.id, "descricao", e.target.value)}
-                              className="bg-slate-50 border-slate-200 text-xs h-9 font-medium"
+                              presets={presets}
+                              onChangeText={(text) => handleUpdateItem(item.id, "descricao", text)}
+                              onSelectPreset={(preset) => applyPreset(item.id, preset)}
+                              className="w-full bg-slate-50 border border-slate-200 text-xs h-9 font-medium rounded-md px-3 outline-none focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)]"
                             />
-                            <SubItemsEditor
+                            <DetailsEditor
                               subitens={item.subitens || []}
+                              suggestions={detailSuggestions}
                               onChange={(next) => handleUpdateSubitens(item.id, next)}
                             />
                           </div>

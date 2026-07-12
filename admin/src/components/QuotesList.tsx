@@ -19,6 +19,7 @@ import {
   UserPlus,
   ArrowUpAZ,
   ArrowDownZA,
+  Bookmark,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ import { getQuotesLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
+import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
 import PageHeader from "@/components/PageHeader";
 import PrivacyToggle from "@/components/PrivacyToggle";
 
@@ -92,6 +94,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
 
   // Estados para criação direta de Orçamento
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isPresetsOpen, setIsPresetsOpen] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -336,10 +339,21 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
         title="Orçamentos"
         description="Propostas comerciais e orçamentos emitidos para clientes."
         actions={
-          <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
-            <Plus className="h-4 w-4" />
-            Novo orçamento
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsPresetsOpen(true)}
+              variant="outline"
+              className="gap-1.5"
+              title="Gerenciar itens salvos para reutilizar nos orçamentos"
+            >
+              <Bookmark className="h-4 w-4" />
+              <span className="hidden sm:inline">Itens salvos</span>
+            </Button>
+            <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
+              <Plus className="h-4 w-4" />
+              Novo orçamento
+            </Button>
+          </div>
         }
       >
         <PrivacyToggle />
@@ -872,6 +886,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           )}
         </div>
       </Dialog>
+      <QuoteItemPresetsManager isOpen={isPresetsOpen} onClose={() => setIsPresetsOpen(false)} />
       <ActionDialogHost dialog={dialog} />
     </div>
   );
