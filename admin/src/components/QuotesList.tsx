@@ -38,6 +38,7 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import PageHeader from "@/components/PageHeader";
+import PrivacyToggle from "@/components/PrivacyToggle";
 
 interface QuoteItem {
   id: string;
@@ -335,10 +336,13 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
         title="Orçamentos"
         description="Propostas comerciais e orçamentos emitidos para clientes."
         actions={
-          <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
-            <Plus className="h-4 w-4" />
-            Novo orçamento
-          </Button>
+          <div className="flex items-center gap-2">
+            <PrivacyToggle />
+            <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
+              <Plus className="h-4 w-4" />
+              Novo orçamento
+            </Button>
+          </div>
         }
       />
 
@@ -361,7 +365,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor Total</p>
-            <p className="text-xl font-bold text-slate-800">{formatCurrency(totalValue)}</p>
+            <p className="text-xl font-bold text-slate-800 privacy-value">{formatCurrency(totalValue)}</p>
             <p className="text-xs text-emerald-650">Soma de propostas filtradas</p>
           </div>
         </Card>
@@ -372,7 +376,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor Aprovados</p>
-            <p className="text-xl font-bold text-slate-800">{formatCurrency(totalApprovedValue)}</p>
+            <p className="text-xl font-bold text-slate-800 privacy-value">{formatCurrency(totalApprovedValue)}</p>
             <p className="text-xs text-indigo-600 font-medium">Soma de propostas fechadas</p>
           </div>
         </Card>
@@ -383,7 +387,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket Médio (Aprovados)</p>
-            <p className="text-xl font-bold text-slate-800">{formatCurrency(averageValue)}</p>
+            <p className="text-xl font-bold text-slate-800 privacy-value">{formatCurrency(averageValue)}</p>
             <p className="text-xs text-slate-400">Média por proposta aprovada</p>
           </div>
         </Card>
@@ -564,7 +568,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                         )}
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-800 font-bold">
-                        {formatCurrency(q.valor_final)}
+                        <span className="privacy-value">{formatCurrency(q.valor_final)}</span>
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
                         <div className="flex justify-end items-center gap-2">
