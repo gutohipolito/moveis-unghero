@@ -742,6 +742,7 @@ async function loadClientAttachments(clientId: string): Promise<ClientAttachment
     size_bytes: row.size_bytes,
     createdAt: row.createdAt.toISOString(),
     uploaded_by: row.uploaded_by?.name ?? null,
+    project_id: row.project_id ?? null,
   }));
 }
 
@@ -923,6 +924,42 @@ export async function addActivityAction(
   } catch (error) {
     console.error("Erro ao registrar atividade do cliente:", error);
     return { success: false, error: "Não foi possível salvar a atividade." };
+  }
+}
+
+export async function updateClientObservacoesAction(
+  clientId: string,
+  observacoes: string
+) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  if (isDatabaseOffline()) {
+    return { success: false, error: "Banco de dados indisponível." };
+  }
+
+  const value = observacoes.trim();
+
+  try {
+    await prisma.client.update({
+      where: { id: clientId },
+      data: { observacoes: value || null },
+    });
+    revalidatePath(`/clientes/${clientId}`);
+    return { success: true, observacoes: value };
+  } catch (error) {
+    console.error("Erro ao salvar observações do cliente:", error);
+    return { success: false, error: "Não foi possível salvar as notas." };
   }
 }
 

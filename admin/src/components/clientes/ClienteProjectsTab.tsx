@@ -193,7 +193,7 @@ export default function ClienteProjectsTab({
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {projects.map((project) => {
               const isFormLead = clientOrigem === "FORMULARIO";
               const hasNoQuote = !project.quotes || project.quotes.length === 0;
@@ -209,74 +209,84 @@ export default function ClienteProjectsTab({
                     setOpenCreateQuote(isBlocked);
                     setSelectedProjectId(project.id);
                   }}
-                  className={`text-left p-4 rounded-xl border transition-all hover:shadow-md ${
+                  className={`group relative flex flex-col text-left p-4 rounded-2xl border bg-white transition-all hover:shadow-md hover:-translate-y-0.5 ${
                     isBlocked
-                      ? "border-rose-200 bg-rose-50/30 hover:bg-rose-50/50"
+                      ? "border-rose-200 hover:border-rose-300"
                       : isApproved
-                        ? "border-2 border-emerald-500 bg-emerald-50/50 hover:bg-emerald-50/70 shadow-sm shadow-emerald-500/10"
-                        : "border-border/60 bg-slate-50 hover:bg-slate-100/70"
+                        ? "border-emerald-300 ring-1 ring-emerald-500/20 hover:border-emerald-400"
+                        : "border-border/70 hover:border-primary/40"
                   }`}
                 >
+                  {/* Cabeçalho: identificação + status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground flex items-center gap-1.5 flex-wrap">
-                        Projeto {project.id.slice(0, 8).toUpperCase()}
-                        {isBlocked ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded uppercase">
-                            <Lock className="h-3 w-3" /> Bloqueado
-                          </span>
-                        ) : null}
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Projeto</span>
+                      <p className="text-sm font-black text-foreground font-mono tracking-tight truncate">
+                        #{project.id.slice(0, 8).toUpperCase()}
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {project.updatedAt
-                            ? new Date(project.updatedAt).toLocaleDateString("pt-BR")
-                            : "—"}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <DollarSign className="h-3.5 w-3.5" />
-                          {isBlocked ? (
-                            <span className="text-rose-600 font-semibold">Sem orçamento</span>
-                          ) : (
-                            <span className="privacy-value">
-                              {project.valor_previsto.toLocaleString("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                              })}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      {project.briefing ? (
-                        <p className="mt-2 text-[11px] text-muted-foreground flex items-center gap-1">
-                          <Sparkles className="h-3 w-3 text-primary" />
-                          {project.briefing.estilo}
-                          {project.briefing.score != null ? ` · Score ${project.briefing.score}` : ""}
-                        </p>
-                      ) : null}
-                      {latestQuote ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          Orçamento v{latestQuote.versao}:{" "}
-                          <span className="privacy-value font-semibold">
-                            {latestQuote.valor_final.toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })}
-                          </span>
-                        </p>
-                      ) : null}
-                      {(project.environments_count ?? 0) > 0 ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {project.environments_count} ambiente
-                          {project.environments_count === 1 ? "" : "s"}
-                        </p>
-                      ) : null}
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                  </div>
-                  <div className="mt-3">
                     <ProjectStatusBadge status={project.status_geral} blocked={isBlocked} />
+                  </div>
+
+                  {/* Valor em destaque */}
+                  <div className={`mt-3 rounded-xl px-3 py-2 border ${isBlocked ? "bg-rose-50/60 border-rose-100" : "bg-slate-50 border-border/50"}`}>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" /> Valor previsto
+                    </span>
+                    {isBlocked ? (
+                      <p className="text-sm font-bold text-rose-600 mt-0.5">Sem orçamento</p>
+                    ) : (
+                      <p className="text-lg font-black text-foreground mt-0.5 privacy-value">
+                        {project.valor_previsto.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })}
+                      </p>
+                    )}
+                    {latestQuote ? (
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        Orçamento v{latestQuote.versao}:{" "}
+                        <span className="privacy-value font-semibold text-foreground">
+                          {latestQuote.valor_final.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })}
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {/* Chips de metadados */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-slate-100 rounded-full px-2 py-0.5">
+                      <Calendar className="h-3 w-3" />
+                      {project.updatedAt
+                        ? new Date(project.updatedAt).toLocaleDateString("pt-BR")
+                        : "—"}
+                    </span>
+                    {(project.environments_count ?? 0) > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-slate-100 rounded-full px-2 py-0.5">
+                        <Layers className="h-3 w-3" />
+                        {project.environments_count} ambiente{project.environments_count === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                    {project.briefing ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                        <Sparkles className="h-3 w-3" />
+                        {project.briefing.estilo}
+                        {project.briefing.score != null ? ` · ${project.briefing.score}` : ""}
+                      </span>
+                    ) : null}
+                    {isBlocked ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-full uppercase">
+                        <Lock className="h-3 w-3" /> Bloqueado
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* Rodapé: ação */}
+                  <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-end gap-1 text-[11px] font-bold text-primary transition-opacity opacity-70 group-hover:opacity-100">
+                    Ver detalhes <ChevronRight className="h-4 w-4" />
                   </div>
                 </button>
               );

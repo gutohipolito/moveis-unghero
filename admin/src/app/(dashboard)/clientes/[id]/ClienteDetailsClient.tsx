@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { 
   type Activity, 
   type Payment, 
-  addActivityAction 
+  addActivityAction,
+  updateClientObservacoesAction 
 } from "@/app/actions/cliente";
 import { getClientDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
@@ -123,6 +124,12 @@ export default function ClienteDetailsClient({
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
 
+  // Aba Notas — observações editáveis
+  const [notesValue, setNotesValue] = useState(initialClient.observacoes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+
   const syncClientDetails = useCallback(async () => {
     const result = await getClientDetailsLiveSnapshot(client.id);
     if (result.success && result.client) {
@@ -166,6 +173,23 @@ export default function ClienteDetailsClient({
       setNoteError(res.error ?? "Não foi possível salvar a anotação.");
     }
     setIsSubmittingNote(false);
+  };
+
+  // Salvar Observações / Notas do cliente
+  const handleSaveNotes = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingNotes(true);
+    setNotesError(null);
+    setNotesSaved(false);
+    const res = await updateClientObservacoesAction(client.id, notesValue);
+    if (res.success) {
+      setClient((prev) => ({ ...prev, observacoes: res.observacoes ?? "" }));
+      setNotesSaved(true);
+      window.setTimeout(() => setNotesSaved(false), 2500);
+    } else {
+      setNotesError(res.error ?? "Não foi possível salvar as notas.");
+    }
+    setSavingNotes(false);
   };
 
   return (
@@ -407,6 +431,7 @@ export default function ClienteDetailsClient({
               clientId={client.id}
               attachments={attachments}
               onAttachmentsChange={setAttachments}
+              projects={projects.map((p) => ({ id: p.id, status_geral: p.status_geral }))}
             />
           )}
 
@@ -520,11 +545,41 @@ export default function ClienteDetailsClient({
 
           {/* ABA: NOTAS / OBSERVAÇÕES */}
           {activeTab === "notas" && (
-            <Card className="p-5 glass-card space-y-2">
-              <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Observações / Notas</h3>
-              <p className="text-sm text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
-                {docInfo.observacoes || "Sem observações iniciais registradas para este cliente."}
+            <Card className="p-5 glass-card space-y-3">
+              <div className="flex items-center justify-between gap-3 border-b border-border/40 pb-2">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-primary" /> Observações / Notas
+                </h3>
+                {notesSaved && (
+                  <span className="text-[11px] font-bold text-emerald-600">Salvo ✓</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Anotações livres e permanentes sobre o cliente (preferências, restrições, contexto). Para registrar eventos com data e autor, use a Linha do Tempo.
               </p>
+              <form onSubmit={handleSaveNotes} className="space-y-3">
+                <textarea
+                  value={notesValue}
+                  onChange={(e) => {
+                    setNotesValue(e.target.value);
+                    setNotesSaved(false);
+                  }}
+                  placeholder="Escreva aqui as observações e notas deste cliente..."
+                  className="w-full min-h-40 bg-slate-50 border border-border rounded-xl text-sm p-3 outline-none focus:ring-1 focus:ring-primary leading-relaxed whitespace-pre-line"
+                />
+                {notesError && (
+                  <p className="text-xs text-red-600 font-medium">{notesError}</p>
+                )}
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={savingNotes || notesValue === (client.observacoes ?? "")}
+                    className="text-xs font-bold gap-1.5 btn-metallic"
+                  >
+                    <Send className="h-3.5 w-3.5" /> {savingNotes ? "Salvando..." : "Salvar notas"}
+                  </Button>
+                </div>
+              </form>
             </Card>
           )}
 

@@ -7,6 +7,7 @@ export type ClientAttachmentDTO = {
   size_bytes: number | null;
   createdAt: string;
   uploaded_by: string | null;
+  project_id: string | null;
 };
 
 export const CLIENT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB

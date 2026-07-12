@@ -17,6 +17,7 @@ function mapAttachment(record: {
   size_bytes: number | null;
   createdAt: Date;
   uploaded_by: { name: string } | null;
+  project_id: string | null;
 }) {
   return {
     id: record.id,
@@ -27,7 +28,22 @@ function mapAttachment(record: {
     size_bytes: record.size_bytes,
     createdAt: record.createdAt.toISOString(),
     uploaded_by: record.uploaded_by?.name ?? null,
+    project_id: record.project_id ?? null,
   };
+}
+
+async function resolveProjectId(
+  rawProjectId: unknown,
+  clientId: string
+): Promise<string | null> {
+  if (typeof rawProjectId !== "string" || rawProjectId.trim() === "") {
+    return null;
+  }
+  const project = await prisma.project.findFirst({
+    where: { id: rawProjectId, client_id: clientId },
+    select: { id: true },
+  });
+  return project?.id ?? null;
 }
 
 export async function POST(
@@ -60,6 +76,7 @@ export async function POST(
 
   const formData = await request.formData();
   const file = formData.get("file");
+  const projectId = await resolveProjectId(formData.get("projectId"), clientId);
 
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ success: false, error: "Arquivo inválido" }, { status: 400 });
@@ -97,6 +114,7 @@ export async function POST(
       data: {
         client_id: clientId,
         company_id: auth.companyId,
+        project_id: projectId,
         nome: safeName || `arquivo.${ext}`,
         mime_type: mimeType,
         url: blob.url,
@@ -114,6 +132,60 @@ export async function POST(
     console.error("Erro no upload de anexo do cliente:", error);
     return NextResponse.json(
       { success: false, error: "Não foi possível salvar o arquivo." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ clientId: string }> }
+) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+
+  const { clientId } = await context.params;
+
+  try {
+    await requireClientInCompany(clientId, auth.companyId);
+  } catch {
+    return NextResponse.json({ success: false, error: "Acesso negado" }, { status: 403 });
+  }
+
+  let body: { id?: string; projectId?: string | null };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ success: false, error: "Corpo inválido" }, { status: 400 });
+  }
+
+  if (!body.id) {
+    return NextResponse.json({ success: false, error: "ID do arquivo obrigatório" }, { status: 400 });
+  }
+
+  const existing = await prisma.clientAttachment.findFirst({
+    where: { id: body.id, client_id: clientId, company_id: auth.companyId },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ success: false, error: "Arquivo não encontrado" }, { status: 404 });
+  }
+
+  const projectId = await resolveProjectId(body.projectId, clientId);
+
+  try {
+    const updated = await prisma.clientAttachment.update({
+      where: { id: existing.id },
+      data: { project_id: projectId },
+      include: { uploaded_by: { select: { name: true } } },
+    });
+    return NextResponse.json({ success: true, attachment: mapAttachment(updated) });
+  } catch (error) {
+    console.error("Erro ao reatribuir anexo do cliente:", error);
+    return NextResponse.json(
+      { success: false, error: "Não foi possível atualizar o arquivo." },
       { status: 500 }
     );
   }
