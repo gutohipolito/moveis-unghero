@@ -336,15 +336,14 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
         title="Orçamentos"
         description="Propostas comerciais e orçamentos emitidos para clientes."
         actions={
-          <div className="flex items-center gap-2">
-            <PrivacyToggle />
-            <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
-              <Plus className="h-4 w-4" />
-              Novo orçamento
-            </Button>
-          </div>
+          <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
+            <Plus className="h-4 w-4" />
+            Novo orçamento
+          </Button>
         }
-      />
+      >
+        <PrivacyToggle />
+      </PageHeader>
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
