@@ -1,30 +1,37 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { getAgendaLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import type { AgendaCategory, AgendaEventSource, DerivedAgendaEvent } from "@/lib/agendaEvents";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  User, 
-  MapPin, 
-  CheckCircle2, 
-  AlertCircle,
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Calendar as CalendarIcon,
+  Clock,
+  User,
+  CheckCircle2,
   Filter,
   Layers,
-  Sparkles
+  Sparkles,
+  FileText,
+  FileClock,
+  PhoneCall,
+  Timer,
+  Factory,
+  ExternalLink,
+  Lock,
+  type LucideIcon,
 } from "lucide-react";
 
-interface AgendaEvent {
+interface TaskAgendaEvent {
   id: string;
   titulo: string;
   descricao: string;
@@ -36,44 +43,101 @@ interface AgendaEvent {
   projectId: string;
 }
 
+/** Evento unificado usado na renderização (tarefas manuais + derivados). */
+type CalendarEvent = DerivedAgendaEvent;
+
 interface ProjectOption {
   id: string;
   clientName: string;
 }
 
 interface AgendaClientProps {
-  initialEvents: AgendaEvent[];
+  initialEvents: TaskAgendaEvent[];
+  derivedEvents: DerivedAgendaEvent[];
   projects: ProjectOption[];
   companyId: string;
 }
 
-const TIPO_COMPROMISSO: Record<string, { label: string; color: string; border: string; bg: string }> = {
-  VISITA_COMERCIAL: { label: "Visita Comercial", color: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10" },
-  MEDICAO_TECNICA: { label: "Medição Técnica", color: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/10" },
-  ENTREGA_MOVEIS: { label: "Entrega de Móveis", color: "text-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/10" },
-  INSTALACAO: { label: "Instalação", color: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10" },
-  OUTROS: { label: "Outros", color: "text-slate-400", border: "border-slate-500/20", bg: "bg-slate-500/10" }
+interface VisualConfig {
+  label: string;
+  color: string;
+  border: string;
+  bg: string;
+  icon: LucideIcon;
+}
+
+/** Config visual das tarefas manuais (por tipo de compromisso). */
+const TIPO_COMPROMISSO: Record<string, VisualConfig> = {
+  VISITA_COMERCIAL: { label: "Visita Comercial", color: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10", icon: User },
+  MEDICAO_TECNICA: { label: "Medição Técnica", color: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/10", icon: CalendarIcon },
+  ENTREGA_MOVEIS: { label: "Entrega de Móveis", color: "text-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/10", icon: Layers },
+  INSTALACAO: { label: "Instalação", color: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10", icon: CheckCircle2 },
+  OUTROS: { label: "Outros", color: "text-slate-400", border: "border-slate-500/20", bg: "bg-slate-500/10", icon: CalendarIcon },
 };
 
-export default function AgendaClient({ initialEvents, projects, companyId }: AgendaClientProps) {
-  const [events, setEvents] = useState<AgendaEvent[]>(initialEvents);
-  const [currentDate, setCurrentDate] = useState(new Date("2026-07-01T00:00:00Z")); // Fixado em julho/2026 para os mocks
-  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<AgendaEvent | null>(null);
+/** Config visual dos eventos derivados (por origem). */
+const SOURCE_CONFIG: Record<Exclude<AgendaEventSource, "task">, VisualConfig> = {
+  form_received: { label: "Formulário", color: "text-sky-400", border: "border-sky-500/20", bg: "bg-sky-500/10", icon: FileText },
+  quote_deadline: { label: "Prazo Orçamento", color: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10", icon: FileClock },
+  followup: { label: "Follow-up", color: "text-rose-400", border: "border-rose-500/20", bg: "bg-rose-500/10", icon: PhoneCall },
+  sla: { label: "SLA Produção", color: "text-violet-400", border: "border-violet-500/20", bg: "bg-violet-500/10", icon: Timer },
+  production_start: { label: "Início Produção", color: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10", icon: Factory },
+};
 
-  // Estados dos Filtros
+const CATEGORY_LABELS: Record<AgendaCategory, string> = {
+  comercial: "Comercial",
+  producao: "Produção",
+  manual: "Manual",
+};
+
+function getVisual(evt: CalendarEvent): VisualConfig {
+  if (evt.source === "task") {
+    return TIPO_COMPROMISSO[evt.tipo] || TIPO_COMPROMISSO.OUTROS;
+  }
+  return SOURCE_CONFIG[evt.source] || TIPO_COMPROMISSO.OUTROS;
+}
+
+/** Normaliza uma tarefa manual para o shape unificado. */
+function taskToCalendarEvent(task: TaskAgendaEvent): CalendarEvent {
+  return {
+    ...task,
+    source: "task",
+    category: "manual",
+    readOnly: false,
+  };
+}
+
+function toDateInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export default function AgendaClient({ initialEvents, derivedEvents, projects, companyId }: AgendaClientProps) {
+  // Estados separados: tarefas (com live-sync) e derivados (estáticos das props).
+  const [taskEvents, setTaskEvents] = useState<TaskAgendaEvent[]>(initialEvents);
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
+  // Filtros
+  const [filterCategoria, setFilterCategoria] = useState<string>("ALL");
   const [filterTipo, setFilterTipo] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+
+  const today = new Date();
+  const todayStr = toDateInputValue(today);
 
   // Form de Novo Agendamento
   const [form, setForm] = useState({
     titulo: "",
     descricao: "",
     responsavel: "",
-    data: "2026-07-01",
+    data: todayStr,
     hora: "09:00",
     tipo: "MEDICAO_TECNICA" as any,
-    projectId: projects[0]?.id || ""
+    projectId: projects[0]?.id || "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -81,7 +145,7 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
   const syncAgenda = useCallback(async () => {
     const result = await getAgendaLiveSnapshot(companyId);
     if (result.success && result.events) {
-      setEvents(result.events);
+      setTaskEvents(result.events);
     }
   }, [companyId]);
 
@@ -90,39 +154,48 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
     enabled: !loading && !isAddEventOpen && !selectedEvent,
   });
 
+  // Mescla tarefas (live) + derivados (props). O live-sync só atualiza tarefas,
+  // então os derivados nunca são apagados por uma sincronização.
+  const allEvents = useMemo<CalendarEvent[]>(
+    () => [...taskEvents.map(taskToCalendarEvent), ...derivedEvents],
+    [taskEvents, derivedEvents]
+  );
+
   // Lógica do Calendário (Mês)
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   const monthNames = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
   ];
 
-  const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Dom, 1 = Seg...
+  const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Dias vazios que precedem o dia 1 do mês
-  const prevMonthEmptyDays = Array.from({ length: firstDayIndex }, (_, i) => null);
-  // Dias do mês
+  const prevMonthEmptyDays = Array.from({ length: firstDayIndex }, () => null);
   const monthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const calendarCells = [...prevMonthEmptyDays, ...monthDays];
 
-  // Navegação
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const handleToday = () => setCurrentDate(new Date());
 
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+  const isCurrentMonth =
+    year === today.getFullYear() && month === today.getMonth();
 
   // Filtragem dos eventos
-  const filteredEvents = events.filter(e => {
+  const filteredEvents = allEvents.filter((e) => {
+    const matchCategoria = filterCategoria === "ALL" || e.category === filterCategoria;
     const matchTipo = filterTipo === "ALL" || e.tipo === filterTipo;
     const matchStatus = filterStatus === "ALL" || e.status === filterStatus;
-    return matchTipo && matchStatus;
+    return matchCategoria && matchTipo && matchStatus;
   });
+
+  const sortedEvents = useMemo(
+    () => [...filteredEvents].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()),
+    [filteredEvents]
+  );
 
   // Salvar novo agendamento
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,18 +204,18 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
 
     setLoading(true);
     const dataHoraIso = new Date(`${form.data}T${form.hora}:00Z`).toISOString();
-    
+
     const result = await createTask(form.projectId, {
       titulo: form.titulo,
       descricao: form.descricao,
       responsavel: form.responsavel,
       data: dataHoraIso,
-      tipo: form.tipo
+      tipo: form.tipo,
     });
 
     if (result.success && result.task) {
-      const p = projects.find(item => item.id === form.projectId);
-      const newEvent: AgendaEvent = {
+      const p = projects.find((item) => item.id === form.projectId);
+      const newEvent: TaskAgendaEvent = {
         id: result.task.id,
         titulo: result.task.titulo,
         descricao: result.task.descricao || "",
@@ -151,31 +224,30 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
         status: result.task.status,
         tipo: result.task.tipo,
         projectName: p?.clientName || "Projeto",
-        projectId: form.projectId
+        projectId: form.projectId,
       };
 
-      setEvents([newEvent, ...events]);
+      setTaskEvents([newEvent, ...taskEvents]);
       setIsAddEventOpen(false);
-      // Reseta form
       setForm({
         titulo: "",
         descricao: "",
         responsavel: "",
-        data: "2026-07-01",
+        data: todayStr,
         hora: "09:00",
         tipo: "MEDICAO_TECNICA",
-        projectId: projects[0]?.id || ""
+        projectId: projects[0]?.id || "",
       });
     }
     setLoading(false);
   };
 
-  // Concluir / Reabrir tarefa
-  const handleToggleStatus = async (evt: AgendaEvent) => {
+  // Concluir / Reabrir tarefa (apenas eventos editáveis)
+  const handleToggleStatus = async (evt: CalendarEvent) => {
+    if (evt.readOnly) return;
     const newStatus = evt.status === "PENDENTE" ? "CONCLUIDA" : "PENDENTE";
-    
-    // Atualiza estado local
-    setEvents(events.map(e => e.id === evt.id ? { ...e, status: newStatus } : e));
+
+    setTaskEvents(taskEvents.map((e) => (e.id === evt.id ? { ...e, status: newStatus } : e)));
     if (selectedEvent?.id === evt.id) {
       setSelectedEvent({ ...selectedEvent, status: newStatus });
     }
@@ -183,17 +255,16 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
     await toggleTaskStatus(evt.projectId, evt.id, newStatus === "CONCLUIDA");
   };
 
-  // Formata hora do evento
   const formatEventTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
+
       {/* Coluna Esquerda: Filtros e Calendário */}
       <div className="lg:col-span-8 space-y-6">
-        
+
         {/* Painel de Filtros e Controles */}
         <Card className="p-4 glass-card border-border flex flex-wrap items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-4 flex-wrap">
@@ -201,9 +272,20 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
               <Filter className="h-3.5 w-3.5" />
               <span>Filtrar por:</span>
             </div>
-            
-            <Select 
-              value={filterTipo} 
+
+            <Select
+              value={filterCategoria}
+              onChange={(e) => setFilterCategoria(e.target.value)}
+              className="text-xs py-1 h-8 bg-slate-100"
+            >
+              <option value="ALL">Todas as Categorias</option>
+              <option value="comercial">Comercial</option>
+              <option value="producao">Produção</option>
+              <option value="manual">Manual</option>
+            </Select>
+
+            <Select
+              value={filterTipo}
               onChange={(e) => setFilterTipo(e.target.value)}
               className="text-xs py-1 h-8 bg-slate-100"
             >
@@ -215,8 +297,8 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
               <option value="OUTROS">Outros</option>
             </Select>
 
-            <Select 
-              value={filterStatus} 
+            <Select
+              value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="text-xs py-1 h-8 bg-slate-100"
             >
@@ -229,6 +311,23 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
           <Button onClick={() => setIsAddEventOpen(true)} size="sm" className="btn-metallic">
             <Plus className="h-4 w-4 mr-1.5" /> Agendar
           </Button>
+        </Card>
+
+        {/* Legenda de origens */}
+        <Card className="p-3 glass-card border-border flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Legenda:</span>
+          {(Object.keys(SOURCE_CONFIG) as Array<Exclude<AgendaEventSource, "task">>).map((source) => {
+            const cfg = SOURCE_CONFIG[source];
+            const Icon = cfg.icon;
+            return (
+              <span key={source} className={`inline-flex items-center gap-1 text-[10px] font-semibold ${cfg.color}`}>
+                <Icon className="h-3 w-3" /> {cfg.label}
+              </span>
+            );
+          })}
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500">
+            <CalendarIcon className="h-3 w-3" /> Tarefa manual
+          </span>
         </Card>
 
         {/* Grade do Calendário */}
@@ -245,8 +344,13 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
               <Button onClick={handlePrevMonth} variant="outline" size="icon" className="h-8 w-8">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button onClick={() => setCurrentDate(new Date("2026-07-01T00:00:00Z"))} variant="outline" size="sm" className="h-8 px-2.5 text-xs font-semibold">
-                Julho 2026
+              <Button
+                onClick={handleToday}
+                variant="outline"
+                size="sm"
+                className={`h-8 px-2.5 text-xs font-semibold ${isCurrentMonth ? "border-primary/60 text-primary" : ""}`}
+              >
+                Hoje
               </Button>
               <Button onClick={handleNextMonth} variant="outline" size="icon" className="h-8 w-8">
                 <ChevronRight className="h-4 w-4" />
@@ -269,42 +373,41 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
           <div className="grid grid-cols-7 grid-rows-5 border-collapse divide-x divide-y divide-border">
             {calendarCells.map((day, idx) => {
               if (day === null) {
-                return (
-                  <div key={`empty-${idx}`} className="h-28 bg-slate-50" />
-                );
+                return <div key={`empty-${idx}`} className="h-28 bg-slate-50" />;
               }
 
-              // Filtra eventos deste dia específico
               const cellDateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const dayEvents = filteredEvents.filter(e => {
+              const dayEvents = filteredEvents.filter((e) => {
                 const eDate = new Date(e.data);
                 const eDateStr = `${eDate.getUTCFullYear()}-${String(eDate.getUTCMonth() + 1).padStart(2, "0")}-${String(eDate.getUTCDate()).padStart(2, "0")}`;
                 return eDateStr === cellDateStr;
               });
 
+              const isToday = isCurrentMonth && day === today.getDate();
+
               return (
-                <div 
-                  key={`day-${day}`} 
-                  className="h-28 p-1.5 flex flex-col justify-between hover:bg-slate-100 transition-colors group cursor-pointer"
+                <div
+                  key={`day-${day}`}
+                  className={`h-28 p-1.5 flex flex-col justify-between hover:bg-slate-100 transition-colors group cursor-pointer ${isToday ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : ""}`}
                   onClick={() => {
                     if (dayEvents.length > 0) {
                       setSelectedEvent(dayEvents[0]);
                     }
                   }}
                 >
-                  <span className="text-xs font-bold text-muted-foreground/80 group-hover:text-primary transition-colors">
+                  <span className={`text-xs font-bold transition-colors ${isToday ? "text-primary" : "text-muted-foreground/80 group-hover:text-primary"}`}>
                     {day}
                   </span>
-                  
+
                   {/* Eventos da Célula */}
                   <div className="flex-1 mt-1 space-y-1 overflow-y-auto max-h-[80px] scrollbar-thin">
-                    {dayEvents.map(evt => {
-                      const cfg = TIPO_COMPROMISSO[evt.tipo] || TIPO_COMPROMISSO.OUTROS;
+                    {dayEvents.map((evt) => {
+                      const cfg = getVisual(evt);
                       const isCompleted = evt.status === "CONCLUIDA";
-                      
+
                       return (
-                        <div 
-                          key={evt.id} 
+                        <div
+                          key={evt.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedEvent(evt);
@@ -328,72 +431,89 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
 
       {/* Coluna Direita: Painel de Detalhes e Lista Geral */}
       <div className="lg:col-span-4 space-y-6">
-        
+
         {/* Painel de Compromisso Selecionado */}
         <Card className="p-6 bg-card/35 backdrop-blur-xs border-border/40 flex flex-col justify-between min-h-[350px]">
           {selectedEvent ? (
-            <div className="space-y-5 flex-1 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    TIPO_COMPROMISSO[selectedEvent.tipo]?.border
-                  } ${TIPO_COMPROMISSO[selectedEvent.tipo]?.bg} ${TIPO_COMPROMISSO[selectedEvent.tipo]?.color}`}>
-                    {TIPO_COMPROMISSO[selectedEvent.tipo]?.label || "Compromisso"}
-                  </span>
-                  
-                  <button 
-                    onClick={() => handleToggleStatus(selectedEvent)}
-                    className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer transition-all ${
-                      selectedEvent.status === "CONCLUIDA"
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                        : "border-border/60 bg-transparent text-muted-foreground hover:bg-accent/40"
-                    }`}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                    {selectedEvent.status === "CONCLUIDA" ? "Concluído" : "Pendente"}
-                  </button>
-                </div>
+            (() => {
+              const cfg = getVisual(selectedEvent);
+              return (
+                <div className="space-y-5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.border} ${cfg.bg} ${cfg.color}`}>
+                        {cfg.label}
+                      </span>
 
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-lg text-foreground leading-tight">
-                    {selectedEvent.titulo}
-                  </h3>
-                  <span className="text-xs text-primary font-semibold flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" /> Projeto: {selectedEvent.projectName}
-                  </span>
-                </div>
+                      {selectedEvent.readOnly ? (
+                        <span className="inline-flex items-center text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-border/60 bg-secondary text-muted-foreground">
+                          <Lock className="h-3 w-3 mr-1" /> Somente leitura
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleStatus(selectedEvent)}
+                          className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer transition-all ${
+                            selectedEvent.status === "CONCLUIDA"
+                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                              : "border-border/60 bg-transparent text-muted-foreground hover:bg-accent/40"
+                          }`}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                          {selectedEvent.status === "CONCLUIDA" ? "Concluído" : "Pendente"}
+                        </button>
+                      )}
+                    </div>
 
-                {selectedEvent.descricao && (
-                  <p className="text-xs text-muted-foreground leading-relaxed italic">
-                    "{selectedEvent.descricao}"
-                  </p>
-                )}
+                    <div className="space-y-1">
+                      <h3 className="font-extrabold text-lg text-foreground leading-tight">
+                        {selectedEvent.titulo}
+                      </h3>
+                      <span className="text-xs text-primary font-semibold flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" /> Projeto: {selectedEvent.projectName}
+                      </span>
+                    </div>
 
-                <div className="space-y-2 border-t border-border/20 pt-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary/80" />
-                    <span>
-                      {new Date(selectedEvent.data).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} às {formatEventTime(selectedEvent.data)}
-                    </span>
+                    {selectedEvent.descricao && (
+                      <p className="text-xs text-muted-foreground leading-relaxed italic">
+                        "{selectedEvent.descricao}"
+                      </p>
+                    )}
+
+                    <div className="space-y-2 border-t border-border/20 pt-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary/80" />
+                        <span>
+                          {new Date(selectedEvent.data).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })} às {formatEventTime(selectedEvent.data)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-primary/80" />
+                        <span>Responsável: <strong>{selectedEvent.responsavel}</strong></span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary/80" />
-                    <span>Responsável: <strong>{selectedEvent.responsavel}</strong></span>
+
+                  <div className="border-t border-border/20 pt-4 flex gap-2">
+                    {selectedEvent.readOnly && selectedEvent.href && (
+                      <a
+                        href={selectedEvent.href}
+                        className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg btn-metallic"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" /> Abrir
+                      </a>
+                    )}
+                    <Button
+                      onClick={() => setSelectedEvent(null)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs font-semibold"
+                    >
+                      Fechar Detalhes
+                    </Button>
                   </div>
                 </div>
-              </div>
-
-              <div className="border-t border-border/20 pt-4 flex gap-2">
-                <Button 
-                  onClick={() => setSelectedEvent(null)}
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full text-xs font-semibold"
-                >
-                  Fechar Detalhes
-                </Button>
-              </div>
-            </div>
+              );
+            })()
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-6 flex-1 text-muted-foreground">
               <CalendarIcon className="h-10 w-10 text-primary/30 mb-3" />
@@ -417,25 +537,27 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
           </div>
 
           <div className="space-y-2.5 max-h-[300px] overflow-y-auto scrollbar-thin">
-            {filteredEvents.length === 0 ? (
+            {sortedEvents.length === 0 ? (
               <div className="text-xs text-muted-foreground text-center py-6">
                 Nenhum compromisso correspondente encontrado para exibir.
               </div>
             ) : (
-              filteredEvents.slice(0, 5).map(evt => {
-                const cfg = TIPO_COMPROMISSO[evt.tipo] || TIPO_COMPROMISSO.OUTROS;
+              sortedEvents.slice(0, 8).map((evt) => {
+                const cfg = getVisual(evt);
+                const Icon = cfg.icon;
                 const isCompleted = evt.status === "CONCLUIDA";
-                
+
                 return (
-                  <div 
-                    key={evt.id} 
+                  <div
+                    key={evt.id}
                     onClick={() => setSelectedEvent(evt)}
                     className={`p-3 rounded-lg border ${cfg.border} bg-black/10 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isCompleted ? "opacity-50" : ""
                     }`}
                   >
                     <div className="space-y-1 min-w-0">
-                      <h4 className={`font-bold text-xs text-foreground truncate ${isCompleted ? "line-through" : ""}`}>
+                      <h4 className={`font-bold text-xs text-foreground truncate flex items-center gap-1.5 ${isCompleted ? "line-through" : ""}`}>
+                        <Icon className={`h-3 w-3 shrink-0 ${cfg.color}`} />
                         {evt.titulo}
                       </h4>
                       <p className="text-[10px] text-muted-foreground flex items-center gap-2">
@@ -445,7 +567,7 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
                       </p>
                     </div>
                     <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wider ${cfg.bg} ${cfg.color}`}>
-                      {cfg.label.split(" ")[0]}
+                      {evt.readOnly ? cfg.label.split(" ")[0] : "Tarefa"}
                     </span>
                   </div>
                 );
@@ -470,7 +592,7 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
               onChange={(e) => setForm({ ...form, projectId: e.target.value })}
               required
             >
-              {projects.map(p => (
+              {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.clientName} (Projeto {p.id.split("-")[1] || p.id})
                 </option>
@@ -484,7 +606,6 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
             </label>
             <Input
               required
-              
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
             />
@@ -496,7 +617,6 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
             </label>
             <textarea
               className="w-full bg-card/60 border border-border/60 hover:border-border rounded-lg p-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary placeholder-muted-foreground transition-all duration-200 resize-none h-16"
-              
               value={form.descricao}
               onChange={(e) => setForm({ ...form, descricao: e.target.value })}
             />
@@ -534,7 +654,6 @@ export default function AgendaClient({ initialEvents, projects, companyId }: Age
               </label>
               <Input
                 required
-                
                 value={form.responsavel}
                 onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
               />
