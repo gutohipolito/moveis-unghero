@@ -67,9 +67,13 @@ export default function DashboardLayoutWrapper({
                 <Link
                   href="/crm"
                   aria-label="Móveis Unghero"
-                  className="text-[11px] font-black text-indigo-650 bg-indigo-50 border border-indigo-100 h-8 w-8 flex items-center justify-center rounded-lg shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  className="h-9 w-9 rounded-lg overflow-hidden shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
-                  MU
+                  <img
+                    src="/icon-mu.png"
+                    alt="Móveis Unghero"
+                    className="h-full w-full object-cover"
+                  />
                 </Link>
                 <button
                   onClick={handleToggle}

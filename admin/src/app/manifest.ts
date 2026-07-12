@@ -18,19 +18,19 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["business", "productivity"],
     icons: [
       {
-        src: "/pwa-icon/192",
+        src: "/icon-mu-192.png",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/pwa-icon/512",
+        src: "/icon-mu.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/pwa-icon/512",
+        src: "/icon-mu.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
@@ -41,19 +41,19 @@ export default function manifest(): MetadataRoute.Manifest {
         name: "Funil comercial",
         short_name: "CRM",
         url: "/crm",
-        icons: [{ src: "/pwa-icon/192", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: "/icon-mu-192.png", sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Chão de fábrica",
         short_name: "Fábrica",
         url: "/factory",
-        icons: [{ src: "/pwa-icon/192", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: "/icon-mu-192.png", sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Agenda",
         short_name: "Agenda",
         url: "/agenda",
-        icons: [{ src: "/pwa-icon/192", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: "/icon-mu-192.png", sizes: "192x192", type: "image/png" }],
       },
     ],
   };

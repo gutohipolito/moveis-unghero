@@ -19,8 +19,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: [{ url: "/icon", type: "image/png" }],
-    apple: [{ url: "/apple-icon", type: "image/png" }],
+    icon: [{ url: "/icon-mu.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/icon-mu.png", type: "image/png", sizes: "512x512" }],
   },
 };
 
