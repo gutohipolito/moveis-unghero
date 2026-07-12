@@ -108,11 +108,11 @@ export default function ClienteDetailsClient({
   
   // Abas: overview, projects, documents, finance, timeline
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "finance" | "timeline" | "documents">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "finance" | "timeline" | "documents" | "notas">("overview");
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "finance" || tab === "projects" || tab === "documents" || tab === "timeline" || tab === "overview") {
+    if (tab === "finance" || tab === "projects" || tab === "documents" || tab === "timeline" || tab === "overview" || tab === "notas") {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -181,9 +181,9 @@ export default function ClienteDetailsClient({
         <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
       </div>
 
-      {/* ─── PERFIL DO CLIENTE — HEADER ─── */}
-      <Card className="p-6 glass-card flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-start gap-4">
+      {/* ─── PERFIL DO CLIENTE — HEADER (com contato integrado) ─── */}
+      <Card className="p-6 glass-card space-y-5">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
@@ -200,35 +200,74 @@ export default function ClienteDetailsClient({
             )}
 
             <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-muted-foreground font-medium">
-              <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-rose-500" /> {client.cidade}</span>
               <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Origem: {ORIGIN_LABELS[client.origem] || client.origem}</span>
             </div>
           </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
+              {STATUS_LABELS[client.status] || client.status}
+            </span>
+
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
+            >
+              <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
+            </a>
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
-            {STATUS_LABELS[client.status] || client.status}
-          </span>
-          
-          <a 
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
-          >
-            <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
-          </a>
+        {/* Informações de contato integradas */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+              <Phone className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
+              {sensitiveHidden ? (
+                <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
+              ) : (
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+              <Mail className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
+              {sensitiveHidden ? (
+                <span className="text-sm font-semibold text-foreground select-none break-all">{maskEmail(client.email)}</span>
+              ) : (
+                <a href={`mailto:${client.email}`} className="text-sm font-semibold text-primary hover:underline break-all">{client.email}</a>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+              <MapPin className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
+              <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
+            </div>
+          </div>
         </div>
       </Card>
 
       {/* ─── CONTEÚDO ─── */}
-      {/* Mobile: cards de informações/notas primeiro, depois o seletor de abas e o conteúdo.
-          Desktop: seletor no topo (full-width), cards à esquerda e conteúdo à direita. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {/* Seletor de abas full-width e, abaixo, cada aba ocupando toda a largura. */}
+      <div className="space-y-6">
 
         {/* ─── SELETOR DE ABAS ─── */}
-        <div className="order-2 lg:order-1 lg:col-span-3">
+        <div>
           {/* Mobile: dropdown de seção */}
           <div className="relative sm:hidden">
             <select
@@ -241,6 +280,7 @@ export default function ClienteDetailsClient({
               <option value="documents">Fotos &amp; Docs ({attachments.length})</option>
               <option value="finance">Financeiro</option>
               <option value="timeline">Linha do Tempo</option>
+              <option value="notas">Notas</option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>
@@ -285,65 +325,19 @@ export default function ClienteDetailsClient({
               >
                 <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("notas")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "notas" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <FileText className="h-4 w-4 shrink-0" /> Notas
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Lado Esquerdo: Cards Cadastrais (presente em quase todas as telas) */}
-        <div className="order-1 lg:order-2 lg:col-span-1 space-y-6">
-          <Card className="p-5 glass-card space-y-4">
-            <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Informações de Contato</h3>
-            <div className="space-y-3.5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                  <Phone className="h-4 w-4" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
-                  {sensitiveHidden ? (
-                    <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
-                  ) : (
-                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                  <Mail className="h-4 w-4" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
-                  {sensitiveHidden ? (
-                    <span className="text-sm font-semibold text-foreground select-none break-all">{maskEmail(client.email)}</span>
-                  ) : (
-                    <a href={`mailto:${client.email}`} className="text-sm font-semibold text-primary hover:underline break-all">{client.email}</a>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
-                  <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5 glass-card space-y-2">
-            <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Observações / Notas</h3>
-            <p className="text-xs text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
-              {docInfo.observacoes || "Sem observações iniciais registradas para este cliente."}
-            </p>
-          </Card>
-        </div>
-
-        {/* Lado Direito: Conteúdo Dinâmico */}
-        <div className="order-3 lg:col-span-2 space-y-6">
+        {/* Conteúdo Dinâmico (largura total) */}
+        <div className="space-y-6">
 
           {/* ABA: VISÃO GERAL — resumo rápido */}
           {activeTab === "overview" && (
@@ -522,6 +516,16 @@ export default function ClienteDetailsClient({
                 </div>
               </Card>
             </div>
+          )}
+
+          {/* ABA: NOTAS / OBSERVAÇÕES */}
+          {activeTab === "notas" && (
+            <Card className="p-5 glass-card space-y-2">
+              <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Observações / Notas</h3>
+              <p className="text-sm text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
+                {docInfo.observacoes || "Sem observações iniciais registradas para este cliente."}
+              </p>
+            </Card>
           )}
 
         </div>
