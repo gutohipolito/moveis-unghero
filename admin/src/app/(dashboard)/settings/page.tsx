@@ -8,9 +8,26 @@ import {
   Save, 
   CheckCircle2, 
   AlertTriangle,
-  Info
+  Info,
+  HardDrive,
+  ImageIcon,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getStorageUsageAction, type StorageUsage } from "@/app/actions/storage";
+
+// Referência do plano Vercel Blob (armazenamento incluído) para o medidor de uso.
+const STORAGE_REFERENCE_BYTES = 5 * 1024 * 1024 * 1024;
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return "0 MB";
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return `${gb.toFixed(2)} GB`;
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) return `${mb.toFixed(1)} MB`;
+  const kb = bytes / 1024;
+  return `${kb.toFixed(0)} KB`;
+}
 
 export default function SettingsPage() {
   // Estados de Dados da Empresa
@@ -32,6 +49,10 @@ export default function SettingsPage() {
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
+  // Uso de armazenamento (somente Admin)
+  const [storage, setStorage] = useState<StorageUsage | null>(null);
+  const [storageLoading, setStorageLoading] = useState(true);
+
   // Carrega configurações persistidas localmente se existirem
   useEffect(() => {
     const savedOffline = localStorage.getItem("db-offline-simulado");
@@ -50,6 +71,24 @@ export default function SettingsPage() {
 
     const savedRazao = localStorage.getItem("settings-razao-social");
     if (savedRazao) setRazaoSocial(savedRazao);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getStorageUsageAction()
+      .then((res) => {
+        if (!active) return;
+        setStorage(res.success ? res.usage : null);
+      })
+      .catch(() => {
+        if (active) setStorage(null);
+      })
+      .finally(() => {
+        if (active) setStorageLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleSave = (e: React.FormEvent) => {
@@ -234,6 +273,73 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        {/* Painel 4: Armazenamento (Admin) */}
+        {(storageLoading || storage) && (
+          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <HardDrive className="h-5 w-5 text-indigo-600" />
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">Armazenamento de Arquivos</h2>
+            </div>
+
+            {storageLoading ? (
+              <div className="flex items-center gap-2 text-xs text-slate-450 font-medium py-2">
+                <div className="h-4 w-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                Calculando uso de armazenamento...
+              </div>
+            ) : storage ? (
+              (() => {
+                const pct = Math.min(100, (storage.totalBytes / STORAGE_REFERENCE_BYTES) * 100);
+                const barColor = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-indigo-600";
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-2xl font-black text-slate-800 tracking-tight">{formatBytes(storage.totalBytes)}</p>
+                        <p className="text-[11px] text-slate-450 font-medium mt-0.5">
+                          de {formatBytes(STORAGE_REFERENCE_BYTES)} de referência ({pct.toFixed(1)}% utilizado)
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
+                        {storage.fileCount} arquivo{storage.fileCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+
+                    <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.max(pct, 1)}%` }} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-150 rounded-xl px-3.5 py-3">
+                        <ImageIcon className="h-4.5 w-4.5 text-indigo-600 shrink-0" />
+                        <div>
+                          <p className="text-sm font-black text-slate-800 leading-none">{storage.imageCount}</p>
+                          <p className="text-[10px] text-slate-450 font-medium uppercase tracking-wider mt-1">Fotos</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-150 rounded-xl px-3.5 py-3">
+                        <FileText className="h-4.5 w-4.5 text-indigo-600 shrink-0" />
+                        <div>
+                          <p className="text-sm font-black text-slate-800 leading-none">{storage.docCount}</p>
+                          <p className="text-[10px] text-slate-450 font-medium uppercase tracking-wider mt-1">Documentos</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-slate-150 bg-slate-50/60 text-[11px] text-slate-500 font-medium">
+                      <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                      <span>
+                        Total de fotos e documentos anexados aos clientes (Vercel Blob). As imagens são otimizadas
+                        automaticamente no upload para reduzir o consumo. A referência de {formatBytes(STORAGE_REFERENCE_BYTES)} serve
+                        de parâmetro; acima do incluído no plano, o excedente é cobrado por uso.
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : null}
+          </div>
+        )}
 
         {/* Barra de Ações do Formulário */}
         <div className="flex items-center justify-between pt-2">

@@ -19,6 +19,7 @@ import {
   CLIENT_ATTACHMENT_MAX_BYTES,
 } from "@/lib/clientAttachments";
 import { labelProjectStatus } from "@/lib/navLabels";
+import { compressImageFile } from "@/lib/imageCompression";
 import ClienteCameraModal from "@/components/clientes/ClienteCameraModal";
 import { ModalShell } from "@/components/ui/modal-shell";
 
@@ -163,7 +164,8 @@ export default function ClienteDocumentsTab({
 
     try {
       const uploaded: ClientAttachmentDTO[] = [];
-      for (const file of list) {
+      for (const original of list) {
+        const file = await compressImageFile(original);
         const attachment = await uploadClientFile(clientId, file, uploadProjectId);
         uploaded.push(attachment);
       }
@@ -289,6 +291,8 @@ export default function ClienteDocumentsTab({
         <p className="text-[11px] text-muted-foreground">
           Formatos aceitos: <span className="font-semibold text-foreground">JPG, PNG, WEBP, HEIC/HEIF e PDF</span>{" "}
           · até <span className="font-semibold text-foreground">{Math.round(CLIENT_ATTACHMENT_MAX_BYTES / (1024 * 1024))} MB</span> por arquivo.
+          <br />
+          As imagens são otimizadas automaticamente (redimensionadas para até 1600px) para ocupar menos espaço, sem perda perceptível.
         </p>
 
         <input
