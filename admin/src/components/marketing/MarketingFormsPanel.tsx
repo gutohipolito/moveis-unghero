@@ -93,7 +93,7 @@ function MarketingFormCard({ form }: { form: MarketingForm }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Link2 className="h-4 w-4 text-primary" />
@@ -208,7 +208,7 @@ export default function MarketingFormsPanel() {
         </p>
       </Card>
 
-      <div className="space-y-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
         {MARKETING_FORMS.map((form) => (
           <MarketingFormCard key={form.id} form={form} />
         ))}
