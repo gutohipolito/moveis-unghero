@@ -4,6 +4,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import FinanceiroClient from "./FinanceiroClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
+import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 
 export default async function FinanceiroPage() {
   await guardModule("financeiro");
@@ -46,6 +47,8 @@ export default async function FinanceiroPage() {
       >
         <PrivacyToggle />
       </PageHeader>
+
+      <FinanceSectionTabs />
 
       <FinanceiroClient initialInstallments={formattedInsts} companyId={userCompanyId} />
     </div>

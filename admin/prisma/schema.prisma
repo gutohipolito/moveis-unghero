@@ -24,6 +24,7 @@ model Company {
   professionalPartners ProfessionalPartner[]
   suppliers      Supplier[]
   inventoryItems InventoryItem[]
+  expenses       Expense[]
 }
 
 model User {
@@ -210,6 +211,7 @@ model Project {
   briefing              LeadBriefing?
   attachments           ClientAttachment[] @relation("ProjectAttachments")
   supplyTickets         SupplyTicket[]
+  expenses              Expense[]
 }
 
 enum ProjectStatus {
@@ -558,6 +560,7 @@ model Supplier {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   inventoryItems     InventoryItem[]
+  expenses           Expense[]
 
   @@index([company_id])
 }
@@ -647,4 +650,64 @@ model PushNotificationSent {
 
   @@unique([subscription_id, notification_id])
   @@index([subscription_id])
+}
+
+// ── Financeiro: Contas a Pagar / Despesas ──────────────────────────────
+enum ExpenseNature {
+  FIXA
+  VARIAVEL
+}
+
+enum ExpenseStatus {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+enum ExpenseCategory {
+  ALUGUEL
+  ENERGIA
+  AGUA
+  INTERNET_TELEFONE
+  SALARIOS
+  PRO_LABORE
+  IMPOSTOS
+  MATERIAL
+  FERRAGENS
+  TERCEIROS
+  FRETE_LOGISTICA
+  MARKETING
+  MANUTENCAO
+  EQUIPAMENTOS
+  COMBUSTIVEL
+  TAXAS_BANCARIAS
+  OUTROS
+}
+
+model Expense {
+  id               String          @id @default(uuid())
+  company_id       String
+  company          Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  descricao        String
+  categoria        ExpenseCategory @default(OUTROS)
+  natureza         ExpenseNature   @default(VARIAVEL)
+  valor            Decimal         @db.Decimal(12, 2)
+  data_vencimento  DateTime
+  data_pagamento   DateTime?
+  status           ExpenseStatus   @default(PENDENTE)
+  metodo_pagamento PaymentMethod?
+  supplier_id      String?
+  supplier         Supplier?       @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
+  project_id       String?
+  project          Project?        @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  fornecedor_nome  String?
+  observacoes      String?
+  grupo_id         String?         // agrupa lançamentos recorrentes (mesma série mensal)
+  created_by       String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([company_id])
+  @@index([company_id, status])
+  @@index([company_id, data_vencimento])
 }
