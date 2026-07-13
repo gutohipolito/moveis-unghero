@@ -12,7 +12,6 @@ import {
   Target,
   Percent,
   ArrowUpRight,
-  Info,
   ArrowUpDown,
 } from "lucide-react";
 import type { ProfitabilityData, ProjectProfitRow } from "@/app/actions/profitability";
@@ -141,15 +140,6 @@ export default function RentabilidadeClient({ data }: { data: ProfitabilityData 
           </div>
         </Card>
       </div>
-
-      <p className="text-[11px] text-muted-foreground inline-flex items-start gap-1.5">
-        <Info className="h-3.5 w-3.5 text-slate-400 mt-px shrink-0" />
-        <span>
-          <strong className="text-slate-600">Receita</strong> = valor do orçamento aprovado (ou previsto).{" "}
-          <strong className="text-slate-600">Custo</strong> = despesas vinculadas à obra em Contas a Pagar.
-          Vincule as despesas ao projeto para a margem ficar precisa.
-        </span>
-      </p>
 
       {/* Filtros */}
       <Card className="p-4 glass-card border-border flex flex-col md:flex-row md:items-center gap-3">
