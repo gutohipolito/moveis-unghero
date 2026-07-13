@@ -20,6 +20,7 @@ import {
   ArrowUpAZ,
   ArrowDownZA,
   Bookmark,
+  CheckCircle2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Dialog } from "@/components/ui/dialog";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { 
+  approveQuote,
   deleteQuote,
   getProjectsForQuotes, 
   getQuotes,
@@ -91,6 +93,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "APPROVED">("ALL");
   const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor">("validade");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   // Estados para criação direta de Orçamento
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -237,6 +240,39 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           showSuccess("Orçamento excluído", `A versão ${version} foi removida com sucesso.`);
         } else {
           showError("Erro ao excluir", (res as { error?: string }).error || "Erro ao excluir orçamento.");
+        }
+      },
+    });
+  };
+
+  const handleApproveQuote = (quote: Quote) => {
+    if (quote.aprovado_em || approvingId) return;
+
+    confirmAction({
+      title: "Aprovar proposta?",
+      message: `A versão ${quote.versao} de ${quote.project.client.nome} será aprovada e o projeto passará para o status Aprovado.`,
+      confirmLabel: "Sim, aprovar",
+      onConfirm: async () => {
+        setApprovingId(quote.id);
+        const approvedAt = new Date().toISOString();
+        // Atualização otimista: aprova este e desaprova os demais do mesmo projeto.
+        setQuotes((prev) =>
+          prev.map((q) =>
+            q.project_id === quote.project_id
+              ? { ...q, aprovado_em: q.id === quote.id ? approvedAt : null }
+              : q
+          )
+        );
+
+        const res = await approveQuote(quote.project_id, quote.id, quote.versao);
+        setApprovingId(null);
+
+        if (res.success) {
+          showSuccess("Proposta aprovada", `Versão ${quote.versao} aprovada com sucesso.`);
+          syncQuotes();
+        } else {
+          showError("Erro ao aprovar", res.error ?? "Não foi possível aprovar a proposta.");
+          syncQuotes();
         }
       },
     });
@@ -585,6 +621,20 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
                         <div className="flex justify-end items-center gap-2">
+                          {!isApproved && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 disabled:opacity-50"
+                              onClick={() => handleApproveQuote(q)}
+                              disabled={approvingId === q.id}
+                              title="Aprovar proposta"
+                            >
+                              <CheckCircle2 className={`h-3.5 w-3.5 ${approvingId === q.id ? "animate-pulse" : ""}`} />
+                              {approvingId === q.id ? "Aprovando..." : "Aprovar"}
+                            </Button>
+                          )}
+
                           <Link 
                             href={`/quotes/${q.id}/print`}
                             target="_blank"
