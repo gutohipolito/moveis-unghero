@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -14,7 +14,9 @@ import {
   PlayCircle,
   RotateCcw,
   Ban,
+  ImagePlus,
 } from "lucide-react";
+import { compressImageFile } from "@/lib/imageCompression";
 import {
   SUPPLY_STATUS_LABELS,
   SUPPLY_PRIORITY_LABELS,
@@ -86,8 +88,22 @@ export default function ChamadosClient({
   const [descricao, setDescricao] = useState("");
   const [prioridade, setPrioridade] = useState<SupplyTicketPriority>("MEDIA");
   const [projectId, setProjectId] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
+
+  function addFiles(list: FileList | null) {
+    if (!list) return;
+    const incoming = Array.from(list).filter((f) => f.type.startsWith("image/"));
+    setFiles((prev) => [...prev, ...incoming].slice(0, 6));
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
 
   // Actions
   const [actionId, setActionId] = useState<string | null>(null);
@@ -120,11 +136,25 @@ export default function ChamadosClient({
     setSubmitting(true);
     setFormError(null);
     try {
+      const imagens: string[] = [];
+      for (const file of files) {
+        const compressed = await compressImageFile(file);
+        const fd = new FormData();
+        fd.append("file", compressed);
+        const resp = await fetch("/api/chamados/upload", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+          throw new Error(data.error || "Falha ao enviar a imagem.");
+        }
+        imagens.push(data.url as string);
+      }
+
       const res = await createSupplyTicket({
         titulo,
         descricao,
         prioridade,
         projectId: projectId || null,
+        imagens,
       });
       if (res.success) {
         upsertTicket(res.ticket);
@@ -132,12 +162,13 @@ export default function ChamadosClient({
         setDescricao("");
         setPrioridade("MEDIA");
         setProjectId("");
+        setFiles([]);
         setShowForm(false);
       } else {
         setFormError(res.error);
       }
-    } catch {
-      setFormError("Não foi possível abrir o chamado.");
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Não foi possível abrir o chamado.");
     } finally {
       setSubmitting(false);
     }
@@ -282,6 +313,50 @@ export default function ChamadosClient({
             </select>
           </div>
 
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-450">
+              Fotos (opcional)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {previews.map((src, i) => (
+                <div
+                  key={i}
+                  className="relative h-20 w-20 rounded-xl overflow-hidden border border-slate-200"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="Prévia" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center cursor-pointer"
+                    aria-label="Remover imagem"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {files.length < 6 && (
+                <label className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-0.5 cursor-pointer text-slate-400 hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50/40 transition-colors">
+                  <ImagePlus className="h-5 w-5" />
+                  <span className="text-[9px] font-black uppercase tracking-wide">Adicionar</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      addFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">
+              JPG, PNG ou WEBP · até 10 MB · máx. 6 imagens · otimizadas automaticamente.
+            </p>
+          </div>
+
           {formError && (
             <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl">
               {formError}
@@ -295,7 +370,11 @@ export default function ChamadosClient({
               className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold transition-all disabled:opacity-60 cursor-pointer"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Abrir chamado
+              {submitting
+                ? files.length > 0
+                  ? "Enviando imagens…"
+                  : "Abrindo…"
+                : "Abrir chamado"}
             </button>
           </div>
         </form>
@@ -345,6 +424,23 @@ export default function ChamadosClient({
                     <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap break-words">{t.descricao}</p>
                   </div>
                 </div>
+
+                {t.imagens.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {t.imagens.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block h-16 w-16 rounded-lg overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="Anexo do chamado" className="h-full w-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100">
                   <span className="inline-flex items-center gap-1.5">

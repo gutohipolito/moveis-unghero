@@ -19,6 +19,7 @@ type TicketRow = {
   prioridade: SupplyTicketPriority;
   project_id: string | null;
   resolucao: string | null;
+  imagens: string[];
   createdAt: Date;
   resolvedAt: Date | null;
   requested_by: string;
@@ -42,6 +43,7 @@ function mapTicket(row: TicketRow): SupplyTicketDTO {
     requesterName: row.requester?.name ?? "—",
     resolverName: row.resolver?.name ?? null,
     resolucao: row.resolucao,
+    imagens: row.imagens ?? [],
     createdAt: row.createdAt.toISOString(),
     resolvedAt: row.resolvedAt ? row.resolvedAt.toISOString() : null,
   };
@@ -60,6 +62,7 @@ export interface CreateSupplyTicketInput {
   descricao: string;
   prioridade?: SupplyTicketPriority;
   projectId?: string | null;
+  imagens?: string[];
 }
 
 export type SupplyTicketResult =
@@ -106,6 +109,12 @@ export async function createSupplyTicket(
 
   const prioridade: SupplyTicketPriority = input.prioridade ?? "MEDIA";
 
+  const imagens = Array.isArray(input.imagens)
+    ? input.imagens
+        .filter((u): u is string => typeof u === "string" && u.includes("blob.vercel-storage.com"))
+        .slice(0, 6)
+    : [];
+
   try {
     const row = await prisma.supplyTicket.create({
       data: {
@@ -115,6 +124,7 @@ export async function createSupplyTicket(
         prioridade,
         project_id: projectId,
         requested_by: auth.userId,
+        imagens,
       },
       include: TICKET_INCLUDE,
     });

@@ -393,6 +393,7 @@ model SupplyTicket {
   resolved_by  String?
   resolver     User?                @relation("SupplyTicketResolver", fields: [resolved_by], references: [id])
   resolucao    String?
+  imagens      String[]             @default([])
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   resolvedAt   DateTime?

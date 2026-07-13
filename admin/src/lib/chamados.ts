@@ -13,6 +13,7 @@ export interface SupplyTicketDTO {
   requesterName: string;
   resolverName: string | null;
   resolucao: string | null;
+  imagens: string[];
   createdAt: string;
   resolvedAt: string | null;
 }
