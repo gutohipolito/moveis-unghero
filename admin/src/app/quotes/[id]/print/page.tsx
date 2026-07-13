@@ -458,7 +458,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             </section>
 
             {/* Condições de pagamento */}
-            <section className="rounded-lg border border-neutral-200 px-3 py-2.5 space-y-2">
+            <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
                 <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500 shrink-0">
                   Condições de pagamento
@@ -476,16 +476,73 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                   ))}
                 </div>
               </div>
-              <div className="text-[8.5px] text-neutral-600 leading-snug space-y-0.5">
-                <p>
-                  <span className="font-bold text-neutral-800">À vista:</span> 5% de desconto no PIX ou
-                  transferência.
-                </p>
-                <p>
-                  <span className="font-bold text-neutral-800">Parcelado:</span> Entrada de 40% (confirmação
-                  do pedido) + 60% em até 6x no cartão ou boleto (mediante análise).
-                </p>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {/* À vista */}
+                <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
+                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
+                    À vista
+                  </span>
+                  <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+                    <li className="flex gap-1.5">
+                      <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
+                      <span>
+                        <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
+                        <strong className="text-neutral-900">5x sem juros</strong>
+                      </span>
+                    </li>
+                    <li className="flex gap-1.5">
+                      <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
+                      <span>
+                        <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
+                        <strong className="text-neutral-900">50% na entrega</strong>
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Parcelado */}
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+                    Parcelado
+                  </span>
+                  <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+                    <li className="flex gap-1.5">
+                      <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+                      <span>
+                        <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
+                        <strong className="text-neutral-900">5x sem juros</strong>
+                      </span>
+                    </li>
+                    <li className="flex gap-1.5">
+                      <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+                      <span>
+                        ou em <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo)
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Cartão */}
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+                    Cartão
+                  </span>
+                  <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+                    <li className="flex gap-1.5">
+                      <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+                      <span>
+                        Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos
+                        (+ a taxa de parcelamento do cartão)
+                      </span>
+                    </li>
+                  </ul>
+                </div>
               </div>
+
+              <p className="text-[8px] text-neutral-400 leading-snug">
+                *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
+              </p>
             </section>
           </main>
 
