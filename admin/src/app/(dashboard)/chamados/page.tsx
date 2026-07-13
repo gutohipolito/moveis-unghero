@@ -1,4 +1,5 @@
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { guardModule } from "@/lib/moduleAccess";
 import { getAuthContext } from "@/lib/auth-guard";
 import { getSessionCompanyId } from "@/lib/session";
@@ -41,6 +42,17 @@ export default async function ChamadosPage() {
       <PageHeader
         title="Chamados de Insumos"
         description="Abra chamados sobre falta de insumos. As solicitações são encaminhadas à Diretoria para resolução."
+        help={
+          <TooltipBody
+            title="Como funciona"
+            items={[
+              "Qualquer colaborador pode abrir um chamado de falta de insumo.",
+              "Defina prioridade e, se quiser, vincule a um projeto e anexe fotos.",
+              "A Diretoria recebe uma notificação e pode assumir e resolver.",
+              "O chamado registra quem solicitou e quem resolveu.",
+            ]}
+          />
+        }
       />
       <ChamadosClient
         initialTickets={tickets}

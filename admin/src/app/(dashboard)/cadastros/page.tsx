@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { getCatalogGroups } from "@/app/actions/cadastros";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import CadastrosClient from "./CadastrosClient";
 
 interface CadastrosPageProps {
@@ -23,6 +24,16 @@ export default async function CadastrosPage({ searchParams }: CadastrosPageProps
       <PageHeader
         title="Cadastros"
         description="Central de listas configuráveis (veículos, categorias de insumos) e referências do sistema. Para parceiros profissionais, use Projetistas e Arquitetos."
+        help={
+          <TooltipBody
+            title="Listas do sistema"
+            items={[
+              "Configure as listas reutilizadas em outras telas (veículos, categorias, etc.).",
+              "Mantenha os valores padronizados para evitar duplicidade.",
+              "Para arquitetos e projetistas externos, use Projetistas e Arquitetos.",
+            ]}
+          />
+        }
       />
 
       <CadastrosClient

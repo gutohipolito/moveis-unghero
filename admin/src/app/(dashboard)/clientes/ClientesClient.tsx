@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import SensitiveToggle from "@/components/SensitiveToggle";
+import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -557,6 +558,17 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="page-title">Clientes</h1>
+              <InfoTooltip label="Sobre Clientes">
+                <TooltipBody
+                  title="Base de clientes"
+                  items={[
+                    "Cadastre clientes Pessoa Física ou Jurídica escolhendo o tipo antes.",
+                    "Clique em qualquer parte da linha (fora dos botões) para abrir o cliente.",
+                    "O ícone de olho oculta dados sensíveis como telefone, e-mail e documento.",
+                    "Ajuste quantos itens aparecem por página no rodapé da lista.",
+                  ]}
+                />
+              </InfoTooltip>
               <SensitiveToggle />
             </div>
             <p className="page-subtitle">

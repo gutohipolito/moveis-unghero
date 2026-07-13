@@ -42,6 +42,7 @@ import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import PrivacyToggle from "@/components/PrivacyToggle";
 
 interface QuoteItem {
@@ -374,6 +375,17 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
       <PageHeader
         title="Orçamentos"
         description="Propostas comerciais e orçamentos emitidos para clientes."
+        help={
+          <TooltipBody
+            title="Propostas comerciais"
+            items={[
+              "Crie orçamentos com itens livres ou reutilizando itens salvos.",
+              "Vincule um arquiteto e escolha o modelo antes de gerar o PDF.",
+              "Aprovar um orçamento gera as parcelas em Contas a Receber.",
+              "A validade muda de cor conforme se aproxima do vencimento.",
+            ]}
+          />
+        }
         actions={
           <div className="flex items-center gap-2">
             <Button

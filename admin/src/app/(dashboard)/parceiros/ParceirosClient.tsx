@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
+import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { PartnerType } from "@prisma/client";
 import {
   createParceiro,
@@ -633,6 +634,17 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl font-black tracking-tight text-slate-800">Projetistas e Arquitetos</h1>
+              <InfoTooltip label="Sobre Projetistas e Arquitetos">
+                <TooltipBody
+                  title="Parceiros externos"
+                  items={[
+                    "Cadastre arquitetos e projetistas que indicam clientes.",
+                    "Vincule um parceiro a um orçamento para dar o devido crédito.",
+                    "Acompanhe indicações e desempenho de cada parceiro.",
+                    "O modo privacidade oculta nomes e fotos em apresentações.",
+                  ]}
+                />
+              </InfoTooltip>
               <button
                 onClick={() => setPrivacyMode(!privacyMode)}
                 className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-650 transition-colors cursor-pointer border border-slate-200 bg-white shadow-sm"

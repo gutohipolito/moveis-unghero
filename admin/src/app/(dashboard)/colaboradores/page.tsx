@@ -4,6 +4,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import ColaboradoresClient from "@/components/ColaboradoresClient";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function ColaboradoresPage() {
   await guardModule("colaboradores");
@@ -28,6 +29,16 @@ export default async function ColaboradoresPage() {
       <PageHeader
         title="Colaboradores"
         description="Equipe interna com acesso ao painel — comercial, fábrica, financeiro e administradores. Para parceiros externos (arquitetos/projetistas), use Projetistas e Arquitetos."
+        help={
+          <TooltipBody
+            title="Equipe interna"
+            items={[
+              "Cadastre quem tem acesso ao painel e defina o cargo de cada um.",
+              "O cargo determina os módulos visíveis (veja em Permissões de Acesso).",
+              "Para arquitetos e projetistas externos, use Projetistas e Arquitetos.",
+            ]}
+          />
+        }
       />
 
       <ColaboradoresClient

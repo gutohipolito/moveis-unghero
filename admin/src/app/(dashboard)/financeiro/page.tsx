@@ -4,6 +4,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import FinanceiroClient from "./FinanceiroClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 
 export default async function FinanceiroPage() {
@@ -44,6 +45,17 @@ export default async function FinanceiroPage() {
       <PageHeader
         title="Financeiro"
         description="Faturamento, entradas, saldo devedor e parcelas de todos os projetos."
+        help={
+          <TooltipBody
+            title="Contas a Receber"
+            items={[
+              "Mostra as parcelas geradas a partir dos orçamentos aprovados.",
+              "Acompanhe o que já foi recebido, o que está em aberto e o que está vencido.",
+              "Marque parcelas como pagas para alimentar o DRE e o caixa.",
+              "Use as abas para navegar entre Receber, Pagar, DRE e Rentabilidade.",
+            ]}
+          />
+        }
       >
         <PrivacyToggle />
       </PageHeader>

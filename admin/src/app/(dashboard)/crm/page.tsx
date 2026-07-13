@@ -5,6 +5,7 @@ import { getSessionCompanyId } from "@/lib/session";
 import KanbanBoard from "@/components/KanbanBoard";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function CRMPage() {
   await guardModule("crm");
@@ -22,6 +23,17 @@ export default async function CRMPage() {
       <PageHeader
         title="Funil Comercial"
         description="Gerencie as etapas de negociação e fabricação dos móveis sob medida."
+        help={
+          <TooltipBody
+            title="Funil de vendas"
+            items={[
+              "Arraste os cards entre as colunas para avançar cada negócio de etapa.",
+              "No mobile, use o botão de avançar dentro do card.",
+              "O topo de cada coluna mostra o total em negociação daquela etapa.",
+              "O ícone de olho oculta os valores para apresentações; clique para exibir.",
+            ]}
+          />
+        }
       >
         <PrivacyToggle />
       </PageHeader>

@@ -50,11 +50,31 @@ export default function InfoTooltip({
       {open && (
         <div
           role="tooltip"
-          className="absolute left-0 top-8 z-50 w-72 rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-xl shadow-slate-900/10"
+          className="absolute left-0 top-8 z-50 w-72 rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-xl shadow-slate-900/10 normal-case"
         >
           {children}
         </div>
       )}
     </div>
+  );
+}
+
+/** Corpo padronizado do tooltip: título opcional + lista de itens. */
+export function TooltipBody({
+  title,
+  items,
+}: {
+  title?: string;
+  items: React.ReactNode[];
+}) {
+  return (
+    <>
+      {title && <p className="text-xs font-bold text-slate-700 mb-1.5">{title}</p>}
+      <ul className="space-y-1.5 text-[11px] leading-relaxed text-slate-600 list-disc pl-4 font-medium">
+        {items.map((it, i) => (
+          <li key={i}>{it}</li>
+        ))}
+      </ul>
+    </>
   );
 }

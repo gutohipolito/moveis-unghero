@@ -4,6 +4,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import BiClient from "./BiClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function BIPage() {
   await guardModule("bi");
@@ -57,6 +58,16 @@ export default async function BIPage() {
       <PageHeader
         title="Relatórios"
         description="Análise e inteligência de mercado para a operação comercial da Móveis Unghero."
+        help={
+          <TooltipBody
+            title="Inteligência comercial"
+            items={[
+              "Consolida projetos, valores e origem dos clientes em indicadores.",
+              "Analise desempenho por cidade, canal de origem e parceiros.",
+              "Use o modo privado (olho) para ocultar valores em apresentações.",
+            ]}
+          />
+        }
       >
         <PrivacyToggle />
       </PageHeader>

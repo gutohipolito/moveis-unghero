@@ -4,6 +4,7 @@ import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
 import LogisticaClient from "./LogisticaClient";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function LogisticaPage() {
   await guardModule("logistica");
@@ -47,6 +48,16 @@ export default async function LogisticaPage() {
       <PageHeader
         title="Logística e Entrega"
         description="Planejamento de rotas de expedição, equipes de montagem e controle de qualidade técnica."
+        help={
+          <TooltipBody
+            title="Expedição e montagem"
+            items={[
+              "Lista os projetos aprovados, em produção, instalação e finalizados.",
+              "Planeje rotas de entrega e defina o veículo e a equipe de montagem.",
+              "Use para organizar a agenda de expedição e o controle de qualidade.",
+            ]}
+          />
+        }
       />
 
       <LogisticaClient

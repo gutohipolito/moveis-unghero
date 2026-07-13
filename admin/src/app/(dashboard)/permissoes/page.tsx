@@ -1,4 +1,5 @@
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { guardModule, getCompanyPermissions } from "@/lib/moduleAccess";
 import { getSessionCompanyId } from "@/lib/session";
 import {
@@ -24,6 +25,17 @@ export default async function PermissoesPage() {
       <PageHeader
         title="Permissões de Acesso"
         description="Defina o que cada cargo pode acessar no sistema. A Diretoria sempre tem acesso total."
+        help={
+          <TooltipBody
+            title="Controle de acesso"
+            items={[
+              "Marque quais módulos cada cargo pode abrir no menu.",
+              "Quem não tem acesso a um módulo não o vê e é bloqueado ao tentar entrar.",
+              "A Diretoria (admin) sempre tem acesso total e não pode ser restringida.",
+              "As mudanças valem para todos os usuários daquele cargo.",
+            ]}
+          />
+        }
       />
       <PermissoesClient initial={initial} />
     </div>

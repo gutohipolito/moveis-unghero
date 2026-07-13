@@ -15,6 +15,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { getStorageUsageAction, type StorageUsage } from "@/app/actions/storage";
 import { usePermissions } from "@/context/PermissionsContext";
 
@@ -138,7 +139,19 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Cabeçalho de Título */}
       <div className="border-b border-border/40 pb-5">
-        <h1 className="text-2xl font-black tracking-tight text-slate-800">Configurações do Sistema</h1>
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-2xl font-black tracking-tight text-slate-800">Configurações do Sistema</h1>
+          <InfoTooltip label="Sobre Configurações">
+            <TooltipBody
+              title="Configurações"
+              items={[
+                "Dados institucionais, metas e parâmetros padrão da operação.",
+                "Acompanhe o uso de armazenamento de fotos e documentos.",
+                "Disponível apenas para a Diretoria (administradores).",
+              ]}
+            />
+          </InfoTooltip>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           Gerencie as informações institucionais, metas de faturamento, prazos de entrega e ambiente de banco de dados da Móveis Unghero.
         </p>

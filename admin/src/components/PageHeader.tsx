@@ -1,4 +1,5 @@
 import React from "react";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface PageHeaderProps {
   title: string;
@@ -6,6 +7,8 @@ interface PageHeaderProps {
   badge?: React.ReactNode;
   actions?: React.ReactNode;
   children?: React.ReactNode;
+  /** Conteúdo do tooltip de ajuda exibido ao lado do título. */
+  help?: React.ReactNode;
 }
 
 export default function PageHeader({
@@ -14,6 +17,7 @@ export default function PageHeader({
   badge,
   actions,
   children,
+  help,
 }: PageHeaderProps) {
   return (
     <div className="page-header">
@@ -21,6 +25,7 @@ export default function PageHeader({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="page-title">{title}</h1>
+            {help && <InfoTooltip label={`Sobre ${title}`}>{help}</InfoTooltip>}
             {badge}
             {children}
           </div>

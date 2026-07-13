@@ -4,6 +4,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import { listExpenses } from "@/app/actions/expenses";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 import ContasPagarClient from "./ContasPagarClient";
 import type { ExpenseDTO } from "@/lib/expenses";
@@ -43,6 +44,17 @@ export default async function ContasPagarPage() {
       <PageHeader
         title="Financeiro"
         description="Contas a pagar, despesas fixas e variáveis com vencimentos."
+        help={
+          <TooltipBody
+            title="Contas a Pagar"
+            items={[
+              "Cadastre despesas fixas (aluguel, salários) e variáveis (material, frete).",
+              "Defina vencimento, categoria e, se quiser, vincule a um fornecedor ou projeto.",
+              "Use a recorrência para lançar uma despesa que se repete todo mês.",
+              "Marcar como paga alimenta o DRE e a rentabilidade por obra.",
+            ]}
+          />
+        }
       >
         <PrivacyToggle />
       </PageHeader>

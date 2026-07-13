@@ -3,6 +3,7 @@ import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
 import FactoryClient from "./FactoryClient";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function FactoryPage({
   searchParams,
@@ -23,6 +24,16 @@ export default async function FactoryPage({
       <PageHeader
         title="Chão de Fábrica"
         description="Acompanhe em tempo real as etapas de fabricação e montagem dos cômodos liberados para produção."
+        help={
+          <TooltipBody
+            title="Produção em tempo real"
+            items={[
+              "Cada cômodo liberado avança pelas etapas de fabricação em um quadro.",
+              "Atribua responsáveis e acompanhe o andamento por projeto.",
+              "O SLA sinaliza prazos de cada etapa para evitar atrasos.",
+            ]}
+          />
+        }
       />
 
       <FactoryClient

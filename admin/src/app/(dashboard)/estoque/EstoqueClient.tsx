@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import PrivacyToggle from "@/components/PrivacyToggle";
+import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -319,6 +320,17 @@ export default function EstoqueClient({
             <h1 className="text-2xl font-black text-foreground tracking-tight">
               Estoque & Fornecedores
             </h1>
+            <InfoTooltip label="Sobre Estoque">
+              <TooltipBody
+                title="Insumos e fornecedores"
+                items={[
+                  "Controle a quantidade de cada insumo e o patrimônio em estoque.",
+                  "Itens abaixo do mínimo aparecem como estoque baixo ou esgotado.",
+                  "Cadastre fornecedores para agilizar compras e reposição.",
+                  "A baixa de estoque pode ser feita ao gerar orçamentos.",
+                ]}
+              />
+            </InfoTooltip>
             <PrivacyToggle />
           </div>
           <p className="text-sm text-muted-foreground">Controle de insumos e matérias-primas da Móveis Unghero.</p>

@@ -5,6 +5,7 @@ import { getSessionCompanyId } from "@/lib/session";
 import type { DerivedAgendaEvent } from "@/lib/agendaEvents";
 import AgendaClient from "./AgendaClient";
 import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function AgendaPage() {
   await guardModule("agenda");
@@ -39,6 +40,16 @@ export default async function AgendaPage() {
       <PageHeader
         title="Agenda"
         description="Visitas comerciais, medições, entregas e instalações."
+        help={
+          <TooltipBody
+            title="Compromissos e prazos"
+            items={[
+              "Registre visitas, medições, entregas e instalações.",
+              "Alguns eventos são gerados automaticamente a partir de projetos e leads.",
+              "Use os filtros para focar em um tipo de evento ou período.",
+            ]}
+          />
+        }
       />
 
       <AgendaClient
