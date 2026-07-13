@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Loader2, Pencil, Trash2, Check, X, Plus, Layers, ListChecks } from "lucide-react";
-import { DetailsEditor } from "@/components/quotes/QuoteItemInputs";
+import { Bookmark, Loader2, Pencil, Trash2, Check, X, Plus, Type, ListChecks } from "lucide-react";
 import type { QuoteItemPresetDTO, QuoteDetailPresetDTO } from "@/lib/quoteItemPresets";
 import {
   listQuoteItemPresets,
@@ -17,7 +16,7 @@ import {
   deleteQuoteDetailPreset,
 } from "@/app/actions/quoteItemPresets";
 
-type Tab = "ambientes" | "detalhes";
+type Tab = "descricoes" | "detalhes";
 
 export default function QuoteItemPresetsManager({
   isOpen,
@@ -26,15 +25,14 @@ export default function QuoteItemPresetsManager({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<Tab>("ambientes");
+  const [tab, setTab] = useState<Tab>("descricoes");
 
-  // Ambientes / itens
+  // Descrições do item
   const [presets, setPresets] = useState<QuoteItemPresetDTO[]>([]);
   const [descricao, setDescricao] = useState("");
-  const [detalhes, setDetalhes] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Detalhes globais
+  // Detalhes do item
   const [details, setDetails] = useState<QuoteDetailPresetDTO[]>([]);
   const [detailText, setDetailText] = useState("");
   const [editingDetailId, setEditingDetailId] = useState<string | null>(null);
@@ -43,14 +41,6 @@ export default function QuoteItemPresetsManager({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Sugestões (globais + opcionais já cadastrados) para o editor de opcionais do ambiente.
-  const detailSuggestions = useMemo(() => {
-    const set = new Set<string>();
-    for (const d of details) set.add(d.texto);
-    for (const p of presets) for (const d of p.detalhes) set.add(d);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [details, presets]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -68,31 +58,27 @@ export default function QuoteItemPresetsManager({
     };
   }, [isOpen]);
 
-  function resetAmbienteForm() {
+  /* ------------------------------------------------------------------ */
+  /* Descrições                                                          */
+  /* ------------------------------------------------------------------ */
+
+  function resetDescricaoForm() {
     setEditingId(null);
     setDescricao("");
-    setDetalhes([]);
     setError(null);
   }
 
-  function startEdit(p: QuoteItemPresetDTO) {
-    setEditingId(p.id);
-    setDescricao(p.descricao);
-    setDetalhes([...p.detalhes]);
-    setError(null);
-  }
-
-  async function handleSaveAmbiente() {
+  async function handleSaveDescricao() {
     if (!descricao.trim()) {
-      setError("Informe a descrição do ambiente/item.");
+      setError("Informe a descrição do item.");
       return;
     }
     setSaving(true);
     setError(null);
     try {
       const res = editingId
-        ? await updateQuoteItemPreset(editingId, { descricao, detalhes })
-        : await createQuoteItemPreset({ descricao, detalhes });
+        ? await updateQuoteItemPreset(editingId, { descricao })
+        : await createQuoteItemPreset({ descricao });
       if (res.success) {
         setPresets((prev) => {
           const idx = prev.findIndex((p) => p.id === res.preset.id);
@@ -100,7 +86,7 @@ export default function QuoteItemPresetsManager({
             idx === -1 ? [...prev, res.preset] : prev.map((p) => (p.id === res.preset.id ? res.preset : p));
           return next.sort((a, b) => a.descricao.localeCompare(b.descricao, "pt-BR"));
         });
-        resetAmbienteForm();
+        resetDescricaoForm();
       } else {
         setError(res.error);
       }
@@ -111,13 +97,13 @@ export default function QuoteItemPresetsManager({
     }
   }
 
-  async function handleDeleteAmbiente(id: string) {
+  async function handleDeleteDescricao(id: string) {
     setDeletingId(id);
     try {
       const res = await deleteQuoteItemPreset(id);
       if (res.success) {
         setPresets((prev) => prev.filter((p) => p.id !== id));
-        if (editingId === id) resetAmbienteForm();
+        if (editingId === id) resetDescricaoForm();
       } else {
         setError(res.error ?? "Não foi possível excluir.");
       }
@@ -125,6 +111,10 @@ export default function QuoteItemPresetsManager({
       setDeletingId(null);
     }
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Detalhes                                                            */
+  /* ------------------------------------------------------------------ */
 
   function resetDetailForm() {
     setEditingDetailId(null);
@@ -183,7 +173,7 @@ export default function QuoteItemPresetsManager({
           <div>
             <h2 className="text-base font-black text-slate-800">Itens salvos do orçamento</h2>
             <p className="text-[11px] text-slate-500 font-medium">
-              Cadastre ambientes/itens e detalhes reutilizáveis para montar orçamentos mais rápido.
+              Cadastre descrições e detalhes reutilizáveis. Cada um aparece apenas no seu próprio campo ao montar o orçamento.
             </p>
           </div>
         </div>
@@ -193,14 +183,14 @@ export default function QuoteItemPresetsManager({
           <button
             type="button"
             onClick={() => {
-              setTab("ambientes");
+              setTab("descricoes");
               setError(null);
             }}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              tab === "ambientes" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+              tab === "descricoes" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            <Layers className="h-4 w-4 text-amber-500" /> Ambientes / Itens
+            <Type className="h-4 w-4 text-amber-500" /> Descrição do item
           </button>
           <button
             type="button"
@@ -212,54 +202,52 @@ export default function QuoteItemPresetsManager({
               tab === "detalhes" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            <ListChecks className="h-4 w-4 text-slate-500" /> Detalhes globais
+            <ListChecks className="h-4 w-4 text-slate-500" /> Detalhes do item
           </button>
         </div>
 
-        {tab === "ambientes" ? (
+        {tab === "descricoes" ? (
           <>
             <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-450">
-                  {editingId ? "Editar ambiente / item" : "Descrição do ambiente ou item"}
-                </label>
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">
+                {editingId ? "Editar descrição" : "Nova descrição do item"}
+              </label>
+              <p className="text-[10px] text-slate-400 font-medium -mt-1">
+                Aparece como sugestão apenas no campo <strong>Descrição do item</strong>.
+              </p>
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={descricao}
                   onChange={(e) => setDescricao(e.target.value)}
                   maxLength={160}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSaveDescricao();
+                    }
+                  }}
                   placeholder="Ex: Mesa, Cozinha completa, Closet..."
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-amber-400 focus:outline-none transition-all"
+                  className="flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-amber-400 focus:outline-none transition-all"
                 />
+                {editingId && (
+                  <Button type="button" variant="outline" onClick={resetDescricaoForm} className="gap-1.5">
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button type="button" onClick={handleSaveDescricao} disabled={saving} className="btn-metallic gap-1.5">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  {editingId ? "Atualizar" : "Adicionar"}
+                </Button>
               </div>
-
-              <div>
-                <p className="text-[10px] text-slate-400 font-medium mb-1">
-                  Opcionais deste item (aparecem em destaque ao selecionar este ambiente). Você pode reaproveitar detalhes globais.
-                </p>
-                <DetailsEditor subitens={detalhes} suggestions={detailSuggestions} onChange={setDetalhes} />
-              </div>
-
               {error && (
                 <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">{error}</p>
               )}
-
-              <div className="flex items-center gap-2 justify-end">
-                {editingId && (
-                  <Button type="button" variant="outline" onClick={resetAmbienteForm} className="gap-1.5">
-                    <X className="h-4 w-4" /> Cancelar edição
-                  </Button>
-                )}
-                <Button type="button" onClick={handleSaveAmbiente} disabled={saving} className="btn-metallic gap-1.5">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  {editingId ? "Atualizar" : "Salvar ambiente"}
-                </Button>
-              </div>
             </div>
 
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                {presets.length} {presets.length === 1 ? "ambiente salvo" : "ambientes salvos"}
+                {presets.length} {presets.length === 1 ? "descrição salva" : "descrições salvas"}
               </p>
               {loading ? (
                 <div className="flex items-center gap-2 text-xs text-slate-450 font-medium py-6 justify-center">
@@ -267,33 +255,35 @@ export default function QuoteItemPresetsManager({
                 </div>
               ) : presets.length === 0 ? (
                 <div className="text-center py-8 text-xs text-slate-400 font-medium border border-dashed border-slate-200 rounded-xl">
-                  Nenhum ambiente salvo ainda.
+                  Nenhuma descrição salva ainda.
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[34vh] overflow-y-auto pr-1">
+                <div className="flex flex-wrap gap-2 max-h-[34vh] overflow-y-auto pr-1">
                   {presets.map((p) => (
-                    <div key={p.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-white">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-800 break-words">{p.descricao}</p>
-                        {p.detalhes.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {p.detalhes.map((d, i) => (
-                              <span key={`${d}-${i}`} className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
-                                {d}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button type="button" onClick={() => startEdit(p)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer" title="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button type="button" onClick={() => handleDeleteAmbiente(p.id)} disabled={deletingId === p.id} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50" title="Excluir">
-                          {deletingId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
+                    <span key={p.id} className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+                      {p.descricao}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(p.id);
+                          setDescricao(p.descricao);
+                          setError(null);
+                        }}
+                        className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 cursor-pointer"
+                        title="Editar"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDescricao(p.id)}
+                        disabled={deletingId === p.id}
+                        className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                        title="Excluir"
+                      >
+                        {deletingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                      </button>
+                    </span>
                   ))}
                 </div>
               )}
@@ -303,10 +293,10 @@ export default function QuoteItemPresetsManager({
           <>
             <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 space-y-3">
               <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">
-                {editingDetailId ? "Editar detalhe global" : "Novo detalhe global"}
+                {editingDetailId ? "Editar detalhe" : "Novo detalhe do item"}
               </label>
               <p className="text-[10px] text-slate-400 font-medium -mt-1">
-                Detalhes avulsos ficam disponíveis para <strong>qualquer</strong> item do orçamento.
+                Aparece como sugestão apenas no campo <strong>Detalhes do item</strong>.
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -340,7 +330,7 @@ export default function QuoteItemPresetsManager({
 
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                {details.length} {details.length === 1 ? "detalhe global" : "detalhes globais"}
+                {details.length} {details.length === 1 ? "detalhe salvo" : "detalhes salvos"}
               </p>
               {loading ? (
                 <div className="flex items-center gap-2 text-xs text-slate-450 font-medium py-6 justify-center">
@@ -348,7 +338,7 @@ export default function QuoteItemPresetsManager({
                 </div>
               ) : details.length === 0 ? (
                 <div className="text-center py-8 text-xs text-slate-400 font-medium border border-dashed border-slate-200 rounded-xl">
-                  Nenhum detalhe global ainda.
+                  Nenhum detalhe salvo ainda.
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2 max-h-[34vh] overflow-y-auto pr-1">

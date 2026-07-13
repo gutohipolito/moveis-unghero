@@ -32,7 +32,6 @@ interface QuoteItemInput {
   precoCusto?: number;
   markup?: number;
   subitens?: string[];
-  optionals?: string[];
 }
 
 // Template único ativo no sistema
@@ -92,22 +91,17 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     loadPresets();
   }, []);
 
-  // Detalhes globais (avulsos) + todos os opcionais já cadastrados nos itens.
-  const detailSuggestions = React.useMemo(() => {
-    const set = new Set<string>();
-    for (const d of globalDetails) set.add(d);
-    for (const p of presets) for (const d of p.detalhes) set.add(d);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [presets, globalDetails]);
+  // Sugestões do campo de detalhes: apenas o cadastro de "Detalhes do item".
+  const detailSuggestions = React.useMemo(
+    () => [...globalDetails].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [globalDetails]
+  );
 
-  // Aplica um ambiente salvo: preenche a descrição e disponibiliza os opcionais
-  // do item (sem forçar sua adição — o operador escolhe quais usar).
+  // Aplica uma descrição salva: preenche apenas a descrição do item.
   const applyPreset = (id: string, preset: QuoteItemPresetDTO) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id
-          ? { ...item, descricao: preset.descricao, optionals: [...preset.detalhes] }
-          : item
+        item.id === id ? { ...item, descricao: preset.descricao } : item
       )
     );
   };
@@ -420,7 +414,6 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               <DetailsEditor
                                 subitens={item.subitens || []}
                                 suggestions={detailSuggestions}
-                                itemOptionals={item.optionals || []}
                                 onChange={(next) => handleUpdateSubitens(item.id, next)}
                               />
                             </div>
@@ -560,7 +553,6 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             <DetailsEditor
                               subitens={item.subitens || []}
                               suggestions={detailSuggestions}
-                              itemOptionals={item.optionals || []}
                               onChange={(next) => handleUpdateSubitens(item.id, next)}
                             />
                           </div>

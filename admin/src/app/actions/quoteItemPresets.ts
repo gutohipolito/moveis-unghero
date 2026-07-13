@@ -1,25 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { capitalizeText } from "@/lib/utils";
 import {
-  cleanDetalhes,
   type QuoteItemPresetDTO,
   type QuoteDetailPresetDTO,
 } from "@/lib/quoteItemPresets";
 
-function mapPreset(row: {
-  id: string;
-  descricao: string;
-  detalhes: Prisma.JsonValue | null;
-}): QuoteItemPresetDTO {
-  const detalhes = Array.isArray(row.detalhes)
-    ? (row.detalhes as unknown[]).map((d) => String(d))
-    : [];
-  return { id: row.id, descricao: row.descricao, detalhes };
+function mapPreset(row: { id: string; descricao: string }): QuoteItemPresetDTO {
+  return { id: row.id, descricao: row.descricao };
 }
 
 export type PresetResult =
@@ -35,7 +26,7 @@ export async function listQuoteItemPresets(): Promise<{
     const rows = await prisma.quoteItemPreset.findMany({
       where: { company_id: auth.companyId },
       orderBy: { descricao: "asc" },
-      select: { id: true, descricao: true, detalhes: true },
+      select: { id: true, descricao: true },
     });
     return { success: true, presets: rows.map(mapPreset) };
   } catch (error) {
@@ -46,21 +37,21 @@ export async function listQuoteItemPresets(): Promise<{
 
 export async function createQuoteItemPreset(input: {
   descricao: string;
-  detalhes?: string[];
 }): Promise<PresetResult> {
   const auth = await requireAuth();
   const descricao = capitalizeText((input.descricao ?? "").trim());
   if (!descricao) return { success: false, error: "Informe a descrição do item." };
 
-  const detalhes = cleanDetalhes(input.detalhes);
   try {
+    const existing = await prisma.quoteItemPreset.findFirst({
+      where: { company_id: auth.companyId, descricao },
+      select: { id: true, descricao: true },
+    });
+    if (existing) return { success: true, preset: mapPreset(existing) };
+
     const row = await prisma.quoteItemPreset.create({
-      data: {
-        company_id: auth.companyId,
-        descricao,
-        detalhes: detalhes as Prisma.InputJsonValue,
-      },
-      select: { id: true, descricao: true, detalhes: true },
+      data: { company_id: auth.companyId, descricao },
+      select: { id: true, descricao: true },
     });
     revalidatePath("/quotes");
     return { success: true, preset: mapPreset(row) };
@@ -72,7 +63,7 @@ export async function createQuoteItemPreset(input: {
 
 export async function updateQuoteItemPreset(
   id: string,
-  input: { descricao: string; detalhes?: string[] }
+  input: { descricao: string }
 ): Promise<PresetResult> {
   const auth = await requireAuth();
   const descricao = capitalizeText((input.descricao ?? "").trim());
@@ -84,12 +75,11 @@ export async function updateQuoteItemPreset(
   });
   if (!existing) return { success: false, error: "Item não encontrado." };
 
-  const detalhes = cleanDetalhes(input.detalhes);
   try {
     const row = await prisma.quoteItemPreset.update({
       where: { id },
-      data: { descricao, detalhes: detalhes as Prisma.InputJsonValue },
-      select: { id: true, descricao: true, detalhes: true },
+      data: { descricao },
+      select: { id: true, descricao: true },
     });
     revalidatePath("/quotes");
     return { success: true, preset: mapPreset(row) };
