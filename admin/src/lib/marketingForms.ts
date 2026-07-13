@@ -93,6 +93,60 @@ Equipe Móveis Unghero`,
     ],
   },
   {
+    id: "cadastro-cliente",
+    title: "Cadastro — Cliente",
+    description:
+      "Formulário para o próprio cliente se cadastrar na base (dados pessoais, endereço e imóvel). O cadastro entra direto na lista de clientes.",
+    audience: "Cliente final",
+    shortPath: "/cadastro",
+    adminPath: "/cadastro",
+    messages: [
+      {
+        id: "whatsapp-cadastro",
+        label: "WhatsApp — Enviar cadastro",
+        template: `Olá, tudo bem?
+
+Somos a Móveis Unghero, marcenaria de alto padrão em Farroupilha/RS.
+
+Para agilizar seu atendimento, faça seu cadastro rápido neste link (leva menos de 2 minutos):
+
+{link}
+
+Assim que recebermos, nossa equipe entra em contato com você!
+
+Equipe Móveis Unghero`,
+      },
+      {
+        id: "whatsapp-cadastro-pos",
+        label: "WhatsApp — Após primeiro contato",
+        template: `Que bom falar com você! 😊
+
+Para deixarmos seu cadastro completo em nossa base, preencha rapidamente este formulário:
+
+{link}
+
+Qualquer dúvida, estamos à disposição!
+Equipe Móveis Unghero`,
+      },
+      {
+        id: "email-cadastro",
+        label: "E-mail — Solicitar cadastro",
+        template: `Prezado(a),
+
+Agradecemos seu interesse na Móveis Unghero.
+
+Para darmos sequência ao seu atendimento, pedimos o preenchimento do cadastro no link abaixo:
+
+{link}
+
+Após o envio, nossa equipe entrará em contato para alinhar os próximos passos.
+
+Atenciosamente,
+Equipe Móveis Unghero`,
+      },
+    ],
+  },
+  {
     id: "projetistas-arquitetos",
     title: "Cadastro — Projetistas e Arquitetos",
     description:
