@@ -301,15 +301,15 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   // Salvar Novo Cliente
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !email || !telefone || !cidade) return;
+    if (!nome || !telefone) return;
 
-    const data = { 
-      nome, 
-      email, 
-      telefone, 
-      cidade, 
-      origem, 
-      status, 
+    const data = {
+      nome,
+      email,
+      telefone,
+      cidade,
+      origem,
+      status,
       observacoes,
       company_id: companyId,
       tipo_pessoa: tipoPessoa,
@@ -372,7 +372,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   // Salvar Edição do Cliente
   const handleUpdateClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClient || !nome || !email || !telefone || !cidade) return;
+    if (!selectedClient || !nome || !telefone) return;
 
     const data = { 
       nome, 
@@ -1046,7 +1046,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         </span>
                       </label>
                       <Input 
-                        required 
                         value={documento} 
                         onChange={e => {
                           const val = e.target.value;
@@ -1065,7 +1064,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         </span>
                       </label>
                       <Input 
-                        required 
                         value={documento} 
                         onChange={e => setDocumento(e.target.value)} 
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
@@ -1089,7 +1087,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-750">E-mail</label>
                     <Input 
-                      required 
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
@@ -1173,7 +1170,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                     <div className="col-span-2 space-y-1">
                       <label className="text-xs font-bold text-slate-750">Cidade</label>
                       <Input 
-                        required 
                         value={cidade} 
                         onChange={e => setCidade(e.target.value)} 
                          
@@ -1338,7 +1334,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         </span>
                       </label>
                       <Input 
-                        required 
                         value={documento} 
                         onChange={e => {
                           const val = e.target.value;
@@ -1357,7 +1352,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         </span>
                       </label>
                       <Input 
-                        required 
                         value={documento} 
                         onChange={e => setDocumento(e.target.value)} 
                         className="border-slate-350 bg-slate-50/50 text-xs h-9 font-semibold text-slate-900 focus:border-primary focus:bg-white" 
@@ -1381,7 +1375,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-750">E-mail</label>
                     <Input 
-                      required 
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
@@ -1465,7 +1458,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                     <div className="col-span-2 space-y-1">
                       <label className="text-xs font-bold text-slate-750">Cidade</label>
                       <Input 
-                        required 
                         value={cidade} 
                         onChange={e => setCidade(e.target.value)} 
                          
