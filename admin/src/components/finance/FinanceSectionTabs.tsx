@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, BarChart3 } from "lucide-react";
 
 const TABS = [
-  { href: "/financeiro", label: "Contas a Receber", icon: ArrowDownCircle },
-  { href: "/financeiro/contas-a-pagar", label: "Contas a Pagar", icon: ArrowUpCircle },
+  { href: "/financeiro", label: "Contas a Receber", icon: ArrowDownCircle, iconClass: "text-emerald-500" },
+  { href: "/financeiro/contas-a-pagar", label: "Contas a Pagar", icon: ArrowUpCircle, iconClass: "text-rose-500" },
+  { href: "/financeiro/dre", label: "DRE", icon: BarChart3, iconClass: "text-amber-500" },
 ];
 
 export default function FinanceSectionTabs() {
@@ -14,7 +15,7 @@ export default function FinanceSectionTabs() {
 
   return (
     <div className="inline-flex items-center gap-1 p-1 bg-slate-100/80 border border-slate-200/60 rounded-xl">
-      {TABS.map(({ href, label, icon: Icon }) => {
+      {TABS.map(({ href, label, icon: Icon, iconClass }) => {
         const active = pathname === href;
         return (
           <Link
@@ -26,11 +27,7 @@ export default function FinanceSectionTabs() {
                 : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            <Icon
-              className={`h-4 w-4 ${
-                href === "/financeiro" ? "text-emerald-500" : "text-rose-500"
-              }`}
-            />
+            <Icon className={`h-4 w-4 ${iconClass}`} />
             {label}
           </Link>
         );
