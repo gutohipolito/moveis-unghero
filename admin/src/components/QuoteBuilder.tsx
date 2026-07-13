@@ -12,6 +12,21 @@ import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "
 import { listQuoteItemPresets, listQuoteDetailPresets } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 import { DescriptionCombobox, DetailsEditor } from "@/components/quotes/QuoteItemInputs";
+import { getParceiros } from "@/app/actions/parceiros";
+
+interface PartnerOption {
+  id: string;
+  nome: string;
+  tipo: string;
+}
+
+const PARTNER_ROLE_LABEL: Record<string, string> = {
+  ARQUITETO: "Arquiteto",
+  PROJETISTA: "Projetista",
+  DECORADOR: "Decorador",
+  ENGENHEIRO: "Engenheiro",
+  OUTROS: "Parceiro",
+};
 
 interface QuoteBuilderProps {
   projectId: string;
@@ -52,6 +67,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [presets, setPresets] = useState<QuoteItemPresetDTO[]>([]);
   const [globalDetails, setGlobalDetails] = useState<string[]>([]);
+  const [partners, setPartners] = useState<PartnerOption[]>([]);
+  const [partnerId, setPartnerId] = useState<string>("");
   const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
   const [briefingData, setBriefingData] = useState<any | null>(null);
@@ -77,6 +94,20 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       }
     }
     loadInventory();
+  }, [companyId]);
+
+  useEffect(() => {
+    async function loadPartners() {
+      const res = await getParceiros(companyId);
+      if (res.success) {
+        setPartners(
+          res.parceiros
+            .filter((p) => p.ativo)
+            .map((p) => ({ id: p.id, nome: p.nome, tipo: String(p.tipo) }))
+        );
+      }
+    }
+    loadPartners();
   }, [companyId]);
 
   useEffect(() => {
@@ -227,6 +258,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       validade,
       observacoes,
       template_tipo: QUOTE_TEMPLATE_ID,
+      partnerId: partnerId || null,
       items: items.map((item) => ({
         descricao: item.descricao,
         quantidade: item.quantidade,
@@ -338,6 +370,27 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               value={validade}
               onChange={(e) => setValidade(e.target.value)}
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Arquiteto / Parceiro (opcional)
+            </label>
+            <Select
+              value={partnerId}
+              onChange={(e) => setPartnerId(e.target.value)}
+              className="h-10"
+            >
+              <option value="">Sem arquiteto vinculado</option>
+              {partners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                  {PARTNER_ROLE_LABEL[p.tipo] ? ` — ${PARTNER_ROLE_LABEL[p.tipo]}` : ""}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Aparece de forma discreta no PDF do orçamento.
+            </p>
           </div>
         </div>
 

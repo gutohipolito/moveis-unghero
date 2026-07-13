@@ -26,6 +26,14 @@ const FACTORY = {
   siteHref: "https://moveisunghero.com.br",
 };
 
+const PARTNER_ROLE_LABEL: Record<string, string> = {
+  ARQUITETO: "Arquiteto",
+  PROJETISTA: "Projetista",
+  DECORADOR: "Decorador",
+  ENGENHEIRO: "Engenheiro",
+  OUTROS: "Parceiro",
+};
+
 const COMMERCIAL_NOTES = [
   {
     icon: CalendarClock,
@@ -147,6 +155,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
       },
       include: {
         items: true,
+        partner: { select: { nome: true, tipo: true } },
         project: {
           include: {
             client: true,
@@ -189,6 +198,9 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   }
 
   const client = quote.project.client;
+  const partnerRoleLabel = quote.partner
+    ? PARTNER_ROLE_LABEL[String(quote.partner.tipo)] ?? "Arquiteto"
+    : null;
   const formattedValidade = new Date(quote.validade).toLocaleDateString("pt-BR");
   const formattedDataEmissao = new Date().toLocaleDateString("pt-BR");
   const formatCurrency = (val: number) => {
@@ -322,6 +334,12 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                     </p>
                   ) : null}
                 </div>
+                {quote.partner ? (
+                  <p className="text-[10px] text-neutral-400 pt-1">
+                    <span className="font-semibold text-neutral-500">{partnerRoleLabel}:</span>{" "}
+                    {quote.partner.nome}
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex gap-3 shrink-0 self-start">

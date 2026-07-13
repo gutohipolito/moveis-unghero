@@ -176,6 +176,7 @@ model ProfessionalPartner {
   imagens     String?
   portfolioUrl String?
   projects     Project[]          @relation("PartnerProjects")
+  quotes       Quote[]            @relation("PartnerQuotes")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -271,7 +272,11 @@ model Quote {
   pdf_share_code String? @unique
   pdf_shared_at DateTime?
   aprovado_em   DateTime?
+  partner_id  String?
+  partner     ProfessionalPartner? @relation("PartnerQuotes", fields: [partner_id], references: [id], onDelete: SetNull)
   items       QuoteItem[]
+
+  @@index([partner_id])
 }
 
 model QuoteItem {

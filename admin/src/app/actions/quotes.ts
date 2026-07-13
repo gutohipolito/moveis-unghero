@@ -25,6 +25,7 @@ export interface CreateQuoteInput {
   validade: string;
   observacoes?: string;
   template_tipo?: string;
+  partnerId?: string | null;
   items: {
     descricao: string;
     quantidade: number;
@@ -50,6 +51,16 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
     };
   }
 
+  // Valida o parceiro (arquiteto) informado, garantindo que pertence à empresa.
+  let partnerId: string | null = null;
+  if (data.partnerId) {
+    const partner = await prisma.professionalPartner.findFirst({
+      where: { id: data.partnerId, company_id: auth.companyId },
+      select: { id: true },
+    });
+    partnerId = partner?.id ?? null;
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Busca orçamentos existentes do projeto para determinar a próxima versão
@@ -70,6 +81,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           valor_final: data.valor_final,
           validade: new Date(data.validade),
           observacoes: data.observacoes || "",
+          partner_id: partnerId,
         }
       });
 
