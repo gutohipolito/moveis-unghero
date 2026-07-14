@@ -12,20 +12,14 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: monorepoRoot,
   async headers() {
-    return [
-      {
-        // Permite que a página de cadastro seja exibida em iframe apenas
-        // a partir do site institucional (moveisunghero.com.br/cadastro).
-        source: "/cadastro",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value:
-              "frame-ancestors 'self' https://moveisunghero.com.br https://www.moveisunghero.com.br",
-          },
-        ],
-      },
-    ];
+    // Formulários públicos exibidos via iframe no site institucional
+    // (moveisunghero.com.br/cadastro, /orcamento, /cadastro-parceiro).
+    const frameAncestors =
+      "frame-ancestors 'self' https://moveisunghero.com.br https://www.moveisunghero.com.br";
+    return ["/cadastro", "/briefing", "/cadastro-parceiro"].map((source) => ({
+      source,
+      headers: [{ key: "Content-Security-Policy", value: frameAncestors }],
+    }));
   },
 };
 
