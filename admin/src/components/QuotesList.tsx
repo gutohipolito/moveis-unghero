@@ -644,12 +644,13 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                         <span className="privacy-value">{formatCurrency(q.valor_final)}</span>
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
-                        <div className="flex justify-end items-center gap-2">
+                        {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}
+                        <div className="flex items-center gap-2 w-[20.5rem] max-w-full ml-auto">
                           {!isApproved && (
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 disabled:opacity-50"
+                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 shrink-0 disabled:opacity-50"
                               onClick={() => handleApproveQuote(q)}
                               disabled={approvingId === q.id}
                               title="Aprovar proposta"
@@ -659,27 +660,35 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             </Button>
                           )}
 
-                          <Link 
+                          <Link
                             href={`/quotes/${q.id}/print`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className={isApproved ? "min-w-0 flex-1" : "shrink-0"}
                           >
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8"
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 ${
+                                isApproved ? "w-full justify-center" : ""
+                              }`}
                               title="Visualizar PDF / Imprimir"
                             >
                               <Printer className="h-3.5 w-3.5" />
                               PDF
                             </Button>
                           </Link>
-                          
-                          <Link href={`/projects/${q.project_id}`}>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8"
+
+                          <Link
+                            href={`/projects/${q.project_id}`}
+                            className={isApproved ? "min-w-0 flex-1" : "shrink-0"}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 ${
+                                isApproved ? "w-full justify-center" : ""
+                              }`}
                               title="Ver Detalhes do Projeto"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -688,10 +697,10 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                           </Link>
 
                           {!isApproved && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2 shrink-0"
                               onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, isApproved)}
                               title="Excluir Orçamento"
                             >
