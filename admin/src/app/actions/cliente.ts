@@ -463,21 +463,36 @@ export async function deleteClientAction(clientId: string) {
   }
 
   try {
-    const projects = await prisma.project.findMany({ where: { client_id: clientId } });
-    const projectIds = projects.map(p => p.id);
-
     await prisma.$transaction(async (tx) => {
-      // Deleta faturas, tarefas, cronogramas, etc
-      await tx.installment.deleteMany({ where: { project_id: { in: projectIds } } });
-      await tx.task.deleteMany({ where: { project_id: { in: projectIds } } });
-      await tx.file.deleteMany({ where: { project_id: { in: projectIds } } });
-      await tx.quote.deleteMany({ where: { project_id: { in: projectIds } } });
-      await tx.timeline.deleteMany({ where: { project_id: { in: projectIds } } });
-      await tx.environment.deleteMany({ where: { project_id: { in: projectIds } } });
-      
-      // Deleta projetos
-      await tx.project.deleteMany({ where: { client_id: clientId } });
-      // Deleta o cliente
+      const projects = await tx.project.findMany({
+        where: { client_id: clientId },
+        select: { id: true },
+      });
+      const projectIds = projects.map((p) => p.id);
+
+      if (projectIds.length > 0) {
+        const quotes = await tx.quote.findMany({
+          where: { project_id: { in: projectIds } },
+          select: { id: true },
+        });
+        const quoteIds = quotes.map((q) => q.id);
+
+        // QuoteItem tem FK RESTRICT — precisa sair antes do Quote
+        if (quoteIds.length > 0) {
+          await tx.quoteItem.deleteMany({ where: { quote_id: { in: quoteIds } } });
+        }
+        await tx.quote.deleteMany({ where: { project_id: { in: projectIds } } });
+        await tx.installment.deleteMany({ where: { project_id: { in: projectIds } } });
+        await tx.task.deleteMany({ where: { project_id: { in: projectIds } } });
+        await tx.file.deleteMany({ where: { project_id: { in: projectIds } } });
+        await tx.timeline.deleteMany({ where: { project_id: { in: projectIds } } });
+        await tx.environment.deleteMany({ where: { project_id: { in: projectIds } } });
+        // ProjectSlaState / LeadBriefing: CASCADE no banco
+        // SupplyTicket / Expense / ClientAttachment.project_id: SET NULL
+        await tx.project.deleteMany({ where: { client_id: clientId } });
+      }
+
+      // ClientAttachment: CASCADE no banco
       await tx.client.delete({ where: { id: clientId } });
     });
 
@@ -485,7 +500,16 @@ export async function deleteClientAction(clientId: string) {
     return { success: true };
   } catch (error) {
     console.warn("Falha ao excluir cliente no banco:", error);
-    return { success: false, error: "Não foi possível excluir o cliente." };
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Não foi possível excluir o cliente.";
+    return {
+      success: false,
+      error: message.includes("Foreign key") || message.includes("Restrict")
+        ? "Este cliente possui registros vinculados que impedem a exclusão. Remova orçamentos/projetos associados ou tente novamente."
+        : "Não foi possível excluir o cliente.",
+    };
   }
 }
 

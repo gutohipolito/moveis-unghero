@@ -344,7 +344,10 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           setClients(clients.filter(c => c.id !== clientId));
           showSuccess("Cliente excluído", `${clientName} foi removido da base de clientes.`);
         } else {
-          showError("Não foi possível excluir", "Erro ao remover o cliente. Tente novamente.");
+          showError(
+            "Não foi possível excluir",
+            res.error || "Erro ao remover o cliente. Tente novamente."
+          );
         }
       },
     });
