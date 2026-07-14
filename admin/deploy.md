@@ -41,7 +41,21 @@ Durante a configuração do deploy na Vercel, você precisará adicionar as segu
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Chave pública VAPID para push mobile (Web Push) | `npm run generate-vapid` |
 | `VAPID_PRIVATE_KEY` | Chave privada VAPID — **nunca commitar** | `npm run generate-vapid` |
 | `VAPID_SUBJECT` | Contato do remetente push (ex: `mailto:contato@moveisunghero.com.br`) | E-mail da empresa |
-| `CRON_SECRET` | Protege o cron de push (`/api/cron/push-notifications`) | `npm run generate-vapid` |
+| `CRON_SECRET` | Protege o cron de push (`/api/cron/push-notifications`) e o backup (`/api/cron/database-backup`) | Segredo longo aleatório |
+| `NEON_API_KEY` | API key da Neon para snapshot diário do banco (branches `backup/YYYY-MM-DD`) | Neon Console → Account → API keys |
+| `NEON_PROJECT_ID` | ID do projeto Neon (ex.: `dawn-heart-06598117`) | Neon Console → Settings |
+
+### Backup diário dos dados
+
+- **Código e layout:** já ficam no GitHub a cada push/deploy (não precisam de backup separado).
+- **Dados do dashboard** (clientes, orçamentos, financeiro, fábrica, etc.): snapshot diário às **03:00 BRT** via branch Neon `backup/YYYY-MM-DD`, com retenção de **30 dias**.
+- Configure `NEON_API_KEY` e `NEON_PROJECT_ID` na Vercel **e** nos secrets do GitHub Actions (workflow `Daily database backup`).
+- Para testar manualmente após o deploy:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  https://admin.moveisunghero.com.br/api/cron/database-backup
+```
 
 ### Push mobile (opcional)
 

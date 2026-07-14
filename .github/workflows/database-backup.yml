@@ -1,0 +1,90 @@
+# Backup diário do banco (Neon)
+#
+# Garante snapshot mesmo se o cron da Vercel falhar.
+# Secrets necessários no GitHub (Settings → Secrets → Actions):
+#   NEON_API_KEY
+#   NEON_PROJECT_ID  (ex.: dawn-heart-06598117)
+
+name: Daily database backup
+
+on:
+  schedule:
+    # 03:00 BRT (UTC-3) = 06:00 UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Create Neon snapshot branch
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NEON_API_KEY:-}" ] || [ -z "${NEON_PROJECT_ID:-}" ]; then
+            echo "NEON_API_KEY / NEON_PROJECT_ID não configurados. Pulei o backup."
+            exit 0
+          fi
+
+          STAMP=$(date -u +%F)
+          NAME="backup/${STAMP}"
+          API="https://console.neon.tech/api/v2"
+
+          BRANCHES=$(curl -fsS -H "Authorization: Bearer ${NEON_API_KEY}" \
+            -H "Accept: application/json" \
+            "${API}/projects/${NEON_PROJECT_ID}/branches")
+
+          EXISTS=$(echo "$BRANCHES" | node -e "
+            const d=JSON.parse(require('fs').readFileSync(0,'utf8'));
+            const name=process.env.NAME;
+            console.log(d.branches.some(b=>b.name===name) ? '1' : '0');
+          " NAME="$NAME")
+
+          if [ "$EXISTS" = "1" ]; then
+            echo "Backup já existe: ${NAME}"
+          else
+            PARENT=$(echo "$BRANCHES" | node -e "
+              const d=JSON.parse(require('fs').readFileSync(0,'utf8'));
+              const p=d.branches.find(b=>b.name==='production') || d.branches.find(b=>b.default) || d.branches[0];
+              if (!p) process.exit(2);
+              console.log(p.id);
+            ")
+            curl -fsS -X POST \
+              -H "Authorization: Bearer ${NEON_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d "{\"branch\":{\"name\":\"${NAME}\",\"parent_id\":\"${PARENT}\"}}" \
+              "${API}/projects/${NEON_PROJECT_ID}/branches" > /tmp/created.json
+            echo "Criado: ${NAME}"
+            cat /tmp/created.json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.branch.id)"
+          fi
+
+          # Remove backup/* com mais de 30 dias
+          CUTOFF_MS=$(( $(date -u +%s) * 1000 - 30 * 24 * 60 * 60 * 1000 ))
+          echo "$BRANCHES" | node -e "
+            const d=JSON.parse(require('fs').readFileSync(0,'utf8'));
+            const cutoff=Number(process.env.CUTOFF_MS);
+            for (const b of d.branches) {
+              if (!b.name.startsWith('backup/')) continue;
+              if (b.default || b.protected) continue;
+              if (new Date(b.created_at).getTime() >= cutoff) continue;
+              console.log(b.id + ' ' + b.name);
+            }
+          " CUTOFF_MS="$CUTOFF_MS" | while read -r BID BNAME; do
+            [ -z "${BID:-}" ] && continue
+            echo "Removendo ${BNAME} (${BID})"
+            curl -fsS -X DELETE \
+              -H "Authorization: Bearer ${NEON_API_KEY}" \
+              -H "Accept: application/json" \
+              "${API}/projects/${NEON_PROJECT_ID}/branches/${BID}" || true
+          done
