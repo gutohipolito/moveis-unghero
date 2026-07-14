@@ -390,7 +390,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 partner-card">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 partner-card text-slate-800">
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
@@ -410,7 +410,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
               <h2 className="text-lg font-black text-slate-900 leading-tight">Qual a sua especialidade profissional?</h2>
-              <p className="text-xs text-slate-400 font-semibold font-medium">Selecione sua principal área de atuação para personalizarmos a parceria.</p>
+              <p className="text-xs text-slate-500 font-semibold font-medium">Selecione sua principal área de atuação para personalizarmos a parceria.</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -457,7 +457,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
               <h2 className="text-lg font-black text-slate-900 leading-tight">Quem é você e onde atua?</h2>
-              <p className="text-xs text-slate-400 font-semibold font-medium">Queremos conhecer você e seu escritório de projetos.</p>
+              <p className="text-xs text-slate-500 font-semibold font-medium">Queremos conhecer você e seu escritório de projetos.</p>
             </div>
 
             <div className="space-y-4">
@@ -471,7 +471,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   placeholder="Seu nome completo"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                 />
               </div>
 
@@ -485,7 +485,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     placeholder="Nome do seu studio de design/arquitetura"
                     value={escritorio}
                     onChange={(e) => setEscritorio(e.target.value)}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
                 </div>
 
@@ -520,7 +520,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   placeholder={tipo === "ARQUITETO" ? "Ex: A123456-7" : tipo === "ENGENHEIRO" ? "Ex: 123.456-D" : "Ex: CAU, CREA ou ABD (se houver)"}
                   value={registroProfissional}
                   onChange={(e) => setRegistroProfissional(e.target.value)}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   required={tipo === "ARQUITETO" || tipo === "ENGENHEIRO"}
                 />
               </div>
@@ -550,7 +550,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5 text-center">
               <h2 className="text-lg font-black text-slate-900 leading-tight">Como podemos falar com você?</h2>
-              <p className="text-xs text-slate-400 font-semibold font-medium">Informe seus contatos comerciais para retornarmos.</p>
+              <p className="text-xs text-slate-500 font-semibold font-medium">Informe seus contatos comerciais para retornarmos.</p>
             </div>
 
             <div className="space-y-4 border border-slate-100 rounded-xl p-5 bg-slate-50/50">
@@ -565,7 +565,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     placeholder="(54) 99999-9999"
                     value={telefone}
                     onChange={handleTelefoneChange}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
                 </div>
 
@@ -579,7 +579,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     placeholder="arquiteto@exemplo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
                 </div>
               </div>
@@ -609,7 +609,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
               <h2 className="text-lg font-black text-slate-900 leading-tight">Seu Portfólio ou Perfil Digital</h2>
-              <p className="text-xs text-slate-400 font-semibold font-medium">Compartilhe um link para podermos conhecer um pouco mais de seus trabalhos e projetos.</p>
+              <p className="text-xs text-slate-500 font-semibold font-medium">Compartilhe um link para podermos conhecer um pouco mais de seus trabalhos e projetos.</p>
             </div>
 
             <div className="space-y-4">
@@ -622,7 +622,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   placeholder="https://instagram.com/seu_perfil ou portfolio"
                   value={portfolioUrl}
                   onChange={(e) => setPortfolioUrl(e.target.value)}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                 />
               </div>
             </div>
@@ -651,7 +651,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
               <h2 className="text-lg font-black text-slate-900 leading-tight">Sobre a Parceria</h2>
-              <p className="text-xs text-slate-400 font-semibold font-medium">Conte-nos um pouco sobre suas expectativas (indicação de clientes, execução de móveis sob medida, RT, etc.) ou observações adicionais.</p>
+              <p className="text-xs text-slate-500 font-semibold font-medium">Conte-nos um pouco sobre suas expectativas (indicação de clientes, execução de móveis sob medida, RT, etc.) ou observações adicionais.</p>
             </div>
 
             <div className="space-y-4">
@@ -664,7 +664,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}
                   rows={4}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold resize-none"
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold resize-none text-slate-900"
                 />
               </div>
             </div>
