@@ -30,11 +30,15 @@ export const CONFIGURABLE_MODULES: ModuleDef[] = [
 /** Módulos restritos à Diretoria (ADMIN) — nunca aparecem para outros cargos. */
 export const ADMIN_ONLY_MODULES = new Set(["colaboradores", "settings", "permissoes"]);
 
+/** Módulos liberados para qualquer colaborador, independente de configuração. */
+export const ALWAYS_ALLOWED_MODULES = new Set(["melhorias"]);
+
 export const CONFIGURABLE_MODULE_KEYS = CONFIGURABLE_MODULES.map((m) => m.key);
 
 export const ALL_MODULE_KEYS = [
   ...CONFIGURABLE_MODULE_KEYS,
   ...Array.from(ADMIN_ONLY_MODULES),
+  ...Array.from(ALWAYS_ALLOWED_MODULES),
 ];
 
 /** Cargos que podem ter permissões editadas na matriz (ADMIN é sempre total). */
@@ -68,11 +72,12 @@ export function resolveAllowedModules(
 ): string[] {
   if (role === "ADMIN") return ALL_MODULE_KEYS;
 
+  const always = Array.from(ALWAYS_ALLOWED_MODULES);
   const configured = permissions?.[role];
-  if (!configured) return [...CONFIGURABLE_MODULE_KEYS];
+  if (!configured) return [...CONFIGURABLE_MODULE_KEYS, ...always];
 
-  // Mantém apenas chaves válidas e configuráveis.
-  return configured.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k));
+  // Mantém apenas chaves válidas e configuráveis, sempre incluindo as liberadas a todos.
+  return [...configured.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k)), ...always];
 }
 
 /** Verifica se um cargo pode acessar um módulo específico. */
@@ -81,6 +86,7 @@ export function canAccessModule(
   role: Role,
   moduleKey: string
 ): boolean {
+  if (ALWAYS_ALLOWED_MODULES.has(moduleKey)) return true;
   if (ADMIN_ONLY_MODULES.has(moduleKey)) return role === "ADMIN";
   if (role === "ADMIN") return true;
   return resolveAllowedModules(permissions, role).includes(moduleKey);

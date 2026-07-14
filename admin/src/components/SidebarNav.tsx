@@ -22,6 +22,7 @@ import {
   Settings,
   ShieldCheck,
   ChevronDown,
+  Lightbulb,
 } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -48,6 +49,7 @@ export const NAV_SECTIONS = [
 
 export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
+  { name: "Melhorias", href: "/melhorias", icon: Lightbulb, section: "Visão Geral" },
 
   { name: "Avaliação Google", href: "/marketing", icon: Star, section: "Marketing" },
   { name: "Formulários", href: "/marketing/formularios", icon: NotebookPen, section: "Marketing" },

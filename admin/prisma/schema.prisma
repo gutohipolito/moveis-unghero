@@ -25,6 +25,7 @@ model Company {
   suppliers      Supplier[]
   inventoryItems InventoryItem[]
   expenses       Expense[]
+  suggestions    Suggestion[]
 }
 
 model User {
@@ -58,6 +59,8 @@ model User {
   pushSubscriptions PushSubscription[]
   supplyTicketsRequested SupplyTicket[] @relation("SupplyTicketRequester")
   supplyTicketsResolved  SupplyTicket[] @relation("SupplyTicketResolver")
+  suggestionsCreated  Suggestion[] @relation("SuggestionAuthor")
+  suggestionsResolved Suggestion[] @relation("SuggestionResolver")
 }
 
 enum Role {
@@ -397,6 +400,29 @@ model SupplyTicket {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   resolvedAt   DateTime?
+
+  @@index([company_id, status])
+}
+
+enum SuggestionStatus {
+  ABERTA
+  CONCLUIDA
+}
+
+model Suggestion {
+  id          String            @id @default(uuid())
+  company_id  String
+  company     Company           @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  titulo      String
+  descricao   String?
+  status      SuggestionStatus  @default(ABERTA)
+  created_by  String
+  author      User              @relation("SuggestionAuthor", fields: [created_by], references: [id])
+  done_by     String?
+  resolver    User?             @relation("SuggestionResolver", fields: [done_by], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  doneAt      DateTime?
 
   @@index([company_id, status])
 }

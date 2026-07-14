@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import SuggestionFab from "@/components/melhorias/SuggestionFab";
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 
@@ -137,6 +138,7 @@ export default function DashboardLayoutWrapper({
       </div>
 
       <MobileBottomNav />
+      <SuggestionFab />
     </div>
   );
 }
