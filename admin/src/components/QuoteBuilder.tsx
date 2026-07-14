@@ -7,7 +7,7 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers } from "lucide-react";
+import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers, Building2, BadgeCheck } from "lucide-react";
 import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
 import { listQuoteItemPresets, listQuoteDetailPresets } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
@@ -17,11 +17,25 @@ import {
   flushPendingQuoteDetailDrafts,
 } from "@/components/quotes/QuoteItemInputs";
 import { getParceiros } from "@/app/actions/parceiros";
+import { formatPartnerRegistro, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
+import type { PartnerType } from "@prisma/client";
 
 interface PartnerOption {
   id: string;
   nome: string;
   tipo: string;
+  fotoUrl: string | null;
+  escritorio: string | null;
+  registro_profissional: string | null;
+  cidade: string | null;
+}
+
+function getPartnerInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
 }
 
 const PARTNER_ROLE_LABEL: Record<string, string> = {
@@ -109,7 +123,15 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         setPartners(
           res.parceiros
             .filter((p) => p.ativo)
-            .map((p) => ({ id: p.id, nome: p.nome, tipo: String(p.tipo) }))
+            .map((p) => ({
+              id: p.id,
+              nome: p.nome,
+              tipo: String(p.tipo),
+              fotoUrl: p.fotoUrl,
+              escritorio: p.escritorio,
+              registro_profissional: p.registro_profissional,
+              cidade: p.cidade,
+            }))
         );
       }
     }
@@ -386,8 +408,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               onChange={(e) => setValidade(e.target.value)}
             />
           </div>
-          <div className="sm:col-span-2">
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+          <div className="sm:col-span-2 space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground block">
               Arquiteto / Parceiro (opcional)
             </label>
             <Select
@@ -403,7 +425,62 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 </option>
               ))}
             </Select>
-            <p className="mt-1 text-[10px] text-muted-foreground">
+            {(() => {
+              const selected = partners.find((p) => p.id === partnerId);
+              if (!selected) return null;
+              const style = PARTNER_TYPE_STYLES[selected.tipo as PartnerType] ?? PARTNER_TYPE_STYLES.OUTROS;
+              const RoleIcon = style.icon;
+              const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
+              return (
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-slate-100/80 p-4 shadow-sm">
+                  <div className={`absolute inset-x-0 top-0 h-1 ${style.accent}`} />
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className={`h-14 w-14 shrink-0 rounded-2xl overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center ${style.avatar}`}
+                    >
+                      {selected.fotoUrl ? (
+                        <img
+                          src={selected.fotoUrl}
+                          alt={selected.nome}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-black tracking-wide">
+                          {getPartnerInitials(selected.nome)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-extrabold text-slate-800 truncate">{selected.nome}</p>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}
+                        >
+                          <RoleIcon className="h-2.5 w-2.5" />
+                          {style.label}
+                        </span>
+                      </div>
+                      {selected.escritorio ? (
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 truncate">
+                          <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          {selected.escritorio}
+                        </p>
+                      ) : null}
+                      {registro ? (
+                        <p className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 truncate">
+                          <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          {registro}
+                        </p>
+                      ) : null}
+                      {!selected.escritorio && !registro && selected.cidade ? (
+                        <p className="text-[11px] font-semibold text-slate-400">{selected.cidade}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+            <p className="text-[10px] text-muted-foreground">
               Aparece de forma discreta no PDF do orçamento.
             </p>
           </div>

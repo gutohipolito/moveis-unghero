@@ -75,3 +75,22 @@ export const PARTNER_TYPE_STYLES: Record<
 };
 
 export const PARTNER_TYPES = Object.keys(PARTNER_TYPE_LABELS) as PartnerType[];
+
+/** Exibe CAU/CREA apenas quando houver valor cadastrado. */
+export function formatPartnerRegistro(
+  tipo: PartnerType | string,
+  registro: string | null | undefined
+): string | null {
+  const value = registro?.trim();
+  if (!value) return null;
+  if (/^(CAU|CREA|ABD)\b/i.test(value)) return value;
+  if (tipo === "ARQUITETO") return `CAU ${value}`;
+  if (tipo === "ENGENHEIRO") return `CREA ${value}`;
+  return value;
+}
+
+export function partnerRegistroLabel(tipo: PartnerType | string): string {
+  if (tipo === "ARQUITETO") return "Registro CAU";
+  if (tipo === "ENGENHEIRO") return "Registro CREA";
+  return "Registro profissional";
+}

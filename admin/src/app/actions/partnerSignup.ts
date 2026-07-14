@@ -13,6 +13,7 @@ export interface PartnerSignupData {
   cidade?: string;
   escritorio?: string;
   portfolio_url?: string;
+  registro_profissional?: string;
   observacoes?: string;
   company_id?: string;
 }
@@ -73,11 +74,6 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
       }
     }
 
-    const portfolioNote = data.portfolio_url?.trim()
-      ? `Portfolio/Instagram: ${data.portfolio_url.trim()}`
-      : null;
-    const observacoes = [portfolioNote, data.observacoes?.trim()].filter(Boolean).join("\n") || null;
-
     const parceiro = await prisma.professionalPartner.create({
       data: {
         company_id: companyId,
@@ -87,7 +83,9 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
         telefone,
         cidade: data.cidade?.trim() ? capitalizeText(data.cidade.trim()) : null,
         escritorio: data.escritorio?.trim() ? capitalizeText(data.escritorio.trim()) : null,
-        observacoes,
+        registro_profissional: data.registro_profissional?.trim() || null,
+        portfolioUrl: data.portfolio_url?.trim() || null,
+        observacoes: data.observacoes?.trim() || null,
         ativo: true,
       },
     });

@@ -112,6 +112,14 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
         }
       });
 
+      // 5. Vincula o parceiro ao projeto quando ainda não houver um
+      if (partnerId) {
+        await tx.project.updateMany({
+          where: { id: projectId, partner_id: null },
+          data: { partner_id: partnerId },
+        });
+      }
+
       return { 
         quote: {
           id: quote.id,

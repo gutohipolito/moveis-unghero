@@ -11,7 +11,7 @@ import {
 } from "@/app/actions/parceiros";
 import { getParceirosLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
-import { PARTNER_TYPE_STYLES, PARTNER_TYPES } from "@/lib/partnerTypes";
+import { PARTNER_TYPE_STYLES, PARTNER_TYPES, formatPartnerRegistro, partnerRegistroLabel } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,14 @@ const PartnerCard = ({
   const style = PARTNER_TYPE_STYLES[p.tipo];
   const Icon = style.icon;
   const imagesList = p.imagens ? p.imagens.split(",").filter(Boolean) : [];
+  const projectCount = p.projects?.length ?? 0;
+  const totalLinkedValue = (p.projects ?? []).reduce(
+    (sum, proj) => sum + Number(proj.valor_previsto || 0),
+    0
+  );
+  const registroLabel = formatPartnerRegistro(p.tipo, p.registro_profissional);
+  const formatCurrency = (val: number) =>
+    val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
     <Card
@@ -90,9 +98,9 @@ const PartnerCard = ({
       
       <div className="p-5 flex flex-col gap-4 flex-1">
         {/* Perfil & Cabeçalho */}
-        <div className="flex items-center gap-3.5 relative">
-          {/* Avatar com upload rápido e bordas premium */}
-          <div className={`relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 transition-all duration-300 ${privacyMode ? "blur-md select-none" : ""}`}>
+        <div className="flex items-start gap-3.5">
+          {/* Avatar com upload rápido */}
+          <div className={`relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 ${privacyMode ? "blur-md select-none" : ""}`}>
             {p.fotoUrl ? (
               <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover group-hover/avatar:scale-105 transition-transform duration-500" />
             ) : (
@@ -124,10 +132,23 @@ const PartnerCard = ({
               }}
               disabled={uploadingId !== null}
             />
+            {p.fotoUrl && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteImage(p.id, p.fotoUrl!, true);
+                }}
+                title="Remover foto de perfil"
+                className="absolute bottom-1 right-1 p-0.5 bg-black/70 hover:bg-red-600 rounded-md text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer z-10"
+              >
+                <Trash2 className="h-2.5 w-2.5" />
+              </button>
+            )}
           </div>
 
-          <div className="min-w-0 flex-1">
-            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-600 transition-colors truncate transition-all duration-300 ${privacyMode ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-600 transition-colors truncate ${privacyMode ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
                 <Icon className="h-2.5 w-2.5" />
@@ -141,19 +162,32 @@ const PartnerCard = ({
                 </span>
               )}
             </div>
+            {registroLabel && (
+              <p className="mt-1.5 text-[10px] font-semibold text-slate-500 truncate">
+                {registroLabel}
+              </p>
+            )}
           </div>
 
-          {/* Ações Rápidas de Foto do perfil */}
-          {p.fotoUrl && (
+          {/* Editar / Excluir no topo (ícones) */}
+          <div className="flex items-center gap-1 shrink-0 -mt-0.5">
             <button
               type="button"
-              onClick={() => handleDeleteImage(p.id, p.fotoUrl!, true)}
-              title="Remover foto de perfil"
-              className="absolute top-0 right-0 p-1 bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg text-slate-400 hover:text-red-500 transition-colors shadow-sm cursor-pointer"
+              onClick={() => openEdit(p)}
+              title="Editar cadastro"
+              className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors cursor-pointer"
             >
-              <X className="h-3.5 w-3.5" />
+              <Pencil className="h-3.5 w-3.5" />
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => handleDelete(p)}
+              title="Excluir parceiro"
+              className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-colors cursor-pointer"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Dados Comerciais / Escritório */}
@@ -166,6 +200,24 @@ const PartnerCard = ({
             </div>
           </div>
         )}
+
+        {/* Projetos vinculados (sempre visível) */}
+        <div className="rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-3.5 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+              Projetos vinculados
+            </span>
+            <span className="text-[10px] font-black tabular-nums text-slate-600 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+              {projectCount}
+            </span>
+          </div>
+          <p className="text-lg font-black tracking-tight text-slate-800 tabular-nums leading-none">
+            {formatCurrency(totalLinkedValue)}
+          </p>
+          <p className="text-[9px] font-semibold text-slate-400">
+            Valor total dos projetos no CRM
+          </p>
+        </div>
 
         {/* Contatos Rápidos em Grid */}
         <div className="grid grid-cols-3 gap-2">
@@ -317,12 +369,12 @@ const PartnerCard = ({
               </div>
             </div>
 
-            {/* Projetos Integrados no CRM */}
+            {/* Lista detalhada de projetos */}
             <div className="border-t border-slate-100 pt-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Projetos no CRM</span>
                 <span className="text-[8px] font-black bg-slate-50 border border-slate-100 text-slate-650 px-2 py-0.5 rounded-full">
-                  {p.projects?.length || 0}
+                  {projectCount}
                 </span>
               </div>
               {p.projects && p.projects.length > 0 ? (
@@ -364,29 +416,6 @@ const PartnerCard = ({
             </div>
           </>
         )}
-
-        {/* Ações de Edição e Exclusão do Parceiro */}
-        <div className="flex gap-2 pt-3 border-t border-slate-100 mt-1">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all"
-            onClick={() => openEdit(p)}
-          >
-            <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
-            Editar Cadastro
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl transition-all"
-            onClick={() => handleDelete(p)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </Card>
   );
@@ -436,6 +465,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [telefone, setTelefone] = useState("");
   const [cidade, setCidade] = useState("");
   const [escritorio, setEscritorio] = useState("");
+  const [registroProfissional, setRegistroProfissional] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
@@ -459,6 +489,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setTelefone("");
     setCidade("");
     setEscritorio("");
+    setRegistroProfissional("");
     setObservacoes("");
     setFotoUrl("");
     setPortfolioUrl("");
@@ -478,6 +509,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setTelefone(p.telefone || "");
     setCidade(p.cidade || "");
     setEscritorio(p.escritorio || "");
+    setRegistroProfissional(p.registro_profissional || "");
     setObservacoes(p.observacoes || "");
     setFotoUrl(p.fotoUrl || "");
     setPortfolioUrl(p.portfolioUrl || "");
@@ -491,7 +523,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         !q ||
         p.nome.toLowerCase().includes(q) ||
         (p.escritorio?.toLowerCase().includes(q) ?? false) ||
-        (p.cidade?.toLowerCase().includes(q) ?? false);
+        (p.cidade?.toLowerCase().includes(q) ?? false) ||
+        (p.registro_profissional?.toLowerCase().includes(q) ?? false);
       const matchesTipo = filterTipo === "ALL" || p.tipo === filterTipo;
       return matchesSearch && matchesTipo && p.ativo;
     });
@@ -512,6 +545,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       telefone,
       cidade,
       escritorio,
+      registro_profissional: registroProfissional,
       observacoes,
       fotoUrl,
       portfolioUrl,
@@ -762,6 +796,23 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Escritório / Studio</label>
                 <Input value={escritorio} onChange={(e) => setEscritorio(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">
+                  {partnerRegistroLabel(tipo)}
+                  {tipo === "ARQUITETO" || tipo === "ENGENHEIRO" ? "" : " (opcional)"}
+                </label>
+                <Input
+                  value={registroProfissional}
+                  onChange={(e) => setRegistroProfissional(e.target.value)}
+                  placeholder={
+                    tipo === "ARQUITETO"
+                      ? "Ex: A123456-7"
+                      : tipo === "ENGENHEIRO"
+                        ? "Ex: 123.456-D"
+                        : "Ex: CAU, CREA ou ABD (se houver)"
+                  }
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Telefone</label>

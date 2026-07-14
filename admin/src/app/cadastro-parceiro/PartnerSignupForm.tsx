@@ -293,10 +293,6 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
     setLoading(true);
 
-    const labelRegistro = tipo === "ARQUITETO" ? "CAU" : tipo === "ENGENHEIRO" ? "CREA" : "Registro Profissional";
-    const registroNote = registroProfissional.trim() ? `${labelRegistro}: ${registroProfissional.trim()}` : null;
-    const finalObservacoes = [registroNote, observacoes.trim()].filter(Boolean).join("\n") || "";
-
     const res = await submitPublicPartnerSignupAction({
       nome,
       tipo,
@@ -305,7 +301,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       cidade,
       escritorio,
       portfolio_url: portfolioUrl,
-      observacoes: finalObservacoes,
+      registro_profissional: registroProfissional.trim() || undefined,
+      observacoes: observacoes.trim() || undefined,
       company_id: companyId,
     });
 

@@ -7,6 +7,7 @@ import QuotePrintToolbar from "@/components/QuotePrintToolbar";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuoteSubitensLine, parseQuoteSubitens } from "@/lib/quoteItems";
 import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePdfShare";
+import { formatPartnerRegistro } from "@/lib/partnerTypes";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -155,7 +156,14 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
       },
       include: {
         items: true,
-        partner: { select: { nome: true, tipo: true } },
+        partner: {
+          select: {
+            nome: true,
+            tipo: true,
+            escritorio: true,
+            registro_profissional: true,
+          },
+        },
         project: {
           include: {
             client: true,
@@ -200,6 +208,9 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   const client = quote.project.client;
   const partnerRoleLabel = quote.partner
     ? PARTNER_ROLE_LABEL[String(quote.partner.tipo)] ?? "Arquiteto"
+    : null;
+  const partnerRegistro = quote.partner
+    ? formatPartnerRegistro(quote.partner.tipo, quote.partner.registro_profissional)
     : null;
   const formattedValidade = new Date(quote.validade).toLocaleDateString("pt-BR");
   const formattedDataEmissao = new Date().toLocaleDateString("pt-BR");
@@ -335,10 +346,16 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                   ) : null}
                 </div>
                 {quote.partner ? (
-                  <p className="text-[10px] text-neutral-400 pt-1">
-                    <span className="font-semibold text-neutral-500">{partnerRoleLabel}:</span>{" "}
-                    {quote.partner.nome}
-                  </p>
+                  <div className="text-[10px] text-neutral-400 pt-1 space-y-0.5">
+                    <p>
+                      <span className="font-semibold text-neutral-500">{partnerRoleLabel}:</span>{" "}
+                      {quote.partner.nome}
+                    </p>
+                    {quote.partner.escritorio ? (
+                      <p>{quote.partner.escritorio}</p>
+                    ) : null}
+                    {partnerRegistro ? <p>{partnerRegistro}</p> : null}
+                  </div>
                 ) : null}
               </div>
 

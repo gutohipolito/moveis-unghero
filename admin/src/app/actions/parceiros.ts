@@ -14,6 +14,7 @@ export interface ParceiroDTO {
   telefone: string | null;
   cidade: string | null;
   escritorio: string | null;
+  registro_profissional: string | null;
   observacoes: string | null;
   ativo: boolean;
   fotoUrl: string | null;
@@ -61,15 +62,48 @@ export async function getParceiros(companyId: string) {
             client: {
               select: {
                 nome: true,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
+        quotes: {
+          select: {
+            project: {
+              select: {
+                id: true,
+                valor_previsto: true,
+                status_geral: true,
+                client: {
+                  select: {
+                    nome: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: [{ ativo: "desc" }, { nome: "asc" }],
     });
 
-    return { success: true as const, parceiros: parceiros as unknown as ParceiroDTO[] };
+    const mapped: ParceiroDTO[] = parceiros.map((p) => {
+      const byId = new Map<string, NonNullable<ParceiroDTO["projects"]>[number]>();
+      for (const proj of p.projects) {
+        byId.set(proj.id, proj);
+      }
+      for (const quote of p.quotes) {
+        if (quote.project && !byId.has(quote.project.id)) {
+          byId.set(quote.project.id, quote.project);
+        }
+      }
+      const { quotes: _quotes, ...rest } = p;
+      return {
+        ...rest,
+        projects: Array.from(byId.values()),
+      } as unknown as ParceiroDTO;
+    });
+
+    return { success: true as const, parceiros: mapped };
   } catch (error) {
     console.error("Erro ao buscar parceiros:", error);
     return { success: false as const, error: "Falha ao carregar parceiros.", parceiros: [] as ParceiroDTO[] };
@@ -85,6 +119,7 @@ export async function createParceiro(
     telefone?: string;
     cidade?: string;
     escritorio?: string;
+    registro_profissional?: string;
     observacoes?: string;
     fotoUrl?: string;
     imagens?: string;
@@ -118,6 +153,7 @@ export async function createParceiro(
         telefone: data.telefone?.trim() || null,
         cidade: data.cidade ? capitalizeText(data.cidade) : null,
         escritorio: data.escritorio ? capitalizeText(data.escritorio) : null,
+        registro_profissional: data.registro_profissional?.trim() || null,
         observacoes: data.observacoes?.trim() || null,
         fotoUrl: data.fotoUrl?.trim() || null,
         imagens: data.imagens?.trim() || null,
@@ -142,6 +178,7 @@ export async function updateParceiro(
     telefone?: string;
     cidade?: string;
     escritorio?: string;
+    registro_profissional?: string;
     observacoes?: string;
     ativo?: boolean;
     fotoUrl?: string;
@@ -175,6 +212,9 @@ export async function updateParceiro(
         ...(data.telefone !== undefined ? { telefone: data.telefone.trim() || null } : {}),
         ...(data.cidade !== undefined ? { cidade: data.cidade ? capitalizeText(data.cidade) : null } : {}),
         ...(data.escritorio !== undefined ? { escritorio: data.escritorio ? capitalizeText(data.escritorio) : null } : {}),
+        ...(data.registro_profissional !== undefined
+          ? { registro_profissional: data.registro_profissional.trim() || null }
+          : {}),
         ...(data.observacoes !== undefined ? { observacoes: data.observacoes.trim() || null } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         ...(data.fotoUrl !== undefined ? { fotoUrl: data.fotoUrl?.trim() || null } : {}),
