@@ -362,7 +362,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             cnpj: cnpjValue,
             nome: data.nome_fantasia || data.razao_social || "",
             email: data.email || prev.email || "",
-            telefone: data.ddd_telefone_1 || data.telefone || prev.telefone || "",
             cep: data.cep || prev.cep || "",
             endereco: data.logradouro || prev.endereco || "",
             numero: data.numero || prev.numero || "",

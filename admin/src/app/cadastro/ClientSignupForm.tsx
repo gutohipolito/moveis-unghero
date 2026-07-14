@@ -440,7 +440,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                   type="text"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  placeholder={tipoPessoa === "PF" ? "Ex: João da Silva" : "Ex: Marcenaria Alfa Ltda"}
                   className={inputClass}
                 />
               </div>
@@ -452,7 +451,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                   </label>
                   <input
                     type="tel"
-                    placeholder="(54) 99999-9999"
                     value={telefone}
                     onChange={handleTelefoneChange}
                     className={inputClass}
@@ -464,7 +462,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                   </label>
                   <input
                     type="email"
-                    placeholder="voce@exemplo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={inputClass}
@@ -511,7 +508,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                       setCep(e.target.value);
                       fetchAddressByCep(e.target.value);
                     }}
-                    placeholder="00000-000"
                     className={inputClass}
                   />
                 </div>
@@ -603,7 +599,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}
                   rows={4}
-                  placeholder="Conte o que você procura: ambientes, estilo, prazos, preferências..."
                   className={`${inputClass} resize-none bg-slate-950/60 text-slate-100 border border-slate-800`}
                 />
               </div>
@@ -615,7 +610,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                     type="checkbox"
                     checked={aceitaTermos}
                     onChange={(e) => setAceitaTermos(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
                     required
                   />
                   <span className="text-[11px] font-semibold text-slate-350 leading-relaxed">
@@ -628,10 +623,10 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                     type="checkbox"
                     checked={aceitaMarketing}
                     onChange={(e) => setAceitaMarketing(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
                   />
                   <span className="text-[11px] font-semibold text-slate-400 leading-relaxed">
-                    Aceito receber contatos e novidades da Móveis Unghero via WhatsApp, e-mail ou ligação. (Opcional)
+                    Aceito receber contatos e novidades da Móveis Unghero via WhatsApp ou e-mail. (Opcional)
                   </span>
                 </label>
               </div>

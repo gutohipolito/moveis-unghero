@@ -147,7 +147,6 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
           ...prev,
           nome: json.nome_fantasia || json.razao_social || prev.nome,
           email: json.email || prev.email,
-          telefone: json.ddd_telefone_1 || json.telefone || prev.telefone,
           cep: json.cep || prev.cep,
           endereco: json.logradouro || prev.endereco,
           numero: json.numero || prev.numero,
