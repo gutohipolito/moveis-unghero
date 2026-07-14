@@ -15,7 +15,8 @@ import {
   Smartphone, 
   Mail, 
   Link as LinkIcon, 
-  Handshake
+  Handshake,
+  Award
 } from "lucide-react";
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
 import { PARTNER_TYPE_LABELS, PARTNER_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
@@ -30,6 +31,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   const [escritorio, setEscritorio] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [registroProfissional, setRegistroProfissional] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -58,6 +60,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           if (draft.escritorio) setEscritorio(draft.escritorio);
           if (draft.portfolioUrl) setPortfolioUrl(draft.portfolioUrl);
           if (draft.observacoes) setObservacoes(draft.observacoes);
+          if (draft.registroProfissional) setRegistroProfissional(draft.registroProfissional);
         } catch (e) {
           console.error("Erro ao recuperar rascunho de parceiro:", e);
         }
@@ -79,10 +82,11 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         escritorio,
         portfolioUrl,
         observacoes,
+        registroProfissional,
       };
       localStorage.setItem("moveis_unghero_partner_draft", JSON.stringify(draft));
     }
-  }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes]);
+  }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes, registroProfissional]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -132,6 +136,16 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
+      if (tipo === "ARQUITETO" && !registroProfissional.trim()) {
+        setError("Por favor, informe o seu CAU para prosseguir.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      if (tipo === "ENGENHEIRO" && !registroProfissional.trim()) {
+        setError("Por favor, informe o seu CREA para prosseguir.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
     }
     if (step === 3) {
       if (!telefone.trim() && !email.trim()) {
@@ -165,6 +179,16 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+    if (tipo === "ARQUITETO" && !registroProfissional.trim()) {
+      setError("Por favor, informe o seu CAU.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (tipo === "ENGENHEIRO" && !registroProfissional.trim()) {
+      setError("Por favor, informe o seu CREA.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     if (!telefone.trim() && !email.trim()) {
       setError("Por favor, preencha pelo menos um contato (WhatsApp ou E-mail) para podermos retornar.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -172,6 +196,10 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     }
 
     setLoading(true);
+
+    const labelRegistro = tipo === "ARQUITETO" ? "CAU" : tipo === "ENGENHEIRO" ? "CREA" : "Registro Profissional";
+    const registroNote = registroProfissional.trim() ? `${labelRegistro}: ${registroProfissional.trim()}` : null;
+    const finalObservacoes = [registroNote, observacoes.trim()].filter(Boolean).join("\n") || "";
 
     const res = await submitPublicPartnerSignupAction({
       nome,
@@ -181,7 +209,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       cidade,
       escritorio,
       portfolio_url: portfolioUrl,
-      observacoes,
+      observacoes: finalObservacoes,
       company_id: companyId,
     });
 
@@ -378,6 +406,22 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                   />
                 </div>
+              </div>
+
+              {/* Registro do Conselho de Classe (CAU, CREA, etc.) */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-100 mt-2">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Award className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  {tipo === "ARQUITETO" ? "Registro CAU *" : tipo === "ENGENHEIRO" ? "Registro CREA *" : "Registro Profissional / Conselho de Classe (CAU, CREA, ABD) (Opcional)"}
+                </label>
+                <input
+                  type="text"
+                  placeholder={tipo === "ARQUITETO" ? "Ex: A123456-7" : tipo === "ENGENHEIRO" ? "Ex: 123.456-D" : "Ex: CAU, CREA ou ABD (se houver)"}
+                  value={registroProfissional}
+                  onChange={(e) => setRegistroProfissional(e.target.value)}
+                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
+                  required={tipo === "ARQUITETO" || tipo === "ENGENHEIRO"}
+                />
               </div>
             </div>
 
