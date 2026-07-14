@@ -42,7 +42,7 @@ const PARTNER_ROLE_LABEL: Record<string, string> = {
   ARQUITETO: "Arquiteto",
   PROJETISTA: "Projetista",
   DECORADOR: "Decorador",
-  ENGENHEIRO: "Engenheiro",
+  ENGENHEIRO: "Engenheiro(a)",
   OUTROS: "Parceiro",
 };
 
@@ -432,11 +432,10 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               const RoleIcon = style.icon;
               const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
               return (
-                <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-slate-100/80 p-4 shadow-sm">
-                  <div className={`absolute inset-x-0 top-0 h-1 ${style.accent}`} />
-                  <div className="flex items-center gap-3.5">
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50 p-3 shadow-sm w-fit max-w-sm space-y-2 text-slate-800 text-xs">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`h-14 w-14 shrink-0 rounded-2xl overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center ${style.avatar}`}
+                      className={`h-11 w-11 shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center ${style.avatar}`}
                     >
                       {selected.fotoUrl ? (
                         <img
@@ -445,35 +444,33 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-sm font-black tracking-wide">
+                        <span className="text-xs font-black tracking-wide">
                           {getPartnerInitials(selected.nome)}
                         </span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-extrabold text-slate-800 truncate">{selected.nome}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="text-xs font-extrabold text-slate-800 truncate">{selected.nome}</p>
                         <span
-                          className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}
+                          className={`inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}
                         >
-                          <RoleIcon className="h-2.5 w-2.5" />
+                          <RoleIcon className="h-2 w-2" />
                           {style.label}
                         </span>
                       </div>
                       {selected.escritorio ? (
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 truncate">
-                          <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <p className="text-[10px] font-semibold text-slate-500 truncate">
                           {selected.escritorio}
                         </p>
                       ) : null}
                       {registro ? (
-                        <p className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 truncate">
-                          <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <p className="text-[10px] font-bold text-slate-400 truncate">
                           {registro}
                         </p>
                       ) : null}
                       {!selected.escritorio && !registro && selected.cidade ? (
-                        <p className="text-[11px] font-semibold text-slate-400">{selected.cidade}</p>
+                        <p className="text-[10px] font-semibold text-slate-400">{selected.cidade}</p>
                       ) : null}
                     </div>
                   </div>
