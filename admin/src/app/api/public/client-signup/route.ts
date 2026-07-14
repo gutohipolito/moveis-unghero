@@ -56,6 +56,8 @@ export async function POST(request: NextRequest) {
     tipo_imovel: str(data.tipo_imovel),
     observacoes: str(data.observacoes),
     company_id: str(data.company_id),
+    lgpd_aceite: data.lgpd_aceite === true || data.lgpd_aceite === "true",
+    marketing_aceite: data.marketing_aceite === true || data.marketing_aceite === "true",
   });
 
   return NextResponse.json(result, {

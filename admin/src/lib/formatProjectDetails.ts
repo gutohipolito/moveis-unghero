@@ -12,6 +12,9 @@ export type ProjectDetailsPayload = {
     telefone: string;
     email: string;
     observacoes?: string | null;
+    lgpd_aceite?: boolean;
+    lgpd_aceite_em?: string | Date | null;
+    marketing_aceite?: boolean;
   };
   data_entrega_prevista: string | null;
   responsavel_id: string | null;
@@ -107,7 +110,20 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
     id: project.id,
     valor_previsto: Number(project.valor_previsto),
     status_geral: project.status_geral,
-    client: project.client,
+    client: {
+      id: project.client.id,
+      nome: project.client.nome,
+      cidade: project.client.cidade,
+      origem: project.client.origem,
+      telefone: project.client.telefone,
+      email: project.client.email,
+      observacoes: project.client.observacoes,
+      lgpd_aceite: Boolean(project.client.lgpd_aceite),
+      lgpd_aceite_em: project.client.lgpd_aceite_em
+        ? project.client.lgpd_aceite_em.toISOString()
+        : null,
+      marketing_aceite: Boolean(project.client.marketing_aceite),
+    },
     data_entrega_prevista: project.data_entrega_prevista
       ? project.data_entrega_prevista.toISOString()
       : null,

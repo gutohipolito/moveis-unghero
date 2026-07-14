@@ -39,6 +39,11 @@ import {
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
 import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
+import ClientConsentCard from "@/components/clientes/ClientConsentCard";
+import {
+  resolveClientConsent,
+  stripConsentFromObservacoes,
+} from "@/lib/clientConsent";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 
 interface ProjectSummary extends ClientProjectSummary {}
@@ -55,6 +60,9 @@ interface ClientDetails {
   cpf?: string;
   cnpj?: string;
   observacoes: string;
+  lgpd_aceite?: boolean;
+  lgpd_aceite_em?: string | null;
+  marketing_aceite?: boolean;
   projects?: ProjectSummary[];
 }
 
@@ -124,8 +132,10 @@ export default function ClienteDetailsClient({
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
 
-  // Aba Notas — observações editáveis
-  const [notesValue, setNotesValue] = useState(initialClient.observacoes ?? "");
+  // Aba Notas — observações editáveis (sem o bloco legado de LGPD)
+  const [notesValue, setNotesValue] = useState(
+    stripConsentFromObservacoes(initialClient.observacoes ?? "")
+  );
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
@@ -184,6 +194,7 @@ export default function ClienteDetailsClient({
     const res = await updateClientObservacoesAction(client.id, notesValue);
     if (res.success) {
       setClient((prev) => ({ ...prev, observacoes: res.observacoes ?? "" }));
+      setNotesValue(stripConsentFromObservacoes(res.observacoes ?? ""));
       setNotesSaved(true);
       window.setTimeout(() => setNotesSaved(false), 2500);
     } else {
@@ -284,6 +295,16 @@ export default function ClienteDetailsClient({
             </div>
           </div>
         </div>
+
+        <ClientConsentCard
+          className="mt-4"
+          consent={resolveClientConsent({
+            lgpd_aceite: client.lgpd_aceite,
+            lgpd_aceite_em: client.lgpd_aceite_em,
+            marketing_aceite: client.marketing_aceite,
+            observacoes: client.observacoes,
+          })}
+        />
       </Card>
 
       {/* ─── CONTEÚDO ─── */}
@@ -570,7 +591,10 @@ export default function ClienteDetailsClient({
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    disabled={savingNotes || notesValue === (client.observacoes ?? "")}
+                    disabled={
+                      savingNotes ||
+                      notesValue === stripConsentFromObservacoes(client.observacoes ?? "")
+                    }
                     className="text-xs font-bold gap-1.5 btn-metallic"
                   >
                     <Send className="h-3.5 w-3.5" /> {savingNotes ? "Salvando..." : "Salvar notas"}

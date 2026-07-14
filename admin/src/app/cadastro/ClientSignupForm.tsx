@@ -222,17 +222,12 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       return;
     }
     if (!aceitaTermos) {
-      setError("Você precisa aceitar os termos de uso e autorizar o tratamento de seus dados de acordo com a LGPD.");
+      setError("Você precisa aceitar o tratamento de dados de acordo com a LGPD.");
       scrollTop();
       return;
     }
 
     setLoading(true);
-    
-    let finalObservacoes = observacoes.trim();
-    const dataAtual = new Date().toLocaleDateString("pt-BR");
-    const consentLog = `\n\n--- Consentimentos LGPD (Formulário) ---\n[LGPD] Autorizou o tratamento de dados pessoais para atendimento comercial e orçamento: SIM (${dataAtual})\n[Marketing] Aceitou receber comunicações de marketing e novidades: ${aceitaMarketing ? "SIM" : "NÃO"}`;
-    finalObservacoes += consentLog;
 
     const res = await submitPublicClientSignupAction({
       tipo_pessoa: tipoPessoa,
@@ -247,8 +242,10 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       cidade,
       uf,
       tipo_imovel: tipoImovel,
-      observacoes: finalObservacoes,
+      observacoes: observacoes.trim(),
       company_id: companyId,
+      lgpd_aceite: aceitaTermos,
+      marketing_aceite: aceitaMarketing,
     });
     setLoading(false);
 
@@ -634,30 +631,43 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
               </div>
             </div>
 
-            <div className="flex justify-between pt-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-3 pt-2">
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all order-2 sm:order-1"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" /> Enviar Cadastro
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col items-stretch sm:items-end gap-1.5 order-1 sm:order-2">
+                <button
+                  type="submit"
+                  disabled={loading || !aceitaTermos}
+                  title={
+                    !aceitaTermos
+                      ? "Aceite o tratamento de dados (LGPD) para enviar o cadastro"
+                      : undefined
+                  }
+                  aria-disabled={loading || !aceitaTermos}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" /> Enviar Cadastro
+                    </>
+                  )}
+                </button>
+                {!aceitaTermos && !loading ? (
+                  <p className="text-[10px] text-amber-400/90 font-semibold text-center sm:text-right leading-snug px-1">
+                    Marque o aceite da LGPD para liberar o envio
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
         )}

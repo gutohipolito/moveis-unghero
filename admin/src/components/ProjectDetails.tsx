@@ -26,6 +26,11 @@ import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
+import ClientConsentCard from "@/components/clientes/ClientConsentCard";
+import {
+  resolveClientConsent,
+  stripConsentFromObservacoes,
+} from "@/lib/clientConsent";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -132,6 +137,9 @@ interface Project {
     telefone: string;
     email: string;
     observacoes?: string | null;
+    lgpd_aceite?: boolean;
+    lgpd_aceite_em?: string | Date | null;
+    marketing_aceite?: boolean;
   };
   environments: Environment[];
   files: ProjectFile[];
@@ -842,12 +850,26 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </div>
             </div>
 
-            {project.client.observacoes && (
-              <div className="p-3.5 rounded-lg bg-slate-50 border border-border text-xs text-muted-foreground">
-                <span className="font-semibold block text-foreground mb-1">Notas do Cliente:</span>
-                {project.client.observacoes}
-              </div>
-            )}
+            {(() => {
+              const consent = resolveClientConsent({
+                lgpd_aceite: project.client.lgpd_aceite,
+                lgpd_aceite_em: project.client.lgpd_aceite_em,
+                marketing_aceite: project.client.marketing_aceite,
+                observacoes: project.client.observacoes,
+              });
+              const notes = stripConsentFromObservacoes(project.client.observacoes);
+              return (
+                <>
+                  <ClientConsentCard consent={consent} />
+                  {notes ? (
+                    <div className="p-3.5 rounded-lg bg-slate-50 border border-border text-xs text-muted-foreground">
+                      <span className="font-semibold block text-foreground mb-1">Notas do Cliente:</span>
+                      <span className="whitespace-pre-wrap">{notes}</span>
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
 
             {/* Controle Operacional do Projeto */}
             <div className="border-t border-slate-100 pt-4 mt-4 space-y-4">

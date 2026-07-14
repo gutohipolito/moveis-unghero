@@ -56,6 +56,9 @@ function formatClientRecord(c: {
   tipo_imovel?: string | null;
   obs_imovel?: string | null;
   obs_entrega?: string | null;
+  lgpd_aceite?: boolean | null;
+  lgpd_aceite_em?: Date | string | null;
+  marketing_aceite?: boolean | null;
   createdAt?: Date | null;
   projects?: {
     id: string;
@@ -81,6 +84,14 @@ function formatClientRecord(c: {
     cpf: doc.cpf || "",
     cnpj: doc.cnpj || "",
     observacoes: doc.observacoes,
+    lgpd_aceite: Boolean(c.lgpd_aceite),
+    lgpd_aceite_em:
+      c.lgpd_aceite_em instanceof Date
+        ? c.lgpd_aceite_em.toISOString()
+        : typeof c.lgpd_aceite_em === "string"
+          ? c.lgpd_aceite_em
+          : null,
+    marketing_aceite: Boolean(c.marketing_aceite),
     cep: c.cep || "",
     endereco: c.endereco || "",
     numero: c.numero || "",

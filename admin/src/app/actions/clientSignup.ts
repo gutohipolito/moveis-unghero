@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
+import { stripConsentFromObservacoes } from "@/lib/clientConsent";
 
 export interface ClientSignupData {
   tipo_pessoa?: TipoPessoa;
@@ -21,6 +22,8 @@ export interface ClientSignupData {
   tipo_imovel?: string;
   observacoes?: string;
   company_id?: string;
+  lgpd_aceite?: boolean;
+  marketing_aceite?: boolean;
 }
 
 export async function submitPublicClientSignupAction(data: ClientSignupData) {
@@ -33,6 +36,12 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     }
     if (!telefone) {
       return { success: false, error: "Informe um telefone/WhatsApp para contato." };
+    }
+    if (!data.lgpd_aceite) {
+      return {
+        success: false,
+        error: "É necessário aceitar o tratamento de dados (LGPD) para concluir o cadastro.",
+      };
     }
 
     let companyId = data.company_id;
@@ -66,6 +75,7 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     }
 
     const contact = resolveClientContactFields(telefone, data.email);
+    const observacoes = stripConsentFromObservacoes(data.observacoes?.trim() || "");
 
     const client = await prisma.client.create({
       data: {
@@ -76,7 +86,7 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         cidade: data.cidade?.trim() ? capitalizeText(data.cidade.trim()) : "",
         origem: "FORMULARIO",
         status: "LEAD",
-        observacoes: data.observacoes?.trim() || "",
+        observacoes,
         company_id: companyId,
         tipo_pessoa: tipoPessoa,
         cpf,
@@ -87,6 +97,9 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         bairro: data.bairro?.trim() ? capitalizeText(data.bairro.trim()) : null,
         uf: data.uf?.trim() ? data.uf.trim().toUpperCase() : null,
         tipo_imovel: data.tipo_imovel?.trim() || null,
+        lgpd_aceite: true,
+        lgpd_aceite_em: new Date(),
+        marketing_aceite: Boolean(data.marketing_aceite),
       },
     });
 

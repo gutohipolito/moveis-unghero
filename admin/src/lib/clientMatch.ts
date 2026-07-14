@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Client } from "@prisma/client";
 import { formatPhoneDisplay } from "@/lib/phone";
+import { sanitizePublicClientEmail } from "@/lib/clientConsent";
 
 /** Dígitos do telefone BR (DDD + número), sem código do país. */
 export function normalizePhoneDigits(telefone: string): string {
@@ -16,7 +17,7 @@ export function buildClientPlaceholderEmail(phoneDigits: string): string {
 }
 
 export function normalizeClientEmail(email?: string | null): string {
-  return (email || "").trim().toLowerCase();
+  return sanitizePublicClientEmail(email);
 }
 
 export function isPlaceholderClientEmail(email: string): boolean {
