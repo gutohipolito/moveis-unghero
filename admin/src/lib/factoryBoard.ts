@@ -20,7 +20,7 @@ export async function fetchFactoryBoard(companyId: string) {
             client: { company_id: companyId },
             OR: [
               { files: { some: { aprovado_producao: true } } },
-              { status_geral: "PRODUCAO" },
+              { status_geral: { in: ["APROVADO", "PRODUCAO"] } },
             ],
           },
         },

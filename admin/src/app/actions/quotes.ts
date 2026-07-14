@@ -11,6 +11,7 @@ import {
   requireClientInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
+import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -137,7 +138,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
   }
 }
 
-// Atualiza o status do orçamento e, se aprovado, atualiza o status do projeto principal
+// Atualiza o status do orçamento e, se aprovado, cria ambientes na fila da fábrica
 export async function approveQuote(projectId: string, quoteId: string, version: number) {
   const auth = await getAuthContext();
   if (!auth) {
@@ -155,7 +156,10 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
   try {
     const quote = await prisma.quote.findFirst({
       where: { id: quoteId, project_id: projectId },
-      select: { valor_final: true },
+      select: {
+        valor_final: true,
+        items: { select: { descricao: true }, orderBy: { id: "asc" } },
+      },
     });
     if (!quote) {
       return { success: false, error: "Orçamento não encontrado" };
@@ -163,7 +167,12 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
 
     const approvedAt = new Date();
 
-    await prisma.$transaction(async (tx) => {
+    // Ambientes a criar a partir dos itens principais (sem subitens).
+    const itemNames = quote.items
+      .map((item) => capitalizeText((item.descricao || "").trim()))
+      .filter(Boolean);
+
+    const createdNames = await prisma.$transaction(async (tx) => {
       await tx.quote.updateMany({
         where: { project_id: projectId, id: { not: quoteId } },
         data: { aprovado_em: null },
@@ -181,21 +190,56 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
           valor_previsto: quote.valor_final,
         },
       });
+
+      const existingEnvs = await tx.environment.findMany({
+        where: { project_id: projectId },
+        select: { nome: true },
+      });
+      const existingNames = new Set(
+        existingEnvs.map((e) => e.nome.trim().toLowerCase())
+      );
+
+      const created: string[] = [];
+      for (const nome of itemNames) {
+        const key = nome.toLowerCase();
+        if (existingNames.has(key)) continue;
+
+        await tx.environment.create({
+          data: {
+            project_id: projectId,
+            nome,
+            tipo: inferEnvironmentTypeFromName(nome),
+            status: "PRONTO_PRODUCAO",
+          },
+        });
+        existingNames.add(key);
+        created.push(nome);
+      }
+
+      return created;
     });
 
-    // Registra o evento de aprovação de proposta na timeline
+    const envSummary =
+      createdNames.length > 0
+        ? ` Ambientes criados e enviados à Fila de Produção: ${createdNames.join(", ")}.`
+        : itemNames.length > 0
+          ? " Ambientes do orçamento já existiam no projeto."
+          : "";
+
     await prisma.timeline.create({
       data: {
         project_id: projectId,
-        acao: `Proposta comercial v${version} foi APROVADA pelo cliente. Projeto movido para a etapa de Preparação Técnica.`,
+        acao: `Proposta comercial v${version} foi APROVADA pelo cliente. Projeto movido para Aprovados.${envSummary}`,
         interno_sotamente: false,
-        user_id: await ensureActorUserId()
-      }
+        user_id: await ensureActorUserId(),
+      },
     });
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/clientes", "layout");
-    return { success: true };
+    revalidatePath("/factory");
+    revalidatePath("/crm");
+    return { success: true, createdEnvironments: createdNames };
   } catch (error) {
     console.error("Erro na Server Action approveQuote:", error);
     return { success: false, error: error instanceof Error ? error.message : "Erro ao aprovar orçamento no banco remoto" };
