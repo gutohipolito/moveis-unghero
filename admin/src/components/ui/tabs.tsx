@@ -28,7 +28,7 @@ export function Tabs({ defaultValue, value, onValueChange, children, className }
   }
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full min-w-0 max-w-full", className)}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child as React.ReactElement<any>, {
@@ -53,7 +53,7 @@ export function TabsList({ children, className, activeTab, setActiveTab }: TabsL
   return (
     <div
       className={cn(
-        "inline-flex h-9 items-center justify-center rounded-lg bg-secondary p-1 text-muted-foreground border border-border/40",
+        "inline-flex h-9 max-w-full min-w-0 items-center justify-start overflow-x-auto overscroll-x-contain rounded-lg bg-secondary p-1 text-muted-foreground border border-border/40",
         className
       )}
     >
@@ -85,7 +85,7 @@ export function TabsTrigger({ value, children, className, active, onClick }: Tab
       onClick={onClick}
       type="button"
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+        "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
         active ? "bg-card text-foreground shadow-xs font-semibold border border-border/50" : "hover:text-foreground opacity-75 hover:opacity-100",
         className
       )}

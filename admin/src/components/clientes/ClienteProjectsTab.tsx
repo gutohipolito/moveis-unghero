@@ -452,7 +452,7 @@ function ClienteProjectDrawer({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

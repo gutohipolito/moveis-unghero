@@ -63,7 +63,8 @@ import {
   DollarSign,
   Trash2,
   Sparkles,
-  Calendar
+  Calendar,
+  ChevronDown,
 } from "lucide-react";
 
 interface Environment {
@@ -226,6 +227,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("environments");
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -763,7 +765,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 max-w-full overflow-x-hidden">
       {/* Botão de Voltar e Banner de Mock */}
       {!embedded ? (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -826,27 +828,35 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               <span className="text-xs font-bold text-primary tracking-widest uppercase">
                 Cliente & Projeto
               </span>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mt-1">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mt-1 break-words">
                 {project.client.nome}
               </h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center">
-                <MapPin className="h-4 w-4 text-muted-foreground mr-2.5" />
-                Cidade: <span className="text-foreground font-medium ml-1">{project.client.cidade}</span>
+              <div className="flex items-start min-w-0">
+                <MapPin className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                <span className="min-w-0">
+                  Cidade: <span className="text-foreground font-medium break-words">{project.client.cidade}</span>
+                </span>
               </div>
-              <div className="flex items-center">
-                <Phone className="h-4 w-4 text-muted-foreground mr-2.5" />
-                WhatsApp: <span className="text-foreground font-medium ml-1">{project.client.telefone}</span>
+              <div className="flex items-start min-w-0">
+                <Phone className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                <span className="min-w-0">
+                  WhatsApp: <span className="text-foreground font-medium break-all">{project.client.telefone}</span>
+                </span>
               </div>
-              <div className="flex items-center">
-                <Mail className="h-4 w-4 text-muted-foreground mr-2.5" />
-                E-mail: <span className="text-foreground font-medium ml-1">{project.client.email}</span>
+              <div className="flex items-start min-w-0">
+                <Mail className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                <span className="min-w-0">
+                  E-mail: <span className="text-foreground font-medium break-all">{project.client.email}</span>
+                </span>
               </div>
-              <div className="flex items-center">
-                <Building className="h-4 w-4 text-muted-foreground mr-2.5" />
-                Origem Lead: <span className="text-foreground font-medium ml-1 uppercase">{project.client.origem}</span>
+              <div className="flex items-start min-w-0">
+                <Building className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                <span className="min-w-0">
+                  Origem Lead: <span className="text-foreground font-medium uppercase break-words">{project.client.origem}</span>
+                </span>
               </div>
             </div>
 
@@ -1063,41 +1073,59 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         onSuccess={() => window.location.reload()}
       />
 
-      <Tabs defaultValue="environments">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 max-w-full">
+        {/* Mobile: dropdown — evita estourar a largura do viewport */}
+        <div className="relative sm:hidden">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+          >
+            <option value="environments">Ambientes ({project.environments.length})</option>
+            <option value="quotes">Orçamentos ({project.quotes?.length || 0})</option>
+            <option value="briefing">Formulário</option>
+            <option value="finances">Financeiro ({project.installments?.length || 0})</option>
+            <option value="tasks">Tarefas ({project.tasks?.length || 0})</option>
+            <option value="files">Arquivos Técnicos ({project.files.length})</option>
+            <option value="timeline">Histórico & Notas ({filteredTimeline.length})</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
+
+        <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="environments">
-            <Layers className="h-4 w-4 mr-2" /> Ambientes ({project.environments.length})
+            <Layers className="h-4 w-4 mr-2 shrink-0" /> Ambientes ({project.environments.length})
           </TabsTrigger>
           <TabsTrigger value="quotes">
-            <DollarSign className="h-4 w-4 mr-2" /> Orçamentos ({project.quotes?.length || 0})
+            <DollarSign className="h-4 w-4 mr-2 shrink-0" /> Orçamentos ({project.quotes?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="briefing">
-            <FileText className="h-4 w-4 mr-2" /> Formulário
+            <FileText className="h-4 w-4 mr-2 shrink-0" /> Formulário
           </TabsTrigger>
           <TabsTrigger value="finances">
-            <DollarSign className="h-4 w-4 mr-2" /> Financeiro ({project.installments?.length || 0})
+            <DollarSign className="h-4 w-4 mr-2 shrink-0" /> Financeiro ({project.installments?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="tasks">
-            <CheckCircle2 className="h-4 w-4 mr-2" /> Tarefas ({project.tasks?.length || 0})
+            <CheckCircle2 className="h-4 w-4 mr-2 shrink-0" /> Tarefas ({project.tasks?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="files">
-            <FileText className="h-4 w-4 mr-2" /> Arquivos Técnicos ({project.files.length})
+            <FileText className="h-4 w-4 mr-2 shrink-0" /> Arquivos Técnicos ({project.files.length})
           </TabsTrigger>
           <TabsTrigger value="timeline">
-            <Clock className="h-4 w-4 mr-2" /> Histórico & Notas ({filteredTimeline.length})
+            <Clock className="h-4 w-4 mr-2 shrink-0" /> Histórico & Notas ({filteredTimeline.length})
           </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Ambientes */}
         <TabsContent value="environments" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <h3 className="text-lg font-bold">Módulos de Ambientes / Cômodos</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Monitore e atualize as etapas de fabricação de cada cômodo de forma individual.
               </p>
             </div>
-            <Button onClick={() => setIsAddEnvOpen(true)} size="sm" className="btn-metallic">
+            <Button onClick={() => setIsAddEnvOpen(true)} size="sm" className="btn-metallic w-full sm:w-auto shrink-0">
               <Plus className="h-4 w-4 mr-1.5" /> Novo Cômodo
             </Button>
           </div>
@@ -1115,16 +1143,16 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     key={env.id} 
                     className="p-5 rounded-xl border border-border bg-white flex flex-col justify-between gap-4 shadow-sm"
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest block w-max mb-1.5">
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest inline-block max-w-full truncate mb-1.5">
                           {env.tipo}
                         </span>
-                        <h4 className="font-semibold text-base text-foreground">{env.nome}</h4>
+                        <h4 className="font-semibold text-base text-foreground break-words">{env.nome}</h4>
                       </div>
                       
                       {/* Badge de Status Atual */}
-                      <span className={`text-xs font-medium border px-2.5 py-0.5 rounded-full ${currentStatusInfo?.bg}`}>
+                      <span className={`text-xs font-medium border px-2.5 py-0.5 rounded-full shrink-0 text-right ${currentStatusInfo?.bg}`}>
                         {currentStatusInfo?.label}
                       </span>
                     </div>
