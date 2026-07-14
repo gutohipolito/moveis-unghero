@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createQuote, getProjectBriefingAction, type ItemType } from "@/app/actions/quotes";
 import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -11,7 +11,11 @@ import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers } from "lucide
 import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
 import { listQuoteItemPresets, listQuoteDetailPresets } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
-import { DescriptionCombobox, DetailsEditor } from "@/components/quotes/QuoteItemInputs";
+import {
+  DescriptionCombobox,
+  DetailsEditor,
+  flushPendingQuoteDetailDrafts,
+} from "@/components/quotes/QuoteItemInputs";
 import { getParceiros } from "@/app/actions/parceiros";
 
 interface PartnerOption {
@@ -63,6 +67,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     return date.toISOString().split("T")[0];
   });
   const [items, setItems] = useState<QuoteItemInput[]>([]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [desconto, setDesconto] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [presets, setPresets] = useState<QuoteItemPresetDTO[]>([]);
@@ -244,22 +250,31 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
+
+    // Consolida detalhes digitados mas ainda não confirmados com Enter
+    // (blur síncrono + ref atualizado no re-render do flushSync).
+    flushPendingQuoteDetailDrafts();
+    const currentItems = itemsRef.current;
+
+    if (currentItems.length === 0) {
       showError("Orçamento vazio", "Adicione pelo menos um item comercial antes de salvar.");
       return;
     }
 
     setLoading(true);
 
+    const currentSubtotal = currentItems.reduce((sum, item) => sum + item.valor_total, 0);
+    const currentValorFinal = Math.max(0, currentSubtotal - desconto);
+
     const inputData = {
-      subtotal,
+      subtotal: currentSubtotal,
       desconto,
-      valor_final: valorFinal,
+      valor_final: currentValorFinal,
       validade,
       observacoes,
       template_tipo: QUOTE_TEMPLATE_ID,
       partnerId: partnerId || null,
-      items: items.map((item) => ({
+      items: currentItems.map((item) => ({
         descricao: item.descricao,
         quantidade: item.quantidade,
         tipo_custo: item.tipo_custo,
@@ -274,7 +289,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     if (result.success && result.data) {
       // Dar baixa no estoque se o checkbox estiver ativo e houver itens de estoque
       if (baixarEstoque) {
-        const itemsToDeduct = items
+        const itemsToDeduct = currentItems
           .filter(item => item.inventoryItemId)
           .map(item => ({
             itemId: item.inventoryItemId!,

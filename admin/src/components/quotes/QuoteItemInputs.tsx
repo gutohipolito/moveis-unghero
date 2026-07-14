@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Plus, X, ListPlus } from "lucide-react";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 
@@ -87,6 +88,9 @@ export function DescriptionCombobox({
  * Editor de detalhes do item em "chips".
  * - `suggestions`: detalhes salvos no cadastro de "Detalhes do item".
  * Saída continua sendo um array de strings (compatível com subitens).
+ *
+ * Importante: o texto digitado e ainda não confirmado com Enter também é
+ * consolidado no blur / submit — senão o PDF saía só com o título do item.
  */
 export function DetailsEditor({
   subitens,
@@ -100,6 +104,10 @@ export function DetailsEditor({
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftRef = useRef(draft);
+  const subitensRef = useRef(subitens);
+  draftRef.current = draft;
+  subitensRef.current = subitens;
 
   const currentSet = useMemo(
     () => new Set(subitens.map((s) => s.toLowerCase())),
@@ -118,13 +126,21 @@ export function DetailsEditor({
       .slice(0, 8);
   }, [suggestions, currentSet, q]);
 
-  function addDetail(v: string) {
-    const t = v.trim();
-    if (!t) return;
-    if (!subitens.some((s) => s.toLowerCase() === t.toLowerCase())) {
-      onChange([...subitens, t]);
+  function commitDraft(from = draftRef.current) {
+    const t = from.trim();
+    if (!t) return false;
+    const current = subitensRef.current;
+    if (current.some((s) => s.toLowerCase() === t.toLowerCase())) {
+      setDraft("");
+      return false;
     }
+    onChange([...current, t]);
     setDraft("");
+    return true;
+  }
+
+  function addDetail(v: string) {
+    commitDraft(v);
     setOpen(false);
   }
 
@@ -140,7 +156,6 @@ export function DetailsEditor({
         Detalhes do item (opcional)
       </label>
 
-      {/* Chips já escolhidos */}
       {subitens.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-1.5">
           {subitens.map((s, idx) => (
@@ -168,12 +183,18 @@ export function DetailsEditor({
             <input
               type="text"
               value={draft}
+              data-quote-detail-draft="true"
               onChange={(e) => {
                 setDraft(e.target.value);
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
               onBlur={() => {
+                // Consolida o texto pendente imediatamente (flushSync) para que
+                // um clique em "Salvar" já enxergue o detalhe no estado pai.
+                flushSync(() => {
+                  commitDraft();
+                });
                 blurTimer.current = setTimeout(() => setOpen(false), 120);
               }}
               onKeyDown={(e) => {
@@ -219,8 +240,23 @@ export function DetailsEditor({
       </div>
 
       <p className="mt-1 text-[9px] text-slate-400">
-        Apenas texto informativo — sem quantidade nem valor. No PDF aparece abaixo do item, separado por •.
+        Texto informativo (sem quantidade nem valor). Confirme com Enter ou ao
+        sair do campo — no PDF aparece abaixo do item, separado por •.
       </p>
     </div>
   );
+}
+
+/** Consolida rascunhos de detalhes ainda abertos (ex.: antes do submit). */
+export function flushPendingQuoteDetailDrafts() {
+  if (typeof document === "undefined") return;
+  const active = document.activeElement;
+  if (
+    active instanceof HTMLElement &&
+    active.matches('input[data-quote-detail-draft="true"]')
+  ) {
+    flushSync(() => {
+      active.blur();
+    });
+  }
 }
