@@ -265,9 +265,6 @@ export default function QuoteItemPresetsManager({
                       handleSaveDescricao();
                     }
                   }}
-                  placeholder={
-                    editingId ? "Ex: Cozinha completa" : "Ex: Melamina 18mm, Ripado, Vidros..."
-                  }
                   className="flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-amber-400 focus:outline-none transition-all"
                 />
                 {editingId && (
@@ -351,11 +348,6 @@ export default function QuoteItemPresetsManager({
                       handleSaveDetail();
                     }
                   }}
-                  placeholder={
-                    editingDetailId
-                      ? "Ex: Corrediça telescópica Openfield"
-                      : "Ex: Corrediças telescópicas, Difusor de LED, Puxadores..."
-                  }
                   className="flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-amber-400 focus:outline-none transition-all"
                 />
                 {editingDetailId && (

@@ -331,7 +331,6 @@ export default function ClienteProjectsTab({
                   type="number"
                   min="1"
                   step="0.01"
-                  placeholder="Ex: 35000"
                   value={valorPrevisto}
                   onChange={(e) => setValorPrevisto(e.target.value)}
                   className="border-border bg-slate-50 text-sm"

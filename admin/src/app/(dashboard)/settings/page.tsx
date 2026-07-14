@@ -172,9 +172,7 @@ export default function SettingsPage() {
                 type="text"
                 value={razaoSocial}
                 onChange={(e) => setRazaoSocial(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="Ex: Móveis Unghero Ltda"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
 
             <div className="space-y-1.5">
@@ -183,9 +181,7 @@ export default function SettingsPage() {
                 type="text"
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="00.000.000/0001-00"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
 
             <div className="space-y-1.5">
@@ -194,9 +190,7 @@ export default function SettingsPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="contato@empresa.com"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
 
             <div className="space-y-1.5">
@@ -205,9 +199,7 @@ export default function SettingsPage() {
                 type="text"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="(00) 00000-0000"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
@@ -216,9 +208,7 @@ export default function SettingsPage() {
                 type="text"
                 value={endereco}
                 onChange={(e) => setEndereco(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="Rua, Número, Bairro, Cidade - UF"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
           </div>
         </div>
@@ -237,9 +227,7 @@ export default function SettingsPage() {
                 type="number"
                 value={metaMensal}
                 onChange={(e) => setMetaMensal(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="Ex: 250000"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
 
             <div className="space-y-1.5">
@@ -248,9 +236,7 @@ export default function SettingsPage() {
                 type="number"
                 value={prazoEntrega}
                 onChange={(e) => setPrazoEntrega(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="Ex: 45"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
 
             <div className="space-y-1.5">
@@ -259,9 +245,7 @@ export default function SettingsPage() {
                 type="number"
                 value={margemPadrao}
                 onChange={(e) => setMargemPadrao(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"
-                placeholder="Ex: 35"
-              />
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 transition-all focus:border-indigo-500 focus:outline-none"              />
             </div>
           </div>
         </div>

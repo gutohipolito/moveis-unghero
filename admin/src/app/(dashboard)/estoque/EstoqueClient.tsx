@@ -21,7 +21,6 @@ import { getEstoqueLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
-import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { 
   Package, 
   Users, 
@@ -645,7 +644,7 @@ export default function EstoqueClient({
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground block">Telefone Comercial</label>
-                  <Input type="tel" placeholder={PHONE_PLACEHOLDER} value={supplierTelefone} onChange={e => setSupplierTelefone(e.target.value)}  className="border-border bg-slate-50 text-sm" />
+                  <Input type="tel" value={supplierTelefone} onChange={e => setSupplierTelefone(e.target.value)}  className="border-border bg-slate-50 text-sm" />
                 </div>
               </div>
 

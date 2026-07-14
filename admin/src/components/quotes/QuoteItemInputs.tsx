@@ -15,14 +15,12 @@ export function DescriptionCombobox({
   onChangeText,
   onSelectPreset,
   className,
-  placeholder = "Descrição do item",
 }: {
   value: string;
   presets: QuoteItemPresetDTO[];
   onChangeText: (text: string) => void;
   onSelectPreset: (preset: QuoteItemPresetDTO) => void;
   className?: string;
-  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,7 +40,6 @@ export function DescriptionCombobox({
       <input
         type="text"
         required
-        placeholder={placeholder}
         value={value}
         onChange={(e) => {
           onChangeText(e.target.value);
@@ -171,7 +168,6 @@ export function DetailsEditor({
             <input
               type="text"
               value={draft}
-              placeholder="Digite um detalhe e Enter (ex: Puxador cromado)"
               onChange={(e) => {
                 setDraft(e.target.value);
                 setOpen(true);

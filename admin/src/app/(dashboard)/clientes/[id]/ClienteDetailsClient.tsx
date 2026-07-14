@@ -448,7 +448,6 @@ export default function ClienteDetailsClient({
                       required
                       value={newTitle}
                       onChange={e => setNewTitle(e.target.value)}
-                      placeholder="Assunto da interação ou reunião"
                       className="border-border bg-slate-50 text-xs py-1"
                     />
                   </div>
@@ -458,7 +457,6 @@ export default function ClienteDetailsClient({
                       required
                       value={newDesc}
                       onChange={e => setNewDesc(e.target.value)}
-                      placeholder="Descreva o que foi conversado ou as notas da medição técnica..."
                       className="w-full h-16 bg-slate-50 border border-border rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -564,7 +562,6 @@ export default function ClienteDetailsClient({
                     setNotesValue(e.target.value);
                     setNotesSaved(false);
                   }}
-                  placeholder="Escreva aqui as observações e notas deste cliente..."
                   className="w-full min-h-40 bg-slate-50 border border-border rounded-xl text-sm p-3 outline-none focus:ring-1 focus:ring-primary leading-relaxed whitespace-pre-line"
                 />
                 {notesError && (

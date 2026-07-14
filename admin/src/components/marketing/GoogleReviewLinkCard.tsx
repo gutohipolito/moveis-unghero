@@ -329,7 +329,6 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                     type="text"
                     value={manualName}
                     onChange={(event) => handleManualNameChange(event.target.value)}
-                    placeholder="Ex.: Maria Silva"
                     className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -342,7 +341,6 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                     type="tel"
                     value={manualPhone}
                     onChange={(event) => handleManualPhoneChange(event.target.value)}
-                    placeholder="(54) 99999-9999"
                     className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
                   />
                 </div>

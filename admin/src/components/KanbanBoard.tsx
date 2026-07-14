@@ -1053,7 +1053,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               value={lossMotivo}
               onChange={(e) => setLossMotivo(e.target.value)}
               rows={3}
-              placeholder="Ex.: Optou por outro fornecedor, orçamento acima do esperado..."
               className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none resize-none"
             />
           </div>
@@ -1591,7 +1590,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                       value={editingObservacoes}
                       onChange={(e) => setEditingObservacoes(e.target.value)}
                       rows={3}
-                      placeholder="Descreva detalhes específicos do cliente, preferências de acabamento e histórico comercial do fechamento..."
                       className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium resize-none leading-relaxed"
                     />
                   </div>

@@ -553,7 +553,6 @@ export default function ContasPagarClient({ initialExpenses, suppliers, projects
               <Input
                 value={form.descricao}
                 onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
-                placeholder="Ex: Aluguel do galpão, Compra de MDF..."
                 className="bg-slate-50"
               />
             </div>
@@ -567,7 +566,6 @@ export default function ContasPagarClient({ initialExpenses, suppliers, projects
                   step="0.01"
                   value={form.valor}
                   onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
-                  placeholder="0,00"
                   className="bg-slate-50"
                 />
               </div>
@@ -655,7 +653,6 @@ export default function ContasPagarClient({ initialExpenses, suppliers, projects
                 <Input
                   value={form.fornecedor_nome}
                   onChange={(e) => setForm((f) => ({ ...f, fornecedor_nome: e.target.value }))}
-                  placeholder="Ex: Imobiliária, Concessionária..."
                   className="bg-slate-50"
                 />
               </div>
@@ -724,7 +721,6 @@ export default function ContasPagarClient({ initialExpenses, suppliers, projects
                 value={form.observacoes}
                 onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
                 className="w-full min-h-[60px] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-amber-400"
-                placeholder="Anotações internas..."
               />
             </div>
 

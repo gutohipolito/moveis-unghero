@@ -14,7 +14,7 @@ import {
   HelpCircle,
   Loader2,
 } from "lucide-react";
-import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { formatPhoneInput } from "@/lib/phone";
 import { labelOrigin, labelStatus } from "@/lib/navLabels";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import type { Origin } from "@/app/actions/kanban";
@@ -310,7 +310,6 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
                   set("documento", val);
                   if (data.tipo_pessoa === "PJ") fetchCompanyByCnpj(val);
                 }}
-                placeholder={data.tipo_pessoa === "PJ" ? "00.000.000/0001-00" : "000.000.000-00"}
                 className={inputClass}
               />
             </div>
@@ -329,7 +328,6 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
                 type="text"
                 value={data.nome}
                 onChange={(e) => set("nome", e.target.value)}
-                placeholder={data.tipo_pessoa === "PF" ? "Ex: João da Silva" : "Ex: Marcenaria Alfa Ltda"}
                 className={inputClass}
               />
             </div>
@@ -339,7 +337,6 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
                 <label className={labelClass}>Telefone / WhatsApp *</label>
                 <input
                   type="tel"
-                  placeholder={PHONE_PLACEHOLDER}
                   value={data.telefone}
                   onChange={(e) => set("telefone", formatPhoneInput(e.target.value))}
                   className={inputClass}
@@ -349,7 +346,6 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
                 <label className={labelClass}>E-mail</label>
                 <input
                   type="email"
-                  placeholder="cliente@exemplo.com"
                   value={data.email}
                   onChange={(e) => set("email", e.target.value)}
                   className={inputClass}
@@ -378,7 +374,6 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
                     set("cep", val);
                     fetchAddressByCep(val);
                   }}
-                  placeholder="00000-000"
                   className={inputClass}
                 />
               </div>

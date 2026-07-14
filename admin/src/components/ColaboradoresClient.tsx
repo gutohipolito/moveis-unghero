@@ -527,7 +527,6 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
             <div className="space-y-1">
               <label className="text-xs font-semibold text-muted-foreground">Nome completo</label>
               <Input
-                placeholder="Nome completo do colaborador"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -538,7 +537,6 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
               <label className="text-xs font-semibold text-muted-foreground">E-mail corporativo</label>
               <Input
                 type="email"
-                placeholder="E-mail profissional"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -549,7 +547,6 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
               <label className="text-xs font-semibold text-muted-foreground">Foto de perfil (URL)</label>
               <Input
                 type="url"
-                placeholder="https://exemplo.com/foto.jpg"
                 value={image}
                 onChange={(e) => setImage(e.target.value)}
               />
@@ -598,7 +595,6 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
               </label>
               <Input
                 type="password"
-                placeholder={editing ? "Manter senha atual" : "Mínimo 6 caracteres"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required={!editing}

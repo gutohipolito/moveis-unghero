@@ -706,7 +706,6 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             className="w-full min-h-[80px] rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
             value={observacoes}
             onChange={(e) => setObservacoes(e.target.value)}
-            placeholder="Anotações internas sobre o orçamento..."
           />
         </div>
 

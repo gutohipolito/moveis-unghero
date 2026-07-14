@@ -12,7 +12,6 @@ import {
 import { getParceirosLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { PARTNER_TYPE_STYLES, PARTNER_TYPES } from "@/lib/partnerTypes";
-import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -768,7 +767,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 <label className="text-xs font-bold text-muted-foreground">Telefone</label>
                 <Input
                   type="tel"
-                  placeholder={PHONE_PLACEHOLDER}
                   value={telefone}
                   onChange={(e) => setTelefone(e.target.value)}
                 />
@@ -779,11 +777,11 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </div>
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Link do Portfolio ou Instagram</label>
-                <Input type="url" placeholder="https://..." value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} />
+                <Input type="url" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} />
               </div>
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">URL da Foto de Perfil (Avatar)</label>
-                <Input type="url" placeholder="https://..." value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} />
+                <Input type="url" value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} />
               </div>
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Observações</label>

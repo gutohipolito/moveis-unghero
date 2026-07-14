@@ -27,7 +27,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
-import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { 
   approveQuote,
   deleteQuote,
@@ -884,7 +883,6 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                           <label className="text-xs font-bold text-slate-500">Nome *</label>
                           <Input
                             required
-                            placeholder="Nome do cliente"
                             value={quickNome}
                             onChange={(e) => setQuickNome(e.target.value)}
                             className="bg-white border-slate-200 text-sm h-10"
@@ -894,7 +892,6 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                           <label className="text-xs font-bold text-slate-500">Cidade *</label>
                           <Input
                             required
-                            placeholder="Cidade"
                             value={quickCidade}
                             onChange={(e) => setQuickCidade(e.target.value)}
                             className="bg-white border-slate-200 text-sm h-10"
@@ -907,7 +904,6 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                           <label className="text-xs font-bold text-slate-500">E-mail</label>
                           <Input
                             type="email"
-                            placeholder="Opcional"
                             value={quickEmail}
                             onChange={(e) => setQuickEmail(e.target.value)}
                             className="bg-white border-slate-200 text-sm h-10"
@@ -917,7 +913,6 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                           <label className="text-xs font-bold text-slate-500">Telefone</label>
                           <Input
                             type="tel"
-                            placeholder={PHONE_PLACEHOLDER}
                             value={quickTelefone}
                             onChange={(e) => setQuickTelefone(e.target.value)}
                             className="bg-white border-slate-200 text-sm h-10"

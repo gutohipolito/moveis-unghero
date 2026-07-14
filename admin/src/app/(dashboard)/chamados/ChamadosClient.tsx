@@ -262,7 +262,6 @@ export default function ChamadosClient({
                 required
                 maxLength={120}
                 className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all"
-                placeholder="Ex: Falta de dobradiças 35mm"
               />
             </div>
             <div className="space-y-1.5">
@@ -291,7 +290,6 @@ export default function ChamadosClient({
               required
               rows={3}
               className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-sm text-slate-700 focus:border-indigo-500 focus:outline-none transition-all resize-y"
-              placeholder="Detalhe o insumo em falta, quantidade necessária e onde será usado."
             />
           </div>
 
