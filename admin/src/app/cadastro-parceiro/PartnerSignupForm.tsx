@@ -21,6 +21,21 @@ import {
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
 import { PARTNER_TYPE_LABELS, PARTNER_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 
+const CIDADES_SERRA_GAUCHA = [
+  { value: "Farroupilha", label: "Farroupilha" },
+  { value: "Caxias do Sul", label: "Caxias do Sul" },
+  { value: "Bento Gonçalves", label: "Bento Gonçalves" },
+  { value: "Garibaldi", label: "Garibaldi" },
+  { value: "Carlos Barbosa", label: "Carlos Barbosa" },
+  { value: "Flores da Cunha", label: "Flores da Cunha" },
+  { value: "Nova Roma do Sul", label: "Nova Roma do Sul" },
+  { value: "Pinto Bandeira", label: "Pinto Bandeira" },
+  { value: "Veranópolis", label: "Veranópolis" },
+  { value: "Nova Petrópolis", label: "Nova Petrópolis" },
+  { value: "Gramado", label: "Gramado" },
+  { value: "Canela", label: "Canela" }
+];
+
 export default function PartnerSignupForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
   const [nome, setNome] = useState("");
@@ -121,18 +136,20 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       return;
     }
     if (step === 2) {
-      if (!nome.trim()) {
-        setError("Por favor, preencha seu nome completo profissional.");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
-      if (nome.trim().length < 3) {
+      const cleanNome = nome.trim();
+      if (!cleanNome) {
         setError("Por favor, informe seu nome completo.");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
+      const nameParts = cleanNome.split(/\s+/).filter(part => part.length > 0);
+      if (nameParts.length < 2) {
+        setError("Por favor, informe seu nome e sobrenome (nome completo).");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       if (!cidade.trim()) {
-        setError("Por favor, informe sua cidade de atuação.");
+        setError("Por favor, selecione sua cidade de atuação.");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -153,10 +170,42 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      if (email.trim() && !email.includes("@")) {
-        setError("Por favor, insira um e-mail válido.");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
+      if (telefone.trim()) {
+        const cleanTel = telefone.replace(/\D/g, "");
+        if (![10, 11].includes(cleanTel.length)) {
+          setError("Por favor, insira um WhatsApp/Telefone válido com DDD.");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+      if (email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+          setError("Por favor, insira um e-mail válido.");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+    }
+    if (step === 4) {
+      if (portfolioUrl.trim()) {
+        const value = portfolioUrl.trim();
+        let testValue = value;
+        if (!/^https?:\/\//i.test(value)) {
+          testValue = `https://${value}`;
+        }
+        try {
+          const parsedUrl = new URL(testValue);
+          if (!parsedUrl.hostname.includes(".")) {
+            setError("Por favor, insira um link ou URL válido para o seu portfólio (ex: https://instagram.com/seu_perfil).");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+        } catch (e) {
+          setError("Por favor, insira um link ou URL válido para o seu portfólio (ex: https://instagram.com/seu_perfil).");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
       }
     }
 
@@ -174,8 +223,20 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     event.preventDefault();
     setError(null);
 
-    if (!nome.trim() || nome.trim().length < 3) {
-      setError("Por favor, preencha seu nome completo profissional.");
+    const cleanNome = nome.trim();
+    if (!cleanNome) {
+      setError("Por favor, informe seu nome completo.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const nameParts = cleanNome.split(/\s+/).filter(part => part.length > 0);
+    if (nameParts.length < 2) {
+      setError("Por favor, informe seu nome e sobrenome (nome completo).");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (!cidade.trim()) {
+      setError("Por favor, informe sua cidade de atuação.");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -193,6 +254,41 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       setError("Por favor, preencha pelo menos um contato (WhatsApp ou E-mail) para podermos retornar.");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
+    }
+    if (telefone.trim()) {
+      const cleanTel = telefone.replace(/\D/g, "");
+      if (![10, 11].includes(cleanTel.length)) {
+        setError("Por favor, insira um WhatsApp/Telefone válido com DDD.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setError("Por favor, insira um e-mail válido.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+    if (portfolioUrl.trim()) {
+      const value = portfolioUrl.trim();
+      let testValue = value;
+      if (!/^https?:\/\//i.test(value)) {
+        testValue = `https://${value}`;
+      }
+      try {
+        const parsedUrl = new URL(testValue);
+        if (!parsedUrl.hostname.includes(".")) {
+          setError("Por favor, insira um link ou URL de portfólio válido.");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      } catch (e) {
+        setError("Por favor, insira um link ou URL de portfólio válido.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
     }
 
     setLoading(true);
@@ -283,7 +379,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       {/* Barra de Progresso */}
       <div className="mb-8 space-y-2 partner-progress-wrapper">
         <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <span>Seja um Parceiro Unghero</span>
+          <span>Seja um Parceiro</span>
           <span>{progressPercent}% Concluído</span>
         </div>
         <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -367,12 +463,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Nome profissional *
+                  <User className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Nome Completo *
                 </label>
                 <input
                   required
                   type="text"
-                  placeholder="Seu nome profissional completo"
+                  placeholder="Seu nome completo"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
@@ -397,14 +493,19 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Cidade de atuação principal *
                   </label>
-                  <input
+                  <select
                     required
-                    type="text"
-                    placeholder="Ex: Farroupilha - RS"
                     value={cidade}
                     onChange={(e) => setCidade(e.target.value)}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
-                  />
+                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900 cursor-pointer"
+                  >
+                    <option value="" className="text-slate-400">Selecione...</option>
+                    {CIDADES_SERRA_GAUCHA.map((c) => (
+                      <option key={c.value} value={c.value} className="text-slate-900 font-semibold">
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

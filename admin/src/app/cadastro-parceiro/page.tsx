@@ -1,3 +1,4 @@
+import React from "react";
 import PartnerSignupForm from "./PartnerSignupForm";
 
 export const metadata = {
@@ -8,35 +9,29 @@ export const metadata = {
 
 export default function CadastroParceiroPage() {
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col justify-between relative overflow-hidden">
+    <main className="min-h-screen bg-slate-950 flex flex-col justify-between relative w-full max-w-full overflow-x-hidden text-slate-100">
       {/* Imagem de Fundo Overlay Sutil */}
       <div 
-        className="absolute inset-0 z-0 bg-[url('/partner_signup_bg.png')] bg-cover bg-center opacity-30 pointer-events-none"
-        style={{ filter: "brightness(0.35) contrast(1.1)" }}
+        className="absolute inset-0 z-0 bg-[url('/partner_signup_bg.png')] bg-cover bg-center opacity-15 pointer-events-none"
+        style={{ filter: "brightness(0.20) contrast(1.15) grayscale(0.2)" }}
       />
 
-      <header className="w-full bg-slate-950/85 backdrop-blur-sm border-b border-slate-800/60 py-4 px-6 shadow-sm z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="Móveis Unghero"
-              className="h-9 w-auto object-contain"
-            />
-          </div>
-          <span className="text-[10px] font-black text-white uppercase tracking-widest bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700/60 shadow-inner">
-            Parceiros
-          </span>
-        </div>
-      </header>
-
-      <div className="flex-1 flex items-center py-8 z-10">
-        <div className="w-full">
-          <PartnerSignupForm />
-        </div>
+      {/* Logo no Topo */}
+      <div className="w-full flex justify-center pt-8 pb-4 md:pt-12 md:pb-6 z-10 shrink-0">
+        <img
+          src="/logo.png"
+          alt="Móveis Unghero"
+          className="h-10 w-auto object-contain"
+        />
       </div>
 
-      <footer className="w-full border-t border-slate-800/60 bg-slate-950/85 backdrop-blur-sm py-6 text-center text-xs font-bold text-slate-500 z-10">
+      {/* Conteúdo Principal (Formulário Centralizado) */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pb-12 z-10 w-full max-w-2xl mx-auto">
+        <PartnerSignupForm />
+      </div>
+
+      {/* Rodapé Público */}
+      <footer className="w-full border-t border-slate-900/60 bg-slate-950/80 backdrop-blur-sm py-6 text-center text-xs font-bold text-slate-500 z-10 shrink-0">
         <p>© {new Date().getFullYear()} Móveis Unghero — Todos os direitos reservados.</p>
         <p className="text-[10px] font-semibold text-slate-600 mt-1">Farroupilha · RS · desde 2006</p>
       </footer>
