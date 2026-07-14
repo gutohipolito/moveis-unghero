@@ -29,8 +29,8 @@ const TIPO_IMOVEL_OPTIONS = [
 
 const TOTAL_STEPS = 4;
 const inputClass =
-  "w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900";
-const labelClass = "text-xs font-bold text-slate-700 flex items-center gap-1.5";
+  "w-full border border-slate-800 bg-slate-950/60 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-semibold text-slate-100 placeholder-slate-500 transition-all";
+const labelClass = "text-xs font-bold text-slate-300 flex items-center gap-1.5";
 
 export default function ClientSignupForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
@@ -53,6 +53,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   const [uf, setUf] = useState("");
   const [tipoImovel, setTipoImovel] = useState("CASA");
   const [observacoes, setObservacoes] = useState("");
+  const [aceitaTermos, setAceitaTermos] = useState(false);
+  const [aceitaMarketing, setAceitaMarketing] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -82,6 +84,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           if (d.uf) setUf(d.uf);
           if (d.tipoImovel) setTipoImovel(d.tipoImovel);
           if (d.observacoes) setObservacoes(d.observacoes);
+          if (d.aceitaTermos !== undefined) setAceitaTermos(d.aceitaTermos);
+          if (d.aceitaMarketing !== undefined) setAceitaMarketing(d.aceitaMarketing);
         } catch (e) {
           console.error("Erro ao recuperar rascunho de cliente:", e);
         }
@@ -110,6 +114,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           uf,
           tipoImovel,
           observacoes,
+          aceitaTermos,
+          aceitaMarketing,
         })
       );
     }
@@ -129,6 +135,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
     uf,
     tipoImovel,
     observacoes,
+    aceitaTermos,
+    aceitaMarketing,
   ]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,8 +221,19 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       scrollTop();
       return;
     }
+    if (!aceitaTermos) {
+      setError("Você precisa aceitar os termos de uso e autorizar o tratamento de seus dados de acordo com a LGPD.");
+      scrollTop();
+      return;
+    }
 
     setLoading(true);
+    
+    let finalObservacoes = observacoes.trim();
+    const dataAtual = new Date().toLocaleDateString("pt-BR");
+    const consentLog = `\n\n--- Consentimentos LGPD (Formulário) ---\n[LGPD] Autorizou o tratamento de dados pessoais para atendimento comercial e orçamento: SIM (${dataAtual})\n[Marketing] Aceitou receber comunicações de marketing e novidades: ${aceitaMarketing ? "SIM" : "NÃO"}`;
+    finalObservacoes += consentLog;
+
     const res = await submitPublicClientSignupAction({
       tipo_pessoa: tipoPessoa,
       documento,
@@ -228,7 +247,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       cidade,
       uf,
       tipo_imovel: tipoImovel,
-      observacoes,
+      observacoes: finalObservacoes,
       company_id: companyId,
     });
     setLoading(false);
@@ -248,21 +267,21 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-6">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm text-center py-12 space-y-8 animate-in fade-in duration-500 flex flex-col items-center">
-          <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full mx-auto">
+      <div className="max-w-2xl mx-auto px-6 py-6 w-full z-10">
+        <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-2xl text-center py-12 space-y-8 animate-in fade-in duration-500 flex flex-col items-center">
+          <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full mx-auto">
             <CheckCircle className="h-14 w-14 animate-bounce" />
           </div>
           <div className="space-y-3">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Cadastro enviado!</h2>
-            <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
+            <h2 className="text-2xl font-black text-slate-100 tracking-tight">Cadastro enviado!</h2>
+            <p className="text-sm text-slate-400 font-medium max-w-sm mx-auto leading-relaxed">
               Recebemos seus dados. Nossa equipe já pode dar sequência ao seu atendimento e entrará em
               contato em breve.
             </p>
           </div>
 
-          <div className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-3.5 shadow-inner">
-            <p className="text-xs font-bold text-slate-800 uppercase tracking-widest text-center">
+          <div className="p-5 bg-slate-950/40 border border-slate-800/80 rounded-2xl w-full max-w-sm mx-auto space-y-3.5 shadow-inner">
+            <p className="text-xs font-bold text-slate-300 uppercase tracking-widest text-center">
               Canais Oficiais
             </p>
             <div className="grid grid-cols-2 gap-3 text-center">
@@ -270,9 +289,9 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 href="https://www.instagram.com/moveisunghero/"
                 target="_blank"
                 rel="noreferrer"
-                className="flex flex-col items-center justify-center p-4 aspect-square bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
+                className="flex flex-col items-center justify-center p-4 aspect-square bg-slate-900/60 hover:bg-slate-850/60 border border-slate-800 rounded-2xl text-xs font-bold text-slate-200 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-pink-600 shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-pink-500 shrink-0">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
@@ -283,9 +302,9 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 href="https://wa.me/5554999971050"
                 target="_blank"
                 rel="noreferrer"
-                className="flex flex-col items-center justify-center p-4 aspect-square bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
+                className="flex flex-col items-center justify-center p-4 aspect-square bg-slate-900/60 hover:bg-slate-850/60 border border-slate-800 rounded-2xl text-xs font-bold text-slate-200 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
               >
-                <Smartphone className="h-6 w-6 text-emerald-600 shrink-0" />
+                <Smartphone className="h-6 w-6 text-emerald-500 shrink-0" />
                 <span>WhatsApp</span>
               </a>
             </div>
@@ -296,14 +315,14 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-6">
+    <div className="w-full z-10 relative">
       {/* Barra de Progresso */}
       <div className="mb-8 space-y-2">
         <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
           <span>Cadastro de Cliente</span>
           <span>{progressPercent}% Concluído</span>
         </div>
-        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
@@ -313,16 +332,16 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300"
+        className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-2xl transition-all duration-300"
       >
         {error && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
-            <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
+          <div className="mb-6 p-4 bg-rose-950/40 border border-rose-900/60 text-rose-200 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-4.5 w-4.5 text-rose-500 shrink-0" />
             <span className="flex-1 text-left">{error}</span>
             <button
               type="button"
               onClick={() => setError(null)}
-              className="text-rose-450 hover:text-rose-600 font-extrabold text-sm ml-1 cursor-pointer leading-none"
+              className="text-rose-400 hover:text-rose-350 font-extrabold text-sm ml-1 cursor-pointer leading-none"
             >
               ×
             </button>
@@ -333,8 +352,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Como é o seu cadastro?</h2>
-              <p className="text-xs text-slate-400 font-semibold">
+              <h2 className="text-lg font-black text-slate-100 leading-tight">Como é o seu cadastro?</h2>
+              <p className="text-xs text-slate-400 font-semibold font-medium">
                 Escolha pessoa física ou jurídica. Se for empresa, o CNPJ preenche seus dados.
               </p>
             </div>
@@ -349,24 +368,23 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                     onClick={() => setTipoPessoa(tipo)}
                     className={`text-left rounded-2xl border p-4 transition-all cursor-pointer ${
                       selected
-                        ? "border-primary ring-1 ring-primary bg-primary/5"
-                        : "border-slate-200 bg-white hover:border-slate-350"
+                        ? "border-primary ring-1 ring-primary bg-primary/5 text-slate-100"
+                        : "border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-900/30 text-slate-300"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <span
                         className={`p-2.5 rounded-xl ${
-                          tipo === "PF" ? "bg-blue-500/10 text-blue-600" : "bg-purple-500/10 text-purple-600"
+                          selected
+                            ? "bg-primary/15 text-primary border border-primary/25"
+                            : "bg-slate-800/40 text-slate-400 border border-slate-800/20"
                         }`}
                       >
                         {tipo === "PF" ? <User className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
                       </span>
                       <div>
-                        <p className="text-sm font-bold text-slate-900">
+                        <p className={`text-sm font-bold ${selected ? "text-slate-100" : "text-slate-300"}`}>
                           {tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
-                        </p>
-                        <p className="text-[11px] font-semibold text-slate-400">
-                          {tipo === "PF" ? "PF — CPF" : "PJ — CNPJ"}
                         </p>
                       </div>
                     </div>
@@ -408,7 +426,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Seus dados de contato</h2>
+              <h2 className="text-lg font-black text-slate-100 leading-tight">Seus dados de contato</h2>
               <p className="text-xs text-slate-400 font-semibold">Precisamos do nome e do WhatsApp para falar com você.</p>
             </div>
 
@@ -459,7 +477,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
@@ -478,7 +496,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
         {step === 3 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Endereço (Opcional)</h2>
+              <h2 className="text-lg font-black text-slate-100 leading-tight">Endereço (Opcional)</h2>
               <p className="text-xs text-slate-400 font-semibold">Informe o CEP para preenchermos o restante automaticamente.</p>
             </div>
 
@@ -536,7 +554,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
@@ -555,7 +573,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
         {step === 4 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Sobre o seu projeto</h2>
+              <h2 className="text-lg font-black text-slate-100 leading-tight">Sobre o seu projeto</h2>
               <p className="text-xs text-slate-400 font-semibold">Últimos detalhes para conhecermos melhor sua necessidade.</p>
             </div>
 
@@ -567,10 +585,10 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 <select
                   value={tipoImovel}
                   onChange={(e) => setTipoImovel(e.target.value)}
-                  className={`${inputClass} cursor-pointer`}
+                  className={`${inputClass} cursor-pointer bg-slate-950/65 border-slate-800 text-slate-100`}
                 >
                   {TIPO_IMOVEL_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
+                    <option key={o.value} value={o.value} className="bg-slate-900 text-slate-100">
                       {o.label}
                     </option>
                   ))}
@@ -586,8 +604,36 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                   onChange={(e) => setObservacoes(e.target.value)}
                   rows={4}
                   placeholder="Conte o que você procura: ambientes, estilo, prazos, preferências..."
-                  className={`${inputClass} resize-none`}
+                  className={`${inputClass} resize-none bg-slate-950/60 text-slate-100 border border-slate-800`}
                 />
+              </div>
+
+              {/* Questões de LGPD */}
+              <div className="space-y-3 pt-3 border-t border-slate-800/40">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={aceitaTermos}
+                    onChange={(e) => setAceitaTermos(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
+                    required
+                  />
+                  <span className="text-[11px] font-semibold text-slate-350 leading-relaxed">
+                    Estou de acordo com o tratamento de meus dados pessoais para fins de atendimento comercial e orçamento, em conformidade com a LGPD. *
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={aceitaMarketing}
+                    onChange={(e) => setAceitaMarketing(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
+                  />
+                  <span className="text-[11px] font-semibold text-slate-400 leading-relaxed">
+                    Aceito receber contatos e novidades da Móveis Unghero via WhatsApp, e-mail ou ligação. (Opcional)
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -596,7 +642,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 type="button"
                 onClick={prevStep}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
