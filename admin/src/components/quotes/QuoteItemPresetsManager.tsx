@@ -7,14 +7,22 @@ import { Bookmark, Loader2, Pencil, Trash2, Check, X, Plus, Type, ListChecks } f
 import type { QuoteItemPresetDTO, QuoteDetailPresetDTO } from "@/lib/quoteItemPresets";
 import {
   listQuoteItemPresets,
-  createQuoteItemPreset,
+  createQuoteItemPresetsBulk,
   updateQuoteItemPreset,
   deleteQuoteItemPreset,
   listQuoteDetailPresets,
-  createQuoteDetailPreset,
+  createQuoteDetailPresetsBulk,
   updateQuoteDetailPreset,
   deleteQuoteDetailPreset,
 } from "@/app/actions/quoteItemPresets";
+
+/** Divide o texto por vírgula (e quebras de linha), removendo vazios. */
+function splitEntries(raw: string): string[] {
+  return raw
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 type Tab = "descricoes" | "detalhes";
 
@@ -69,26 +77,40 @@ export default function QuoteItemPresetsManager({
   }
 
   async function handleSaveDescricao() {
-    if (!descricao.trim()) {
+    const entries = splitEntries(descricao);
+    if (entries.length === 0) {
       setError("Informe a descrição do item.");
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const res = editingId
-        ? await updateQuoteItemPreset(editingId, { descricao })
-        : await createQuoteItemPreset({ descricao });
-      if (res.success) {
-        setPresets((prev) => {
-          const idx = prev.findIndex((p) => p.id === res.preset.id);
-          const next =
-            idx === -1 ? [...prev, res.preset] : prev.map((p) => (p.id === res.preset.id ? res.preset : p));
-          return next.sort((a, b) => a.descricao.localeCompare(b.descricao, "pt-BR"));
-        });
-        resetDescricaoForm();
+      if (editingId) {
+        const res = await updateQuoteItemPreset(editingId, { descricao: entries[0] });
+        if (res.success) {
+          setPresets((prev) =>
+            prev
+              .map((p) => (p.id === res.preset.id ? res.preset : p))
+              .sort((a, b) => a.descricao.localeCompare(b.descricao, "pt-BR"))
+          );
+          resetDescricaoForm();
+        } else {
+          setError(res.error);
+        }
       } else {
-        setError(res.error);
+        const res = await createQuoteItemPresetsBulk({ descricoes: entries });
+        if (res.success) {
+          setPresets((prev) => {
+            const map = new Map(prev.map((p) => [p.id, p]));
+            res.presets.forEach((p) => map.set(p.id, p));
+            return Array.from(map.values()).sort((a, b) =>
+              a.descricao.localeCompare(b.descricao, "pt-BR")
+            );
+          });
+          resetDescricaoForm();
+        } else {
+          setError(res.error ?? "Não foi possível salvar.");
+        }
       }
     } catch {
       setError("Não foi possível salvar.");
@@ -123,25 +145,40 @@ export default function QuoteItemPresetsManager({
   }
 
   async function handleSaveDetail() {
-    if (!detailText.trim()) {
+    const entries = splitEntries(detailText);
+    if (entries.length === 0) {
       setError("Informe o detalhe.");
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const res = editingDetailId
-        ? await updateQuoteDetailPreset(editingDetailId, { texto: detailText })
-        : await createQuoteDetailPreset({ texto: detailText });
-      if (res.success) {
-        setDetails((prev) => {
-          const idx = prev.findIndex((d) => d.id === res.detail.id);
-          const next = idx === -1 ? [...prev, res.detail] : prev.map((d) => (d.id === res.detail.id ? res.detail : d));
-          return next.sort((a, b) => a.texto.localeCompare(b.texto, "pt-BR"));
-        });
-        resetDetailForm();
+      if (editingDetailId) {
+        const res = await updateQuoteDetailPreset(editingDetailId, { texto: entries[0] });
+        if (res.success) {
+          setDetails((prev) =>
+            prev
+              .map((d) => (d.id === res.detail.id ? res.detail : d))
+              .sort((a, b) => a.texto.localeCompare(b.texto, "pt-BR"))
+          );
+          resetDetailForm();
+        } else {
+          setError(res.error);
+        }
       } else {
-        setError(res.error);
+        const res = await createQuoteDetailPresetsBulk({ textos: entries });
+        if (res.success) {
+          setDetails((prev) => {
+            const map = new Map(prev.map((d) => [d.id, d]));
+            res.details.forEach((d) => map.set(d.id, d));
+            return Array.from(map.values()).sort((a, b) =>
+              a.texto.localeCompare(b.texto, "pt-BR")
+            );
+          });
+          resetDetailForm();
+        } else {
+          setError(res.error ?? "Não foi possível salvar o detalhe.");
+        }
       }
     } catch {
       setError("Não foi possível salvar o detalhe.");
@@ -214,20 +251,23 @@ export default function QuoteItemPresetsManager({
               </label>
               <p className="text-[10px] text-slate-400 font-medium -mt-1">
                 Aparece como sugestão apenas no campo <strong>Descrição do item</strong>.
+                {!editingId && " Separe por vírgula para adicionar vários de uma vez."}
               </p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={descricao}
                   onChange={(e) => setDescricao(e.target.value)}
-                  maxLength={160}
+                  maxLength={editingId ? 160 : 600}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleSaveDescricao();
                     }
                   }}
-                  placeholder="Ex: Mesa, Cozinha completa, Closet..."
+                  placeholder={
+                    editingId ? "Ex: Cozinha completa" : "Ex: Melamina 18mm, Ripado, Vidros..."
+                  }
                   className="flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-amber-400 focus:outline-none transition-all"
                 />
                 {editingId && (
@@ -297,20 +337,25 @@ export default function QuoteItemPresetsManager({
               </label>
               <p className="text-[10px] text-slate-400 font-medium -mt-1">
                 Aparece como sugestão apenas no campo <strong>Detalhes do item</strong>.
+                {!editingDetailId && " Separe por vírgula para adicionar vários de uma vez."}
               </p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={detailText}
                   onChange={(e) => setDetailText(e.target.value)}
-                  maxLength={160}
+                  maxLength={editingDetailId ? 160 : 600}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleSaveDetail();
                     }
                   }}
-                  placeholder="Ex: Puxador cromado, Corrediça telescópica..."
+                  placeholder={
+                    editingDetailId
+                      ? "Ex: Corrediça telescópica Openfield"
+                      : "Ex: Corrediças telescópicas, Difusor de LED, Puxadores..."
+                  }
                   className="flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-amber-400 focus:outline-none transition-all"
                 />
                 {editingDetailId && (

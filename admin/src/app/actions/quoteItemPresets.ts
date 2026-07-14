@@ -61,6 +61,45 @@ export async function createQuoteItemPreset(input: {
   }
 }
 
+export async function createQuoteItemPresetsBulk(input: {
+  descricoes: string[];
+}): Promise<{ success: boolean; presets: QuoteItemPresetDTO[]; error?: string }> {
+  const auth = await requireAuth();
+  const nomes = Array.from(
+    new Set(
+      (input.descricoes ?? [])
+        .map((d) => capitalizeText((d ?? "").trim()).slice(0, 160))
+        .filter(Boolean)
+    )
+  );
+  if (nomes.length === 0)
+    return { success: false, presets: [], error: "Informe ao menos uma descrição." };
+
+  try {
+    const result: QuoteItemPresetDTO[] = [];
+    for (const descricao of nomes) {
+      const existing = await prisma.quoteItemPreset.findFirst({
+        where: { company_id: auth.companyId, descricao },
+        select: { id: true, descricao: true },
+      });
+      if (existing) {
+        result.push(mapPreset(existing));
+        continue;
+      }
+      const row = await prisma.quoteItemPreset.create({
+        data: { company_id: auth.companyId, descricao },
+        select: { id: true, descricao: true },
+      });
+      result.push(mapPreset(row));
+    }
+    revalidatePath("/quotes");
+    return { success: true, presets: result };
+  } catch (error) {
+    console.error("Erro ao salvar itens em lote:", error);
+    return { success: false, presets: [], error: "Não foi possível salvar os itens." };
+  }
+}
+
 export async function updateQuoteItemPreset(
   id: string,
   input: { descricao: string }
@@ -158,6 +197,45 @@ export async function createQuoteDetailPreset(input: {
   } catch (error) {
     console.error("Erro ao salvar detalhe:", error);
     return { success: false, error: "Não foi possível salvar o detalhe." };
+  }
+}
+
+export async function createQuoteDetailPresetsBulk(input: {
+  textos: string[];
+}): Promise<{ success: boolean; details: QuoteDetailPresetDTO[]; error?: string }> {
+  const auth = await requireAuth();
+  const textos = Array.from(
+    new Set(
+      (input.textos ?? [])
+        .map((t) => capitalizeText((t ?? "").trim()).slice(0, 160))
+        .filter(Boolean)
+    )
+  );
+  if (textos.length === 0)
+    return { success: false, details: [], error: "Informe ao menos um detalhe." };
+
+  try {
+    const result: QuoteDetailPresetDTO[] = [];
+    for (const texto of textos) {
+      const existing = await prisma.quoteDetailPreset.findFirst({
+        where: { company_id: auth.companyId, texto },
+        select: { id: true, texto: true },
+      });
+      if (existing) {
+        result.push(existing);
+        continue;
+      }
+      const row = await prisma.quoteDetailPreset.create({
+        data: { company_id: auth.companyId, texto },
+        select: { id: true, texto: true },
+      });
+      result.push(row);
+    }
+    revalidatePath("/quotes");
+    return { success: true, details: result };
+  } catch (error) {
+    console.error("Erro ao salvar detalhes em lote:", error);
+    return { success: false, details: [], error: "Não foi possível salvar os detalhes." };
   }
 }
 
