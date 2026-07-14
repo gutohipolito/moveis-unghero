@@ -9,6 +9,13 @@ export const metadata: Metadata = {
   title: "Móveis Unghero | Painel Operacional",
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
+  // Painel interno: não deve ser indexado por buscadores (Google, etc.).
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false },
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
