@@ -346,15 +346,17 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                   ) : null}
                 </div>
                 {quote.partner ? (
-                  <div className="text-[10px] text-neutral-400 pt-1 space-y-0.5">
-                    <p>
-                      <span className="font-semibold text-neutral-500">{partnerRoleLabel}:</span>{" "}
-                      {quote.partner.nome}
-                    </p>
+                  <div className="mt-3 p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight">
+                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
+                      {partnerRoleLabel}
+                    </span>
+                    <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
                     {quote.partner.escritorio ? (
-                      <p>{quote.partner.escritorio}</p>
+                      <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
                     ) : null}
-                    {partnerRegistro ? <p>{partnerRegistro}</p> : null}
+                    {partnerRegistro ? (
+                      <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
