@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 
 interface InfoTooltipProps {
@@ -9,36 +9,89 @@ interface InfoTooltipProps {
   className?: string;
 }
 
+type Coords = { top: number; left: number; width: number };
+
+const GAP = 8;
+const MARGIN = 8;
+const MAX_WIDTH = 288; // w-72
+
 export default function InfoTooltip({
   children,
   label = "Mais informações",
   className = "",
 }: InfoTooltipProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const reposition = useCallback(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const width = Math.min(MAX_WIDTH, vw - MARGIN * 2);
+
+    // Horizontal: alinha à esquerda do botão, mas nunca ultrapassa a viewport.
+    let left = rect.left;
+    left = Math.min(left, vw - width - MARGIN);
+    left = Math.max(MARGIN, left);
+
+    // Vertical: abaixo do botão; se não couber, coloca acima.
+    const panelH = panelRef.current?.offsetHeight ?? 0;
+    let top = rect.bottom + GAP;
+    if (panelH && top + panelH > vh - MARGIN) {
+      const above = rect.top - GAP - panelH;
+      if (above >= MARGIN) top = above;
+      else top = Math.max(MARGIN, vh - panelH - MARGIN);
+    }
+
+    setCoords({ top, left, width });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) reposition();
+  }, [open, reposition]);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    // Segunda passada após medir a altura real do painel.
+    reposition();
+
+    const onDocDown = (e: MouseEvent) => {
+      if (
+        wrapRef.current?.contains(e.target as Node) ||
+        panelRef.current?.contains(e.target as Node)
+      )
+        return;
+      setOpen(false);
     };
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("keydown", esc);
+    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onScroll = () => reposition();
+
+    document.addEventListener("mousedown", onDocDown);
+    document.addEventListener("keydown", onEsc);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("keydown", esc);
+      document.removeEventListener("mousedown", onDocDown);
+      document.removeEventListener("keydown", onEsc);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", onScroll, true);
     };
-  }, [open]);
+  }, [open, reposition]);
 
   return (
     <div
-      ref={ref}
+      ref={wrapRef}
       className={`relative inline-flex ${className}`}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
       <button
+        ref={btnRef}
         type="button"
         aria-label={label}
         onClick={() => setOpen((o) => !o)}
@@ -49,8 +102,16 @@ export default function InfoTooltip({
 
       {open && (
         <div
+          ref={panelRef}
           role="tooltip"
-          className="absolute left-0 top-8 z-50 w-72 rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-xl shadow-slate-900/10 normal-case"
+          style={{
+            position: "fixed",
+            top: coords?.top ?? -9999,
+            left: coords?.left ?? -9999,
+            width: coords?.width ?? MAX_WIDTH,
+            visibility: coords ? "visible" : "hidden",
+          }}
+          className="z-[200] rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-xl shadow-slate-900/10 normal-case"
         >
           {children}
         </div>

@@ -818,10 +818,12 @@ body {
   pointer-events: auto;
   position: relative;
   width: 100%;
+  /* svh (small viewport) é estável no mobile: não recalcula quando a barra
+     do navegador some/aparece ao rolar, evitando o modal "sambando". */
   max-height: min(
-    90dvh,
+    90svh,
     calc(
-      100dvh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
+      100svh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
     )
   );
   margin: auto;
@@ -846,8 +848,10 @@ body {
 @media (max-width: 767px) {
   .modal-panel-quote {
     max-width: 100%;
-    max-height: 100dvh;
-    min-height: 100dvh;
+    /* Preenche a viewport fixa (estável) em vez de dvh dinâmico, para não
+       "sambar" quando a barra do navegador aparece/some ao rolar. */
+    max-height: 100%;
+    min-height: 100%;
     margin: 0;
     border-radius: 0;
     border-left: none;
@@ -866,8 +870,8 @@ body {
 .modal-panel-fullscreen {
   width: 100%;
   max-width: none;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100%;
+  max-height: 100%;
   margin: 0;
   border-radius: 0;
   border: none;
