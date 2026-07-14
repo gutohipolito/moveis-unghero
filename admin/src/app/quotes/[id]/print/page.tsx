@@ -504,13 +504,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                     <li className="flex gap-1.5">
                       <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
                       <span>
-                        <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
-                        <strong className="text-neutral-900">5x sem juros</strong>
-                      </span>
-                    </li>
-                    <li className="flex gap-1.5">
-                      <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
-                      <span>
                         <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
                         <strong className="text-neutral-900">50% na entrega</strong>
                       </span>
