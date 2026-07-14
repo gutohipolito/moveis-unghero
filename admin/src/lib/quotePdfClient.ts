@@ -8,6 +8,9 @@ export class QuotePdfBlobNotConfiguredError extends Error {
   }
 }
 
+/** Tolerância em mm: evita 2ª página em branco por arredondamento. */
+const PAGE_OVERFLOW_EPSILON_MM = 1.5;
+
 export async function generateQuotePdfBlob() {
   const element = document.querySelector<HTMLElement>(".print-page");
   if (!element) {
@@ -16,15 +19,27 @@ export async function generateQuotePdfBlob() {
 
   const { jsPDF } = await import("jspdf");
 
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    backgroundColor: "#ffffff",
-    width: element.scrollWidth,
-    height: element.scrollHeight,
-    windowWidth: element.scrollWidth,
-  });
+  // Em tela o card usa min-height A4; na captura isso vira “folha” extra.
+  const previousMinHeight = element.style.minHeight;
+  const previousHeight = element.style.height;
+  element.style.minHeight = "0px";
+  element.style.height = "auto";
+
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+    });
+  } finally {
+    element.style.minHeight = previousMinHeight;
+    element.style.height = previousHeight;
+  }
 
   const pdf = new jsPDF({
     unit: "mm",
@@ -36,8 +51,21 @@ export async function generateQuotePdfBlob() {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const imgWidth = pageWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  let imgHeight = (canvas.height * imgWidth) / canvas.width;
   const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+  // Cabe em uma folha (ou só um pouco maior): uma página só, sem folha em branco.
+  if (imgHeight <= pageHeight + PAGE_OVERFLOW_EPSILON_MM) {
+    pdf.addImage(
+      imgData,
+      "JPEG",
+      0,
+      0,
+      imgWidth,
+      Math.min(imgHeight, pageHeight)
+    );
+    return pdf.output("blob");
+  }
 
   let heightLeft = imgHeight;
   let position = 0;
@@ -45,7 +73,7 @@ export async function generateQuotePdfBlob() {
   pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
   heightLeft -= pageHeight;
 
-  while (heightLeft > 0) {
+  while (heightLeft > PAGE_OVERFLOW_EPSILON_MM) {
     position = heightLeft - imgHeight;
     pdf.addPage();
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);

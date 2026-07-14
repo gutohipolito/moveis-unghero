@@ -219,7 +219,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   };
 
   return (
-    <div className="bg-slate-100 text-black min-h-screen font-sans print:bg-white">
+    <div className="print-shell bg-slate-100 text-black min-h-screen font-sans print:bg-white print:min-h-0">
       <style dangerouslySetInnerHTML={{ __html: `
         @page {
           size: A4 portrait;
@@ -231,21 +231,40 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             color: #000000 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-          }
-          .print-page {
-            height: 297mm !important;
-            width: 210mm !important;
-            max-height: 297mm !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            padding: 0 !important;
+            height: auto !important;
             margin: 0 !important;
+            padding: 0 !important;
+          }
+          /* Evita página em branco: NÃO usar page-break-after: always na única folha */
+          .print-page {
+            width: 210mm !important;
+            height: auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+            page-break-after: auto !important;
+            break-after: auto !important;
+            page-break-inside: auto !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
             box-sizing: border-box !important;
             border: none !important;
             box-shadow: none !important;
             background: #ffffff !important;
+            overflow: visible !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+          .print-shell {
+            min-height: 0 !important;
+            height: auto !important;
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .print-shell-inner {
+            max-width: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
           }
           .print-quote-header {
             background-color: #171717 !important;
@@ -321,7 +340,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         />
       </div>
 
-      <div className="max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
+      <div className="print-shell-inner max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
         <div className="print-page flex flex-col">
           <PrintTopHeader />
 
