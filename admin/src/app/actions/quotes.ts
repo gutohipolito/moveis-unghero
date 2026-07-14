@@ -270,6 +270,20 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
   }
 
   try {
+    const existing = await prisma.quote.findFirst({
+      where: { id: quoteId, project_id: projectId },
+      select: { id: true, aprovado_em: true },
+    });
+    if (!existing) {
+      return { success: false, error: "Orçamento não encontrado." };
+    }
+    if (existing.aprovado_em) {
+      return {
+        success: false,
+        error: "Orçamentos aprovados não podem ser excluídos.",
+      };
+    }
+
     await prisma.$transaction(async (tx) => {
       // 1. Remove itens
       await tx.quoteItem.deleteMany({

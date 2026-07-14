@@ -228,7 +228,16 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     { id: "QUICK" as const, label: "Avulso", icon: UserPlus },
   ];
 
-  const handleDeleteQuote = (projectId: string, quoteId: string, version: number) => {
+  const handleDeleteQuote = (
+    projectId: string,
+    quoteId: string,
+    version: number,
+    isApproved?: boolean
+  ) => {
+    if (isApproved) {
+      showError("Não permitido", "Orçamentos aprovados não podem ser excluídos.");
+      return;
+    }
     confirmAction({
       title: "Excluir orçamento?",
       message: `A versão ${version} será removida permanentemente. Esta ação não pode ser desfeita.`,
@@ -595,20 +604,24 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                       <td className="py-4 px-4 text-sm text-slate-600">
                         {q.project.client.bairro || "Não informado"}
                       </td>
-                      <td className={`py-4 px-4 text-sm ${dateClass}`}>
-                        <span className="inline-flex items-center gap-1.5">
-                          {formatDate(q.validade)}
-                          {nearWarning && (
-                            <span className="text-[11px] font-semibold text-amber-600">
-                              ({daysLeft}d)
-                            </span>
-                          )}
-                          {nearDanger && (
-                            <span className="text-[11px] font-semibold text-rose-600">
-                              ({daysLeft <= 0 ? "hoje" : `${daysLeft}d`})
-                            </span>
-                          )}
-                        </span>
+                      <td className={`py-4 px-4 text-sm ${isApproved ? "text-slate-400" : dateClass}`}>
+                        {isApproved ? (
+                          <span className="text-slate-400">—</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5">
+                            {formatDate(q.validade)}
+                            {nearWarning && (
+                              <span className="text-[11px] font-semibold text-amber-600">
+                                ({daysLeft}d)
+                              </span>
+                            )}
+                            {nearDanger && (
+                              <span className="text-[11px] font-semibold text-rose-600">
+                                ({daysLeft <= 0 ? "hoje" : `${daysLeft}d`})
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-sm">
                         {q.aprovado_em ? (
@@ -674,15 +687,17 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             </Button>
                           </Link>
 
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2"
-                            onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao)}
-                            title="Excluir Orçamento"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {!isApproved && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2"
+                              onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, isApproved)}
+                              title="Excluir Orçamento"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

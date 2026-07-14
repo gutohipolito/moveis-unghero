@@ -668,14 +668,24 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     });
   };
 
-  const handleDeleteProjectQuote = (quote: { id: string; versao: number }) => {
+  const handleDeleteProjectQuote = (quote: { id: string; versao: number; aprovado_em?: string | null }) => {
+    if (quote.aprovado_em) {
+      showError("Não permitido", "Propostas aprovadas não podem ser excluídas.");
+      return;
+    }
     confirmAction({
       title: "Excluir proposta?",
       message: `A versão ${quote.versao} será removida permanentemente.`,
       confirmLabel: "Sim, excluir",
       onConfirm: async () => {
+        const previousQuotes = project.quotes;
         setProject(prev => ({ ...prev, quotes: prev.quotes.filter(item => item.id !== quote.id) }));
-        await deleteQuote(project.id, quote.id, quote.versao);
+        const res = await deleteQuote(project.id, quote.id, quote.versao);
+        if (!res.success) {
+          setProject(prev => ({ ...prev, quotes: previousQuotes }));
+          showError("Erro ao excluir", res.error ?? "Não foi possível excluir a proposta.");
+          return;
+        }
         showSuccess("Proposta excluída", `Versão ${quote.versao} removida do projeto.`);
       },
     });
@@ -1461,10 +1471,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                                 Aprovada
                               </span>
-                            ) : null}
-                            <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
-                              Validade: {new Date(q.validade).toLocaleDateString("pt-BR")}
-                            </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
+                                Validade: {new Date(q.validade).toLocaleDateString("pt-BR")}
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
                             <span>Subtotal: <strong className="text-foreground">{formatCurrency(q.subtotal)}</strong></span>
@@ -1503,13 +1514,15 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <FileText className="h-4 w-4 mr-1.5" /> Gerar PDF
                           </Link>
 
-                          <button
-                            onClick={() => handleDeleteProjectQuote(q)}
-                            className="p-2 rounded-lg hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors cursor-pointer"
-                            title="Excluir Orçamento"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {!isApproved && (
+                            <button
+                              onClick={() => handleDeleteProjectQuote(q)}
+                              className="p-2 rounded-lg hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors cursor-pointer"
+                              title="Excluir Orçamento"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       );
