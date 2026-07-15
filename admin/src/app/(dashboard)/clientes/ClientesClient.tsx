@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import SensitiveToggle from "@/components/SensitiveToggle";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { 
   Plus, 
   Search, 
@@ -16,7 +15,6 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  ExternalLink,
   PlusCircle
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -29,7 +27,7 @@ import {
 } from "@/app/actions/cliente";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { labelOrigin, labelStatus } from "@/lib/navLabels";
+import { labelOrigin, labelStatus, labelProjectStatus, projectStatusChipClass, shortProjectCode } from "@/lib/navLabels";
 import {
   resolveClientDocument,
   type TipoPessoa,
@@ -53,6 +51,35 @@ interface ProjectSummary {
   id: string;
   status_geral: string;
   valor_previsto: number;
+  quotes_count?: number;
+}
+
+function LinkedProjectChip({
+  project,
+  stopPropagation = false,
+}: {
+  project: ProjectSummary;
+  stopPropagation?: boolean;
+}) {
+  const quotesCount = project.quotes_count ?? 0;
+  return (
+    <Link
+      href={`/projects/${project.id}`}
+      onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
+      title={`${labelProjectStatus(project.status_geral)}${
+        quotesCount > 0 ? ` · ${quotesCount} orçamento(s)` : ""
+      }`}
+      className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors hover:brightness-95 ${projectStatusChipClass(project.status_geral)}`}
+    >
+      <span className="font-mono tracking-wide opacity-75">#{shortProjectCode(project.id)}</span>
+      <span className="font-extrabold">{labelProjectStatus(project.status_geral)}</span>
+      {quotesCount > 0 ? (
+        <span className="opacity-70 font-semibold normal-case">
+          · {quotesCount} orç.
+        </span>
+      ) : null}
+    </Link>
+  );
 }
 
 interface Client {
@@ -107,7 +134,6 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
 export default function ClientesClient({ initialClients, companyId, initialPageSize = 20 }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const { sensitiveHidden } = usePrivacy();
-  const router = useRouter();
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
@@ -223,9 +249,6 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     // Persiste na conta do usuário (não bloqueia a UI)
     void updateUserPreference("clientesPageSize", size);
   };
-
-  // Abre a tela do cliente ao clicar na linha (exceto em áreas interativas)
-  const openClient = (id: string) => router.push(`/clientes/${id}`);
 
   // Converte um cliente da lista para os dados iniciais do wizard (edição)
   const clientToWizardData = (client: Client): Partial<ClientWizardData> => {
@@ -384,7 +407,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       const newProj: ProjectSummary = {
         id: res.data?.project?.id || `proj-${Date.now()}`,
         status_geral: "LEAD",
-        valor_previsto: Number(valorPrevisto)
+        valor_previsto: Number(valorPrevisto),
+        quotes_count: 0,
       };
       setClients(clients.map(c => {
         if (c.id === selectedClient.id) {
@@ -610,23 +634,25 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
               return (
                 <article
                   key={client.id}
-                  onClick={() => openClient(client.id)}
-                  className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm transition-all cursor-pointer select-none hover:border-primary/40 hover:shadow-md active:scale-[0.998] ${
+                  className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm ${
                     docInfo.tipo_pessoa === "PJ" ? "border-indigo-400/40 shadow-xs" : "border-border"
                   }`}
                 >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-foreground truncate">
+                          <Link
+                            href={`/clientes/${client.id}`}
+                            className="font-semibold text-foreground truncate hover:text-primary transition-colors"
+                          >
                             {client.nome}
-                          </span>
+                          </Link>
                           <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                             {docInfo.tipo_pessoa}
                           </span>
                         </div>
                         {docInfo.documento && (
-                          <p className="detail-text mt-0.5 select-none">
+                          <p className="detail-text mt-0.5">
                             {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                           </p>
                         )}
@@ -659,19 +685,12 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                     {projectList.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {projectList.map((p) => (
-                          <Link
-                            key={p.id}
-                            href={`/projects/${p.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="badge-meta px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20"
-                          >
-                            {p.status_geral}
-                          </Link>
+                          <LinkedProjectChip key={p.id} project={p} />
                         ))}
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2 pt-1">
                       <button
                         onClick={() => openProjectModal(client)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10 text-emerald-700 text-sm font-medium cursor-pointer"
@@ -720,7 +739,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   const location = resolveClientLocation(client);
 
                   return (
-                    <tr key={client.id} onClick={() => openClient(client.id)} className="hover:bg-primary/5 transition-colors cursor-pointer select-none">
+                    <tr key={client.id} className="hover:bg-slate-50/70">
                       {/* Cliente */}
                       <td className={`p-4 ${resolveClientDocument(client).tipo_pessoa === "PJ" ? "border-l-4 border-l-indigo-500/80 bg-indigo-50/10" : ""}`}>
                         {(() => {
@@ -728,15 +747,18 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                           return (
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-slate-900 hover:text-primary transition-all">
+                                <Link
+                                  href={`/clientes/${client.id}`}
+                                  className="text-sm font-bold text-slate-900 hover:text-primary transition-colors"
+                                >
                                   {client.nome}
-                                </span>
+                                </Link>
                                 <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
                                   {docInfo.tipo_pessoa}
                                 </span>
                               </div>
                               {docInfo.documento && (
-                                <span className="text-[11px] font-bold text-slate-600 mt-0.5 select-none">
+                                <span className="text-[11px] font-bold text-slate-600 mt-0.5">
                                   {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                                 </span>
                               )}
@@ -784,16 +806,9 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         {projectList.length === 0 ? (
                           <span className="text-xs text-muted-foreground italic font-semibold">Nenhum projeto iniciado</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1.5 max-w-[280px]">
-                            {projectList.map(p => (
-                              <Link 
-                                key={p.id}
-                                href={`/projects/${p.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] bg-primary/5 hover:bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1 font-extrabold transition-all whitespace-nowrap"
-                              >
-                                {p.status_geral} <ExternalLink className="h-2 w-2" />
-                              </Link>
+                          <div className="flex flex-wrap gap-1.5 max-w-[320px]">
+                            {projectList.map((p) => (
+                              <LinkedProjectChip key={p.id} project={p} />
                             ))}
                           </div>
                         )}
@@ -801,24 +816,24 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
 
                       {/* Ações */}
                       <td className="p-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openProjectModal(client)}
-                            className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-all cursor-pointer"
+                            className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors cursor-pointer"
                             title="Iniciar Novo Projeto no CRM"
                           >
                             <PlusCircle className="h-4.5 w-4.5" />
                           </button>
                           <button
                             onClick={() => openEditModal(client)}
-                            className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
+                            className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
                             title="Editar informações do lead"
                           >
                             <Edit className="h-4.5 w-4.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteClient(client.id, client.nome)}
-                            className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
+                            className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors cursor-pointer"
                             title="Excluir lead"
                           >
                             <Trash2 className="h-4.5 w-4.5" />

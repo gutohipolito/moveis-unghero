@@ -68,7 +68,7 @@ function formatClientRecord(c: {
     updatedAt?: Date;
     quotes?: { id: string; valor_final: number | { toNumber?: () => number }; versao: number }[];
     briefing?: { score: number | null; estilo: string; faixa_investimento: string | null } | null;
-    _count?: { environments: number };
+    _count?: { environments?: number; quotes?: number };
   }[];
 }) {
   const doc = resolveClientDocument(c);
@@ -116,6 +116,12 @@ function formatClientRecord(c: {
         valor_final:
           typeof q.valor_final === "number" ? q.valor_final : Number(q.valor_final),
       })),
+      quotes_count:
+        typeof p._count?.quotes === "number"
+          ? p._count.quotes
+          : Array.isArray(p.quotes)
+            ? p.quotes.length
+            : 0,
       briefing: p.briefing
         ? {
             score: p.briefing.score,
@@ -256,6 +262,7 @@ export async function getClients(companyId: string) {
             id: true,
             status_geral: true,
             valor_previsto: true,
+            _count: { select: { quotes: true } },
           },
         },
       },

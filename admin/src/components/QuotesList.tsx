@@ -586,9 +586,8 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                   return (
                     <tr
                       key={q.id}
-                      className={`transition-colors ${
-                        rowExpired ? "bg-rose-500/10 hover:bg-rose-500/15" : "hover:bg-slate-50/50"
-                      }`}
+                      className={rowExpired ? "bg-rose-500/10" : undefined}
+                      style={{ WebkitTapHighlightColor: "transparent" }}
                     >
                       <td className="py-4 px-4 text-sm font-medium text-slate-700">
                         <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-xs">
