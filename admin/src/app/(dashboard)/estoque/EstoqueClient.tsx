@@ -37,6 +37,8 @@ import {
   ChevronRight,
   Boxes,
   Settings2,
+  ClipboardList,
+  Star,
 } from "lucide-react";
 
 interface CategoryOption {
@@ -65,6 +67,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   ILUMINACAO: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
   TINTAS_QUIMICOS: "bg-purple-500/10 text-purple-700 border-purple-200",
   OUTROS: "bg-slate-500/10 text-slate-700 border-slate-200"
+};
+
+const CRM_STATUS_LABELS: Record<string, { label: string, color: string }> = {
+  NOVO: { label: "Novo", color: "bg-blue-500/10 text-blue-700 border-blue-200" },
+  EM_ANALISE: { label: "Em Análise", color: "bg-amber-500/10 text-amber-700 border-amber-200" },
+  HOMOLOGADO: { label: "Homologado", color: "bg-emerald-500/10 text-emerald-700 border-emerald-200" },
+  INATIVO: { label: "Inativo", color: "bg-slate-500/10 text-slate-700 border-slate-200" },
+  BLOQUEADO: { label: "Bloqueado", color: "bg-rose-500/10 text-rose-700 border-rose-200" },
 };
 
 export default function EstoqueClient({
@@ -550,6 +560,8 @@ export default function EstoqueClient({
                   <th className="p-4">Fornecedor / Razão Social</th>
                   <th className="p-4 text-center">CNPJ</th>
                   <th className="p-4 text-center">Material Principal</th>
+                  <th className="p-4 text-center">Status CRM</th>
+                  <th className="p-4 text-center">Avaliação</th>
                   <th className="p-4 text-center">Contato</th>
                   <th className="p-4 text-right">Ações</th>
                 </tr>
@@ -557,50 +569,82 @@ export default function EstoqueClient({
               <tbody className="divide-y divide-border/20">
                 {filteredSuppliers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
                       Nenhum fornecedor parceiro cadastrado.
                     </td>
                   </tr>
                 ) : (
-                  filteredSuppliers.map(sup => (
-                    <tr key={sup.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4">
-                        <div className="flex flex-col">
-                          <strong className="text-sm font-bold text-foreground">{sup.nome}</strong>
-                        </div>
-                      </td>
-                      <td className="p-4 text-center text-xs font-semibold text-slate-500">{sup.cnpj}</td>
-                      <td className="p-4 text-center">
-                        <span className="text-xs font-bold bg-primary/5 text-primary px-2.5 py-0.5 rounded-full border border-primary/20">
-                          {sup.principalMaterial}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex flex-col items-center text-xs text-muted-foreground space-y-1">
-                          <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {sup.telefone}</span>
-                          <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {sup.email}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleEditSupplier(sup)}
-                            className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
-                            title="Editar fornecedor"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSupplier(sup.id, sup.nome)}
-                            className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
-                            title="Remover fornecedor"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filteredSuppliers.map(sup => {
+                    const status = sup.crmStatus || "NOVO";
+                    const statusConfig = CRM_STATUS_LABELS[status] || CRM_STATUS_LABELS.NOVO;
+                    
+                    return (
+                      <tr key={sup.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <strong className="text-sm font-bold text-foreground">{sup.nome}</strong>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center text-xs font-semibold text-slate-500">{sup.cnpj}</td>
+                        <td className="p-4 text-center">
+                          <span className="text-xs font-bold bg-primary/5 text-primary px-2.5 py-0.5 rounded-full border border-primary/20">
+                            {sup.principalMaterial}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className={`text-[10px] font-bold border px-2 py-0.5 rounded-full uppercase tracking-wider ${statusConfig.color}`}>
+                            {statusConfig.label}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          {sup.crmNota && sup.crmNota > 0 ? (
+                            <div className="flex justify-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <Star 
+                                  key={star} 
+                                  className={`h-3 w-3 ${star <= (sup.crmNota || 0) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`} 
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground italic">Não avaliado</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col items-center text-xs text-muted-foreground space-y-1">
+                            <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {sup.telefone}</span>
+                            <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {sup.email}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link href={`/estoque/fornecedores/${sup.id}`}>
+                              <button
+                                className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 transition-all cursor-pointer"
+                                title="Ficha de CRM / Avaliação"
+                              >
+                                <ClipboardList className="h-4 w-4" />
+                              </button>
+                            </Link>
+                            <button
+                              onClick={() => handleEditSupplier(sup)}
+                              className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
+                              title="Editar fornecedor"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSupplier(sup.id, sup.nome)}
+                              className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
+                              title="Remover fornecedor"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

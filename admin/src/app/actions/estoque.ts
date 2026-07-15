@@ -12,6 +12,8 @@ export interface Supplier {
   telefone: string;
   email: string;
   principalMaterial: string;
+  crmStatus?: string;
+  crmNota?: number | null;
 }
 
 export interface InventoryItem {
@@ -41,6 +43,8 @@ type DbSupplier = {
   telefone: string;
   email: string;
   principal_material: string;
+  crmStatus?: string;
+  crmNota?: number | null;
 };
 
 type DbInventoryItem = {
@@ -62,6 +66,8 @@ function mapSupplier(row: DbSupplier): Supplier {
     telefone: row.telefone,
     email: row.email,
     principalMaterial: row.principal_material,
+    crmStatus: row.crmStatus,
+    crmNota: row.crmNota,
   };
 }
 

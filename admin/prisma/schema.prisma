@@ -582,7 +582,7 @@ model Supplier {
   id                 String          @id @default(uuid())
   company_id         String
   company            Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  nome               String
+  nome               String          // Razão Social
   cnpj               String
   telefone           String          @default("")
   email              String          @default("")
@@ -592,6 +592,78 @@ model Supplier {
   updatedAt          DateTime        @updatedAt
   inventoryItems     InventoryItem[]
   expenses           Expense[]
+
+  // Novos campos do Cadastro de Fornecedor
+  nomeFantasia       String?
+  inscricaoEstadual  String?
+  categoria          String?
+  subcategoria       String?
+  site               String?
+  instagram          String?
+  linkedin           String?
+  anoFundacao        Int?
+  numFuncionarios    String?         // opcional
+  possuiShowroom     Boolean?
+
+  // Contato
+  contatoRepresentante String?
+  contatoCargo       String?
+  contatoWhatsapp    String?
+  contatoSegundo     String?
+  contatoTelefoneSecundario String?
+  contatoCidade      String?
+  contatoEstado      String?
+  contatoEndereco    String?
+  contatoCep         String?
+
+  // Produtos
+  produtosFornecidos  String?         @db.Text
+  marcasRepresentadas String?         @db.Text
+  produtosCatalogoUrl String?
+  produtosTabelaPrecosUrl String?
+  produtosLinkCatalogoOnline String?
+  produtosSobEncomenda Boolean?
+  produtosQuantidadeMinima String?
+  produtosTempoFabricacao String?
+
+  // Comercial
+  comercialCondicoesPagamento String[] @default([]) // Array de strings (Pix, Boleto, etc.)
+  comercialDescontoMarceneiros Boolean?
+  comercialTabelaDiferenciada Boolean?
+  comercialRepresentanteExclusivo Boolean?
+  comercialPedidoMinimo String?
+  comercialFreteGratisAcima String?
+  comercialComissao   String?
+  comercialObservacoes String?        @db.Text
+
+  // Logística
+  logisticaCidadeEstoque String?
+  logisticaPrazoMedioEntrega String?
+  logisticaEntregaPropria Boolean?
+  logisticaTransportadora Boolean?
+  logisticaRetiradaLocal Boolean?
+  logisticaEstadosAtendidos String[] @default([])
+  logisticaFazEntregasUrgentes Boolean?
+  logisticaPossuiRastreamento Boolean?
+  logisticaAreaCobertura String?
+
+  // Avaliação Interna (CRM)
+  crmStatus          String          @default("NOVO") // NOVO, EM_ANALISE, HOMOLOGADO, INATIVO, BLOQUEADO
+  crmNota            Int?            // 1-5 estrelas
+  crmQualidade       Int?            // 1-5
+  crmPrazo           Int?            // 1-5
+  crmAtendimento     Int?            // 1-5
+  crmPreco           Int?            // 1-5
+  crmPosVenda        Int?            // 1-5
+  crmUltimaCompra    DateTime?
+  crmValorTotalComprado Decimal?     @db.Decimal(12, 2)
+  crmUltimoOrcamento DateTime?
+  crmUltimoContato   DateTime?
+  crmResponsavelInterno String?
+  crmObservacoes     String?         @db.Text
+  crmHistorico       Json?           // Array de histórico [{ data: "...", acao: "..." }]
+  crmUploads         Json?           // Array de anexos [{ tipo: "...", url: "...", nome: "..." }]
+  crmTags            String[]        @default([])
 
   @@index([company_id])
 }
