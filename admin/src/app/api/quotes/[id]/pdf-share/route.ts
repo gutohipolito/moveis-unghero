@@ -32,6 +32,26 @@ export async function POST(
     return NextResponse.json({ success: false, error: "Orçamento não encontrado" }, { status: 404 });
   }
 
+  const contentType = request.headers.get("content-type") || "";
+  const hasMultipart = contentType.includes("multipart/form-data");
+
+  // Sem arquivo: só garante o link HTML público (layout nativo, igual à impressão)
+  if (!hasMultipart) {
+    const shareCode = quote.pdf_share_code ?? (await generateUniqueQuotePdfShareCode());
+    await prisma.quote.update({
+      where: { id: quoteId },
+      data: {
+        pdf_share_code: shareCode,
+        pdf_shared_at: new Date(),
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      url: buildQuotePdfShortUrl(shareCode),
+    });
+  }
+
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json({
       success: false,

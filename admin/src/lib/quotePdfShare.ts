@@ -34,22 +34,26 @@ export async function generateUniqueQuotePdfShareCode() {
     if (!existing) return code;
   }
 
-  throw new Error("Não foi possível gerar um código único para o link do PDF.");
+  throw new Error("Não foi possível gerar um código único para o link do orçamento.");
 }
 
+/** Garante código curto do link público (não depende mais de PDF no Blob). */
 export async function ensureQuotePdfShareCode(quoteId: string) {
   const quote = await prisma.quote.findUnique({
     where: { id: quoteId },
-    select: { pdf_share_code: true, pdf_share_url: true },
+    select: { pdf_share_code: true },
   });
 
-  if (!quote?.pdf_share_url) return null;
+  if (!quote) return null;
   if (quote.pdf_share_code) return quote.pdf_share_code;
 
   const code = await generateUniqueQuotePdfShareCode();
   await prisma.quote.update({
     where: { id: quoteId },
-    data: { pdf_share_code: code },
+    data: {
+      pdf_share_code: code,
+      pdf_shared_at: new Date(),
+    },
   });
 
   return code;

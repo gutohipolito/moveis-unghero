@@ -1,11 +1,13 @@
 <?php
 /**
- * Serve o PDF em moveisunghero.com.br/o/{codigo} sem expor a URL da Vercel.
+ * Proxy do orçamento em moveisunghero.com.br/o/{codigo}.
+ * Repassa a página HTML do admin (mesmo layout da impressão) e injeta <base>
+ * para logo/CSS/_next carregarem de admin.moveisunghero.com.br.
  *
  * Upload via cPanel: public_html/o/.htaccess + public_html/o/index.php
  */
 
-function quote_pdf_share_code(): ?string
+function quote_share_code(): ?string
 {
     if (!empty($_GET['code']) && preg_match('/^[a-zA-Z0-9]{6,12}$/', (string) $_GET['code'])) {
         return strtolower((string) $_GET['code']);
@@ -21,7 +23,7 @@ function quote_pdf_share_code(): ?string
     return null;
 }
 
-$code = quote_pdf_share_code();
+$code = quote_share_code();
 if (!$code) {
     http_response_code(404);
     echo 'Link inválido.';
@@ -33,10 +35,15 @@ $source = 'https://admin.moveisunghero.com.br/o/' . rawurlencode($code);
 $ch = curl_init($source);
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_FOLLOWLOCATION => false,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_MAXREDIRS => 3,
     CURLOPT_HEADER => true,
     CURLOPT_TIMEOUT => 60,
     CURLOPT_CONNECTTIMEOUT => 15,
+    CURLOPT_HTTPHEADER => [
+        'Accept: text/html,application/xhtml+xml',
+        'User-Agent: MoveisUnghero-QuoteProxy/1.0',
+    ],
 ]);
 
 $response = curl_exec($ch);
@@ -50,9 +57,9 @@ if ($response === false || $httpCode !== 200) {
     if ($httpCode === 404) {
         echo 'Orçamento não encontrado ou link expirado.';
     } else {
-        echo 'Não foi possível abrir o PDF.';
+        echo 'Não foi possível abrir o orçamento.';
         if ($curlError !== '') {
-            error_log('quote pdf proxy: ' . $curlError);
+            error_log('quote share proxy: ' . $curlError);
         }
     }
     exit;
@@ -61,14 +68,27 @@ if ($response === false || $httpCode !== 200) {
 $rawHeaders = substr($response, 0, $headerSize);
 $body = substr($response, $headerSize);
 
-http_response_code(200);
+$contentType = 'text/html; charset=utf-8';
 foreach (explode("\r\n", $rawHeaders) as $line) {
-    if (preg_match('/^(Content-Type|Content-Disposition):/i', $line)) {
-        header($line);
+    if (preg_match('/^Content-Type:\s*(.+)$/i', $line, $m)) {
+        $contentType = trim($m[1]);
+        break;
     }
 }
 
-header('Cache-Control: private, max-age=3600');
+// HTML: assets relativos (/_next, /logo.png) precisam apontar para o admin
+if (stripos($contentType, 'text/html') !== false && stripos($body, '<base ') === false) {
+    $body = preg_replace(
+        '/<head(\s[^>]*)?>/i',
+        '<head$1><base href="https://admin.moveisunghero.com.br/">',
+        $body,
+        1
+    );
+}
+
+http_response_code(200);
+header('Content-Type: ' . $contentType);
+header('Cache-Control: private, no-cache, must-revalidate');
 header('X-Robots-Tag: noindex, nofollow');
 
 echo $body;

@@ -2,140 +2,47 @@ import { getCachedSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import QuotePrintToolbar from "@/components/QuotePrintToolbar";
-import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
-import { formatQuoteSubitensLine, parseQuoteSubitens } from "@/lib/quoteItems";
+import QuotePrintDocument from "@/components/QuotePrintDocument";
+import { parseQuoteSubitens } from "@/lib/quoteItems";
 import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePdfShare";
-import { formatPartnerRegistro } from "@/lib/partnerTypes";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
 }
 
-const FACTORY = {
-  name: "Móveis Unghero LTDA",
-  cnpj: "13.415.510/0001-71",
-  street: "Rua Cenira Cambruzzi, 155",
-  neighborhood: "Planalto",
-  city: "Farroupilha — RS",
-  whatsapp: "(54) 9 9997-1050",
-  whatsappHref: "https://wa.me/5554999971050",
-  email: "moveisunghero@gmail.com",
-  emailHref: "mailto:moveisunghero@gmail.com",
-  site: "moveisunghero.com.br",
-  siteHref: "https://moveisunghero.com.br",
+type LoadedPrintQuote = {
+  id: string;
+  project_id: string;
+  desconto: number;
+  valor_final: number;
+  observacoes: string | null;
+  validade: Date;
+  pdfPublicUrl: string | null;
+  partner: {
+    nome: string;
+    tipo: string;
+    escritorio: string | null;
+    registro_profissional: string | null;
+    fotoUrl: string | null;
+  } | null;
+  project: {
+    client: {
+      nome: string;
+      telefone: string;
+      cidade: string;
+      bairro: string | null;
+    };
+  };
+  items: Array<{
+    descricao: string;
+    quantidade: number;
+    valor_unitario: number;
+    valor_total: number;
+    subitens: string[];
+  }>;
 };
-
-const PARTNER_ROLE_LABEL: Record<string, string> = {
-  ARQUITETO: "Arquiteto",
-  PROJETISTA: "Projetista",
-  DECORADOR: "Decorador",
-  ENGENHEIRO: "Engenheiro",
-  OUTROS: "Parceiro",
-};
-
-const COMMERCIAL_NOTES = [
-  {
-    icon: CalendarClock,
-    text: "O prazo de entrega estimado é acordado individualmente por projeto técnico.",
-  },
-  {
-    icon: ShieldCheck,
-    text: "Garantia estrutural de 5 anos nos painéis de MDF contra defeitos de fabricação.",
-  },
-  {
-    icon: Wrench,
-    text: "A montagem é executada por técnicos especializados da própria fábrica.",
-  },
-] as const;
-
-function PrintTopHeader() {
-  return (
-    <header
-      className="print-quote-header bg-neutral-900 text-white px-[20mm] py-5 flex items-center justify-between gap-6"
-      style={{ backgroundColor: "#171717" }}
-    >
-      <img
-        src="/logo.png"
-        alt="Móveis Unghero"
-        className="h-11 w-auto object-contain brightness-0 invert"
-      />
-      <p className="text-sm sm:text-base font-bold tracking-wide uppercase text-right">
-        Orçamento Comercial detalhado
-      </p>
-    </header>
-  );
-}
-
-function PrintBottomFooter() {
-  return (
-    <footer
-      className="print-quote-footer bg-neutral-900 text-neutral-300 px-[20mm] py-4 mt-auto"
-      style={{ backgroundColor: "#171717" }}
-    >
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 text-[9px] leading-relaxed">
-        <div className="space-y-0.5">
-          <p className="text-white font-bold text-[10px]">{FACTORY.name}</p>
-          <p>
-            <span className="text-neutral-500">CNPJ:</span> {FACTORY.cnpj}
-          </p>
-          <p>
-            <span className="text-neutral-500">Rua:</span> {FACTORY.street}
-          </p>
-          <p>
-            <span className="text-neutral-500">Bairro:</span> {FACTORY.neighborhood}
-            <span className="text-neutral-600 mx-1.5">|</span>
-            {FACTORY.city}
-          </p>
-        </div>
-        <div className="sm:text-right space-y-0.5 font-semibold">
-          <p>
-            <a
-              href={FACTORY.whatsappHref}
-              className="print-footer-link text-white hover:text-neutral-200"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {FACTORY.whatsapp}
-            </a>
-          </p>
-          <p>
-            <a
-              href={FACTORY.emailHref}
-              className="print-footer-link text-white hover:text-neutral-200"
-            >
-              {FACTORY.email}
-            </a>
-          </p>
-          <p>
-            <a
-              href={FACTORY.siteHref}
-              className="print-footer-link text-white hover:text-neutral-200"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {FACTORY.site}
-            </a>
-          </p>
-        </div>
-      </div>
-      <div
-        className="my-4 h-px w-full"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)",
-        }}
-        aria-hidden
-      />
-      <p className="text-center text-[8px] text-neutral-500 leading-relaxed max-w-[90%] mx-auto">
-        Documento comercial de uso exclusivo entre as partes. Os dados pessoais aqui
-        constantes são tratados conforme a LGPD (Lei nº 13.709/2018), exclusivamente
-        para elaboração e acompanhamento desta proposta.
-      </p>
-    </footer>
-  );
-}
 
 export default async function PrintQuotePage({ params }: PrintPageProps) {
   const session = await getCachedSession();
@@ -146,7 +53,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   const { id } = await params;
   const companyId = session.user.company_id || "mock-company-id";
 
-  let quote = null;
+  let quote: LoadedPrintQuote | null = null;
 
   try {
     const dbQuote = await prisma.quote.findFirst({
@@ -174,24 +81,25 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     });
 
     if (dbQuote) {
-      let pdfShareCode = dbQuote.pdf_share_code;
-      if (dbQuote.pdf_share_url && !pdfShareCode) {
-        pdfShareCode = await ensureQuotePdfShareCode(dbQuote.id);
-      }
-
+      const pdfShareCode = await ensureQuotePdfShareCode(dbQuote.id);
       const pdfPublicUrl = resolveQuotePdfPublicUrl({
         pdf_share_code: pdfShareCode,
         pdf_share_url: dbQuote.pdf_share_url,
       });
 
       quote = {
-        ...dbQuote,
-        subtotal: Number(dbQuote.subtotal),
+        id: dbQuote.id,
+        project_id: dbQuote.project_id,
         desconto: Number(dbQuote.desconto),
         valor_final: Number(dbQuote.valor_final),
+        observacoes: dbQuote.observacoes,
+        validade: dbQuote.validade,
         pdfPublicUrl,
+        partner: dbQuote.partner,
+        project: dbQuote.project,
         items: dbQuote.items.map((item) => ({
-          ...item,
+          descricao: item.descricao,
+          quantidade: item.quantidade,
           valor_unitario: Number(item.valor_unitario),
           valor_total: Number(item.valor_total),
           subitens: parseQuoteSubitens(item.subitens),
@@ -207,464 +115,32 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   }
 
   const client = quote.project.client;
-  const partnerRoleLabel = quote.partner
-    ? PARTNER_ROLE_LABEL[String(quote.partner.tipo)] ?? "Arquiteto"
-    : null;
-  const partnerRegistro = quote.partner
-    ? formatPartnerRegistro(quote.partner.tipo, quote.partner.registro_profissional)
-    : null;
   const formattedValidade = new Date(quote.validade).toLocaleDateString("pt-BR");
   const formattedDataEmissao = new Date().toLocaleDateString("pt-BR");
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
-  };
 
   return (
-    <div className="print-shell bg-slate-100 text-black min-h-screen font-sans print:bg-white print:min-h-0">
-      <style dangerouslySetInnerHTML={{ __html: `
-        @page {
-          size: A4 portrait;
-          margin: 0;
-        }
-        @media print {
-          html, body {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          /* Evita página em branco: NÃO usar page-break-after: always na única folha */
-          .print-page {
-            width: 210mm !important;
-            height: auto !important;
-            max-height: none !important;
-            min-height: 0 !important;
-            page-break-after: auto !important;
-            break-after: auto !important;
-            page-break-inside: auto !important;
-            padding: 0 !important;
-            margin: 0 auto !important;
-            box-sizing: border-box !important;
-            border: none !important;
-            box-shadow: none !important;
-            background: #ffffff !important;
-            overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print-shell {
-            min-height: 0 !important;
-            height: auto !important;
-            background: #ffffff !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .print-shell-inner {
-            max-width: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .print-quote-header {
-            background-color: #171717 !important;
-            color: #ffffff !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print-quote-footer {
-            background-color: #171717 !important;
-            color: #d4d4d4 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print-quote-header img {
-            filter: brightness(0) invert(1) !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-        }
-        @media screen {
-          .print-page {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 20px auto;
-            box-sizing: border-box;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background-color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-          }
-        }
-        /* Modo captura do PDF do link — espelha impressão (sem folha A4 esticada) */
-        .pdf-capture-mode {
-          background: #ffffff !important;
-        }
-        .pdf-capture-mode .print-shell {
-          background: #ffffff !important;
-          min-height: 0 !important;
-          height: auto !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        .pdf-capture-mode .print-shell-inner {
-          max-width: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        .pdf-capture-mode .print-page {
-          width: 210mm !important;
-          min-height: 0 !important;
-          height: auto !important;
-          margin: 0 auto !important;
-          border: none !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          overflow: visible !important;
-          background: #ffffff !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        /* Evita espaços enormes do justify-between da prévia em tela */
-        .pdf-capture-mode .print-page > main {
-          flex: 0 0 auto !important;
-          justify-content: flex-start !important;
-          gap: 1.25rem !important;
-        }
-        .pdf-capture-mode .print\\:hidden,
-        .pdf-capture-mode .print-hidden {
-          display: none !important;
-        }
-        .pdf-capture-mode .print-quote-header {
-          background-color: #171717 !important;
-          color: #ffffff !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .pdf-capture-mode .print-quote-footer {
-          background-color: #171717 !important;
-          color: #d4d4d4 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .pdf-capture-mode .print-quote-header img {
-          filter: brightness(0) invert(1) !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        @media print {
-          .print-page > main {
-            flex: 0 0 auto !important;
-            justify-content: flex-start !important;
-            gap: 1.25rem !important;
-          }
-        }
-        .print-quote-header {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .print-quote-footer {
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .print-footer-link {
-          color: #ffffff;
-          text-decoration: none;
-        }
-        @media print {
-          .print-footer-link {
-            text-decoration: underline;
-            text-underline-offset: 2px;
-          }
-          a[href^="http"]::after,
-          a[href^="mailto"]::after {
-            content: none !important;
-          }
-        }
-      `}} />
-
-      <div className="print:hidden sticky top-0 bg-neutral-900 text-white p-4 flex items-center justify-between shadow-md z-50">
-        <Link
-          href={`/projects/${quote.project_id || "proj-1"}`}
-          className="inline-flex items-center text-sm text-neutral-300 hover:text-white transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
-        </Link>
-        <QuotePrintToolbar
-          quoteId={quote.id}
-          clientName={client.nome}
-          clientPhone={client.telefone}
-          valorFinal={formatCurrency(quote.valor_final)}
-          validade={formattedValidade}
-          initialPdfShareUrl={quote.pdfPublicUrl}
-        />
-      </div>
-
-      <div className="print-shell-inner max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
-        <div className="print-page flex flex-col">
-          <PrintTopHeader />
-
-          <main className="flex-1 px-[20mm] py-6 flex flex-col justify-between">
-            {/* Bloco Superior */}
-            <div className="space-y-3.5">
-              {/* Informações do cliente */}
-              <section className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
-                <div className="space-y-2 min-w-0">
-                  <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
-                    Cliente
-                  </span>
-                  <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
-                  <div className="text-xs text-neutral-600 space-y-0.5">
-                    <p>
-                      <span className="font-semibold text-neutral-700">Cidade:</span>{" "}
-                      {client.cidade}
-                    </p>
-                    {client.bairro ? (
-                      <p>
-                        <span className="font-semibold text-neutral-700">Bairro:</span>{" "}
-                        {client.bairro}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end gap-3 shrink-0 self-start">
-                  <div className="flex gap-3">
-                    <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
-                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
-                        Emissão
-                      </span>
-                      <p className="text-[11px] font-bold text-emerald-800 leading-none">{formattedDataEmissao}</p>
-                    </div>
-                    <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
-                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
-                        Validade
-                      </span>
-                      <p className="text-[11px] font-bold text-rose-800 leading-none">{formattedValidade}</p>
-                    </div>
-                  </div>
-
-                  {quote.partner ? (
-                    <div className="p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight flex items-center gap-3">
-                      <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
-                        {quote.partner.fotoUrl ? (
-                          <img
-                            src={quote.partner.fotoUrl}
-                            alt={quote.partner.nome}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-[10px] font-black text-neutral-500">
-                            {quote.partner.nome.substring(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-0.5 text-left">
-                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
-                          {partnerRoleLabel}
-                        </span>
-                        <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
-                        {quote.partner.escritorio ? (
-                          <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
-                        ) : null}
-                        {partnerRegistro ? (
-                          <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </section>
-
-              {/* Subtítulo (sem título "Tabela comercial") */}
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
-                Relação completa de marcenaria sob medida, ferragens e serviços.
-              </p>
-
-              {/* Tabela — mantida */}
-              <div className="overflow-hidden border border-neutral-200 rounded-xl">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-neutral-200 text-neutral-500 uppercase font-bold bg-neutral-50/50 text-[10px]">
-                      <th className="py-3.5 px-4 w-7/12">Descrição Detalhada do Item</th>
-                      <th className="py-3.5 px-4 text-center w-1/12">Qtd</th>
-                      <th className="py-3.5 px-4 text-right w-2/12">Unitário</th>
-                      <th className="py-3.5 px-4 text-right w-2/12">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-150 text-neutral-800">
-                    {quote.items.map((item, idx) => {
-                      const subitensLine =
-                        item.subitens && item.subitens.length > 0
-                          ? formatQuoteSubitensLine(item.subitens)
-                          : "";
-
-                      return (
-                      <tr key={idx}>
-                        <td className="py-3.5 px-4 leading-relaxed">
-                          <p className="font-semibold text-neutral-950">{item.descricao}</p>
-                          {subitensLine ? (
-                            <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
-                              {subitensLine}
-                            </p>
-                          ) : null}
-                        </td>
-                        <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
-                          {item.quantidade}
-                        </td>
-                        <td className="py-3.5 px-4 text-right font-medium text-neutral-600">
-                          {formatCurrency(item.valor_unitario)}
-                        </td>
-                        <td className="py-3.5 px-4 text-right font-extrabold text-neutral-950">
-                          {formatCurrency(item.valor_total)}
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Investimento total — card à direita, colado na tabela */}
-              <div className="flex justify-end -mt-1">
-                <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[200px] space-y-0.5">
-                  {quote.desconto > 0 ? (
-                    <p className="text-[9px] text-emerald-700 font-semibold text-right">
-                      Desconto: -{formatCurrency(quote.desconto)}
-                    </p>
-                  ) : null}
-                  <div className="flex items-baseline justify-end gap-1.5">
-                    <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wide">
-                      Investimento total:
-                    </span>
-                    <span className="text-base font-black text-neutral-950">
-                      {formatCurrency(quote.valor_final)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {quote.observacoes?.trim() ? (
-                <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">
-                    Observações
-                  </h4>
-                  <p className="text-[10px] text-neutral-700 leading-relaxed whitespace-pre-line">
-                    {quote.observacoes.trim()}
-                  </p>
-                </section>
-              ) : null}
-            </div>
-
-            {/* Bloco Inferior */}
-            <div className="space-y-3.5">
-              {/* Notas comerciais */}
-              <section className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
-                    <div
-                      key={text.slice(0, 24)}
-                      className="flex flex-col items-center text-center rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-3.5"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80 mb-2">
-                        <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
-                      </div>
-                      <p className="text-[9px] text-neutral-600 leading-relaxed">{text}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Condições de pagamento */}
-              <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                  <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500 shrink-0">
-                    Condições de pagamento
-                  </h4>
-                  <div className="flex flex-wrap items-center justify-end gap-1.5">
-                    {PAYMENT_BRANDS.map((brand) => (
-                      <img
-                        key={brand.id}
-                        src={brand.src}
-                        alt={brand.alt}
-                        width={brand.width}
-                        height={brand.height}
-                        className="h-5 w-auto object-contain rounded-[3px] border border-neutral-100 bg-white px-0.5"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5">
-                  {/* À vista */}
-                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
-                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
-                      À vista
-                    </span>
-                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                      <li className="flex gap-1.5">
-                        <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
-                        <span>
-                          <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
-                          <strong className="text-neutral-900">50% na entrega</strong>
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Parcelado */}
-                  <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-                      Parcelado
-                    </span>
-                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                      <li className="flex gap-1.5">
-                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                        <span>
-                          <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
-                          <strong className="text-neutral-900">5x sem juros</strong>
-                        </span>
-                      </li>
-                      <li className="flex gap-1.5">
-                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                        <span>
-                          ou em <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo)
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Cartão */}
-                  <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-                      Cartão
-                    </span>
-                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                      <li className="flex gap-1.5">
-                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                        <span>
-                          Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos
-                          (+ a taxa de parcelamento do cartão)
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                <p className="text-[8px] text-neutral-400 leading-snug">
-                  *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
-                </p>
-              </section>
-            </div>
-          </main>
-
-          <PrintBottomFooter />
+    <QuotePrintDocument
+      quote={quote}
+      client={client}
+      emissaoLabel={formattedDataEmissao}
+      validadeLabel={formattedValidade}
+      topBar={
+        <div className="print:hidden sticky top-0 bg-neutral-900 text-white p-4 flex items-center justify-between shadow-md z-50">
+          <Link
+            href={`/projects/${quote.project_id || "proj-1"}`}
+            className="inline-flex items-center text-sm text-neutral-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
+          </Link>
+          <QuotePrintToolbar
+            quoteId={quote.id}
+            clientName={client.nome}
+            clientPhone={client.telefone}
+            validade={formattedValidade}
+            initialPdfShareUrl={quote.pdfPublicUrl}
+          />
         </div>
-      </div>
-    </div>
+      }
+    />
   );
 }

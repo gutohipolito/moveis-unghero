@@ -2,7 +2,6 @@ import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 
 export interface QuoteWhatsAppMessageOptions {
   clientName: string;
-  valorFinal: string;
   validade: string;
   pdfUrl?: string;
 }
@@ -15,14 +14,13 @@ export function buildQuoteWhatsAppMessage(options: QuoteWhatsAppMessageOptions) 
     "",
     "Segue o *orçamento comercial detalhado* da Móveis Unghero:",
     "",
-    `💰 Investimento total: ${options.valorFinal}`,
-    `📅 Validade da proposta: ${options.validade}`,
+    `Validade da proposta: ${options.validade}`,
   ];
 
   if (options.pdfUrl) {
-    lines.push("", "📄 Acesse o PDF do orçamento:", options.pdfUrl);
+    lines.push("", "Acesse o orçamento:", options.pdfUrl);
   } else {
-    lines.push("", "📄 O PDF do orçamento segue em anexo nesta conversa.");
+    lines.push("", "O orçamento segue em anexo nesta conversa.");
   }
 
   lines.push("", "Qualquer dúvida, estamos à disposição!", "Equipe Móveis Unghero");
