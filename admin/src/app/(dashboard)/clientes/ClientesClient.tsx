@@ -56,28 +56,18 @@ interface ProjectSummary {
 
 function LinkedProjectChip({
   project,
-  stopPropagation = false,
 }: {
   project: ProjectSummary;
-  stopPropagation?: boolean;
 }) {
-  const quotesCount = project.quotes_count ?? 0;
   return (
     <Link
       href={`/projects/${project.id}`}
-      onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
       title={`${labelProjectStatus(project.status_geral)}${
-        quotesCount > 0 ? ` · ${quotesCount} orçamento(s)` : ""
+        (project.quotes_count ?? 0) > 0 ? ` · ${project.quotes_count} orçamento(s)` : ""
       }`}
-      className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors hover:brightness-95 ${projectStatusChipClass(project.status_geral)}`}
+      className={`inline-flex items-center font-mono text-[10px] font-bold tracking-wide px-2 py-1 rounded-md border ${projectStatusChipClass(project.status_geral)}`}
     >
-      <span className="font-mono tracking-wide opacity-75">#{shortProjectCode(project.id)}</span>
-      <span className="font-extrabold">{labelProjectStatus(project.status_geral)}</span>
-      {quotesCount > 0 ? (
-        <span className="opacity-70 font-semibold normal-case">
-          · {quotesCount} orç.
-        </span>
-      ) : null}
+      #{shortProjectCode(project.id)}
     </Link>
   );
 }
@@ -739,7 +729,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   const location = resolveClientLocation(client);
 
                   return (
-                    <tr key={client.id} className="hover:bg-slate-50/70">
+                    <tr key={client.id} className="bg-transparent">
                       {/* Cliente */}
                       <td className={`p-4 ${resolveClientDocument(client).tipo_pessoa === "PJ" ? "border-l-4 border-l-indigo-500/80 bg-indigo-50/10" : ""}`}>
                         {(() => {

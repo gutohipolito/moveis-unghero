@@ -649,7 +649,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 shrink-0 disabled:opacity-50"
+                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 shrink-0 disabled:opacity-50 active:scale-100"
                               onClick={() => handleApproveQuote(q)}
                               disabled={approvingId === q.id}
                               title="Aprovar proposta"
@@ -668,7 +668,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             <Button
                               variant="outline"
                               size="sm"
-                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 ${
+                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 active:scale-100 ${
                                 isApproved ? "w-full justify-center" : ""
                               }`}
                               title="Visualizar PDF / Imprimir"
@@ -685,7 +685,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             <Button
                               variant="outline"
                               size="sm"
-                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 ${
+                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 active:scale-100 ${
                                 isApproved ? "w-full justify-center" : ""
                               }`}
                               title="Ver Detalhes do Projeto"
@@ -699,7 +699,7 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2 shrink-0"
+                              className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2 shrink-0 active:scale-100"
                               onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, isApproved)}
                               title="Excluir Orçamento"
                             >
