@@ -44,7 +44,7 @@ curl_setopt_array($ch, [
     CURLOPT_CONNECTTIMEOUT => 15,
     CURLOPT_HTTPHEADER => [
         'Accept: text/html,application/xhtml+xml',
-        'User-Agent: MoveisUnghero-QuoteProxy/1.2',
+        'User-Agent: MoveisUnghero-QuoteProxy/1.3',
     ],
 ]);
 
@@ -83,18 +83,6 @@ if (stripos($body, '<base ') === false) {
         $body,
         1
     );
-    if (is_string($replaced)) {
-        $body = $replaced;
-    }
-}
-
-// Botão Salvar PDF sem React (barra público do Next usa onClick)
-if (stripos($body, 'javascript:window.print()') === false) {
-    $printBar = '<div class="print:hidden sticky top-0 bg-neutral-900 text-white p-3 flex items-center justify-between shadow-md z-50" style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;background:#171717;color:#fff;padding:12px 16px;">'
-        . '<p style="margin:0;font-size:14px;color:#d4d4d4;">Orçamento Móveis Unghero</p>'
-        . '<a href="javascript:window.print()" style="background:#d97706;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:8px 16px;border-radius:8px;">Salvar PDF</a>'
-        . '</div>';
-    $replaced = preg_replace('/<body([^>]*)>/i', '<body$1>' . $printBar, $body, 1);
     if (is_string($replaced)) {
         $body = $replaced;
     }
