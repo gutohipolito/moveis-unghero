@@ -177,7 +177,7 @@ const PartnerCard = ({
   const palette = getPartnerPalette(p.id);
 
   return (
-    <Card
+    <div
       key={p.id}
       onClick={() => onViewDetails(p)}
       className={`border rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative cursor-pointer ${palette.bgCard}`}
@@ -365,7 +365,7 @@ const PartnerCard = ({
           )}
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
