@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QuotePrintDocument from "@/components/QuotePrintDocument";
 import QuotePublicPrintBar from "@/components/QuotePublicPrintBar";
-import { loadPublicQuoteByShareCode } from "@/lib/quotePublicHtml";
+import { loadPublicQuoteByShareCode } from "@/lib/quotePublicShare";
 
 export const dynamic = "force-dynamic";
 

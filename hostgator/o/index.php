@@ -1,8 +1,9 @@
 <?php
 /**
  * Link curto moveisunghero.com.br/o/{codigo}
- * Serve HTML estático do orçamento (sem JS do Next.js),
- * para a URL permanecer em moveisunghero.com.br.
+ * Faz proxy da página do admin, remove o JS do Next.js (evita erro
+ * cross-origin no History) e injeta <base> para CSS/imagens.
+ * A URL do navegador permanece em moveisunghero.com.br.
  *
  * Upload via cPanel: public_html/o/.htaccess + public_html/o/index.php
  */
@@ -31,8 +32,7 @@ if (!$code) {
     exit;
 }
 
-// HTML estático (não a página Next.js — evita erro de History cross-origin)
-$source = 'https://admin.moveisunghero.com.br/api/public/orcamento/' . rawurlencode($code);
+$source = 'https://admin.moveisunghero.com.br/o/' . rawurlencode($code);
 
 $ch = curl_init($source);
 curl_setopt_array($ch, [
@@ -44,7 +44,7 @@ curl_setopt_array($ch, [
     CURLOPT_CONNECTTIMEOUT => 15,
     CURLOPT_HTTPHEADER => [
         'Accept: text/html,application/xhtml+xml',
-        'User-Agent: MoveisUnghero-QuoteProxy/1.1',
+        'User-Agent: MoveisUnghero-QuoteProxy/1.2',
     ],
 ]);
 
@@ -69,6 +69,36 @@ if ($response === false || $httpCode !== 200) {
 }
 
 $body = substr($response, $headerSize);
+
+// Remove runtime do Next — causa SecurityError em domínio diferente
+$body = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $body) ?? $body;
+$body = preg_replace('#<link[^>]+rel=["\']manifest["\'][^>]*>#i', '', $body) ?? $body;
+$body = preg_replace('#<link[^>]+rel=["\']modulepreload["\'][^>]*>#i', '', $body) ?? $body;
+
+// CSS/imagens relativas sobem do admin
+if (stripos($body, '<base ') === false) {
+    $replaced = preg_replace(
+        '/<head(\s[^>]*)?>/i',
+        '<head$1><base href="https://admin.moveisunghero.com.br/">',
+        $body,
+        1
+    );
+    if (is_string($replaced)) {
+        $body = $replaced;
+    }
+}
+
+// Botão Salvar PDF sem React (barra público do Next usa onClick)
+if (stripos($body, 'javascript:window.print()') === false) {
+    $printBar = '<div class="print:hidden sticky top-0 bg-neutral-900 text-white p-3 flex items-center justify-between shadow-md z-50" style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;background:#171717;color:#fff;padding:12px 16px;">'
+        . '<p style="margin:0;font-size:14px;color:#d4d4d4;">Orçamento Móveis Unghero</p>'
+        . '<a href="javascript:window.print()" style="background:#d97706;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:8px 16px;border-radius:8px;">Salvar PDF</a>'
+        . '</div>';
+    $replaced = preg_replace('/<body([^>]*)>/i', '<body$1>' . $printBar, $body, 1);
+    if (is_string($replaced)) {
+        $body = $replaced;
+    }
+}
 
 http_response_code(200);
 header('Content-Type: text/html; charset=utf-8');
