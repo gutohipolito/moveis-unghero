@@ -58,7 +58,7 @@ function getInitials(name: string) {
 const PALETTES = [
   {
     accent: "bg-gradient-to-r from-emerald-500 to-teal-600",
-    bgCard: "bg-gradient-to-b from-emerald-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-emerald-500/8 via-white to-white",
     hoverText: "group-hover/card:text-emerald-700",
     text: "text-emerald-700",
     badge: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700",
@@ -67,7 +67,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-indigo-500 to-violet-600",
-    bgCard: "bg-gradient-to-b from-indigo-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-indigo-500/8 via-white to-white",
     hoverText: "group-hover/card:text-indigo-700",
     text: "text-indigo-700",
     badge: "bg-indigo-500/10 border-indigo-500/20 text-indigo-700",
@@ -76,7 +76,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-rose-500 to-pink-600",
-    bgCard: "bg-gradient-to-b from-rose-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-rose-500/8 via-white to-white",
     hoverText: "group-hover/card:text-rose-700",
     text: "text-rose-700",
     badge: "bg-rose-500/10 border-rose-500/20 text-rose-700",
@@ -85,7 +85,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-amber-500 to-orange-600",
-    bgCard: "bg-gradient-to-b from-amber-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-amber-500/8 via-white to-white",
     hoverText: "group-hover/card:text-amber-700",
     text: "text-amber-700",
     badge: "bg-amber-500/10 border-amber-500/20 text-amber-700",
@@ -94,7 +94,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-cyan-500 to-blue-600",
-    bgCard: "bg-gradient-to-b from-cyan-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-cyan-500/8 via-white to-white",
     hoverText: "group-hover/card:text-cyan-700",
     text: "text-cyan-700",
     badge: "bg-cyan-500/10 border-cyan-500/20 text-cyan-700",
@@ -103,7 +103,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-purple-500 to-fuchsia-600",
-    bgCard: "bg-gradient-to-b from-purple-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-purple-500/8 via-white to-white",
     hoverText: "group-hover/card:text-purple-700",
     text: "text-purple-700",
     badge: "bg-purple-500/10 border-purple-500/20 text-purple-700",
@@ -112,7 +112,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-sky-500 to-indigo-600",
-    bgCard: "bg-gradient-to-b from-sky-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-sky-500/8 via-white to-white",
     hoverText: "group-hover/card:text-sky-700",
     text: "text-sky-700",
     badge: "bg-sky-500/10 border-sky-500/20 text-sky-700",
@@ -121,7 +121,7 @@ const PALETTES = [
   },
   {
     accent: "bg-gradient-to-r from-violet-500 to-fuchsia-600",
-    bgCard: "bg-gradient-to-b from-violet-50/15 via-white to-white",
+    bgCard: "bg-gradient-to-b from-violet-500/8 via-white to-white",
     hoverText: "group-hover/card:text-violet-700",
     text: "text-violet-700",
     badge: "bg-violet-500/10 border-violet-500/20 text-violet-700",
