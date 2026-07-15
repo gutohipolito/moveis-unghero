@@ -345,252 +345,258 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         <div className="print-page flex flex-col">
           <PrintTopHeader />
 
-          <main className="flex-1 px-[20mm] py-6 space-y-5">
-            {/* Informações do cliente */}
-            <section className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
-              <div className="space-y-2 min-w-0">
-                <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
-                  Cliente
-                </span>
-                <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
-                <div className="text-xs text-neutral-600 space-y-0.5">
-                  <p>
-                    <span className="font-semibold text-neutral-700">Cidade:</span>{" "}
-                    {client.cidade}
-                  </p>
-                  {client.bairro ? (
+          <main className="flex-1 px-[20mm] py-6 flex flex-col justify-between">
+            {/* Bloco Superior */}
+            <div className="space-y-3.5">
+              {/* Informações do cliente */}
+              <section className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
+                <div className="space-y-2 min-w-0">
+                  <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
+                    Cliente
+                  </span>
+                  <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
+                  <div className="text-xs text-neutral-600 space-y-0.5">
                     <p>
-                      <span className="font-semibold text-neutral-700">Bairro:</span>{" "}
-                      {client.bairro}
+                      <span className="font-semibold text-neutral-700">Cidade:</span>{" "}
+                      {client.cidade}
                     </p>
+                    {client.bairro ? (
+                      <p>
+                        <span className="font-semibold text-neutral-700">Bairro:</span>{" "}
+                        {client.bairro}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-3 shrink-0 self-start">
+                  <div className="flex gap-3">
+                    <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
+                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
+                        Emissão
+                      </span>
+                      <p className="text-[11px] font-bold text-emerald-800 leading-none">{formattedDataEmissao}</p>
+                    </div>
+                    <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
+                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
+                        Validade
+                      </span>
+                      <p className="text-[11px] font-bold text-rose-800 leading-none">{formattedValidade}</p>
+                    </div>
+                  </div>
+
+                  {quote.partner ? (
+                    <div className="p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight flex items-center gap-3">
+                      <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
+                        {quote.partner.fotoUrl ? (
+                          <img
+                            src={quote.partner.fotoUrl}
+                            alt={quote.partner.nome}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-[10px] font-black text-neutral-500">
+                            {quote.partner.nome.substring(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5 text-left">
+                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
+                          {partnerRoleLabel}
+                        </span>
+                        <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
+                        {quote.partner.escritorio ? (
+                          <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
+                        ) : null}
+                        {partnerRegistro ? (
+                          <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
+                        ) : null}
+                      </div>
+                    </div>
                   ) : null}
                 </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-3 shrink-0 self-start">
-                <div className="flex gap-3">
-                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
-                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
-                      Emissão
-                    </span>
-                    <p className="text-[11px] font-bold text-emerald-800 leading-none">{formattedDataEmissao}</p>
-                  </div>
-                  <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
-                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
-                      Validade
-                    </span>
-                    <p className="text-[11px] font-bold text-rose-800 leading-none">{formattedValidade}</p>
-                  </div>
-                </div>
-
-                {quote.partner ? (
-                  <div className="p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight flex items-center gap-3">
-                    <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
-                      {quote.partner.fotoUrl ? (
-                        <img
-                          src={quote.partner.fotoUrl}
-                          alt={quote.partner.nome}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-[10px] font-black text-neutral-500">
-                          {quote.partner.nome.substring(0, 2).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-0.5 text-left">
-                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
-                        {partnerRoleLabel}
-                      </span>
-                      <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
-                      {quote.partner.escritorio ? (
-                        <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
-                      ) : null}
-                      {partnerRegistro ? (
-                        <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            {/* Subtítulo (sem título "Tabela comercial") */}
-            <p className="text-[11px] text-neutral-500 leading-relaxed">
-              Relação completa de marcenaria sob medida, ferragens e serviços.
-            </p>
-
-            {/* Tabela — mantida */}
-            <div className="overflow-hidden border border-neutral-200 rounded-xl">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-neutral-200 text-neutral-500 uppercase font-bold bg-neutral-50/50 text-[10px]">
-                    <th className="py-3.5 px-4 w-7/12">Descrição Detalhada do Item</th>
-                    <th className="py-3.5 px-4 text-center w-1/12">Qtd</th>
-                    <th className="py-3.5 px-4 text-right w-2/12">Unitário</th>
-                    <th className="py-3.5 px-4 text-right w-2/12">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-150 text-neutral-800">
-                  {quote.items.map((item, idx) => {
-                    const subitensLine =
-                      item.subitens && item.subitens.length > 0
-                        ? formatQuoteSubitensLine(item.subitens)
-                        : "";
-
-                    return (
-                    <tr key={idx}>
-                      <td className="py-3.5 px-4 leading-relaxed">
-                        <p className="font-semibold text-neutral-950">{item.descricao}</p>
-                        {subitensLine ? (
-                          <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
-                            {subitensLine}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
-                        {item.quantidade}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-medium text-neutral-600">
-                        {formatCurrency(item.valor_unitario)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-extrabold text-neutral-950">
-                        {formatCurrency(item.valor_total)}
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Investimento total — card à direita, colado na tabela */}
-            <div className="flex justify-end -mt-1">
-              <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[200px] space-y-0.5">
-                {quote.desconto > 0 ? (
-                  <p className="text-[9px] text-emerald-700 font-semibold text-right">
-                    Desconto: -{formatCurrency(quote.desconto)}
-                  </p>
-                ) : null}
-                <div className="flex items-baseline justify-end gap-1.5">
-                  <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wide">
-                    Investimento total:
-                  </span>
-                  <span className="text-base font-black text-neutral-950">
-                    {formatCurrency(quote.valor_final)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {quote.observacoes?.trim() ? (
-              <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">
-                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">
-                  Observações
-                </h4>
-                <p className="text-[10px] text-neutral-700 leading-relaxed whitespace-pre-line">
-                  {quote.observacoes.trim()}
-                </p>
               </section>
-            ) : null}
 
-            {/* Notas comerciais */}
-            <section className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
-                {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
-                  <div
-                    key={text.slice(0, 24)}
-                    className="flex flex-col items-center text-center rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-3.5"
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80 mb-2">
-                      <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
-                    </div>
-                    <p className="text-[9px] text-neutral-600 leading-relaxed">{text}</p>
-                  </div>
-                ))}
+              {/* Subtítulo (sem título "Tabela comercial") */}
+              <p className="text-[11px] text-neutral-500 leading-relaxed">
+                Relação completa de marcenaria sob medida, ferragens e serviços.
+              </p>
+
+              {/* Tabela — mantida */}
+              <div className="overflow-hidden border border-neutral-200 rounded-xl">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-neutral-200 text-neutral-500 uppercase font-bold bg-neutral-50/50 text-[10px]">
+                      <th className="py-3.5 px-4 w-7/12">Descrição Detalhada do Item</th>
+                      <th className="py-3.5 px-4 text-center w-1/12">Qtd</th>
+                      <th className="py-3.5 px-4 text-right w-2/12">Unitário</th>
+                      <th className="py-3.5 px-4 text-right w-2/12">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-150 text-neutral-800">
+                    {quote.items.map((item, idx) => {
+                      const subitensLine =
+                        item.subitens && item.subitens.length > 0
+                          ? formatQuoteSubitensLine(item.subitens)
+                          : "";
+
+                      return (
+                      <tr key={idx}>
+                        <td className="py-3.5 px-4 leading-relaxed">
+                          <p className="font-semibold text-neutral-950">{item.descricao}</p>
+                          {subitensLine ? (
+                            <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
+                              {subitensLine}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
+                          {item.quantidade}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-medium text-neutral-600">
+                          {formatCurrency(item.valor_unitario)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-extrabold text-neutral-950">
+                          {formatCurrency(item.valor_total)}
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </section>
 
-            {/* Condições de pagamento */}
-            <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500 shrink-0">
-                  Condições de pagamento
-                </h4>
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                  {PAYMENT_BRANDS.map((brand) => (
-                    <img
-                      key={brand.id}
-                      src={brand.src}
-                      alt={brand.alt}
-                      width={brand.width}
-                      height={brand.height}
-                      className="h-5 w-auto object-contain rounded-[3px] border border-neutral-100 bg-white px-0.5"
-                    />
+              {/* Investimento total — card à direita, colado na tabela */}
+              <div className="flex justify-end -mt-1">
+                <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[200px] space-y-0.5">
+                  {quote.desconto > 0 ? (
+                    <p className="text-[9px] text-emerald-700 font-semibold text-right">
+                      Desconto: -{formatCurrency(quote.desconto)}
+                    </p>
+                  ) : null}
+                  <div className="flex items-baseline justify-end gap-1.5">
+                    <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wide">
+                      Investimento total:
+                    </span>
+                    <span className="text-base font-black text-neutral-950">
+                      {formatCurrency(quote.valor_final)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {quote.observacoes?.trim() ? (
+                <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">
+                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">
+                    Observações
+                  </h4>
+                  <p className="text-[10px] text-neutral-700 leading-relaxed whitespace-pre-line">
+                    {quote.observacoes.trim()}
+                  </p>
+                </section>
+              ) : null}
+            </div>
+
+            {/* Bloco Inferior */}
+            <div className="space-y-3.5">
+              {/* Notas comerciais */}
+              <section className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
+                    <div
+                      key={text.slice(0, 24)}
+                      className="flex flex-col items-center text-center rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-3.5"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80 mb-2">
+                        <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
+                      </div>
+                      <p className="text-[9px] text-neutral-600 leading-relaxed">{text}</p>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="grid grid-cols-3 gap-2.5">
-                {/* À vista */}
-                <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
-                    À vista
-                  </span>
-                  <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                    <li className="flex gap-1.5">
-                      <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
-                      <span>
-                        <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
-                        <strong className="text-neutral-900">50% na entrega</strong>
-                      </span>
-                    </li>
-                  </ul>
+              {/* Condições de pagamento */}
+              <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                  <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500 shrink-0">
+                    Condições de pagamento
+                  </h4>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    {PAYMENT_BRANDS.map((brand) => (
+                      <img
+                        key={brand.id}
+                        src={brand.src}
+                        alt={brand.alt}
+                        width={brand.width}
+                        height={brand.height}
+                        className="h-5 w-auto object-contain rounded-[3px] border border-neutral-100 bg-white px-0.5"
+                      />
+                    ))}
+                  </div>
                 </div>
 
-                {/* Parcelado */}
-                <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-                    Parcelado
-                  </span>
-                  <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                    <li className="flex gap-1.5">
-                      <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                      <span>
-                        <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
-                        <strong className="text-neutral-900">5x sem juros</strong>
-                      </span>
-                    </li>
-                    <li className="flex gap-1.5">
-                      <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                      <span>
-                        ou em <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo)
-                      </span>
-                    </li>
-                  </ul>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {/* À vista */}
+                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
+                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
+                      À vista
+                    </span>
+                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+                      <li className="flex gap-1.5">
+                        <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
+                        <span>
+                          <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
+                          <strong className="text-neutral-900">50% na entrega</strong>
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Parcelado */}
+                  <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+                      Parcelado
+                    </span>
+                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+                      <li className="flex gap-1.5">
+                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+                        <span>
+                          <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
+                          <strong className="text-neutral-900">5x sem juros</strong>
+                        </span>
+                      </li>
+                      <li className="flex gap-1.5">
+                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+                        <span>
+                          ou em <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo)
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Cartão */}
+                  <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+                      Cartão
+                    </span>
+                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+                      <li className="flex gap-1.5">
+                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+                        <span>
+                          Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos
+                          (+ a taxa de parcelamento do cartão)
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
-                {/* Cartão */}
-                <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-                    Cartão
-                  </span>
-                  <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                    <li className="flex gap-1.5">
-                      <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                      <span>
-                        Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos
-                        (+ a taxa de parcelamento do cartão)
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <p className="text-[8px] text-neutral-400 leading-snug">
-                *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
-              </p>
-            </section>
+                <p className="text-[8px] text-neutral-400 leading-snug">
+                  *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
+                </p>
+              </section>
+            </div>
           </main>
 
           <PrintBottomFooter />
