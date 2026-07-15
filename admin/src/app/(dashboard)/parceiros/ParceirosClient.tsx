@@ -58,75 +58,75 @@ function getInitials(name: string) {
 const PALETTES = [
   {
     accent: "bg-gradient-to-r from-emerald-500 to-teal-600",
-    bgCard: "bg-gradient-to-b from-emerald-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/60 hover:border-emerald-350",
     hoverText: "group-hover/card:text-emerald-700",
     text: "text-emerald-700",
     badge: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700",
     avatar: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25",
-    editHover: "hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100",
+    editHover: "hover:text-emerald-600 hover:bg-white hover:border-emerald-200",
   },
   {
     accent: "bg-gradient-to-r from-indigo-500 to-violet-600",
-    bgCard: "bg-gradient-to-b from-indigo-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-200/60 hover:border-indigo-350",
     hoverText: "group-hover/card:text-indigo-700",
     text: "text-indigo-700",
     badge: "bg-indigo-500/10 border-indigo-500/20 text-indigo-700",
     avatar: "bg-indigo-500/15 text-indigo-700 border-indigo-500/25",
-    editHover: "hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100",
+    editHover: "hover:text-indigo-600 hover:bg-white hover:border-indigo-200",
   },
   {
     accent: "bg-gradient-to-r from-rose-500 to-pink-600",
-    bgCard: "bg-gradient-to-b from-rose-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-rose-50 to-pink-50 border-rose-200/60 hover:border-rose-350",
     hoverText: "group-hover/card:text-rose-700",
     text: "text-rose-700",
     badge: "bg-rose-500/10 border-rose-500/20 text-rose-700",
     avatar: "bg-rose-500/15 text-rose-700 border-rose-500/25",
-    editHover: "hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100",
+    editHover: "hover:text-rose-600 hover:bg-white hover:border-rose-200",
   },
   {
     accent: "bg-gradient-to-r from-amber-500 to-orange-600",
-    bgCard: "bg-gradient-to-b from-amber-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200/60 hover:border-amber-350",
     hoverText: "group-hover/card:text-amber-700",
     text: "text-amber-700",
     badge: "bg-amber-500/10 border-amber-500/20 text-amber-700",
     avatar: "bg-amber-500/15 text-amber-700 border-amber-500/25",
-    editHover: "hover:text-amber-600 hover:bg-emerald-50 hover:border-emerald-100",
+    editHover: "hover:text-amber-600 hover:bg-white hover:border-amber-200",
   },
   {
     accent: "bg-gradient-to-r from-cyan-500 to-blue-600",
-    bgCard: "bg-gradient-to-b from-cyan-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-cyan-50 to-blue-50 border-cyan-200/60 hover:border-cyan-350",
     hoverText: "group-hover/card:text-cyan-700",
     text: "text-cyan-700",
     badge: "bg-cyan-500/10 border-cyan-500/20 text-cyan-700",
     avatar: "bg-cyan-500/15 text-cyan-700 border-cyan-500/25",
-    editHover: "hover:text-cyan-600 hover:bg-cyan-50 hover:border-cyan-100",
+    editHover: "hover:text-cyan-600 hover:bg-white hover:border-cyan-200",
   },
   {
     accent: "bg-gradient-to-r from-purple-500 to-fuchsia-600",
-    bgCard: "bg-gradient-to-b from-purple-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-200/60 hover:border-purple-350",
     hoverText: "group-hover/card:text-purple-700",
     text: "text-purple-700",
     badge: "bg-purple-500/10 border-purple-500/20 text-purple-700",
     avatar: "bg-purple-500/15 text-purple-700 border-purple-500/25",
-    editHover: "hover:text-purple-600 hover:bg-purple-50 hover:border-purple-100",
+    editHover: "hover:text-purple-600 hover:bg-white hover:border-purple-200",
   },
   {
     accent: "bg-gradient-to-r from-sky-500 to-indigo-600",
-    bgCard: "bg-gradient-to-b from-sky-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200/60 hover:border-sky-350",
     hoverText: "group-hover/card:text-sky-700",
     text: "text-sky-700",
     badge: "bg-sky-500/10 border-sky-500/20 text-sky-700",
     avatar: "bg-sky-500/15 text-sky-700 border-sky-500/25",
-    editHover: "hover:text-sky-600 hover:bg-sky-50 hover:border-sky-100",
+    editHover: "hover:text-sky-600 hover:bg-white hover:border-sky-200",
   },
   {
     accent: "bg-gradient-to-r from-violet-500 to-fuchsia-600",
-    bgCard: "bg-gradient-to-b from-violet-50 via-white to-white",
+    bgCard: "bg-gradient-to-br from-violet-50 to-fuchsia-50 border-violet-200/60 hover:border-violet-350",
     hoverText: "group-hover/card:text-violet-700",
     text: "text-violet-700",
     badge: "bg-violet-500/10 border-violet-500/20 text-violet-700",
     avatar: "bg-violet-500/15 text-violet-700 border-violet-500/25",
-    editHover: "hover:text-violet-600 hover:bg-violet-50 hover:border-violet-100",
+    editHover: "hover:text-violet-600 hover:bg-white hover:border-violet-200",
   },
 ];
 
@@ -180,7 +180,7 @@ const PartnerCard = ({
     <Card
       key={p.id}
       onClick={() => onViewDetails(p)}
-      className={`border border-slate-100 hover:border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative cursor-pointer ${palette.bgCard}`}
+      className={`border rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative cursor-pointer ${palette.bgCard}`}
     >
       <div className={`h-1.5 w-full ${palette.accent}`} />
       
@@ -190,7 +190,7 @@ const PartnerCard = ({
           {/* Avatar com upload rápido */}
           <div 
             onClick={(e) => e.stopPropagation()}
-            className={`relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 ${privacyMode ? "blur-md select-none" : ""}`}
+            className={`relative group/avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/60 bg-white overflow-hidden shadow-sm ring-4 ring-white/40 transition-all duration-300 group-hover/card:ring-white/80 ${privacyMode ? "blur-md select-none" : ""}`}
           >
             {p.fotoUrl ? (
               <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover group-hover/avatar:scale-105 transition-transform duration-500" />
@@ -247,8 +247,8 @@ const PartnerCard = ({
               </span>
               
               {p.cidade && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-400 bg-slate-50/80 px-2 py-0.5 rounded-full border border-slate-100">
-                  <MapPin className="h-2.5 w-2.5 text-slate-350" />
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-slate-500 bg-white/70 px-2 py-0.5 rounded-full border border-white/90">
+                  <MapPin className="h-2.5 w-2.5 text-slate-400" />
                   {p.cidade}
                 </span>
               )}
@@ -266,7 +266,7 @@ const PartnerCard = ({
               type="button"
               onClick={() => openEdit(p)}
               title="Editar cadastro"
-              className={`p-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-500 transition-colors cursor-pointer ${palette.editHover}`}
+              className={`p-2 rounded-xl border border-white/60 bg-white/80 text-slate-600 transition-colors cursor-pointer ${palette.editHover}`}
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -274,7 +274,7 @@ const PartnerCard = ({
               type="button"
               onClick={() => handleDelete(p)}
               title="Excluir parceiro"
-              className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-colors cursor-pointer"
+              className="p-2 rounded-xl border border-white/60 bg-white/80 text-slate-500 hover:text-red-650 hover:bg-red-50 hover:border-red-100 transition-colors cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -283,22 +283,22 @@ const PartnerCard = ({
 
         {/* Dados Comerciais / Escritório */}
         {p.escritorio && (
-          <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
-            <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
+          <div className="flex items-center gap-2 p-2 bg-white/80 border border-white/90 rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <Building2 className="h-4 w-4 text-slate-450 shrink-0" />
             <div className="min-w-0 flex-1">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">Escritório / Studio</span>
-              <span className="text-[10px] font-bold text-slate-700 truncate block mt-0.5">{p.escritorio}</span>
+              <span className="text-[8px] font-black text-slate-455 uppercase tracking-widest block leading-none">Escritório / Studio</span>
+              <span className="text-[10px] font-extrabold text-slate-700 truncate block mt-0.5">{p.escritorio}</span>
             </div>
           </div>
         )}
 
         {/* Projetos vinculados (sempre visível) */}
-        <div className="rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-3.5 space-y-2">
+        <div className="rounded-xl border border-white/95 bg-white/90 p-3.5 space-y-2 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-450">
               Projetos vinculados
             </span>
-            <span className="text-[10px] font-black tabular-nums text-slate-600 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-black tabular-nums text-slate-750 bg-white border border-slate-200/80 px-2 py-0.5 rounded-full">
               {projectCount}
             </span>
           </div>
@@ -324,7 +324,7 @@ const PartnerCard = ({
               <span className="text-[9px] font-bold">WhatsApp</span>
             </a>
           ) : (
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 text-slate-300 opacity-60">
+            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
               <Phone className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">WhatsApp</span>
             </div>
@@ -340,7 +340,7 @@ const PartnerCard = ({
               <span className="text-[9px] font-bold">E-mail</span>
             </a>
           ) : (
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 text-slate-300 opacity-60">
+            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
               <Mail className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">E-mail</span>
             </div>
@@ -358,7 +358,7 @@ const PartnerCard = ({
               <span className="text-[9px] font-bold">Portfólio</span>
             </a>
           ) : (
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 text-slate-300 opacity-60">
+            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
               <Globe className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">Portfólio</span>
             </div>
@@ -862,6 +862,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         isOpen={viewingPartner !== null}
         onClose={() => setViewingPartner(null)}
         className="max-w-2xl"
+        viewportClassName="flex items-center justify-center p-4"
       >
         {viewingPartner && (() => {
           const p = viewingPartner;
@@ -970,7 +971,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wide block">Volume de Vendas</span>
+                      <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wide block">Total em Projetos</span>
                       <span className="text-xl font-black text-slate-800 leading-none">{formatCurrency(totalLinkedValue)}</span>
                     </div>
                   </div>
