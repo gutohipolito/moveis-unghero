@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Loader2, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
@@ -58,62 +58,29 @@ export default function QuotePrintToolbar({
   const [pdfStatus, setPdfStatus] = useState<PdfLinkStatus>(
     initialPdfShareUrl ? "ready" : "idle"
   );
-  const [busyAction, setBusyAction] = useState<"print" | "whatsapp" | null>(null);
-  const refreshStarted = useRef(false);
+  const [busyAction, setBusyAction] = useState<"whatsapp" | null>(null);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
 
-  /** Sempre gera/republica o blob no layout atual (não reutiliza PDF antigo do link). */
-  const ensurePdfShareLink = useCallback(
-    async (forceRefresh = true) => {
-      if (!forceRefresh && pdfShareUrl) {
-        setPdfStatus("ready");
-        return { url: pdfShareUrl, blob: null as Blob | null };
-      }
-
-      setPdfStatus("preparing");
-      try {
-        const { url, blob } = await publishQuotePdfShare(quoteId, clientName);
-        setPdfShareUrl(url);
-        setPdfStatus("ready");
-        return { url, blob };
-      } catch (error) {
-        if (error instanceof QuotePdfBlobNotConfiguredError) {
-          setPdfStatus("unavailable");
-          return { url: null, blob: await generateQuotePdfBlob() };
-        }
-        setPdfStatus(pdfShareUrl ? "ready" : "idle");
-        throw error;
-      }
-    },
-    [clientName, pdfShareUrl, quoteId]
-  );
-
-  // Ao abrir a página de impressão, atualiza o PDF do link público com o layout atual.
-  useEffect(() => {
-    if (refreshStarted.current) return;
-    refreshStarted.current = true;
-
-    const timer = window.setTimeout(() => {
-      void ensurePdfShareLink(true).catch(() => {
-        // Falha silenciosa no refresh — o usuário pode tentar de novo ao enviar.
-      });
-    }, 900);
-
-    return () => window.clearTimeout(timer);
-  }, [ensurePdfShareLink]);
-
-  async function handlePrint() {
-    setBusyAction("print");
+  const ensurePdfShareLink = useCallback(async () => {
+    setPdfStatus("preparing");
     try {
-      await ensurePdfShareLink(true);
-      window.print();
+      const { url, blob } = await publishQuotePdfShare(quoteId, clientName);
+      setPdfShareUrl(url);
+      setPdfStatus("ready");
+      return { url, blob };
     } catch (error) {
-      window.print();
-      const msg = error instanceof Error ? error.message : "Não foi possível gerar o link do PDF.";
-      window.alert(msg);
-    } finally {
-      setBusyAction(null);
+      if (error instanceof QuotePdfBlobNotConfiguredError) {
+        setPdfStatus("unavailable");
+        return { url: null, blob: await generateQuotePdfBlob() };
+      }
+      setPdfStatus(pdfShareUrl ? "ready" : "idle");
+      throw error;
     }
+  }, [clientName, pdfShareUrl, quoteId]);
+
+  /** Impressão do browser = layout bonito. Não regenera o PDF do link aqui (evita flicker). */
+  function handlePrint() {
+    window.print();
   }
 
   async function handleWhatsApp() {
@@ -124,8 +91,7 @@ export default function QuotePrintToolbar({
 
     setBusyAction("whatsapp");
     try {
-      // Sempre republica: o cliente deve receber o layout atual, não um PDF antigo.
-      const { url, blob } = await ensurePdfShareLink(true);
+      const { url, blob } = await ensurePdfShareLink();
       const pdfBlob = blob ?? (await generateQuotePdfBlob());
       const fileName = `orcamento-${slugifyFileName(clientName)}.pdf`;
       const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
@@ -178,13 +144,8 @@ export default function QuotePrintToolbar({
 
   return (
     <div className="flex items-center gap-2">
-      {pdfStatus === "ready" ? (
-        <span className="hidden sm:inline text-[10px] text-emerald-400 font-medium">
-          Link do PDF atualizado
-        </span>
-      ) : null}
       {pdfStatus === "preparing" ? (
-        <span className="hidden sm:inline text-[10px] text-neutral-400">Atualizando PDF do link...</span>
+        <span className="hidden sm:inline text-[10px] text-neutral-400">Gerando PDF do link...</span>
       ) : null}
 
       <Button
@@ -212,12 +173,8 @@ export default function QuotePrintToolbar({
         disabled={isBusy}
         className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
       >
-        {busyAction === "print" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Printer className="h-4 w-4" />
-        )}
-        {busyAction === "print" ? "Preparando..." : "Imprimir / Salvar PDF"}
+        <Printer className="h-4 w-4" />
+        Imprimir / Salvar PDF
       </Button>
     </div>
   );

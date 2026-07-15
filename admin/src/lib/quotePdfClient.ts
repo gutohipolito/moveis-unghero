@@ -40,14 +40,35 @@ async function waitForQuoteAssets(root: HTMLElement) {
     }
   }
 
-  // Um frame para o browser aplicar o CSS de captura
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
   );
 }
 
+function showCaptureOverlay() {
+  const overlay = document.createElement("div");
+  overlay.id = "quote-pdf-capture-overlay";
+  overlay.setAttribute("aria-live", "polite");
+  overlay.style.cssText = [
+    "position:fixed",
+    "inset:0",
+    "z-index:2147483647",
+    "display:flex",
+    "align-items:center",
+    "justify-content:center",
+    "background:#0a0a0a",
+    "color:#fafafa",
+    "font:600 14px/1.4 system-ui,sans-serif",
+    "letter-spacing:0.02em",
+  ].join(";");
+  overlay.textContent = "Gerando PDF do link…";
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
 /**
- * Gera PDF no layout de impressão (mesmo visual que o cliente deve ver no link).
+ * Gera PDF no layout compacto de impressão (sem alterar a tela visível do usuário).
+ * Estilos de captura vão só no clone do html2canvas; a tela fica coberta por overlay.
  */
 export async function generateQuotePdfBlob() {
   const element = document.querySelector<HTMLElement>(".print-page");
@@ -57,6 +78,7 @@ export async function generateQuotePdfBlob() {
 
   const { jsPDF } = await import("jspdf");
   const shell = document.documentElement;
+  const overlay = showCaptureOverlay();
 
   shell.classList.add("pdf-capture-mode");
   const previousMinHeight = element.style.minHeight;
@@ -74,7 +96,7 @@ export async function generateQuotePdfBlob() {
     const height = Math.ceil(element.scrollHeight);
 
     canvas = await html2canvas(element, {
-      scale: 2.5,
+      scale: 2,
       useCORS: true,
       allowTaint: false,
       logging: false,
@@ -84,7 +106,10 @@ export async function generateQuotePdfBlob() {
       windowWidth: Math.max(width, 820),
       windowHeight: height,
       onclone: (clonedDoc) => {
+        // Estilos só no clone — o overlay já cobre a página real
         clonedDoc.documentElement.classList.add("pdf-capture-mode");
+        const clonedOverlay = clonedDoc.getElementById("quote-pdf-capture-overlay");
+        clonedOverlay?.remove();
         const clonedPage = clonedDoc.querySelector<HTMLElement>(".print-page");
         if (clonedPage) {
           clonedPage.style.minHeight = "0px";
@@ -102,6 +127,7 @@ export async function generateQuotePdfBlob() {
     element.style.minHeight = previousMinHeight;
     element.style.height = previousHeight;
     element.style.overflow = previousOverflow;
+    overlay.remove();
   }
 
   const pdf = new jsPDF({
@@ -115,25 +141,24 @@ export async function generateQuotePdfBlob() {
   const pageHeight = pdf.internal.pageSize.getHeight();
   const imgWidth = pageWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  // PNG preserva melhor texto/áreas escuras do cabeçalho/rodapé
-  const imgData = canvas.toDataURL("image/png");
+  const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
   if (imgHeight <= pageHeight + PAGE_OVERFLOW_EPSILON_MM) {
     const drawHeight = Math.min(imgHeight, pageHeight);
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, drawHeight);
+    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, drawHeight);
     return pdf.output("blob");
   }
 
   let heightLeft = imgHeight;
   let position = 0;
 
-  pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+  pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
   heightLeft -= pageHeight;
 
   while (heightLeft > PAGE_OVERFLOW_EPSILON_MM) {
     position = heightLeft - imgHeight;
     pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
   }
 

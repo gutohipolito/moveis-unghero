@@ -301,13 +301,14 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             overflow: hidden;
           }
         }
-        /* Modo captura do PDF do link público — espelha a impressão */
+        /* Modo captura do PDF do link — espelha impressão (sem folha A4 esticada) */
         .pdf-capture-mode {
           background: #ffffff !important;
         }
         .pdf-capture-mode .print-shell {
           background: #ffffff !important;
           min-height: 0 !important;
+          height: auto !important;
           padding: 0 !important;
           margin: 0 !important;
         }
@@ -329,6 +330,12 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
+        /* Evita espaços enormes do justify-between da prévia em tela */
+        .pdf-capture-mode .print-page > main {
+          flex: 0 0 auto !important;
+          justify-content: flex-start !important;
+          gap: 1.25rem !important;
+        }
         .pdf-capture-mode .print\\:hidden,
         .pdf-capture-mode .print-hidden {
           display: none !important;
@@ -349,6 +356,13 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           filter: brightness(0) invert(1) !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+        }
+        @media print {
+          .print-page > main {
+            flex: 0 0 auto !important;
+            justify-content: flex-start !important;
+            gap: 1.25rem !important;
+          }
         }
         .print-quote-header {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
