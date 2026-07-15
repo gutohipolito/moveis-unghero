@@ -59,12 +59,13 @@ export default function QuotePrintToolbar({
     initialPdfShareUrl ? "ready" : "idle"
   );
   const [busyAction, setBusyAction] = useState<"print" | "whatsapp" | null>(null);
-  const prefetchStarted = useRef(false);
+  const refreshStarted = useRef(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
 
+  /** Sempre gera/republica o blob no layout atual (não reutiliza PDF antigo do link). */
   const ensurePdfShareLink = useCallback(
-    async (force = false) => {
-      if (!force && pdfShareUrl) {
+    async (forceRefresh = true) => {
+      if (!forceRefresh && pdfShareUrl) {
         setPdfStatus("ready");
         return { url: pdfShareUrl, blob: null as Blob | null };
       }
@@ -87,23 +88,24 @@ export default function QuotePrintToolbar({
     [clientName, pdfShareUrl, quoteId]
   );
 
+  // Ao abrir a página de impressão, atualiza o PDF do link público com o layout atual.
   useEffect(() => {
-    if (prefetchStarted.current || initialPdfShareUrl) return;
-    prefetchStarted.current = true;
+    if (refreshStarted.current) return;
+    refreshStarted.current = true;
 
     const timer = window.setTimeout(() => {
-      void ensurePdfShareLink().catch(() => {
-        // Falha silenciosa no prefetch — o usuário pode tentar de novo ao imprimir/enviar.
+      void ensurePdfShareLink(true).catch(() => {
+        // Falha silenciosa no refresh — o usuário pode tentar de novo ao enviar.
       });
-    }, 1200);
+    }, 900);
 
     return () => window.clearTimeout(timer);
-  }, [ensurePdfShareLink, initialPdfShareUrl]);
+  }, [ensurePdfShareLink]);
 
   async function handlePrint() {
     setBusyAction("print");
     try {
-      await ensurePdfShareLink();
+      await ensurePdfShareLink(true);
       window.print();
     } catch (error) {
       window.print();
@@ -122,7 +124,8 @@ export default function QuotePrintToolbar({
 
     setBusyAction("whatsapp");
     try {
-      const { url, blob } = await ensurePdfShareLink();
+      // Sempre republica: o cliente deve receber o layout atual, não um PDF antigo.
+      const { url, blob } = await ensurePdfShareLink(true);
       const pdfBlob = blob ?? (await generateQuotePdfBlob());
       const fileName = `orcamento-${slugifyFileName(clientName)}.pdf`;
       const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
@@ -134,8 +137,6 @@ export default function QuotePrintToolbar({
         pdfUrl: url ?? undefined,
       });
 
-      // No Mac/desktop o share nativo abre o menu do sistema (AirDrop etc.) e trava a UI.
-      // Com link do PDF pronto, o fluxo ideal é abrir o WhatsApp direto.
       if (isMobileDevice()) {
         setBusyAction(null);
         try {
@@ -179,11 +180,11 @@ export default function QuotePrintToolbar({
     <div className="flex items-center gap-2">
       {pdfStatus === "ready" ? (
         <span className="hidden sm:inline text-[10px] text-emerald-400 font-medium">
-          Link do PDF pronto
+          Link do PDF atualizado
         </span>
       ) : null}
       {pdfStatus === "preparing" ? (
-        <span className="hidden sm:inline text-[10px] text-neutral-400">Gerando link...</span>
+        <span className="hidden sm:inline text-[10px] text-neutral-400">Atualizando PDF do link...</span>
       ) : null}
 
       <Button
@@ -195,7 +196,7 @@ export default function QuotePrintToolbar({
             ? "Enviar proposta pelo WhatsApp com link do PDF"
             : "Cliente sem telefone cadastrado"
         }
-        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer"
+        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
       >
         {busyAction === "whatsapp" ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -209,7 +210,7 @@ export default function QuotePrintToolbar({
         type="button"
         onClick={handlePrint}
         disabled={isBusy}
-        className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer"
+        className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
       >
         {busyAction === "print" ? (
           <Loader2 className="h-4 w-4 animate-spin" />

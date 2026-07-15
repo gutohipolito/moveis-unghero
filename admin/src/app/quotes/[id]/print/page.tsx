@@ -301,6 +301,55 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             overflow: hidden;
           }
         }
+        /* Modo captura do PDF do link público — espelha a impressão */
+        .pdf-capture-mode {
+          background: #ffffff !important;
+        }
+        .pdf-capture-mode .print-shell {
+          background: #ffffff !important;
+          min-height: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        .pdf-capture-mode .print-shell-inner {
+          max-width: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        .pdf-capture-mode .print-page {
+          width: 210mm !important;
+          min-height: 0 !important;
+          height: auto !important;
+          margin: 0 auto !important;
+          border: none !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          overflow: visible !important;
+          background: #ffffff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .pdf-capture-mode .print\\:hidden,
+        .pdf-capture-mode .print-hidden {
+          display: none !important;
+        }
+        .pdf-capture-mode .print-quote-header {
+          background-color: #171717 !important;
+          color: #ffffff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .pdf-capture-mode .print-quote-footer {
+          background-color: #171717 !important;
+          color: #d4d4d4 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .pdf-capture-mode .print-quote-header img {
+          filter: brightness(0) invert(1) !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         .print-quote-header {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);

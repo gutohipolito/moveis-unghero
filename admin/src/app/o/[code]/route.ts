@@ -19,6 +19,7 @@ export async function GET(
     where: { pdf_share_code: normalized },
     select: {
       pdf_share_url: true,
+      pdf_shared_at: true,
       project: {
         select: {
           client: {
@@ -47,13 +48,18 @@ export async function GET(
 
   const clientSlug = slugifyFileName(quote.project.client.nome);
   const filename = `orcamento-${clientSlug}.pdf`;
+  const versionToken = quote.pdf_shared_at
+    ? new Date(quote.pdf_shared_at).getTime().toString(36)
+    : Date.now().toString(36);
 
   return new NextResponse(upstream.body, {
     status: 200,
     headers: {
       "Content-Type": upstream.headers.get("content-type") || "application/pdf",
       "Content-Disposition": `inline; filename="${filename}"`,
-      "Cache-Control": "private, max-age=3600",
+      // Evita servir PDF antigo após republicação do mesmo código
+      "Cache-Control": "private, no-cache, must-revalidate",
+      ETag: `"pdf-${normalized}-${versionToken}"`,
       "X-Robots-Tag": "noindex, nofollow",
     },
   });
