@@ -162,6 +162,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             tipo: true,
             escritorio: true,
             registro_profissional: true,
+            fotoUrl: true,
           },
         },
         project: {
@@ -364,35 +365,53 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
                     </p>
                   ) : null}
                 </div>
-                {quote.partner ? (
-                  <div className="mt-3 p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight">
-                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
-                      {partnerRoleLabel}
-                    </span>
-                    <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
-                    {quote.partner.escritorio ? (
-                      <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
-                    ) : null}
-                    {partnerRegistro ? (
-                      <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
 
-              <div className="flex gap-3 shrink-0 self-start">
-                <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
-                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
-                    Emissão
-                  </span>
-                  <p className="text-[11px] font-bold text-emerald-800 leading-none">{formattedDataEmissao}</p>
+              <div className="flex flex-col items-end gap-3 shrink-0 self-start">
+                <div className="flex gap-3">
+                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
+                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
+                      Emissão
+                    </span>
+                    <p className="text-[11px] font-bold text-emerald-800 leading-none">{formattedDataEmissao}</p>
+                  </div>
+                  <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
+                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
+                      Validade
+                    </span>
+                    <p className="text-[11px] font-bold text-rose-800 leading-none">{formattedValidade}</p>
+                  </div>
                 </div>
-                <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
-                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
-                    Validade
-                  </span>
-                  <p className="text-[11px] font-bold text-rose-800 leading-none">{formattedValidade}</p>
-                </div>
+
+                {quote.partner ? (
+                  <div className="p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight flex items-center gap-3">
+                    <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
+                      {quote.partner.fotoUrl ? (
+                        <img
+                          src={quote.partner.fotoUrl}
+                          alt={quote.partner.nome}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[10px] font-black text-neutral-500">
+                          {quote.partner.nome.substring(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-0.5 text-left">
+                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
+                        {partnerRoleLabel}
+                      </span>
+                      <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
+                      {quote.partner.escritorio ? (
+                        <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
+                      ) : null}
+                      {partnerRegistro ? (
+                        <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </section>
 
@@ -477,9 +496,6 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
 
             {/* Notas comerciais */}
             <section className="space-y-3">
-              <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-500 text-center">
-                Notas comerciais
-              </h4>
               <div className="grid grid-cols-3 gap-3">
                 {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
                   <div
