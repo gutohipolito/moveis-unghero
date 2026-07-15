@@ -182,14 +182,20 @@ export function quotePrintStylesCss() {
   `;
 }
 
-function PrintTopHeader() {
+function resolveAsset(assetBase: string | undefined, path: string) {
+  if (!assetBase) return path;
+  const base = assetBase.replace(/\/$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function PrintTopHeader({ assetBase }: { assetBase?: string }) {
   return (
     <header
       className="print-quote-header bg-neutral-900 text-white px-[20mm] py-5 flex items-center justify-between gap-6"
       style={{ backgroundColor: "#171717" }}
     >
       <img
-        src="/logo.png"
+        src={resolveAsset(assetBase, "/logo.png")}
         alt="Móveis Unghero"
         className="h-11 w-auto object-contain brightness-0 invert"
       />
@@ -272,6 +278,8 @@ type QuotePrintDocumentProps = {
   client: QuotePrintClient;
   emissaoLabel: string;
   validadeLabel: string;
+  /** Prefixo absoluto para /logo.png e /payments (proxy no domínio principal). */
+  assetBase?: string;
   /** Toolbar / ações acima do documento (ocultas na impressão). */
   topBar?: ReactNode;
 };
@@ -281,6 +289,7 @@ export default function QuotePrintDocument({
   client,
   emissaoLabel,
   validadeLabel,
+  assetBase,
   topBar,
 }: QuotePrintDocumentProps) {
   const partnerRoleLabel = quote.partner
@@ -298,7 +307,7 @@ export default function QuotePrintDocument({
 
       <div className="print-shell-inner max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
         <div className="print-page flex flex-col">
-          <PrintTopHeader />
+          <PrintTopHeader assetBase={assetBase} />
 
           <main className="flex-1 px-[20mm] py-6 flex flex-col justify-between">
             <div className="space-y-3.5">
@@ -472,7 +481,7 @@ export default function QuotePrintDocument({
                     {PAYMENT_BRANDS.map((brand) => (
                       <img
                         key={brand.id}
-                        src={brand.src}
+                        src={resolveAsset(assetBase, brand.src)}
                         alt={brand.alt}
                         width={brand.width}
                         height={brand.height}
