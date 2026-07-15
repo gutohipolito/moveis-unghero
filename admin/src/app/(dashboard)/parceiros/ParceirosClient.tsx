@@ -55,6 +55,91 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
+const PALETTES = [
+  {
+    accent: "bg-gradient-to-r from-emerald-500 to-teal-600",
+    bgCard: "bg-gradient-to-b from-emerald-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-emerald-700",
+    text: "text-emerald-700",
+    badge: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700",
+    avatar: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25",
+    editHover: "hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-indigo-500 to-violet-600",
+    bgCard: "bg-gradient-to-b from-indigo-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-indigo-700",
+    text: "text-indigo-700",
+    badge: "bg-indigo-500/10 border-indigo-500/20 text-indigo-700",
+    avatar: "bg-indigo-500/15 text-indigo-700 border-indigo-500/25",
+    editHover: "hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-rose-500 to-pink-600",
+    bgCard: "bg-gradient-to-b from-rose-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-rose-700",
+    text: "text-rose-700",
+    badge: "bg-rose-500/10 border-rose-500/20 text-rose-700",
+    avatar: "bg-rose-500/15 text-rose-700 border-rose-500/25",
+    editHover: "hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-amber-500 to-orange-600",
+    bgCard: "bg-gradient-to-b from-amber-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-amber-700",
+    text: "text-amber-700",
+    badge: "bg-amber-500/10 border-amber-500/20 text-amber-700",
+    avatar: "bg-amber-500/15 text-amber-700 border-amber-500/25",
+    editHover: "hover:text-amber-600 hover:bg-amber-50 hover:border-amber-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-cyan-500 to-blue-600",
+    bgCard: "bg-gradient-to-b from-cyan-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-cyan-700",
+    text: "text-cyan-700",
+    badge: "bg-cyan-500/10 border-cyan-500/20 text-cyan-700",
+    avatar: "bg-cyan-500/15 text-cyan-700 border-cyan-500/25",
+    editHover: "hover:text-cyan-600 hover:bg-cyan-50 hover:border-cyan-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-purple-500 to-fuchsia-600",
+    bgCard: "bg-gradient-to-b from-purple-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-purple-700",
+    text: "text-purple-700",
+    badge: "bg-purple-500/10 border-purple-500/20 text-purple-700",
+    avatar: "bg-purple-500/15 text-purple-700 border-purple-500/25",
+    editHover: "hover:text-purple-600 hover:bg-purple-50 hover:border-purple-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-sky-500 to-indigo-600",
+    bgCard: "bg-gradient-to-b from-sky-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-sky-700",
+    text: "text-sky-700",
+    badge: "bg-sky-500/10 border-sky-500/20 text-sky-700",
+    avatar: "bg-sky-500/15 text-sky-700 border-sky-500/25",
+    editHover: "hover:text-sky-600 hover:bg-sky-50 hover:border-sky-100",
+  },
+  {
+    accent: "bg-gradient-to-r from-violet-500 to-fuchsia-600",
+    bgCard: "bg-gradient-to-b from-violet-50/15 via-white to-white",
+    hoverText: "group-hover/card:text-violet-700",
+    text: "text-violet-700",
+    badge: "bg-violet-500/10 border-violet-500/20 text-violet-700",
+    avatar: "bg-violet-500/15 text-violet-700 border-violet-500/25",
+    editHover: "hover:text-violet-600 hover:bg-violet-50 hover:border-violet-100",
+  },
+];
+
+function getPartnerPalette(id: string) {
+  let hash = 0;
+  const seed = id || "default";
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PALETTES.length;
+  return PALETTES[index];
+}
+
 interface PartnerCardProps {
   p: ParceiroDTO;
   privacyMode: boolean;
@@ -89,12 +174,14 @@ const PartnerCard = ({
   const formatCurrency = (val: number) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const palette = getPartnerPalette(p.id);
+
   return (
     <Card
       key={p.id}
-      className="bg-white border border-slate-100 hover:border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative"
+      className={`border border-slate-100 hover:border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative ${palette.bgCard}`}
     >
-      <div className={`h-1.5 w-full ${style.accent}`} />
+      <div className={`h-1.5 w-full ${palette.accent}`} />
       
       <div className="p-5 flex flex-col gap-4 flex-1">
         {/* Perfil & Cabeçalho */}
@@ -104,7 +191,7 @@ const PartnerCard = ({
             {p.fotoUrl ? (
               <img src={p.fotoUrl} alt={p.nome} className="h-full w-full object-cover group-hover/avatar:scale-105 transition-transform duration-500" />
             ) : (
-              <div className={`h-full w-full flex items-center justify-center text-lg font-black ${style.avatar}`}>
+              <div className={`h-full w-full flex items-center justify-center text-lg font-black ${palette.avatar}`}>
                 {getInitials(p.nome)}
               </div>
             )}
@@ -148,15 +235,15 @@ const PartnerCard = ({
           </div>
 
           <div className="min-w-0 flex-1 pt-0.5">
-            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-600 transition-colors truncate ${privacyMode ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
+            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight transition-colors truncate ${palette.hoverText} ${privacyMode ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
+              <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${palette.badge}`}>
                 <Icon className="h-2.5 w-2.5" />
                 {style.label}
               </span>
               
               {p.cidade && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-400 bg-slate-50/80 px-2 py-0.5 rounded-full border border-slate-100">
                   <MapPin className="h-2.5 w-2.5 text-slate-350" />
                   {p.cidade}
                 </span>
@@ -175,7 +262,7 @@ const PartnerCard = ({
               type="button"
               onClick={() => openEdit(p)}
               title="Editar cadastro"
-              className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors cursor-pointer"
+              className={`p-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-500 transition-colors cursor-pointer ${palette.editHover}`}
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -732,7 +819,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map((p) => (
               <PartnerCard
                 key={p.id}
