@@ -199,11 +199,6 @@ body {
     box-shadow var(--motion-fast) var(--ease-out);
 }
 
-.surface-compact:active {
-  transform: scale(0.99);
-  transition-duration: var(--motion-fast);
-}
-
 .glassmorphism {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
