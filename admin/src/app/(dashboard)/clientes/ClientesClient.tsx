@@ -707,9 +707,9 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
               })}
             </div>
 
-            <Card className="hidden md:block glass-card overflow-hidden [&]:transform-none active:transform-none">
-            <div className="overflow-x-auto [-webkit-tap-highlight-color:transparent]">
-          <table className="w-full text-sm text-left border-collapse select-text">
+            <Card className="hidden md:block glass-card overflow-hidden">
+            <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
             <thead>
               <tr>
                 <th className="p-4 whitespace-nowrap font-bold">Cliente</th>
