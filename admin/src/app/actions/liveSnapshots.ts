@@ -318,57 +318,56 @@ export async function getBiLiveSnapshot(companyId: string) {
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   try {
-    const [projects, partners] = await Promise.all([
-      prisma.project.findMany({
-        where: { client: { company_id: auth.companyId } },
-        select: {
-          id: true,
-          valor_previsto: true,
-          status_geral: true,
-          client: {
-            select: {
-              id: true,
-              nome: true,
-              cidade: true,
-              origem: true,
-              telefone: true,
-              email: true,
-            },
+    const projects = await prisma.project.findMany({
+      where: { client: { company_id: auth.companyId } },
+      select: {
+        id: true,
+        valor_previsto: true,
+        status_geral: true,
+        partner_id: true,
+        partner: {
+          select: {
+            id: true,
+            nome: true,
+            cidade: true,
+            tipo: true,
           },
         },
-      }),
-      prisma.professionalPartner.findMany({
-        where: { company_id: auth.companyId, ativo: true },
-        select: { id: true, nome: true, cidade: true, tipo: true },
-        orderBy: { nome: "asc" },
-      }),
-    ]);
+        client: {
+          select: {
+            id: true,
+            nome: true,
+            cidade: true,
+            origem: true,
+            telefone: true,
+            email: true,
+          },
+        },
+      },
+    });
 
     const formattedProjects = projects.map((project) => ({
       id: project.id,
       valor_previsto: Number(project.valor_previsto),
       status_geral: project.status_geral,
+      partner_id: project.partner_id,
+      partner: project.partner,
       client: project.client,
     }));
 
-    const version = buildLiveSnapshotVersion([
-      ...formattedProjects.map((project) => ({
+    const version = buildLiveSnapshotVersion(
+      formattedProjects.map((project) => ({
         kind: "project",
         id: project.id,
         status: project.status_geral,
         valor: project.valor_previsto,
-      })),
-      ...partners.map((partner) => ({
-        kind: "partner",
-        id: partner.id,
-        nome: partner.nome,
-      })),
-    ]);
+        partner_id: project.partner_id,
+      }))
+    );
 
     return {
       success: true as const,
       projects: formattedProjects,
-      partners,
       version,
     };
   } catch (error) {

@@ -1,25 +1,31 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
-import { SegmentControl } from "@/components/ui/segment-control";
 import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Award, 
-  PieChart, 
-  Percent, 
-  Users, 
-  MapPin 
+import {
+  TrendingUp,
+  DollarSign,
+  Award,
+  PieChart,
+  Users,
+  MapPin,
+  FolderKanban,
 } from "lucide-react";
 
 interface Project {
   id: string;
   valor_previsto: number;
   status_geral: string;
+  partner_id: string | null;
+  partner: {
+    id: string;
+    nome: string;
+    cidade: string | null;
+    tipo: string;
+  } | null;
   client: {
     id: string;
     nome: string;
@@ -30,16 +36,8 @@ interface Project {
   };
 }
 
-interface Partner {
-  id: string;
-  nome: string;
-  cidade: string | null;
-  tipo: string;
-}
-
 interface BiClientProps {
   initialProjects: Project[];
-  initialPartners: Partner[];
   companyId: string;
 }
 
@@ -51,141 +49,127 @@ const COLUMNS_CRM = [
   { id: "APROVADO", label: "Aprovados", color: "from-emerald-500 to-emerald-600" },
   { id: "PRODUCAO", label: "Produção", color: "from-cyan-500 to-cyan-600" },
   { id: "INSTALACAO", label: "Instalação", color: "from-indigo-500 to-indigo-600" },
-  { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" }
+  { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" },
 ];
 
-export default function BiClient({ initialProjects, initialPartners, companyId }: BiClientProps) {
+const CLOSED_STATUSES = ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"];
+const PARTNER_COMMISSION_RATE = 0.05;
+
+const ORIGIN_LABELS: Record<string, string> = {
+  INSTAGRAM: "Instagram",
+  INDICACAO: "Indicação de Clientes",
+  SITE: "Site institucional",
+  GOOGLE: "Google Search",
+  WHATSAPP: "WhatsApp",
+  FACEBOOK: "Facebook",
+};
+
+export default function BiClient({ initialProjects, companyId }: BiClientProps) {
   const [projects, setProjects] = useState(initialProjects);
-  const [partners, setPartners] = useState(initialPartners);
-  const [filterPeriod, setFilterPeriod] = useState<"30" | "90" | "365">("90");
 
   const syncBi = useCallback(async () => {
     const result = await getBiLiveSnapshot(companyId);
-    if (result.success) {
-      if (result.projects) setProjects(result.projects);
-      if (result.partners) setPartners(result.partners);
+    if (result.success && result.projects) {
+      setProjects(result.projects);
     }
   }, [companyId]);
 
   useLiveEntity("bi", { sync: syncBi });
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    }).format(val);
-  };
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
-  // 1. Cálculos de CRM e Funil
   const totalPipeline = projects.reduce((acc, p) => acc + p.valor_previsto, 0);
-  const statusCounts = COLUMNS_CRM.map(col => {
-    const list = projects.filter(p => p.status_geral === col.id);
+
+  const statusCounts = COLUMNS_CRM.map((col) => {
+    const list = projects.filter((p) => p.status_geral === col.id);
     const sum = list.reduce((acc, p) => acc + p.valor_previsto, 0);
     return {
       id: col.id,
       label: col.label,
       count: list.length,
       value: sum,
-      color: col.color
+      color: col.color,
     };
   });
 
-  const maxCRMValue = Math.max(...statusCounts.map(s => s.value), 1);
+  const maxCRMValue = Math.max(...statusCounts.map((s) => s.value), 1);
 
-  // 2. Receitas vs Custos (Margem de marcenaria de luxo)
-  // Projetos aprovados, em produção, instalação ou finalizados representam faturamento real
-  const activeClosedProjects = projects.filter(p =>
-    ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"].includes(p.status_geral)
-  );
-  
+  const activeClosedProjects = projects.filter((p) => CLOSED_STATUSES.includes(p.status_geral));
   const grossRevenue = activeClosedProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
-  // O custo estimado de materiais de alta tecnologia em marcenaria fina gira em torno de 38%
-  const estimatedMaterialCost = grossRevenue * 0.38;
-  // Custos fixos e mão de obra em torno de 22%
-  const estimatedLabourCost = grossRevenue * 0.22;
-  const netProfit = grossRevenue - estimatedMaterialCost - estimatedLabourCost;
-  const profitMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+  const ticketMedio =
+    activeClosedProjects.length > 0 ? grossRevenue / activeClosedProjects.length : 0;
 
-  // 3. Origens de Leads Rentáveis
-  const originsData = ["INSTAGRAM", "INDICACAO", "SITE", "GOOGLE", "WHATSAPP"].map(orig => {
-    const list = projects.filter(p => p.client.origem === orig);
-    const sum = list.reduce((acc, p) => acc + p.valor_previsto, 0);
-    return {
-      name: orig,
-      count: list.length,
-      value: sum
-    };
-  }).sort((a, b) => b.value - a.value);
+  const originsData = useMemo(() => {
+    const map = new Map<string, { name: string; count: number; value: number }>();
 
-  const maxOriginValue = Math.max(...originsData.map(o => o.value), 1);
+    for (const project of projects) {
+      const origem = (project.client.origem || "OUTRO").toUpperCase();
+      const current = map.get(origem) ?? { name: origem, count: 0, value: 0 };
+      current.count += 1;
+      current.value += project.valor_previsto;
+      map.set(origem, current);
+    }
 
-  // 4. Ranking de Projetistas e Comissões reais (ProfessionalPartner)
-  const designerRanking = partners.map(partner => {
-    // Como a modelagem do banco não possui um relacionamento direto ou chave estrangeira conectando
-    // projetos a ProfessionalPartner, as vendas reais registradas no banco de dados são 0.
-    const totalSold = 0;
-    const comission = 0;
-    return {
-      name: partner.nome,
-      city: partner.cidade || "Não informada",
-      count: 0,
-      totalSold,
-      comission
-    };
-  });
+    return Array.from(map.values()).sort((a, b) => b.value - a.value);
+  }, [projects]);
 
-  // 5. Cálculo Dinâmico do Destaque Comercial Real
-  let highlightText = "";
+  const maxOriginValue = Math.max(...originsData.map((o) => o.value), 1);
+
+  const designerRanking = useMemo(() => {
+    const byPartner = new Map<
+      string,
+      {
+        name: string;
+        city: string;
+        count: number;
+        totalSold: number;
+        comission: number;
+      }
+    >();
+
+    for (const project of projects) {
+      if (!project.partner_id || !project.partner) continue;
+      const current = byPartner.get(project.partner_id) ?? {
+        name: project.partner.nome,
+        city: project.partner.cidade || "Não informada",
+        count: 0,
+        totalSold: 0,
+        comission: 0,
+      };
+      current.count += 1;
+      current.totalSold += project.valor_previsto;
+      current.comission = current.totalSold * PARTNER_COMMISSION_RATE;
+      byPartner.set(project.partner_id, current);
+    }
+
+    return Array.from(byPartner.values()).sort((a, b) => b.totalSold - a.totalSold);
+  }, [projects]);
+
+  let highlightText =
+    "Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.";
+
   if (activeClosedProjects.length > 0 && grossRevenue > 0) {
-    const ticketMedio = grossRevenue / activeClosedProjects.length;
-    
-    // Calcular faturamento por origem nos projetos fechados
     const originRevenues: Record<string, number> = {};
-    activeClosedProjects.forEach(p => {
+    activeClosedProjects.forEach((p) => {
       const orig = p.client.origem;
       originRevenues[orig] = (originRevenues[orig] || 0) + p.valor_previsto;
     });
-    
+
     const sortedOrigins = Object.entries(originRevenues)
       .map(([name, val]) => ({ name, val }))
       .sort((a, b) => b.val - a.val);
-      
+
     if (sortedOrigins.length > 0) {
       const mainOrigin = sortedOrigins[0];
       const pct = (mainOrigin.val / grossRevenue) * 100;
-      
-      const originLabels: Record<string, string> = {
-        INSTAGRAM: "Instagram",
-        INDICACAO: "Indicação de Clientes",
-        SITE: "Site institucional",
-        GOOGLE: "Google Search",
-        WHATSAPP: "WhatsApp",
-        FACEBOOK: "Facebook"
-      };
-      const originLabel = originLabels[mainOrigin.name] || mainOrigin.name;
-      
+      const originLabel = ORIGIN_LABELS[mainOrigin.name] || mainOrigin.name;
       highlightText = `Os leads via ${originLabel} são responsáveis por ${pct.toFixed(0)}% da receita aprovada, com ticket médio real de ${formatCurrency(ticketMedio)} por projeto fechado.`;
     }
-  } else {
-    highlightText = "Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.";
   }
 
   return (
     <div className="space-y-[var(--space-6)] pb-[var(--space-8)]">
-      <div className="overflow-x-auto -mx-[var(--space-1)] px-[var(--space-1)]">
-        <SegmentControl
-          value={filterPeriod}
-          onChange={setFilterPeriod}
-          aria-label="Período do relatório"
-          className="min-w-max"
-          options={[
-            { value: "30", label: "30 dias" },
-            { value: "90", label: "90 dias" },
-            { value: "365", label: "Este ano" },
-          ]}
-        />
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
         <KpiCard
           label="Pipeline de vendas"
@@ -200,27 +184,30 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
           accent="success"
         />
         <KpiCard
-          label="Custo insumos (est.)"
-          value={<span className="privacy-value">{formatCurrency(estimatedMaterialCost)}</span>}
-          icon={Percent}
+          label="Projetos no funil"
+          value={String(projects.length)}
+          icon={FolderKanban}
           accent="info"
-          trend={{ value: "MDF e ferragens" }}
         />
         <KpiCard
-          label="Lucro líquido (est.)"
-          value={<span className="privacy-value">{formatCurrency(netProfit)}</span>}
+          label="Ticket médio aprovado"
+          value={<span className="privacy-value">{formatCurrency(ticketMedio)}</span>}
           icon={Award}
           accent="warning"
-          trend={grossRevenue > 0 ? { value: `Margem ${profitMargin.toFixed(1)}%`, positive: profitMargin > 0 } : undefined}
+          trend={
+            activeClosedProjects.length > 0
+              ? {
+                  value: `${activeClosedProjects.length} fechado${activeClosedProjects.length === 1 ? "" : "s"}`,
+                }
+              : undefined
+          }
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--space-4)]">
         <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
           <div>
-            <h3 className="text-headline text-foreground">
-              Distribuição do funil CRM
-            </h3>
+            <h3 className="text-headline text-foreground">Distribuição do funil CRM</h3>
             <p className="text-caption text-muted-foreground mt-1">
               Total financeiro retido em cada coluna operacional do Kanban.
             </p>
@@ -232,12 +219,14 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
               return (
                 <div key={col.id} className="space-y-1">
                   <div className="flex justify-between text-xs font-bold text-neutral-800">
-                    <span>{col.label} ({col.count} {col.count === 1 ? "projeto" : "projetos"})</span>
+                    <span>
+                      {col.label} ({col.count} {col.count === 1 ? "projeto" : "projetos"})
+                    </span>
                     <span className="privacy-value">{formatCurrency(col.value)}</span>
                   </div>
                   <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full bg-gradient-to-r ${col.color} transition-all duration-1000`} 
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${col.color} transition-all duration-1000`}
                       style={{ width: `${Math.max(2, percentage)}%` }}
                     />
                   </div>
@@ -247,79 +236,76 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
           </div>
         </Card>
 
-        {/* Gráfico 2: Origem dos Leads e Atração Comercial */}
         <Card className="p-[var(--space-4)] space-y-[var(--space-4)] flex flex-col justify-between">
           <div>
-            <h3 className="text-headline text-foreground">
-              Rentabilidade por canal
-            </h3>
+            <h3 className="text-headline text-foreground">Rentabilidade por canal</h3>
             <p className="text-caption text-muted-foreground mt-1">
               Quais canais trazem projetos de maior valor bruto de fechamento.
             </p>
           </div>
 
           <div className="space-y-5 my-auto py-4">
-            {originsData.map((orig) => {
-              const pct = (orig.value / maxOriginValue) * 100;
-              return (
-                <div key={orig.name} className="flex items-center gap-4">
-                  <span className="w-24 text-xs font-extrabold text-muted-foreground text-right tracking-wider block uppercase">
-                    {orig.name}
-                  </span>
-                  <div className="flex-1 space-y-1">
-                    <div className="w-full h-4 bg-slate-100 rounded-lg overflow-hidden relative">
-                      <div 
-                        className="h-full rounded-lg bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-1000" 
-                        style={{ width: `${Math.max(2, pct)}%` }}
-                      />
+            {originsData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Nenhum projeto com origem registrada.
+              </p>
+            ) : (
+              originsData.map((orig) => {
+                const pct = (orig.value / maxOriginValue) * 100;
+                return (
+                  <div key={orig.name} className="flex items-center gap-4">
+                    <span className="w-24 text-xs font-extrabold text-muted-foreground text-right tracking-wider block uppercase">
+                      {ORIGIN_LABELS[orig.name] || orig.name}
+                    </span>
+                    <div className="flex-1 space-y-1">
+                      <div className="w-full h-4 bg-slate-100 rounded-lg overflow-hidden relative">
+                        <div
+                          className="h-full rounded-lg bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-1000"
+                          style={{ width: `${Math.max(2, pct)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-32 text-right">
+                      <strong className="text-xs font-bold text-neutral-800 block privacy-value">
+                        {formatCurrency(orig.value)}
+                      </strong>
+                      <span className="text-[10px] text-muted-foreground block font-medium">
+                        {orig.count} {orig.count === 1 ? "lead" : "leads"}
+                      </span>
                     </div>
                   </div>
-                  <div className="w-32 text-right">
-                    <strong className="text-xs font-bold text-neutral-800 block privacy-value">
-                      {formatCurrency(orig.value)}
-                    </strong>
-                    <span className="text-[10px] text-muted-foreground block font-medium">
-                      {orig.count} {orig.count === 1 ? "lead" : "leads"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-3">
             <PieChart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="text-xs">
               <strong className="text-amber-800 font-bold block mb-0.5">Destaque Comercial:</strong>
-              <p className="text-amber-700/80 leading-relaxed font-medium">
-                {highlightText}
-              </p>
+              <p className="text-amber-700/80 leading-relaxed font-medium">{highlightText}</p>
             </div>
           </div>
         </Card>
-
       </div>
 
-      {/* Ranking de Projetistas & Comissões */}
       <Card className="p-[var(--space-4)] space-y-[var(--space-4)]">
         <div>
-          <h3 className="text-headline text-foreground">
-            Projetistas parceiros
-          </h3>
+          <h3 className="text-headline text-foreground">Projetistas parceiros</h3>
           <p className="text-caption text-muted-foreground mt-1">
-            Especificações ativas e comissão contratual (5%).
+            Apenas parceiros com projetos vinculados. Comissão estimada em 5% sobre o valor dos
+            projetos.
           </p>
         </div>
 
-        {/* Mobile: cards */}
         <div className="md:hidden space-y-[var(--space-3)]">
           {designerRanking.length === 0 ? (
             <div className="text-center py-8 text-sm text-muted-foreground bg-slate-50/50 border border-dashed rounded-xl">
-              Nenhum parceiro profissional cadastrado.
+              Nenhum parceiro com projeto vinculado.
             </div>
           ) : (
-            designerRanking.map((des, index) => (
-              <div key={index} className="surface-compact p-[var(--space-3)] space-y-[var(--space-2)]">
+            designerRanking.map((des) => (
+              <div key={des.name} className="surface-compact p-[var(--space-3)] space-y-[var(--space-2)]">
                 <div className="flex items-center gap-[var(--space-3)]">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-primary/15">
                     <Users className="h-4 w-4 text-primary" />
@@ -338,11 +324,15 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
                   </div>
                   <div>
                     <p className="text-label text-muted-foreground">Faturamento</p>
-                    <p className="text-caption font-bold privacy-value">{formatCurrency(des.totalSold)}</p>
+                    <p className="text-caption font-bold privacy-value">
+                      {formatCurrency(des.totalSold)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-label text-muted-foreground">Comissão</p>
-                    <p className="text-caption font-bold text-[hsl(var(--success))] privacy-value">{formatCurrency(des.comission)}</p>
+                    <p className="text-caption font-bold text-[hsl(var(--success))] privacy-value">
+                      {formatCurrency(des.comission)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -356,29 +346,27 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
               <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50">
                 <th className="p-3">Nome do Profissional</th>
                 <th className="p-3">Cidade / Região</th>
-                <th className="p-3 text-center">Projetos Ativos</th>
-                <th className="p-3 text-right">Faturamento Total</th>
-                <th className="p-3 text-right">Comissão a Pagar (5%)</th>
+                <th className="p-3 text-center">Projetos vinculados</th>
+                <th className="p-3 text-right">Valor dos projetos</th>
+                <th className="p-3 text-right">Comissão (5%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20 text-neutral-700">
               {designerRanking.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-sm text-muted-foreground">
-                    Nenhum parceiro profissional cadastrado.
+                    Nenhum parceiro com projeto vinculado.
                   </td>
                 </tr>
               ) : (
-                designerRanking.map((des, index) => (
-                  <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                designerRanking.map((des) => (
+                  <tr key={des.name} className="hover:bg-slate-50/50 transition-colors">
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
                           <Users className="h-4 w-4 text-primary" />
                         </div>
-                        <div>
-                          <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
-                        </div>
+                        <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
                       </div>
                     </td>
                     <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
@@ -387,9 +375,7 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
                         {des.city}
                       </div>
                     </td>
-                    <td className="p-3 text-center font-bold text-neutral-800">
-                      {des.count}
-                    </td>
+                    <td className="p-3 text-center font-bold text-neutral-800">{des.count}</td>
                     <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
                       {formatCurrency(des.totalSold)}
                     </td>
@@ -405,7 +391,6 @@ export default function BiClient({ initialProjects, initialPartners, companyId }
           </table>
         </div>
       </Card>
-
     </div>
   );
 }

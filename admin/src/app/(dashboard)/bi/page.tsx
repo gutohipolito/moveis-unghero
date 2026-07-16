@@ -10,48 +10,12 @@ export default async function BIPage() {
   await guardModule("bi");
   const userCompanyId = await getSessionCompanyId();
 
-  let projects: any[] = [];
-  let partners: any[] = [];
+  let projects: Awaited<ReturnType<typeof loadBiProjects>> = [];
   try {
-    projects = await prisma.project.findMany({
-      where: { client: { company_id: userCompanyId } },
-      select: {
-        id: true,
-        valor_previsto: true,
-        status_geral: true,
-        client: {
-          select: {
-            id: true,
-            nome: true,
-            cidade: true,
-            origem: true,
-            telefone: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    partners = await prisma.professionalPartner.findMany({
-      where: { company_id: userCompanyId, ativo: true },
-      select: {
-        id: true,
-        nome: true,
-        cidade: true,
-        tipo: true,
-      },
-      orderBy: { nome: "asc" }
-    });
+    projects = await loadBiProjects(userCompanyId);
   } catch (error) {
     console.warn("Falha ao se conectar com banco de dados no BI.", error);
   }
-
-  const formattedProjects = projects.map((p) => ({
-    id: p.id,
-    valor_previsto: Number(p.valor_previsto),
-    status_geral: p.status_geral,
-    client: p.client,
-  }));
 
   return (
     <div className="space-y-6">
@@ -72,7 +36,46 @@ export default async function BIPage() {
         <PrivacyToggle />
       </PageHeader>
 
-      <BiClient initialProjects={formattedProjects} initialPartners={partners} companyId={userCompanyId} />
+      <BiClient initialProjects={projects} companyId={userCompanyId} />
     </div>
   );
+}
+
+async function loadBiProjects(companyId: string) {
+  const projects = await prisma.project.findMany({
+    where: { client: { company_id: companyId } },
+    select: {
+      id: true,
+      valor_previsto: true,
+      status_geral: true,
+      partner_id: true,
+      partner: {
+        select: {
+          id: true,
+          nome: true,
+          cidade: true,
+          tipo: true,
+        },
+      },
+      client: {
+        select: {
+          id: true,
+          nome: true,
+          cidade: true,
+          origem: true,
+          telefone: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return projects.map((p) => ({
+    id: p.id,
+    valor_previsto: Number(p.valor_previsto),
+    status_geral: p.status_geral,
+    partner_id: p.partner_id,
+    partner: p.partner,
+    client: p.client,
+  }));
 }
