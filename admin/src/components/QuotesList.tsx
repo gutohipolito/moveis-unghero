@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
+import { usePermissions } from "@/context/PermissionsContext";
 import { 
   approveQuote,
   deleteQuote,
@@ -86,6 +87,7 @@ interface QuotesListProps {
 }
 
 export default function QuotesList({ initialQuotes, companyId }: QuotesListProps) {
+  const { isAdmin } = usePermissions();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -234,13 +236,15 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     version: number,
     isApproved?: boolean
   ) => {
-    if (isApproved) {
-      showError("Não permitido", "Orçamentos aprovados não podem ser excluídos.");
+    if (isApproved && !isAdmin) {
+      showError("Não permitido", "Orçamentos aprovados só podem ser excluídos por um administrador.");
       return;
     }
     confirmAction({
-      title: "Excluir orçamento?",
-      message: `A versão ${version} será removida permanentemente. Esta ação não pode ser desfeita.`,
+      title: isApproved ? "Excluir orçamento aprovado?" : "Excluir orçamento?",
+      message: isApproved
+        ? `A versão ${version} está aprovada e será removida permanentemente. Esta ação não pode ser desfeita.`
+        : `A versão ${version} será removida permanentemente. Esta ação não pode ser desfeita.`,
       confirmLabel: "Sim, excluir",
       onConfirm: async () => {
         const res = await deleteQuote(projectId, quoteId, version);
@@ -695,13 +699,13 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
                             </Button>
                           </Link>
 
-                          {!isApproved && (
+                          {(!isApproved || isAdmin) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2 shrink-0 active:scale-100"
                               onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, isApproved)}
-                              title="Excluir Orçamento"
+                              title={isApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

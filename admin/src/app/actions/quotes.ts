@@ -12,6 +12,7 @@ import {
   requireProjectInCompany,
 } from "@/lib/auth-guard";
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
+import { ADMIN_EMAIL } from "@/lib/constants";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -254,7 +255,7 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
   }
 }
 
-// Remove um orçamento
+// Remove um orçamento (aprovados: apenas Administrador / cargo ADMIN)
 export async function deleteQuote(projectId: string, quoteId: string, version: number) {
   const auth = await getAuthContext();
   if (!auth) {
@@ -269,6 +270,9 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
     };
   }
 
+  const canDeleteApproved =
+    auth.cargo === "ADMIN" || auth.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
   try {
     const existing = await prisma.quote.findFirst({
       where: { id: quoteId, project_id: projectId },
@@ -277,10 +281,10 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
     if (!existing) {
       return { success: false, error: "Orçamento não encontrado." };
     }
-    if (existing.aprovado_em) {
+    if (existing.aprovado_em && !canDeleteApproved) {
       return {
         success: false,
-        error: "Orçamentos aprovados não podem ser excluídos.",
+        error: "Orçamentos aprovados só podem ser excluídos por um administrador.",
       };
     }
 
@@ -297,7 +301,9 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
       await tx.timeline.create({
         data: {
           project_id: projectId,
-          acao: `Orçamento comercial v${version} foi excluído do sistema`,
+          acao: existing.aprovado_em
+            ? `Orçamento comercial v${version} (aprovado) foi excluído pelo administrador`
+            : `Orçamento comercial v${version} foi excluído do sistema`,
           interno_sotamente: true,
           user_id: await ensureActorUserId()
         }

@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { usePermissions } from "@/context/PermissionsContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import {
@@ -218,6 +219,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 ];
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false }: ProjectDetailsProps) {
+  const { isAdmin } = usePermissions();
   const [project, setProject] = useState<Project>(initialProject);
   const isFormLead = project.client.origem === "FORMULARIO";
   const hasNoQuote = !project.quotes || project.quotes.length === 0;
@@ -669,13 +671,16 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   };
 
   const handleDeleteProjectQuote = (quote: { id: string; versao: number; aprovado_em?: string | null }) => {
-    if (quote.aprovado_em) {
-      showError("Não permitido", "Propostas aprovadas não podem ser excluídas.");
+    const isApproved = Boolean(quote.aprovado_em);
+    if (isApproved && !isAdmin) {
+      showError("Não permitido", "Propostas aprovadas só podem ser excluídas por um administrador.");
       return;
     }
     confirmAction({
-      title: "Excluir proposta?",
-      message: `A versão ${quote.versao} será removida permanentemente.`,
+      title: isApproved ? "Excluir proposta aprovada?" : "Excluir proposta?",
+      message: isApproved
+        ? `A versão ${quote.versao} está aprovada e será removida permanentemente.`
+        : `A versão ${quote.versao} será removida permanentemente.`,
       confirmLabel: "Sim, excluir",
       onConfirm: async () => {
         const previousQuotes = project.quotes;
@@ -1514,11 +1519,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <FileText className="h-4 w-4 mr-1.5" /> Gerar PDF
                           </Link>
 
-                          {!isApproved && (
+                          {(!isApproved || isAdmin) && (
                             <button
                               onClick={() => handleDeleteProjectQuote(q)}
                               className="p-2 rounded-lg hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors cursor-pointer"
-                              title="Excluir Orçamento"
+                              title={isApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
