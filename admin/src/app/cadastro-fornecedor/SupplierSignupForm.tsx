@@ -19,6 +19,9 @@ import {
   DollarSign
 } from "lucide-react";
 import { submitPublicSupplierSignupAction, SupplierSignupData } from "@/app/actions/supplierSignup";
+import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
+
+const TOTAL_STEPS = 5;
 
 const ESTADOS_BRASIL = [
   { value: "AC", label: "Acre" },
@@ -56,6 +59,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const submitUnlocked = useSubmitUnlock(step === TOTAL_STEPS);
 
   // --- Estados do Formulário ---
   // 1. Gerais
@@ -396,6 +400,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
   // --- Envio Final ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!submitUnlocked || step !== TOTAL_STEPS) return;
     const err = validateStep();
     if (err) {
       setError(err);
@@ -492,11 +497,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
     );
   };
 
-  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
-      e.preventDefault();
-    }
-  };
+  const handleFormKeyDown = preventEnterSubmit;
 
   // Se for sucesso, renderizar confirmação premium
   if (success) {
@@ -1490,7 +1491,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
           ) : (
             <button
               type="submit"
-              disabled={loading || uploadingCatalogo || uploadingTabela}
+              disabled={loading || uploadingCatalogo || uploadingTabela || !submitUnlocked}
               className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-100 transition-all font-bold text-xs cursor-pointer disabled:opacity-50 shadow-lg shadow-emerald-500/10"
             >
               {loading ? (

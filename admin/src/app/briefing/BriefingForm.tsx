@@ -22,6 +22,9 @@ import {
   ChevronDown
 } from "lucide-react";
 import { submitPublicBriefingAction } from "@/app/actions/briefing";
+import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
+
+const TOTAL_STEPS = 11;
 
 // Estilos de imagens para os cards de estilo
 const ESTILOS = [
@@ -85,6 +88,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const [existingClientLinked, setExistingClientLinked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const submitUnlocked = useSubmitUnlock(step === TOTAL_STEPS);
 
   useEffect(() => {
     if (error) {
@@ -429,6 +433,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!submitUnlocked || step !== TOTAL_STEPS) return;
     if (!nome.trim() || !telefone.trim()) {
       setError("Por favor, preencha seu nome e seu WhatsApp de contato.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -555,7 +560,11 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 briefing-card">
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={preventEnterSubmit}
+        className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 briefing-card"
+      >
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
@@ -1251,7 +1260,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !submitUnlocked}
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50"
               >
                 {loading ? "Processando..." : "Enviar Qualificação"}

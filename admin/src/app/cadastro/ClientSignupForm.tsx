@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { submitPublicClientSignupAction } from "@/app/actions/clientSignup";
 import type { TipoPessoa } from "@/lib/clientDocument";
+import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 
 const TIPO_IMOVEL_OPTIONS = [
   { value: "CASA", label: "Casa Residencial" },
@@ -55,6 +56,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   const [observacoes, setObservacoes] = useState("");
   const [aceitaTermos, setAceitaTermos] = useState(false);
   const [aceitaMarketing, setAceitaMarketing] = useState(false);
+  const submitUnlocked = useSubmitUnlock(step === TOTAL_STEPS);
 
   useEffect(() => {
     if (error) {
@@ -215,6 +217,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!submitUnlocked || step !== TOTAL_STEPS) return;
     if (!nome.trim() || !telefone.trim()) {
       setError("Por favor, preencha seu nome e telefone/WhatsApp.");
       setStep(2);
@@ -260,11 +263,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
     scrollTop();
   }
 
-  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
-      e.preventDefault();
-    }
-  };
+  const handleFormKeyDown = preventEnterSubmit;
 
   const progressPercent = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100);
 
@@ -650,13 +649,15 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
               <div className="flex flex-col items-stretch sm:items-end gap-1.5 order-1 sm:order-2">
                 <button
                   type="submit"
-                  disabled={loading || !aceitaTermos}
+                  disabled={loading || !aceitaTermos || !submitUnlocked}
                   title={
                     !aceitaTermos
                       ? "Aceite o tratamento de dados (LGPD) para enviar o cadastro"
-                      : undefined
+                      : !submitUnlocked
+                        ? "Aguarde um instante para enviar"
+                        : undefined
                   }
-                  aria-disabled={loading || !aceitaTermos}
+                  aria-disabled={loading || !aceitaTermos || !submitUnlocked}
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
                 >
                   {loading ? (

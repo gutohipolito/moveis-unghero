@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
 import { PARTNER_TYPE_LABELS, PARTNER_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
+import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
+
+const TOTAL_STEPS = 5;
 
 const CIDADES_SERRA_GAUCHA = [
   { value: "Farroupilha", label: "Farroupilha" },
@@ -51,6 +54,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const submitUnlocked = useSubmitUnlock(step === TOTAL_STEPS);
 
   useEffect(() => {
     if (error) {
@@ -222,6 +226,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!submitUnlocked || step !== TOTAL_STEPS) return;
 
     const cleanNome = nome.trim();
     if (!cleanNome) {
@@ -319,11 +324,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     setError(res.error ?? "Não foi possível enviar o cadastro.");
   }
 
-  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
-      e.preventDefault();
-    }
-  };
+  const handleFormKeyDown = preventEnterSubmit;
 
   // Barra de progresso dinâmica baseada em 5 etapas
   const progressPercent = Math.round(((step - 1) / 4) * 100);
@@ -683,7 +684,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !submitUnlocked}
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50"
               >
                 {loading ? (
