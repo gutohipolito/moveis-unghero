@@ -75,12 +75,13 @@ export function contractPrintStylesCss() {
         print-color-adjust: exact !important;
       }
       .contract-watermark {
-        opacity: 0.09 !important;
+        opacity: 0.02 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
       .contract-watermark img {
-        filter: invert(1) !important;
+        /* Branco → escuro no papel (MU preto suave) */
+        filter: invert(1) brightness(0.25) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -127,6 +128,7 @@ export default function ContractPrintDocument({
   topBar,
 }: ContractPrintDocumentProps) {
   const logoSrc = `${assetBase}/logo.png`;
+  const watermarkSrc = `${assetBase}/mu-watermark.png`;
   const f = QUOTE_PRINT_FACTORY;
   const vars = {
     valor: contract.valor,
@@ -151,16 +153,16 @@ export default function ContractPrintDocument({
         {topBar ? <div className="print:hidden mb-4">{topBar}</div> : null}
         <div className="print-shell-inner">
           <article className="print-page relative flex flex-col text-neutral-900 overflow-hidden">
-            {/* Marca d'água (timbrado) — logo invertido + baixa opacidade */}
+            {/* Marca d'água (timbrado) — MU anexo, bem maior, ~2% */}
             <div
-              className="contract-watermark pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.09]"
+              className="contract-watermark pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.02]"
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={logoSrc}
+                src={watermarkSrc}
                 alt=""
-                className="w-[62%] max-w-[360px] object-contain invert"
+                className="w-[92%] max-w-[680px] object-contain invert brightness-[0.25]"
               />
             </div>
 
