@@ -14,6 +14,7 @@ export interface PartnerSignupData {
   escritorio?: string;
   portfolio_url?: string;
   registro_profissional?: string;
+  origem?: string;
   observacoes?: string;
   company_id?: string;
 }
@@ -85,6 +86,7 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
         escritorio: data.escritorio?.trim() ? capitalizeText(data.escritorio.trim()) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
         portfolioUrl: data.portfolio_url?.trim() || null,
+        origem: data.origem?.trim() || null,
         observacoes: data.observacoes?.trim() || null,
         ativo: true,
       },

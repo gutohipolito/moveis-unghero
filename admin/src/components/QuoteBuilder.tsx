@@ -41,9 +41,10 @@ function getPartnerInitials(name: string) {
 
 const PARTNER_ROLE_LABEL: Record<string, string> = {
   ARQUITETO: "Arquiteto",
-  PROJETISTA: "Projetista",
+  DESIGNER_INTERIORES: "Designer de Interiores",
+  PROJETISTA: "Projetista de Móveis",
   DECORADOR: "Decorador",
-  ENGENHEIRO: "Engenheiro(a)",
+  ENGENHEIRO: "Engenheiro",
   OUTROS: "Parceiro",
 };
 

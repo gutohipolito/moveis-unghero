@@ -164,6 +164,7 @@ enum PartnerType {
   ARQUITETO
   DECORADOR
   ENGENHEIRO
+  DESIGNER_INTERIORES
   OUTROS
 }
 
@@ -178,6 +179,7 @@ model ProfessionalPartner {
   cidade                 String?
   escritorio             String?
   registro_profissional  String?
+  origem                 String?
   observacoes            String?
   ativo                  Boolean     @default(true)
   fotoUrl                String?

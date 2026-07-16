@@ -19,10 +19,12 @@ import {
   Award
 } from "lucide-react";
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
-import { PARTNER_TYPE_LABELS, PARTNER_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
+import { PARTNER_ORIGEM_OPTIONS, PARTNER_SIGNUP_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 
 const TOTAL_STEPS = 5;
+
+const STEP_LABELS = ["Especialidade", "Identidade", "Contato", "Portfólio", "Parceria"] as const;
 
 const CIDADES_SERRA_GAUCHA = [
   { value: "Farroupilha", label: "Farroupilha" },
@@ -42,7 +44,7 @@ const CIDADES_SERRA_GAUCHA = [
 export default function PartnerSignupForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
   const [nome, setNome] = useState("");
-  const [tipo, setTipo] = useState<PartnerType>("PROJETISTA");
+  const [tipo, setTipo] = useState<PartnerType>("ARQUITETO");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [cidade, setCidade] = useState("");
@@ -50,6 +52,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [registroProfissional, setRegistroProfissional] = useState("");
+  const [origem, setOrigem] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -80,6 +83,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           if (draft.portfolioUrl) setPortfolioUrl(draft.portfolioUrl);
           if (draft.observacoes) setObservacoes(draft.observacoes);
           if (draft.registroProfissional) setRegistroProfissional(draft.registroProfissional);
+          if (draft.origem) setOrigem(draft.origem);
         } catch (e) {
           console.error("Erro ao recuperar rascunho de parceiro:", e);
         }
@@ -102,10 +106,11 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         portfolioUrl,
         observacoes,
         registroProfissional,
+        origem,
       };
       localStorage.setItem("moveis_unghero_partner_draft", JSON.stringify(draft));
     }
-  }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes, registroProfissional]);
+  }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes, registroProfissional, origem]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -296,6 +301,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       }
     }
 
+    if (!origem.trim()) {
+      setError("Por favor, informe como conheceu nossa empresa.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     setLoading(true);
 
     const res = await submitPublicPartnerSignupAction({
@@ -307,6 +318,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       escritorio,
       portfolio_url: portfolioUrl,
       registro_profissional: registroProfissional.trim() || undefined,
+      origem: origem.trim(),
       observacoes: observacoes.trim() || undefined,
       company_id: companyId,
     });
@@ -327,7 +339,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   const handleFormKeyDown = preventEnterSubmit;
 
   // Barra de progresso dinâmica baseada em 5 etapas
-  const progressPercent = Math.round(((step - 1) / 4) * 100);
+  const progressPercent = Math.round((step / TOTAL_STEPS) * 100);
 
   if (success) {
     return (
@@ -379,22 +391,50 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-6 partner-container">
-      {/* Barra de Progresso */}
-      <div className="mb-8 space-y-2 partner-progress-wrapper">
-        <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <span>Seja um Parceiro</span>
-          <span>{progressPercent}% Concluído</span>
+    <div className="w-full partner-container">
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={handleFormKeyDown}
+        className="bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-300 partner-card text-slate-800 overflow-hidden"
+      >
+        {/* Barra de progresso dentro do card */}
+        <div className="border-b border-slate-100">
+          <div className="relative h-1.5 w-full bg-slate-100">
+            <div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-500 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="grid grid-cols-5 bg-slate-50/90">
+            {STEP_LABELS.map((label, index) => {
+              const n = index + 1;
+              const active = n === step;
+              const done = n < step;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  disabled={loading || n > step}
+                  onClick={() => n < step && setStep(n)}
+                  className={`py-3 px-1 text-center transition-colors border-b-2 ${
+                    active
+                      ? "border-amber-500 text-amber-800 bg-amber-50/60"
+                      : done
+                        ? "border-transparent text-emerald-700 hover:bg-slate-100/80 cursor-pointer"
+                        : "border-transparent text-slate-400 cursor-default"
+                  }`}
+                >
+                  <span className="block text-[10px] font-black tracking-wide">{n}</span>
+                  <span className="hidden sm:block text-[9px] font-bold uppercase tracking-wide mt-0.5 truncate">
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary transition-all duration-300 ease-out" 
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
 
-      <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 partner-card text-slate-800">
+        <div className="p-6 md:p-8">
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
@@ -418,7 +458,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {PARTNER_TYPES.map((t) => {
+              {PARTNER_SIGNUP_TYPES.map((t) => {
                 const isSelected = tipo === t;
                 const style = PARTNER_TYPE_STYLES[t];
                 const Icon = style.icon;
@@ -655,7 +695,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
               <h2 className="text-lg font-black text-slate-900 leading-tight">Sobre a Parceria</h2>
-              <p className="text-xs text-slate-500 font-semibold font-medium">Conte-nos um pouco sobre suas expectativas (indicação de clientes, execução de móveis sob medida, RT, etc.) ou observações adicionais.</p>
+              <p className="text-xs text-slate-500 font-semibold font-medium">Conte-nos um pouco sobre suas expectativas e como nos conheceu.</p>
             </div>
 
             <div className="space-y-4">
@@ -670,6 +710,37 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   rows={4}
                   className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold resize-none text-slate-900"
                 />
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-slate-700">Como conheceu nossa empresa? *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PARTNER_ORIGEM_OPTIONS.map((option) => {
+                    const selected = origem === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setOrigem(option)}
+                        className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-xs font-bold transition-all cursor-pointer ${
+                          selected
+                            ? "border-amber-500 bg-amber-50 text-amber-900"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                            selected ? "border-amber-600 bg-amber-600" : "border-slate-300 bg-white"
+                          }`}
+                          aria-hidden
+                        >
+                          {selected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                        </span>
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -702,6 +773,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             </div>
           </div>
         )}
+        </div>
       </form>
     </div>
   );

@@ -15,6 +15,7 @@ export interface ParceiroDTO {
   cidade: string | null;
   escritorio: string | null;
   registro_profissional: string | null;
+  origem: string | null;
   observacoes: string | null;
   ativo: boolean;
   fotoUrl: string | null;
@@ -120,6 +121,7 @@ export async function createParceiro(
     cidade?: string;
     escritorio?: string;
     registro_profissional?: string;
+    origem?: string;
     observacoes?: string;
     fotoUrl?: string;
     imagens?: string;
@@ -154,6 +156,7 @@ export async function createParceiro(
         cidade: data.cidade ? capitalizeText(data.cidade) : null,
         escritorio: data.escritorio ? capitalizeText(data.escritorio) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
+        origem: data.origem?.trim() || null,
         observacoes: data.observacoes?.trim() || null,
         fotoUrl: data.fotoUrl?.trim() || null,
         imagens: data.imagens?.trim() || null,
@@ -179,6 +182,7 @@ export async function updateParceiro(
     cidade?: string;
     escritorio?: string;
     registro_profissional?: string;
+    origem?: string;
     observacoes?: string;
     ativo?: boolean;
     fotoUrl?: string;
@@ -215,6 +219,7 @@ export async function updateParceiro(
         ...(data.registro_profissional !== undefined
           ? { registro_profissional: data.registro_profissional.trim() || null }
           : {}),
+        ...(data.origem !== undefined ? { origem: data.origem.trim() || null } : {}),
         ...(data.observacoes !== undefined ? { observacoes: data.observacoes.trim() || null } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         ...(data.fotoUrl !== undefined ? { fotoUrl: data.fotoUrl?.trim() || null } : {}),

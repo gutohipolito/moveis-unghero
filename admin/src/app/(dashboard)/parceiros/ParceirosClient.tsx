@@ -11,7 +11,14 @@ import {
 } from "@/app/actions/parceiros";
 import { getParceirosLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
-import { PARTNER_TYPE_STYLES, PARTNER_TYPES, formatPartnerRegistro, partnerRegistroLabel } from "@/lib/partnerTypes";
+import {
+  PARTNER_ORIGEM_OPTIONS,
+  PARTNER_SIGNUP_TYPES,
+  PARTNER_TYPE_STYLES,
+  PARTNER_TYPES,
+  formatPartnerRegistro,
+  partnerRegistroLabel,
+} from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -409,12 +416,13 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   };
 
   const [nome, setNome] = useState("");
-  const [tipo, setTipo] = useState<PartnerType>("PROJETISTA");
+  const [tipo, setTipo] = useState<PartnerType>("ARQUITETO");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [cidade, setCidade] = useState("");
   const [escritorio, setEscritorio] = useState("");
   const [registroProfissional, setRegistroProfissional] = useState("");
+  const [origem, setOrigem] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
@@ -433,12 +441,13 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
   const resetForm = () => {
     setNome("");
-    setTipo("PROJETISTA");
+    setTipo("ARQUITETO");
     setEmail("");
     setTelefone("");
     setCidade("");
     setEscritorio("");
     setRegistroProfissional("");
+    setOrigem("");
     setObservacoes("");
     setFotoUrl("");
     setPortfolioUrl("");
@@ -459,6 +468,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setCidade(p.cidade || "");
     setEscritorio(p.escritorio || "");
     setRegistroProfissional(p.registro_profissional || "");
+    setOrigem(p.origem || "");
     setObservacoes(p.observacoes || "");
     setFotoUrl(p.fotoUrl || "");
     setPortfolioUrl(p.portfolioUrl || "");
@@ -495,6 +505,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       cidade,
       escritorio,
       registro_profissional: registroProfissional,
+      origem: origem || undefined,
       observacoes,
       fotoUrl,
       portfolioUrl,
@@ -712,10 +723,10 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         <div className="space-y-4 pr-6">
           <div>
             <h3 className="text-lg font-bold">
-              {editing ? "Editar parceiro" : "Cadastrar projetista / arquiteto"}
+              {editing ? "Editar parceiro" : "Cadastrar parceiro"}
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Profissionais externos que indicam clientes ou co-projetam com a marcenaria.
+              Arquitetos, designers, projetistas e demais profissionais que indicam clientes ou co-projetam.
             </p>
           </div>
 
@@ -732,7 +743,10 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   onChange={(e) => setTipo(e.target.value as PartnerType)}
                   className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
                 >
-                  {PARTNER_TYPES.map((t) => (
+                  {(editing && !PARTNER_SIGNUP_TYPES.includes(tipo)
+                    ? PARTNER_TYPES
+                    : PARTNER_SIGNUP_TYPES
+                  ).map((t) => (
                     <option key={t} value={t}>
                       {PARTNER_TYPE_STYLES[t].label}
                     </option>
@@ -783,6 +797,21 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">URL da Foto de Perfil (Avatar)</label>
                 <Input type="url" value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Como conheceu nossa empresa?</label>
+                <select
+                  value={origem}
+                  onChange={(e) => setOrigem(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                >
+                  <option value="">Não informado</option>
+                  {PARTNER_ORIGEM_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Observações</label>
