@@ -10,6 +10,8 @@ import {
   Pencil,
   Trash2,
   FileText,
+  MessageCircle,
+  Loader2,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -32,6 +34,11 @@ import {
 } from "@/app/actions/contracts";
 import { DEFAULT_CONTRACT_TEMPLATE } from "@/lib/contractTemplates";
 import { formatContractCurrency, formatContractDateShort } from "@/lib/contractTemplates";
+import { formatPhoneForWhatsApp } from "@/lib/google-review";
+import {
+  buildContractWhatsAppMessage,
+  openContractWhatsApp,
+} from "@/lib/contractWhatsApp";
 
 type ClientOption = {
   id: string;
@@ -100,6 +107,7 @@ export default function ContratosClient({
   const [templates, setTemplates] = useState(initialTemplates);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [whatsAppBusyId, setWhatsAppBusyId] = useState<string | null>(null);
 
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -276,6 +284,47 @@ export default function ContratosClient({
         showSuccess("Excluído", "Contrato removido.");
       },
     });
+  };
+
+  const handleWhatsAppContract = async (c: ContractDTO) => {
+    const phone = c.client?.telefone || "";
+    if (!formatPhoneForWhatsApp(phone)) {
+      showError(
+        "Telefone ausente",
+        "Vincule um cliente com WhatsApp cadastrado ou abra o contrato e envie por lá."
+      );
+      return;
+    }
+
+    setWhatsAppBusyId(c.id);
+    try {
+      const response = await fetch(`/api/contracts/${c.id}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        url?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.success || !data.url) {
+        throw new Error(data.error || "Não foi possível gerar o link.");
+      }
+      const message = buildContractWhatsAppMessage({
+        clientName: c.cliente_nome,
+        contractUrl: data.url,
+      });
+      const opened = openContractWhatsApp(phone, message);
+      if (!opened) throw new Error("Telefone inválido para WhatsApp.");
+    } catch (error) {
+      showError(
+        "Erro no WhatsApp",
+        error instanceof Error ? error.message : "Falha ao preparar o envio."
+      );
+    } finally {
+      setWhatsAppBusyId(null);
+    }
   };
 
   const openCreateTemplate = () => {
@@ -455,6 +504,20 @@ export default function ContratosClient({
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleWhatsAppContract(c)}
+                      disabled={whatsAppBusyId === c.id}
+                      title="Enviar por WhatsApp para assinatura"
+                      className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      {whatsAppBusyId === c.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <MessageCircle className="h-3.5 w-3.5" />
+                      )}
+                      WhatsApp
+                    </button>
                     <Link
                       href={`/contratos/${c.id}/print`}
                       target="_blank"

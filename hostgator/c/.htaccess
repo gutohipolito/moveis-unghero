@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /c/
+
+# moveisunghero.com.br/c/abc123 → proxy local
+RewriteRule ^([a-zA-Z0-9]{6,12})/?$ index.php?code=$1 [L,QSA]
+
+DirectoryIndex index.php

@@ -3,6 +3,10 @@ import { getCachedSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import ContractPrintDocument from "@/components/ContractPrintDocument";
 import ContractPrintToolbar from "@/components/ContractPrintToolbar";
+import {
+  ensureContractShareCode,
+  resolveContractPublicUrl,
+} from "@/lib/contractShare";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -19,9 +23,15 @@ export default async function ContractPrintPage({ params }: PrintPageProps) {
 
   const contract = await prisma.contract.findFirst({
     where: { id, company_id: companyId },
+    include: {
+      client: { select: { telefone: true, nome: true } },
+    },
   });
 
   if (!contract) notFound();
+
+  const shareCode = await ensureContractShareCode(contract.id);
+  const shareUrl = resolveContractPublicUrl(shareCode);
 
   return (
     <ContractPrintDocument
@@ -41,7 +51,14 @@ export default async function ContractPrintPage({ params }: PrintPageProps) {
         data_contrato: contract.data_contrato,
         cidade_emissao: contract.cidade_emissao,
       }}
-      topBar={<ContractPrintToolbar />}
+      topBar={
+        <ContractPrintToolbar
+          contractId={contract.id}
+          clientName={contract.cliente_nome}
+          clientPhone={contract.client?.telefone || ""}
+          initialShareUrl={shareUrl}
+        />
+      }
     />
   );
 }

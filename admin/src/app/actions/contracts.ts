@@ -46,7 +46,7 @@ export type ContractDTO = {
   observacoes: string | null;
   createdAt: Date;
   updatedAt: Date;
-  client?: { id: string; nome: string } | null;
+  client?: { id: string; nome: string; telefone?: string | null } | null;
   project?: { id: string; status_geral: string } | null;
   template?: { id: string; nome: string } | null;
 };
@@ -79,7 +79,7 @@ function mapContract(c: {
   observacoes: string | null;
   createdAt: Date;
   updatedAt: Date;
-  client?: { id: string; nome: string } | null;
+  client?: { id: string; nome: string; telefone?: string | null } | null;
   project?: { id: string; status_geral: string } | null;
   template?: { id: string; nome: string } | null;
 }): ContractDTO {
@@ -303,7 +303,7 @@ export async function getContracts(companyId: string) {
   const contracts = await prisma.contract.findMany({
     where: { company_id: companyId },
     include: {
-      client: { select: { id: true, nome: true } },
+      client: { select: { id: true, nome: true, telefone: true } },
       project: { select: { id: true, status_geral: true } },
       template: { select: { id: true, nome: true } },
     },

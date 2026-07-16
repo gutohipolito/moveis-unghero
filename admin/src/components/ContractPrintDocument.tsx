@@ -68,8 +68,19 @@ export function contractPrintStylesCss() {
       .print\\:hidden {
         display: none !important;
       }
+      /* Logo branco-sobre-preto → preto-sobre-branco no papel */
+      .contract-logo-header {
+        filter: invert(1) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       .contract-watermark {
-        opacity: 0.06 !important;
+        opacity: 0.09 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .contract-watermark img {
+        filter: invert(1) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -139,19 +150,27 @@ export default function ContractPrintDocument({
       <div className="print-shell">
         {topBar ? <div className="print:hidden mb-4">{topBar}</div> : null}
         <div className="print-shell-inner">
-          <article className="print-page relative flex flex-col text-neutral-900">
-            {/* Marca d'água */}
+          <article className="print-page relative flex flex-col text-neutral-900 overflow-hidden">
+            {/* Marca d'água (timbrado) — logo invertido + baixa opacidade */}
             <div
-              className="contract-watermark pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.07]"
+              className="contract-watermark pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.09]"
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoSrc} alt="" className="w-[55%] max-w-[320px] object-contain" />
+              <img
+                src={logoSrc}
+                alt=""
+                className="w-[62%] max-w-[360px] object-contain invert"
+              />
             </div>
 
             <header className="relative z-10 flex items-center justify-between border-b border-neutral-200 px-10 pt-8 pb-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoSrc} alt={f.name} className="h-10 w-auto object-contain" />
+              <img
+                src={logoSrc}
+                alt={f.name}
+                className="contract-logo-header h-10 w-auto object-contain invert"
+              />
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
                 Documento contratual
               </p>
