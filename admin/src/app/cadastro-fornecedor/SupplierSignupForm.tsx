@@ -100,6 +100,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
   // Upload States
   const [uploadingCatalogo, setUploadingCatalogo] = useState(false);
   const [uploadingTabela, setUploadingTabela] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
 
   // 4. Comercial
   const [comercialCondicoesPagamento, setComercialCondicoesPagamento] = useState<string[]>([]);
@@ -220,9 +221,63 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
   ]);
 
   // --- Máscaras ---
+  async function fetchCompanyByCnpj(cnpjValue: string) {
+    const clean = cnpjValue.replace(/\D/g, "");
+    if (clean.length !== 14) return;
+    setCnpjLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      const json = await res.json();
+      if (json && !json.message) {
+        if (json.razao_social) setNome(json.razao_social);
+        if (json.nome_fantasia) setNomeFantasia(json.nome_fantasia);
+        if (json.email) setEmail(json.email);
+        
+        // Tratar telefone comercial
+        if (json.ddd_telefone_1) {
+          const rawTel = `${json.ddd_telefone_1}`;
+          const cleanTel = rawTel.replace(/\D/g, "");
+          if (cleanTel.length === 10 || cleanTel.length === 11) {
+            setTelefone(`(${cleanTel.slice(0, 2)}) ${cleanTel.slice(2, 7)}-${cleanTel.slice(7)}`);
+          } else {
+            setTelefone(rawTel);
+          }
+        }
+        
+        // Tratar CEP
+        if (json.cep) {
+          const rawCep = `${json.cep}`;
+          const cleanCep = rawCep.replace(/\D/g, "");
+          if (cleanCep.length === 8) {
+            setContatoCep(`${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`);
+          } else {
+            setContatoCep(rawCep);
+          }
+        }
+        
+        if (json.municipio) setContatoCidade(json.municipio);
+        if (json.uf) setContatoEstado(json.uf);
+        
+        // Montar endereço completo
+        let end = json.logradouro || "";
+        if (json.numero) end += `, ${json.numero}`;
+        if (json.complemento) end += ` - ${json.complemento}`;
+        if (json.bairro) end += ` - ${json.bairro}`;
+        if (end) setContatoEndereco(end);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar CNPJ:", err);
+    } finally {
+      setCnpjLoading(false);
+    }
+  }
+
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 14) value = value.slice(0, 14);
+
+    const cleanCnpj = value;
 
     if (value.length > 12) {
       value = `${value.slice(0, 2)}.${value.slice(2, 5)}.${value.slice(5, 8)}/${value.slice(8, 12)}-${value.slice(12)}`;
@@ -234,6 +289,10 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
       value = `${value.slice(0, 2)}.${value.slice(2)}`;
     }
     setCnpj(value);
+
+    if (cleanCnpj.length === 14) {
+      fetchCompanyByCnpj(cleanCnpj);
+    }
   };
 
   const handlePhoneChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -553,8 +612,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={nome} 
                     onChange={e => setNome(e.target.value)}
-                    placeholder="Ex: Madeiras Farroupilha LTDA" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -563,22 +621,28 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={nomeFantasia} 
                     onChange={e => setNomeFantasia(e.target.value)}
-                    placeholder="Ex: Madeiras Imperial" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-400 block">CNPJ *</label>
+                <div className="space-y-1 relative">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-slate-400 block">CNPJ *</label>
+                    {cnpjLoading && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-blue-400 animate-pulse">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Buscando...
+                      </span>
+                    )}
+                  </div>
                   <input 
                     required 
                     type="text" 
                     value={cnpj} 
                     onChange={handleCnpjChange}
                     placeholder="00.000.000/0000-00" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -587,8 +651,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={inscricaoEstadual} 
                     onChange={e => setInscricaoEstadual(e.target.value)}
-                    placeholder="Ex: 043009944" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -617,8 +680,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={subcategoria} 
                     onChange={e => setSubcategoria(e.target.value)}
-                    placeholder="Ex: Puxadores, Corrediças ocultas" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -630,8 +692,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={site} 
                     onChange={e => setSite(e.target.value)}
-                    placeholder="Ex: www.suaempresa.com" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -640,8 +701,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={instagram} 
                     onChange={e => setInstagram(e.target.value)}
-                    placeholder="@suaempresa" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -650,8 +710,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={linkedin} 
                     onChange={e => setLinkedin(e.target.value)}
-                    placeholder="linkedin.com/company/suaempresa" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -663,8 +722,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="number" 
                     value={anoFundacao} 
                     onChange={e => setAnoFundacao(e.target.value)}
-                    placeholder="Ex: 2012" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -673,8 +731,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={numFuncionarios} 
                     onChange={e => setNumFuncionarios(e.target.value)}
-                    placeholder="Ex: 10 a 50" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-3">
@@ -727,8 +784,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={contatoRepresentante} 
                     onChange={e => setContatoRepresentante(e.target.value)}
-                    placeholder="Nome completo do vendedor/atendente" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -737,8 +793,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={contatoCargo} 
                     onChange={e => setContatoCargo(e.target.value)}
-                    placeholder="Ex: Gerente de Contas, Vendedor Externo" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -751,8 +806,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="email" 
                     value={email} 
                     onChange={e => setEmail(e.target.value)}
-                    placeholder="fornecedor@email.com" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -761,8 +815,8 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="tel" 
                     value={contatoWhatsapp} 
                     onChange={handlePhoneChange(setContatoWhatsapp)}
-                    placeholder="(54) 99999-9999" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    placeholder="(00) 00000-0000" 
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -771,8 +825,8 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="tel" 
                     value={telefone} 
                     onChange={handlePhoneChange(setTelefone)}
-                    placeholder="(54) 3400-0000" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    placeholder="(00) 0000-0000" 
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -787,8 +841,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                       type="text" 
                       value={contatoSegundo} 
                       onChange={e => setContatoSegundo(e.target.value)}
-                      placeholder="Ex: Maria (Faturamento)" 
-                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                     />
                   </div>
                   <div className="space-y-1">
@@ -797,8 +850,8 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                       type="tel" 
                       value={contatoTelefoneSecundario} 
                       onChange={handlePhoneChange(setContatoTelefoneSecundario)}
-                      placeholder="(54) 99999-9999" 
-                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                      placeholder="(00) 00000-0000" 
+                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                     />
                   </div>
                 </div>
@@ -814,8 +867,8 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                       type="text" 
                       value={contatoCep} 
                       onChange={handleCepChange}
-                      placeholder="95180-000" 
-                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                      placeholder="00000-000" 
+                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                     />
                   </div>
                   <div className="space-y-1">
@@ -824,8 +877,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                       type="text" 
                       value={contatoCidade} 
                       onChange={e => setContatoCidade(e.target.value)}
-                      placeholder="Ex: Farroupilha" 
-                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                      className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                     />
                   </div>
                   <div className="space-y-1">
@@ -849,8 +901,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={contatoEndereco} 
                     onChange={e => setContatoEndereco(e.target.value)}
-                    placeholder="Rua Júlio de Castilhos, 123 - Centro" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -877,8 +928,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                   rows={3}
                   value={produtosFornecidos} 
                   onChange={e => setProdutosFornecidos(e.target.value)}
-                  placeholder="Ex: Chapas de MDF amadeiradas de 15mm e 18mm, fitas de borda e cola PVA..." 
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none resize-y"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none resize-y"
                 />
               </div>
 
@@ -888,8 +938,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                   rows={2}
                   value={marcasRepresentadas} 
                   onChange={e => setMarcasRepresentadas(e.target.value)}
-                  placeholder="Ex: Duratex, Guararapes, FGVTN, etc." 
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none resize-y"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none resize-y"
                 />
               </div>
 
@@ -986,8 +1035,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                   type="text" 
                   value={produtosLinkCatalogoOnline} 
                   onChange={e => setProdutosLinkCatalogoOnline(e.target.value)}
-                  placeholder="https://drive.google.com/..." 
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                 />
               </div>
 
@@ -1023,8 +1071,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={produtosQuantidadeMinima} 
                     onChange={e => setProdutosQuantidadeMinima(e.target.value)}
-                    placeholder="Ex: 5 chapas, R$ 1.500" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1033,8 +1080,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={produtosTempoFabricacao} 
                     onChange={e => setProdutosTempoFabricacao(e.target.value)}
-                    placeholder="Ex: 3 a 5 dias úteis" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -1165,8 +1211,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={comercialPedidoMinimo} 
                     onChange={e => setComercialPedidoMinimo(e.target.value)}
-                    placeholder="Ex: R$ 500,00" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1175,8 +1220,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={comercialFreteGratisAcima} 
                     onChange={e => setComercialFreteGratisAcima(e.target.value)}
-                    placeholder="Ex: R$ 1.500,00" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1185,8 +1229,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={comercialComissao} 
                     onChange={e => setComercialComissao(e.target.value)}
-                    placeholder="Ex: 5%" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -1197,8 +1240,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                   rows={3}
                   value={comercialObservacoes} 
                   onChange={e => setComercialObservacoes(e.target.value)}
-                  placeholder="Ex: Desconto de 5% para pagamentos no Pix. Faturamento apenas após aprovação cadastral..." 
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none resize-y"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none resize-y"
                 />
               </div>
 
@@ -1225,8 +1267,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={logisticaCidadeEstoque} 
                     onChange={e => setLogisticaCidadeEstoque(e.target.value)}
-                    placeholder="Ex: Bento Gonçalves - RS" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1235,8 +1276,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                     type="text" 
                     value={logisticaPrazoMedioEntrega} 
                     onChange={e => setLogisticaPrazoMedioEntrega(e.target.value)}
-                    placeholder="Ex: 2 a 3 dias úteis" 
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
               </div>
@@ -1408,8 +1448,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
                   type="text" 
                   value={logisticaAreaCobertura} 
                   onChange={e => setLogisticaAreaCobertura(e.target.value)}
-                  placeholder="Ex: Caxias, Bento, Garibaldi, Farroupilha e Porto Alegre" 
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-600 focus:border-blue-500 outline-none"
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                 />
               </div>
 
