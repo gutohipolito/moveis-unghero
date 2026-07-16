@@ -319,6 +319,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     setError(res.error ?? "Não foi possível enviar o cadastro.");
   }
 
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+      e.preventDefault();
+    }
+  };
+
   // Barra de progresso dinâmica baseada em 5 etapas
   const progressPercent = Math.round(((step - 1) / 4) * 100);
 
@@ -387,7 +393,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 partner-card text-slate-800">
+      <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 partner-card text-slate-800">
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />

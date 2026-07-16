@@ -260,6 +260,12 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
     scrollTop();
   }
 
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+      e.preventDefault();
+    }
+  };
+
   const progressPercent = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100);
 
   if (success) {
@@ -331,6 +337,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
       <form
         onSubmit={handleSubmit}
+        onKeyDown={handleFormKeyDown}
         className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-2xl transition-all duration-300"
       >
         {error && (

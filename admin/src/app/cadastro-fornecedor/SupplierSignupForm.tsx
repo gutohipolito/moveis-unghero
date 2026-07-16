@@ -492,6 +492,12 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
     );
   };
 
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+      e.preventDefault();
+    }
+  };
+
   // Se for sucesso, renderizar confirmação premium
   if (success) {
     return (
@@ -582,7 +588,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+      <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="p-6 sm:p-8 space-y-6">
         
         {/* Notificação de Erros */}
         {error && (
