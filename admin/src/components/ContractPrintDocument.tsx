@@ -75,7 +75,7 @@ export function contractPrintStylesCss() {
         print-color-adjust: exact !important;
       }
       .contract-watermark {
-        opacity: 0.02 !important;
+        opacity: 0.05 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -155,7 +155,7 @@ export default function ContractPrintDocument({
           <article className="print-page relative flex flex-col text-neutral-900 overflow-hidden">
             {/* Marca d'água (timbrado) — MU anexo, bem maior, ~2% */}
             <div
-              className="contract-watermark pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.02]"
+              className="contract-watermark pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.05]"
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
