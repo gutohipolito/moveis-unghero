@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Link2,
   MessageCircle,
+  Package,
   PenTool,
   UserPlus,
 } from "lucide-react";
@@ -48,6 +49,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 function formIcon(form: MarketingForm) {
   if (form.id === "projetistas-arquitetos") return PenTool;
   if (form.id === "cadastro-cliente") return UserPlus;
+  if (form.id === "cadastro-fornecedor") return Package;
   return ClipboardList;
 }
 

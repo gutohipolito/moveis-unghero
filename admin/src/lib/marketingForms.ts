@@ -201,6 +201,62 @@ Equipe Móveis Unghero`,
       },
     ],
   },
+  {
+    id: "cadastro-fornecedor",
+    title: "Cadastro — Fornecedores",
+    description:
+      "Ficha cadastral completa para distribuidores e fabricantes apresentarem catálogo, condições comerciais e logística.",
+    audience: "Fornecedor",
+    shortPath: "/cadastro-fornecedor",
+    adminPath: "/cadastro-fornecedor",
+    messages: [
+      {
+        id: "whatsapp-convite",
+        label: "WhatsApp — Convite comercial",
+        template: `Olá! Tudo bem?
+
+Somos a Móveis Unghero, marcenaria de alto padrão em Farroupilha/RS, e estamos ampliando nossa rede de fornecedores.
+
+Se você trabalha com materiais, ferragens ou acabamentos para móveis planejados e tem interesse em apresentar seu catálogo, faça o pré-cadastro neste link:
+
+{link}
+
+Nossa equipe comercial analisa o material e retorna em breve.
+
+Equipe Móveis Unghero`,
+      },
+      {
+        id: "whatsapp-feira",
+        label: "WhatsApp — Após feira / visita",
+        template: `Olá! Foi um prazer conversar com você.
+
+Conforme combinamos, segue o link da ficha cadastral de fornecedores da Móveis Unghero:
+
+{link}
+
+Assim que recebermos, nossa equipe comercial entra em contato para alinhar as próximas etapas.
+
+Abraço,
+Equipe Móveis Unghero`,
+      },
+      {
+        id: "email-fornecedor",
+        label: "E-mail — Solicitação de cadastro",
+        template: `Prezado(a),
+
+A Móveis Unghero busca fornecedores e representantes para materiais e componentes de móveis planejados de alto padrão.
+
+Para apresentar seu catálogo e condições comerciais, preencha a ficha cadastral no link abaixo:
+
+{link}
+
+Retornaremos após a análise do material enviado.
+
+Atenciosamente,
+Equipe Móveis Unghero`,
+      },
+    ],
+  },
 ];
 
 export function getMarketingFormShortUrl(form: MarketingForm) {

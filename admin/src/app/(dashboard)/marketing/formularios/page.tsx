@@ -9,14 +9,14 @@ export default async function MarketingFormulariosPage() {
     <div className="space-y-6">
       <PageHeader
         title="Formulários"
-        description="Links curtos e mensagens prontas para enviar formulários de orçamento, cadastro de clientes e de parceiros."
+        description="Links curtos e mensagens prontas para enviar formulários de orçamento, cadastro de clientes, parceiros e fornecedores."
         help={
           <TooltipBody
             title="Captação de leads"
             items={[
-              "Compartilhe links curtos dos formulários de orçamento e de parceiros.",
+              "Compartilhe links curtos dos formulários de orçamento, parceiros e fornecedores.",
               "Copie mensagens prontas para enviar pelo WhatsApp.",
-              "As respostas caem automaticamente no funil comercial.",
+              "As respostas caem automaticamente no funil comercial ou no estoque.",
             ]}
           />
         }
