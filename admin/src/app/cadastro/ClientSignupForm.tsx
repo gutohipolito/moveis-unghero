@@ -19,6 +19,7 @@ import {
 import { submitPublicClientSignupAction } from "@/app/actions/clientSignup";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
+import FormProgressBar from "@/components/forms/FormProgressBar";
 
 const TIPO_IMOVEL_OPTIONS = [
   { value: "CASA", label: "Casa Residencial" },
@@ -29,6 +30,7 @@ const TIPO_IMOVEL_OPTIONS = [
 ];
 
 const TOTAL_STEPS = 4;
+const STEP_LABELS = ["Identidade", "Contato", "Endereço", "Imóvel"] as const;
 const inputClass =
   "w-full border border-slate-800 bg-slate-950/60 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-semibold text-slate-100 placeholder-slate-500 transition-all";
 const labelClass = "text-xs font-bold text-slate-300 flex items-center gap-1.5";
@@ -265,8 +267,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
   const handleFormKeyDown = preventEnterSubmit;
 
-  const progressPercent = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100);
-
   if (success) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-6 w-full z-10">
@@ -320,25 +320,20 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
   return (
     <div className="w-full z-10 relative">
-      {/* Barra de Progresso */}
-      <div className="mb-8 space-y-2">
-        <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <span>Cadastro de Cliente</span>
-          <span>{progressPercent}% Concluído</span>
-        </div>
-        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all duration-300 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
-
       <form
         onSubmit={handleSubmit}
         onKeyDown={handleFormKeyDown}
-        className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-2xl transition-all duration-300"
+        className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl shadow-2xl transition-all duration-300 overflow-hidden"
       >
+        <FormProgressBar
+          step={step}
+          totalSteps={TOTAL_STEPS}
+          tone="primary"
+          stepLabel={`Etapa ${step} de ${TOTAL_STEPS} · ${STEP_LABELS[step - 1]}`}
+          className="border-b border-slate-800/80 bg-slate-950/40"
+        />
+
+        <div className="p-6 md:p-8">
         {error && (
           <div className="mb-6 p-4 bg-rose-950/40 border border-rose-900/60 text-rose-200 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-4.5 w-4.5 text-rose-500 shrink-0" />
@@ -679,6 +674,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
             </div>
           </div>
         )}
+        </div>
       </form>
     </div>
   );

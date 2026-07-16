@@ -1,5 +1,6 @@
 import React from "react";
 import PartnerSignupForm from "./PartnerSignupForm";
+import FormLgpdNotice from "@/components/forms/FormLgpdNotice";
 
 export const metadata = {
   title: "Cadastro de Parceiros | Móveis Unghero",
@@ -30,6 +31,7 @@ export default function CadastroParceiroPage() {
           </p>
         </div>
         <PartnerSignupForm />
+        <FormLgpdNotice purpose="avaliar a parceria profissional e manter contato comercial" />
       </div>
 
       <footer className="w-full border-t border-slate-900/60 bg-slate-950/80 backdrop-blur-sm py-6 text-center text-xs font-bold text-slate-500 z-10 shrink-0">

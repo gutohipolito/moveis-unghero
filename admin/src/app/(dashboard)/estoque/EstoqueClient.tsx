@@ -354,12 +354,12 @@ export default function EstoqueClient({
               <Plus className="h-4.5 w-4.5" /> Novo Insumo / Item
             </Button>
           ) : (
-            <Button 
-              onClick={() => { resetSupplierForm(); setIsSupplierModalOpen(true); }} 
-              className="font-bold btn-metallic gap-1.5"
+            <Link
+              href="/estoque/fornecedores/novo"
+              className="inline-flex items-center justify-center font-bold btn-metallic gap-1.5 rounded-[var(--radius-sm)] text-sm min-h-9 px-4"
             >
               <Plus className="h-4.5 w-4.5" /> Novo Fornecedor
-            </Button>
+            </Link>
           )}
         </div>
       </div>

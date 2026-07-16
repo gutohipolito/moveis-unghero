@@ -53,7 +53,15 @@ const ESTADOS_BRASIL = [
   { value: "TO", label: "Tocantins" },
 ];
 
-export default function SupplierSignupForm({ companyId }: { companyId?: string }) {
+export default function SupplierSignupForm({
+  companyId,
+  viaPainel = false,
+  onCreated,
+}: {
+  companyId?: string;
+  viaPainel?: boolean;
+  onCreated?: (id: string) => void;
+}) {
   const [step, setStep] = useState(1);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -412,6 +420,7 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
 
     const payload: SupplierSignupData = {
       company_id: companyId,
+      viaPainel,
       nome,
       nomeFantasia: nomeFantasia || undefined,
       cnpj,
@@ -469,10 +478,14 @@ export default function SupplierSignupForm({ companyId }: { companyId?: string }
     try {
       const res = await submitPublicSupplierSignupAction(payload);
       if (res.success) {
-        setSuccess(true);
         if (typeof window !== "undefined") {
           localStorage.removeItem("moveis_unghero_supplier_draft");
         }
+        if (viaPainel && res.id && onCreated) {
+          onCreated(res.id);
+          return;
+        }
+        setSuccess(true);
       } else {
         setError(res.error || "Ocorreu um erro ao enviar o cadastro.");
       }

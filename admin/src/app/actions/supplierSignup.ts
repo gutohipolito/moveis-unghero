@@ -6,6 +6,7 @@ import { capitalizeText } from "@/lib/utils";
 
 export interface SupplierSignupData {
   company_id?: string;
+  viaPainel?: boolean;
   
   // Informações Gerais
   nome: string; // Razão Social
@@ -191,13 +192,16 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
         crmHistorico: [
           {
             data: new Date().toISOString(),
-            acao: "Cadastro enviado via formulário público de fornecedores.",
+            acao: data.viaPainel
+              ? "Cadastro realizado pelo painel interno."
+              : "Cadastro enviado via formulário público de fornecedores.",
           }
         ]
       },
     });
 
     revalidatePath("/estoque");
+    revalidatePath(`/estoque/fornecedores/${fornecedor.id}`);
     return { success: true, id: fornecedor.id };
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error);

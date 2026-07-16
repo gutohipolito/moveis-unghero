@@ -1,0 +1,23 @@
+type FormLgpdNoticeProps = {
+  className?: string;
+  /** Texto complementar do propósito do formulário (opcional). */
+  purpose?: string;
+};
+
+const DEFAULT_PURPOSE =
+  "prestar o atendimento comercial, elaborar orçamentos e manter contato sobre a solicitação";
+
+export default function FormLgpdNotice({
+  className = "",
+  purpose = DEFAULT_PURPOSE,
+}: FormLgpdNoticeProps) {
+  return (
+    <p
+      className={`mt-6 text-[10px] font-medium text-slate-500 leading-relaxed text-center max-w-md mx-auto ${className}`}
+    >
+      De acordo com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018), as informações
+      enviadas neste formulário serão tratadas com confidencialidade e utilizadas apenas para{" "}
+      {purpose}.
+    </p>
+  );
+}

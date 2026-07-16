@@ -21,6 +21,7 @@ import {
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
 import { PARTNER_ORIGEM_OPTIONS, PARTNER_SIGNUP_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
+import FormProgressBar from "@/components/forms/FormProgressBar";
 
 const TOTAL_STEPS = 5;
 
@@ -338,9 +339,6 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
   const handleFormKeyDown = preventEnterSubmit;
 
-  // Barra de progresso dinâmica baseada em 5 etapas
-  const progressPercent = Math.round((step / TOTAL_STEPS) * 100);
-
   if (success) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-6 partner-container">
@@ -397,42 +395,13 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         onKeyDown={handleFormKeyDown}
         className="bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-300 partner-card text-slate-800 overflow-hidden"
       >
-        {/* Barra de progresso dentro do card */}
-        <div className="border-b border-slate-100">
-          <div className="relative h-1.5 w-full bg-slate-100">
-            <div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-500 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-5 bg-slate-50/90">
-            {STEP_LABELS.map((label, index) => {
-              const n = index + 1;
-              const active = n === step;
-              const done = n < step;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  disabled={loading || n > step}
-                  onClick={() => n < step && setStep(n)}
-                  className={`py-3 px-1 text-center transition-colors border-b-2 ${
-                    active
-                      ? "border-amber-500 text-amber-800 bg-amber-50/60"
-                      : done
-                        ? "border-transparent text-emerald-700 hover:bg-slate-100/80 cursor-pointer"
-                        : "border-transparent text-slate-400 cursor-default"
-                  }`}
-                >
-                  <span className="block text-[10px] font-black tracking-wide">{n}</span>
-                  <span className="hidden sm:block text-[9px] font-bold uppercase tracking-wide mt-0.5 truncate">
-                    {label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <FormProgressBar
+          step={step}
+          totalSteps={TOTAL_STEPS}
+          tone="amber"
+          stepLabel={`Etapa ${step} de ${TOTAL_STEPS} · ${STEP_LABELS[step - 1]}`}
+          className="border-b border-slate-100 bg-slate-50/50"
+        />
 
         <div className="p-6 md:p-8">
         {error && (
