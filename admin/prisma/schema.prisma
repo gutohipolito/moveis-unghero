@@ -26,6 +26,8 @@ model Company {
   inventoryItems InventoryItem[]
   expenses       Expense[]
   suggestions    Suggestion[]
+  contractTemplates ContractTemplate[]
+  contracts         Contract[]
 }
 
 model User {
@@ -140,6 +142,7 @@ model Client {
   marketing_aceite  Boolean   @default(false)
   createdAt    DateTime  @default(now())
   attachments  ClientAttachment[]
+  contracts    Contract[]
 
   @@index([company_id, telefone_digits])
 }
@@ -221,6 +224,7 @@ model Project {
   attachments           ClientAttachment[] @relation("ProjectAttachments")
   supplyTickets         SupplyTicket[]
   expenses              Expense[]
+  contracts             Contract[]
 }
 
 enum ProjectStatus {
@@ -815,4 +819,64 @@ model Expense {
   @@index([company_id])
   @@index([company_id, status])
   @@index([company_id, data_vencimento])
+}
+
+enum ContractStatus {
+  RASCUNHO
+  EMITIDO
+}
+
+model ContractTemplate {
+  id                 String     @id @default(uuid())
+  company_id         String
+  company            Company    @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  nome               String
+  titulo             String     @default("CONTRATO DE PRESTAÇÃO DE SERVIÇO")
+  clausula_local     String     @db.Text
+  clausula_pagamento String     @db.Text
+  clausula_prazo     String     @db.Text
+  clausula_extra     String?    @db.Text
+  ativo              Boolean    @default(true)
+  contracts          Contract[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([company_id])
+}
+
+model Contract {
+  id                 String           @id @default(uuid())
+  company_id         String
+  company            Company          @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  template_id        String?
+  template           ContractTemplate? @relation(fields: [template_id], references: [id], onDelete: SetNull)
+  client_id          String?
+  client             Client?          @relation(fields: [client_id], references: [id], onDelete: SetNull)
+  project_id         String?
+  project            Project?         @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  titulo             String
+  cliente_nome       String
+  cliente_documento  String
+  cliente_endereco   String
+  servicos           String           @db.Text
+  valor              Decimal          @db.Decimal(12, 2)
+  entrada_pct        Int              @default(50)
+  clausula_local     String           @db.Text
+  clausula_pagamento String           @db.Text
+  clausula_prazo     String           @db.Text
+  clausula_extra     String?          @db.Text
+  data_entrega       DateTime?
+  data_contrato      DateTime
+  cidade_emissao     String           @default("Farroupilha")
+  status             ContractStatus   @default(RASCUNHO)
+  observacoes        String?
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([company_id])
+  @@index([company_id, status])
+  @@index([client_id])
+  @@index([project_id])
 }

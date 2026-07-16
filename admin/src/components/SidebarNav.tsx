@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Lightbulb,
+  FileSignature,
 } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -58,6 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
   { name: "Clientes", href: "/clientes", icon: Users, section: "Comercial" },
   { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Comercial" },
+  { name: "Contratos", href: "/contratos", icon: FileSignature, section: "Comercial" },
   { name: "Projetistas e Arquitetos", href: "/parceiros", icon: PenTool, section: "Comercial" },
 
   { name: "Agenda", href: "/agenda", icon: Calendar, section: "Produção" },
@@ -93,6 +95,7 @@ const HEAVY_ROUTES = new Set([
   "/financeiro",
   "/clientes",
   "/quotes",
+  "/contratos",
   "/estoque",
   "/logistica",
 ]);
