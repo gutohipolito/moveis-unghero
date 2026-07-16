@@ -7,6 +7,7 @@ import QuotePrintToolbar from "@/components/QuotePrintToolbar";
 import QuotePrintDocument from "@/components/QuotePrintDocument";
 import { parseQuoteSubitens } from "@/lib/quoteItems";
 import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePdfShare";
+import { formatDateBR } from "@/lib/brazilDate";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -115,8 +116,8 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
   }
 
   const client = quote.project.client;
-  const formattedValidade = new Date(quote.validade).toLocaleDateString("pt-BR");
-  const formattedDataEmissao = new Date().toLocaleDateString("pt-BR");
+  const formattedValidade = formatDateBR(quote.validade);
+  const formattedDataEmissao = formatDateBR();
 
   return (
     <QuotePrintDocument

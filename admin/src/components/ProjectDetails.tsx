@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
+import { formatDateBR } from "@/lib/brazilDate";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import {
@@ -1478,7 +1479,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               </span>
                             ) : (
                               <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
-                                Validade: {new Date(q.validade).toLocaleDateString("pt-BR")}
+                                Validade: {formatDateBR(q.validade)}
                               </span>
                             )}
                           </div>

@@ -38,6 +38,7 @@ import {
 } from "@/app/actions/quotes";
 import { getQuotesLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
@@ -298,26 +299,21 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     }).format(val);
   };
 
-  const formatDate = (dateInput: Date | string) => {
-    const d = new Date(dateInput);
-    return d.toLocaleDateString("pt-BR");
-  };
+  const formatDate = (dateInput: Date | string) => formatDateBR(dateInput);
 
   const isExpired = (dateInput: Date | string) => {
-    const d = new Date(dateInput);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() < today.getTime();
+    return toISODateBR(dateInput) < toISODateBR();
   };
 
   // Dias restantes até a validade (0 = vence hoje, negativo = vencido)
   const getDaysUntilExpiry = (dateInput: Date | string) => {
-    const d = new Date(dateInput);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    d.setHours(0, 0, 0, 0);
-    return Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const target = toISODateBR(dateInput);
+    const today = toISODateBR();
+    const [ty, tm, td] = target.split("-").map(Number);
+    const [yy, ym, yd] = today.split("-").map(Number);
+    const targetUtc = Date.UTC(ty, tm - 1, td);
+    const todayUtc = Date.UTC(yy, ym - 1, yd);
+    return Math.round((targetUtc - todayUtc) / (1000 * 60 * 60 * 24));
   };
 
   // Filtragem

@@ -13,6 +13,7 @@ import {
 } from "@/lib/auth-guard";
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 import { ADMIN_EMAIL } from "@/lib/constants";
+import { parseISODateOnlyBrazil } from "@/lib/brazilDate";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -81,7 +82,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           subtotal: data.subtotal,
           desconto: data.desconto,
           valor_final: data.valor_final,
-          validade: new Date(data.validade),
+          validade: parseISODateOnlyBrazil(data.validade),
           observacoes: data.observacoes || "",
           partner_id: partnerId,
         }

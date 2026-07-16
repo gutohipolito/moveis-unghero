@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { QuotePrintClient, QuotePrintData } from "@/components/QuotePrintDocument";
 import { parseQuoteSubitens } from "@/lib/quoteItems";
+import { formatDateBR } from "@/lib/brazilDate";
 
 export async function loadPublicQuoteByShareCode(code: string) {
   const normalized = code.trim().toLowerCase();
@@ -52,8 +53,8 @@ export async function loadPublicQuoteByShareCode(code: string) {
   };
 
   const client: QuotePrintClient = dbQuote.project.client;
-  const validadeLabel = new Date(dbQuote.validade).toLocaleDateString("pt-BR");
-  const emissaoLabel = (dbQuote.pdf_shared_at ?? new Date()).toLocaleDateString("pt-BR");
+  const validadeLabel = formatDateBR(dbQuote.validade);
+  const emissaoLabel = formatDateBR(dbQuote.pdf_shared_at ?? new Date());
 
   return {
     quote,

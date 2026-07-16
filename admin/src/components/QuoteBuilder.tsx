@@ -19,6 +19,7 @@ import {
 import { getParceiros } from "@/app/actions/parceiros";
 import { formatPartnerRegistro, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 import type { PartnerType } from "@prisma/client";
+import { addCalendarDaysISO, toISODateBR } from "@/lib/brazilDate";
 
 interface PartnerOption {
   id: string;
@@ -75,10 +76,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const { showSuccess, showError } = dialog;
   const [observacoes, setObservacoes] = useState(ACTIVE_TEMPLATE.observacoes);
   const [validade, setValidade] = useState(() => {
-    // Validade padrão: 15 dias a partir de hoje
-    const date = new Date();
-    date.setDate(date.getDate() + 15);
-    return date.toISOString().split("T")[0];
+    // Validade padrão: 15 dias a partir de hoje (calendário de São Paulo)
+    return addCalendarDaysISO(toISODateBR(), 15);
   });
   const [items, setItems] = useState<QuoteItemInput[]>([]);
   const itemsRef = useRef(items);
