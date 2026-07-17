@@ -70,7 +70,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   // Carregar rascunho do localStorage na montagem (client-side)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("moveis_unghero_partner_draft");
+      localStorage.removeItem("moveis_unghero_partner_draft");
+      const saved = localStorage.getItem("moveis_unghero_partner_draft_v2");
       if (saved) {
         try {
           const draft = JSON.parse(saved);
@@ -109,7 +110,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         registroProfissional,
         origem,
       };
-      localStorage.setItem("moveis_unghero_partner_draft", JSON.stringify(draft));
+      localStorage.setItem("moveis_unghero_partner_draft_v2", JSON.stringify(draft));
     }
   }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes, registroProfissional, origem]);
 
@@ -328,6 +329,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
     if (res.success) {
       if (typeof window !== "undefined") {
+        localStorage.removeItem("moveis_unghero_partner_draft_v2");
         localStorage.removeItem("moveis_unghero_partner_draft");
       }
       setSuccess(true);
@@ -725,13 +727,16 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <button
                 type="submit"
                 disabled={loading || !submitUnlocked}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50"
+                title={!submitUnlocked ? "Aguarde um instante para enviar" : undefined}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Enviando...
                   </>
+                ) : !submitUnlocked ? (
+                  "Aguarde..."
                 ) : (
                   <>
                     <Send className="h-4 w-4" />

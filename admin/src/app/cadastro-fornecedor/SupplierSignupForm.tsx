@@ -138,7 +138,8 @@ export default function SupplierSignupForm({
   // --- Recuperação / Persistência do Rascunho ---
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("moveis_unghero_supplier_draft");
+      localStorage.removeItem("moveis_unghero_supplier_draft");
+      const saved = localStorage.getItem("moveis_unghero_supplier_draft_v2");
       if (saved) {
         try {
           const draft = JSON.parse(saved);
@@ -222,7 +223,7 @@ export default function SupplierSignupForm({
         comercialCondicoesPagamento, comercialDescontoMarceneiros, comercialTabelaDiferenciada, comercialRepresentanteExclusivo, comercialPedidoMinimo, comercialFreteGratisAcima, comercialComissao, comercialObservacoes,
         logisticaCidadeEstoque, logisticaPrazoMedioEntrega, logisticaEntregaPropria, logisticaTransportadora, logisticaRetiradaLocal, logisticaEstadosAtendidos, logisticaFazEntregasUrgentes, logisticaPossuiRastreamento, logisticaAreaCobertura
       };
-      localStorage.setItem("moveis_unghero_supplier_draft", JSON.stringify(draft));
+      localStorage.setItem("moveis_unghero_supplier_draft_v2", JSON.stringify(draft));
     }
   }, [
     isLoaded, step, nome, nomeFantasia, cnpj, inscricaoEstadual, categoria, subcategoria, site, instagram, linkedin, anoFundacao, numFuncionarios, possuiShowroom,
@@ -479,6 +480,7 @@ export default function SupplierSignupForm({
       const res = await submitPublicSupplierSignupAction(payload);
       if (res.success) {
         if (typeof window !== "undefined") {
+          localStorage.removeItem("moveis_unghero_supplier_draft_v2");
           localStorage.removeItem("moveis_unghero_supplier_draft");
         }
         if (viaPainel && res.id && onCreated) {
@@ -1505,13 +1507,16 @@ export default function SupplierSignupForm({
             <button
               type="submit"
               disabled={loading || uploadingCatalogo || uploadingTabela || !submitUnlocked}
-              className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-100 transition-all font-bold text-xs cursor-pointer disabled:opacity-50 shadow-lg shadow-emerald-500/10"
+              title={!submitUnlocked ? "Aguarde um instante para enviar" : undefined}
+              className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-100 transition-all font-bold text-xs cursor-pointer disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-emerald-500/10"
             >
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Enviando...
                 </>
+              ) : !submitUnlocked ? (
+                "Aguarde..."
               ) : (
                 <>
                   Finalizar Cadastro

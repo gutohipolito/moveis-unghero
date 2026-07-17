@@ -70,7 +70,8 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   // Carrega rascunho
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("moveis_unghero_cliente_draft");
+      localStorage.removeItem("moveis_unghero_cliente_draft");
+      const saved = localStorage.getItem("moveis_unghero_cliente_draft_v2");
       if (saved) {
         try {
           const d = JSON.parse(saved);
@@ -102,7 +103,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   useEffect(() => {
     if (isLoaded && typeof window !== "undefined") {
       localStorage.setItem(
-        "moveis_unghero_cliente_draft",
+        "moveis_unghero_cliente_draft_v2",
         JSON.stringify({
           step,
           tipoPessoa,
@@ -256,6 +257,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
     if (res.success) {
       if (typeof window !== "undefined") {
+        localStorage.removeItem("moveis_unghero_cliente_draft_v2");
         localStorage.removeItem("moveis_unghero_cliente_draft");
       }
       setSuccess(true);
@@ -653,12 +655,14 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                         : undefined
                   }
                   aria-disabled={loading || !aceitaTermos || !submitUnlocked}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none disabled:hover:bg-emerald-600"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" /> Enviando...
                     </>
+                  ) : !submitUnlocked ? (
+                    "Aguarde..."
                   ) : (
                     <>
                       <Send className="h-4 w-4" /> Enviar Cadastro
