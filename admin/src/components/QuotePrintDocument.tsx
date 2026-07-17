@@ -166,7 +166,35 @@ export function quotePrintStylesCss() {
         border-radius: 8px;
         background-color: #ffffff;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        overflow: hidden;
+        /* visible evita cortar o rodapé/LGPD no mobile */
+        overflow: visible;
+      }
+    }
+    @media screen and (max-width: 639px) {
+      .print-shell-inner {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        padding-bottom: 1.5rem !important;
+      }
+      .print-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto 1rem !important;
+        border-radius: 0.75rem;
+      }
+      .print-quote-header,
+      .print-quote-footer {
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+      }
+      .print-page > main {
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+      }
+      .print-quote-footer-legal {
+        color: #a3a3a3 !important;
+        font-size: 10px !important;
+        line-height: 1.45 !important;
       }
     }
     .print-quote-header {
@@ -211,11 +239,11 @@ function PrintBottomFooter() {
   const f = QUOTE_PRINT_FACTORY;
   return (
     <footer
-      className="print-quote-footer bg-neutral-900 text-neutral-300 px-[20mm] py-4 mt-auto"
+      className="print-quote-footer bg-neutral-900 text-neutral-300 px-6 sm:px-[20mm] py-5 mt-auto"
       style={{ backgroundColor: "#171717" }}
     >
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 text-[9px] leading-relaxed">
-        <div className="space-y-0.5">
+      <div className="flex flex-col gap-4 text-[9px] leading-relaxed sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-0.5 text-center sm:text-left">
           <p className="text-white font-bold text-[10px]">{f.name}</p>
           <p>
             <span className="text-neutral-500">CNPJ:</span> {f.cnpj}
@@ -229,7 +257,7 @@ function PrintBottomFooter() {
             {f.city}
           </p>
         </div>
-        <div className="sm:text-right space-y-0.5 font-semibold">
+        <div className="space-y-0.5 font-semibold text-center sm:text-right">
           <p>
             <a
               href={f.whatsappHref}
@@ -265,7 +293,7 @@ function PrintBottomFooter() {
         }}
         aria-hidden
       />
-      <p className="text-center text-[8px] text-neutral-500 leading-relaxed max-w-[90%] mx-auto">
+      <p className="print-quote-footer-legal text-center text-[9px] sm:text-[8px] text-neutral-400 leading-relaxed max-w-[42rem] mx-auto px-1 pb-1">
         Documento comercial de uso exclusivo entre as partes. Os dados pessoais aqui constantes são
         tratados conforme a LGPD (Lei nº 13.709/2018), exclusivamente para elaboração e
         acompanhamento desta proposta.
@@ -331,15 +359,15 @@ export default function QuotePrintDocument({
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-3 shrink-0 self-start">
+                <div className="flex flex-col items-stretch gap-3 shrink-0 self-start w-full sm:w-auto">
                   <div className="flex gap-3">
-                    <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
+                    <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
                       <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
                         Emissão
                       </span>
                       <p className="text-[11px] font-bold text-emerald-800 leading-none">{emissaoLabel}</p>
                     </div>
-                    <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px]">
+                    <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
                       <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
                         Validade
                       </span>
@@ -348,8 +376,8 @@ export default function QuotePrintDocument({
                   </div>
 
                   {quote.partner ? (
-                    <div className="p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 w-fit space-y-1 shadow-sm leading-tight flex items-center gap-3">
-                      <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
+                    <div className="w-full p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 space-y-1 shadow-sm leading-tight flex items-center gap-3">
+                      <div className="h-16 w-16 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
                         {quote.partner.fotoUrl ? (
                           <img
                             src={quote.partner.fotoUrl}
@@ -357,7 +385,7 @@ export default function QuotePrintDocument({
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <span className="text-[10px] font-black text-neutral-500">
+                          <span className="text-xs font-black text-neutral-500">
                             {quote.partner.nome.substring(0, 2).toUpperCase()}
                           </span>
                         )}
@@ -366,7 +394,7 @@ export default function QuotePrintDocument({
                         <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
                           {partnerRoleLabel}
                         </span>
-                        <p className="font-bold text-neutral-900 text-xs">{quote.partner.nome}</p>
+                        <p className="font-bold text-neutral-900 text-xs leading-snug">{quote.partner.nome}</p>
                         {quote.partner.escritorio ? (
                           <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
                         ) : null}
