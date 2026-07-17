@@ -14,10 +14,10 @@ export default function SuggestionFab() {
         onClick={() => setOpen(true)}
         aria-label="Sugerir melhoria"
         title="Sugerir melhoria"
-        className="group fixed z-40 flex items-center justify-center gap-2
+        className="fixed z-40 flex items-center justify-center
           right-4 bottom-[calc(var(--mobile-nav-height)_+_env(safe-area-inset-bottom)_+_0.75rem)]
-          md:right-6 md:bottom-6
-          h-11 w-11 md:h-auto md:w-auto md:px-5 md:py-3
+          md:right-6 md:bottom-12
+          h-11 w-11
           rounded-full text-white
           bg-gradient-to-br from-amber-400 to-amber-600
           shadow-lg shadow-amber-500/30
@@ -26,9 +26,6 @@ export default function SuggestionFab() {
           ring-1 ring-amber-300/50"
       >
         <Lightbulb className="h-5 w-5 shrink-0" />
-        <span className="hidden md:inline text-sm font-bold whitespace-nowrap">
-          Sugerir melhoria
-        </span>
       </button>
 
       <SuggestionModal isOpen={open} onClose={() => setOpen(false)} />
