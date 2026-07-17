@@ -10,6 +10,11 @@ import {
   buildSlaEvent,
   type DerivedAgendaEvent,
 } from "@/lib/agendaEvents";
+import {
+  countTechSheetFields,
+  summarizeText,
+  type FactoryBoardEnvironment,
+} from "@/lib/factoryEnvironment";
 
 export async function fetchFactoryBoard(companyId: string) {
   const [environments, slaStates] = await Promise.all([
@@ -31,14 +36,28 @@ export async function fetchFactoryBoard(companyId: string) {
           status: true,
           responsavel_id: true,
           ajudante_id: true,
+          materiais: true,
+          ferragens: true,
+          acabamentos: true,
+          medidas_observacoes: true,
+          observacoes_fabrica: true,
+          capa_attachment_id: true,
           project: {
             select: {
               id: true,
-              client: { select: { nome: true } },
+              client: { select: { id: true, nome: true } },
             },
           },
           responsavel: { select: { name: true } },
           ajudante: { select: { name: true } },
+          attachments: {
+            select: {
+              id: true,
+              url: true,
+              mime_type: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
         },
       })
       .catch((error) => {
@@ -48,18 +67,39 @@ export async function fetchFactoryBoard(companyId: string) {
     getCompanySlaStates(companyId),
   ]);
 
-  const formattedEnvironments = environments.map((environment) => ({
-    id: environment.id,
-    nome: environment.nome,
-    tipo: environment.tipo,
-    status: environment.status,
-    projectId: environment.project?.id || "",
-    clientName: environment.project?.client?.nome || "Cliente avulso",
-    responsavelId: environment.responsavel_id || null,
-    responsavelNome: environment.responsavel?.name || null,
-    ajudanteId: environment.ajudante_id || null,
-    ajudanteNome: environment.ajudante?.name || null,
-  }));
+  const formattedEnvironments: FactoryBoardEnvironment[] = environments.map((environment) => {
+    const fill = countTechSheetFields(environment);
+    const cover =
+      environment.attachments.find((item) => item.id === environment.capa_attachment_id) ??
+      environment.attachments.find((item) => item.mime_type.startsWith("image/")) ??
+      null;
+
+    return {
+      id: environment.id,
+      nome: environment.nome,
+      tipo: environment.tipo,
+      status: environment.status,
+      projectId: environment.project?.id || "",
+      clientId: environment.project?.client?.id || "",
+      clientName: environment.project?.client?.nome || "Cliente avulso",
+      responsavelId: environment.responsavel_id || null,
+      responsavelNome: environment.responsavel?.name || null,
+      ajudanteId: environment.ajudante_id || null,
+      ajudanteNome: environment.ajudante?.name || null,
+      materiais: environment.materiais,
+      ferragens: environment.ferragens,
+      acabamentos: environment.acabamentos,
+      medidasObservacoes: environment.medidas_observacoes,
+      observacoesFabrica: environment.observacoes_fabrica,
+      materialsSummary: summarizeText(environment.materiais),
+      hardwareSummary: summarizeText(environment.ferragens),
+      attachmentCount: environment.attachments.length,
+      coverUrl: cover?.url ?? null,
+      techSheetFilled: fill.filled,
+      techSheetTotal: fill.total,
+      techSheetComplete: fill.complete,
+    };
+  });
 
   const slaByProject: Record<string, ProjectSlaView> = {};
   for (const sla of slaStates) {
@@ -72,6 +112,13 @@ export async function fetchFactoryBoard(companyId: string) {
       status: environment.status,
       responsavelId: environment.responsavelId ?? "",
       ajudanteId: environment.ajudanteId ?? "",
+      materials: environment.materiais ?? "",
+      hardware: environment.ferragens ?? "",
+      finishes: environment.acabamentos ?? "",
+      measures: environment.medidasObservacoes ?? "",
+      notes: environment.observacoesFabrica ?? "",
+      attachments: environment.attachmentCount,
+      cover: environment.coverUrl ?? "",
     })),
     ...slaStates.map((sla) => ({
       id: sla.projectId,

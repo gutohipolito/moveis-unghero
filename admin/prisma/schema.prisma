@@ -58,6 +58,7 @@ model User {
   operatorNotes     OperatorNote[]
   operatorReminders OperatorReminder[]
   clientAttachments ClientAttachment[] @relation("ClientAttachmentUploader")
+  environmentAttachments EnvironmentAttachment[] @relation("EnvironmentAttachmentUploader")
   pushSubscriptions PushSubscription[]
   supplyTicketsRequested SupplyTicket[] @relation("SupplyTicketRequester")
   supplyTicketsResolved  SupplyTicket[] @relation("SupplyTicketResolver")
@@ -252,6 +253,43 @@ model Environment {
   responsavel    User?             @relation("UserResponsavel", fields: [responsavel_id], references: [id])
   ajudante_id    String?
   ajudante       User?             @relation("UserAjudante", fields: [ajudante_id], references: [id])
+
+  // Ficha técnica de produção (por cômodo)
+  materiais            String?  @db.Text
+  ferragens            String?  @db.Text
+  acabamentos          String?  @db.Text
+  medidas_observacoes  String?  @db.Text
+  observacoes_fabrica  String?  @db.Text
+  capa_attachment_id   String?
+
+  attachments EnvironmentAttachment[]
+}
+
+enum EnvironmentAttachmentCategory {
+  PROJETO_ARQUITETO
+  PROJETO_FABRICA
+  RENDER
+  REFERENCIA
+  MEDICAO
+  FOTO
+}
+
+model EnvironmentAttachment {
+  id             String                         @id @default(uuid())
+  environment_id String
+  environment    Environment                    @relation(fields: [environment_id], references: [id], onDelete: Cascade)
+  company_id     String
+  nome           String
+  mime_type      String
+  url            String
+  size_bytes     Int?
+  categoria      EnvironmentAttachmentCategory  @default(FOTO)
+  uploaded_by_id String?
+  uploaded_by    User?                          @relation("EnvironmentAttachmentUploader", fields: [uploaded_by_id], references: [id], onDelete: SetNull)
+  createdAt      DateTime                       @default(now())
+
+  @@index([environment_id])
+  @@index([company_id])
 }
 
 enum EnvironmentType {

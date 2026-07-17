@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
@@ -12,6 +12,10 @@ import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
 import FactoryEnvironmentDetailModal from "@/components/FactoryEnvironmentDetailModal";
 import type { ProjectSlaView } from "@/lib/productionSla";
+import {
+  getClientColor,
+  type FactoryBoardEnvironment,
+} from "@/lib/factoryEnvironment";
 import {
   Layers,
   ArrowRight,
@@ -26,20 +30,12 @@ import {
   ChevronUp,
   ChevronsDownUp,
   ChevronsUpDown,
+  ImageIcon,
+  FileStack,
+  ClipboardCheck,
 } from "lucide-react";
 
-interface EnvironmentItem {
-  id: string;
-  nome: string;
-  tipo: string;
-  status: string;
-  projectId: string;
-  clientName: string;
-  responsavelId?: string | null;
-  responsavelNome?: string | null;
-  ajudanteId?: string | null;
-  ajudanteNome?: string | null;
-}
+type EnvironmentItem = FactoryBoardEnvironment;
 
 interface ColaboradorSelect {
   id: string;
@@ -99,6 +95,10 @@ const COLUMNS = [
     icon: CheckCircle2,
   },
 ];
+
+function stackKey(status: string, projectId: string) {
+  return `${status}::${projectId || "sem-projeto"}`;
+}
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -177,6 +177,7 @@ export default function FactoryClient({
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(
     () => new Set(initialEnvironments.map((e) => e.id))
   );
+  const [expandedStacks, setExpandedStacks] = useState<Set<string>>(() => new Set());
   const knownEnvIdsRef = useRef(new Set(initialEnvironments.map((e) => e.id)));
   const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
   const [slaModal, setSlaModal] = useState<{
@@ -198,7 +199,6 @@ export default function FactoryClient({
     enabled: !draggedId && !detailItem && !slaModal,
   });
 
-  // Novos cômodos (live sync) entram recolhidos
   useEffect(() => {
     setCollapsedCards((prev) => {
       let changed = false;
@@ -226,6 +226,26 @@ export default function FactoryClient({
     }
   }, [slaCheckProjectId, slaByProject]);
 
+  const stacksByColumn = useMemo(() => {
+    const result: Record<string, { key: string; projectId: string; items: EnvironmentItem[] }[]> = {};
+    for (const col of COLUMNS) {
+      const colItems = environments.filter((item) => item.status === col.id);
+      const byProject = new Map<string, EnvironmentItem[]>();
+      for (const item of colItems) {
+        const pid = item.projectId || `loose-${item.id}`;
+        const list = byProject.get(pid) ?? [];
+        list.push(item);
+        byProject.set(pid, list);
+      }
+      result[col.id] = Array.from(byProject.entries()).map(([projectId, items]) => ({
+        key: stackKey(col.id, projectId.startsWith("loose-") ? items[0]?.id ?? projectId : projectId),
+        projectId: projectId.startsWith("loose-") ? items[0]?.projectId ?? "" : projectId,
+        items,
+      }));
+    }
+    return result;
+  }, [environments]);
+
   const openSlaVerify = (projectId: string) => {
     const sla = slaByProject[projectId];
     if (!sla) return;
@@ -249,6 +269,15 @@ export default function FactoryClient({
     });
   };
 
+  const toggleStackExpand = (key: string) => {
+    setExpandedStacks((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const toggleColumnCollapse = (colId: string, itemIds: string[]) => {
     setCollapsedCards((prev) => {
       const allCollapsed = itemIds.length > 0 && itemIds.every((id) => prev.has(id));
@@ -266,8 +295,8 @@ export default function FactoryClient({
     const cleanId = responsavelId === "none" ? null : responsavelId;
     const selected = colaboradores.find((c) => c.id === cleanId);
 
-    setEnvironments(
-      environments.map((env) =>
+    setEnvironments((prev) =>
+      prev.map((env) =>
         env.id === environmentId
           ? {
               ...env,
@@ -295,8 +324,8 @@ export default function FactoryClient({
     const cleanId = ajudanteId === "none" ? null : ajudanteId;
     const selected = colaboradores.find((c) => c.id === cleanId);
 
-    setEnvironments(
-      environments.map((env) =>
+    setEnvironments((prev) =>
+      prev.map((env) =>
         env.id === environmentId
           ? { ...env, ajudanteId: cleanId, ajudanteNome: selected?.name ?? null }
           : env
@@ -329,7 +358,9 @@ export default function FactoryClient({
     const item = environments.find((env) => env.id === id);
     if (!item || item.status === targetStatus) return;
 
-    setEnvironments(environments.map((env) => (env.id === id ? { ...env, status: targetStatus } : env)));
+    setEnvironments((prev) =>
+      prev.map((env) => (env.id === id ? { ...env, status: targetStatus } : env))
+    );
     setDraggedId(null);
     setDidDrag(true);
     if (detailItem?.id === id) {
@@ -348,8 +379,8 @@ export default function FactoryClient({
     const item = environments.find((e) => e.id === envId);
     if (!item || item.status === status) return;
 
-    setEnvironments(
-      environments.map((env) => (env.id === envId ? { ...env, status } : env))
+    setEnvironments((prev) =>
+      prev.map((env) => (env.id === envId ? { ...env, status } : env))
     );
     if (detailItem?.id === envId) {
       setDetailItem({ ...detailItem, status });
@@ -384,12 +415,23 @@ export default function FactoryClient({
     }
   };
 
+  const handleBoardPatch = (envId: string, patch: Partial<EnvironmentItem>) => {
+    setEnvironments((prev) =>
+      prev.map((env) => (env.id === envId ? { ...env, ...patch } : env))
+    );
+    if (detailItem?.id === envId) {
+      setDetailItem({ ...detailItem, ...patch });
+    }
+  };
+
   const handleMoveRight = async (item: EnvironmentItem) => {
     const currentIdx = COLUMNS.findIndex((col) => col.id === item.status);
     if (currentIdx === -1 || currentIdx === COLUMNS.length - 1) return;
 
     const nextStatus = COLUMNS[currentIdx + 1].id;
-    setEnvironments(environments.map((env) => (env.id === item.id ? { ...env, status: nextStatus } : env)));
+    setEnvironments((prev) =>
+      prev.map((env) => (env.id === item.id ? { ...env, status: nextStatus } : env))
+    );
 
     await updateEnvironmentStatus(item.projectId, item.id, nextStatus as any);
   };
@@ -398,6 +440,232 @@ export default function FactoryClient({
   const emCorteCount = environments.filter((e) => e.status === "EM_CORTE").length;
   const emMontagemCount = environments.filter((e) => e.status === "MONTAGEM_FABRICA").length;
   const prontoEntregaCount = environments.filter((e) => e.status === "PRONTO_ENTREGA").length;
+
+  const renderRoomCard = (
+    item: EnvironmentItem,
+    col: (typeof COLUMNS)[number],
+    options?: { stackedExtra?: number; stackKey?: string; showStackToggle?: boolean }
+  ) => {
+    const isCollapsed = collapsedCards.has(item.id);
+    const clientColor = getClientColor(item.clientId);
+    const stackedExtra = options?.stackedExtra ?? 0;
+
+    return (
+      <Card
+        key={item.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, item.id)}
+        onDragEnd={handleDragEnd}
+        onClick={() => handleCardClick(item)}
+        className={`glass-card glass-card-hover overflow-hidden border-border/80 active:scale-[0.98] transition-all duration-200 cursor-pointer relative group ${
+          draggedId === item.id ? "opacity-40 scale-[0.98]" : ""
+        } ${clientColor.border} border-l-[3px]`}
+      >
+        <div className={`h-1 ${col.accent}`} />
+
+        <div className="p-3.5 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${clientColor.swatch}`}
+                  title="Cor do cliente"
+                />
+                {item.projectId ? (
+                  <Link
+                    href={`/projects/${item.projectId}`}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full hover:ring-1 ${clientColor.ring} transition-colors`}
+                    title={item.clientName}
+                  >
+                    <User className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{item.clientName}</span>
+                  </Link>
+                ) : (
+                  <span
+                    className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full`}
+                  >
+                    <User className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{item.clientName}</span>
+                  </span>
+                )}
+                {stackedExtra > 0 && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (options?.stackKey) toggleStackExpand(options.stackKey);
+                    }}
+                    className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-foreground text-background shrink-0"
+                    title="Expandir pilha do projeto"
+                  >
+                    +{stackedExtra}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-start gap-2">
+                {item.coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.coverUrl}
+                    alt=""
+                    className="h-10 w-10 rounded-md object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-md border border-dashed border-border flex items-center justify-center text-muted-foreground shrink-0">
+                    <ImageIcon className="h-4 w-4" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
+                    {item.nome}
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+                    Clique para ficha técnica
+                  </p>
+                </div>
+              </div>
+              {(item.materialsSummary || item.hardwareSummary) && (
+                <p className="text-[10px] text-muted-foreground line-clamp-2">
+                  {item.materialsSummary || item.hardwareSummary}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                    item.techSheetComplete
+                      ? "bg-emerald-500/10 text-emerald-700"
+                      : item.techSheetFilled > 0
+                        ? "bg-amber-500/10 text-amber-700"
+                        : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  <ClipboardCheck className="h-3 w-3" />
+                  Ficha {item.techSheetFilled}/{item.techSheetTotal}
+                </span>
+                {item.attachmentCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
+                    <FileStack className="h-3 w-3" />
+                    {item.attachmentCount}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-0.5 shrink-0">
+              {options?.showStackToggle && options.stackKey && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleStackExpand(options.stackKey!);
+                  }}
+                  className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer"
+                  title="Expandir ou recolher pilha"
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
+                <div className="flex items-center gap-1 mr-1">
+                  {item.responsavelNome && (
+                    <span
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
+                      title={`Responsável: ${item.responsavelNome}`}
+                    >
+                      {getInitials(item.responsavelNome)}
+                    </span>
+                  )}
+                  {item.ajudanteNome && (
+                    <span
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-muted-foreground"
+                      title={`Ajudante: ${item.ajudanteNome}`}
+                    >
+                      {getInitials(item.ajudanteNome)}
+                    </span>
+                  )}
+                </div>
+              )}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCardCollapse(item.id);
+                }}
+                className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                title={isCollapsed ? "Expandir card" : "Recolher card"}
+              >
+                {isCollapsed ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              {col.id !== "FINALIZADO" && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMoveRight(item);
+                  }}
+                  className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                  title="Avançar etapa de produção"
+                >
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {item.projectId && (
+            <SlaRadar
+              sla={slaByProject[item.projectId] ?? null}
+              compact
+              onVerify={() => openSlaVerify(item.projectId)}
+            />
+          )}
+
+          <div
+            className={`grid transition-all duration-200 ease-in-out ${
+              isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="space-y-2.5 pt-2.5 border-t border-border/50">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                  <Users className="h-3 w-3" />
+                  Equipe
+                </div>
+
+                <TeamSelect
+                  label="Responsável"
+                  value={item.responsavelId}
+                  excludeId={item.ajudanteId}
+                  colaboradores={colaboradores}
+                  onChange={(id) => handleResponsavelChange(item.id, id)}
+                />
+
+                <TeamSelect
+                  label="Ajudante"
+                  optional
+                  value={item.ajudanteId}
+                  excludeId={item.responsavelId}
+                  colaboradores={colaboradores}
+                  onChange={(id) => handleAjudanteChange(item.id, id)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-[var(--space-5)]">
@@ -409,15 +677,17 @@ export default function FactoryClient({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Arraste entre colunas para a <strong className="font-semibold text-foreground">etapa de produção</strong> do cômodo.
-        Clique no card para ver e editar equipe, etapa de fábrica e <strong className="font-semibold text-foreground">radar de prazos (SLA)</strong> do projeto.
+        Cômodos do mesmo projeto formam uma <strong className="font-semibold text-foreground">pilha</strong> por etapa.
+        A cor identifica o cliente. Arraste cômodos individualmente; clique para abrir a{" "}
+        <strong className="font-semibold text-foreground">ficha técnica</strong> e imagens.
       </p>
 
       <div
         className={`kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-stretch min-h-0 ${KANBAN_BOARD_HEIGHT}`}
       >
         {COLUMNS.map((col) => {
-          const colItems = environments.filter((item) => item.status === col.id);
+          const stacks = stacksByColumn[col.id] ?? [];
+          const colItems = stacks.flatMap((stack) => stack.items);
           const Icon = col.icon;
           const colItemIds = colItems.map((item) => item.id);
           const allColCollapsed =
@@ -459,149 +729,56 @@ export default function FactoryClient({
               </div>
 
               <div className="flex-1 min-h-0 p-3 space-y-3 overflow-y-auto scrollbar-thin">
-                {colItems.length === 0 ? (
+                {stacks.length === 0 ? (
                   <div className="h-full min-h-[8rem] flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
                     Arrastar cômodo para esta fila...
                   </div>
                 ) : (
-                  colItems.map((item) => {
-                    const isCollapsed = collapsedCards.has(item.id);
+                  stacks.map((stack) => {
+                    const isExpanded = expandedStacks.has(stack.key) || stack.items.length === 1;
+                    const top = stack.items[0];
+                    const clientColor = getClientColor(top.clientId);
+
+                    if (!isExpanded) {
+                      return (
+                        <div key={stack.key} className="relative">
+                          {stack.items.length > 1 && (
+                            <>
+                              <div
+                                className={`absolute inset-x-2 top-2 h-full rounded-xl border ${clientColor.border} bg-card/70 -z-10 translate-y-1.5 opacity-70`}
+                              />
+                              <div
+                                className={`absolute inset-x-1 top-1 h-full rounded-xl border ${clientColor.border} bg-card/80 -z-10 translate-y-0.5 opacity-85`}
+                              />
+                            </>
+                          )}
+                          {renderRoomCard(top, col, {
+                            stackedExtra: stack.items.length - 1,
+                            stackKey: stack.key,
+                            showStackToggle: stack.items.length > 1,
+                          })}
+                        </div>
+                      );
+                    }
 
                     return (
-                    <Card
-                      key={item.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, item.id)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => handleCardClick(item)}
-                      className={`glass-card glass-card-hover overflow-hidden border-border/80 active:scale-[0.98] transition-all duration-200 cursor-pointer relative group ${
-                        draggedId === item.id ? "opacity-40 scale-[0.98]" : ""
-                      }`}
-                    >
-                      <div className={`h-1 ${col.accent}`} />
-
-                      <div className="p-3.5 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="space-y-1.5 min-w-0 flex-1">
-                            {item.projectId ? (
-                              <Link
-                                href={`/projects/${item.projectId}`}
-                                onPointerDown={(e) => e.stopPropagation()}
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full hover:text-primary hover:bg-primary/10 transition-colors"
-                                title={item.clientName}
-                              >
-                                <User className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{item.clientName}</span>
-                              </Link>
-                            ) : (
-                              <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full">
-                                <User className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{item.clientName}</span>
-                              </span>
-                            )}
-                            <h4 className="font-bold text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
-                              {item.nome}
-                            </h4>
-                            <p className="text-[10px] text-muted-foreground/80">Clique para detalhes</p>
-                          </div>
-
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
-                              <div className="flex items-center gap-1 mr-1">
-                                {item.responsavelNome && (
-                                  <span
-                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
-                                    title={`Responsável: ${item.responsavelNome}`}
-                                  >
-                                    {getInitials(item.responsavelNome)}
-                                  </span>
-                                )}
-                                {item.ajudanteNome && (
-                                  <span
-                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-muted-foreground"
-                                    title={`Ajudante: ${item.ajudanteNome}`}
-                                  >
-                                    {getInitials(item.ajudanteNome)}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleCardCollapse(item.id);
-                              }}
-                              className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
-                              title={isCollapsed ? "Expandir card" : "Recolher card"}
-                            >
-                              {isCollapsed ? (
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              ) : (
-                                <ChevronUp className="h-3.5 w-3.5" />
-                              )}
-                            </button>
-
-                            {col.id !== "FINALIZADO" && (
-                              <button
-                                type="button"
-                                onPointerDown={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoveRight(item);
-                                }}
-                                className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
-                                title="Avançar etapa de produção"
-                              >
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {item.projectId && (
-                          <SlaRadar
-                            sla={slaByProject[item.projectId] ?? null}
-                            compact
-                            onVerify={() => openSlaVerify(item.projectId)}
-                          />
+                      <div key={stack.key} className="space-y-2">
+                        {stack.items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleStackExpand(stack.key)}
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border ${clientColor.border} ${clientColor.soft} text-[10px] font-bold uppercase tracking-wide ${clientColor.text}`}
+                          >
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className={`h-2 w-2 rounded-full ${clientColor.swatch}`} />
+                              <span className="truncate">{top.clientName}</span>
+                              <span className="opacity-70">· {stack.items.length} cômodos</span>
+                            </span>
+                            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                          </button>
                         )}
-
-                        <div
-                          className={`grid transition-all duration-200 ease-in-out ${
-                            isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-                          }`}
-                        >
-                          <div className="overflow-hidden">
-                            <div className="space-y-2.5 pt-2.5 border-t border-border/50">
-                              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                                <Users className="h-3 w-3" />
-                                Equipe
-                              </div>
-
-                              <TeamSelect
-                                label="Responsável"
-                                value={item.responsavelId}
-                                excludeId={item.ajudanteId}
-                                colaboradores={colaboradores}
-                                onChange={(id) => handleResponsavelChange(item.id, id)}
-                              />
-
-                              <TeamSelect
-                                label="Ajudante"
-                                optional
-                                value={item.ajudanteId}
-                                excludeId={item.responsavelId}
-                                colaboradores={colaboradores}
-                                onChange={(id) => handleAjudanteChange(item.id, id)}
-                              />
-                            </div>
-                          </div>
-                        </div>
+                        {stack.items.map((item) => renderRoomCard(item, col))}
                       </div>
-                    </Card>
                     );
                   })
                 )}
@@ -636,6 +813,7 @@ export default function FactoryClient({
         onProductionStatusChange={handleProductionStatusChange}
         onResponsavelChange={handleDetailResponsavelChange}
         onAjudanteChange={handleDetailAjudanteChange}
+        onBoardPatch={handleBoardPatch}
         onSlaUpdated={(projectId, updated) => {
           setSlaByProject((prev) => ({ ...prev, [projectId]: updated }));
         }}
