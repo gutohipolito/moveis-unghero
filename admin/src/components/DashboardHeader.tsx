@@ -3,8 +3,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { logout } from "@/app/actions/login";
 import HeaderQuickActions from "@/components/HeaderQuickActions";
+import NotificationChannelSettings from "@/components/NotificationChannelSettings";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
-import { Clock, CloudSun, ChevronDown, Download, LogOut, User as UserIcon } from "lucide-react";
+import {
+  BellRing,
+  ChevronDown,
+  Clock,
+  CloudSun,
+  Download,
+  LogOut,
+  Mail,
+  User as UserIcon,
+} from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 
@@ -171,22 +181,45 @@ export default function DashboardHeader({
               ) : (
                 <UserIcon className="h-4 w-4 text-primary" />
               )}
+              <span className="dashboard-user-online-dot" aria-label="Usuário online" />
             </div>
             <div className="hidden sm:block text-left min-w-0">
-              <p className="text-sm font-medium text-foreground truncate max-w-[140px]">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[140px]">{user.cargo || "COMERCIAL"}</p>
+              <p className="text-[13px] font-bold text-foreground truncate max-w-[150px] leading-tight">
+                {user.name}
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground truncate max-w-[150px] mt-0.5">
+                {user.cargo || "COMERCIAL"}
+              </p>
             </div>
             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${menuOpen ? "rotate-180" : ""}`} />
           </button>
 
           {menuOpen && (
             <div className="dashboard-user-menu">
-              <div className="px-3 py-2 border-b border-border sm:hidden">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.cargo || "COMERCIAL"}</p>
+              <div className="dashboard-user-menu-profile">
+                <div className="dashboard-user-menu-avatar">
+                  {user.image ? (
+                    <img src={user.image} alt="" className="h-full w-full rounded-xl object-cover" />
+                  ) : (
+                    <UserIcon className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-foreground">{user.name}</p>
+                  <span className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary">
+                    {user.cargo || "COMERCIAL"}
+                  </span>
+                  {user.email && (
+                    <p className="mt-1.5 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                      <Mail className="h-3 w-3 shrink-0" />
+                      {user.email}
+                    </p>
+                  )}
+                </div>
               </div>
+
               {now && (
-                <div className="px-3 py-2 border-b border-border sm:hidden text-xs text-muted-foreground space-y-1">
+                <div className="grid grid-cols-2 gap-2 border-b border-border bg-muted/20 px-3 py-2.5 text-[10px] text-muted-foreground sm:hidden">
                   <p className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5" /> {formatLocalTime(now)} · {formatLocalDate(now)}
                   </p>
@@ -197,6 +230,19 @@ export default function DashboardHeader({
                   )}
                 </div>
               )}
+
+              <div className="dashboard-user-menu-settings">
+                <NotificationChannelSettings />
+              </div>
+
+              <div className="flex items-center gap-2 border-t border-border bg-muted/20 px-3 py-2">
+                <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-[10px] text-muted-foreground">
+                  Preferências salvas neste dispositivo.
+                </p>
+              </div>
+
+              <div className="p-2">
               {canInstall && (
                 <button
                   type="button"
@@ -205,18 +251,19 @@ export default function DashboardHeader({
                     setMenuOpen(false);
                   }}
                   disabled={installing}
-                  className="dashboard-user-menu-item w-full"
+                  className="dashboard-user-menu-item w-full rounded-lg"
                 >
                   <Download className="h-4 w-4" />
                   {installing ? "Instalando..." : "Instalar aplicativo"}
                 </button>
               )}
               <form action={logout}>
-                <button type="submit" className="dashboard-user-menu-item w-full">
+                <button type="submit" className="dashboard-user-menu-item dashboard-user-menu-logout w-full rounded-lg">
                   <LogOut className="h-4 w-4" />
                   Sair do painel
                 </button>
               </form>
+              </div>
             </div>
           )}
         </div>

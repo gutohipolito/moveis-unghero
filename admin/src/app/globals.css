@@ -358,6 +358,55 @@ body {
   color: hsl(var(--sidebar-foreground));
 }
 
+.sidebar-user-channels {
+  display: none;
+}
+
+.mobile-drawer .sidebar-user-channels {
+  display: block;
+}
+
+.sidebar-user-channels-trigger {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--sidebar-muted));
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sidebar-user-channels-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-user-channels-trigger:hover {
+  background: hsl(24 10% 20%);
+  color: hsl(var(--sidebar-foreground));
+}
+
+.sidebar-user-channels-chevron {
+  transition: transform 0.15s ease;
+}
+
+.sidebar-user-channels[open] .sidebar-user-channels-chevron {
+  transform: rotate(180deg);
+}
+
+.sidebar-user-channels-panel {
+  max-height: min(52vh, 28rem);
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  overflow-y: auto;
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
 .mobile-menu-btn {
   display: flex;
   align-items: center;
@@ -1130,42 +1179,93 @@ body {
 .dashboard-user-trigger {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.375rem 0.625rem 0.375rem 0.375rem;
-  border-radius: var(--radius);
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--background));
+  gap: 0.6875rem;
+  min-height: 2.75rem;
+  padding: 0.3125rem 0.625rem 0.3125rem 0.3125rem;
+  border-radius: 0.875rem;
+  border: 1px solid hsl(var(--border) / 0.85);
+  background: hsl(var(--card));
+  box-shadow: 0 1px 2px hsl(24 14% 14% / 0.04);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .dashboard-user-trigger:hover {
-  background: hsl(var(--muted));
+  border-color: hsl(var(--primary) / 0.28);
+  background: hsl(var(--muted) / 0.45);
+  box-shadow: 0 4px 14px hsl(24 14% 14% / 0.07);
 }
 
 .dashboard-user-avatar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.125rem;
+  height: 2.125rem;
   border-radius: 9999px;
-  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--primary) / 0.18);
+  background: hsl(var(--primary) / 0.08);
   flex-shrink: 0;
-  overflow: hidden;
+}
+
+.dashboard-user-online-dot {
+  position: absolute;
+  right: -0.0625rem;
+  bottom: -0.0625rem;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border: 2px solid hsl(var(--card));
+  border-radius: 9999px;
+  background: hsl(152 69% 40%);
 }
 
 .dashboard-user-menu {
   position: absolute;
-  top: calc(100% + 0.375rem);
+  top: calc(100% + 0.5rem);
   right: 0;
-  min-width: 11rem;
+  width: min(23rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100dvh - 5.5rem));
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px hsl(24 14% 14% / 0.1);
-  overflow: hidden;
+  border-radius: 1rem;
+  box-shadow: 0 18px 48px hsl(24 14% 14% / 0.14);
+  overflow-x: hidden;
+  overflow-y: auto;
   z-index: 50;
+  animation: dropdown-in 0.18s ease-out both;
+}
+
+.dashboard-user-menu-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background:
+    radial-gradient(circle at top right, hsl(var(--primary) / 0.1), transparent 48%),
+    hsl(var(--card));
+}
+
+.dashboard-user-menu-avatar {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid hsl(var(--primary) / 0.18);
+  border-radius: 0.75rem;
+  background: hsl(var(--primary) / 0.08);
+}
+
+.dashboard-user-menu-settings {
+  padding: 0.875rem;
+  background: hsl(var(--muted) / 0.12);
 }
 
 .dashboard-user-menu-item {
@@ -1182,6 +1282,25 @@ body {
 
 .dashboard-user-menu-item:hover {
   background: hsl(var(--muted));
+}
+
+.dashboard-user-menu-logout {
+  color: hsl(var(--destructive));
+}
+
+.dashboard-user-menu-logout:hover {
+  background: hsl(var(--destructive) / 0.08);
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .kanban-scroll {
