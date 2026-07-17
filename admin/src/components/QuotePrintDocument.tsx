@@ -166,35 +166,7 @@ export function quotePrintStylesCss() {
         border-radius: 8px;
         background-color: #ffffff;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        /* visible evita cortar o rodapé/LGPD no mobile */
-        overflow: visible;
-      }
-    }
-    @media screen and (max-width: 639px) {
-      .print-shell-inner {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        padding-bottom: 1.5rem !important;
-      }
-      .print-page {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 auto 1rem !important;
-        border-radius: 0.75rem;
-      }
-      .print-quote-header,
-      .print-quote-footer {
-        padding-left: 1.25rem !important;
-        padding-right: 1.25rem !important;
-      }
-      .print-page > main {
-        padding-left: 1.25rem !important;
-        padding-right: 1.25rem !important;
-      }
-      .print-quote-footer-legal {
-        color: #a3a3a3 !important;
-        font-size: 10px !important;
-        line-height: 1.45 !important;
+        overflow: hidden;
       }
     }
     .print-quote-header {
@@ -228,7 +200,7 @@ function PrintTopHeader({ assetBase }: { assetBase?: string }) {
         alt="Móveis Unghero"
         className="h-11 w-auto object-contain brightness-0 invert"
       />
-      <p className="text-sm sm:text-base font-bold tracking-wide uppercase text-right">
+      <p className="text-base font-bold tracking-wide uppercase text-right">
         Orçamento Comercial detalhado
       </p>
     </header>
@@ -239,11 +211,11 @@ function PrintBottomFooter() {
   const f = QUOTE_PRINT_FACTORY;
   return (
     <footer
-      className="print-quote-footer bg-neutral-900 text-neutral-300 px-6 sm:px-[20mm] py-5 mt-auto"
+      className="print-quote-footer bg-neutral-900 text-neutral-300 px-[20mm] py-4 mt-auto"
       style={{ backgroundColor: "#171717" }}
     >
-      <div className="flex flex-col gap-4 text-[9px] leading-relaxed sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-0.5 text-center sm:text-left">
+      <div className="flex flex-row items-start justify-between gap-4 text-[9px] leading-relaxed">
+        <div className="space-y-0.5 text-left">
           <p className="text-white font-bold text-[10px]">{f.name}</p>
           <p>
             <span className="text-neutral-500">CNPJ:</span> {f.cnpj}
@@ -257,7 +229,7 @@ function PrintBottomFooter() {
             {f.city}
           </p>
         </div>
-        <div className="space-y-0.5 font-semibold text-center sm:text-right">
+        <div className="space-y-0.5 font-semibold text-right">
           <p>
             <a
               href={f.whatsappHref}
@@ -293,7 +265,7 @@ function PrintBottomFooter() {
         }}
         aria-hidden
       />
-      <p className="print-quote-footer-legal text-center text-[9px] sm:text-[8px] text-neutral-400 leading-relaxed max-w-[42rem] mx-auto px-1 pb-1">
+      <p className="text-center text-[8px] text-neutral-500 leading-relaxed max-w-[90%] mx-auto">
         Documento comercial de uso exclusivo entre as partes. Os dados pessoais aqui constantes são
         tratados conforme a LGPD (Lei nº 13.709/2018), exclusivamente para elaboração e
         acompanhamento desta proposta.
@@ -340,7 +312,7 @@ export default function QuotePrintDocument({
 
           <main className="flex-1 px-[20mm] py-6 flex flex-col justify-between">
             <div className="space-y-3.5">
-              <section className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
+              <section className="grid grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
                 <div className="space-y-2 min-w-0">
                   <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
                     Cliente
@@ -359,7 +331,7 @@ export default function QuotePrintDocument({
                   </div>
                 </div>
 
-                <div className="flex flex-col items-stretch gap-3 shrink-0 self-start w-full sm:w-auto">
+                <div className="flex flex-col items-stretch gap-3 shrink-0 self-start">
                   <div className="flex gap-3">
                     <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
                       <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
