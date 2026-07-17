@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
@@ -100,22 +100,6 @@ const COLUMNS = [
   },
 ];
 
-const TIPO_LABELS: Record<string, string> = {
-  COZINHA: "Cozinha",
-  CLOSET: "Closet",
-  DORMITORIO: "Dormitório",
-  BANHEIRO: "Banheiro",
-  OUTROS: "Outros",
-};
-
-const ENVIRONMENT_ICONS: Record<string, string> = {
-  COZINHA: "🍳",
-  CLOSET: "👔",
-  DORMITORIO: "🛏️",
-  BANHEIRO: "🚿",
-  OUTROS: "🪵",
-};
-
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
@@ -190,7 +174,10 @@ export default function FactoryClient({
   const [slaByProject, setSlaByProject] = useState(initialSlaByProject);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [didDrag, setDidDrag] = useState(false);
-  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(
+    () => new Set(initialEnvironments.map((e) => e.id))
+  );
+  const knownEnvIdsRef = useRef(new Set(initialEnvironments.map((e) => e.id)));
   const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
   const [slaModal, setSlaModal] = useState<{
     projectId: string;
@@ -210,6 +197,22 @@ export default function FactoryClient({
     sync: syncFactory,
     enabled: !draggedId && !detailItem && !slaModal,
   });
+
+  // Novos cômodos (live sync) entram recolhidos
+  useEffect(() => {
+    setCollapsedCards((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const env of environments) {
+        if (!knownEnvIdsRef.current.has(env.id)) {
+          knownEnvIdsRef.current.add(env.id);
+          next.add(env.id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [environments]);
 
   useEffect(() => {
     if (!slaCheckProjectId) return;
@@ -480,10 +483,23 @@ export default function FactoryClient({
                       <div className="p-3.5 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-1.5 min-w-0 flex-1">
-                            <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-semibold tracking-wide uppercase inline-flex items-center gap-1">
-                              {ENVIRONMENT_ICONS[item.tipo] || "🪵"}{" "}
-                              {TIPO_LABELS[item.tipo] || item.tipo}
-                            </span>
+                            {item.projectId ? (
+                              <Link
+                                href={`/projects/${item.projectId}`}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full hover:text-primary hover:bg-primary/10 transition-colors"
+                                title={item.clientName}
+                              >
+                                <User className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{item.clientName}</span>
+                              </Link>
+                            ) : (
+                              <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full">
+                                <User className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{item.clientName}</span>
+                              </span>
+                            )}
                             <h4 className="font-bold text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
                               {item.nome}
                             </h4>
@@ -491,6 +507,26 @@ export default function FactoryClient({
                           </div>
 
                           <div className="flex items-center gap-0.5 shrink-0">
+                            {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
+                              <div className="flex items-center gap-1 mr-1">
+                                {item.responsavelNome && (
+                                  <span
+                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
+                                    title={`Responsável: ${item.responsavelNome}`}
+                                  >
+                                    {getInitials(item.responsavelNome)}
+                                  </span>
+                                )}
+                                {item.ajudanteNome && (
+                                  <span
+                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-muted-foreground"
+                                    title={`Ajudante: ${item.ajudanteNome}`}
+                                  >
+                                    {getInitials(item.ajudanteNome)}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             <button
                               type="button"
                               onPointerDown={(e) => e.stopPropagation()}
@@ -523,44 +559,6 @@ export default function FactoryClient({
                               </button>
                             )}
                           </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-                            <User className="h-3 w-3 shrink-0" />
-                            {item.projectId ? (
-                              <Link
-                                href={`/projects/${item.projectId}`}
-                                className="truncate font-medium hover:text-primary transition-colors"
-                                onPointerDown={(e) => e.stopPropagation()}
-                              >
-                                {item.clientName}
-                              </Link>
-                            ) : (
-                              <span className="truncate font-medium">{item.clientName}</span>
-                            )}
-                          </div>
-
-                          {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
-                            <div className="flex items-center gap-1 shrink-0">
-                              {item.responsavelNome && (
-                                <span
-                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
-                                  title={`Responsável: ${item.responsavelNome}`}
-                                >
-                                  {getInitials(item.responsavelNome)}
-                                </span>
-                              )}
-                              {item.ajudanteNome && (
-                                <span
-                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-muted-foreground"
-                                  title={`Ajudante: ${item.ajudanteNome}`}
-                                >
-                                  {getInitials(item.ajudanteNome)}
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </div>
 
                         {item.projectId && (

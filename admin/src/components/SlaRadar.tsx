@@ -18,6 +18,7 @@ interface SlaRadarProps {
 
 export default function SlaRadar({ sla, compact = false, onVerify }: SlaRadarProps) {
   if (!sla) {
+    if (compact) return null;
     return (
       <div className={`rounded-lg border border-dashed border-border ${compact ? "p-2" : "p-3"} text-[10px] text-muted-foreground`}>
         Radar de prazos não iniciado
