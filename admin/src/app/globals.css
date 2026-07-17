@@ -793,6 +793,11 @@ body {
 .modal-viewport {
   position: fixed;
   inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -821,7 +826,10 @@ body {
       100svh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
     )
   );
+  /* margin auto + viewport flex: centraliza na tela e ainda permite scroll
+     quando o conteúdo for mais alto que a viewport. */
   margin: auto;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   border-radius: 1rem;

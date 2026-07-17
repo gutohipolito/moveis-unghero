@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,10 @@ import {
   Trash2,
   Download,
   Loader2,
+  Check,
 } from "lucide-react";
+
+const TECH_AUTOSAVE_MS = 900;
 
 export type FactoryEnvironmentItem = FactoryBoardEnvironment;
 
@@ -109,9 +112,15 @@ export default function FactoryEnvironmentDetailModal({
   const [acabamentos, setAcabamentos] = useState("");
   const [medidas, setMedidas] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [techReady, setTechReady] = useState(false);
   const [savingTech, setSavingTech] = useState(false);
+  const [techDirty, setTechDirty] = useState(false);
   const [techMessage, setTechMessage] = useState<string | null>(null);
   const [techError, setTechError] = useState<string | null>(null);
+  const lastSavedTechRef = useRef("");
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onBoardPatchRef = useRef(onBoardPatch);
+  onBoardPatchRef.current = onBoardPatch;
 
   const [attachments, setAttachments] = useState<EnvironmentAttachmentDTO[]>([]);
   const [capaId, setCapaId] = useState<string | null>(null);
@@ -121,6 +130,68 @@ export default function FactoryEnvironmentDetailModal({
     useState<EnvironmentAttachmentCategory>("FOTO");
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
 
+  const techSnapshot = useCallback(
+    () =>
+      JSON.stringify({
+        materiais,
+        ferragens,
+        acabamentos,
+        medidas,
+        observacoes,
+      }),
+    [materiais, ferragens, acabamentos, medidas, observacoes]
+  );
+
+  const persistTechSheet = useCallback(
+    async (environmentId: string, values: {
+      materiais: string;
+      ferragens: string;
+      acabamentos: string;
+      medidas: string;
+      observacoes: string;
+    }) => {
+      setSavingTech(true);
+      setTechError(null);
+      const result = await saveEnvironmentTechSheet(environmentId, {
+        materiais: values.materiais,
+        ferragens: values.ferragens,
+        acabamentos: values.acabamentos,
+        medidas_observacoes: values.medidas,
+        observacoes_fabrica: values.observacoes,
+      });
+      setSavingTech(false);
+      if (!result.success) {
+        setTechError(result.error);
+        setTechDirty(true);
+        return false;
+      }
+      const savedSnapshot = JSON.stringify({
+        materiais: result.tech.materiais,
+        ferragens: result.tech.ferragens,
+        acabamentos: result.tech.acabamentos,
+        medidas: result.tech.medidas_observacoes,
+        observacoes: result.tech.observacoes_fabrica,
+      });
+      lastSavedTechRef.current = savedSnapshot;
+      setTechDirty(false);
+      setTechMessage("Salvo automaticamente");
+      onBoardPatchRef.current(environmentId, {
+        materiais: result.tech.materiais || null,
+        ferragens: result.tech.ferragens || null,
+        acabamentos: result.tech.acabamentos || null,
+        medidasObservacoes: result.tech.medidas_observacoes || null,
+        observacoesFabrica: result.tech.observacoes_fabrica || null,
+        materialsSummary: summarizeText(result.tech.materiais),
+        hardwareSummary: summarizeText(result.tech.ferragens),
+        techSheetFilled: result.fill.filled,
+        techSheetTotal: result.fill.total,
+        techSheetComplete: result.fill.complete,
+      });
+      return true;
+    },
+    []
+  );
+
   useEffect(() => {
     if (!item) return;
     setTab("ficha");
@@ -129,6 +200,8 @@ export default function FactoryEnvironmentDetailModal({
     setTechMessage(null);
     setTechError(null);
     setAttachmentError(null);
+    setTechReady(false);
+    setTechDirty(false);
     setMateriais(item.materiais ?? "");
     setFerragens(item.ferragens ?? "");
     setAcabamentos(item.acabamentos ?? "");
@@ -138,19 +211,81 @@ export default function FactoryEnvironmentDetailModal({
     let cancelled = false;
     (async () => {
       const result = await getEnvironmentTechSheet(item.id);
-      if (cancelled || !result.success) return;
+      if (cancelled) return;
+      if (!result.success) {
+        setTechReady(true);
+        lastSavedTechRef.current = JSON.stringify({
+          materiais: item.materiais ?? "",
+          ferragens: item.ferragens ?? "",
+          acabamentos: item.acabamentos ?? "",
+          medidas: item.medidasObservacoes ?? "",
+          observacoes: item.observacoesFabrica ?? "",
+        });
+        return;
+      }
       setMateriais(result.tech.materiais);
       setFerragens(result.tech.ferragens);
       setAcabamentos(result.tech.acabamentos);
       setMedidas(result.tech.medidas_observacoes);
       setObservacoes(result.tech.observacoes_fabrica);
       setCapaId(result.tech.capa_attachment_id);
+      lastSavedTechRef.current = JSON.stringify({
+        materiais: result.tech.materiais,
+        ferragens: result.tech.ferragens,
+        acabamentos: result.tech.acabamentos,
+        medidas: result.tech.medidas_observacoes,
+        observacoes: result.tech.observacoes_fabrica,
+      });
+      setTechReady(true);
     })();
 
     return () => {
       cancelled = true;
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
     };
   }, [item?.id]);
+
+  useEffect(() => {
+    if (!item || !techReady) return;
+    const snapshot = techSnapshot();
+    if (snapshot === lastSavedTechRef.current) {
+      setTechDirty(false);
+      return;
+    }
+
+    setTechDirty(true);
+    setTechMessage(null);
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      void persistTechSheet(item.id, {
+        materiais,
+        ferragens,
+        acabamentos,
+        medidas,
+        observacoes,
+      });
+    }, TECH_AUTOSAVE_MS);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [
+    item?.id,
+    techReady,
+    materiais,
+    ferragens,
+    acabamentos,
+    medidas,
+    observacoes,
+    techSnapshot,
+    persistTechSheet,
+  ]);
 
   useEffect(() => {
     if (!item || tab !== "arquivos") return;
@@ -201,35 +336,33 @@ export default function FactoryEnvironmentDetailModal({
     setSlaStageDraft("");
   }
 
-  async function handleSaveTech() {
-    setSavingTech(true);
-    setTechError(null);
-    setTechMessage(null);
-    const result = await saveEnvironmentTechSheet(currentItem.id, {
+  async function handleSaveTechNow() {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    await persistTechSheet(currentItem.id, {
       materiais,
       ferragens,
       acabamentos,
-      medidas_observacoes: medidas,
-      observacoes_fabrica: observacoes,
+      medidas,
+      observacoes,
     });
-    setSavingTech(false);
-    if (!result.success) {
-      setTechError(result.error);
-      return;
+  }
+
+  function handleModalClose() {
+    if (autosaveTimerRef.current && item && techDirty) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+      void persistTechSheet(item.id, {
+        materiais,
+        ferragens,
+        acabamentos,
+        medidas,
+        observacoes,
+      });
     }
-    setTechMessage("Ficha técnica salva.");
-    onBoardPatch(currentItem.id, {
-      materiais: result.tech.materiais || null,
-      ferragens: result.tech.ferragens || null,
-      acabamentos: result.tech.acabamentos || null,
-      medidasObservacoes: result.tech.medidas_observacoes || null,
-      observacoesFabrica: result.tech.observacoes_fabrica || null,
-      materialsSummary: summarizeText(result.tech.materiais),
-      hardwareSummary: summarizeText(result.tech.ferragens),
-      techSheetFilled: result.fill.filled,
-      techSheetTotal: result.fill.total,
-      techSheetComplete: result.fill.complete,
-    });
+    onClose();
   }
 
   async function handleUpload(fileList: FileList | null) {
@@ -319,7 +452,7 @@ export default function FactoryEnvironmentDetailModal({
   ];
 
   return (
-    <Dialog isOpen={!!item} onClose={onClose} className="max-w-3xl">
+    <Dialog isOpen={!!item} onClose={handleModalClose} className="max-w-3xl">
       <div className="space-y-4 pr-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -370,9 +503,40 @@ export default function FactoryEnvironmentDetailModal({
 
         {tab === "ficha" && (
           <section className="space-y-3">
-            <p className="text-[11px] text-muted-foreground">
-              Materiais, ferragens e observações de execução deste cômodo — visíveis no card da fábrica.
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[11px] text-muted-foreground">
+                Materiais, ferragens e observações de execução deste cômodo — visíveis no card da
+                fábrica. As alterações são salvas automaticamente.
+              </p>
+              <div className="shrink-0 text-[10px] font-semibold whitespace-nowrap">
+                {savingTech ? (
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Salvando…
+                  </span>
+                ) : techError ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveTechNow()}
+                    className="text-red-700 underline-offset-2 hover:underline"
+                  >
+                    Erro — tocar para tentar
+                  </button>
+                ) : techDirty ? (
+                  <span className="text-amber-700">Alterações pendentes…</span>
+                ) : techMessage ? (
+                  <span className="inline-flex items-center gap-1 text-emerald-700">
+                    <Check className="h-3 w-3" />
+                    {techMessage}
+                  </span>
+                ) : techReady ? (
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <Check className="h-3 w-3" />
+                    Salvo
+                  </span>
+                ) : null}
+              </div>
+            </div>
             <div className="grid grid-cols-1 gap-3">
               <label className="space-y-1">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">Materiais</span>
@@ -434,14 +598,6 @@ export default function FactoryEnvironmentDetailModal({
                 {techError}
               </p>
             )}
-            {techMessage && (
-              <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1.5">
-                {techMessage}
-              </p>
-            )}
-            <Button type="button" size="sm" disabled={savingTech} onClick={handleSaveTech}>
-              {savingTech ? "Salvando…" : "Salvar ficha técnica"}
-            </Button>
           </section>
         )}
 
@@ -728,14 +884,14 @@ export default function FactoryEnvironmentDetailModal({
           {item.projectId && (
             <Link
               href={`/projects/${item.projectId}`}
-              onClick={onClose}
+              onClick={handleModalClose}
               className="inline-flex flex-1 items-center justify-center h-9 px-4 text-sm font-medium rounded-md border border-border bg-background hover:bg-secondary transition-colors"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Abrir projeto completo
             </Link>
           )}
-          <Button type="button" variant="secondary" onClick={onClose} className="flex-1 sm:flex-none">
+          <Button type="button" variant="secondary" onClick={handleModalClose} className="flex-1 sm:flex-none">
             Fechar
           </Button>
         </div>

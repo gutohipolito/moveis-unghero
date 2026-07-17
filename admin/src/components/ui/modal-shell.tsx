@@ -70,6 +70,19 @@ export function ModalShell({
             panelClassName
           )}
           onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            // Enter em input/select não deve submeter formulário nem ativar
+            // o primeiro botão do modal (comportamento comum de operadores).
+            if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+            const target = event.target as HTMLElement | null;
+            if (!target) return;
+            const tag = target.tagName;
+            if (tag === "TEXTAREA" || target.isContentEditable) return;
+            if (tag === "BUTTON" || tag === "A" || target.getAttribute("role") === "button") return;
+            if (tag === "INPUT" || tag === "SELECT") {
+              event.preventDefault();
+            }
+          }}
         >
           {showClose ? (
             <button
