@@ -457,101 +457,52 @@ export default function FactoryClient({
         onDragStart={(e) => handleDragStart(e, item.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(item)}
-        className={`glass-card glass-card-hover overflow-hidden border-border/80 active:scale-[0.98] transition-all duration-200 cursor-pointer relative group ${
+        className={`glass-card glass-card-hover overflow-hidden active:scale-[0.98] transition-all duration-200 cursor-pointer relative group ${
           draggedId === item.id ? "opacity-40 scale-[0.98]" : ""
-        } ${clientColor.border} border-l-[3px]`}
+        } ${clientColor.border} ${clientColor.soft} border-2`}
       >
-        <div className={`h-1 ${col.accent}`} />
+        <div className={`h-1.5 ${clientColor.swatch}`} />
 
-        <div className="p-3.5 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1.5 min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${clientColor.swatch}`}
-                  title="Cor do cliente"
-                />
-                {item.projectId ? (
-                  <Link
-                    href={`/projects/${item.projectId}`}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full hover:ring-1 ${clientColor.ring} transition-colors`}
-                    title={item.clientName}
-                  >
-                    <User className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{item.clientName}</span>
-                  </Link>
-                ) : (
-                  <span
-                    className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 max-w-full`}
-                  >
-                    <User className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{item.clientName}</span>
-                  </span>
-                )}
-                {stackedExtra > 0 && (
-                  <button
-                    type="button"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (options?.stackKey) toggleStackExpand(options.stackKey);
-                    }}
-                    className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-foreground text-background shrink-0"
-                    title="Expandir pilha do projeto"
-                  >
-                    +{stackedExtra}
-                  </button>
-                )}
-              </div>
-              <div className="flex items-start gap-2">
-                {item.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.coverUrl}
-                    alt=""
-                    className="h-10 w-10 rounded-md object-cover border border-border shrink-0"
-                  />
-                ) : (
-                  <div className="h-10 w-10 rounded-md border border-dashed border-border flex items-center justify-center text-muted-foreground shrink-0">
-                    <ImageIcon className="h-4 w-4" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
-                    {item.nome}
-                  </h4>
-                  <p className="text-[10px] text-muted-foreground/80 mt-0.5">
-                    Clique para ficha técnica
-                  </p>
-                </div>
-              </div>
-              {(item.materialsSummary || item.hardwareSummary) && (
-                <p className="text-[10px] text-muted-foreground line-clamp-2">
-                  {item.materialsSummary || item.hardwareSummary}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
-                    item.techSheetComplete
-                      ? "bg-emerald-500/10 text-emerald-700"
-                      : item.techSheetFilled > 0
-                        ? "bg-amber-500/10 text-amber-700"
-                        : "bg-secondary text-muted-foreground"
-                  }`}
+        <div className="p-3 space-y-2.5 bg-card/85">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${clientColor.swatch}`}
+                title="Cor do cliente"
+              />
+              {item.projectId ? (
+                <Link
+                  href={`/projects/${item.projectId}`}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 min-w-0 hover:ring-1 ${clientColor.ring} transition-colors`}
+                  title={item.clientName}
                 >
-                  <ClipboardCheck className="h-3 w-3" />
-                  Ficha {item.techSheetFilled}/{item.techSheetTotal}
+                  <User className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{item.clientName}</span>
+                </Link>
+              ) : (
+                <span
+                  className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 min-w-0`}
+                >
+                  <User className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{item.clientName}</span>
                 </span>
-                {item.attachmentCount > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                    <FileStack className="h-3 w-3" />
-                    {item.attachmentCount}
-                  </span>
-                )}
-              </div>
+              )}
+              {stackedExtra > 0 && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (options?.stackKey) toggleStackExpand(options.stackKey);
+                  }}
+                  className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${clientColor.swatch} text-white shrink-0`}
+                  title="Expandir pilha do projeto"
+                >
+                  +{stackedExtra}
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-0.5 shrink-0">
@@ -563,31 +514,11 @@ export default function FactoryClient({
                     e.stopPropagation();
                     toggleStackExpand(options.stackKey!);
                   }}
-                  className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer"
+                  className={`p-1.5 rounded-md ${clientColor.soft} ${clientColor.text} hover:ring-1 ${clientColor.ring} transition-all cursor-pointer`}
                   title="Expandir ou recolher pilha"
                 >
                   <Layers className="h-3.5 w-3.5" />
                 </button>
-              )}
-              {isCollapsed && (item.responsavelNome || item.ajudanteNome) && (
-                <div className="flex items-center gap-1 mr-1">
-                  {item.responsavelNome && (
-                    <span
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
-                      title={`Responsável: ${item.responsavelNome}`}
-                    >
-                      {getInitials(item.responsavelNome)}
-                    </span>
-                  )}
-                  {item.ajudanteNome && (
-                    <span
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-muted-foreground"
-                      title={`Ajudante: ${item.ajudanteNome}`}
-                    >
-                      {getInitials(item.ajudanteNome)}
-                    </span>
-                  )}
-                </div>
               )}
               <button
                 type="button"
@@ -596,7 +527,7 @@ export default function FactoryClient({
                   e.stopPropagation();
                   toggleCardCollapse(item.id);
                 }}
-                className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                className={`p-1.5 rounded-md ${clientColor.soft} ${clientColor.text} hover:ring-1 ${clientColor.ring} transition-all cursor-pointer`}
                 title={isCollapsed ? "Expandir card" : "Recolher card"}
               >
                 {isCollapsed ? (
@@ -614,7 +545,7 @@ export default function FactoryClient({
                     e.stopPropagation();
                     handleMoveRight(item);
                   }}
-                  className="p-1.5 rounded-md bg-secondary hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all cursor-pointer opacity-70 group-hover:opacity-100"
+                  className={`p-1.5 rounded-md ${clientColor.soft} ${clientColor.text} hover:ring-1 ${clientColor.ring} transition-all cursor-pointer`}
                   title="Avançar etapa de produção"
                 >
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -622,6 +553,35 @@ export default function FactoryClient({
               )}
             </div>
           </div>
+
+          <div className="flex items-start gap-2.5">
+            {item.coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.coverUrl}
+                alt=""
+                className={`h-11 w-11 rounded-lg object-cover border ${clientColor.border} shrink-0`}
+              />
+            ) : (
+              <div className={`h-11 w-11 rounded-lg border border-dashed ${clientColor.border} ${clientColor.soft} flex items-center justify-center ${clientColor.text} shrink-0`}>
+                <ImageIcon className="h-4 w-4" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h4 className="font-bold text-[15px] text-foreground leading-[1.2] group-hover:text-primary transition-colors">
+                {item.nome}
+              </h4>
+              <p className="text-[10px] text-muted-foreground/80 mt-1 whitespace-nowrap">
+                Abrir ficha técnica
+              </p>
+            </div>
+          </div>
+
+          {(item.materialsSummary || item.hardwareSummary) && (
+            <p className="text-[10px] text-muted-foreground line-clamp-2">
+              {item.materialsSummary || item.hardwareSummary}
+            </p>
+          )}
 
           {item.projectId && (
             <SlaRadar
@@ -631,13 +591,57 @@ export default function FactoryClient({
             />
           )}
 
+          <div className="flex items-end justify-between gap-2 pt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                  item.techSheetComplete
+                    ? "bg-emerald-500/10 text-emerald-700"
+                    : item.techSheetFilled > 0
+                      ? "bg-amber-500/10 text-amber-700"
+                      : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                <ClipboardCheck className="h-3 w-3" />
+                Ficha {item.techSheetFilled}/{item.techSheetTotal}
+              </span>
+              {item.attachmentCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
+                  <FileStack className="h-3 w-3" />
+                  {item.attachmentCount}
+                </span>
+              )}
+            </div>
+
+            {(item.responsavelNome || item.ajudanteNome) && (
+              <div className="flex items-center -space-x-1 shrink-0">
+                {item.responsavelNome && (
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card ${clientColor.swatch} text-[9px] font-bold text-white`}
+                    title={`Responsável: ${item.responsavelNome}`}
+                  >
+                    {getInitials(item.responsavelNome)}
+                  </span>
+                )}
+                {item.ajudanteNome && (
+                  <span
+                    className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card bg-secondary text-[9px] font-bold text-muted-foreground"
+                    title={`Ajudante: ${item.ajudanteNome}`}
+                  >
+                    {getInitials(item.ajudanteNome)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
           <div
             className={`grid transition-all duration-200 ease-in-out ${
               isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
             }`}
           >
             <div className="overflow-hidden">
-              <div className="space-y-2.5 pt-2.5 border-t border-border/50">
+              <div className={`space-y-2.5 pt-2.5 border-t ${clientColor.border}`}>
                 <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                   <Users className="h-3 w-3" />
                   Equipe
