@@ -46,7 +46,7 @@ export function Pagination({
     "inline-flex items-center justify-center h-8 min-w-8 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
-    <div className="flex flex-col gap-3 pt-4 sm:grid sm:grid-cols-3 sm:items-center sm:gap-3">
+    <div className="flex flex-col gap-3 pt-4 pb-8 sm:grid sm:grid-cols-3 sm:items-center sm:gap-3 md:pb-10">
       {/* Navegação de páginas — centralizada, em linha própria no mobile */}
       <div className="order-1 sm:order-2 flex items-center justify-center gap-1">
         <button
