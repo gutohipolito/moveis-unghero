@@ -673,12 +673,6 @@ export default function FactoryClient({
 
   return (
     <div className="space-y-[var(--space-5)]">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
-        <KpiCard label="Total na fábrica" value={`${totalPecas} cômodos`} icon={ClipboardList} accent="neutral" />
-        <KpiCard label="Em corte" value={`${emCorteCount} cômodos`} icon={Layers} accent="info" />
-        <KpiCard label="Em montagem" value={`${emMontagemCount} peças`} icon={Wrench} accent="warning" />
-        <KpiCard label="Pronto p/ expedição" value={`${prontoEntregaCount} cômodos`} icon={Package} accent="success" />
-      </div>
 
       <p className="text-xs text-muted-foreground">
         Cômodos do mesmo projeto formam uma <strong className="font-semibold text-foreground">pilha</strong> por etapa.

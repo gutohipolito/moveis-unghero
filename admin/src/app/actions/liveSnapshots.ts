@@ -318,34 +318,46 @@ export async function getBiLiveSnapshot(companyId: string) {
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   try {
-    const projects = await prisma.project.findMany({
-      where: { client: { company_id: auth.companyId } },
-      select: {
-        id: true,
-        valor_previsto: true,
-        status_geral: true,
-        partner_id: true,
-        partner: {
-          select: {
-            id: true,
-            nome: true,
-            cidade: true,
-            tipo: true,
-            fotoUrl: true,
+    const [projects, quotes, fbRes] = await Promise.all([
+      prisma.project.findMany({
+        where: { client: { company_id: auth.companyId } },
+        select: {
+          id: true,
+          valor_previsto: true,
+          status_geral: true,
+          partner_id: true,
+          partner: {
+            select: {
+              id: true,
+              nome: true,
+              cidade: true,
+              tipo: true,
+              fotoUrl: true,
+            },
+          },
+          client: {
+            select: {
+              id: true,
+              nome: true,
+              cidade: true,
+              origem: true,
+              telefone: true,
+              email: true,
+            },
           },
         },
-        client: {
-          select: {
-            id: true,
-            nome: true,
-            cidade: true,
-            origem: true,
-            telefone: true,
-            email: true,
-          },
+      }),
+      prisma.quote.findMany({
+        where: { project: { client: { company_id: auth.companyId } } },
+        select: {
+          id: true,
+          valor_final: true,
+          validade: true,
+          aprovado_em: true,
         },
-      },
-    });
+      }),
+      fetchFactoryBoard(auth.companyId),
+    ]);
 
     const formattedProjects = projects.map((project) => ({
       id: project.id,
@@ -355,16 +367,6 @@ export async function getBiLiveSnapshot(companyId: string) {
       partner: project.partner,
       client: project.client,
     }));
-
-    const quotes = await prisma.quote.findMany({
-      where: { project: { client: { company_id: auth.companyId } } },
-      select: {
-        id: true,
-        valor_final: true,
-        validade: true,
-        aprovado_em: true,
-      },
-    });
 
     const formattedQuotes = quotes.map((q) => ({
       id: q.id,
@@ -388,12 +390,18 @@ export async function getBiLiveSnapshot(companyId: string) {
         validade: quote.validade,
         aprovado_em: quote.aprovado_em,
       })),
+      ...fbRes.environments.map((env) => ({
+        kind: "factory_env",
+        id: env.id,
+        status: env.status,
+      })),
     ]);
 
     return {
       success: true as const,
       projects: formattedProjects,
       quotes: formattedQuotes,
+      environments: fbRes.environments,
       version,
     };
   } catch (error) {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
+import { fetchFactoryBoard } from "@/lib/factoryBoard";
 import BiClient from "./BiClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
@@ -12,11 +13,16 @@ export default async function BIPage() {
 
   let projects: Awaited<ReturnType<typeof loadBiProjects>> = [];
   let quotes: Awaited<ReturnType<typeof loadBiQuotes>> = [];
+  let factoryEnvironments: any[] = [];
   try {
-    [projects, quotes] = await Promise.all([
+    const [pRes, qRes, fbRes] = await Promise.all([
       loadBiProjects(userCompanyId),
       loadBiQuotes(userCompanyId),
+      fetchFactoryBoard(userCompanyId),
     ]);
+    projects = pRes;
+    quotes = qRes;
+    factoryEnvironments = fbRes.environments;
   } catch (error) {
     console.warn("Falha ao se conectar com banco de dados no BI.", error);
   }
@@ -46,6 +52,7 @@ export default async function BIPage() {
       <BiClient
         initialProjects={projects}
         initialQuotes={quotes}
+        initialEnvironments={factoryEnvironments}
         companyId={userCompanyId}
       />
     </div>

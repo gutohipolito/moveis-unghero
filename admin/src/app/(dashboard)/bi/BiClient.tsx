@@ -37,6 +37,11 @@ import {
   User,
   Palette,
   Ruler,
+  Wrench,
+  Layers,
+  Package,
+  Truck,
+  ClipboardCheck,
 } from "lucide-react";
 
 interface Project {
@@ -68,9 +73,27 @@ export interface BiQuoteSummary {
   aprovado_em: string | null;
 }
 
+interface FactoryEnvironment {
+  id: string;
+  nome: string;
+  tipo: string;
+  status: string;
+  projectId: string;
+  clientId: string;
+  clientName: string;
+  responsavelId: string | null;
+  responsavelNome: string | null;
+  ajudanteId: string | null;
+  ajudanteNome: string | null;
+  techSheetFilled: number;
+  techSheetTotal: number;
+  techSheetComplete: boolean;
+}
+
 interface BiClientProps {
   initialProjects: Project[];
   initialQuotes: BiQuoteSummary[];
+  initialEnvironments: FactoryEnvironment[];
   companyId: string;
 }
 
@@ -84,6 +107,14 @@ const COLUMNS_CRM = [
   { id: "INSTALACAO", label: "Instalação", color: "from-indigo-500 to-indigo-600" },
   { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" },
   { id: "PERDIDO", label: "Perdas", color: "from-rose-500 to-rose-600" },
+];
+
+const COLUMNS_FACTORY = [
+  { id: "PRONTO_PRODUCAO", label: "Fila de Produção", color: "from-purple-400 to-purple-500" },
+  { id: "EM_CORTE", label: "Corte / Usinagem", color: "from-cyan-400 to-cyan-500" },
+  { id: "MONTAGEM_FABRICA", label: "Montagem Fábrica", color: "from-orange-400 to-orange-500" },
+  { id: "PRONTO_ENTREGA", label: "Pronto p/ Entrega", color: "from-emerald-400 to-emerald-500" },
+  { id: "EM_INSTALACAO", label: "Instalação", color: "from-indigo-400 to-indigo-500" },
 ];
 
 const FUNNEL_ACTIVE_STATUSES = [
@@ -129,10 +160,12 @@ const PARTNER_TYPE_COLORS: Record<string, { bg: string; text: string; border: st
 export default function BiClient({
   initialProjects,
   initialQuotes,
+  initialEnvironments,
   companyId,
 }: BiClientProps) {
   const [projects, setProjects] = useState(initialProjects);
   const [quotes, setQuotes] = useState(initialQuotes);
+  const [environments, setEnvironments] = useState(initialEnvironments);
 
   // Privacidade global integrada do projeto
   const { privacyMode, togglePrivacy } = usePrivacy();
@@ -163,7 +196,7 @@ export default function BiClient({
   }, [privacyMode, togglePrivacy]);
 
   // Estados de navegação e busca
-  const [activeTab, setActiveTab] = useState<"geral" | "funil_orcamentos" | "parceiros" | "exportar">("geral");
+  const [activeTab, setActiveTab] = useState<"geral" | "funil_orcamentos" | "producao" | "parceiros" | "exportar">("geral");
   const [searchTerm, setSearchTerm] = useState("");
 
   // Estados específicos para Parceiros
@@ -178,6 +211,7 @@ export default function BiClient({
     kpis: true,
     crm: true,
     channels: true,
+    production: true,
     partners: true,
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -188,6 +222,7 @@ export default function BiClient({
     if (result.success) {
       if (result.projects) setProjects(result.projects as Project[]);
       if (result.quotes) setQuotes(result.quotes);
+      if (result.environments) setEnvironments(result.environments as FactoryEnvironment[]);
     }
   }, [companyId]);
 
@@ -509,6 +544,90 @@ export default function BiClient({
     return list;
   }, [quotesHealth, negotiationValue, negotiationProjects]);
 
+  // ==========================================
+  // NOVOS CÁLCULOS ANALÍTICOS DE PRODUÇÃO
+  // ==========================================
+
+  // Cômodos ativos na fábrica (todos exceto os marcados como FINALIZADO)
+  const activeEnvironments = useMemo(() => {
+    return environments.filter((e) => e.status !== "FINALIZADO");
+  }, [environments]);
+
+  const factoryKpis = useMemo(() => {
+    const total = activeEnvironments.length;
+    const emCorte = activeEnvironments.filter((e) => e.status === "EM_CORTE").length;
+    const emMontagem = activeEnvironments.filter((e) => e.status === "MONTAGEM_FABRICA").length;
+    const prontoEntrega = activeEnvironments.filter((e) => e.status === "PRONTO_ENTREGA").length;
+    const emInstalacao = activeEnvironments.filter((e) => e.status === "EM_INSTALACAO").length;
+    const filaProducao = activeEnvironments.filter((e) => e.status === "PRONTO_PRODUCAO").length;
+
+    return {
+      total,
+      emCorte,
+      emMontagem,
+      prontoEntrega,
+      emInstalacao,
+      filaProducao,
+    };
+  }, [activeEnvironments]);
+
+  // Distribuição de carga de trabalho dos colaboradores (Responsável / Ajudante)
+  const staffWorkload = useMemo(() => {
+    const map = new Map<string, { name: string; lead: number; helper: number; total: number }>();
+
+    for (const env of activeEnvironments) {
+      if (env.responsavelNome) {
+        const cur = map.get(env.responsavelNome) ?? { name: env.responsavelNome, lead: 0, helper: 0, total: 0 };
+        cur.lead += 1;
+        cur.total += 1;
+        map.set(env.responsavelNome, cur);
+      }
+      if (env.ajudanteNome) {
+        const cur = map.get(env.ajudanteNome) ?? { name: env.ajudanteNome, lead: 0, helper: 0, total: 0 };
+        cur.helper += 1;
+        cur.total += 1;
+        map.set(env.ajudanteNome, cur);
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [activeEnvironments]);
+
+  // Estatísticas de preenchimento das Fichas Técnicas
+  const techSheetStats = useMemo(() => {
+    if (activeEnvironments.length === 0) return { pct: 0, complete: 0, incomplete: 0 };
+    let filledSum = 0;
+    let totalSum = 0;
+    let completeCount = 0;
+
+    for (const env of activeEnvironments) {
+      filledSum += env.techSheetFilled || 0;
+      totalSum += env.techSheetTotal || 0;
+      if (env.techSheetComplete) completeCount += 1;
+    }
+
+    const pct = totalSum > 0 ? (filledSum / totalSum) * 100 : 0;
+    return {
+      pct,
+      complete: completeCount,
+      incomplete: activeEnvironments.length - completeCount,
+    };
+  }, [activeEnvironments]);
+
+  // Tipologia dos cômodos que estão na linha de produção hoje
+  const roomTypesData = useMemo(() => {
+    const map = new Map<string, { type: string; count: number }>();
+    for (const env of activeEnvironments) {
+      const type = env.tipo || "OUTROS";
+      const cur = map.get(type) ?? { type, count: 0 };
+      cur.count += 1;
+      map.set(type, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [activeEnvironments]);
+
+  const maxRoomTypeCount = Math.max(...roomTypesData.map((r) => r.count), 1);
+
   // Helper para obter as iniciais de um nome
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);
@@ -607,6 +726,23 @@ export default function BiClient({
           >
             <FolderKanban className="h-4 w-4" />
             <span>Funil & Orçamentos</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("producao")}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
+              activeTab === "producao"
+                ? "bg-primary/10 text-primary border border-primary/20 shadow-xs font-bold"
+                : "text-muted-foreground hover:bg-slate-100 hover:text-foreground border border-transparent"
+            }`}
+          >
+            <Wrench className="h-4 w-4" />
+            <span>Produção (Fábrica)</span>
+            {activeEnvironments.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary/20 text-primary-foreground leading-none">
+                {activeEnvironments.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -1059,6 +1195,205 @@ export default function BiClient({
           </div>
         )}
 
+        {activeTab === "producao" && (
+          <div className="space-y-6 animate-in fade-in-50 duration-200">
+            {/* 1. KPIs da Produção Translocados do Chão de Fábrica */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+              <KpiCard label="Total na fábrica" value={`${factoryKpis.total} cômodos`} icon={ClipboardList} accent="neutral" />
+              <KpiCard label="Em corte" value={`${factoryKpis.emCorte} cômodos`} icon={Layers} accent="info" />
+              <KpiCard label="Em montagem" value={`${factoryKpis.emMontagem} peças`} icon={Wrench} accent="warning" />
+              <KpiCard label="Pronto p/ expedição" value={`${factoryKpis.prontoEntrega} cômodos`} icon={Package} accent="success" />
+            </div>
+
+            {/* 2. Gráficos Analíticos Detalhados da Produção */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              
+              {/* Distribuição por Etapa na Fábrica */}
+              <Card className="p-5 lg:col-span-7 space-y-4 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-headline text-foreground flex items-center gap-1.5">
+                    <Wrench className="h-4.5 w-4.5 text-primary" />
+                    Cômodos Ativos por Fila Operacional
+                  </h3>
+                  <p className="text-caption text-muted-foreground mt-0.5">
+                    Volume de trabalho distribuído pelas fases físicas da marcenaria e entrega.
+                  </p>
+                </div>
+
+                <div className="space-y-3.5 my-auto py-2">
+                  {COLUMNS_FACTORY.map((col) => {
+                    const count = activeEnvironments.filter((e) => e.status === col.id).length;
+                    const maxCount = Math.max(...COLUMNS_FACTORY.map((c) => activeEnvironments.filter((e) => e.status === c.id).length), 1);
+                    const pct = (count / maxCount) * 100;
+
+                    return (
+                      <div key={col.id} className="space-y-1">
+                        <div className="flex justify-between text-xs font-bold text-neutral-800">
+                          <span>{col.label}</span>
+                          <span>{count} {count === 1 ? "cômodo" : "cômodos"}</span>
+                        </div>
+                        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full bg-gradient-to-r ${col.color} transition-all duration-1000`}
+                            style={{ width: `${Math.max(2, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              {/* Fichas Técnicas & Controle de Preparação */}
+              <Card className="p-5 lg:col-span-5 space-y-4 flex flex-col justify-between">
+                <div className="space-y-0.5">
+                  <h3 className="text-headline text-foreground flex items-center gap-1.5">
+                    <ClipboardCheck className="h-4.5 w-4.5 text-primary" />
+                    Preenchimento de Fichas Técnicas
+                  </h3>
+                  <p className="text-caption text-muted-foreground">
+                    Taxa de documentação técnica dos cômodos liberados na fábrica.
+                  </p>
+                </div>
+
+                <div className="space-y-5 my-auto">
+                  <div className="flex flex-col items-center justify-center space-y-2 py-2">
+                    <div className="relative flex items-center justify-center h-24 w-24">
+                      {/* Círculo de Progresso */}
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle
+                          cx="48"
+                          cy="48"
+                          r="40"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          fill="transparent"
+                          className="text-slate-100"
+                        />
+                        <circle
+                          cx="48"
+                          cy="48"
+                          r="40"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          fill="transparent"
+                          strokeDasharray={251.2}
+                          strokeDashoffset={251.2 - (251.2 * techSheetStats.pct) / 100}
+                          className="text-primary transition-all duration-1000"
+                        />
+                      </svg>
+                      <span className="absolute text-lg font-black text-neutral-900">
+                        {techSheetStats.pct.toFixed(0)}%
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-neutral-500">Média de Conclusão Técnica</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-center border-t border-slate-100 pt-3.5">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-semibold block uppercase">Completas</span>
+                      <strong className="text-sm font-bold text-emerald-600 block mt-0.5">{techSheetStats.complete} cômodos</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-semibold block uppercase">Incompletas</span>
+                      <strong className="text-sm font-bold text-amber-600 block mt-0.5">{techSheetStats.incomplete} cômodos</strong>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Carga de Trabalho por Equipe e Tipologia de Cômodo */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              
+              {/* Equipe Operacional da Fábrica */}
+              <Card className="p-5 space-y-3.5">
+                <div>
+                  <h3 className="text-headline text-foreground flex items-center gap-1.5">
+                    <Users className="h-4.5 w-4.5 text-primary" />
+                    Carga de Trabalho da Equipe (Ativa)
+                  </h3>
+                  <p className="text-caption text-muted-foreground mt-0.5">
+                    Número de cômodos sob encargo dos marceneiros e auxiliares no momento.
+                  </p>
+                </div>
+
+                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
+                  {staffWorkload.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-muted-foreground font-semibold">
+                      Nenhum profissional com cômodo atribuído hoje.
+                    </div>
+                  ) : (
+                    staffWorkload.map((staff) => (
+                      <div key={staff.name} className="flex items-center justify-between text-xs border-b border-slate-50 pb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700 border">
+                            {getInitials(staff.name)}
+                          </span>
+                          <div>
+                            <strong className="text-neutral-800 block font-semibold">{staff.name}</strong>
+                            <span className="text-[9px] text-muted-foreground block font-medium">
+                              Como Responsável: {staff.lead} | Como Ajudante: {staff.helper}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="bg-primary/10 text-primary font-extrabold text-xs px-2.5 py-1 rounded-lg">
+                          {staff.total} cômodos
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              {/* Tipos de Cômodos em Produção */}
+              <Card className="p-5 space-y-3.5">
+                <div>
+                  <h3 className="text-headline text-foreground flex items-center gap-1.5">
+                    <Palette className="h-4.5 w-4.5 text-primary" />
+                    Tipologia de Cômodos na Linha
+                  </h3>
+                  <p className="text-caption text-muted-foreground mt-0.5">
+                    Quais ambientes predominam nas serras e bancadas de montagem atualmente.
+                  </p>
+                </div>
+
+                <div className="space-y-4 max-h-[250px] overflow-y-auto pr-1">
+                  {roomTypesData.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-muted-foreground font-semibold">
+                      Nenhum cômodo ativo em produção.
+                    </div>
+                  ) : (
+                    roomTypesData.map((room) => {
+                      const pct = (room.count / maxRoomTypeCount) * 100;
+                      return (
+                        <div key={room.type} className="flex items-center gap-3">
+                          <span className="w-20 text-[10px] font-extrabold text-muted-foreground text-right tracking-wider block uppercase truncate">
+                            {room.type}
+                          </span>
+                          <div className="flex-1">
+                            <div className="w-full h-3 bg-slate-100 rounded-md overflow-hidden relative">
+                              <div
+                                className="h-full rounded-md bg-gradient-to-r from-indigo-400 to-indigo-500 transition-all duration-1000"
+                                style={{ width: `${Math.max(2, pct)}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="w-16 text-right shrink-0">
+                            <strong className="text-xs font-bold text-neutral-800 block">
+                              {room.count} {room.count === 1 ? "cômodo" : "cômodos"}
+                            </strong>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+
         {activeTab === "parceiros" && (
           <div className="space-y-4 animate-in fade-in-50 duration-200 flex flex-col h-full">
             
@@ -1263,7 +1598,7 @@ export default function BiClient({
                               </div>
                               <div>
                                 <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Faturamento</span>
-                                <strong className="text-xs font-black text-neutral-955 block mt-0.5 privacy-value">
+                                <strong className="text-xs font-black text-neutral-950 block mt-0.5 privacy-value">
                                   {formatCurrency(des.totalSold)}
                                 </strong>
                               </div>
@@ -1499,6 +1834,23 @@ export default function BiClient({
                         <span className="font-bold block text-xs">Rentabilidade por Canal</span>
                         <span className="text-[10px] text-muted-foreground block leading-none">
                           Rankings financeiro dos canais de origem de leads.
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 text-sm text-neutral-800 bg-slate-50 p-2.5 rounded-lg border border-border/40 cursor-pointer hover:bg-slate-100/70 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={pdfSections.production}
+                        onChange={(e) =>
+                          setPdfSections((p) => ({ ...p, production: e.target.checked }))
+                        }
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                      />
+                      <div className="text-left">
+                        <span className="font-bold block text-xs">Estatísticas do Chão de Fábrica</span>
+                        <span className="text-[10px] text-muted-foreground block leading-none">
+                          Cômodos ativos por fila, preparação técnica e tipologia dos ambientes na linha.
                         </span>
                       </div>
                     </label>
@@ -1751,11 +2103,59 @@ export default function BiClient({
           </div>
         )}
 
-        {/* 4. Ranking de Projetistas */}
+        {/* 4. Estatísticas de Produção (Chão de Fábrica) no PDF */}
+        {pdfSections.production && (
+          <div className="mb-6 space-y-2.5 page-break-inside-avoid">
+            <h2 className="text-xs uppercase tracking-wider font-extrabold text-neutral-700 border-b border-neutral-350 pb-1">
+              4. Análise de Produção & Chão de Fábrica
+            </h2>
+            <div className="grid grid-cols-4 gap-3 mb-3 text-center text-[9px] font-bold text-neutral-700">
+              <div className="border border-neutral-200 p-1.5 rounded bg-slate-50/20">Total: {factoryKpis.total} cômodos</div>
+              <div className="border border-neutral-200 p-1.5 rounded bg-slate-50/20">Em corte: {factoryKpis.emCorte}</div>
+              <div className="border border-neutral-200 p-1.5 rounded bg-slate-50/20">Em montagem: {factoryKpis.emMontagem}</div>
+              <div className="border border-neutral-200 p-1.5 rounded bg-slate-50/20">Pronto expedição: {factoryKpis.prontoEntrega}</div>
+            </div>
+            
+            <table className="w-full text-left border-collapse text-[10px]">
+              <thead>
+                <tr className="border-b border-neutral-800 font-bold text-neutral-600">
+                  <th className="py-1.5 pr-2">Etapa Operacional</th>
+                  <th className="py-1.5 text-center px-2">Cômodos Ativos</th>
+                  <th className="py-1.5 text-right pl-4 w-1/3">Porcentagem</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200">
+                {COLUMNS_FACTORY.map((col) => {
+                  const count = activeEnvironments.filter((e) => e.status === col.id).length;
+                  const total = activeEnvironments.length || 1;
+                  const pct = (count / total) * 100;
+                  return (
+                    <tr key={col.id}>
+                      <td className="py-1.5 font-bold text-neutral-900">{col.label}</td>
+                      <td className="py-1.5 text-center text-neutral-700">{count}</td>
+                      <td className="py-1.5 text-right pl-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-20 bg-neutral-100 border border-neutral-200 h-2 rounded overflow-hidden">
+                            <div className="bg-neutral-800 h-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[10px] text-neutral-500 font-bold w-8 text-right">
+                            {pct.toFixed(0)}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 5. Ranking de Projetistas */}
         {pdfSections.partners && (
           <div className="mb-6 space-y-2.5 page-break-inside-avoid">
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-neutral-700 border-b border-neutral-350 pb-1">
-              4. Ranking de Parceiros & Profissionais
+              5. Ranking de Parceiros & Profissionais
             </h2>
             {/* Resumo Superior com suporte a privacidade */}
             <div className="grid grid-cols-3 gap-3 mb-3 border border-neutral-250 p-2 rounded bg-slate-50/20 text-[9px] font-bold text-neutral-700">
