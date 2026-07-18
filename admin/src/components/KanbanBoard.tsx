@@ -8,14 +8,22 @@ import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
 import {
-  FOLLOW_UP_ALERT_DAYS,
   FOLLOW_UP_BADGE_STYLES,
   FOLLOW_UP_CARD_STYLES,
   getDaysSinceContact,
   getFollowUpLevel,
   getFollowUpMessage,
   needsFollowUp,
+  type FollowUpSlaConfig,
 } from "@/lib/followUp";
+import {
+  CRM_FOLLOW_UP_SLA_PREF_KEY,
+  loadFollowUpSlaLocal,
+  resolveFollowUpSla,
+  saveFollowUpSlaLocal,
+} from "@/lib/crmFollowUpPrefs";
+import { updateUserPreference } from "@/app/actions/preferences";
+import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
 import { labelOrigin } from "@/lib/navLabels";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -45,6 +53,7 @@ import {
   EyeOff,
   ChevronsDownUp,
   ChevronsUpDown,
+  UserX,
 } from "lucide-react";
 
 interface Project {
@@ -116,6 +125,7 @@ interface Project {
 interface KanbanBoardProps {
   initialProjects: Project[];
   companyId: string;
+  initialFollowUpSla?: Partial<FollowUpSlaConfig> | null;
   clients?: Array<{
     id: string;
     nome: string;
@@ -264,7 +274,12 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
     return "Fábrica: Montagem Interna (80%)";
   };
 
-export default function KanbanBoard({ initialProjects, companyId, clients = [] }: KanbanBoardProps) {
+export default function KanbanBoard({
+  initialProjects,
+  companyId,
+  clients = [],
+  initialFollowUpSla = null,
+}: KanbanBoardProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -298,6 +313,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   // Dados sensíveis sempre começam ocultos nesta tela (não usa preferência global).
   const [valuesHidden, setValuesHidden] = useState(true);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [followUpSla, setFollowUpSla] = useState<FollowUpSlaConfig>(() =>
+    resolveFollowUpSla(initialFollowUpSla)
+  );
+  const autoLossRunningRef = useRef(false);
   
 
   const [loading, setLoading] = useState(false);
@@ -319,6 +338,22 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
       if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const local = loadFollowUpSlaLocal();
+    // Preferência salva no servidor tem prioridade; local cobre 1ª visita sem prop.
+    if (initialFollowUpSla) {
+      setFollowUpSla(resolveFollowUpSla(initialFollowUpSla));
+    } else {
+      setFollowUpSla(local);
+    }
+  }, [initialFollowUpSla]);
+
+  const handleSaveFollowUpSla = (next: FollowUpSlaConfig) => {
+    setFollowUpSla(next);
+    saveFollowUpSlaLocal(next);
+    void updateUserPreference(CRM_FOLLOW_UP_SLA_PREF_KEY, next);
+  };
 
   const clearRevealTimeout = () => {
     if (revealTimeoutRef.current) {
@@ -689,17 +724,72 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     setExpandedCards(new Set());
   };
 
+  const followUpLosses = funnelProjects.filter(
+    (p) => getFollowUpLevel(p, followUpSla) === "loss"
+  );
   const followUpAlerts = funnelProjects.filter(
-    (p) => getFollowUpLevel(p) === "alert"
+    (p) => getFollowUpLevel(p, followUpSla) === "alert"
   );
   const followUpWarnings = funnelProjects.filter(
-    (p) => getFollowUpLevel(p) === "warning"
+    (p) => getFollowUpLevel(p, followUpSla) === "warning"
   );
+
+  // Auto-move para Perdas quando o operador ativou essa opção no SLA.
+  useEffect(() => {
+    if (!followUpSla.autoMoveToLoss || autoLossRunningRef.current) return;
+
+    const candidates = projects.filter(
+      (p) =>
+        p.status_geral !== "PERDIDO" && getFollowUpLevel(p, followUpSla) === "loss"
+    );
+    if (candidates.length === 0) return;
+
+    autoLossRunningRef.current = true;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const movedIds: string[] = [];
+        for (const project of candidates) {
+          const days = getDaysSinceContact(project);
+          const motivo = `Sem retorno há ${days} dias (SLA)`;
+          const result = await markProjectAsLost(project.id, motivo);
+          if (cancelled) return;
+          if (result.success) movedIds.push(project.id);
+        }
+
+        if (cancelled || movedIds.length === 0) return;
+
+        setProjects((prev) =>
+          prev.map((p) =>
+            movedIds.includes(p.id)
+              ? {
+                  ...p,
+                  status_geral: "PERDIDO",
+                  motivo_perda: `Sem retorno há ${getDaysSinceContact(p)} dias (SLA)`,
+                }
+              : p
+          )
+        );
+        showSuccess(
+          "SLA de perdas aplicado",
+          `${movedIds.length} lead(s) movido(s) automaticamente para Perdas.`
+        );
+      } finally {
+        if (!cancelled) autoLossRunningRef.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      autoLossRunningRef.current = false;
+    };
+  }, [projects, followUpSla, showSuccess]);
 
   const renderProjectCard = (project: Project, colId?: ProjectStatus) => {
     const isDraggingThis = activeDragId === project.id;
-    const followLevel = getFollowUpLevel(project);
-    const followMessage = getFollowUpMessage(project);
+    const followLevel = getFollowUpLevel(project, followUpSla);
+    const followMessage = getFollowUpMessage(project, followUpSla);
     const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
     const showFollowUp = needsFollowUp(project.status_geral);
     const isCollapsed = !expandedCards.has(project.id);
@@ -838,9 +928,11 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
           {followMessage ? (
             <div
-              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
+              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert" | "loss"]}`}
             >
-              {followLevel === "alert" ? (
+              {followLevel === "loss" ? (
+                <UserX className="h-3 w-3 shrink-0" />
+              ) : followLevel === "alert" ? (
                 <BellRing className="h-3 w-3 shrink-0" />
               ) : (
                 <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -993,20 +1085,30 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <ChevronsDownUp className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
             )}
           </button>
+          <CrmFollowUpSlaSettings sla={followUpSla} onSave={handleSaveFollowUpSla} />
         </div>
 
-        {boardView === "funil" && (followUpAlerts.length > 0 || followUpWarnings.length > 0) && (
+        {boardView === "funil" &&
+          (followUpLosses.length > 0 ||
+            followUpAlerts.length > 0 ||
+            followUpWarnings.length > 0) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
+            {followUpLosses.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/10 text-rose-900 border border-rose-600/25 font-semibold">
+                <UserX className="h-3.5 w-3.5" />
+                {followUpLosses.length} elegível(is) a perdas ({followUpSla.lossDays}+ dias)
+              </span>
+            )}
             {followUpAlerts.length > 0 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-800 border border-red-500/20 font-semibold">
                 <BellRing className="h-3.5 w-3.5" />
-                {followUpAlerts.length} sem resposta há {FOLLOW_UP_ALERT_DAYS}+ dias
+                {followUpAlerts.length} sem resposta há {followUpSla.alertDays}+ dias
               </span>
             )}
             {followUpWarnings.length > 0 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/20 font-semibold">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                {followUpWarnings.length} próximo(s) do limite
+                {followUpWarnings.length} próximo(s) do limite ({followUpSla.warningDays}+ dias)
               </span>
             )}
           </div>

@@ -1,6 +1,7 @@
 import type { ProjectStatus } from "@/app/actions/kanban";
 import {
   FOLLOW_UP_ALERT_DAYS,
+  FOLLOW_UP_LOSS_DAYS,
   getDaysSinceContact,
   getFollowUpLevel,
   needsFollowUp,
@@ -54,16 +55,24 @@ export function buildFollowUpNotifications(projects: NotificationProject[]): App
     if (level === "ok") continue;
 
     const days = getDaysSinceContact(project);
-    const isAlert = level === "alert";
+    const isUrgent = level === "alert" || level === "loss";
 
     items.push({
       id: `follow-up-${project.id}`,
       type: "follow_up",
-      priority: isAlert ? "high" : "normal",
-      title: isAlert ? "Retomar contato urgente" : "Lembrete de follow-up",
-      message: isAlert
-        ? `${project.client.nome} está há ${days} dias sem resposta (limite: ${FOLLOW_UP_ALERT_DAYS}d).`
-        : `${project.client.nome} — último contato há ${days} dias.`,
+      priority: isUrgent ? "high" : "normal",
+      title:
+        level === "loss"
+          ? "Lead elegível para perdas"
+          : isUrgent
+            ? "Retomar contato urgente"
+            : "Lembrete de follow-up",
+      message:
+        level === "loss"
+          ? `${project.client.nome} está há ${days} dias sem retorno (SLA de perdas: ${FOLLOW_UP_LOSS_DAYS}d).`
+          : isUrgent
+            ? `${project.client.nome} está há ${days} dias sem resposta (limite: ${FOLLOW_UP_ALERT_DAYS}d).`
+            : `${project.client.nome} — último contato há ${days} dias.`,
       href: `/crm?alerta=${project.id}`,
       createdAt: new Date().toISOString(),
       meta: {
