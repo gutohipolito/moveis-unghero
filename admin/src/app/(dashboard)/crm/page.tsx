@@ -3,7 +3,6 @@ import { guardModule } from "@/lib/moduleAccess";
 import { fetchCrmProjects } from "@/lib/crmProjects";
 import { getSessionCompanyId } from "@/lib/session";
 import KanbanBoard from "@/components/KanbanBoard";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 
@@ -30,14 +29,12 @@ export default async function CRMPage() {
               "Arraste os cards entre as colunas para avançar cada negócio de etapa.",
               "No mobile, use o botão de avançar dentro do card.",
               "O topo de cada coluna mostra o total em negociação daquela etapa.",
-              "O olho oculta o total das colunas e os 4 últimos dígitos do telefone nos cards.",
+              "Totais e telefone começam ocultos; o olho revela por 30s e volta a ocultar.",
               "Indicadores do funil ficam em Relatórios.",
             ]}
           />
         }
-      >
-        <PrivacyToggle />
-      </PageHeader>
+      />
 
       <KanbanBoard
         initialProjects={formattedProjects}

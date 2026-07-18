@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
 import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
@@ -22,7 +22,6 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SegmentControl } from "@/components/ui/segment-control";
 import { Input } from "@/components/ui/input";
-import { usePrivacy } from "@/context/PrivacyContext";
 import { maskPhoneLastDigits } from "@/lib/phone";
 import { 
   Plus, 
@@ -42,6 +41,8 @@ import {
   Check,
   Send,
   ArrowRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 interface Project {
@@ -132,6 +133,9 @@ interface KanbanBoardProps {
     obs_entrega?: string | null;
   }>;
 }
+
+/** Tempo em que totais e telefone ficam visíveis após clicar no olho. */
+const CRM_SENSITIVE_REVEAL_MS = 30_000;
 
 const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
   { id: "LEAD", title: "Prospecção" },
@@ -289,7 +293,9 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   // Cards começam minimizados; só entram neste set quando o operador expande.
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [copiedScript, setCopiedScript] = useState(false);
-  const { privacyMode } = usePrivacy();
+  // Dados sensíveis sempre começam ocultos nesta tela (não usa preferência global).
+  const [valuesHidden, setValuesHidden] = useState(true);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
 
   const [loading, setLoading] = useState(false);
@@ -305,6 +311,37 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     sync: syncCrm,
     enabled: !activeDragId && !loading && !isEditLeadOpen && !lossModalProject,
   });
+
+  useEffect(() => {
+    return () => {
+      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+    };
+  }, []);
+
+  const clearRevealTimeout = () => {
+    if (revealTimeoutRef.current) {
+      clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+  };
+
+  const hideSensitiveValues = () => {
+    clearRevealTimeout();
+    setValuesHidden(true);
+  };
+
+  const toggleSensitiveVisibility = () => {
+    if (valuesHidden) {
+      setValuesHidden(false);
+      clearRevealTimeout();
+      revealTimeoutRef.current = setTimeout(() => {
+        setValuesHidden(true);
+        revealTimeoutRef.current = null;
+      }, CRM_SENSITIVE_REVEAL_MS);
+      return;
+    }
+    hideSensitiveValues();
+  };
 
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -759,7 +796,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <p className="flex items-center text-xs text-muted-foreground">
                 <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
                 <span className="tabular-nums">
-                  {privacyMode
+                  {valuesHidden
                     ? maskPhoneLastDigits(project.client.telefone, 4)
                     : project.client.telefone}
                 </span>
@@ -792,7 +829,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             <div className="overflow-hidden">
               <div className="space-y-2 border-t border-border/70 pt-2">
                 <div className="space-y-2">
-                  {followMessage && (
+                  {!isCollapsed && followMessage ? (
                     <div
                       className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
                     >
@@ -803,13 +840,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                       )}
                       <span className="truncate">{followMessage}</span>
                     </div>
-                  )}
+                  ) : null}
 
-                  {showFollowUp && (
+                  {!isCollapsed && showFollowUp ? (
                     <p className="text-[10px] text-muted-foreground/80">
                       Último contato: há {getDaysSinceContact(project)} dia(s)
                     </p>
-                  )}
+                  ) : null}
 
                   {(project.status_geral === "PRODUCAO" ||
                     project.status_geral === "INSTALACAO" ||
@@ -898,15 +935,33 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   return (
     <div className="space-y-[var(--space-5)]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
-        <SegmentControl
-          value={boardView}
-          onChange={setBoardView}
-          aria-label="Visualização do funil"
-          options={[
-            { value: "funil", label: "Funil ativo" },
-            { value: "perdas", label: "Perdas", badge: lostProjects.length },
-          ]}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <SegmentControl
+            value={boardView}
+            onChange={setBoardView}
+            aria-label="Visualização do funil"
+            options={[
+              { value: "funil", label: "Funil ativo" },
+              { value: "perdas", label: "Perdas", badge: lostProjects.length },
+            ]}
+          />
+          <button
+            type="button"
+            onClick={toggleSensitiveVisibility}
+            className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
+            title={
+              valuesHidden
+                ? "Mostrar totais e telefone (oculta de novo em 30s)"
+                : "Ocultar totais e telefone"
+            }
+          >
+            {valuesHidden ? (
+              <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
+            ) : (
+              <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
+            )}
+          </button>
+        </div>
 
         {boardView === "funil" && (followUpAlerts.length > 0 || followUpWarnings.length > 0) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -979,7 +1034,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                 {colSum > 0 && (
                   <span
                     className={`text-xs font-bold text-foreground shrink-0 ml-2 tabular-nums transition-[filter] duration-300 ${
-                      privacyMode ? "blur-[5px] select-none" : "blur-0"
+                      valuesHidden ? "blur-[5px] select-none" : "blur-0"
                     }`}
                   >
                     {formatCurrency(colSum)}
