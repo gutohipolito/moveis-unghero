@@ -1043,7 +1043,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`w-72 xl:w-80 shrink-0 flex flex-col h-full rounded-2xl bg-slate-100/75 border border-slate-200/60 shadow-2xs transition-all duration-300 relative ${
+              className={`kanban-column flex flex-col h-full rounded-2xl bg-slate-100/75 border border-slate-200/60 shadow-2xs transition-all duration-300 relative ${
                 isOver ? `ring-2 ${theme.dropRing} shadow-md scale-[1.01]` : ""
               }`}
             >
