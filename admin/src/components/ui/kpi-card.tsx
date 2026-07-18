@@ -6,7 +6,7 @@ export interface KpiCardProps {
   label: string;
   value: React.ReactNode;
   icon: LucideIcon;
-  trend?: { value: string; positive?: boolean };
+  trend?: { value: React.ReactNode; positive?: boolean };
   accent?: "primary" | "success" | "warning" | "info" | "neutral";
   className?: string;
   valueClassName?: string;

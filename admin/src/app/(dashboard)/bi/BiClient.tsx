@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { toISODateBR } from "@/lib/brazilDate";
 import { Pagination } from "@/components/ui/pagination";
+import { usePrivacy } from "@/context/PrivacyContext";
 import {
   TrendingUp,
   DollarSign,
@@ -132,6 +133,34 @@ export default function BiClient({
 }: BiClientProps) {
   const [projects, setProjects] = useState(initialProjects);
   const [quotes, setQuotes] = useState(initialQuotes);
+
+  // Privacidade global integrada do projeto
+  const { privacyMode, togglePrivacy } = usePrivacy();
+
+  // 1. Forçar o modo privado a estar ATIVO por padrão ao entrar no BI (Relatórios)
+  useEffect(() => {
+    if (!privacyMode) {
+      togglePrivacy();
+    }
+  }, []); // Executado apenas na montagem
+
+  // 2. Timer de auto-ocultação: se o usuário clicar para mostrar os valores (privacyMode virar false),
+  // aguardamos 30 segundos e depois ativamos a privacidade de novo automaticamente.
+  useEffect(() => {
+    let timerId: NodeJS.Timeout;
+
+    if (!privacyMode) {
+      timerId = setTimeout(() => {
+        togglePrivacy();
+      }, 30_000); // 30 segundos
+    }
+
+    return () => {
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+    };
+  }, [privacyMode, togglePrivacy]);
 
   // Estados de navegação e busca
   const [activeTab, setActiveTab] = useState<"geral" | "funil_orcamentos" | "parceiros" | "exportar">("geral");
@@ -327,10 +356,16 @@ export default function BiClient({
     setCurrentPage(1);
   };
 
-  let highlightText =
-    "Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.";
+  // Reestruturação para usar elemento React ao invés de string estática, ocultando o ticket médio de faturamento destaque
+  const highlightText = useMemo(() => {
+    if (activeClosedProjects.length === 0 || grossRevenue === 0) {
+      return (
+        <span>
+          Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.
+        </span>
+      );
+    }
 
-  if (activeClosedProjects.length > 0 && grossRevenue > 0) {
     const originRevenues: Record<string, number> = {};
     activeClosedProjects.forEach((p) => {
       const orig = p.client.origem;
@@ -341,13 +376,24 @@ export default function BiClient({
       .map(([name, val]) => ({ name, val }))
       .sort((a, b) => b.val - a.val);
 
-    if (sortedOrigins.length > 0) {
-      const mainOrigin = sortedOrigins[0];
-      const pct = (mainOrigin.val / grossRevenue) * 100;
-      const originLabel = ORIGIN_LABELS[mainOrigin.name] || mainOrigin.name;
-      highlightText = `Os leads via ${originLabel} são responsáveis por ${pct.toFixed(0)}% da receita aprovada, com ticket médio real de ${formatCurrency(ticketMedio)} por projeto fechado.`;
+    if (sortedOrigins.length === 0) {
+      return (
+        <span>
+          Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.
+        </span>
+      );
     }
-  }
+
+    const mainOrigin = sortedOrigins[0];
+    const pct = (mainOrigin.val / grossRevenue) * 100;
+    const originLabel = ORIGIN_LABELS[mainOrigin.name] || mainOrigin.name;
+
+    return (
+      <span>
+        Os leads via {originLabel} são responsáveis por {pct.toFixed(0)}% da receita aprovada, com ticket médio real de <strong className="privacy-value font-bold">{formatCurrency(ticketMedio)}</strong> por projeto fechado.
+      </span>
+    );
+  }, [activeClosedProjects, grossRevenue, ticketMedio]);
 
   // ==========================================
   // NOVOS CÁLCULOS ANALÍTICOS PARA UI/UX
@@ -408,9 +454,9 @@ export default function BiClient({
     };
   }, [quotes]);
 
-  // 3. Alertas e Oportunidades Comerciais
+  // 3. Alertas e Oportunidades Comerciais (agora usando elementos React para ocultar os valores sensíveis)
   const commercialAlerts = useMemo(() => {
-    const list: Array<{ id: string; type: "warning" | "success" | "info"; title: string; desc: string }> = [];
+    const list: Array<{ id: string; type: "warning" | "success" | "info"; title: string; desc: React.ReactNode }> = [];
 
     // Alerta 1: Orçamentos Ativos (oportunidade de fechamento)
     const activeVal = quotesHealth.active.value;
@@ -420,7 +466,11 @@ export default function BiClient({
         id: "alert-active",
         type: "success",
         title: "Acompanhamento Comercial Pendente",
-        desc: `Temos ${activeQtd} proposta(s) ativa(s) aguardando retorno dos clientes, representando ${formatCurrency(activeVal)} no mercado. Faça follow-up hoje mesmo.`
+        desc: (
+          <span>
+            Temos {activeQtd} proposta(s) ativa(s) aguardando retorno dos clientes, representando <strong className="privacy-value font-bold">{formatCurrency(activeVal)}</strong> no mercado. Faça follow-up hoje mesmo.
+          </span>
+        )
       });
     }
 
@@ -432,7 +482,11 @@ export default function BiClient({
         id: "alert-negoc",
         type: "info",
         title: "Decisão Comercial Requerida",
-        desc: `Há ${negocQtd} projeto(s) na etapa de Negociação acumulando ${formatCurrency(negocVal)}. Priorize a renegociação destes leads com os projetistas.`
+        desc: (
+          <span>
+            Há {negocQtd} projeto(s) na etapa de Negociação acumulando <strong className="privacy-value font-bold">{formatCurrency(negocVal)}</strong>. Priorize a renegociação destes leads com os projetistas.
+          </span>
+        )
       });
     }
 
@@ -444,7 +498,11 @@ export default function BiClient({
         id: "alert-expired",
         type: "warning",
         title: "Resgate de Propostas Vencidas",
-        desc: `Existem ${expiredQtd} orçamento(s) vencido(s) que somam ${formatCurrency(expiredVal)}. Vale estruturar uma campanha de desconto ou resgate técnico.`
+        desc: (
+          <span>
+            Existem {expiredQtd} orçamento(s) vencido(s) que somam <strong className="privacy-value font-bold">{formatCurrency(expiredVal)}</strong>. Vale estruturar uma campanha de desconto ou resgate técnico.
+          </span>
+        )
       });
     }
 
@@ -888,7 +946,7 @@ export default function BiClient({
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs font-extrabold text-neutral-500">
                       <span>Proporção por Valor de Orçamento</span>
-                      <span>Total: R$ {formatCurrency(quotesHealth.totalVal)}</span>
+                      <span>Total: <span className="privacy-value">{formatCurrency(quotesHealth.totalVal)}</span></span>
                     </div>
                     <div className="w-full h-6 rounded-lg overflow-hidden flex border border-slate-200/50 shadow-xs">
                       {quotesHealth.approved.value > 0 && (
@@ -989,9 +1047,9 @@ export default function BiClient({
                       )}
                       <div className="space-y-1">
                         <strong className="text-xs font-bold block">{alert.title}</strong>
-                        <p className="text-[11px] leading-relaxed text-neutral-600/90 font-medium">
+                        <div className="text-[11px] leading-relaxed text-neutral-600/90 font-medium">
                           {alert.desc}
-                        </p>
+                        </div>
                       </div>
                     </Card>
                   ))
@@ -1029,7 +1087,17 @@ export default function BiClient({
                 value={partnersStats.topPartner ? partnersStats.topPartner.name : "Nenhum"}
                 icon={Award}
                 accent="warning"
-                trend={partnersStats.topPartner ? { value: `Faturou ${formatCurrency(partnersStats.topPartner.totalSold)}` } : undefined}
+                trend={
+                  partnersStats.topPartner 
+                    ? { 
+                        value: (
+                          <span>
+                            Faturou <strong className="privacy-value font-bold">{formatCurrency(partnersStats.topPartner.totalSold)}</strong>
+                          </span>
+                        ) 
+                      } 
+                    : undefined
+                }
               />
             </div>
 
@@ -1195,7 +1263,7 @@ export default function BiClient({
                               </div>
                               <div>
                                 <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Faturamento</span>
-                                <strong className="text-xs font-black text-neutral-950 block mt-0.5 privacy-value">
+                                <strong className="text-xs font-black text-neutral-955 block mt-0.5 privacy-value">
                                   {formatCurrency(des.totalSold)}
                                 </strong>
                               </div>
@@ -1677,7 +1745,7 @@ export default function BiClient({
                 })}
               </tbody>
             </table>
-            <div className="p-2 border border-neutral-300 rounded bg-slate-50 text-[10px] text-neutral-700">
+            <div className="p-2 border border-neutral-350 rounded bg-slate-50 text-[10px] text-neutral-700">
               <strong>Destaque Comercial:</strong> {highlightText}
             </div>
           </div>
@@ -1689,15 +1757,15 @@ export default function BiClient({
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-neutral-700 border-b border-neutral-350 pb-1">
               4. Ranking de Parceiros & Profissionais
             </h2>
-            {/* Adiciona Resumo Superior no Impresso */}
-            <div className="grid grid-cols-3 gap-3 mb-3 border border-neutral-200 p-2 rounded bg-slate-50/20 text-[9px] font-bold text-neutral-700">
+            {/* Resumo Superior com suporte a privacidade */}
+            <div className="grid grid-cols-3 gap-3 mb-3 border border-neutral-250 p-2 rounded bg-slate-50/20 text-[9px] font-bold text-neutral-700">
               <div>Total de Parceiros: {partnersStats.activeCount}</div>
-              <div>Faturamento Parcerias: {formatCurrency(partnersStats.faturamentoTotal)}</div>
-              <div>Comissões Estimadas: {formatCurrency(partnersStats.comissaoTotal)}</div>
+              <div>Faturamento Parcerias: <span className="privacy-value">{formatCurrency(partnersStats.faturamentoTotal)}</span></div>
+              <div>Comissões Estimadas: <span className="privacy-value">{formatCurrency(partnersStats.comissaoTotal)}</span></div>
             </div>
             <table className="w-full text-left border-collapse text-[10px]">
               <thead>
-                <tr className="border-b border-neutral-800 font-bold text-neutral-600">
+                <tr className="border-b border-neutral-850 font-bold text-neutral-650">
                   <th className="py-1.5 pr-2">Nome do Profissional</th>
                   <th className="py-1.5 px-2">Categoria</th>
                   <th className="py-1.5 px-2">Cidade / Região</th>
@@ -1727,7 +1795,7 @@ export default function BiClient({
         )}
 
         {/* Termo de Confidencialidade / Rodapé */}
-        <div className="mt-12 pt-4 border-t border-neutral-400 flex justify-between items-center text-[9px] text-neutral-500">
+        <div className="mt-12 pt-4 border-t border-neutral-450 flex justify-between items-center text-[9px] text-neutral-500">
           <span>Este documento contém informações estratégicas e confidenciais da Móveis Unghero LTDA.</span>
           <span>Página 1 de 1</span>
         </div>
