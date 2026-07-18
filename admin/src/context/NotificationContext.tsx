@@ -30,11 +30,11 @@ import {
   loadDismissedToastIds,
   loadNotificationPrefs,
   markNotificationDelivered,
-  markNotificationsCleared,
   markToastDismissed,
   pruneClearedNotificationIds,
   pruneDeliveredIds,
   pruneDismissedToastIds,
+  saveClearedNotificationIds,
   saveNotificationPrefs,
   type NotificationPreferences,
 } from "@/lib/notificationChannels";
@@ -98,7 +98,7 @@ export function NotificationProvider({
 }: NotificationProviderProps) {
   const router = useRouter();
   const [activeNotifications, setActiveNotifications] = useState(initialNotifications);
-  const [clearedVersion, setClearedVersion] = useState(0);
+  const [clearedIds, setClearedIds] = useState<Set<string>>(() => new Set());
   const [toasts, setToasts] = useState<InAppToast[]>([]);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPrefs());
   const [browserPermission, setBrowserPermission] = useState<BrowserPermission>(() =>
@@ -111,15 +111,14 @@ export function NotificationProvider({
   const pushSupported = isPushNotificationSupported();
   const pushConfigured = Boolean(getVapidPublicKeyFromEnv());
 
-  const deliveredRef = useRef<Set<string>>(loadDeliveredNotificationIds());
-  const dismissedToastRef = useRef<Set<string>>(loadDismissedToastIds());
-  const clearedRef = useRef<Set<string>>(loadClearedNotificationIds());
+  const deliveredRef = useRef<Set<string>>(new Set());
+  const dismissedToastRef = useRef<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set(initialNotifications.map((n) => n.id)));
   const toastKeysRef = useRef<Set<string>>(new Set());
 
   const notifications = useMemo(
-    () => activeNotifications.filter((n) => !clearedRef.current.has(n.id)),
-    [activeNotifications, clearedVersion]
+    () => activeNotifications.filter((n) => !clearedIds.has(n.id)),
+    [activeNotifications, clearedIds]
   );
 
   const deliverInAppToasts = useCallback(
@@ -190,7 +189,14 @@ export function NotificationProvider({
 
       pruneDeliveredIds(deliveredRef.current, nextIds);
       pruneDismissedToastIds(dismissedToastRef.current, nextIds);
-      pruneClearedNotificationIds(clearedRef.current, nextIds);
+
+      setClearedIds((prev) => {
+        const nextCleared = new Set(prev);
+        pruneClearedNotificationIds(nextCleared, nextIds);
+        return nextCleared.size === prev.size && [...nextCleared].every((id) => prev.has(id))
+          ? prev
+          : nextCleared;
+      });
 
       if (options?.deliverNew) {
         const newItems = next.filter((n) => !knownIdsRef.current.has(n.id));
@@ -202,13 +208,15 @@ export function NotificationProvider({
 
       knownIdsRef.current = new Set(nextIds);
       setActiveNotifications(next);
-      setClearedVersion((v) => v + 1);
     },
     [companyId, deliverInAppToasts, deliverToBrowser]
   );
 
   useEffect(() => {
     setBrowserPermission(getBrowserPermission());
+    deliveredRef.current = loadDeliveredNotificationIds();
+    dismissedToastRef.current = loadDismissedToastIds();
+    setClearedIds(loadClearedNotificationIds());
   }, []);
 
   useEffect(() => {
@@ -225,7 +233,6 @@ export function NotificationProvider({
   useEffect(() => {
     setActiveNotifications(initialNotifications);
     knownIdsRef.current = new Set(initialNotifications.map((n) => n.id));
-    setClearedVersion((v) => v + 1);
   }, [initialNotifications]);
 
   useEffect(() => {
@@ -298,7 +305,6 @@ export function NotificationProvider({
     const pending = res.notifications;
     setActiveNotifications(pending);
     knownIdsRef.current = new Set(pending.map((n) => n.id));
-    setClearedVersion((v) => v + 1);
 
     if (pending.length > 0) {
       await deliverToBrowser(pending, { summaryOnly: pending.length > 1 });
@@ -404,11 +410,16 @@ export function NotificationProvider({
   );
 
   const clearNotifications = useCallback((ids?: string[]) => {
-    const targetIds =
-      ids ?? activeNotifications.map((n) => n.id).filter((id) => !clearedRef.current.has(id));
-    if (targetIds.length === 0) return;
-    markNotificationsCleared(targetIds, clearedRef.current);
-    setClearedVersion((v) => v + 1);
+    setClearedIds((prev) => {
+      const targetIds =
+        ids ?? activeNotifications.map((n) => n.id).filter((id) => !prev.has(id));
+      if (targetIds.length === 0) return prev;
+
+      const next = new Set(prev);
+      for (const id of targetIds) next.add(id);
+      saveClearedNotificationIds(next);
+      return next;
+    });
   }, [activeNotifications]);
 
   const value: NotificationContextValue = {

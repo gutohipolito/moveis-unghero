@@ -18,30 +18,34 @@ export default function NotificationCenter({
   const [internalOpen, setInternalOpen] = useState(false);
   const [panelItems, setPanelItems] = useState<AppNotification[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
+  const clearedOnOpenRef = useRef(false);
 
   const open = isOpen ?? internalOpen;
 
   const { notifications, clearNotifications } = useNotificationContext();
 
   const setOpen = (value: boolean) => {
-    if (value && !open) {
-      const snapshot = [...notifications];
-      setPanelItems(snapshot);
-      if (snapshot.length > 0) {
-        clearNotifications(snapshot.map((n) => n.id));
-      }
-    }
-    if (!value) {
-      setPanelItems([]);
-    }
     if (onOpenChange) onOpenChange(value);
     else setInternalOpen(value);
   };
 
-  const badgeCount = notifications.length;
-  const urgentCount = notifications.filter((n) => n.priority === "high").length;
-  const listItems = open ? panelItems : notifications;
-  const listCount = listItems.length;
+  // Ao abrir: mostra snapshot e marca como limpas (badge some).
+  useEffect(() => {
+    if (!open) {
+      clearedOnOpenRef.current = false;
+      setPanelItems([]);
+      return;
+    }
+
+    if (clearedOnOpenRef.current) return;
+    clearedOnOpenRef.current = true;
+
+    const snapshot = [...notifications];
+    setPanelItems(snapshot);
+    if (snapshot.length > 0) {
+      clearNotifications(snapshot.map((n) => n.id));
+    }
+  }, [open, notifications, clearNotifications]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -56,9 +60,20 @@ export default function NotificationCenter({
   }, [open]);
 
   const handleClearAll = () => {
-    clearNotifications(panelItems.map((n) => n.id));
+    const ids = panelItems.length > 0
+      ? panelItems.map((n) => n.id)
+      : notifications.map((n) => n.id);
+    clearNotifications(ids);
     setPanelItems([]);
   };
+
+  // Com painel aberto o badge some na hora; fechado usa a lista já filtrada.
+  const badgeCount = open ? 0 : notifications.length;
+  const urgentCount = open
+    ? 0
+    : notifications.filter((n) => n.priority === "high").length;
+  const listItems = open ? panelItems : notifications;
+  const listCount = listItems.length;
 
   return (
     <div className="relative" ref={panelRef}>

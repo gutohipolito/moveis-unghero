@@ -1,4 +1,4 @@
-const CACHE_VERSION = "mu-admin-v4";
+const CACHE_VERSION = "mu-admin-v5";
 
 self.addEventListener("push", (event) => {
   let payload = {
