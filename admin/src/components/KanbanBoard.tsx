@@ -43,6 +43,8 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 
 interface Project {
@@ -674,6 +676,19 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
   const funnelProjects = projects.filter((p) => p.status_geral !== "PERDIDO");
   const lostProjects = projects.filter((p) => p.status_geral === "PERDIDO");
+  const visibleBoardProjects = boardView === "funil" ? funnelProjects : lostProjects;
+  const allCardsCollapsed =
+    visibleBoardProjects.length === 0 ||
+    visibleBoardProjects.every((p) => !expandedCards.has(p.id));
+
+  const toggleAllCardsCollapse = () => {
+    if (allCardsCollapsed) {
+      setExpandedCards(new Set(visibleBoardProjects.map((p) => p.id)));
+      return;
+    }
+    setExpandedCards(new Set());
+  };
+
   const followUpAlerts = funnelProjects.filter(
     (p) => getFollowUpLevel(p) === "alert"
   );
@@ -821,6 +836,19 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </button>
           </div>
 
+          {followMessage ? (
+            <div
+              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
+            >
+              {followLevel === "alert" ? (
+                <BellRing className="h-3 w-3 shrink-0" />
+              ) : (
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+              )}
+              <span className="truncate">{followMessage}</span>
+            </div>
+          ) : null}
+
           <div
             className={`grid transition-all duration-200 ease-in-out ${
               isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
@@ -829,20 +857,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             <div className="overflow-hidden">
               <div className="space-y-2 border-t border-border/70 pt-2">
                 <div className="space-y-2">
-                  {!isCollapsed && followMessage ? (
-                    <div
-                      className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert"]}`}
-                    >
-                      {followLevel === "alert" ? (
-                        <BellRing className="h-3 w-3 shrink-0" />
-                      ) : (
-                        <AlertTriangle className="h-3 w-3 shrink-0" />
-                      )}
-                      <span className="truncate">{followMessage}</span>
-                    </div>
-                  ) : null}
-
-                  {!isCollapsed && showFollowUp ? (
+                  {showFollowUp ? (
                     <p className="text-[10px] text-muted-foreground/80">
                       Último contato: há {getDaysSinceContact(project)} dia(s)
                     </p>
@@ -959,6 +974,23 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
             ) : (
               <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={toggleAllCardsCollapse}
+            disabled={visibleBoardProjects.length === 0}
+            className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group disabled:opacity-40 disabled:pointer-events-none"
+            title={
+              allCardsCollapsed
+                ? "Expandir todos os cards"
+                : "Minimizar todos os cards"
+            }
+          >
+            {allCardsCollapsed ? (
+              <ChevronsUpDown className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
+            ) : (
+              <ChevronsDownUp className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
             )}
           </button>
         </div>
