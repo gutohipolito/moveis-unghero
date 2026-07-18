@@ -14,6 +14,7 @@ export interface NotificationPreferences {
 const PREFS_KEY = "mu_notification_prefs";
 const DELIVERED_KEY = "mu_notification_delivered";
 const TOAST_DISMISSED_KEY = "mu_toast_dismissed";
+const CLEARED_KEY = "mu_notification_cleared";
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   browser: false,
@@ -105,6 +106,47 @@ export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string
     }
   }
   if (changed) saveDismissedToastIds(dismissed);
+}
+
+/** IDs limpos no centro de notificações (badge/lista) — persiste entre sessões. */
+export function loadClearedNotificationIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(CLEARED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveClearedNotificationIds(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  const list = [...ids].slice(-300);
+  localStorage.setItem(CLEARED_KEY, JSON.stringify(list));
+}
+
+export function markNotificationsCleared(ids: string[], cleared: Set<string>) {
+  let changed = false;
+  for (const id of ids) {
+    if (!cleared.has(id)) {
+      cleared.add(id);
+      changed = true;
+    }
+  }
+  if (changed) saveClearedNotificationIds(cleared);
+}
+
+export function pruneClearedNotificationIds(cleared: Set<string>, activeIds: string[]) {
+  const active = new Set(activeIds);
+  let changed = false;
+  for (const id of cleared) {
+    if (!active.has(id)) {
+      cleared.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) saveClearedNotificationIds(cleared);
 }
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

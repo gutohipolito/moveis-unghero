@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -24,11 +25,14 @@ import {
   type BrowserPermission,
 } from "@/lib/browserNotifications";
 import {
+  loadClearedNotificationIds,
   loadDeliveredNotificationIds,
   loadDismissedToastIds,
   loadNotificationPrefs,
   markNotificationDelivered,
+  markNotificationsCleared,
   markToastDismissed,
+  pruneClearedNotificationIds,
   pruneDeliveredIds,
   pruneDismissedToastIds,
   saveNotificationPrefs,
@@ -74,6 +78,8 @@ interface NotificationContextValue {
   testPushNotification: () => Promise<boolean>;
   dismissToast: (id: string) => void;
   openToast: (id: string, href: string) => void;
+  /** Marca notificações como limpas (some do badge/lista). */
+  clearNotifications: (ids?: string[]) => void;
   refreshNotifications: () => void;
 }
 
@@ -91,7 +97,8 @@ export function NotificationProvider({
   children,
 }: NotificationProviderProps) {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [activeNotifications, setActiveNotifications] = useState(initialNotifications);
+  const [clearedVersion, setClearedVersion] = useState(0);
   const [toasts, setToasts] = useState<InAppToast[]>([]);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPrefs());
   const [browserPermission, setBrowserPermission] = useState<BrowserPermission>(() =>
@@ -106,8 +113,14 @@ export function NotificationProvider({
 
   const deliveredRef = useRef<Set<string>>(loadDeliveredNotificationIds());
   const dismissedToastRef = useRef<Set<string>>(loadDismissedToastIds());
+  const clearedRef = useRef<Set<string>>(loadClearedNotificationIds());
   const knownIdsRef = useRef<Set<string>>(new Set(initialNotifications.map((n) => n.id)));
   const toastKeysRef = useRef<Set<string>>(new Set());
+
+  const notifications = useMemo(
+    () => activeNotifications.filter((n) => !clearedRef.current.has(n.id)),
+    [activeNotifications, clearedVersion]
+  );
 
   const deliverInAppToasts = useCallback(
     (items: AppNotification[]) => {
@@ -177,6 +190,7 @@ export function NotificationProvider({
 
       pruneDeliveredIds(deliveredRef.current, nextIds);
       pruneDismissedToastIds(dismissedToastRef.current, nextIds);
+      pruneClearedNotificationIds(clearedRef.current, nextIds);
 
       if (options?.deliverNew) {
         const newItems = next.filter((n) => !knownIdsRef.current.has(n.id));
@@ -187,7 +201,8 @@ export function NotificationProvider({
       }
 
       knownIdsRef.current = new Set(nextIds);
-      setNotifications(next);
+      setActiveNotifications(next);
+      setClearedVersion((v) => v + 1);
     },
     [companyId, deliverInAppToasts, deliverToBrowser]
   );
@@ -208,8 +223,9 @@ export function NotificationProvider({
   }, [pushSupported, prefs.push]);
 
   useEffect(() => {
-    setNotifications(initialNotifications);
+    setActiveNotifications(initialNotifications);
     knownIdsRef.current = new Set(initialNotifications.map((n) => n.id));
+    setClearedVersion((v) => v + 1);
   }, [initialNotifications]);
 
   useEffect(() => {
@@ -280,8 +296,9 @@ export function NotificationProvider({
 
     const res = await getNotifications(companyId);
     const pending = res.notifications;
-    setNotifications(pending);
+    setActiveNotifications(pending);
     knownIdsRef.current = new Set(pending.map((n) => n.id));
+    setClearedVersion((v) => v + 1);
 
     if (pending.length > 0) {
       await deliverToBrowser(pending, { summaryOnly: pending.length > 1 });
@@ -386,6 +403,14 @@ export function NotificationProvider({
     [dismissToast, router]
   );
 
+  const clearNotifications = useCallback((ids?: string[]) => {
+    const targetIds =
+      ids ?? activeNotifications.map((n) => n.id).filter((id) => !clearedRef.current.has(id));
+    if (targetIds.length === 0) return;
+    markNotificationsCleared(targetIds, clearedRef.current);
+    setClearedVersion((v) => v + 1);
+  }, [activeNotifications]);
+
   const value: NotificationContextValue = {
     notifications,
     toasts,
@@ -406,6 +431,7 @@ export function NotificationProvider({
     testPushNotification,
     dismissToast,
     openToast,
+    clearNotifications,
     refreshNotifications: () => syncNotifications({ deliverNew: false }),
   };
 

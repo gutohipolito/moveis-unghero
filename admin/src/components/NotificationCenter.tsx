@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, CircleAlert } from "lucide-react";
 import { useNotificationContext } from "@/context/NotificationContext";
+import type { AppNotification } from "@/lib/notifications";
 
 interface NotificationCenterProps {
   isOpen?: boolean;
@@ -15,18 +16,32 @@ export default function NotificationCenter({
   onOpenChange,
 }: NotificationCenterProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [panelItems, setPanelItems] = useState<AppNotification[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const open = isOpen ?? internalOpen;
+
+  const { notifications, clearNotifications } = useNotificationContext();
+
   const setOpen = (value: boolean) => {
+    if (value && !open) {
+      const snapshot = [...notifications];
+      setPanelItems(snapshot);
+      if (snapshot.length > 0) {
+        clearNotifications(snapshot.map((n) => n.id));
+      }
+    }
+    if (!value) {
+      setPanelItems([]);
+    }
     if (onOpenChange) onOpenChange(value);
     else setInternalOpen(value);
   };
 
-  const { notifications } = useNotificationContext();
-
-  const notifCount = notifications.length;
+  const badgeCount = notifications.length;
   const urgentCount = notifications.filter((n) => n.priority === "high").length;
+  const listItems = open ? panelItems : notifications;
+  const listCount = listItems.length;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -40,6 +55,11 @@ export default function NotificationCenter({
     }
   }, [open]);
 
+  const handleClearAll = () => {
+    clearNotifications(panelItems.map((n) => n.id));
+    setPanelItems([]);
+  };
+
   return (
     <div className="relative" ref={panelRef}>
       <button
@@ -50,11 +70,11 @@ export default function NotificationCenter({
         aria-expanded={open}
       >
         <Bell className="h-4 w-4" />
-        {notifCount > 0 && (
+        {badgeCount > 0 && (
           <span
             className={`notification-badge ${urgentCount > 0 ? "notification-badge-urgent" : ""}`}
           >
-            {notifCount > 9 ? "9+" : notifCount}
+            {badgeCount > 9 ? "9+" : badgeCount}
           </span>
         )}
       </button>
@@ -68,14 +88,25 @@ export default function NotificationCenter({
                 Prazos, pendências e atividades importantes.
               </p>
             </div>
-            {notifCount > 0 && (
-              <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                {notifCount} nova{notifCount !== 1 ? "s" : ""}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {listCount > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Limpar todas
+                  </button>
+                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                    {listCount} nova{listCount !== 1 ? "s" : ""}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
 
-          {notifications.length === 0 ? (
+          {listItems.length === 0 ? (
             <div className="notification-empty">
               <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
                 <Bell className="h-5 w-5" />
@@ -87,7 +118,7 @@ export default function NotificationCenter({
             </div>
           ) : (
             <ul className="notification-list">
-              {notifications.map((item) => (
+              {listItems.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
