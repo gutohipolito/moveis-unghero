@@ -31,7 +31,7 @@ export default async function BIPage() {
             title="Inteligência comercial"
             items={[
               "Consolida projetos, valores e origem dos clientes em indicadores.",
-              "Inclui resumo de orçamentos emitidos, ativos, vencidos e aprovados.",
+              "Inclui resumo do funil (ativos, negociação e perdas) e de orçamentos.",
               "Analise desempenho por cidade, canal de origem e parceiros.",
               "Use o modo privado (olho) para ocultar valores em apresentações.",
             ]}

@@ -17,6 +17,9 @@ import {
   Calculator,
   Clock,
   ClipboardList,
+  UserCheck,
+  Handshake,
+  XCircle,
 } from "lucide-react";
 
 interface Project {
@@ -62,6 +65,16 @@ const COLUMNS_CRM = [
   { id: "PRODUCAO", label: "Produção", color: "from-cyan-500 to-cyan-600" },
   { id: "INSTALACAO", label: "Instalação", color: "from-indigo-500 to-indigo-600" },
   { id: "FINALIZADO", label: "Finalizados", color: "from-slate-500 to-slate-600" },
+  { id: "PERDIDO", label: "Perdas", color: "from-rose-500 to-rose-600" },
+];
+
+const FUNNEL_ACTIVE_STATUSES = [
+  "LEAD",
+  "ORCAMENTO",
+  "NEGOCIACAO",
+  "APROVADO",
+  "CONFERENCIA_TECNICA",
+  "PRODUCAO",
 ];
 
 const CLOSED_STATUSES = ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"];
@@ -118,6 +131,18 @@ export default function BiClient({
   }, [quotes]);
 
   const totalPipeline = projects.reduce((acc, p) => acc + p.valor_previsto, 0);
+
+  const funnelActiveProjects = projects.filter((p) =>
+    FUNNEL_ACTIVE_STATUSES.includes(p.status_geral)
+  );
+  const funnelNegotiationValue = funnelActiveProjects.reduce(
+    (acc, p) => acc + p.valor_previsto,
+    0
+  );
+  const negotiationProjects = projects.filter((p) => p.status_geral === "NEGOCIACAO");
+  const negotiationValue = negotiationProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
+  const lostProjects = projects.filter((p) => p.status_geral === "PERDIDO");
+  const lostValue = lostProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
 
   const statusCounts = COLUMNS_CRM.map((col) => {
     const list = projects.filter((p) => p.status_geral === col.id);
@@ -240,6 +265,51 @@ export default function BiClient({
               : undefined
           }
         />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-headline text-foreground">Funil comercial</h3>
+          <p className="text-caption text-muted-foreground mt-1">
+            Volume ativo no Kanban, com destaque para negociação e perdas.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+          <KpiCard
+            label="Total em negociação"
+            value={
+              <span className="privacy-value">{formatCurrency(funnelNegotiationValue)}</span>
+            }
+            icon={TrendingUp}
+            accent="primary"
+          />
+          <KpiCard
+            label="Projetos ativos"
+            value={String(funnelActiveProjects.length)}
+            icon={UserCheck}
+            accent="success"
+          />
+          <KpiCard
+            label="Em negociação"
+            value={
+              <span className="privacy-value">{formatCurrency(negotiationValue)}</span>
+            }
+            icon={Handshake}
+            accent="info"
+            trend={{
+              value: `${negotiationProjects.length} projeto${negotiationProjects.length === 1 ? "" : "s"}`,
+            }}
+          />
+          <KpiCard
+            label="Perdas"
+            value={<span className="privacy-value">{formatCurrency(lostValue)}</span>}
+            icon={XCircle}
+            accent="warning"
+            trend={{
+              value: `${lostProjects.length} lead${lostProjects.length === 1 ? "" : "s"}`,
+            }}
+          />
+        </div>
       </div>
 
       <div className="space-y-3">

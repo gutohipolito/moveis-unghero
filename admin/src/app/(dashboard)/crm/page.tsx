@@ -30,7 +30,8 @@ export default async function CRMPage() {
               "Arraste os cards entre as colunas para avançar cada negócio de etapa.",
               "No mobile, use o botão de avançar dentro do card.",
               "O topo de cada coluna mostra o total em negociação daquela etapa.",
-              "O ícone de olho oculta os valores para apresentações; clique para exibir.",
+              "O olho oculta o total das colunas e os 4 últimos dígitos do telefone nos cards.",
+              "Indicadores do funil ficam em Relatórios.",
             ]}
           />
         }

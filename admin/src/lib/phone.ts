@@ -24,3 +24,20 @@ export function formatPhoneDisplay(telefone: string): string {
   if (!digits) return telefone;
   return formatPhoneInput(digits) || telefone;
 }
+
+/** Oculta os últimos `count` dígitos do telefone (mantém o restante da formatação). */
+export function maskPhoneLastDigits(telefone: string, count = 4): string {
+  if (!telefone) return telefone;
+  let remaining = count;
+  let out = "";
+  for (let i = telefone.length - 1; i >= 0; i--) {
+    const ch = telefone[i];
+    if (/\d/.test(ch) && remaining > 0) {
+      out = "•" + out;
+      remaining -= 1;
+    } else {
+      out = ch + out;
+    }
+  }
+  return out;
+}

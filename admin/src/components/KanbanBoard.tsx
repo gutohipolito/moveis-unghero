@@ -20,16 +20,14 @@ import { labelOrigin } from "@/lib/navLabels";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { KpiCard } from "@/components/ui/kpi-card";
 import { SegmentControl } from "@/components/ui/segment-control";
 import { Input } from "@/components/ui/input";
+import { usePrivacy } from "@/context/PrivacyContext";
+import { maskPhoneLastDigits } from "@/lib/phone";
 import { 
   Plus, 
   MapPin, 
   Phone, 
-  DollarSign, 
-  TrendingUp,
-  UserCheck,
   AlertTriangle,
   BellRing,
   RotateCcw,
@@ -288,8 +286,10 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   const [boardView, setBoardView] = useState<"funil" | "perdas">("funil");
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
-  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
+  // Cards começam minimizados; só entram neste set quando o operador expande.
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [copiedScript, setCopiedScript] = useState(false);
+  const { privacyMode } = usePrivacy();
   
 
   const [loading, setLoading] = useState(false);
@@ -627,7 +627,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   };
 
   const toggleCardCollapse = (id: string) => {
-    setCollapsedCards((prev) => {
+    setExpandedCards((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -644,23 +644,13 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
     (p) => getFollowUpLevel(p) === "warning"
   );
 
-  // Total em negociação = soma de TODOS os cards exibidos no funil (as 6 colunas).
-  const boardProjects = funnelProjects.filter((p) =>
-    FUNNEL_ORDER.includes(p.status_geral as ProjectStatus)
-  );
-  const totalPipeline = boardProjects.reduce(
-    (acc, curr) => acc + (Number(curr.valor_previsto) || 0),
-    0
-  );
-  const activeProjectsCount = boardProjects.length;
-
   const renderProjectCard = (project: Project, colId?: ProjectStatus) => {
     const isDraggingThis = activeDragId === project.id;
     const followLevel = getFollowUpLevel(project);
     const followMessage = getFollowUpMessage(project);
     const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
     const showFollowUp = needsFollowUp(project.status_geral);
-    const isCollapsed = collapsedCards.has(project.id);
+    const isCollapsed = !expandedCards.has(project.id);
     const stageStatus = colId ?? project.status_geral;
     const theme = getStageTheme(stageStatus);
 
@@ -768,7 +758,11 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               </h4>
               <p className="flex items-center text-xs text-muted-foreground">
                 <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
-                {project.client.telefone}
+                <span className="tabular-nums">
+                  {privacyMode
+                    ? maskPhoneLastDigits(project.client.telefone, 4)
+                    : project.client.telefone}
+                </span>
               </p>
             </div>
 
@@ -903,26 +897,6 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
   return (
     <div className="space-y-[var(--space-5)]">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)] lg:flex lg:items-center lg:justify-between lg:gap-[var(--space-6)]">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)] lg:flex lg:items-center lg:gap-[var(--space-6)]">
-          <KpiCard
-            label="Total em negociação"
-            value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
-            icon={TrendingUp}
-            accent="primary"
-            className="lg:min-w-[14rem]"
-          />
-          <KpiCard
-            label="Projetos ativos"
-            value={activeProjectsCount}
-            icon={UserCheck}
-            accent="success"
-            valueClassName="text-[hsl(var(--success))]"
-            className="lg:min-w-[10rem]"
-          />
-        </div>
-      </div>
-
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
         <SegmentControl
           value={boardView}
@@ -970,7 +944,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
         </div>
       ) : (
       <>
-      <div className="kanban-scroll select-none min-h-[420px] md:min-h-[500px]">
+      <div className="kanban-scroll select-none min-h-[560px] md:min-h-[720px]">
         {FUNNEL_COLUMNS.map((col) => {
           const colProjects = projects.filter((p) => p.status_geral === col.id);
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
@@ -1003,13 +977,19 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
                   </span>
                 </div>
                 {colSum > 0 && (
-                  <span className="text-xs font-bold text-foreground privacy-value shrink-0 ml-2">{formatCurrency(colSum)}</span>
+                  <span
+                    className={`text-xs font-bold text-foreground shrink-0 ml-2 tabular-nums transition-[filter] duration-300 ${
+                      privacyMode ? "blur-[5px] select-none" : "blur-0"
+                    }`}
+                  >
+                    {formatCurrency(colSum)}
+                  </span>
                 )}
               </div>
 
               {/* Lista de Cards */}
               <div 
-                className="flex-1 p-[var(--space-2)] space-y-[var(--space-2)] overflow-y-auto max-h-[55vh] md:max-h-[600px] min-h-[240px] md:min-h-[400px]"
+                className="flex-1 p-[var(--space-2)] space-y-[var(--space-2)] overflow-y-auto max-h-[70vh] md:max-h-[780px] min-h-[360px] md:min-h-[600px]"
                 onDragLeave={() => setDragOverColumn(null)}
               >
                 {colProjects.length === 0 ? (
