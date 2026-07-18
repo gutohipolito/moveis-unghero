@@ -27,6 +27,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import ProjectDetails from "@/components/ProjectDetails";
+import { compressImageFile } from "@/lib/imageCompression";
 import {
   Search,
   UserPlus,
@@ -426,6 +427,87 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [observacoes, setObservacoes] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [logoLoading, setLogoLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function fetchCompanyByCnpj(cnpjValue: string) {
+    const clean = cnpjValue.replace(/\D/g, "");
+    if (clean.length !== 14) return;
+    setCnpjLoading(true);
+    setFormError(null);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      const json = await res.json();
+      if (json && !json.message) {
+        setNome(json.razao_social || json.nome_fantasia || "");
+        setEscritorio(json.nome_fantasia || json.razao_social || "");
+        setEmail(json.email || "");
+        if (json.ddd_telefone_1) {
+          const tel = json.ddd_telefone_1.replace(/\D/g, "");
+          if (tel.length >= 10) {
+            setTelefone(`(${tel.substring(0, 2)}) ${tel.substring(2)}`);
+          } else {
+            setTelefone(json.ddd_telefone_1);
+          }
+        }
+        setCidade(json.municipio || "");
+      } else {
+        setFormError("CNPJ não encontrado ou inválido.");
+      }
+    } catch (err) {
+      console.error("Erro ao buscar CNPJ:", err);
+      setFormError("Erro ao buscar CNPJ. Verifique a conexão.");
+    } finally {
+      setCnpjLoading(false);
+    }
+  }
+
+  const handleCnpjChange = (val: string) => {
+    let clean = val.replace(/\D/g, "");
+    if (clean.length > 14) clean = clean.substring(0, 14);
+    
+    let formatted = clean;
+    if (clean.length > 12) {
+      formatted = `${clean.substring(0, 2)}.${clean.substring(2, 5)}.${clean.substring(5, 8)}/${clean.substring(8, 12)}-${clean.substring(12)}`;
+    } else if (clean.length > 8) {
+      formatted = `${clean.substring(0, 2)}.${clean.substring(2, 5)}.${clean.substring(5, 8)}/${clean.substring(8)}`;
+    } else if (clean.length > 5) {
+      formatted = `${clean.substring(0, 2)}.${clean.substring(2, 5)}.${clean.substring(5)}`;
+    } else if (clean.length > 2) {
+      formatted = `${clean.substring(0, 2)}.${clean.substring(2)}`;
+    }
+    
+    setCnpj(formatted);
+    if (clean.length === 14) {
+      fetchCompanyByCnpj(clean);
+    }
+  };
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoLoading(true);
+    setFormError(null);
+    try {
+      const compressed = await compressImageFile(file, { maxDimension: 256, quality: 0.75 });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoUrl(reader.result as string);
+        setLogoLoading(false);
+      };
+      reader.onerror = () => {
+        setFormError("Falha ao ler o arquivo de imagem.");
+        setLogoLoading(false);
+      };
+      reader.readAsDataURL(compressed);
+    } catch (err) {
+      console.error("Erro no upload do logo:", err);
+      setFormError("Erro ao processar imagem.");
+      setLogoLoading(false);
+    }
+  };
 
   const syncParceiros = useCallback(async () => {
     const result = await getParceirosLiveSnapshot(companyId);
@@ -452,6 +534,10 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setFotoUrl("");
     setPortfolioUrl("");
     setEditing(null);
+    setCnpj("");
+    setCnpjLoading(false);
+    setLogoLoading(false);
+    setFormError(null);
   };
 
   const openCreate = () => {
@@ -730,7 +816,67 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Bloco de Logo e CNPJ por primeiro */}
+            <div className="flex gap-4 items-center p-3 border border-border/85 bg-slate-50/50 rounded-xl">
+              {/* Logo / Avatar do Parceiro */}
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Logo / Foto</label>
+                <div className="relative group w-16 h-16 rounded-xl overflow-hidden border border-border bg-background flex items-center justify-center cursor-pointer hover:border-primary transition-all">
+                  {fotoUrl ? (
+                    <img src={fotoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-muted-foreground/45" />
+                  )}
+                  {logoLoading ? (
+                    <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                      <Camera className="h-4 w-4" />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={logoLoading}
+                    onChange={handleLogoChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+                {fotoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setFotoUrl("")}
+                    className="text-[10px] text-rose-500 font-bold hover:underline"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+
+              {/* Busca de CNPJ */}
+              <div className="flex-1 space-y-1">
+                <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground/75" />
+                  CNPJ do Parceiro
+                  {cnpjLoading && <Loader2 className="h-3 w-3 text-primary animate-spin" />}
+                </label>
+                <Input
+                  placeholder="00.000.000/0001-00"
+                  value={cnpj}
+                  onChange={(e) => handleCnpjChange(e.target.value)}
+                  className="font-semibold text-xs"
+                />
+                {formError && (
+                  <p className="text-[10px] text-rose-500 font-bold leading-tight mt-1 animate-in fade-in duration-200">
+                    ⚠️ {formError}
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Nome completo *</label>
