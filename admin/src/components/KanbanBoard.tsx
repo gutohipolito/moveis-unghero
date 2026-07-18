@@ -948,7 +948,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
   };
 
   return (
-    <div className="space-y-[var(--space-5)]">
+    <div className="flex-1 min-h-0 flex flex-col space-y-[var(--space-3)] overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
         <div className="flex items-center gap-2 flex-wrap">
           <SegmentControl
@@ -1030,8 +1030,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
           )}
         </div>
       ) : (
-      <>
-      <div className="kanban-scroll select-none min-h-[560px] md:min-h-[720px]">
+      <div className="flex-1 min-h-0 overflow-x-auto pb-4 custom-scrollbar select-none">
+        <div className="flex gap-4 items-stretch h-full min-w-max pb-2 print:flex-col print:h-auto print:min-w-0 print:gap-6">
         {FUNNEL_COLUMNS.map((col) => {
           const colProjects = projects.filter((p) => p.status_geral === col.id);
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
@@ -1043,12 +1043,12 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
               key={col.id}
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`kanban-column flex flex-col rounded-xl bg-slate-50/40 border border-slate-100/70 transition-all duration-[var(--motion-base)] ${
-                isOver ? `ring-2 ${theme.dropRing} shadow-[var(--shadow-md)] scale-[1.01]` : ""
+              className={`w-72 xl:w-80 shrink-0 flex flex-col h-full rounded-2xl bg-slate-100/75 border border-slate-200/60 shadow-2xs transition-all duration-300 relative ${
+                isOver ? `ring-2 ${theme.dropRing} shadow-md scale-[1.01]` : ""
               }`}
             >
               {/* Cabeçalho da Coluna */}
-              <div className={`p-3.5 ${theme.header} rounded-t-xl flex items-center justify-between border-b border-border/60`}>
+              <div className={`p-3.5 pb-2 ${theme.header} rounded-t-2xl flex items-center justify-between`}>
                 <div className="flex items-center space-x-2 min-w-0">
                   <div className="relative group/tooltip flex items-center shrink-0">
                     <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
@@ -1076,7 +1076,7 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
 
               {/* Lista de Cards */}
               <div 
-                className="flex-1 p-[var(--space-2)] space-y-[var(--space-2)] overflow-y-auto max-h-[70vh] md:max-h-[780px] min-h-[360px] md:min-h-[600px]"
+                className="flex-1 p-2.5 space-y-2.5 overflow-y-auto custom-scrollbar min-h-0"
                 onDragLeave={() => setDragOverColumn(null)}
               >
                 {colProjects.length === 0 ? (
@@ -1090,8 +1090,8 @@ export default function KanbanBoard({ initialProjects, companyId, clients = [] }
             </div>
           );
         })}
+        </div>
       </div>
-      </>
       )}
 
       {/* Modal - Marcar perda */}
