@@ -27,6 +27,10 @@ import {
   Sparkles,
   Info,
   CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  Target,
+  Percent,
 } from "lucide-react";
 
 interface Project {
@@ -134,7 +138,7 @@ export default function BiClient({
 
   const isQuoteExpired = (validade: string) => toISODateBR(validade) < toISODateBR();
 
-  // Métricas
+  // Métricas de Orçamentos
   const quoteMetrics = useMemo(() => {
     const totalValue = quotes.reduce((acc, q) => acc + q.valor_final, 0);
     const approved = quotes.filter((q) => q.aprovado_em);
@@ -264,6 +268,108 @@ export default function BiClient({
       highlightText = `Os leads via ${originLabel} são responsáveis por ${pct.toFixed(0)}% da receita aprovada, com ticket médio real de ${formatCurrency(ticketMedio)} por projeto fechado.`;
     }
   }
+
+  // ==========================================
+  // NOVOS CÁLCULOS ANALÍTICOS PARA UI/UX
+  // ==========================================
+
+  // 1. Funil de Conversão Comercial
+  const funnelStages = useMemo(() => {
+    const totalLeadsQtd = projects.length;
+    const totalLeadsVal = totalPipeline;
+
+    const orcamentosProjects = projects.filter((p) => p.status_geral !== "LEAD" && p.status_geral !== "PERDIDO");
+    const orcamentosQtd = orcamentosProjects.length;
+    const orcamentosVal = orcamentosProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
+
+    const negocProjects = projects.filter((p) =>
+      ["NEGOCIACAO", "CONFERENCIA_TECNICA", "APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"].includes(p.status_geral)
+    );
+    const negocQtd = negocProjects.length;
+    const negocVal = negocProjects.reduce((acc, p) => acc + p.valor_previsto, 0);
+
+    const fechadosProjects = projects.filter((p) => CLOSED_STATUSES.includes(p.status_geral));
+    const fechadosQtd = fechadosProjects.length;
+    const fechadosVal = grossRevenue;
+
+    // Conversões etapa a etapa
+    const convLeadsToOrc = totalLeadsQtd > 0 ? (orcamentosQtd / totalLeadsQtd) * 100 : 0;
+    const convOrcToNeg = orcamentosQtd > 0 ? (negocQtd / orcamentosQtd) * 100 : 0;
+    const convNegToFechados = negocQtd > 0 ? (fechadosQtd / negocQtd) * 100 : 0;
+    const convGeral = totalLeadsQtd > 0 ? (fechadosQtd / totalLeadsQtd) * 100 : 0;
+
+    return {
+      leads: { label: "Leads (Total)", qtd: totalLeadsQtd, value: totalLeadsVal },
+      orcamentos: { label: "Propostas Criadas", qtd: orcamentosQtd, value: orcamentosVal, conv: convLeadsToOrc },
+      negociacao: { label: "Em Negociação", qtd: negocQtd, value: negocVal, conv: convOrcToNeg },
+      fechados: { label: "Projetos Fechados", qtd: fechadosQtd, value: fechadosVal, conv: convNegToFechados },
+      convGeral,
+    };
+  }, [projects, totalPipeline, grossRevenue]);
+
+  // 2. Saúde dos Orçamentos
+  const quotesHealth = useMemo(() => {
+    const approvedQuotes = quotes.filter((q) => q.aprovado_em);
+    const approvedVal = approvedQuotes.reduce((acc, q) => acc + q.valor_final, 0);
+
+    const activeQuotes = quotes.filter((q) => !q.aprovado_em && !isQuoteExpired(q.validade));
+    const activeVal = activeQuotes.reduce((acc, q) => acc + q.valor_final, 0);
+
+    const expiredQuotes = quotes.filter((q) => !q.aprovado_em && isQuoteExpired(q.validade));
+    const expiredVal = expiredQuotes.reduce((acc, q) => acc + q.valor_final, 0);
+
+    const totalVal = quotes.reduce((acc, q) => acc + q.valor_final, 0) || 1;
+
+    return {
+      approved: { label: "Aprovados", qtd: approvedQuotes.length, value: approvedVal, pct: (approvedVal / totalVal) * 100 },
+      active: { label: "Ativos", qtd: activeQuotes.length, value: activeVal, pct: (activeVal / totalVal) * 100 },
+      expired: { label: "Vencidos", qtd: expiredQuotes.length, value: expiredVal, pct: (expiredVal / totalVal) * 100 },
+      totalVal,
+    };
+  }, [quotes]);
+
+  // 3. Alertas e Oportunidades Comerciais
+  const commercialAlerts = useMemo(() => {
+    const list: Array<{ id: string; type: "warning" | "success" | "info"; title: string; desc: string }> = [];
+
+    // Alerta 1: Orçamentos Ativos (oportunidade de fechamento)
+    const activeVal = quotesHealth.active.value;
+    const activeQtd = quotesHealth.active.qtd;
+    if (activeQtd > 0) {
+      list.push({
+        id: "alert-active",
+        type: "success",
+        title: "Acompanhamento Comercial Pendente",
+        desc: `Temos ${activeQtd} proposta(s) ativa(s) aguardando retorno dos clientes, representando ${formatCurrency(activeVal)} no mercado. Faça follow-up hoje mesmo.`
+      });
+    }
+
+    // Alerta 2: Projetos grandes parados em Negociação
+    const negocVal = negotiationValue;
+    const negocQtd = negotiationProjects.length;
+    if (negocQtd > 0 && negocVal > 50000) {
+      list.push({
+        id: "alert-negoc",
+        type: "info",
+        title: "Decisão Comercial Requerida",
+        desc: `Há ${negocQtd} projeto(s) na etapa de Negociação acumulando ${formatCurrency(negocVal)}. Priorize a renegociação destes leads com os projetistas.`
+      });
+    }
+
+    // Alerta 3: Orçamentos vencidos (oportunidade de resgate)
+    const expiredVal = quotesHealth.expired.value;
+    const expiredQtd = quotesHealth.expired.qtd;
+    if (expiredQtd > 0) {
+      list.push({
+        id: "alert-expired",
+        type: "warning",
+        title: "Resgate de Propostas Vencidas",
+        desc: `Existem ${expiredQtd} orçamento(s) vencido(s) que somam ${formatCurrency(expiredVal)}. Vale estruturar uma campanha de desconto ou resgate técnico.`
+      });
+    }
+
+    return list;
+  }, [quotesHealth, negotiationValue, negotiationProjects]);
 
   // Ação de geração de PDF simulada e disparo de impressão
   const handleGeneratePdf = () => {
@@ -508,88 +614,288 @@ export default function BiClient({
 
         {activeTab === "funil_orcamentos" && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
-            {/* Seção 1: Funil Comercial */}
-            <div className="space-y-3.5">
-              <div className="flex items-center gap-2 border-b border-border/40 pb-1">
-                <FolderKanban className="h-5 w-5 text-primary" />
-                <h3 className="text-headline text-foreground">Funil Comercial</h3>
-                <span className="text-xs text-muted-foreground font-medium">— Volume ativo no Kanban</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
-                <KpiCard
-                  label="Total em negociação"
-                  value={
-                    <span className="privacy-value">{formatCurrency(funnelNegotiationValue)}</span>
-                  }
-                  icon={TrendingUp}
-                  accent="primary"
-                />
-                <KpiCard
-                  label="Projetos ativos"
-                  value={String(funnelActiveProjects.length)}
-                  icon={UserCheck}
-                  accent="success"
-                />
-                <KpiCard
-                  label="Em negociação"
-                  value={
-                    <span className="privacy-value">{formatCurrency(negotiationValue)}</span>
-                  }
-                  icon={Handshake}
-                  accent="info"
-                  trend={{
-                    value: `${negotiationProjects.length} projeto${negotiationProjects.length === 1 ? "" : "s"}`,
-                  }}
-                />
-                <KpiCard
-                  label="Perdas"
-                  value={<span className="privacy-value">{formatCurrency(lostValue)}</span>}
-                  icon={XCircle}
-                  accent="warning"
-                  trend={{
-                    value: `${lostProjects.length} lead${lostProjects.length === 1 ? "" : "s"}`,
-                  }}
-                />
-              </div>
+            {/* KPIs Rápidos no Topo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+              <KpiCard
+                label="Conversão Geral"
+                value={`${funnelStages.convGeral.toFixed(1)}%`}
+                icon={Target}
+                accent="primary"
+                trend={{ value: "Leads convertidos em vendas", positive: true }}
+              />
+              <KpiCard
+                label="Faturamento Ativo"
+                value={<span className="privacy-value">{formatCurrency(funnelNegotiationValue)}</span>}
+                icon={TrendingUp}
+                accent="info"
+              />
+              <KpiCard
+                label="Orçamentos Aprovados"
+                value={<span className="privacy-value">{formatCurrency(quoteMetrics.totalApprovedValue)}</span>}
+                icon={DollarSign}
+                accent="success"
+                trend={{ value: `${quoteMetrics.approvedCount} propostas aceitas` }}
+              />
+              <KpiCard
+                label="Ticket Médio Proposta"
+                value={<span className="privacy-value">{formatCurrency(quoteMetrics.averageValue)}</span>}
+                icon={Clock}
+                accent="warning"
+              />
             </div>
 
-            {/* Seção 2: Orçamentos */}
-            <div className="space-y-3.5">
+            {/* Grid dos Gráficos Ricos */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              
+              {/* Gráfico do Funil de Conversão */}
+              <Card className="p-5 lg:col-span-7 space-y-4 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-headline text-foreground flex items-center gap-1.5">
+                    <Target className="h-4.5 w-4.5 text-primary" />
+                    Fluxo de Conversão Comercial
+                  </h3>
+                  <p className="text-caption text-muted-foreground mt-0.5">
+                    Visualização analítica do funil comercial e as taxas de perda ou avanço entre as fases.
+                  </p>
+                </div>
+
+                <div className="space-y-3.5 my-auto py-2">
+                  {/* Etapa 1: Leads */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-neutral-800">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-slate-400" />
+                        {funnelStages.leads.label}
+                      </span>
+                      <div className="text-right">
+                        <span className="privacy-value block font-extrabold">{formatCurrency(funnelStages.leads.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{funnelStages.leads.qtd} projetos cadastrados</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-6 bg-slate-100 rounded-lg overflow-hidden border border-slate-200/50 flex">
+                      <div className="h-full bg-slate-400/90 text-[10px] text-white flex items-center justify-center font-bold px-3 transition-all duration-1000 w-full">
+                        100% Topo do Funil
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seta de Conversão 1 */}
+                  <div className="flex justify-center items-center">
+                    <div className="bg-amber-500/10 text-primary border border-amber-500/20 px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1.5 shadow-2xs">
+                      <Percent className="h-3 w-3" />
+                      <span>{funnelStages.orcamentos.conv.toFixed(0)}% avançaram para proposta</span>
+                    </div>
+                  </div>
+
+                  {/* Etapa 2: Orçamentos */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-neutral-800">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-orange-500" />
+                        {funnelStages.orcamentos.label}
+                      </span>
+                      <div className="text-right">
+                        <span className="privacy-value block font-extrabold">{formatCurrency(funnelStages.orcamentos.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{funnelStages.orcamentos.qtd} propostas elaboradas</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-6 bg-slate-100 rounded-lg overflow-hidden border border-slate-200/50 flex">
+                      <div 
+                        className="h-full bg-orange-500/90 text-[10px] text-white flex items-center justify-center font-bold px-3 transition-all duration-1000 rounded-r-md"
+                        style={{ width: `${Math.max(15, funnelStages.orcamentos.conv)}%` }}
+                      >
+                        {funnelStages.orcamentos.conv.toFixed(0)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seta de Conversão 2 */}
+                  <div className="flex justify-center items-center">
+                    <div className="bg-blue-500/10 text-blue-600 border border-blue-500/20 px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1.5 shadow-2xs">
+                      <Percent className="h-3 w-3" />
+                      <span>{funnelStages.negociacao.conv.toFixed(0)}% entraram em negociação</span>
+                    </div>
+                  </div>
+
+                  {/* Etapa 3: Negociação */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-neutral-800">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        {funnelStages.negociacao.label}
+                      </span>
+                      <div className="text-right">
+                        <span className="privacy-value block font-extrabold">{formatCurrency(funnelStages.negociacao.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{funnelStages.negociacao.qtd} projetos ativos</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-6 bg-slate-100 rounded-lg overflow-hidden border border-slate-200/50 flex">
+                      <div 
+                        className="h-full bg-blue-500/90 text-[10px] text-white flex items-center justify-center font-bold px-3 transition-all duration-1000 rounded-r-md"
+                        style={{ width: `${Math.max(12, (funnelStages.negociacao.conv * funnelStages.orcamentos.conv) / 100)}%` }}
+                      >
+                        {funnelStages.negociacao.conv.toFixed(0)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seta de Conversão 3 */}
+                  <div className="flex justify-center items-center">
+                    <div className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1.5 shadow-2xs">
+                      <Percent className="h-3 w-3" />
+                      <span>{funnelStages.fechados.conv.toFixed(0)}% taxa de fechamento</span>
+                    </div>
+                  </div>
+
+                  {/* Etapa 4: Fechados */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-neutral-800">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        {funnelStages.fechados.label}
+                      </span>
+                      <div className="text-right">
+                        <span className="privacy-value block font-extrabold">{formatCurrency(funnelStages.fechados.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{funnelStages.fechados.qtd} contratos assinados</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-6 bg-slate-100 rounded-lg overflow-hidden border border-slate-200/50 flex">
+                      <div 
+                        className="h-full bg-emerald-500/90 text-[10px] text-white flex items-center justify-center font-bold px-3 transition-all duration-1000 rounded-r-md"
+                        style={{ width: `${Math.max(8, funnelStages.convGeral)}%` }}
+                      >
+                        {funnelStages.convGeral.toFixed(0)}% Fechamento Geral
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Barra de Saúde dos Orçamentos */}
+              <Card className="p-5 lg:col-span-5 space-y-4 flex flex-col justify-between">
+                <div className="space-y-0.5">
+                  <h3 className="text-headline text-foreground flex items-center gap-1.5">
+                    <ClipboardList className="h-4.5 w-4.5 text-primary" />
+                    Saúde das Propostas Emitidas
+                  </h3>
+                  <p className="text-caption text-muted-foreground">
+                    Análise da proporção de orçamentos aprovados, ativos comerciais ou vencidos.
+                  </p>
+                </div>
+
+                <div className="space-y-6 my-auto">
+                  {/* A Barra Segmentada Proporcional */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-extrabold text-neutral-500">
+                      <span>Proporção por Valor de Orçamento</span>
+                      <span>Total: R$ {formatCurrency(quotesHealth.totalVal)}</span>
+                    </div>
+                    <div className="w-full h-6 rounded-lg overflow-hidden flex border border-slate-200/50 shadow-xs">
+                      {quotesHealth.approved.value > 0 && (
+                        <div 
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-1000 flex items-center justify-center text-[10px] font-black text-white"
+                          style={{ width: `${quotesHealth.approved.pct}%` }}
+                          title={`Aprovados: ${quotesHealth.approved.pct.toFixed(0)}%`}
+                        >
+                          {quotesHealth.approved.pct > 15 && `${quotesHealth.approved.pct.toFixed(0)}%`}
+                        </div>
+                      )}
+                      {quotesHealth.active.value > 0 && (
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-400 to-blue-500 transition-all duration-1000 flex items-center justify-center text-[10px] font-black text-white"
+                          style={{ width: `${quotesHealth.active.pct}%` }}
+                          title={`Ativos: ${quotesHealth.active.pct.toFixed(0)}%`}
+                        >
+                          {quotesHealth.active.pct > 15 && `${quotesHealth.active.pct.toFixed(0)}%`}
+                        </div>
+                      )}
+                      {quotesHealth.expired.value > 0 && (
+                        <div 
+                          className="h-full bg-gradient-to-r from-rose-400 to-rose-500 transition-all duration-1000 flex items-center justify-center text-[10px] font-black text-white"
+                          style={{ width: `${quotesHealth.expired.pct}%` }}
+                          title={`Vencidos: ${quotesHealth.expired.pct.toFixed(0)}%`}
+                        >
+                          {quotesHealth.expired.pct > 15 && `${quotesHealth.expired.pct.toFixed(0)}%`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Legenda Detalhada */}
+                  <div className="space-y-3 border-t border-slate-100 pt-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded bg-emerald-500 shrink-0" />
+                        <span className="font-bold text-neutral-800">Propostas Aprovadas</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-black text-neutral-900 block privacy-value">{formatCurrency(quotesHealth.approved.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{quotesHealth.approved.qtd} propostas aceitas</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded bg-blue-500 shrink-0" />
+                        <span className="font-bold text-neutral-800">Propostas Ativas</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-black text-neutral-900 block privacy-value">{formatCurrency(quotesHealth.active.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{quotesHealth.active.qtd} propostas em andamento</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded bg-rose-500 shrink-0" />
+                        <span className="font-bold text-neutral-800">Propostas Expiradas</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-black text-neutral-900 block privacy-value">{formatCurrency(quotesHealth.expired.value)}</span>
+                        <span className="text-[10px] text-muted-foreground block font-medium">{quotesHealth.expired.qtd} propostas sem retorno</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Painel de Recomendações e Alertas Comerciais (Actionable Insights) */}
+            <div className="space-y-2.5">
               <div className="flex items-center gap-2 border-b border-border/40 pb-1">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                <h3 className="text-headline text-foreground">Orçamentos & Propostas</h3>
-                <span className="text-xs text-muted-foreground font-medium">— Propostas comerciais emitidas</span>
+                <Sparkles className="h-4.5 w-4.5 text-primary" />
+                <h3 className="text-headline text-foreground">Alertas e Recomendações de Ação</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
-                <KpiCard
-                  label="Total emitido"
-                  value={String(quoteMetrics.count)}
-                  icon={ClipboardList}
-                  accent="warning"
-                  trend={{
-                    value: `${quoteMetrics.activeCount} ativos · ${quoteMetrics.expiredCount} vencidos · ${quoteMetrics.approvedCount} aprovados`,
-                  }}
-                />
-                <KpiCard
-                  label="Valor total"
-                  value={<span className="privacy-value">{formatCurrency(quoteMetrics.totalValue)}</span>}
-                  icon={Calculator}
-                  accent="success"
-                />
-                <KpiCard
-                  label="Valor aprovados"
-                  value={
-                    <span className="privacy-value">{formatCurrency(quoteMetrics.totalApprovedValue)}</span>
-                  }
-                  icon={DollarSign}
-                  accent="info"
-                />
-                <KpiCard
-                  label="Ticket médio (aprovados)"
-                  value={<span className="privacy-value">{formatCurrency(quoteMetrics.averageValue)}</span>}
-                  icon={Clock}
-                  accent="primary"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {commercialAlerts.length === 0 ? (
+                  <Card className="col-span-3 p-4 text-center text-xs text-muted-foreground font-medium border-dashed border">
+                    Nenhum alerta ou ação recomendada pendente. A saúde comercial está impecável!
+                  </Card>
+                ) : (
+                  commercialAlerts.map((alert) => (
+                    <Card key={alert.id} className={`p-4 flex gap-3 border ${
+                      alert.type === "warning" 
+                        ? "bg-rose-500/5 border-rose-500/10 text-rose-800" 
+                        : alert.type === "success" 
+                          ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-800" 
+                          : "bg-blue-500/5 border-blue-500/10 text-blue-800"
+                    }`}>
+                      {alert.type === "warning" ? (
+                        <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+                      ) : alert.type === "success" ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                      ) : (
+                        <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                      )}
+                      <div className="space-y-1">
+                        <strong className="text-xs font-bold block">{alert.title}</strong>
+                        <p className="text-[11px] leading-relaxed text-neutral-600/90 font-medium">
+                          {alert.desc}
+                        </p>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </div>
           </div>
