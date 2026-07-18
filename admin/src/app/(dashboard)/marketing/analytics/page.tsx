@@ -2,6 +2,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import { getMarketingDashboard } from "@/app/actions/marketing";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import MarketingClient from "../MarketingClient";
 
 export default async function MarketingAnalyticsPage() {
@@ -11,8 +12,8 @@ export default async function MarketingAnalyticsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Analytics do Site"
-        description="Análise em tempo real e histórico de acessos do site institucional moveisunghero.com.br."
+        title="Marketing"
+        description="Avaliações, formulários de captação e tráfego do site."
         help={
           <TooltipBody
             title="Acessos do site"
@@ -25,6 +26,7 @@ export default async function MarketingAnalyticsPage() {
         }
       />
 
+      <MarketingSectionTabs />
       <MarketingClient initialData={data} />
     </div>
   );

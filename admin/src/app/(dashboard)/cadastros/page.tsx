@@ -4,6 +4,7 @@ import { getSessionSafe } from "@/lib/auth";
 import { getCatalogGroups } from "@/app/actions/cadastros";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import CadastrosClient from "./CadastrosClient";
 
 interface CadastrosPageProps {
@@ -22,8 +23,8 @@ export default async function CadastrosPage({ searchParams }: CadastrosPageProps
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Cadastros"
-        description="Central de listas configuráveis (veículos, categorias de insumos) e referências do sistema. Para parceiros profissionais, use Projetistas e Arquitetos."
+        title="Configurações"
+        description="Empresa, equipe, permissões e listas configuráveis do sistema."
         help={
           <TooltipBody
             title="Listas do sistema"
@@ -35,6 +36,8 @@ export default async function CadastrosPage({ searchParams }: CadastrosPageProps
           />
         }
       />
+
+      <SettingsSectionTabs />
 
       <CadastrosClient
         initialGroups={groups}

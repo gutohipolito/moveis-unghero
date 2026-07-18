@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
+import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import { getStorageUsageAction, type StorageUsage } from "@/app/actions/storage";
 import { usePermissions } from "@/context/PermissionsContext";
 
@@ -121,43 +122,54 @@ export default function SettingsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center space-y-3">
-          <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
-            <ShieldAlert className="h-6 w-6 text-amber-600" />
-          </div>
-          <h1 className="text-lg font-black text-slate-800">Acesso restrito</h1>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
-            As configurações do sistema estão disponíveis apenas para a Diretoria. Fale com um administrador se precisar de acesso.
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-800">Configurações</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Equipe, permissões e cadastros do sistema.
           </p>
+        </div>
+        <SettingsSectionTabs />
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center space-y-3">
+            <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
+              <ShieldAlert className="h-6 w-6 text-amber-600" />
+            </div>
+            <h2 className="text-lg font-black text-slate-800">Acesso restrito</h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              Os dados da empresa estão disponíveis apenas para a Diretoria. Use as abas acima para as áreas liberadas ao seu cargo.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Cabeçalho de Título */}
-      <div className="border-b border-border/40 pb-5">
+      <div>
         <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl font-black tracking-tight text-slate-800">Configurações do Sistema</h1>
+          <h1 className="text-2xl font-black tracking-tight text-slate-800">Configurações</h1>
           <InfoTooltip label="Sobre Configurações">
             <TooltipBody
               title="Configurações"
               items={[
                 "Dados institucionais, metas e parâmetros padrão da operação.",
                 "Acompanhe o uso de armazenamento de fotos e documentos.",
-                "Disponível apenas para a Diretoria (administradores).",
+                "Nas abas: colaboradores, permissões e cadastros do sistema.",
               ]}
             />
           </InfoTooltip>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Gerencie as informações institucionais, metas de faturamento, prazos de entrega e ambiente de banco de dados da Móveis Unghero.
+        <p className="text-sm text-muted-foreground mt-1">
+          Empresa, equipe, permissões e listas configuráveis do sistema.
         </p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <SettingsSectionTabs />
+
+      <form onSubmit={handleSave} className="space-y-6 max-w-4xl">
         {/* Painel 1: Dados da Empresa */}
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">

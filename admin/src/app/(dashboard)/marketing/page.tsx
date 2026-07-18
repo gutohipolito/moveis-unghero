@@ -3,6 +3,7 @@ import { guardModule } from "@/lib/moduleAccess";
 import { getClients } from "@/app/actions/cliente";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import MarketingReviewClients from "./MarketingReviewClients";
 import { auth } from "@/lib/auth";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
@@ -29,8 +30,8 @@ export default async function MarketingPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Avaliação Google"
-        description="Link curto, QR Code e mensagem no WhatsApp para pedir avaliações após a entrega."
+        title="Marketing"
+        description="Avaliações, formulários de captação e tráfego do site."
         help={
           <TooltipBody
             title="Peça avaliações"
@@ -42,6 +43,8 @@ export default async function MarketingPage() {
           />
         }
       />
+
+      <MarketingSectionTabs />
 
       <MarketingReviewClients initialClients={clients} companyId={companyId} />
     </div>

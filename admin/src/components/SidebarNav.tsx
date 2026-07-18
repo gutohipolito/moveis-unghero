@@ -6,21 +6,16 @@ import {
   Kanban,
   Calendar,
   DollarSign,
-  User as UserIcon,
   Layers,
   LayoutDashboard,
   Users,
   Package,
   Truck,
   ClipboardList,
-  BookMarked,
   PenTool,
   PackageOpen,
   Star,
-  BarChart3,
-  NotebookPen,
   Settings,
-  ShieldCheck,
   ChevronDown,
   Lightbulb,
   FileSignature,
@@ -29,6 +24,11 @@ import {
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
 import { moduleKeyForHref } from "@/lib/permissions";
+import {
+  SETTINGS_HUB_MODULES,
+  SETTINGS_HUB_PATHS,
+  resolveSettingsHubHref,
+} from "@/components/settings/SettingsSectionTabs";
 
 export interface NavItem {
   name: string;
@@ -37,6 +37,10 @@ export interface NavItem {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   badge?: string;
   section: string;
+  /** Se definido, o item aparece se o usuário puder acessar qualquer um desses módulos. */
+  moduleKeys?: string[];
+  /** Rotas que mantêm este item ativo no menu (hubs com abas internas). */
+  matchPaths?: string[];
 }
 
 /** Ordem das seções no menu lateral — agrupamento didático para o operador. */
@@ -53,9 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
   { name: "Melhorias", href: "/melhorias", icon: Lightbulb, section: "Visão Geral" },
 
-  { name: "Avaliação Google", href: "/marketing", icon: Star, section: "Marketing" },
-  { name: "Formulários", href: "/marketing/formularios", icon: NotebookPen, section: "Marketing" },
-  { name: "Tráfego GA4", href: "/marketing/analytics", icon: BarChart3, section: "Marketing" },
+  { name: "Marketing", href: "/marketing", icon: Star, section: "Marketing" },
 
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
   { name: "Clientes", href: "/clientes", icon: Users, section: "Comercial" },
@@ -72,18 +74,27 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Logística e Entrega", href: "/logistica", icon: Truck, section: "Logística" },
 
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Administração" },
-  { name: "Colaboradores", href: "/colaboradores", icon: UserIcon, section: "Administração" },
-  { name: "Permissões", href: "/permissoes", icon: ShieldCheck, section: "Administração" },
-  { name: "Cadastros do Sistema", href: "/cadastros", icon: BookMarked, section: "Administração" },
-  { name: "Configurações", href: "/settings", icon: Settings, section: "Administração" },
+  {
+    name: "Configurações",
+    href: "/settings",
+    icon: Settings,
+    section: "Administração",
+    moduleKeys: [...SETTINGS_HUB_MODULES],
+    matchPaths: [...SETTINGS_HUB_PATHS],
+  },
 ];
 
-export function isNavItemActive(pathname: string, href: string): boolean {
+export function isNavItemActive(
+  pathname: string,
+  href: string,
+  matchPaths?: string[]
+): boolean {
+  if (matchPaths?.length) {
+    return matchPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
   if (pathname === href) return true;
   if (!pathname.startsWith(`${href}/`)) return false;
   if (href === "/factory" && pathname.startsWith("/factory/portal")) return false;
-  if (href === "/marketing" && pathname.startsWith("/marketing/analytics")) return false;
-  if (href === "/marketing" && pathname.startsWith("/marketing/formularios")) return false;
   return true;
 }
 
@@ -116,9 +127,11 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
   return (
     <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
       {NAV_SECTIONS.map((section) => {
-        const items = NAV_ITEMS.filter(
-          (i) => i.section === section && can(moduleKeyForHref(i.href))
-        );
+        const items = NAV_ITEMS.filter((i) => {
+          if (i.section !== section) return false;
+          if (i.moduleKeys?.length) return i.moduleKeys.some((k) => can(k));
+          return can(moduleKeyForHref(i.href));
+        });
         if (items.length === 0) return null;
 
         // O recolhimento por seção só se aplica ao sidebar expandido.
@@ -145,13 +158,15 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
             {!sectionCollapsed && (
             <div className="space-y-0.5">
               {items.map((item) => {
-                const isActive = isNavItemActive(pathname, item.href);
+                const href =
+                  item.href === "/settings" ? resolveSettingsHubHref(can) : item.href;
+                const isActive = isNavItemActive(pathname, href, item.matchPaths);
                 const label = compact && item.shortName ? item.shortName : item.name;
 
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={href}
                     prefetch={!HEAVY_ROUTES.has(item.href)}
                     onClick={onNavigate}
                     className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""} ${

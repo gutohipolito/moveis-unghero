@@ -1,6 +1,7 @@
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import MarketingFormsPanel from "@/components/marketing/MarketingFormsPanel";
+import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import { guardModule } from "@/lib/moduleAccess";
 
 export default async function MarketingFormulariosPage() {
@@ -8,8 +9,8 @@ export default async function MarketingFormulariosPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Formulários"
-        description="Links curtos e mensagens prontas para enviar formulários de orçamento, cadastro de clientes, parceiros e fornecedores."
+        title="Marketing"
+        description="Avaliações, formulários de captação e tráfego do site."
         help={
           <TooltipBody
             title="Captação de leads"
@@ -21,6 +22,7 @@ export default async function MarketingFormulariosPage() {
           />
         }
       />
+      <MarketingSectionTabs />
       <MarketingFormsPanel />
     </div>
   );

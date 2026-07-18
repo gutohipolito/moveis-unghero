@@ -13,7 +13,7 @@ export interface ModuleDef {
 /** Módulos cujo acesso é configurável por cargo (Diretoria sempre tem acesso total). */
 export const CONFIGURABLE_MODULES: ModuleDef[] = [
   { key: "bi", label: "Relatórios", section: "Visão Geral" },
-  { key: "marketing", label: "Marketing (Avaliações, Formulários, GA4)", section: "Marketing" },
+  { key: "marketing", label: "Marketing", section: "Marketing" },
   { key: "crm", label: "Funil Comercial", section: "Comercial" },
   { key: "clientes", label: "Clientes", section: "Comercial" },
   { key: "quotes", label: "Orçamentos", section: "Comercial" },

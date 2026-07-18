@@ -1,5 +1,6 @@
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import { guardModule, getCompanyPermissions } from "@/lib/moduleAccess";
 import { getSessionCompanyId } from "@/lib/session";
 import {
@@ -23,8 +24,8 @@ export default async function PermissoesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Permissões de Acesso"
-        description="Defina o que cada cargo pode acessar no sistema. A Diretoria sempre tem acesso total."
+        title="Configurações"
+        description="Empresa, equipe, permissões e listas configuráveis do sistema."
         help={
           <TooltipBody
             title="Controle de acesso"
@@ -37,6 +38,7 @@ export default async function PermissoesPage() {
           />
         }
       />
+      <SettingsSectionTabs />
       <PermissoesClient initial={initial} />
     </div>
   );
