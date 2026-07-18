@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { 
   Search, 
@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 import { usePermissions } from "@/context/PermissionsContext";
 import { 
   approveQuote,
@@ -36,6 +37,7 @@ import {
   createProjectForClient,
   createQuickClientAndProject
 } from "@/app/actions/quotes";
+import { updateUserPreference } from "@/app/actions/preferences";
 import { getQuotesLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
@@ -45,6 +47,8 @@ import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import PrivacyToggle from "@/components/PrivacyToggle";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
 interface QuoteItem {
   id: string;
@@ -85,9 +89,14 @@ interface Quote {
 interface QuotesListProps {
   initialQuotes: Quote[];
   companyId: string;
+  initialPageSize?: number;
 }
 
-export default function QuotesList({ initialQuotes, companyId }: QuotesListProps) {
+export default function QuotesList({
+  initialQuotes,
+  companyId,
+  initialPageSize = 20,
+}: QuotesListProps) {
   const { isAdmin } = usePermissions();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const dialog = useActionDialog();
@@ -97,6 +106,8 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
   const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor">("validade");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   // Estados para criação direta de Orçamento
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -367,6 +378,23 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
     return 0;
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, sortBy, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedQuotes.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedQuotes = sortedQuotes.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+    void updateUserPreference("quotesPageSize", size);
+  };
+
   // Métricas
   const totalValue = filteredQuotes.reduce((acc, q) => acc + q.valor_final, 0);
   
@@ -562,14 +590,14 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {sortedQuotes.length === 0 ? (
+              {pagedQuotes.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400 text-sm">
                     Nenhum orçamento encontrado.
                   </td>
                 </tr>
               ) : (
-                sortedQuotes.map((q) => {
+                pagedQuotes.map((q) => {
                   const expired = isExpired(q.validade);
                   const daysLeft = getDaysUntilExpiry(q.validade);
                   const isApproved = !!q.aprovado_em;
@@ -716,6 +744,18 @@ export default function QuotesList({ initialQuotes, companyId }: QuotesListProps
           </table>
         </div>
       </div>
+
+      {sortedQuotes.length > 0 ? (
+        <Pagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={sortedQuotes.length}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          itemLabel="orçamentos"
+        />
+      ) : null}
 
       {/* ─── MODAL: CRIAR NOVO ORÇAMENTO ─── */}
       <Dialog
