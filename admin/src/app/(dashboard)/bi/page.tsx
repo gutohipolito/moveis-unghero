@@ -22,24 +22,26 @@ export default async function BIPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Relatórios"
-        description="Análise e inteligência de mercado para a operação comercial da Móveis Unghero."
-        help={
-          <TooltipBody
-            title="Inteligência comercial"
-            items={[
-              "Consolida projetos, valores e origem dos clientes em indicadores.",
-              "Inclui resumo do funil (ativos, negociação e perdas) e de orçamentos.",
-              "Analise desempenho por cidade, canal de origem e parceiros.",
-              "Use o modo privado (olho) para ocultar valores em apresentações.",
-            ]}
-          />
-        }
-      >
-        <PrivacyToggle />
-      </PageHeader>
+    <div className="md:h-[calc(100vh-125px)] md:flex md:flex-col md:overflow-hidden space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
+      <div className="shrink-0 print:hidden">
+        <PageHeader
+          title="Relatórios"
+          description="Análise e inteligência de mercado para a operação comercial da Móveis Unghero."
+          help={
+            <TooltipBody
+              title="Inteligência comercial"
+              items={[
+                "Consolida projetos, valores e origem dos clientes em indicadores.",
+                "Inclui resumo do funil (ativos, negociação e perdas) e de orçamentos.",
+                "Analise desempenho por cidade, canal de origem e parceiros.",
+                "Use o modo privado (olho) para ocultar valores em apresentações.",
+              ]}
+            />
+          }
+        >
+          <PrivacyToggle />
+        </PageHeader>
+      </div>
 
       <BiClient
         initialProjects={projects}
