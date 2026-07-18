@@ -7,8 +7,6 @@ import {
   Trash2, 
   ExternalLink, 
   Printer, 
-  DollarSign, 
-  Calculator, 
   Clock,
   AlertTriangle,
   Plus,
@@ -22,13 +20,13 @@ import {
   Bookmark,
   CheckCircle2,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { usePermissions } from "@/context/PermissionsContext";
+import { usePrivacy } from "@/context/PrivacyContext";
 import { 
   approveQuote,
   deleteQuote,
@@ -98,6 +96,7 @@ export default function QuotesList({
   initialPageSize = 20,
 }: QuotesListProps) {
   const { isAdmin } = usePermissions();
+  const { privacyMode } = usePrivacy();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -395,17 +394,6 @@ export default function QuotesList({
     void updateUserPreference("quotesPageSize", size);
   };
 
-  // Métricas
-  const totalValue = filteredQuotes.reduce((acc, q) => acc + q.valor_final, 0);
-  
-  const approvedQuotes = filteredQuotes.filter(q => q.aprovado_em !== null && q.aprovado_em !== undefined);
-  const totalApprovedValue = approvedQuotes.reduce((acc, q) => acc + q.valor_final, 0);
-  
-  const averageValue = approvedQuotes.length > 0 ? totalApprovedValue / approvedQuotes.length : 0;
-  const expiredCount = filteredQuotes.filter(q => isExpired(q.validade) && !q.aprovado_em).length;
-  const activeCount = filteredQuotes.filter(q => !isExpired(q.validade) && !q.aprovado_em).length;
-  const approvedCount = approvedQuotes.length;
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -419,6 +407,7 @@ export default function QuotesList({
               "Vincule um arquiteto e escolha o modelo antes de gerar o PDF.",
               "Aprovar um orçamento gera as parcelas em Contas a Receber.",
               "A validade muda de cor conforme se aproxima do vencimento.",
+              "Indicadores de valor ficam em Relatórios.",
             ]}
           />
         }
@@ -442,53 +431,6 @@ export default function QuotesList({
       >
         <PrivacyToggle />
       </PageHeader>
-
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center gap-4 bg-white border border-slate-100 shadow-sm">
-          <div className="p-3 bg-amber-500/10 rounded-lg text-amber-600">
-            <Calculator className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Emitido</p>
-            <p className="text-xl font-bold text-slate-800">{filteredQuotes.length} orçamentos</p>
-            <p className="text-xs text-slate-400">{activeCount} ativos / {expiredCount} vencidos / {approvedCount} aprovados</p>
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center gap-4 bg-white border border-slate-100 shadow-sm">
-          <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-600">
-            <DollarSign className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor Total</p>
-            <p className="text-xl font-bold text-slate-800 privacy-value">{formatCurrency(totalValue)}</p>
-            <p className="text-xs text-emerald-650">Soma de propostas filtradas</p>
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center gap-4 bg-white border border-slate-100 shadow-sm">
-          <div className="p-3 bg-indigo-500/10 rounded-lg text-indigo-650">
-            <DollarSign className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor Aprovados</p>
-            <p className="text-xl font-bold text-slate-800 privacy-value">{formatCurrency(totalApprovedValue)}</p>
-            <p className="text-xs text-indigo-600 font-medium">Soma de propostas fechadas</p>
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center gap-4 bg-white border border-slate-100 shadow-sm">
-          <div className="p-3 bg-blue-500/10 rounded-lg text-blue-600">
-            <Clock className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket Médio (Aprovados)</p>
-            <p className="text-xl font-bold text-slate-800 privacy-value">{formatCurrency(averageValue)}</p>
-            <p className="text-xs text-slate-400">Média por proposta aprovada</p>
-          </div>
-        </Card>
-      </div>
 
       {/* Filtros e Busca */}
       <div className="flex flex-col gap-3 bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
@@ -668,7 +610,7 @@ export default function QuotesList({
                         )}
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-800 font-bold">
-                        <span className="privacy-value">{formatCurrency(q.valor_final)}</span>
+                        {!privacyMode ? formatCurrency(q.valor_final) : null}
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
                         {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}

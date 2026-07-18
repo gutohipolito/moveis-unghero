@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { toISODateBR } from "@/lib/brazilDate";
 import {
   TrendingUp,
   DollarSign,
@@ -13,6 +14,9 @@ import {
   Users,
   MapPin,
   FolderKanban,
+  Calculator,
+  Clock,
+  ClipboardList,
 } from "lucide-react";
 
 interface Project {
@@ -36,8 +40,16 @@ interface Project {
   };
 }
 
+export interface BiQuoteSummary {
+  id: string;
+  valor_final: number;
+  validade: string;
+  aprovado_em: string | null;
+}
+
 interface BiClientProps {
   initialProjects: Project[];
+  initialQuotes: BiQuoteSummary[];
   companyId: string;
 }
 
@@ -64,13 +76,19 @@ const ORIGIN_LABELS: Record<string, string> = {
   FACEBOOK: "Facebook",
 };
 
-export default function BiClient({ initialProjects, companyId }: BiClientProps) {
+export default function BiClient({
+  initialProjects,
+  initialQuotes,
+  companyId,
+}: BiClientProps) {
   const [projects, setProjects] = useState(initialProjects);
+  const [quotes, setQuotes] = useState(initialQuotes);
 
   const syncBi = useCallback(async () => {
     const result = await getBiLiveSnapshot(companyId);
-    if (result.success && result.projects) {
-      setProjects(result.projects);
+    if (result.success) {
+      if (result.projects) setProjects(result.projects);
+      if (result.quotes) setQuotes(result.quotes);
     }
   }, [companyId]);
 
@@ -78,6 +96,26 @@ export default function BiClient({ initialProjects, companyId }: BiClientProps) 
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+  const isQuoteExpired = (validade: string) => toISODateBR(validade) < toISODateBR();
+
+  const quoteMetrics = useMemo(() => {
+    const totalValue = quotes.reduce((acc, q) => acc + q.valor_final, 0);
+    const approved = quotes.filter((q) => q.aprovado_em);
+    const totalApprovedValue = approved.reduce((acc, q) => acc + q.valor_final, 0);
+    const averageValue = approved.length > 0 ? totalApprovedValue / approved.length : 0;
+    const expiredCount = quotes.filter((q) => isQuoteExpired(q.validade) && !q.aprovado_em).length;
+    const activeCount = quotes.filter((q) => !isQuoteExpired(q.validade) && !q.aprovado_em).length;
+    return {
+      count: quotes.length,
+      totalValue,
+      totalApprovedValue,
+      averageValue,
+      expiredCount,
+      activeCount,
+      approvedCount: approved.length,
+    };
+  }, [quotes]);
 
   const totalPipeline = projects.reduce((acc, p) => acc + p.valor_previsto, 0);
 
@@ -202,6 +240,46 @@ export default function BiClient({ initialProjects, companyId }: BiClientProps) 
               : undefined
           }
         />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-headline text-foreground">Orçamentos</h3>
+          <p className="text-caption text-muted-foreground mt-1">
+            Indicadores das propostas comerciais emitidas.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+          <KpiCard
+            label="Total emitido"
+            value={String(quoteMetrics.count)}
+            icon={ClipboardList}
+            accent="warning"
+            trend={{
+              value: `${quoteMetrics.activeCount} ativos · ${quoteMetrics.expiredCount} vencidos · ${quoteMetrics.approvedCount} aprovados`,
+            }}
+          />
+          <KpiCard
+            label="Valor total"
+            value={<span className="privacy-value">{formatCurrency(quoteMetrics.totalValue)}</span>}
+            icon={Calculator}
+            accent="success"
+          />
+          <KpiCard
+            label="Valor aprovados"
+            value={
+              <span className="privacy-value">{formatCurrency(quoteMetrics.totalApprovedValue)}</span>
+            }
+            icon={DollarSign}
+            accent="info"
+          />
+          <KpiCard
+            label="Ticket médio (aprovados)"
+            value={<span className="privacy-value">{formatCurrency(quoteMetrics.averageValue)}</span>}
+            icon={Clock}
+            accent="primary"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--space-4)]">

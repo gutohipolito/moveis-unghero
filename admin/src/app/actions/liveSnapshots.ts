@@ -355,19 +355,44 @@ export async function getBiLiveSnapshot(companyId: string) {
       client: project.client,
     }));
 
-    const version = buildLiveSnapshotVersion(
-      formattedProjects.map((project) => ({
+    const quotes = await prisma.quote.findMany({
+      where: { project: { client: { company_id: auth.companyId } } },
+      select: {
+        id: true,
+        valor_final: true,
+        validade: true,
+        aprovado_em: true,
+      },
+    });
+
+    const formattedQuotes = quotes.map((q) => ({
+      id: q.id,
+      valor_final: Number(q.valor_final),
+      validade: q.validade.toISOString(),
+      aprovado_em: q.aprovado_em ? q.aprovado_em.toISOString() : null,
+    }));
+
+    const version = buildLiveSnapshotVersion([
+      ...formattedProjects.map((project) => ({
         kind: "project",
         id: project.id,
         status: project.status_geral,
         valor: project.valor_previsto,
         partner_id: project.partner_id,
-      }))
-    );
+      })),
+      ...formattedQuotes.map((quote) => ({
+        kind: "quote",
+        id: quote.id,
+        valor: quote.valor_final,
+        validade: quote.validade,
+        aprovado_em: quote.aprovado_em,
+      })),
+    ]);
 
     return {
       success: true as const,
       projects: formattedProjects,
+      quotes: formattedQuotes,
       version,
     };
   } catch (error) {
