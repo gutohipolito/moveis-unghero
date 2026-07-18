@@ -42,6 +42,8 @@ type LoadedPrintQuote = {
     valor_unitario: number;
     valor_total: number;
     subitens: string[];
+    produto_nome: string | null;
+    produto_imagem_url: string | null;
   }>;
 };
 
@@ -63,7 +65,13 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         project: { client: { company_id: companyId } },
       },
       include: {
-        items: true,
+        items: {
+          include: {
+            showcaseProduct: {
+              select: { nome: true, imagem_url: true },
+            },
+          },
+        },
         partner: {
           select: {
             nome: true,
@@ -104,6 +112,8 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
           valor_unitario: Number(item.valor_unitario),
           valor_total: Number(item.valor_total),
           subitens: parseQuoteSubitens(item.subitens),
+          produto_nome: item.showcaseProduct?.nome ?? null,
+          produto_imagem_url: item.showcaseProduct?.imagem_url ?? null,
         })),
       };
     }

@@ -17,6 +17,7 @@ export const CONFIGURABLE_MODULES: ModuleDef[] = [
   { key: "crm", label: "Funil Comercial", section: "Comercial" },
   { key: "clientes", label: "Clientes", section: "Comercial" },
   { key: "quotes", label: "Orçamentos", section: "Comercial" },
+  { key: "produtos", label: "Produtos", section: "Comercial" },
   { key: "contratos", label: "Contratos", section: "Comercial" },
   { key: "parceiros", label: "Projetistas e Arquitetos", section: "Comercial" },
   { key: "agenda", label: "Agenda", section: "Produção" },

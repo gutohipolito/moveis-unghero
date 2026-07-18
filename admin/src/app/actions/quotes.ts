@@ -35,6 +35,7 @@ export interface CreateQuoteInput {
     tipo_custo: ItemType;
     valor_unitario: number;
     valor_total: number;
+    showcase_product_id?: string | null;
     subitens?: string[];
   }[];
 }
@@ -62,6 +63,23 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
       select: { id: true },
     });
     partnerId = partner?.id ?? null;
+  }
+
+  // Valida produtos do mostruário vinculados às linhas.
+  const showcaseIds = Array.from(
+    new Set(
+      data.items
+        .map((item) => item.showcase_product_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  const validShowcaseIds = new Set<string>();
+  if (showcaseIds.length > 0) {
+    const products = await prisma.showcaseProduct.findMany({
+      where: { id: { in: showcaseIds }, company_id: auth.companyId },
+      select: { id: true },
+    });
+    products.forEach((p) => validShowcaseIds.add(p.id));
   }
 
   try {
@@ -98,6 +116,10 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
             tipo_custo: item.tipo_custo,
             valor_unitario: item.valor_unitario,
             valor_total: item.valor_total,
+            showcase_product_id:
+              item.showcase_product_id && validShowcaseIds.has(item.showcase_product_id)
+                ? item.showcase_product_id
+                : null,
             subitens:
               item.subitens && item.subitens.length > 0 ? item.subitens : undefined,
           })),

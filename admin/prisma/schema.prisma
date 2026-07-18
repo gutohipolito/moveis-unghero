@@ -24,6 +24,7 @@ model Company {
   professionalPartners ProfessionalPartner[]
   suppliers      Supplier[]
   inventoryItems InventoryItem[]
+  showcaseProducts ShowcaseProduct[]
   expenses       Expense[]
   suggestions    Suggestion[]
   contractTemplates ContractTemplate[]
@@ -333,15 +334,19 @@ model Quote {
 }
 
 model QuoteItem {
-  id            String   @id @default(uuid())
-  quote_id      String
-  quote         Quote    @relation(fields: [quote_id], references: [id])
-  descricao     String
-  quantidade    Int
-  tipo_custo    ItemType // MOVEIS_MDF, FERRAGENS_ESPECIAIS, MAO_DE_OBRA, OUTROS
-  valor_unitario Decimal  @db.Decimal(12, 2)
-  valor_total   Decimal  @db.Decimal(12, 2)
-  subitens      Json?
+  id                   String           @id @default(uuid())
+  quote_id             String
+  quote                Quote            @relation(fields: [quote_id], references: [id])
+  descricao            String
+  quantidade           Int
+  tipo_custo           ItemType // MOVEIS_MDF, FERRAGENS_ESPECIAIS, MAO_DE_OBRA, OUTROS
+  valor_unitario       Decimal          @db.Decimal(12, 2)
+  valor_total          Decimal          @db.Decimal(12, 2)
+  subitens             Json?
+  showcase_product_id  String?
+  showcaseProduct      ShowcaseProduct? @relation(fields: [showcase_product_id], references: [id], onDelete: SetNull)
+
+  @@index([showcase_product_id])
 }
 
 enum ItemType {
@@ -726,9 +731,33 @@ model InventoryItem {
   ativo       Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  showcaseProducts ShowcaseProduct[]
 
   @@index([company_id])
   @@index([company_id, categoria])
+}
+
+model ShowcaseProduct {
+  id                String         @id @default(uuid())
+  company_id        String
+  company           Company        @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  inventory_item_id String?
+  inventoryItem     InventoryItem? @relation(fields: [inventory_item_id], references: [id], onDelete: SetNull)
+  nome              String
+  descricao         String?        @db.Text
+  categoria         String?
+  imagem_url        String?
+  imagem_mime       String?
+  preco_exibicao    Decimal?       @db.Decimal(12, 2)
+  ordem             Int            @default(0)
+  ativo             Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  quoteItems        QuoteItem[]
+
+  @@index([company_id])
+  @@index([company_id, ativo])
+  @@index([inventory_item_id])
 }
 
 model LeadBriefing {

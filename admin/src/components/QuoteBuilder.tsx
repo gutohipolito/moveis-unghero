@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createQuote, getProjectBriefingAction, type ItemType } from "@/app/actions/quotes";
 import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
+import { listShowcaseProducts, type ShowcaseProductDTO } from "@/app/actions/produtos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers, Building2, BadgeCheck } from "lucide-react";
+import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers, Building2, BadgeCheck, Images } from "lucide-react";
 import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
 import { listQuoteItemPresets, listQuoteDetailPresets } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
@@ -64,6 +65,7 @@ interface QuoteItemInput {
   valor_unitario: number;
   valor_total: number;
   inventoryItemId?: string;
+  showcaseProductId?: string;
   precoCusto?: number;
   markup?: number;
   subitens?: string[];
@@ -85,6 +87,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   itemsRef.current = items;
   const [desconto, setDesconto] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [showcaseProducts, setShowcaseProducts] = useState<ShowcaseProductDTO[]>([]);
   const [presets, setPresets] = useState<QuoteItemPresetDTO[]>([]);
   const [globalDetails, setGlobalDetails] = useState<string[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
@@ -114,6 +117,16 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       }
     }
     loadInventory();
+  }, [companyId]);
+
+  useEffect(() => {
+    async function loadShowcase() {
+      const res = await listShowcaseProducts(companyId, { ativoOnly: true });
+      if (res.success) {
+        setShowcaseProducts(res.products);
+      }
+    }
+    loadShowcase();
   }, [companyId]);
 
   useEffect(() => {
@@ -205,6 +218,27 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     setItems([...items, newItem]);
   };
 
+  const handleAddItemFromShowcase = () => {
+    if (showcaseProducts.length === 0) {
+      showError("Mostruário vazio", "Cadastre produtos em Comercial → Produtos antes de usar no orçamento.");
+      return;
+    }
+
+    const product = showcaseProducts[0];
+    const unit = product.preco_exibicao ?? 0;
+    const newItem: QuoteItemInput = {
+      id: `item-${Date.now()}`,
+      descricao: product.descricao?.trim() || product.nome,
+      quantidade: 1,
+      tipo_custo: "MOVEIS_MDF",
+      valor_unitario: unit,
+      valor_total: unit,
+      showcaseProductId: product.id,
+      subitens: [],
+    };
+    setItems([...items, newItem]);
+  };
+
   // Remover uma linha de item
   const handleRemoveItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
@@ -227,11 +261,28 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             const currentMarkup = item.markup || 2.2;
             updatedItem = {
               ...updatedItem,
+              showcaseProductId: undefined,
               descricao: selected.nome,
               precoCusto: selected.precoCusto,
               tipo_custo: mappedType,
               valor_unitario: selected.precoCusto * currentMarkup,
               valor_total: item.quantidade * (selected.precoCusto * currentMarkup)
+            };
+          }
+        }
+
+        if (field === "showcaseProductId") {
+          const selected = showcaseProducts.find((p) => p.id === value);
+          if (selected) {
+            const unit = selected.preco_exibicao ?? item.valor_unitario;
+            updatedItem = {
+              ...updatedItem,
+              inventoryItemId: undefined,
+              precoCusto: undefined,
+              markup: undefined,
+              descricao: selected.descricao?.trim() || selected.nome,
+              valor_unitario: unit,
+              valor_total: item.quantidade * unit,
             };
           }
         }
@@ -302,6 +353,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         tipo_custo: item.tipo_custo,
         valor_unitario: item.valor_unitario,
         valor_total: item.valor_total,
+        showcase_product_id: item.showcaseProductId || null,
         subitens: (item.subitens || []).map((s) => s.trim()).filter(Boolean),
       })),
     };
@@ -493,7 +545,10 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               <Button type="button" onClick={handleAddItem} size="sm" variant="outline" className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-1" /> Item livre
               </Button>
-              <Button type="button" onClick={handleAddItemFromStock} size="sm" variant="outline" className="w-full sm:w-auto border-cyan-200 text-cyan-700 hover:bg-cyan-50">
+              <Button type="button" onClick={handleAddItemFromShowcase} size="sm" variant="outline" className="w-full sm:w-auto border-amber-200 text-amber-800 hover:bg-amber-50">
+                <Images className="h-4 w-4 mr-1 text-amber-700" /> Do mostruário
+              </Button>
+              <Button type="button" onClick={handleAddItemFromStock} size="sm" variant="outline" className="w-full sm:w-auto border-cyan-200 text-cyan-700 hover:bg-cyan-50 col-span-2 sm:col-span-1">
                 <Plus className="h-4 w-4 mr-1 text-cyan-600" /> Do estoque
               </Button>
             </div>
@@ -516,12 +571,16 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 {items.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
-                      Tabela vazia. Adicione um "Item Livre" ou um "Insumo do Estoque" para começar.
+                      Tabela vazia. Adicione um item livre, do mostruário ou do estoque.
                     </td>
                   </tr>
                 ) : (
                   items.map((item) => {
                     const isStockItem = !!item.inventoryItemId;
+                    const isShowcaseItem = !!item.showcaseProductId;
+                    const showcase = isShowcaseItem
+                      ? showcaseProducts.find((p) => p.id === item.showcaseProductId)
+                      : null;
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/60 transition-colors border-b border-slate-100">
@@ -544,6 +603,39 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                                 <span className="text-muted-foreground/30">|</span>
                                 <span>Venda Sugerida: R$ {(item.valor_unitario || 0).toFixed(2)}</span>
                               </div>
+                            </div>
+                          ) : isShowcaseItem ? (
+                            <div className="space-y-1.5">
+                              <div className="flex gap-2 items-start">
+                                {showcase?.imagem_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={showcase.imagem_url}
+                                    alt=""
+                                    className="w-10 h-10 rounded object-cover border border-slate-200 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                                    <Images className="h-4 w-4 text-amber-600" />
+                                  </div>
+                                )}
+                                <select
+                                  value={item.showcaseProductId}
+                                  onChange={(e) => handleUpdateItem(item.id, "showcaseProductId", e.target.value)}
+                                  className="flex-1 bg-white border border-amber-200 rounded-lg text-xs p-2 outline-none font-bold text-slate-800 focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                                >
+                                  {showcaseProducts.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.nome}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <DetailsEditor
+                                subitens={item.subitens || []}
+                                suggestions={detailSuggestions}
+                                onChange={(next) => handleUpdateSubitens(item.id, next)}
+                              />
                             </div>
                           ) : (
                             <div>
@@ -639,11 +731,15 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
           <div className="block md:hidden p-3.5 space-y-4.5 bg-slate-50/50 border-t border-border/20">
             {items.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 font-medium">
-                Tabela vazia. Adicione um "Item Livre" ou um "Insumo do Estoque" para começar.
+                Tabela vazia. Adicione um item livre, do mostruário ou do estoque.
               </div>
             ) : (
               items.map((item, idx) => {
                 const isStockItem = !!item.inventoryItemId;
+                const isShowcaseItem = !!item.showcaseProductId;
+                const showcase = isShowcaseItem
+                  ? showcaseProducts.find((p) => p.id === item.showcaseProductId)
+                  : null;
                 return (
                   <div key={item.id} className="p-4 bg-white border border-slate-200/80 rounded-2xl space-y-4 shadow-sm relative animate-in fade-in duration-200">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -682,6 +778,35 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               <span>Custo: R$ {(item.precoCusto || 0).toFixed(2)}</span>
                               <span>Venda Sugerida: R$ {(item.valor_unitario || 0).toFixed(2)}</span>
                             </div>
+                          </div>
+                        ) : isShowcaseItem ? (
+                          <div className="space-y-1.5">
+                            <div className="flex gap-2 items-center">
+                              {showcase?.imagem_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={showcase.imagem_url}
+                                  alt=""
+                                  className="w-10 h-10 rounded object-cover border border-slate-200 shrink-0"
+                                />
+                              ) : null}
+                              <select
+                                value={item.showcaseProductId}
+                                onChange={(e) => handleUpdateItem(item.id, "showcaseProductId", e.target.value)}
+                                className="flex-1 bg-amber-50/50 border border-amber-200 rounded-lg text-xs p-2 outline-none font-bold text-slate-800 cursor-pointer"
+                              >
+                                {showcaseProducts.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.nome}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <DetailsEditor
+                              subitens={item.subitens || []}
+                              suggestions={detailSuggestions}
+                              onChange={(next) => handleUpdateSubitens(item.id, next)}
+                            />
                           </div>
                         ) : (
                           <div>

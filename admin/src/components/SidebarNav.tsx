@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Lightbulb,
   FileSignature,
+  Images,
 } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -59,6 +60,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Funil Comercial", shortName: "Funil", href: "/crm", icon: Kanban, section: "Comercial" },
   { name: "Clientes", href: "/clientes", icon: Users, section: "Comercial" },
   { name: "Orçamentos", href: "/quotes", icon: ClipboardList, section: "Comercial" },
+  { name: "Produtos", href: "/produtos", icon: Images, section: "Comercial" },
   { name: "Contratos", href: "/contratos", icon: FileSignature, section: "Comercial" },
   { name: "Projetistas e Arquitetos", href: "/parceiros", icon: PenTool, section: "Comercial" },
 
@@ -95,6 +97,7 @@ const HEAVY_ROUTES = new Set([
   "/financeiro",
   "/clientes",
   "/quotes",
+  "/produtos",
   "/contratos",
   "/estoque",
   "/logistica",

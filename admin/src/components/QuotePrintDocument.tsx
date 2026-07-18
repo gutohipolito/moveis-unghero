@@ -48,6 +48,8 @@ export type QuotePrintItem = {
   valor_unitario: number;
   valor_total: number;
   subitens?: string[] | null;
+  produto_nome?: string | null;
+  produto_imagem_url?: string | null;
 };
 
 export type QuotePrintPartner = {
@@ -403,12 +405,29 @@ export default function QuotePrintDocument({
                       return (
                         <tr key={idx}>
                           <td className="py-3.5 px-4 leading-relaxed">
-                            <p className="font-semibold text-neutral-950">{item.descricao}</p>
-                            {subitensLine ? (
-                              <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
-                                {subitensLine}
-                              </p>
-                            ) : null}
+                            <div className="flex gap-2.5 items-start">
+                              {item.produto_imagem_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={item.produto_imagem_url}
+                                  alt={item.produto_nome || item.descricao}
+                                  className="w-11 h-11 rounded-md object-cover border border-neutral-200 shrink-0"
+                                />
+                              ) : null}
+                              <div className="min-w-0">
+                                {item.produto_nome ? (
+                                  <p className="text-[9px] font-bold uppercase tracking-wide text-neutral-500 mb-0.5">
+                                    {item.produto_nome}
+                                  </p>
+                                ) : null}
+                                <p className="font-semibold text-neutral-950">{item.descricao}</p>
+                                {subitensLine ? (
+                                  <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
+                                    {subitensLine}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
                             {item.quantidade}

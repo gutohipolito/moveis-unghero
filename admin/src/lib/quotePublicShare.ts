@@ -12,7 +12,13 @@ export async function loadPublicQuoteByShareCode(code: string) {
   const dbQuote = await prisma.quote.findFirst({
     where: { pdf_share_code: normalized },
     include: {
-      items: true,
+      items: {
+        include: {
+          showcaseProduct: {
+            select: { nome: true, imagem_url: true },
+          },
+        },
+      },
       partner: {
         select: {
           nome: true,
@@ -49,6 +55,8 @@ export async function loadPublicQuoteByShareCode(code: string) {
       valor_unitario: Number(item.valor_unitario),
       valor_total: Number(item.valor_total),
       subitens: parseQuoteSubitens(item.subitens),
+      produto_nome: item.showcaseProduct?.nome ?? null,
+      produto_imagem_url: item.showcaseProduct?.imagem_url ?? null,
     })),
   };
 
