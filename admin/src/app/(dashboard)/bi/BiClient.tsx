@@ -828,7 +828,7 @@ export default function BiClient({
                   </p>
                 </div>
 
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-3 pr-1">
                   {statusCounts.map((col) => {
                     const percentage = (col.value / maxCRMValue) * 100;
                     return (
@@ -859,7 +859,7 @@ export default function BiClient({
                   </p>
                 </div>
 
-                <div className="space-y-4 my-auto py-2 max-h-[260px] overflow-y-auto pr-1">
+                <div className="space-y-4 my-auto py-2 pr-1">
                   {originsData.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-6">
                       Nenhum projeto com origem registrada.
