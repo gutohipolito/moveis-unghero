@@ -589,12 +589,12 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       email,
       telefone,
       cidade,
-      escritorio,
-      registro_profissional: registroProfissional,
-      origem: origem || undefined,
-      observacoes,
+      escritorio: escritorio.trim() || nome.trim(),
+      registro_profissional: registroProfissional || undefined,
+      origem: origem || "PAINEL",
+      observacoes: observacoes || undefined,
       fotoUrl,
-      portfolioUrl,
+      portfolioUrl: portfolioUrl || undefined,
     };
 
     if (editing) {
@@ -903,27 +903,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 <label className="text-xs font-bold text-muted-foreground">Cidade</label>
                 <Input value={cidade} onChange={(e) => setCidade(e.target.value)} />
               </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">Escritório / Studio</label>
-                <Input value={escritorio} onChange={(e) => setEscritorio(e.target.value)} />
-              </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">
-                  {partnerRegistroLabel(tipo)}
-                  {tipo === "ARQUITETO" || tipo === "ENGENHEIRO" ? "" : " (opcional)"}
-                </label>
-                <Input
-                  value={registroProfissional}
-                  onChange={(e) => setRegistroProfissional(e.target.value)}
-                  placeholder={
-                    tipo === "ARQUITETO"
-                      ? "Ex: A123456-7"
-                      : tipo === "ENGENHEIRO"
-                        ? "Ex: 123.456-D"
-                        : "Ex: CAU, CREA ou ABD (se houver)"
-                  }
-                />
-              </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Telefone</label>
                 <Input
@@ -935,38 +914,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">E-mail</label>
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">Link do Portfolio ou Instagram</label>
-                <Input type="url" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} />
-              </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">URL da Foto de Perfil (Avatar)</label>
-                <Input type="url" value={fotoUrl} onChange={(e) => setFotoUrl(e.target.value)} />
-              </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">Como conheceu nossa empresa?</label>
-                <select
-                  value={origem}
-                  onChange={(e) => setOrigem(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
-                >
-                  <option value="">Não informado</option>
-                  {PARTNER_ORIGEM_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">Observações</label>
-                <textarea
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-none"
-                />
               </div>
             </div>
 
