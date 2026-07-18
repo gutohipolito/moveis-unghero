@@ -748,6 +748,7 @@ model ShowcaseProduct {
   categoria         String?
   imagem_url        String?
   imagem_mime       String?
+  imagens           String[]       @default([])
   preco_exibicao    Decimal?       @db.Decimal(12, 2)
   ordem             Int            @default(0)
   ativo             Boolean        @default(true)

@@ -13,6 +13,7 @@ export type ShowcaseProductDTO = {
   categoria: string | null;
   imagem_url: string | null;
   imagem_mime: string | null;
+  imagens: string[];
   preco_exibicao: number | null;
   ordem: number;
   ativo: boolean;
@@ -22,6 +23,15 @@ export type ShowcaseProductDTO = {
   updatedAt: string;
 };
 
+function resolveImagens(row: {
+  imagens?: string[] | null;
+  imagem_url: string | null;
+}): string[] {
+  const fromArray = (row.imagens || []).filter(Boolean);
+  if (fromArray.length > 0) return fromArray;
+  return row.imagem_url ? [row.imagem_url] : [];
+}
+
 function mapProduct(row: {
   id: string;
   nome: string;
@@ -29,6 +39,7 @@ function mapProduct(row: {
   categoria: string | null;
   imagem_url: string | null;
   imagem_mime: string | null;
+  imagens?: string[] | null;
   preco_exibicao: { toString(): string } | number | null;
   ordem: number;
   ativo: boolean;
@@ -37,13 +48,15 @@ function mapProduct(row: {
   createdAt: Date;
   updatedAt: Date;
 }): ShowcaseProductDTO {
+  const imagens = resolveImagens(row);
   return {
     id: row.id,
     nome: row.nome,
     descricao: row.descricao,
     categoria: row.categoria,
-    imagem_url: row.imagem_url,
+    imagem_url: imagens[0] || row.imagem_url,
     imagem_mime: row.imagem_mime,
+    imagens,
     preco_exibicao: row.preco_exibicao == null ? null : Number(row.preco_exibicao),
     ordem: row.ordem,
     ativo: row.ativo,
@@ -135,6 +148,7 @@ export async function createShowcaseProduct(
         inventory_item_id: inventoryItemId,
         ordem: data.ordem ?? 0,
         ativo: data.ativo ?? true,
+        imagens: [],
       },
       include: { inventoryItem: { select: { nome: true } } },
     });
@@ -226,12 +240,23 @@ export async function deleteShowcaseProduct(companyId: string, productId: string
   if (!existing) return { success: false as const, error: "Produto não encontrado." };
 
   try {
-    if (
-      existing.imagem_url &&
-      process.env.BLOB_READ_WRITE_TOKEN &&
-      existing.imagem_url.includes("blob.vercel-storage.com")
-    ) {
-      await del(existing.imagem_url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    const urls = Array.from(
+      new Set(
+        [
+          ...(existing.imagens || []),
+          existing.imagem_url,
+        ].filter((u): u is string => Boolean(u))
+      )
+    );
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      await Promise.all(
+        urls
+          .filter((url) => url.includes("blob.vercel-storage.com"))
+          .map((url) =>
+            del(url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => undefined)
+          )
+      );
     }
 
     await prisma.showcaseProduct.delete({ where: { id: productId } });
