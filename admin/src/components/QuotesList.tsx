@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
   Search, 
@@ -19,6 +19,8 @@ import {
   ArrowDownZA,
   Bookmark,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,6 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { usePermissions } from "@/context/PermissionsContext";
-import { usePrivacy } from "@/context/PrivacyContext";
 import { 
   approveQuote,
   deleteQuote,
@@ -44,9 +45,10 @@ import QuoteBuilder from "@/components/QuoteBuilder";
 import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import PrivacyToggle from "@/components/PrivacyToggle";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+/** Tempo em que o valor final fica visível após clicar no olho; depois volta a ocultar. */
+const QUOTE_VALUE_REVEAL_MS = 30_000;
 
 interface QuoteItem {
   id: string;
@@ -96,7 +98,6 @@ export default function QuotesList({
   initialPageSize = 20,
 }: QuotesListProps) {
   const { isAdmin } = usePermissions();
-  const { privacyMode } = usePrivacy();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -107,6 +108,9 @@ export default function QuotesList({
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
+  // Valores sempre começam ocultos nesta tela (não usa preferência global salva).
+  const [valuesHidden, setValuesHidden] = useState(true);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Estados para criação direta de Orçamento
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -140,6 +144,37 @@ export default function QuotesList({
     sync: syncQuotes,
     enabled: !isCreateOpen && !isGeneratingProject,
   });
+
+  useEffect(() => {
+    return () => {
+      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+    };
+  }, []);
+
+  const clearRevealTimeout = () => {
+    if (revealTimeoutRef.current) {
+      clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+  };
+
+  const hideQuoteValues = () => {
+    clearRevealTimeout();
+    setValuesHidden(true);
+  };
+
+  const toggleQuoteValuesVisibility = () => {
+    if (valuesHidden) {
+      setValuesHidden(false);
+      clearRevealTimeout();
+      revealTimeoutRef.current = setTimeout(() => {
+        setValuesHidden(true);
+        revealTimeoutRef.current = null;
+      }, QUOTE_VALUE_REVEAL_MS);
+      return;
+    }
+    hideQuoteValues();
+  };
 
   const handleOpenCreateModal = async () => {
     setIsCreateOpen(true);
@@ -429,7 +464,22 @@ export default function QuotesList({
           </div>
         }
       >
-        <PrivacyToggle />
+        <button
+          type="button"
+          onClick={toggleQuoteValuesVisibility}
+          className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
+          title={
+            valuesHidden
+              ? "Mostrar valores finais (oculta de novo em 30s)"
+              : "Ocultar valores finais"
+          }
+        >
+          {valuesHidden ? (
+            <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
+          ) : (
+            <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
+          )}
+        </button>
       </PageHeader>
 
       {/* Filtros e Busca */}
@@ -610,7 +660,15 @@ export default function QuotesList({
                         )}
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-800 font-bold">
-                        {!privacyMode ? formatCurrency(q.valor_final) : null}
+                        <span
+                          className={`inline-block tabular-nums transition-[filter] duration-300 ${
+                            valuesHidden
+                              ? "blur-[5px] select-none pointer-events-none"
+                              : "blur-0"
+                          }`}
+                        >
+                          {formatCurrency(q.valor_final)}
+                        </span>
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
                         {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}
