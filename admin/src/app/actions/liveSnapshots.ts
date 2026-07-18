@@ -331,6 +331,7 @@ export async function getBiLiveSnapshot(companyId: string) {
             nome: true,
             cidade: true,
             tipo: true,
+            fotoUrl: true,
           },
         },
         client: {

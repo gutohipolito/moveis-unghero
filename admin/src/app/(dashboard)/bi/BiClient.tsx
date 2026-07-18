@@ -6,6 +6,7 @@ import { KpiCard } from "@/components/ui/kpi-card";
 import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { toISODateBR } from "@/lib/brazilDate";
+import { Pagination } from "@/components/ui/pagination";
 import {
   TrendingUp,
   DollarSign,
@@ -47,6 +48,7 @@ interface Project {
     nome: string;
     cidade: string | null;
     tipo: string;
+    fotoUrl: string | null;
   } | null;
   client: {
     id: string;
@@ -138,6 +140,8 @@ export default function BiClient({
   // Estados específicos para Parceiros
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [activeTypeFilter, setActiveTypeFilter] = useState<string>("todos");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Estados de Configuração da Exportação PDF
   const [pdfPeriod, setPdfPeriod] = useState<"all" | "month" | "quarter" | "year">("all");
@@ -153,7 +157,7 @@ export default function BiClient({
   const syncBi = useCallback(async () => {
     const result = await getBiLiveSnapshot(companyId);
     if (result.success) {
-      if (result.projects) setProjects(result.projects);
+      if (result.projects) setProjects(result.projects as Project[]);
       if (result.quotes) setQuotes(result.quotes);
     }
   }, [companyId]);
@@ -233,7 +237,7 @@ export default function BiClient({
 
   const maxOriginValue = Math.max(...originsData.map((o) => o.value), 1);
 
-  // Agrupamento e ranking de projetistas incluindo o tipo de parceiro
+  // Agrupamento e ranking de projetistas incluindo o tipo de parceiro e fotoUrl
   const designerRanking = useMemo(() => {
     const byPartner = new Map<
       string,
@@ -241,6 +245,7 @@ export default function BiClient({
         name: string;
         city: string;
         tipo: string;
+        fotoUrl: string | null;
         count: number;
         totalSold: number;
         comission: number;
@@ -253,6 +258,7 @@ export default function BiClient({
         name: project.partner.nome,
         city: project.partner.cidade || "Não informada",
         tipo: project.partner.tipo || "OUTROS",
+        fotoUrl: project.partner.fotoUrl || null,
         count: 0,
         totalSold: 0,
         comission: 0,
@@ -302,6 +308,24 @@ export default function BiClient({
 
     return result;
   }, [designerRanking, searchTerm, activeTypeFilter]);
+
+  // Lógica de Paginação de Parceiros
+  const totalPartners = filteredDesignerRanking.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedPartners = useMemo(() => {
+    return filteredDesignerRanking.slice(startIndex, startIndex + pageSize);
+  }, [filteredDesignerRanking, startIndex, pageSize]);
+
+  // Handlers para resetar página ativa ao filtrar/pesquisar
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleTypeFilterChange = (tipo: string) => {
+    setActiveTypeFilter(tipo);
+    setCurrentPage(1);
+  };
 
   let highlightText =
     "Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.";
@@ -1018,7 +1042,7 @@ export default function BiClient({
                     type="text"
                     placeholder="Pesquisar parceiro ou cidade..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={handleSearchChange}
                     className="w-full bg-white pl-9 pr-4 py-2 text-sm rounded-lg border border-border focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-xs"
                   />
                 </div>
@@ -1055,7 +1079,7 @@ export default function BiClient({
               {/* Botões de Filtro Rápido de Tipo */}
               <div className="flex flex-wrap gap-1.5 border-t border-slate-200/50 pt-3">
                 <button
-                  onClick={() => setActiveTypeFilter("todos")}
+                  onClick={() => handleTypeFilterChange("todos")}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                     activeTypeFilter === "todos"
                       ? "bg-neutral-900 border-neutral-900 text-white shadow-xs"
@@ -1069,7 +1093,7 @@ export default function BiClient({
                   return (
                     <button
                       key={tipo}
-                      onClick={() => setActiveTypeFilter(tipo)}
+                      onClick={() => handleTypeFilterChange(tipo)}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                         activeTypeFilter === tipo
                           ? "bg-neutral-900 border-neutral-900 text-white shadow-xs"
@@ -1084,158 +1108,213 @@ export default function BiClient({
             </div>
 
             {/* 3. Listagem com Alternador de Layout */}
-            {viewMode === "grid" ? (
-              // Grade de Cards Modernos (Crachás de Parceiros)
-              <div className="flex-1 min-h-[300px] overflow-y-auto pr-1">
-                {filteredDesignerRanking.length === 0 ? (
-                  <div className="text-center py-12 text-sm text-muted-foreground bg-slate-50/50 border border-dashed rounded-xl">
-                    Nenhum parceiro encontrado para os filtros atuais.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredDesignerRanking.map((des) => {
-                      const TypeIcon = getPartnerIcon(des.tipo);
-                      const typeColors = PARTNER_TYPE_COLORS[des.tipo] || PARTNER_TYPE_COLORS.OUTROS;
-                      const contributionPct = partnersStats.faturamentoTotal > 0 
-                        ? (des.totalSold / partnersStats.faturamentoTotal) * 100 
-                        : 0;
+            <div className="flex-1 min-h-[300px] overflow-y-auto pr-1">
+              {viewMode === "grid" ? (
+                // Grade de Cards Modernos (Crachás de Parceiros)
+                <div>
+                  {paginatedPartners.length === 0 ? (
+                    <div className="text-center py-12 text-sm text-muted-foreground bg-slate-50/50 border border-dashed rounded-xl">
+                      Nenhum parceiro encontrado para os filtros atuais.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {paginatedPartners.map((des) => {
+                        const TypeIcon = getPartnerIcon(des.tipo);
+                        const typeColors = PARTNER_TYPE_COLORS[des.tipo] || PARTNER_TYPE_COLORS.OUTROS;
+                        const contributionPct = partnersStats.faturamentoTotal > 0 
+                          ? (des.totalSold / partnersStats.faturamentoTotal) * 100 
+                          : 0;
 
-                      return (
-                        <Card key={des.name} className="p-4 space-y-4 hover:shadow-md transition-all duration-300 border border-border/40 relative overflow-hidden group">
-                          {/* Top Card: Info Principal */}
-                          <div className="flex items-start justify-between gap-3 relative z-5">
-                            <div className="flex items-center gap-3">
-                              {/* Avatar circular com iniciais */}
-                              <div className={`h-11 w-11 rounded-full border flex items-center justify-center font-bold text-sm tracking-wide shadow-2xs ${typeColors.bg} ${typeColors.border}`}>
-                                {getInitials(des.name)}
+                        return (
+                          <Card key={des.name} className="p-4 space-y-4 hover:shadow-md transition-all duration-300 border border-border/40 relative overflow-hidden group">
+                            {/* Top Card: Info Principal */}
+                            <div className="flex items-start justify-between gap-3 relative z-5">
+                              <div className="flex items-center gap-3">
+                                {/* Avatar circular com foto real ou iniciais */}
+                                <div className="h-11 w-11 rounded-full overflow-hidden border flex items-center justify-center font-bold text-sm tracking-wide shadow-2xs shrink-0 bg-slate-50 border-slate-200/50">
+                                  {des.fotoUrl ? (
+                                    <img 
+                                      src={des.fotoUrl} 
+                                      alt={des.name} 
+                                      className="h-full w-full object-cover animate-in fade-in-30 duration-300" 
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = "none";
+                                        const parent = (e.target as HTMLElement).parentElement;
+                                        if (parent && !parent.querySelector(".fallback-avatar")) {
+                                          const textSpan = document.createElement("span");
+                                          textSpan.className = `fallback-avatar ${typeColors.bg} ${typeColors.text} w-full h-full flex items-center justify-center`;
+                                          textSpan.innerText = getInitials(des.name);
+                                          parent.appendChild(textSpan);
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <span className={`${typeColors.bg} ${typeColors.text} w-full h-full flex items-center justify-center`}>
+                                      {getInitials(des.name)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-extrabold text-neutral-900 truncate leading-snug group-hover:text-primary transition-colors">
+                                    {des.name}
+                                  </h4>
+                                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 border ${typeColors.bg} ${typeColors.border}`}>
+                                    <TypeIcon className="h-3 w-3" />
+                                    {PARTNER_TYPE_LABELS[des.tipo] || des.tipo}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <h4 className="text-sm font-extrabold text-neutral-900 truncate leading-snug group-hover:text-primary transition-colors">
-                                  {des.name}
-                                </h4>
-                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 border ${typeColors.bg} ${typeColors.border}`}>
-                                  <TypeIcon className="h-3 w-3" />
-                                  {PARTNER_TYPE_LABELS[des.tipo] || des.tipo}
+                              
+                              <div className="text-right">
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end font-semibold uppercase">
+                                  <MapPin className="h-3 w-3 text-primary" />
+                                  {des.city}
                                 </span>
                               </div>
                             </div>
-                            
-                            <div className="text-right">
-                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end font-semibold uppercase">
-                                <MapPin className="h-3 w-3 text-primary" />
-                                {des.city}
-                              </span>
-                            </div>
-                          </div>
 
-                          {/* Contribuição de Vendas */}
-                          <div className="space-y-1 relative z-5 border-t border-slate-100 pt-3">
-                            <div className="flex justify-between text-[10px] font-bold text-neutral-500">
-                              <span>Participação Comercial</span>
-                              <span>{contributionPct.toFixed(1)}%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-primary rounded-full transition-all duration-1000"
-                                style={{ width: `${contributionPct}%` }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Métricas Compactas */}
-                          <div className="grid grid-cols-3 gap-2 text-center border-t border-slate-100 pt-3 relative z-5 bg-slate-50/50 p-2 rounded-lg">
-                            <div>
-                              <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Projetos</span>
-                              <strong className="text-xs font-bold text-neutral-800 block mt-0.5">{des.count}</strong>
-                            </div>
-                            <div>
-                              <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Faturamento</span>
-                              <strong className="text-xs font-black text-neutral-950 block mt-0.5 privacy-value">
-                                {formatCurrency(des.totalSold)}
-                              </strong>
-                            </div>
-                            <div>
-                              <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Comissão</span>
-                              <strong className="text-xs font-black text-emerald-600 block mt-0.5 privacy-value">
-                                {formatCurrency(des.comission)}
-                              </strong>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              // Tabela Corporativa Tradicional Otimizada
-              <div className="flex-1 min-h-[300px] overflow-y-auto border border-border/40 rounded-xl bg-white shadow-xs">
-                <table className="w-full text-sm text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50 sticky top-0 z-15 shadow-2xs">
-                      <th className="p-3">Nome do Profissional</th>
-                      <th className="p-3">Categoria</th>
-                      <th className="p-3">Cidade / Região</th>
-                      <th className="p-3 text-center">Projetos vinculados</th>
-                      <th className="p-3 text-right">Valor dos projetos</th>
-                      <th className="p-3 text-right">Comissão (5%)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/20 text-neutral-700">
-                    {filteredDesignerRanking.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="p-12 text-center text-sm text-muted-foreground">
-                          Nenhum parceiro encontrado para os filtros atuais.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredDesignerRanking.map((des) => {
-                        const TypeIcon = getPartnerIcon(des.tipo);
-                        const typeColors = PARTNER_TYPE_COLORS[des.tipo] || PARTNER_TYPE_COLORS.OUTROS;
-
-                        return (
-                          <tr key={des.name} className="hover:bg-slate-50/40 transition-colors">
-                            <td className="p-3">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
-                                  <Users className="h-4 w-4 text-primary" />
-                                </div>
-                                <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
+                            {/* Contribuição de Vendas */}
+                            <div className="space-y-1 relative z-5 border-t border-slate-100 pt-3">
+                              <div className="flex justify-between text-[10px] font-bold text-neutral-500">
+                                <span>Participação Comercial</span>
+                                <span>{contributionPct.toFixed(1)}%</span>
                               </div>
-                            </td>
-                            <td className="p-3">
-                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeColors.bg} ${typeColors.border}`}>
-                                <TypeIcon className="h-3 w-3" />
-                                {PARTNER_TYPE_LABELS[des.tipo] || des.tipo}
-                              </span>
-                            </td>
-                            <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5 text-primary" />
-                                {des.city}
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary rounded-full transition-all duration-1000"
+                                  style={{ width: `${contributionPct}%` }}
+                                />
                               </div>
-                            </td>
-                            <td className="p-3 text-center font-bold text-neutral-800">{des.count}</td>
-                            <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
-                              {formatCurrency(des.totalSold)}
-                            </td>
-                            <td className="p-3 text-right">
-                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-2xs privacy-value">
-                                {formatCurrency(des.comission)}
-                              </span>
-                            </td>
-                          </tr>
+                            </div>
+
+                            {/* Métricas Compactas */}
+                            <div className="grid grid-cols-3 gap-2 text-center border-t border-slate-100 pt-3 relative z-5 bg-slate-50/50 p-2 rounded-lg">
+                              <div>
+                                <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Projetos</span>
+                                <strong className="text-xs font-bold text-neutral-800 block mt-0.5">{des.count}</strong>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Faturamento</span>
+                                <strong className="text-xs font-black text-neutral-950 block mt-0.5 privacy-value">
+                                  {formatCurrency(des.totalSold)}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Comissão</span>
+                                <strong className="text-xs font-black text-emerald-600 block mt-0.5 privacy-value">
+                                  {formatCurrency(des.comission)}
+                                </strong>
+                              </div>
+                            </div>
+                          </Card>
                         );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Tabela Corporativa Tradicional Otimizada
+                <div className="border border-border/40 rounded-xl bg-white shadow-xs">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50 sticky top-0 z-15 shadow-2xs">
+                        <th className="p-3">Nome do Profissional</th>
+                        <th className="p-3">Categoria</th>
+                        <th className="p-3">Cidade / Região</th>
+                        <th className="p-3 text-center">Projetos</th>
+                        <th className="p-3 text-right">Valor dos projetos</th>
+                        <th className="p-3 text-right">Comissão (5%)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/20 text-neutral-700">
+                      {paginatedPartners.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-12 text-center text-sm text-muted-foreground">
+                            Nenhum parceiro encontrado para os filtros atuais.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedPartners.map((des) => {
+                          const TypeIcon = getPartnerIcon(des.tipo);
+                          const typeColors = PARTNER_TYPE_COLORS[des.tipo] || PARTNER_TYPE_COLORS.OUTROS;
+
+                          return (
+                            <tr key={des.name} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="p-3">
+                                <div className="flex items-center gap-3">
+                                  {/* Avatar circular com foto real na tabela */}
+                                  <div className="h-8 w-8 rounded-full overflow-hidden border flex items-center justify-center font-bold text-xs shadow-2xs shrink-0 bg-slate-50 border-slate-200/50">
+                                    {des.fotoUrl ? (
+                                      <img 
+                                        src={des.fotoUrl} 
+                                        alt={des.name} 
+                                        className="h-full w-full object-cover animate-in fade-in-30 duration-300" 
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).style.display = "none";
+                                          const parent = (e.target as HTMLElement).parentElement;
+                                          if (parent && !parent.querySelector(".fallback-avatar")) {
+                                            const textSpan = document.createElement("span");
+                                            textSpan.className = `fallback-avatar ${typeColors.bg} ${typeColors.text} w-full h-full flex items-center justify-center`;
+                                            textSpan.innerText = getInitials(des.name);
+                                            parent.appendChild(textSpan);
+                                          }
+                                        }}
+                                      />
+                                    ) : (
+                                      <span className={`${typeColors.bg} ${typeColors.text} w-full h-full flex items-center justify-center`}>
+                                        {getInitials(des.name)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeColors.bg} ${typeColors.border}`}>
+                                  <TypeIcon className="h-3 w-3" />
+                                  {PARTNER_TYPE_LABELS[des.tipo] || des.tipo}
+                                </span>
+                              </td>
+                              <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                                  {des.city}
+                                </div>
+                              </td>
+                              <td className="p-3 text-center font-bold text-neutral-800">{des.count}</td>
+                              <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
+                                {formatCurrency(des.totalSold)}
+                              </td>
+                              <td className="p-3 text-right">
+                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-2xs privacy-value">
+                                  {formatCurrency(des.comission)}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Componente de Paginação */}
             {filteredDesignerRanking.length > 0 && (
-              <p className="text-[10px] text-muted-foreground text-right shrink-0 mt-1">
-                Exibindo {filteredDesignerRanking.length} parceiro(s) do ranking.
-              </p>
+              <div className="shrink-0 mt-2 print:hidden border-t border-slate-100 pt-2">
+                <Pagination
+                  page={currentPage}
+                  pageSize={pageSize}
+                  total={totalPartners}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }}
+                  itemLabel="parceiros"
+                />
+              </div>
             )}
           </div>
         )}
