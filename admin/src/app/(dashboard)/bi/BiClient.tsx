@@ -28,9 +28,13 @@ import {
   Info,
   CheckCircle2,
   AlertTriangle,
-  ArrowRight,
   Target,
   Percent,
+  LayoutGrid,
+  Table,
+  User,
+  Palette,
+  Ruler,
 } from "lucide-react";
 
 interface Project {
@@ -100,6 +104,25 @@ const ORIGIN_LABELS: Record<string, string> = {
   FACEBOOK: "Facebook",
 };
 
+const PARTNER_TYPE_LABELS: Record<string, string> = {
+  ARQUITETO: "Arquiteto",
+  DESIGNER_INTERIORES: "Designer de Interiores",
+  PROJETISTA: "Projetista",
+  DECORADOR: "Decorador",
+  ENGENHEIRO: "Engenheiro",
+  OUTROS: "Parceiro",
+};
+
+// Cores dos avatares baseadas nos tipos de parceiro
+const PARTNER_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  ARQUITETO: { bg: "bg-emerald-50 text-emerald-700", text: "text-emerald-800", border: "border-emerald-200/50" },
+  DESIGNER_INTERIORES: { bg: "bg-amber-50 text-amber-700", text: "text-amber-800", border: "border-amber-200/50" },
+  PROJETISTA: { bg: "bg-blue-50 text-blue-700", text: "text-blue-800", border: "border-blue-200/50" },
+  DECORADOR: { bg: "bg-purple-50 text-purple-700", text: "text-purple-800", border: "border-purple-200/50" },
+  ENGENHEIRO: { bg: "bg-cyan-50 text-cyan-700", text: "text-cyan-800", border: "border-cyan-200/50" },
+  OUTROS: { bg: "bg-slate-50 text-slate-700", text: "text-slate-800", border: "border-slate-200/50" },
+};
+
 export default function BiClient({
   initialProjects,
   initialQuotes,
@@ -111,6 +134,10 @@ export default function BiClient({
   // Estados de navegação e busca
   const [activeTab, setActiveTab] = useState<"geral" | "funil_orcamentos" | "parceiros" | "exportar">("geral");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Estados específicos para Parceiros
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [activeTypeFilter, setActiveTypeFilter] = useState<string>("todos");
 
   // Estados de Configuração da Exportação PDF
   const [pdfPeriod, setPdfPeriod] = useState<"all" | "month" | "quarter" | "year">("all");
@@ -206,12 +233,14 @@ export default function BiClient({
 
   const maxOriginValue = Math.max(...originsData.map((o) => o.value), 1);
 
+  // Agrupamento e ranking de projetistas incluindo o tipo de parceiro
   const designerRanking = useMemo(() => {
     const byPartner = new Map<
       string,
       {
         name: string;
         city: string;
+        tipo: string;
         count: number;
         totalSold: number;
         comission: number;
@@ -223,6 +252,7 @@ export default function BiClient({
       const current = byPartner.get(project.partner_id) ?? {
         name: project.partner.nome,
         city: project.partner.cidade || "Não informada",
+        tipo: project.partner.tipo || "OUTROS",
         count: 0,
         totalSold: 0,
         comission: 0,
@@ -236,16 +266,42 @@ export default function BiClient({
     return Array.from(byPartner.values()).sort((a, b) => b.totalSold - a.totalSold);
   }, [projects]);
 
-  // Filtragem de parceiros para pesquisa
+  // Estatísticas consolidadas de parcerias
+  const partnersStats = useMemo(() => {
+    const activeCount = designerRanking.length;
+    const faturamentoTotal = designerRanking.reduce((acc, des) => acc + des.totalSold, 0);
+    const comissaoTotal = designerRanking.reduce((acc, des) => acc + des.comission, 0);
+    const topPartner = designerRanking.length > 0 ? designerRanking[0] : null;
+
+    return {
+      activeCount,
+      faturamentoTotal,
+      comissaoTotal,
+      topPartner,
+    };
+  }, [designerRanking]);
+
+  // Filtragem de parceiros para pesquisa e tipo de parceiro
   const filteredDesignerRanking = useMemo(() => {
-    if (!searchTerm.trim()) return designerRanking;
-    const term = searchTerm.toLowerCase();
-    return designerRanking.filter(
-      (des) =>
-        des.name.toLowerCase().includes(term) ||
-        des.city.toLowerCase().includes(term)
-    );
-  }, [designerRanking, searchTerm]);
+    let result = designerRanking;
+
+    // Filtro por tipo de parceiro
+    if (activeTypeFilter !== "todos") {
+      result = result.filter((des) => des.tipo === activeTypeFilter);
+    }
+
+    // Filtro por termo de busca
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (des) =>
+          des.name.toLowerCase().includes(term) ||
+          des.city.toLowerCase().includes(term)
+      );
+    }
+
+    return result;
+  }, [designerRanking, searchTerm, activeTypeFilter]);
 
   let highlightText =
     "Nenhum projeto foi aprovado ou finalizado ainda para calcular os destaques comerciais e ticket médio reais do faturamento da fábrica.";
@@ -371,6 +427,26 @@ export default function BiClient({
     return list;
   }, [quotesHealth, negotiationValue, negotiationProjects]);
 
+  // Helper para obter as iniciais de um nome
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0) return "";
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  // Helper para obter ícone de acordo com o tipo
+  const getPartnerIcon = (tipo: string) => {
+    switch (tipo) {
+      case "ARQUITETO":
+        return Ruler;
+      case "DESIGNER_INTERIORES":
+        return Palette;
+      default:
+        return User;
+    }
+  };
+
   // Ação de geração de PDF simulada e disparo de impressão
   const handleGeneratePdf = () => {
     setIsGeneratingPdf(true);
@@ -455,7 +531,7 @@ export default function BiClient({
             onClick={() => setActiveTab("parceiros")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
               activeTab === "parceiros"
-                ? "bg-primary/10 text-primary border border-primary/20 shadow-xs"
+                ? "bg-primary/10 text-primary border border-primary/20 shadow-xs font-bold"
                 : "text-muted-foreground hover:bg-slate-100 hover:text-foreground border border-transparent"
             }`}
           >
@@ -903,123 +979,259 @@ export default function BiClient({
 
         {activeTab === "parceiros" && (
           <div className="space-y-4 animate-in fade-in-50 duration-200 flex flex-col h-full">
-            {/* Barra de Pesquisa e Cabeçalho */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center bg-slate-50 p-3 rounded-xl border border-border/40 shrink-0">
-              <div className="space-y-0.5">
-                <h3 className="text-title text-foreground flex items-center gap-1.5">
-                  <Users className="h-4.5 w-4.5 text-primary" />
-                  Ranking de Projetistas
-                </h3>
-                <p className="text-caption text-muted-foreground">
-                  Comissão estimada de 5% sobre faturamento de parceiros vinculados.
-                </p>
-              </div>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Pesquisar projetista ou cidade..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white pl-9 pr-4 py-2 text-sm rounded-lg border border-border focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-xs"
-                />
-              </div>
+            
+            {/* 1. KPIs Rápidos de Parcerias */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)] shrink-0">
+              <KpiCard
+                label="Parceiros Vinculados"
+                value={String(designerRanking.length)}
+                icon={Users}
+                accent="primary"
+              />
+              <KpiCard
+                label="Faturamento Parcerias"
+                value={<span className="privacy-value">{formatCurrency(partnersStats.faturamentoTotal)}</span>}
+                icon={TrendingUp}
+                accent="success"
+              />
+              <KpiCard
+                label="Comissões Estimadas (5%)"
+                value={<span className="privacy-value">{formatCurrency(partnersStats.comissaoTotal)}</span>}
+                icon={DollarSign}
+                accent="info"
+              />
+              <KpiCard
+                label="Parceiro Destaque"
+                value={partnersStats.topPartner ? partnersStats.topPartner.name : "Nenhum"}
+                icon={Award}
+                accent="warning"
+                trend={partnersStats.topPartner ? { value: `Faturou ${formatCurrency(partnersStats.topPartner.totalSold)}` } : undefined}
+              />
             </div>
 
-            {/* Listagem Mobile */}
-            <div className="md:hidden space-y-[var(--space-3)] overflow-y-auto max-h-[350px] pr-1">
-              {filteredDesignerRanking.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground bg-slate-50/50 border border-dashed rounded-xl">
-                  Nenhum parceiro encontrado para "{searchTerm}".
+            {/* 2. Barra de Filtro, Busca e Controles de Visualização */}
+            <div className="flex flex-col gap-3 p-4 bg-slate-50 border border-border/40 rounded-xl shrink-0">
+              <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center">
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Pesquisar parceiro ou cidade..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-white pl-9 pr-4 py-2 text-sm rounded-lg border border-border focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-xs"
+                  />
                 </div>
-              ) : (
-                filteredDesignerRanking.map((des) => (
-                  <div key={des.name} className="surface-compact p-[var(--space-3)] space-y-[var(--space-2)]">
-                    <div className="flex items-center gap-[var(--space-3)]">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-primary/15">
-                        <Users className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-title text-sm font-semibold truncate">{des.name}</p>
-                        <p className="text-caption text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> {des.city}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-[var(--space-2)] text-center border-t border-slate-100 pt-2">
-                      <div>
-                        <p className="text-label text-[10px] text-muted-foreground">Projetos</p>
-                        <p className="text-sm font-bold text-neutral-800">{des.count}</p>
-                      </div>
-                      <div>
-                        <p className="text-label text-[10px] text-muted-foreground">Faturamento</p>
-                        <p className="text-xs font-bold text-neutral-900 privacy-value">
-                          {formatCurrency(des.totalSold)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-label text-[10px] text-muted-foreground">Comissão</p>
-                        <p className="text-xs font-bold text-emerald-600 privacy-value">
-                          {formatCurrency(des.comission)}
-                        </p>
-                      </div>
-                    </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <span className="text-xs text-muted-foreground font-semibold">Exibição:</span>
+                  <div className="inline-flex rounded-lg border border-border bg-white p-0.5 shadow-xs">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`p-1.5 rounded-md transition-all cursor-pointer flex items-center justify-center ${
+                        viewMode === "grid"
+                          ? "bg-slate-100 text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="Visualizar em Grade"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("table")}
+                      className={`p-1.5 rounded-md transition-all cursor-pointer flex items-center justify-center ${
+                        viewMode === "table"
+                          ? "bg-slate-100 text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="Visualizar em Tabela"
+                    >
+                      <Table className="h-4 w-4" />
+                    </button>
                   </div>
-                ))
-              )}
+                </div>
+              </div>
+
+              {/* Botões de Filtro Rápido de Tipo */}
+              <div className="flex flex-wrap gap-1.5 border-t border-slate-200/50 pt-3">
+                <button
+                  onClick={() => setActiveTypeFilter("todos")}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                    activeTypeFilter === "todos"
+                      ? "bg-neutral-900 border-neutral-900 text-white shadow-xs"
+                      : "bg-white border-border hover:bg-slate-100 text-neutral-700"
+                  }`}
+                >
+                  Todos os Tipos
+                </button>
+                {Array.from(new Set(designerRanking.map((d) => d.tipo))).filter(Boolean).map((tipo) => {
+                  const label = PARTNER_TYPE_LABELS[tipo] || tipo;
+                  return (
+                    <button
+                      key={tipo}
+                      onClick={() => setActiveTypeFilter(tipo)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                        activeTypeFilter === tipo
+                          ? "bg-neutral-900 border-neutral-900 text-white shadow-xs"
+                          : "bg-white border-border hover:bg-slate-100 text-neutral-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Listagem Desktop */}
-            <div className="hidden md:block flex-1 min-h-[300px] max-h-[380px] overflow-y-auto border border-border/40 rounded-xl bg-white shadow-xs">
-              <table className="w-full text-sm text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50 sticky top-0 z-15 shadow-2xs">
-                    <th className="p-3">Nome do Profissional</th>
-                    <th className="p-3">Cidade / Região</th>
-                    <th className="p-3 text-center">Projetos vinculados</th>
-                    <th className="p-3 text-right">Valor dos projetos</th>
-                    <th className="p-3 text-right">Comissão (5%)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/20 text-neutral-700">
-                  {filteredDesignerRanking.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="p-12 text-center text-sm text-muted-foreground">
-                        Nenhum parceiro encontrado para "{searchTerm}".
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredDesignerRanking.map((des) => (
-                      <tr key={des.name} className="hover:bg-slate-50/40 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
-                              <Users className="h-4 w-4 text-primary" />
+            {/* 3. Listagem com Alternador de Layout */}
+            {viewMode === "grid" ? (
+              // Grade de Cards Modernos (Crachás de Parceiros)
+              <div className="flex-1 min-h-[300px] overflow-y-auto pr-1">
+                {filteredDesignerRanking.length === 0 ? (
+                  <div className="text-center py-12 text-sm text-muted-foreground bg-slate-50/50 border border-dashed rounded-xl">
+                    Nenhum parceiro encontrado para os filtros atuais.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filteredDesignerRanking.map((des) => {
+                      const TypeIcon = getPartnerIcon(des.tipo);
+                      const typeColors = PARTNER_TYPE_COLORS[des.tipo] || PARTNER_TYPE_COLORS.OUTROS;
+                      const contributionPct = partnersStats.faturamentoTotal > 0 
+                        ? (des.totalSold / partnersStats.faturamentoTotal) * 100 
+                        : 0;
+
+                      return (
+                        <Card key={des.name} className="p-4 space-y-4 hover:shadow-md transition-all duration-300 border border-border/40 relative overflow-hidden group">
+                          {/* Top Card: Info Principal */}
+                          <div className="flex items-start justify-between gap-3 relative z-5">
+                            <div className="flex items-center gap-3">
+                              {/* Avatar circular com iniciais */}
+                              <div className={`h-11 w-11 rounded-full border flex items-center justify-center font-bold text-sm tracking-wide shadow-2xs ${typeColors.bg} ${typeColors.border}`}>
+                                {getInitials(des.name)}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-extrabold text-neutral-900 truncate leading-snug group-hover:text-primary transition-colors">
+                                  {des.name}
+                                </h4>
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 border ${typeColors.bg} ${typeColors.border}`}>
+                                  <TypeIcon className="h-3 w-3" />
+                                  {PARTNER_TYPE_LABELS[des.tipo] || des.tipo}
+                                </span>
+                              </div>
                             </div>
-                            <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
+                            
+                            <div className="text-right">
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end font-semibold uppercase">
+                                <MapPin className="h-3 w-3 text-primary" />
+                                {des.city}
+                              </span>
+                            </div>
                           </div>
-                        </td>
-                        <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5 text-primary" />
-                            {des.city}
+
+                          {/* Contribuição de Vendas */}
+                          <div className="space-y-1 relative z-5 border-t border-slate-100 pt-3">
+                            <div className="flex justify-between text-[10px] font-bold text-neutral-500">
+                              <span>Participação Comercial</span>
+                              <span>{contributionPct.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary rounded-full transition-all duration-1000"
+                                style={{ width: `${contributionPct}%` }}
+                              />
+                            </div>
                           </div>
-                        </td>
-                        <td className="p-3 text-center font-bold text-neutral-800">{des.count}</td>
-                        <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
-                          {formatCurrency(des.totalSold)}
-                        </td>
-                        <td className="p-3 text-right">
-                          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-2xs privacy-value">
-                            {formatCurrency(des.comission)}
-                          </span>
+
+                          {/* Métricas Compactas */}
+                          <div className="grid grid-cols-3 gap-2 text-center border-t border-slate-100 pt-3 relative z-5 bg-slate-50/50 p-2 rounded-lg">
+                            <div>
+                              <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Projetos</span>
+                              <strong className="text-xs font-bold text-neutral-800 block mt-0.5">{des.count}</strong>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Faturamento</span>
+                              <strong className="text-xs font-black text-neutral-950 block mt-0.5 privacy-value">
+                                {formatCurrency(des.totalSold)}
+                              </strong>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-muted-foreground font-semibold block uppercase">Comissão</span>
+                              <strong className="text-xs font-black text-emerald-600 block mt-0.5 privacy-value">
+                                {formatCurrency(des.comission)}
+                              </strong>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Tabela Corporativa Tradicional Otimizada
+              <div className="flex-1 min-h-[300px] overflow-y-auto border border-border/40 rounded-xl bg-white shadow-xs">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/40 text-muted-foreground text-xs uppercase font-bold bg-slate-50 sticky top-0 z-15 shadow-2xs">
+                      <th className="p-3">Nome do Profissional</th>
+                      <th className="p-3">Categoria</th>
+                      <th className="p-3">Cidade / Região</th>
+                      <th className="p-3 text-center">Projetos vinculados</th>
+                      <th className="p-3 text-right">Valor dos projetos</th>
+                      <th className="p-3 text-right">Comissão (5%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/20 text-neutral-700">
+                    {filteredDesignerRanking.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-sm text-muted-foreground">
+                          Nenhum parceiro encontrado para os filtros atuais.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      filteredDesignerRanking.map((des) => {
+                        const TypeIcon = getPartnerIcon(des.tipo);
+                        const typeColors = PARTNER_TYPE_COLORS[des.tipo] || PARTNER_TYPE_COLORS.OUTROS;
+
+                        return (
+                          <tr key={des.name} className="hover:bg-slate-50/40 transition-colors">
+                            <td className="p-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20">
+                                  <Users className="h-4 w-4 text-primary" />
+                                </div>
+                                <strong className="text-neutral-900 text-sm font-semibold">{des.name}</strong>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeColors.bg} ${typeColors.border}`}>
+                                <TypeIcon className="h-3 w-3" />
+                                {PARTNER_TYPE_LABELS[des.tipo] || des.tipo}
+                              </span>
+                            </td>
+                            <td className="p-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5 text-primary" />
+                                {des.city}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center font-bold text-neutral-800">{des.count}</td>
+                            <td className="p-3 text-right font-bold text-neutral-900 privacy-value">
+                              {formatCurrency(des.totalSold)}
+                            </td>
+                            <td className="p-3 text-right">
+                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-2xs privacy-value">
+                                {formatCurrency(des.comission)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {filteredDesignerRanking.length > 0 && (
               <p className="text-[10px] text-muted-foreground text-right shrink-0 mt-1">
                 Exibindo {filteredDesignerRanking.length} parceiro(s) do ranking.
@@ -1398,20 +1610,28 @@ export default function BiClient({
             <h2 className="text-xs uppercase tracking-wider font-extrabold text-neutral-700 border-b border-neutral-350 pb-1">
               4. Ranking de Parceiros & Profissionais
             </h2>
+            {/* Adiciona Resumo Superior no Impresso */}
+            <div className="grid grid-cols-3 gap-3 mb-3 border border-neutral-200 p-2 rounded bg-slate-50/20 text-[9px] font-bold text-neutral-700">
+              <div>Total de Parceiros: {partnersStats.activeCount}</div>
+              <div>Faturamento Parcerias: {formatCurrency(partnersStats.faturamentoTotal)}</div>
+              <div>Comissões Estimadas: {formatCurrency(partnersStats.comissaoTotal)}</div>
+            </div>
             <table className="w-full text-left border-collapse text-[10px]">
               <thead>
                 <tr className="border-b border-neutral-800 font-bold text-neutral-600">
                   <th className="py-1.5 pr-2">Nome do Profissional</th>
+                  <th className="py-1.5 px-2">Categoria</th>
                   <th className="py-1.5 px-2">Cidade / Região</th>
                   <th className="py-1.5 text-center px-2">Projetos</th>
                   <th className="py-1.5 text-right pl-2">Faturamento Bruto</th>
-                  <th className="py-1.5 text-right pl-2">Comissão Estimada (5%)</th>
+                  <th className="py-1.5 text-right pl-2">Comissão (5%)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
                 {designerRanking.map((des) => (
                   <tr key={des.name}>
                     <td className="py-1.5 font-bold text-neutral-900">{des.name}</td>
+                    <td className="py-1.5 px-2 text-neutral-700">{PARTNER_TYPE_LABELS[des.tipo] || des.tipo}</td>
                     <td className="py-1.5 px-2 text-neutral-600 uppercase tracking-wider">{des.city}</td>
                     <td className="py-1.5 text-center text-neutral-750 font-semibold">{des.count}</td>
                     <td className="py-1.5 text-right font-bold text-neutral-950 privacy-value">
