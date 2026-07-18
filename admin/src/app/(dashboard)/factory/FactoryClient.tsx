@@ -475,17 +475,17 @@ export default function FactoryClient({
                   href={`/projects/${item.projectId}`}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
-                  className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 min-w-0 hover:ring-1 ${clientColor.ring} transition-colors`}
+                  className="text-[10px] bg-slate-100 hover:bg-slate-200 text-neutral-900 px-2 py-0.5 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200 transition-colors"
                   title={item.clientName}
                 >
-                  <User className="h-3 w-3 shrink-0" />
+                  <User className="h-3 w-3 shrink-0 text-slate-500" />
                   <span className="truncate">{item.clientName}</span>
                 </Link>
               ) : (
                 <span
-                  className={`text-[10px] ${clientColor.soft} ${clientColor.text} px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1 min-w-0`}
+                  className="text-[10px] bg-slate-100 text-neutral-900 px-2 py-0.5 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200"
                 >
-                  <User className="h-3 w-3 shrink-0" />
+                  <User className="h-3 w-3 shrink-0 text-slate-500" />
                   <span className="truncate">{item.clientName}</span>
                 </span>
               )}
@@ -554,27 +554,13 @@ export default function FactoryClient({
             </div>
           </div>
 
-          <div className="flex items-start gap-2.5">
-            {item.coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={item.coverUrl}
-                alt=""
-                className={`h-11 w-11 rounded-lg object-cover border ${clientColor.border} shrink-0`}
-              />
-            ) : (
-              <div className={`h-11 w-11 rounded-lg border border-dashed ${clientColor.border} ${clientColor.soft} flex items-center justify-center ${clientColor.text} shrink-0`}>
-                <ImageIcon className="h-4 w-4" />
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h4 className="font-bold text-[15px] text-foreground leading-[1.2] group-hover:text-primary transition-colors">
-                {item.nome}
-              </h4>
-              <p className="text-[10px] text-muted-foreground/80 mt-1 whitespace-nowrap">
-                Abrir ficha técnica
-              </p>
-            </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="font-bold text-[15px] text-foreground leading-[1.2] group-hover:text-primary transition-colors">
+              {item.nome}
+            </h4>
+            <p className="text-[10px] text-muted-foreground/80 mt-1">
+              Abrir ficha técnica
+            </p>
           </div>
 
           {(item.materialsSummary || item.hardwareSummary) && (
@@ -672,17 +658,15 @@ export default function FactoryClient({
   };
 
   return (
-    <div className="space-y-[var(--space-5)]">
-
-      <p className="text-xs text-muted-foreground">
+    <div className="flex-1 min-h-0 flex flex-col space-y-[var(--space-3)] overflow-hidden">
+      <p className="text-[11px] text-muted-foreground shrink-0 leading-normal">
         Cômodos do mesmo projeto formam uma <strong className="font-semibold text-foreground">pilha</strong> por etapa.
         A cor identifica o cliente. Arraste cômodos individualmente; clique para abrir a{" "}
-        <strong className="font-semibold text-foreground">ficha técnica</strong> e imagens.
+        <strong className="font-semibold text-foreground">ficha técnica</strong> e detalhes.
       </p>
 
-      <div
-        className={`kanban-scroll lg:grid lg:grid-cols-3 xl:grid-cols-6 lg:gap-4 lg:overflow-visible lg:pb-0 items-stretch min-h-0 ${KANBAN_BOARD_HEIGHT}`}
-      >
+      <div className="flex-1 min-h-0 overflow-x-auto pb-4 custom-scrollbar">
+        <div className="flex gap-4 items-stretch h-full min-w-max print:flex-col print:h-auto print:min-w-0 print:gap-6">
         {COLUMNS.map((col) => {
           const stacks = stacksByColumn[col.id] ?? [];
           const colItems = stacks.flatMap((stack) => stack.items);
@@ -696,7 +680,7 @@ export default function FactoryClient({
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="kanban-column lg:w-auto flex flex-col h-full min-h-0 bg-secondary/30 border border-border rounded-xl overflow-hidden"
+              className="w-72 xl:w-80 shrink-0 flex flex-col h-full bg-slate-50 border border-border rounded-xl overflow-hidden shadow-xs print:h-auto print:w-full"
             >
               <div
                 className={`p-3.5 flex items-center justify-between border-b border-border/50 font-bold text-xs uppercase tracking-wider shrink-0 ${col.bg}`}
@@ -784,6 +768,7 @@ export default function FactoryClient({
             </div>
           );
         })}
+        </div>
       </div>
 
       {slaModal && (
