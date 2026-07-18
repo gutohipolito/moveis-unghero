@@ -457,6 +457,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
             <div className="flex justify-end pt-2">
               <button
+                key="btn-next-step1"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -543,6 +544,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step2"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -550,6 +552,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step2"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -602,6 +605,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step3"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -609,6 +613,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step3"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -644,6 +649,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step4"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -651,6 +657,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step4"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -717,6 +724,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step5"
                 type="button"
                 onClick={prevStep}
                 disabled={loading}
@@ -725,6 +733,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-submit-partner"
                 type="submit"
                 disabled={loading || !submitUnlocked}
                 title={!submitUnlocked ? "Aguarde um instante para enviar" : undefined}

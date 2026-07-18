@@ -655,6 +655,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
             <div className="flex justify-end pt-2">
               <button
+                key="btn-next-step1"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -832,6 +833,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step4"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -839,6 +841,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step4"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -901,6 +904,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step5"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -910,6 +914,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               {/* Só exibe avançar manual se for condicional */}
               {(pronto === "Está em construção" || pronto === "Será entregue em breve") && (
                 <button
+                  key="btn-next-step5"
                   type="button"
                   onClick={nextStep}
                   className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -962,6 +967,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step6"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -970,6 +976,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
               </button>
               {temProjeto === "Preciso que seja feito um" && (
                 <button
+                  key="btn-next-step6"
                   type="button"
                   onClick={nextStep}
                   className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -1161,6 +1168,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step10"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -1168,6 +1176,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step10"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -1261,6 +1270,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step11"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
@@ -1268,6 +1278,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-submit-briefing"
                 type="submit"
                 disabled={loading || !submitUnlocked}
                 title={!submitUnlocked ? "Aguarde um instante para enviar" : undefined}

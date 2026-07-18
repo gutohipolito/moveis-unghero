@@ -1482,6 +1482,7 @@ export default function SupplierSignupForm({
         <div className="flex items-center justify-between border-t border-slate-900/60 pt-6">
           {step > 1 ? (
             <button
+              key={`btn-back-step-${step}`}
               type="button"
               disabled={loading}
               onClick={handlePrev}
@@ -1496,6 +1497,7 @@ export default function SupplierSignupForm({
 
           {step < 5 ? (
             <button
+              key="btn-next"
               type="button"
               onClick={handleNext}
               className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-slate-100 transition-all font-bold text-xs cursor-pointer shadow-lg shadow-blue-500/10"
@@ -1505,6 +1507,7 @@ export default function SupplierSignupForm({
             </button>
           ) : (
             <button
+              key="btn-submit-supplier"
               type="submit"
               disabled={loading || uploadingCatalogo || uploadingTabela || !submitUnlocked}
               title={!submitUnlocked ? "Aguarde um instante para enviar" : undefined}

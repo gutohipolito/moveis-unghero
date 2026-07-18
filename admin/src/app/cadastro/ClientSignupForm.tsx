@@ -414,6 +414,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
             <div className="flex justify-end pt-2">
               <button
+                key="btn-next-step1"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -474,6 +475,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step3"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all"
@@ -481,6 +483,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step3"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -550,6 +553,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
             <div className="flex justify-between pt-2">
               <button
+                key="btn-back-step4"
                 type="button"
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-800/40 hover:text-white cursor-pointer transition-all"
@@ -557,6 +561,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <button
+                key="btn-next-step4"
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
@@ -636,6 +641,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
 
             <div className="flex flex-col sm:flex-row sm:justify-between gap-3 pt-2">
               <button
+                key="btn-back-step5"
                 type="button"
                 onClick={prevStep}
                 disabled={loading}
@@ -645,6 +651,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
               </button>
               <div className="flex flex-col items-stretch sm:items-end gap-1.5 order-1 sm:order-2">
                 <button
+                  key="btn-submit-client"
                   type="submit"
                   disabled={loading || !aceitaTermos || !submitUnlocked}
                   title={
