@@ -209,25 +209,25 @@ export default function CatalogosClient({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-black text-foreground tracking-tight">Produtos</h1>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Biblioteca de Catálogos</h1>
             <InfoTooltip label="Sobre Catálogos">
               <TooltipBody
                 title="Catálogos para clientes"
                 items={[
                   "Guarde PDFs e imagens de catálogos de marcas e linhas.",
-                  "Use na conversa comercial para mostrar opções ao cliente.",
+                  "Use na conversa comercial para apresentar opções de acabamentos.",
                   "A capa é opcional; em imagens, a própria foto vira capa.",
                 ]}
               />
             </InfoTooltip>
           </div>
           <ProdutosSectionTabs />
-          <p className="text-sm text-muted-foreground">
-            Biblioteca de catálogos para apresentar aos clientes.
+          <p className="text-sm text-slate-500">
+            Acesse, visualize e compartilhe catálogos de fornecedores, materiais e folders inspiracionais.
           </p>
         </div>
 
-        <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full md:w-auto">
+        <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full md:w-auto rounded-xl">
           <Plus className="h-4.5 w-4.5" /> Novo catálogo
         </Button>
       </div>
@@ -235,7 +235,7 @@ export default function CatalogosClient({
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          className="pl-9 bg-white"
+          className="pl-9 bg-white rounded-xl"
           placeholder="Buscar por título, marca ou arquivo…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -243,83 +243,111 @@ export default function CatalogosClient({
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-muted-foreground">
+        <Card className="p-12 text-center text-sm text-muted-foreground rounded-2xl border-dashed">
           <BookOpen className="h-10 w-10 mx-auto mb-3 text-slate-300" />
           Nenhum catálogo ainda. Adicione o primeiro PDF ou imagem.
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6">
           {filtered.map((catalog) => {
             const isPdf = catalog.mime_type === "application/pdf";
             const thumb = catalog.capa_url || (!isPdf ? catalog.arquivo_url : null);
             return (
               <Card
                 key={catalog.id}
-                className="overflow-hidden flex flex-col border-border/60 hover:shadow-md transition-all"
+                className="overflow-hidden flex flex-col border border-slate-200/70 hover:border-slate-300 hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 rounded-2xl bg-white group"
               >
-                <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+                {/* Visualizador de Capa em Proporção Retrato (Estilo Catálogo/Revista Física) */}
+                <div className="aspect-[3/4] bg-slate-50 relative overflow-hidden border-b border-slate-100 flex items-center justify-center select-none">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={thumb}
                       alt={catalog.titulo}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
-                      <FileText className="h-10 w-10" />
-                      <span className="text-[10px] font-bold uppercase tracking-wide">PDF</span>
+                    <div className="absolute inset-0 bg-linear-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
+                      <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md mb-2">
+                        <FileText className="h-7 w-7 text-rose-500" />
+                      </div>
+                      <span className="text-[11px] font-black tracking-widest text-slate-350 uppercase">
+                        {catalog.marca || "Catálogo"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 mt-1 font-medium line-clamp-2 px-2">
+                        {catalog.titulo}
+                      </span>
                     </div>
                   )}
-                  <span className="absolute top-2 left-2 text-[10px] font-bold uppercase bg-black/65 text-white px-1.5 py-0.5 rounded">
+
+                  {/* Efeito 3D de Lombada de Livro/Revista no lado esquerdo */}
+                  <div className="absolute top-0 bottom-0 left-0 w-2.5 bg-linear-to-r from-black/20 via-black/5 to-transparent z-10" />
+
+                  {/* Badge de Formato no Topo Direito */}
+                  <span className={`absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs z-10 ${
+                    isPdf ? "bg-rose-600/90" : "bg-cyan-600/90"
+                  }`}>
                     {isPdf ? "PDF" : "Imagem"}
                   </span>
                 </div>
-                <div className="p-3.5 flex-1 flex flex-col gap-1.5">
-                  {catalog.marca ? (
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {catalog.marca}
+
+                <div className="p-4 flex-1 flex flex-col gap-2">
+                  <div className="space-y-1">
+                    {catalog.marca ? (
+                      <span className="inline-block text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50">
+                        {catalog.marca}
+                      </span>
+                    ) : null}
+                    <h3 className="font-extrabold text-slate-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors text-sm">
+                      {catalog.titulo}
+                    </h3>
+                  </div>
+
+                  {catalog.descricao && (
+                    <p className="text-xs text-slate-450 line-clamp-2 leading-relaxed font-medium">
+                      {catalog.descricao}
                     </p>
-                  ) : null}
-                  <h3 className="font-semibold text-foreground leading-snug line-clamp-2">
-                    {catalog.titulo}
-                  </h3>
-                  {catalog.descricao ? (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{catalog.descricao}</p>
-                  ) : null}
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {catalog.arquivo_nome} · {formatCatalogSize(catalog.size_bytes)}
-                  </p>
-                  <div className="mt-auto pt-3 flex gap-2">
-                    <a
-                      href={catalog.arquivo_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1"
-                    >
-                      <Button type="button" variant="outline" size="sm" className="w-full">
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" /> Abrir
-                      </Button>
-                    </a>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEdit(catalog)}
-                      title="Editar dados"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                      onClick={() => handleDelete(catalog)}
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                  )}
+
+                  <div className="mt-auto space-y-3 pt-2">
+                    {/* Metadados de Arquivo */}
+                    <div className="text-[10px] font-bold text-slate-400 flex items-center justify-between border-t border-slate-100 pt-2 flex-wrap gap-1">
+                      <span className="truncate max-w-[80px] font-mono" title={catalog.arquivo_nome}>
+                        {catalog.arquivo_nome.slice(-15)}
+                      </span>
+                      <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[9px] shrink-0">
+                        {formatCatalogSize(catalog.size_bytes)}
+                      </span>
+                    </div>
+
+                    {/* Ações (Ajustado para evitar hydration mismatch de botão em tag A) */}
+                    <div className="flex gap-1.5 items-center w-full">
+                      <a
+                        href={catalog.arquivo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 h-9 rounded-xl inline-flex items-center justify-center gap-1.5 text-xs font-extrabold transition-all border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs cursor-pointer"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                        Visualizar
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(catalog)}
+                        className="h-9 w-9 shrink-0 rounded-xl inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-all cursor-pointer shadow-xs"
+                        title="Editar dados"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(catalog)}
+                        className="h-9 w-9 shrink-0 rounded-xl inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-rose-50 text-slate-550 hover:text-rose-600 transition-all cursor-pointer shadow-xs"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Card>
