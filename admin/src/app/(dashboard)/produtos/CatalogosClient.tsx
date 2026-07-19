@@ -6,7 +6,6 @@ import {
   updateProductCatalog,
   type ProductCatalogDTO,
 } from "@/app/actions/productCatalogs";
-import { formatCatalogSize } from "@/lib/productCatalogs";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -18,13 +17,12 @@ import {
   BookOpen,
   Plus,
   Trash2,
-  ExternalLink,
   FileText,
   Image as ImageIcon,
   Loader2,
   Pencil,
   Search,
-  X,
+  Settings2,
 } from "lucide-react";
 
 declare global {
@@ -119,12 +117,12 @@ export default function CatalogosClient({
 
   const [catalogs, setCatalogs] = useState(initialCatalogs);
   const [searchQuery, setSearchQuery] = useState("");
+  const [manageMode, setManageMode] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ProductCatalogDTO | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [viewingCatalogUrl, setViewingCatalogUrl] = useState<string | null>(null);
-  const [viewingCatalogTitle, setViewingCatalogTitle] = useState<string>("");
+  const [viewing, setViewing] = useState<ProductCatalogDTO | null>(null);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -309,8 +307,8 @@ export default function CatalogosClient({
                 title="Catálogos para clientes"
                 items={[
                   "Guarde PDFs e imagens de catálogos de marcas e linhas.",
-                  "Use na conversa comercial para apresentar opções de acabamentos.",
-                  "A capa é opcional; em imagens, a própria foto vira capa.",
+                  "A grade mostra só a capa — clique para abrir o arquivo.",
+                  "Em PDF, a primeira página vira capa automaticamente se você não enviar uma.",
                 ]}
               />
             </InfoTooltip>
@@ -321,9 +319,22 @@ export default function CatalogosClient({
           </p>
         </div>
 
-        <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full md:w-auto rounded-xl">
-          <Plus className="h-4.5 w-4.5" /> Novo catálogo
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <Button
+            type="button"
+            variant={manageMode ? "default" : "outline"}
+            onClick={() => setManageMode((v) => !v)}
+            className={`font-bold gap-1.5 rounded-xl w-full sm:w-auto ${
+              manageMode ? "btn-metallic" : ""
+            }`}
+          >
+            <Settings2 className="h-4 w-4" />
+            {manageMode ? "Edição ativa" : "Habilitar edição"}
+          </Button>
+          <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full sm:w-auto rounded-xl">
+            <Plus className="h-4.5 w-4.5" /> Novo catálogo
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-md">
@@ -342,111 +353,61 @@ export default function CatalogosClient({
           Nenhum catálogo ainda. Adicione o primeiro PDF ou imagem.
         </Card>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
           {filtered.map((catalog) => {
             const isPdf = catalog.mime_type === "application/pdf";
             const thumb = catalog.capa_url || (!isPdf ? catalog.arquivo_url : null);
             return (
-              <Card
-                key={catalog.id}
-                className="overflow-hidden flex flex-col border border-slate-200/70 hover:border-slate-300 hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 rounded-2xl bg-white group"
-              >
-                {/* Visualizador de Capa em Proporção Retrato (Estilo Catálogo/Revista Física) */}
-                <div className="aspect-[3/4] bg-slate-50 relative overflow-hidden border-b border-slate-100 flex items-center justify-center select-none">
+              <div key={catalog.id} className="relative group">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (manageMode) return;
+                    setViewing(catalog);
+                  }}
+                  className={`w-full aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
+                    manageMode
+                      ? "cursor-default"
+                      : "cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-slate-300"
+                  }`}
+                  aria-label={`Abrir catálogo ${catalog.titulo}`}
+                >
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={thumb}
-                      alt={catalog.titulo}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-linear-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
-                      <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md mb-2">
-                        <FileText className="h-7 w-7 text-rose-500" />
-                      </div>
-                      <span className="text-[11px] font-black tracking-widest text-slate-350 uppercase">
-                        {catalog.marca || "Catálogo"}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-1 font-medium line-clamp-2 px-2">
-                        {catalog.titulo}
-                      </span>
-                    </div>
+                    <span className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                      <FileText className="h-10 w-10 text-rose-400" />
+                    </span>
                   )}
+                  <span className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-black/25 via-black/5 to-transparent pointer-events-none" />
+                </button>
 
-                  {/* Efeito 3D de Lombada de Livro/Revista no lado esquerdo */}
-                  <div className="absolute top-0 bottom-0 left-0 w-2.5 bg-linear-to-r from-black/20 via-black/5 to-transparent z-10" />
-
-                  {/* Badge de Formato no Topo Direito */}
-                  <span className={`absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs z-10 ${
-                    isPdf ? "bg-rose-600/90" : "bg-cyan-600/90"
-                  }`}>
-                    {isPdf ? "PDF" : "Imagem"}
-                  </span>
-                </div>
-
-                <div className="p-4 flex-1 flex flex-col gap-2">
-                  <div className="space-y-1">
-                    {catalog.marca ? (
-                      <span className="inline-block text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50">
-                        {catalog.marca}
-                      </span>
-                    ) : null}
-                    <h3 className="font-extrabold text-slate-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors text-sm">
-                      {catalog.titulo}
-                    </h3>
+                {manageMode ? (
+                  <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(catalog)}
+                      className="h-8 w-8 rounded-lg inline-flex items-center justify-center bg-white/95 border border-slate-200 text-slate-700 shadow-sm hover:bg-white"
+                      title="Editar"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(catalog)}
+                      className="h-8 w-8 rounded-lg inline-flex items-center justify-center bg-white/95 border border-slate-200 text-rose-600 shadow-sm hover:bg-rose-50"
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-
-                  {catalog.descricao && (
-                    <p className="text-xs text-slate-450 line-clamp-2 leading-relaxed font-medium">
-                      {catalog.descricao}
-                    </p>
-                  )}
-
-                  <div className="mt-auto space-y-3 pt-2">
-                    {/* Metadados de Arquivo */}
-                    <div className="text-[10px] font-bold text-slate-400 flex items-center justify-between border-t border-slate-100 pt-2 flex-wrap gap-1">
-                      <span className="truncate max-w-[80px] font-mono" title={catalog.arquivo_nome}>
-                        {catalog.arquivo_nome.slice(-15)}
-                      </span>
-                      <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[9px] shrink-0">
-                        {formatCatalogSize(catalog.size_bytes)}
-                      </span>
-                    </div>
-
-                    {/* Ações (Ajustado para evitar hydration mismatch de botão em tag A) */}
-                    <div className="flex gap-1.5 items-center w-full">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setViewingCatalogUrl(catalog.arquivo_url);
-                          setViewingCatalogTitle(catalog.titulo);
-                        }}
-                        className="flex-1 h-9 rounded-xl inline-flex items-center justify-center gap-1.5 text-xs font-extrabold transition-all border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs cursor-pointer"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-                        Visualizar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(catalog)}
-                        className="h-9 w-9 shrink-0 rounded-xl inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-all cursor-pointer shadow-xs"
-                        title="Editar dados"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(catalog)}
-                        className="h-9 w-9 shrink-0 rounded-xl inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-rose-50 text-slate-550 hover:text-rose-600 transition-all cursor-pointer shadow-xs"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                ) : null}
+              </div>
             );
           })}
         </div>
@@ -528,7 +489,7 @@ export default function CatalogosClient({
                 />
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                   <ImageIcon className="h-3 w-3" />
-                  Em PDF, a capa ajuda a identificar o catálogo na grade.
+                  Em PDF, a 1ª página vira capa automaticamente se você não enviar uma.
                 </p>
               </div>
             </>
@@ -555,36 +516,42 @@ export default function CatalogosClient({
         </form>
       </Dialog>
 
-      {/* Dialog de Visualização em Modal do PDF/Catálogo */}
       <Dialog
-        isOpen={viewingCatalogUrl !== null}
-        onClose={() => setViewingCatalogUrl(null)}
-        className="max-w-6xl w-full h-[90vh] flex flex-col p-0"
+        isOpen={viewing !== null}
+        onClose={() => setViewing(null)}
+        className="max-w-6xl w-full h-[min(92svh,920px)] max-h-[92svh]"
+        bodyClassName="!p-0 !overflow-hidden flex flex-col min-h-0"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0 bg-white rounded-t-2xl">
-          <div>
-            <h3 className="text-base font-black text-slate-800 tracking-tight leading-none">
-              {viewingCatalogTitle}
-            </h3>
-            <p className="text-[10px] text-slate-450 mt-1.5 font-bold uppercase tracking-wider">Visualização Interna</p>
-          </div>
-          <button
-            onClick={() => setViewingCatalogUrl(null)}
-            className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-          >
-            <X className="h-4.5 w-4.5" />
-          </button>
-        </div>
-
-        <div className="flex-1 bg-slate-900 overflow-hidden relative min-h-[500px] rounded-b-2xl">
-          {viewingCatalogUrl && (
-            <iframe
-              src={`${viewingCatalogUrl}#toolbar=1`}
-              className="w-full h-full border-0 absolute inset-0"
-              title={viewingCatalogTitle}
-            />
-          )}
-        </div>
+        {viewing ? (
+          <>
+            <div className="shrink-0 px-5 py-3.5 pr-12 border-b border-slate-100 bg-white">
+              <h3 className="text-sm font-bold text-slate-800 tracking-tight truncate">
+                {viewing.titulo}
+              </h3>
+              {viewing.marca ? (
+                <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
+                  {viewing.marca}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex-1 min-h-0 relative bg-slate-900">
+              {viewing.mime_type === "application/pdf" ? (
+                <iframe
+                  src={`${viewing.arquivo_url}#toolbar=1&navpanes=0`}
+                  className="absolute inset-0 w-full h-full border-0"
+                  title={viewing.titulo}
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={viewing.arquivo_url}
+                  alt={viewing.titulo}
+                  className="absolute inset-0 w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </>
+        ) : null}
       </Dialog>
     </div>
   );
