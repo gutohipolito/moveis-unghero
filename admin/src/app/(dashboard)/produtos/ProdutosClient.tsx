@@ -39,6 +39,10 @@ import {
   Lock,
   Unlock,
   Star,
+  List,
+  Download,
+  Copy,
+  Check,
 } from "lucide-react";
 
 type InventoryOption = {
@@ -223,6 +227,11 @@ export default function ProdutosClient({
   const [editing, setEditing] = useState<ShowcaseProductDTO | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewingProduct, setViewingProduct] = useState<ShowcaseProductDTO | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [copiedText, setCopiedText] = useState(false);
 
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -546,42 +555,85 @@ export default function ProdutosClient({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <select
-            value={filterAtivo}
-            onChange={(e) => setFilterAtivo(e.target.value as typeof filterAtivo)}
-            className="h-10 rounded-md border border-input bg-white px-3 text-sm"
-          >
-            <option value="ALL">Todos os status</option>
-            <option value="ATIVO">Ativos</option>
-            <option value="INATIVO">Inativos</option>
-          </select>
+          <div className="flex gap-2 shrink-0 items-center">
+            <select
+              value={filterAtivo}
+              onChange={(e) => setFilterAtivo(e.target.value as typeof filterAtivo)}
+              className="h-10 rounded-md border border-input bg-white px-3 text-sm flex-1 sm:flex-none"
+            >
+              <option value="ALL">Todos os status</option>
+              <option value="ATIVO">Ativos</option>
+              <option value="INATIVO">Inativos</option>
+            </select>
+
+            <div className="flex rounded-lg border border-input bg-slate-100 p-0.5 shrink-0 h-10 items-center">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                title="Exibição em Grid"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                  viewMode === "list"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                title="Exibição em Tabela"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
           <button
             type="button"
             data-active={filterCategory === "ALL"}
             onClick={() => setFilterCategory("ALL")}
-            className="shrink-0 inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer bg-slate-50 text-slate-700 border-slate-200 data-[active=true]:bg-slate-900 data-[active=true]:text-white data-[active=true]:border-slate-900"
+            className="shrink-0 inline-flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer text-slate-700 data-[active=true]:bg-slate-950 data-[active=true]:text-white data-[active=true]:border-slate-950"
           >
-            <LayoutGrid className="h-4 w-4" />
+            <LayoutGrid className="h-4 w-4 text-slate-400 group-data-[active=true]:text-white" />
             Todas
-            <span className="opacity-70 font-semibold">{products.length}</span>
+            <span 
+              data-active={filterCategory === "ALL"}
+              className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 data-[active=true]:bg-white/20 data-[active=true]:text-white transition-colors"
+            >
+              {products.length}
+            </span>
           </button>
           {categories.map((cat) => {
             const visual = categoryVisual(cat);
             const Icon = visual.icon;
+            const isActive = filterCategory === cat;
             return (
               <button
                 key={cat}
                 type="button"
-                data-active={filterCategory === cat}
+                data-active={isActive}
                 onClick={() => setFilterCategory(cat)}
-                className={`shrink-0 inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer ${visual.tone}`}
+                className={`shrink-0 inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer ${visual.tone}`}
               >
                 <Icon className="h-4 w-4" />
                 {cat}
-                <span className="opacity-70 font-semibold">{categoryCounts.get(cat) || 0}</span>
+                <span 
+                  className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black transition-colors ${
+                    isActive 
+                      ? "bg-white/20 text-white" 
+                      : "bg-black/5 text-slate-600"
+                  }`}
+                >
+                  {categoryCounts.get(cat) || 0}
+                </span>
               </button>
             );
           })}
@@ -593,15 +645,21 @@ export default function ProdutosClient({
           <Package className="h-10 w-10 mx-auto mb-3 text-slate-300" />
           Nenhum produto no mostruário. Cadastre o primeiro para usar nos orçamentos.
         </Card>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
           {filtered.map((product) => {
             return (
               <Card
                 key={product.id}
+                onClick={() => {
+                  if (!manageMode) {
+                    setViewingProduct(product);
+                    setActiveImageIndex(0);
+                  }
+                }}
                 className={`group overflow-hidden flex flex-col border-border/60 hover:border-border hover:shadow-md transition-all ${
                   !product.ativo ? "opacity-60" : ""
-                }`}
+                } ${!manageMode ? "cursor-pointer" : ""}`}
               >
                 <ProductCardGallery product={product} manageMode={manageMode} />
                 <div className="p-3.5 flex-1 flex flex-col gap-1.5">
@@ -625,7 +683,7 @@ export default function ProdutosClient({
                     </span>
                   ) : null}
                   {manageMode ? (
-                    <div className="mt-auto pt-3 flex gap-2">
+                    <div className="mt-auto pt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         type="button"
                         variant="outline"
@@ -652,6 +710,118 @@ export default function ProdutosClient({
               </Card>
             );
           })}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-xs">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border bg-slate-50 text-slate-550 font-bold text-xs uppercase tracking-wider">
+                <th className="p-4 w-20">Foto</th>
+                <th className="p-4">Nome do Produto</th>
+                <th className="p-4">Categoria</th>
+                <th className="p-4">Preço sugerido</th>
+                <th className="p-4">Estoque</th>
+                <th className="p-4 w-28 text-center">Status</th>
+                {manageMode && <th className="p-4 w-32 text-center">Ações</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {filtered.map((product) => {
+                const isLinkedToStock = !!product.inventory_item_id;
+                const gallery = productGallery(product);
+                const cover = gallery[0] || null;
+                return (
+                  <tr
+                    key={product.id}
+                    onClick={() => {
+                      if (!manageMode) {
+                        setViewingProduct(product);
+                        setActiveImageIndex(0);
+                      }
+                    }}
+                    className={`hover:bg-slate-50/50 transition-colors cursor-pointer group/row ${
+                      !product.ativo ? "opacity-60" : ""
+                    }`}
+                  >
+                    <td className="p-3">
+                      <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden border border-border flex items-center justify-center">
+                        {cover ? (
+                          <img src={cover} alt={product.nome} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-slate-300" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 font-semibold text-slate-800 group-hover/row:text-primary transition-colors">
+                      <div className="flex flex-col gap-0.5">
+                        <span>{product.nome}</span>
+                        {product.descricao && (
+                          <span className="text-xs font-normal text-slate-400 line-clamp-1 font-medium">
+                            {product.descricao}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {product.categoria ? (
+                        <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider text-slate-500 px-2 py-0.5 rounded bg-slate-100/80 border border-slate-200">
+                          {product.categoria}
+                        </span>
+                      ) : (
+                        <span className="text-slate-350">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 font-bold text-slate-850">
+                      {!privacyMode ? formatCurrency(product.preco_exibicao) : <span className="blur-xs font-normal">R$ 0,00</span>}
+                    </td>
+                    <td className="p-4">
+                      {isLinkedToStock ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-100 rounded px-2 py-0.5 w-fit">
+                          <Link2 className="h-3 w-3" />
+                          Vinculado
+                        </span>
+                      ) : (
+                        <span className="text-slate-350 text-xs">Sem vínculo</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border ${
+                        product.ativo 
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                          : "bg-slate-100 text-slate-650 border-slate-300"
+                      }`}>
+                        {product.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </td>
+                    {manageMode && (
+                      <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => openEdit(product)}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-border/80"
+                            onClick={() => handleDelete(product)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -843,6 +1013,183 @@ export default function ProdutosClient({
             </Button>
           </div>
         </form>
+      </Dialog>
+
+      {/* Dialog de Visualização de Detalhes do Produto */}
+      <Dialog
+        isOpen={viewingProduct !== null}
+        onClose={() => {
+          setViewingProduct(null);
+          setCopiedText(false);
+        }}
+        className="max-w-4xl"
+      >
+        {viewingProduct && (() => {
+          const product = viewingProduct;
+          const gallery = productGallery(product);
+          const activeIndex = Math.min(activeImageIndex, gallery.length - 1);
+          const currentImg = gallery[activeIndex] || null;
+
+          const copyCommercialText = () => {
+            const priceText = product.preco_exibicao != null 
+              ? formatCurrency(product.preco_exibicao) 
+              : "Preço sob consulta";
+            
+            const text = `*${product.nome}*\n\n${product.descricao || "Sem descrição comercial."}\n\n*Ambiente:* ${product.categoria || "Geral"}\n*Preço:* ${priceText}`;
+            navigator.clipboard.writeText(text);
+            setCopiedText(true);
+            setTimeout(() => setCopiedText(false), 2000);
+          };
+
+          const downloadCurrentImage = async () => {
+            if (!currentImg) return;
+            try {
+              const res = await fetch(currentImg);
+              const blob = await res.blob();
+              const ext = blob.type.split("/")[1] || "jpg";
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = `${product.nome.toLowerCase().replace(/\s+/g, "-")}-${activeIndex + 1}.${ext}`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } catch {
+              window.open(currentImg, "_blank");
+            }
+          };
+
+          return (
+            <div className="space-y-4 pr-6 text-slate-800">
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <div>
+                  <h3 className="text-lg font-black tracking-tight text-slate-800">Ficha do Produto</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Visualização completa e informações comerciais para vendas.</p>
+                </div>
+                <button
+                  onClick={() => setViewingProduct(null)}
+                  className="p-1.5 hover:bg-slate-100 rounded-md text-muted-foreground transition-colors cursor-pointer"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                {/* Imagens (Grid de 7 colunas) */}
+                <div className="md:col-span-7 space-y-3">
+                  <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-border relative flex items-center justify-center shadow-xs">
+                    {currentImg ? (
+                      <img src={currentImg} alt={product.nome} className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-12 w-12 text-slate-300" />
+                    )}
+                    {!product.ativo && (
+                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide bg-slate-800 text-white px-2.5 py-0.5 rounded-md">
+                        Inativo
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Carrossel de Miniaturas */}
+                  {gallery.length > 1 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {gallery.map((url, idx) => (
+                        <button
+                          key={url}
+                          type="button"
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`w-14 h-14 rounded-lg overflow-hidden border transition-all cursor-pointer ${
+                            idx === activeIndex
+                              ? "border-primary ring-2 ring-primary/20 scale-[1.02]"
+                              : "border-border hover:border-slate-400"
+                          }`}
+                        >
+                          <img src={url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Dados (Grid de 5 colunas) */}
+                <div className="md:col-span-5 flex flex-col justify-between self-stretch gap-5">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      {product.categoria ? (
+                        <span className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                          {product.categoria}
+                        </span>
+                      ) : null}
+                      <h2 className="text-xl font-black text-slate-850 leading-tight tracking-tight mt-1.5">
+                        {product.nome}
+                      </h2>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                      <p className="text-[10px] font-bold uppercase text-slate-450 tracking-wider">Preço de Apresentação</p>
+                      <p className="text-lg font-black text-slate-850">
+                        {!privacyMode ? (
+                          formatCurrency(product.preco_exibicao)
+                        ) : (
+                          <span className="blur-xs font-normal">R$ 0,00</span>
+                        )}
+                      </p>
+                    </div>
+
+                    {product.descricao ? (
+                      <div className="space-y-1">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-450 tracking-wider">Descrição Comercial</h4>
+                        <p className="text-sm text-slate-650 leading-relaxed whitespace-pre-line font-medium">
+                          {product.descricao}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">Sem descrição comercial cadastrada.</p>
+                    )}
+
+                    {product.inventory_item_id && (
+                      <div className="flex items-center gap-2 text-xs font-bold text-cyan-850 bg-cyan-50/50 border border-cyan-100 rounded-lg p-2.5">
+                        <Link2 className="h-4 w-4 text-cyan-600 shrink-0" />
+                        <span>Produto com vínculo no estoque ativo</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ações Técnicas/Comerciais */}
+                  <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-auto">
+                    {currentImg && (
+                      <Button
+                        type="button"
+                        onClick={downloadCurrentImage}
+                        variant="outline"
+                        className="font-bold gap-1.5 h-10 rounded-xl border-border bg-white"
+                      >
+                        <Download className="h-4 w-4 text-slate-500" />
+                        Baixar foto atual
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={copyCommercialText}
+                      className="font-bold gap-1.5 h-10 rounded-xl btn-metallic border-none text-white bg-slate-950 hover:bg-slate-900"
+                    >
+                      {copiedText ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Texto copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copiar divulgação comercial
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </Dialog>
     </div>
   );
