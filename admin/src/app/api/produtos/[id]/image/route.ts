@@ -123,6 +123,75 @@ export async function POST(
   }
 }
 
+/** Define a capa do produto (move a URL escolhida para o índice 0). */
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+
+  const { id: productId } = await context.params;
+  const product = await prisma.showcaseProduct.findFirst({
+    where: { id: productId, company_id: auth.companyId },
+  });
+  if (!product) {
+    return NextResponse.json({ success: false, error: "Produto não encontrado" }, { status: 404 });
+  }
+
+  try {
+    assertCompanyAccess(auth, product.company_id);
+  } catch {
+    return NextResponse.json({ success: false, error: "Acesso negado" }, { status: 403 });
+  }
+
+  let coverUrl: string | undefined;
+  try {
+    const body = (await request.json()) as { coverUrl?: string };
+    coverUrl = typeof body.coverUrl === "string" ? body.coverUrl.trim() : undefined;
+  } catch {
+    return NextResponse.json({ success: false, error: "Payload inválido." }, { status: 400 });
+  }
+
+  if (!coverUrl) {
+    return NextResponse.json({ success: false, error: "Informe a URL da capa." }, { status: 400 });
+  }
+
+  const current = resolveImagens(product);
+  if (!current.includes(coverUrl)) {
+    return NextResponse.json(
+      { success: false, error: "Imagem não pertence a este produto." },
+      { status: 400 }
+    );
+  }
+
+  const imagens = [coverUrl, ...current.filter((url) => url !== coverUrl)];
+
+  try {
+    const updated = await prisma.showcaseProduct.update({
+      where: { id: productId },
+      data: {
+        imagens,
+        imagem_url: imagens[0] || null,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      imagem_url: updated.imagem_url,
+      imagens: updated.imagens,
+    });
+  } catch (error) {
+    console.error("Erro ao definir capa do produto:", error);
+    return NextResponse.json(
+      { success: false, error: "Não foi possível definir a capa." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

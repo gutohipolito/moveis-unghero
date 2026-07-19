@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   createShowcaseProduct,
   deleteShowcaseProduct,
@@ -33,6 +33,11 @@ import {
   Bath,
   BedDouble,
   Armchair,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Unlock,
+  Star,
 } from "lucide-react";
 
 type InventoryOption = {
@@ -97,8 +102,106 @@ function formatCurrency(val: number | null) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 }
 
-function coverUrl(product: ShowcaseProductDTO) {
-  return product.imagens?.[0] || product.imagem_url || null;
+function productGallery(product: ShowcaseProductDTO) {
+  if (product.imagens?.length) return product.imagens;
+  return product.imagem_url ? [product.imagem_url] : [];
+}
+
+function ProductCardGallery({
+  product,
+  manageMode,
+}: {
+  product: ShowcaseProductDTO;
+  manageMode: boolean;
+}) {
+  const gallery = productGallery(product);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex((prev) => (gallery.length === 0 ? 0 : Math.min(prev, gallery.length - 1)));
+  }, [gallery.length, product.id]);
+
+  const safeIndex = gallery.length === 0 ? 0 : Math.min(index, gallery.length - 1);
+  const current = gallery[safeIndex] || null;
+  const hasMultiple = gallery.length > 1;
+
+  const go = (dir: -1 | 1, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!hasMultiple) return;
+    setIndex((prev) => {
+      const next = (prev + dir + gallery.length) % gallery.length;
+      return next;
+    });
+  };
+
+  return (
+    <div className="aspect-square bg-slate-100 relative overflow-hidden">
+      {current ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={current}
+          alt={product.nome}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+          <ImageIcon className="h-10 w-10" />
+        </div>
+      )}
+      {!product.ativo && (
+        <span className="absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wide bg-slate-800 text-white px-2 py-0.5 rounded z-10">
+          Inativo
+        </span>
+      )}
+      {hasMultiple ? (
+        <>
+          <button
+            type="button"
+            onClick={(e) => go(-1, e)}
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
+            title="Foto anterior"
+            aria-label="Foto anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => go(1, e)}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
+            title="Próxima foto"
+            aria-label="Próxima foto"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1">
+            {gallery.map((url, i) => (
+              <button
+                key={url}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIndex(i);
+                }}
+                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                  i === safeIndex ? "w-3 bg-white" : "w-1.5 bg-white/50 hover:bg-white/80"
+                }`}
+                aria-label={`Foto ${i + 1}`}
+              />
+            ))}
+          </div>
+          <span className="absolute top-2 right-2 text-[10px] font-bold bg-black/65 text-white px-1.5 py-0.5 rounded z-10 tabular-nums">
+            {safeIndex + 1}/{gallery.length}
+          </span>
+        </>
+      ) : null}
+      {manageMode && safeIndex === 0 && current ? (
+        <span className="absolute bottom-2 left-2 text-[9px] font-bold uppercase bg-amber-500 text-white px-1.5 py-0.5 rounded z-10">
+          Capa
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 export default function ProdutosClient({
@@ -114,6 +217,7 @@ export default function ProdutosClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("ALL");
   const [filterAtivo, setFilterAtivo] = useState<"ALL" | "ATIVO" | "INATIVO">("ALL");
+  const [manageMode, setManageMode] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ShowcaseProductDTO | null>(null);
   const [saving, setSaving] = useState(false);
@@ -333,6 +437,32 @@ export default function ProdutosClient({
     }
   };
 
+  const handleSetCover = async (url: string) => {
+    const productId = editing?.id;
+    if (!productId || !url) return;
+    if (imagens[0] === url) return;
+
+    setUploading(true);
+    try {
+      const res = await fetch(`/api/produtos/${productId}/image`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverUrl: url }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showError("Falha", data.error || "Não foi possível definir a capa.");
+        return;
+      }
+      applyProductImages(productId, data.imagens || []);
+      showSuccess("Capa atualizada", "Esta foto passou a ser a capa do produto.");
+    } catch {
+      showError("Falha", "Erro de rede ao definir a capa.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleDelete = (product: ShowcaseProductDTO) => {
     confirmAction({
       title: "Excluir produto?",
@@ -365,6 +495,7 @@ export default function ProdutosClient({
                   "Cadastre produtos com fotos para mostrar ao cliente no orçamento.",
                   "O vínculo com o estoque é opcional e não altera a quantidade.",
                   "No PDF do orçamento, a foto de capa aparece na linha do item.",
+                  "Use “Habilitar edição” para mostrar os botões de editar e excluir.",
                 ]}
               />
             </InfoTooltip>
@@ -375,9 +506,29 @@ export default function ProdutosClient({
           </p>
         </div>
 
-        <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full md:w-auto">
-          <Plus className="h-4.5 w-4.5" /> Novo produto
-        </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+          <Button
+            type="button"
+            variant={manageMode ? "default" : "outline"}
+            onClick={() => setManageMode((v) => !v)}
+            className="font-bold gap-1.5 w-full sm:w-auto"
+            title={
+              manageMode
+                ? "Ocultar botões de editar e excluir"
+                : "Mostrar botões de editar e excluir"
+            }
+          >
+            {manageMode ? (
+              <Unlock className="h-4 w-4" />
+            ) : (
+              <Lock className="h-4 w-4" />
+            )}
+            {manageMode ? "Edição ativa" : "Habilitar edição"}
+          </Button>
+          <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full sm:w-auto">
+            <Plus className="h-4.5 w-4.5" /> Novo produto
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -441,8 +592,6 @@ export default function ProdutosClient({
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
           {filtered.map((product) => {
-            const cover = coverUrl(product);
-            const extraPhotos = Math.max(0, (product.imagens?.length || 0) - 1);
             return (
               <Card
                 key={product.id}
@@ -450,30 +599,7 @@ export default function ProdutosClient({
                   !product.ativo ? "opacity-60" : ""
                 }`}
               >
-                <div className="aspect-square bg-slate-100 relative overflow-hidden">
-                  {cover ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={cover}
-                      alt={product.nome}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-                      <ImageIcon className="h-10 w-10" />
-                    </div>
-                  )}
-                  {!product.ativo && (
-                    <span className="absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wide bg-slate-800 text-white px-2 py-0.5 rounded">
-                      Inativo
-                    </span>
-                  )}
-                  {extraPhotos > 0 && (
-                    <span className="absolute bottom-2 right-2 text-[10px] font-bold bg-black/65 text-white px-1.5 py-0.5 rounded">
-                      +{extraPhotos}
-                    </span>
-                  )}
-                </div>
+                <ProductCardGallery product={product} manageMode={manageMode} />
                 <div className="p-3.5 flex-1 flex flex-col gap-1.5">
                   {product.categoria ? (
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -494,26 +620,30 @@ export default function ProdutosClient({
                       Estoque
                     </span>
                   ) : null}
-                  <div className="mt-auto pt-3 flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => openEdit(product)}
-                    >
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                      onClick={() => handleDelete(product)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                  {manageMode ? (
+                    <div className="mt-auto pt-3 flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => openEdit(product)}
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                        onClick={() => handleDelete(product)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="mt-auto pt-1" />
+                  )}
                 </div>
               </Card>
             );
@@ -583,15 +713,28 @@ export default function ProdutosClient({
                 {imagens.map((url, idx) => (
                   <div
                     key={url}
-                    className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50 group/img"
+                    className={`relative aspect-square rounded-lg overflow-hidden border bg-slate-50 group/img ${
+                      idx === 0 ? "border-amber-400 ring-1 ring-amber-300/60" : "border-slate-200"
+                    }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" className="w-full h-full object-cover" />
                     {idx === 0 ? (
-                      <span className="absolute bottom-1 left-1 text-[9px] font-bold uppercase bg-black/70 text-white px-1 rounded">
+                      <span className="absolute bottom-1 left-1 text-[9px] font-bold uppercase bg-amber-500 text-white px-1 rounded inline-flex items-center gap-0.5">
+                        <Star className="h-2.5 w-2.5 fill-current" />
                         Capa
                       </span>
-                    ) : null}
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => void handleSetCover(url)}
+                        className="absolute bottom-1 left-1 right-1 text-[9px] font-bold uppercase bg-black/70 hover:bg-amber-500 text-white px-1 py-0.5 rounded opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer disabled:opacity-50"
+                        title="Definir como capa"
+                      >
+                        Usar como capa
+                      </button>
+                    )}
                     <button
                       type="button"
                       disabled={uploading}
