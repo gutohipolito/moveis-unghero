@@ -21,6 +21,8 @@ import {
   Trash2,
   Image as ImageIcon,
   Loader2,
+  Maximize2,
+  Minimize2,
   Pencil,
   Search,
   Settings2,
@@ -46,6 +48,7 @@ export default function CatalogosClient({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [viewing, setViewing] = useState<ProductCatalogDTO | null>(null);
+  const [viewFullscreen, setViewFullscreen] = useState(false);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -437,22 +440,44 @@ export default function CatalogosClient({
 
       <Dialog
         isOpen={viewing !== null}
-        onClose={() => setViewing(null)}
-        fullscreen
-        className="bg-white"
+        onClose={() => {
+          setViewing(null);
+          setViewFullscreen(false);
+        }}
+        fullscreen={viewFullscreen}
+        className={
+          viewFullscreen
+            ? "bg-white"
+            : "max-w-6xl w-full h-[min(92svh,920px)] max-h-[92svh] bg-white"
+        }
         bodyClassName="!p-0 !overflow-hidden flex flex-col min-h-0 h-full"
       >
         {viewing ? (
           <>
-            <div className="shrink-0 px-5 py-3.5 pr-14 border-b border-slate-100 bg-white">
-              <h3 className="text-sm font-bold text-slate-800 tracking-tight truncate">
-                {viewing.titulo}
-              </h3>
-              {viewing.marca ? (
-                <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
-                  {viewing.marca}
-                </p>
-              ) : null}
+            <div className="shrink-0 flex items-center gap-3 px-5 py-3.5 pr-14 border-b border-slate-100 bg-white">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-bold text-slate-800 tracking-tight truncate">
+                  {viewing.titulo}
+                </h3>
+                {viewing.marca ? (
+                  <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
+                    {viewing.marca}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewFullscreen((v) => !v)}
+                className="shrink-0 h-8 w-8 inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+                title={viewFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+                aria-label={viewFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+              >
+                {viewFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </button>
             </div>
             <div className="flex-1 min-h-0 relative bg-slate-900">
               {viewing.mime_type === "application/pdf" ? (
