@@ -42,6 +42,13 @@ const COMMERCIAL_NOTES = [
   },
 ] as const;
 
+/** A partir deste peso: cards comerciais sem ícones. */
+const COMPACT_WEIGHT = 6;
+/** A partir deste peso: notes + pagamento na 2ª página. */
+const PAGED_WEIGHT = 10;
+
+export type QuotePrintDensity = "normal" | "compact" | "paged";
+
 export type QuotePrintItem = {
   descricao: string;
   quantidade: number;
@@ -78,6 +85,26 @@ function formatCurrency(val: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 }
 
+/** Peso visual: item base + subitens/imagem ocupam mais espaço. */
+export function computeQuoteItemWeight(items: QuotePrintItem[]): number {
+  return items.reduce((weight, item) => {
+    let w = 1;
+    if (item.subitens && item.subitens.length > 0) w += 0.5;
+    if (item.produto_imagem_url) w += 0.5;
+    return weight + w;
+  }, 0);
+}
+
+export function resolveQuotePrintDensity(
+  items: QuotePrintItem[],
+  weight = computeQuoteItemWeight(items)
+): QuotePrintDensity {
+  const count = items.length;
+  if (count >= 8 || weight >= PAGED_WEIGHT) return "paged";
+  if (count >= 5 || weight >= COMPACT_WEIGHT) return "compact";
+  return "normal";
+}
+
 export function quotePrintStylesCss() {
   return `
     @page {
@@ -111,6 +138,10 @@ export function quotePrintStylesCss() {
         overflow: visible !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+      }
+      .print-page-break {
+        page-break-before: always !important;
+        break-before: page !important;
       }
       .print-shell {
         min-height: 0 !important;
@@ -168,7 +199,10 @@ export function quotePrintStylesCss() {
         border-radius: 8px;
         background-color: #ffffff;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        overflow: hidden;
+        overflow: visible;
+      }
+      .print-page-break {
+        margin-top: 28px;
       }
     }
     .print-quote-header {
@@ -191,7 +225,13 @@ function resolveAsset(assetBase: string | undefined, path: string) {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function PrintTopHeader({ assetBase }: { assetBase?: string }) {
+function PrintTopHeader({
+  assetBase,
+  title = "Orçamento Comercial detalhado",
+}: {
+  assetBase?: string;
+  title?: string;
+}) {
   return (
     <header
       className="print-quote-header bg-neutral-900 text-white px-[20mm] py-5 flex items-center justify-between gap-6"
@@ -202,9 +242,7 @@ function PrintTopHeader({ assetBase }: { assetBase?: string }) {
         alt="Móveis Unghero"
         className="h-11 w-auto object-contain brightness-0 invert"
       />
-      <p className="text-base font-bold tracking-wide uppercase text-right">
-        Orçamento Comercial detalhado
-      </p>
+      <p className="text-base font-bold tracking-wide uppercase text-right">{title}</p>
     </header>
   );
 }
@@ -276,6 +314,131 @@ function PrintBottomFooter() {
   );
 }
 
+function CommercialNotesSection({ compact }: { compact: boolean }) {
+  return (
+    <section className="space-y-3">
+      <div className={`grid grid-cols-3 ${compact ? "gap-2" : "gap-3"}`}>
+        {COMMERCIAL_NOTES.map(({ icon: Icon, text }) =>
+          compact ? (
+            <div
+              key={text.slice(0, 24)}
+              className="rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-2"
+            >
+              <p className="text-[9px] text-neutral-600 leading-snug text-left">{text}</p>
+            </div>
+          ) : (
+            <div
+              key={text.slice(0, 24)}
+              className="flex flex-col items-center text-center rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-3.5"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80 mb-2">
+                <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
+              </div>
+              <p className="text-[9px] text-neutral-600 leading-relaxed">{text}</p>
+            </div>
+          )
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
+  return (
+    <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500 shrink-0">
+          Condições de pagamento
+        </h4>
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {PAYMENT_BRANDS.map((brand) => (
+            <img
+              key={brand.id}
+              src={resolveAsset(assetBase, brand.src)}
+              alt={brand.alt}
+              width={brand.width}
+              height={brand.height}
+              className="h-5 w-auto object-contain rounded-[3px] border border-neutral-100 bg-white px-0.5"
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
+          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
+            À vista
+          </span>
+          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+            <li className="flex gap-1.5">
+              <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
+              <span>
+                <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
+                <strong className="text-neutral-900">50% na entrega</strong>
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+            Parcelado
+          </span>
+          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+            <li className="flex gap-1.5">
+              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+              <span>
+                <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
+                <strong className="text-neutral-900">5x sem juros</strong>
+              </span>
+            </li>
+            <li className="flex gap-1.5">
+              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+              <span>
+                ou em <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo)
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+            Cartão
+          </span>
+          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+            <li className="flex gap-1.5">
+              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+              <span>
+                Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos (+ a taxa
+                de parcelamento do cartão)
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <p className="text-[8px] text-neutral-400 leading-snug">
+        *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
+      </p>
+    </section>
+  );
+}
+
+function CommercialFooterBlock({
+  compact,
+  assetBase,
+}: {
+  compact: boolean;
+  assetBase?: string;
+}) {
+  return (
+    <div className="space-y-3.5">
+      <CommercialNotesSection compact={compact} />
+      <PaymentConditionsSection assetBase={assetBase} />
+    </div>
+  );
+}
+
 type QuotePrintDocumentProps = {
   quote: QuotePrintData;
   client: QuotePrintClient;
@@ -302,6 +465,12 @@ export default function QuotePrintDocument({
     ? formatPartnerRegistro(quote.partner.tipo, quote.partner.registro_profissional)
     : null;
 
+  const density = resolveQuotePrintDensity(quote.items);
+  const isCompact = density === "compact" || density === "paged";
+  const isPaged = density === "paged";
+  const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
+  const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
+
   return (
     <div className="print-shell bg-slate-100 text-black min-h-screen font-sans print:bg-white print:min-h-0">
       <style dangerouslySetInnerHTML={{ __html: quotePrintStylesCss() }} />
@@ -312,8 +481,8 @@ export default function QuotePrintDocument({
         <div className="print-page flex flex-col">
           <PrintTopHeader assetBase={assetBase} />
 
-          <main className="flex-1 px-[20mm] py-6 flex flex-col justify-between">
-            <div className="space-y-3.5">
+          <main className="flex-1 px-[20mm] py-6 flex flex-col justify-start gap-5">
+            <div className={sectionGap}>
               <section className="grid grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
                 <div className="space-y-2 min-w-0">
                   <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
@@ -339,13 +508,17 @@ export default function QuotePrintDocument({
                       <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
                         Emissão
                       </span>
-                      <p className="text-[11px] font-bold text-emerald-800 leading-none">{emissaoLabel}</p>
+                      <p className="text-[11px] font-bold text-emerald-800 leading-none">
+                        {emissaoLabel}
+                      </p>
                     </div>
                     <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
                       <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
                         Validade
                       </span>
-                      <p className="text-[11px] font-bold text-rose-800 leading-none">{validadeLabel}</p>
+                      <p className="text-[11px] font-bold text-rose-800 leading-none">
+                        {validadeLabel}
+                      </p>
                     </div>
                   </div>
 
@@ -368,7 +541,9 @@ export default function QuotePrintDocument({
                         <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
                           {partnerRoleLabel}
                         </span>
-                        <p className="font-bold text-neutral-900 text-xs leading-snug">{quote.partner.nome}</p>
+                        <p className="font-bold text-neutral-900 text-xs leading-snug">
+                          {quote.partner.nome}
+                        </p>
                         {quote.partner.escritorio ? (
                           <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
                         ) : null}
@@ -389,10 +564,10 @@ export default function QuotePrintDocument({
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b border-neutral-200 text-neutral-500 uppercase font-bold bg-neutral-50/50 text-[10px]">
-                      <th className="py-3.5 px-4 w-7/12">Descrição Detalhada do Item</th>
-                      <th className="py-3.5 px-4 text-center w-1/12">Qtd</th>
-                      <th className="py-3.5 px-4 text-right w-2/12">Unitário</th>
-                      <th className="py-3.5 px-4 text-right w-2/12">Total</th>
+                      <th className={`${cellPad} w-7/12`}>Descrição Detalhada do Item</th>
+                      <th className={`${cellPad} text-center w-1/12`}>Qtd</th>
+                      <th className={`${cellPad} text-right w-2/12`}>Unitário</th>
+                      <th className={`${cellPad} text-right w-2/12`}>Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-150 text-neutral-800">
@@ -404,7 +579,7 @@ export default function QuotePrintDocument({
 
                       return (
                         <tr key={idx}>
-                          <td className="py-3.5 px-4 leading-relaxed">
+                          <td className={`${cellPad} leading-relaxed`}>
                             <div className="flex gap-2.5 items-start">
                               {item.produto_imagem_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -429,13 +604,13 @@ export default function QuotePrintDocument({
                               </div>
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 text-center font-bold text-neutral-700">
+                          <td className={`${cellPad} text-center font-bold text-neutral-700`}>
                             {item.quantidade}
                           </td>
-                          <td className="py-3.5 px-4 text-right font-medium text-neutral-600">
+                          <td className={`${cellPad} text-right font-medium text-neutral-600`}>
                             {formatCurrency(item.valor_unitario)}
                           </td>
-                          <td className="py-3.5 px-4 text-right font-extrabold text-neutral-950">
+                          <td className={`${cellPad} text-right font-extrabold text-neutral-950`}>
                             {formatCurrency(item.valor_total)}
                           </td>
                         </tr>
@@ -475,105 +650,26 @@ export default function QuotePrintDocument({
               ) : null}
             </div>
 
-            <div className="space-y-3.5">
-              <section className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
-                    <div
-                      key={text.slice(0, 24)}
-                      className="flex flex-col items-center text-center rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-3.5"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80 mb-2">
-                        <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
-                      </div>
-                      <p className="text-[9px] text-neutral-600 leading-relaxed">{text}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                  <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500 shrink-0">
-                    Condições de pagamento
-                  </h4>
-                  <div className="flex flex-wrap items-center justify-end gap-1.5">
-                    {PAYMENT_BRANDS.map((brand) => (
-                      <img
-                        key={brand.id}
-                        src={resolveAsset(assetBase, brand.src)}
-                        alt={brand.alt}
-                        width={brand.width}
-                        height={brand.height}
-                        className="h-5 w-auto object-contain rounded-[3px] border border-neutral-100 bg-white px-0.5"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
-                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
-                      À vista
-                    </span>
-                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                      <li className="flex gap-1.5">
-                        <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
-                        <span>
-                          <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
-                          <strong className="text-neutral-900">50% na entrega</strong>
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-                      Parcelado
-                    </span>
-                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                      <li className="flex gap-1.5">
-                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                        <span>
-                          <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
-                          <strong className="text-neutral-900">5x sem juros</strong>
-                        </span>
-                      </li>
-                      <li className="flex gap-1.5">
-                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                        <span>
-                          ou em <strong className="text-neutral-900">10x no boleto</strong> (com
-                          acréscimo)
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-                      Cartão
-                    </span>
-                    <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-                      <li className="flex gap-1.5">
-                        <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-                        <span>
-                          Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos
-                          (+ a taxa de parcelamento do cartão)
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                <p className="text-[8px] text-neutral-400 leading-snug">
-                  *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
-                </p>
-              </section>
-            </div>
+            {!isPaged ? (
+              <CommercialFooterBlock compact={isCompact} assetBase={assetBase} />
+            ) : null}
           </main>
 
           <PrintBottomFooter />
         </div>
+
+        {isPaged ? (
+          <div className="print-page print-page-break flex flex-col">
+            <PrintTopHeader assetBase={assetBase} title="Condições comerciais" />
+            <main className="flex-1 px-[20mm] py-6 flex flex-col justify-start gap-5">
+              <p className="text-[11px] text-neutral-500 leading-relaxed">
+                Informações de prazo, garantia, montagem e formas de pagamento desta proposta.
+              </p>
+              <CommercialFooterBlock compact={false} assetBase={assetBase} />
+            </main>
+            <PrintBottomFooter />
+          </div>
+        ) : null}
       </div>
     </div>
   );
