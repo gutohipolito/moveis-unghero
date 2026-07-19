@@ -25,6 +25,7 @@ model Company {
   suppliers      Supplier[]
   inventoryItems InventoryItem[]
   showcaseProducts ShowcaseProduct[]
+  productCatalogs  ProductCatalog[]
   expenses       Expense[]
   suggestions    Suggestion[]
   contractTemplates ContractTemplate[]
@@ -60,6 +61,7 @@ model User {
   operatorReminders OperatorReminder[]
   clientAttachments ClientAttachment[] @relation("ClientAttachmentUploader")
   environmentAttachments EnvironmentAttachment[] @relation("EnvironmentAttachmentUploader")
+  productCatalogsUploaded ProductCatalog[] @relation("ProductCatalogUploader")
   pushSubscriptions PushSubscription[]
   supplyTicketsRequested SupplyTicket[] @relation("SupplyTicketRequester")
   supplyTicketsResolved  SupplyTicket[] @relation("SupplyTicketResolver")
@@ -759,6 +761,30 @@ model ShowcaseProduct {
   @@index([company_id])
   @@index([company_id, ativo])
   @@index([inventory_item_id])
+}
+
+/** Catálogos (PDF/imagens) para apresentar aos clientes no comercial. */
+model ProductCatalog {
+  id             String   @id @default(uuid())
+  company_id     String
+  company        Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  titulo         String
+  descricao      String?  @db.Text
+  marca          String?
+  arquivo_url    String
+  arquivo_nome   String
+  mime_type      String
+  size_bytes     Int?
+  capa_url       String?
+  ordem          Int      @default(0)
+  ativo          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  uploaded_by_id String?
+  uploaded_by    User?    @relation("ProductCatalogUploader", fields: [uploaded_by_id], references: [id], onDelete: SetNull)
+
+  @@index([company_id])
+  @@index([company_id, ativo])
 }
 
 model LeadBriefing {

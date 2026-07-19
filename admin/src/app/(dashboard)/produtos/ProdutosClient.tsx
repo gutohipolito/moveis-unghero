@@ -11,6 +11,7 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import PrivacyToggle from "@/components/PrivacyToggle";
 import { usePrivacy } from "@/context/PrivacyContext";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
+import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -501,7 +502,10 @@ export default function ProdutosClient({
             </InfoTooltip>
             <PrivacyToggle />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <div className="mt-3">
+            <ProdutosSectionTabs />
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
             Mostruário visual para identificar o que entra no orçamento do cliente.
           </p>
         </div>

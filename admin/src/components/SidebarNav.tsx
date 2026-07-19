@@ -109,6 +109,7 @@ const HEAVY_ROUTES = new Set([
   "/clientes",
   "/quotes",
   "/produtos",
+  "/produtos/catalogos",
   "/contratos",
   "/estoque",
   "/logistica",
