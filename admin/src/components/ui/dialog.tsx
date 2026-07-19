@@ -11,6 +11,7 @@ export interface DialogProps {
   viewportClassName?: string;
   showClose?: boolean;
   closeOnBackdrop?: boolean;
+  fullscreen?: boolean;
 }
 
 export function Dialog({
@@ -22,6 +23,7 @@ export function Dialog({
   viewportClassName,
   showClose = true,
   closeOnBackdrop = true,
+  fullscreen = false,
 }: DialogProps) {
   return (
     <ModalShell
@@ -29,7 +31,8 @@ export function Dialog({
       onClose={onClose}
       showClose={showClose}
       closeOnBackdrop={closeOnBackdrop}
-      panelClassName={cn("w-full max-w-xl", className)}
+      fullscreen={fullscreen}
+      panelClassName={cn(!fullscreen && "w-full max-w-xl", className)}
       bodyClassName={bodyClassName}
       viewportClassName={viewportClassName}
     >

@@ -438,12 +438,13 @@ export default function CatalogosClient({
       <Dialog
         isOpen={viewing !== null}
         onClose={() => setViewing(null)}
-        className="max-w-6xl w-full h-[min(92svh,920px)] max-h-[92svh]"
-        bodyClassName="!p-0 !overflow-hidden flex flex-col min-h-0"
+        fullscreen
+        className="bg-white"
+        bodyClassName="!p-0 !overflow-hidden flex flex-col min-h-0 h-full"
       >
         {viewing ? (
           <>
-            <div className="shrink-0 px-5 py-3.5 pr-12 border-b border-slate-100 bg-white">
+            <div className="shrink-0 px-5 py-3.5 pr-14 border-b border-slate-100 bg-white">
               <h3 className="text-sm font-bold text-slate-800 tracking-tight truncate">
                 {viewing.titulo}
               </h3>
