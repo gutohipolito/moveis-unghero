@@ -704,9 +704,13 @@ export default function EstoqueClient({
                       <tr key={sup.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-10 w-10 rounded-xl border border-border bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center">
+                            <div className="h-10 w-auto min-w-10 max-w-20 rounded-xl border border-border bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center px-0.5">
                               {sup.logoUrl ? (
-                                <img src={sup.logoUrl} alt="" className="h-full w-full object-cover" />
+                                <img
+                                  src={sup.logoUrl}
+                                  alt=""
+                                  className="h-full w-auto max-w-20 object-contain"
+                                />
                               ) : (
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
                               )}
