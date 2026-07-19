@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -21,6 +21,7 @@ import { getEstoqueLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
+import { compressImageFile } from "@/lib/imageCompression";
 import { 
   Package, 
   Users, 
@@ -39,6 +40,9 @@ import {
   Settings2,
   ClipboardList,
   Star,
+  Loader2,
+  ImagePlus,
+  Building2,
 } from "lucide-react";
 
 interface CategoryOption {
@@ -125,12 +129,18 @@ export default function EstoqueClient({
     enabled: !isSupplierModalOpen && !isItemModalOpen,
   });
 
-  // Estados de Formulário - Fornecedor
+  // Estados de Formulário - Fornecedor (cadastro rápido)
   const [supplierNome, setSupplierNome] = useState("");
+  const [supplierNomeFantasia, setSupplierNomeFantasia] = useState("");
   const [supplierCnpj, setSupplierCnpj] = useState("");
   const [supplierTelefone, setSupplierTelefone] = useState("");
   const [supplierEmail, setSupplierEmail] = useState("");
-  const [supplierMaterial, setSupplierMaterial] = useState("");
+  const [supplierLogoUrl, setSupplierLogoUrl] = useState("");
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cnpjError, setCnpjError] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const lastFetchedCnpjRef = useRef("");
 
   // Estados de Formulário - Item do Estoque
   const [itemNome, setItemNome] = useState("");
@@ -139,6 +149,96 @@ export default function EstoqueClient({
   const [itemMinima, setItemMinima] = useState("");
   const [itemPreco, setItemPreco] = useState("");
   const [itemSupplierId, setItemSupplierId] = useState("");
+
+  const formatCnpj = (value: string) => {
+    let digits = value.replace(/\D/g, "").slice(0, 14);
+    if (digits.length > 12) {
+      return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+    }
+    if (digits.length > 8) {
+      return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+    }
+    if (digits.length > 5) {
+      return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+    }
+    if (digits.length > 2) {
+      return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+    }
+    return digits;
+  };
+
+  const fetchCompanyByCnpj = useCallback(async (cnpjValue: string) => {
+    const clean = cnpjValue.replace(/\D/g, "");
+    if (clean.length !== 14 || clean === lastFetchedCnpjRef.current) return;
+
+    setCnpjLoading(true);
+    setCnpjError(null);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      const json = await res.json();
+      if (!res.ok || json?.message) {
+        setCnpjError("CNPJ não encontrado. Confira o número e tente de novo.");
+        return;
+      }
+
+      lastFetchedCnpjRef.current = clean;
+      if (json.razao_social) setSupplierNome(json.razao_social);
+      if (json.nome_fantasia) setSupplierNomeFantasia(json.nome_fantasia);
+      if (json.email) setSupplierEmail(json.email);
+
+      if (json.ddd_telefone_1) {
+        const cleanTel = `${json.ddd_telefone_1}`.replace(/\D/g, "");
+        if (cleanTel.length === 10 || cleanTel.length === 11) {
+          setSupplierTelefone(
+            `(${cleanTel.slice(0, 2)}) ${cleanTel.slice(2, cleanTel.length === 11 ? 7 : 6)}-${cleanTel.slice(cleanTel.length === 11 ? 7 : 6)}`
+          );
+        } else {
+          setSupplierTelefone(`${json.ddd_telefone_1}`);
+        }
+      }
+    } catch {
+      setCnpjError("Não foi possível consultar o CNPJ agora.");
+    } finally {
+      setCnpjLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const clean = supplierCnpj.replace(/\D/g, "");
+    if (clean.length !== 14) {
+      setCnpjError(null);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void fetchCompanyByCnpj(clean);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [supplierCnpj, fetchCompanyByCnpj]);
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLogoUploading(true);
+    setCnpjError(null);
+    try {
+      const compressed = await compressImageFile(file, { maxDimension: 512, quality: 0.8 });
+      const formData = new FormData();
+      formData.append("file", compressed);
+      const res = await fetch("/api/fornecedores/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok || !json?.success || !json.url) {
+        showError("Upload", json?.error || "Não foi possível enviar o logo.");
+        return;
+      }
+      setSupplierLogoUrl(json.url);
+    } catch {
+      showError("Upload", "Falha ao enviar o logo.");
+    } finally {
+      setLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
 
   // Filtragem da lista de Estoque
   const filteredInventory = inventory.filter(item => {
@@ -161,8 +261,9 @@ export default function EstoqueClient({
   // Filtragem da lista de Fornecedores
   const filteredSuppliers = suppliers.filter(sup => {
     return sup.nome.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           (sup.nomeFantasia || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
            sup.cnpj.includes(searchQuery) || 
-           sup.principalMaterial.toLowerCase().includes(searchQuery.toLowerCase());
+           (sup.principalMaterial || "").toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Métricas do Estoque
@@ -173,10 +274,15 @@ export default function EstoqueClient({
   // Reset Formulário Fornecedor
   const resetSupplierForm = () => {
     setSupplierNome("");
+    setSupplierNomeFantasia("");
     setSupplierCnpj("");
     setSupplierTelefone("");
     setSupplierEmail("");
-    setSupplierMaterial("");
+    setSupplierLogoUrl("");
+    setCnpjError(null);
+    setCnpjLoading(false);
+    setLogoUploading(false);
+    lastFetchedCnpjRef.current = "";
     setEditingSupplier(null);
   };
 
@@ -194,25 +300,35 @@ export default function EstoqueClient({
   // CRUD Fornecedores
   const handleSaveSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supplierNome || !supplierCnpj) return;
+    const cleanCnpj = supplierCnpj.replace(/\D/g, "");
+    if (cleanCnpj.length !== 14) {
+      setCnpjError("Informe um CNPJ válido com 14 dígitos.");
+      return;
+    }
+    if (!supplierNome.trim()) {
+      setCnpjError("Aguarde a busca do CNPJ ou confira o número.");
+      return;
+    }
 
     const data = {
-      nome: supplierNome,
-      cnpj: supplierCnpj,
+      nome: supplierNome.trim(),
+      nomeFantasia: supplierNomeFantasia.trim() || null,
+      cnpj: formatCnpj(cleanCnpj),
       telefone: supplierTelefone,
       email: supplierEmail,
-      principalMaterial: supplierMaterial
+      principalMaterial: "",
+      logoUrl: supplierLogoUrl || null,
     };
 
     if (editingSupplier) {
       const res = await updateSupplierAction(editingSupplier.id, companyId, data);
-      if (res.success) {
-        setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? { ...s, ...data } : s));
+      if (res.success && res.supplier) {
+        setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? res.supplier! : s));
         setIsSupplierModalOpen(false);
         resetSupplierForm();
         showSuccess("Fornecedor atualizado", `${supplierNome} foi salvo com sucesso.`);
       } else {
-        showError("Erro ao salvar", "Não foi possível atualizar o fornecedor.");
+        showError("Erro ao salvar", res.error || "Não foi possível atualizar o fornecedor.");
       }
     } else {
       const res = await createSupplierAction({ ...data, company_id: companyId });
@@ -222,7 +338,7 @@ export default function EstoqueClient({
         resetSupplierForm();
         showSuccess("Fornecedor cadastrado", `${supplierNome} foi adicionado à base de fornecedores.`);
       } else {
-        showError("Erro ao cadastrar", "Não foi possível cadastrar o fornecedor.");
+        showError("Erro ao cadastrar", res.error || "Não foi possível cadastrar o fornecedor.");
       }
     }
   };
@@ -230,10 +346,13 @@ export default function EstoqueClient({
   const handleEditSupplier = (supplier: Supplier) => {
     setEditingSupplier(supplier);
     setSupplierNome(supplier.nome);
+    setSupplierNomeFantasia(supplier.nomeFantasia || "");
     setSupplierCnpj(supplier.cnpj);
     setSupplierTelefone(supplier.telefone);
     setSupplierEmail(supplier.email);
-    setSupplierMaterial(supplier.principalMaterial);
+    setSupplierLogoUrl(supplier.logoUrl || "");
+    lastFetchedCnpjRef.current = supplier.cnpj.replace(/\D/g, "");
+    setCnpjError(null);
     setIsSupplierModalOpen(true);
   };
 
@@ -354,12 +473,15 @@ export default function EstoqueClient({
               <Plus className="h-4.5 w-4.5" /> Novo Insumo / Item
             </Button>
           ) : (
-            <Link
-              href="/estoque/fornecedores/novo"
-              className="inline-flex items-center justify-center font-bold btn-metallic gap-1.5 rounded-[var(--radius-sm)] text-sm min-h-9 px-4"
+            <Button
+              onClick={() => {
+                resetSupplierForm();
+                setIsSupplierModalOpen(true);
+              }}
+              className="font-bold btn-metallic gap-1.5"
             >
               <Plus className="h-4.5 w-4.5" /> Novo Fornecedor
-            </Link>
+            </Button>
           )}
         </div>
       </div>
@@ -581,8 +703,20 @@ export default function EstoqueClient({
                     return (
                       <tr key={sup.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
-                          <div className="flex flex-col">
-                            <strong className="text-sm font-bold text-foreground">{sup.nome}</strong>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-xl border border-border bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center">
+                              {sup.logoUrl ? (
+                                <img src={sup.logoUrl} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <strong className="text-sm font-bold text-foreground truncate">{sup.nome}</strong>
+                              {sup.nomeFantasia ? (
+                                <span className="text-[11px] text-muted-foreground truncate">{sup.nomeFantasia}</span>
+                              ) : null}
+                            </div>
                           </div>
                         </td>
                         <td className="p-4 text-center text-xs font-semibold text-slate-500">{sup.cnpj}</td>
@@ -652,51 +786,126 @@ export default function EstoqueClient({
         </Card>
       )}
 
-      {/* ─── MODAL: FORNECEDOR (CADASTRAR / EDITAR) ─── */}
+      {/* ─── MODAL: FORNECEDOR RÁPIDO (CNPJ + LOGO) ─── */}
       <Dialog
         isOpen={isSupplierModalOpen}
-        onClose={() => setIsSupplierModalOpen(false)}
+        onClose={() => {
+          setIsSupplierModalOpen(false);
+          resetSupplierForm();
+        }}
         className="max-w-md w-full"
       >
         <div className="space-y-4 pr-6">
             <div>
-              <h3 className="text-lg font-bold text-foreground">{editingSupplier ? "Editar Fornecedor" : "Cadastrar Novo Fornecedor"}</h3>
-              <p className="text-xs text-muted-foreground">Cadastre novos parceiros e marcas na base da Móveis Unghero.</p>
+              <h3 className="text-lg font-bold text-foreground">
+                {editingSupplier ? "Editar Fornecedor" : "Novo Fornecedor"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Informe o CNPJ para preencher os dados e anexe o logo da marca.
+              </p>
             </div>
 
             <form onSubmit={handleSaveSupplier} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground block">Razão Social / Nome da Marca</label>
-                <Input required value={supplierNome} onChange={e => setSupplierNome(e.target.value)}  className="border-border bg-slate-50 text-sm" />
+                <label className="text-xs font-bold text-muted-foreground block">CNPJ</label>
+                <div className="relative">
+                  <Input
+                    required
+                    value={supplierCnpj}
+                    onChange={(e) => setSupplierCnpj(formatCnpj(e.target.value))}
+                    placeholder="00.000.000/0000-00"
+                    className="border-border bg-slate-50 text-sm pr-10"
+                    inputMode="numeric"
+                  />
+                  {cnpjLoading ? (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+                  ) : null}
+                </div>
+                {cnpjError ? (
+                  <p className="text-[11px] text-rose-600 font-medium">{cnpjError}</p>
+                ) : null}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">CNPJ</label>
-                  <Input required value={supplierCnpj} onChange={e => setSupplierCnpj(e.target.value)}  className="border-border bg-slate-50 text-sm" />
+              {supplierNome ? (
+                <div className="rounded-xl border border-border bg-slate-50/80 px-3 py-2.5 space-y-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Empresa encontrada
+                  </p>
+                  <p className="text-sm font-semibold text-foreground leading-snug">{supplierNome}</p>
+                  {supplierNomeFantasia ? (
+                    <p className="text-xs text-muted-foreground">{supplierNomeFantasia}</p>
+                  ) : null}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Material Principal</label>
-                  <Input required value={supplierMaterial} onChange={e => setSupplierMaterial(e.target.value)}  className="border-border bg-slate-50 text-sm" />
-                </div>
-              </div>
+              ) : null}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">E-mail Comercial</label>
-                  <Input type="email" value={supplierEmail} onChange={e => setSupplierEmail(e.target.value)}  className="border-border bg-slate-50 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground block">Telefone Comercial</label>
-                  <Input type="tel" value={supplierTelefone} onChange={e => setSupplierTelefone(e.target.value)}  className="border-border bg-slate-50 text-sm" />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground block">Logo</label>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleLogoChange}
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={logoUploading}
+                    className="h-16 w-16 rounded-xl border border-dashed border-border bg-slate-50 hover:bg-slate-100 overflow-hidden flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                    title="Enviar logo"
+                  >
+                    {logoUploading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    ) : supplierLogoUrl ? (
+                      <img src={supplierLogoUrl} alt="Logo" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </button>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={logoUploading}
+                      className="text-xs font-bold"
+                    >
+                      {supplierLogoUrl ? "Trocar imagem" : "Enviar logo"}
+                    </Button>
+                    {supplierLogoUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setSupplierLogoUrl("")}
+                        className="block text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        Remover logo
+                      </button>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">JPG, PNG ou WEBP</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsSupplierModalOpen(false)} className="text-xs font-bold">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsSupplierModalOpen(false);
+                    resetSupplierForm();
+                  }}
+                  className="text-xs font-bold"
+                >
                   Cancelar
                 </Button>
-                <Button type="submit" className="font-bold btn-metallic">
+                <Button
+                  type="submit"
+                  className="font-bold btn-metallic"
+                  disabled={cnpjLoading || logoUploading || !supplierNome}
+                >
                   {editingSupplier ? "Salvar Alterações" : "Cadastrar Fornecedor"}
                 </Button>
               </div>

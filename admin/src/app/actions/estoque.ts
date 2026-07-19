@@ -14,6 +14,8 @@ export interface Supplier {
   principalMaterial: string;
   crmStatus?: string;
   crmNota?: number | null;
+  logoUrl?: string | null;
+  nomeFantasia?: string | null;
 }
 
 export interface InventoryItem {
@@ -36,6 +38,8 @@ export interface InventoryImportRow {
   supplierNome?: string;
 }
 
+type CrmUpload = { tipo?: string; url?: string; nome?: string };
+
 type DbSupplier = {
   id: string;
   nome: string;
@@ -45,6 +49,8 @@ type DbSupplier = {
   principal_material: string;
   crmStatus?: string;
   crmNota?: number | null;
+  nomeFantasia?: string | null;
+  crmUploads?: unknown;
 };
 
 type DbInventoryItem = {
@@ -58,6 +64,38 @@ type DbInventoryItem = {
   supplier?: { nome: string } | null;
 };
 
+function extractLogoUrl(crmUploads: unknown): string | undefined {
+  if (!Array.isArray(crmUploads)) return undefined;
+  const logo = crmUploads.find(
+    (entry): entry is CrmUpload =>
+      !!entry &&
+      typeof entry === "object" &&
+      (entry as CrmUpload).tipo === "Logo" &&
+      typeof (entry as CrmUpload).url === "string"
+  );
+  return logo?.url;
+}
+
+function withLogoUploads(
+  existing: unknown,
+  logoUrl: string | null | undefined
+): { tipo: string; url: string; nome: string }[] {
+  const list = Array.isArray(existing)
+    ? existing.filter(
+        (entry) =>
+          !(
+            entry &&
+            typeof entry === "object" &&
+            (entry as CrmUpload).tipo === "Logo"
+          )
+      )
+    : [];
+  if (logoUrl) {
+    list.unshift({ tipo: "Logo", url: logoUrl, nome: "logo" });
+  }
+  return list as { tipo: string; url: string; nome: string }[];
+}
+
 function mapSupplier(row: DbSupplier): Supplier {
   return {
     id: row.id,
@@ -68,6 +106,8 @@ function mapSupplier(row: DbSupplier): Supplier {
     principalMaterial: row.principal_material,
     crmStatus: row.crmStatus,
     crmNota: row.crmNota,
+    logoUrl: extractLogoUrl(row.crmUploads),
+    nomeFantasia: row.nomeFantasia,
   };
 }
 
@@ -123,7 +163,9 @@ export async function getInventoryAndSuppliers(companyId: string) {
   }
 }
 
-export async function createSupplierAction(data: Omit<Supplier, "id"> & { company_id: string }) {
+export async function createSupplierAction(
+  data: Omit<Supplier, "id"> & { company_id: string; logoUrl?: string | null }
+) {
   const auth = await getAuthContext();
   if (!auth) {
     return { success: false, error: "Não autenticado" };
@@ -142,14 +184,19 @@ export async function createSupplierAction(data: Omit<Supplier, "id"> & { compan
   }
 
   try {
+    const logoUrl = data.logoUrl?.trim() || undefined;
     const supplier = await prisma.supplier.create({
       data: {
         company_id: data.company_id,
         nome: capitalizeText(data.nome),
         cnpj: data.cnpj.trim(),
-        telefone: data.telefone.trim(),
-        email: data.email.trim(),
-        principal_material: capitalizeText(data.principalMaterial),
+        telefone: (data.telefone || "").trim(),
+        email: (data.email || "").trim(),
+        principal_material: capitalizeText(data.principalMaterial || ""),
+        ...(data.nomeFantasia
+          ? { nomeFantasia: capitalizeText(data.nomeFantasia) }
+          : {}),
+        ...(logoUrl ? { crmUploads: withLogoUploads(null, logoUrl) } : {}),
       },
     });
 
@@ -164,7 +211,7 @@ export async function createSupplierAction(data: Omit<Supplier, "id"> & { compan
 export async function updateSupplierAction(
   id: string,
   companyId: string,
-  data: Partial<Supplier>
+  data: Partial<Supplier> & { logoUrl?: string | null }
 ) {
   const auth = await getAuthContext();
   if (!auth) {
@@ -200,6 +247,16 @@ export async function updateSupplierAction(
         ...(data.email !== undefined ? { email: data.email.trim() } : {}),
         ...(data.principalMaterial !== undefined
           ? { principal_material: capitalizeText(data.principalMaterial) }
+          : {}),
+        ...(data.nomeFantasia !== undefined
+          ? {
+              nomeFantasia: data.nomeFantasia
+                ? capitalizeText(data.nomeFantasia)
+                : null,
+            }
+          : {}),
+        ...(data.logoUrl !== undefined
+          ? { crmUploads: withLogoUploads(existing.crmUploads, data.logoUrl) }
           : {}),
       },
     });
