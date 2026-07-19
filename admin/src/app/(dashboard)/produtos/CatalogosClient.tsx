@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import {
   updateProductCatalog,
   type ProductCatalogDTO,
@@ -125,22 +126,46 @@ export default function CatalogosClient({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("titulo", titulo.trim() || file.name);
-      if (descricao.trim()) formData.append("descricao", descricao.trim());
-      if (marca.trim()) formData.append("marca", marca.trim());
-      if (capa) formData.append("capa", capa);
+      // 1. Upload do PDF/Imagem do catálogo direto do navegador para o Vercel Blob
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/produtos/catalogos/upload",
+      });
+
+      // 2. Upload da capa do catálogo (se houver)
+      let capaUrl = null;
+      if (capa) {
+        const capaBlob = await upload(capa.name, capa, {
+          access: "public",
+          handleUploadUrl: "/api/produtos/catalogos/upload",
+        });
+        capaUrl = capaBlob.url;
+      }
+
+      // 3. Envia os metadados e as URLs salvas para criar no banco via JSON
+      const payload = {
+        titulo: titulo.trim() || file.name,
+        descricao: descricao.trim() || null,
+        marca: marca.trim() || null,
+        arquivoUrl: blob.url,
+        arquivoNome: file.name,
+        mimeType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+        capaUrl,
+      };
 
       const res = await fetch("/api/produtos/catalogos", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (!res.ok || !data.success || !data.catalog) {
-        showError("Upload falhou", data.error || "Não foi possível salvar o catálogo.");
+        showError("Cadastro falhou", data.error || "Não foi possível registrar o catálogo.");
         return;
       }
+
       setCatalogs((prev) =>
         [...prev, data.catalog as ProductCatalogDTO].sort((a, b) =>
           a.titulo.localeCompare(b.titulo, "pt-BR")
@@ -149,8 +174,9 @@ export default function CatalogosClient({
       showSuccess("Catálogo adicionado", "Disponível para uso com os clientes.");
       setModalOpen(false);
       resetForm();
-    } catch {
-      showError("Upload falhou", "Erro de rede ao enviar o arquivo.");
+    } catch (err) {
+      console.error(err);
+      showError("Upload falhou", "Erro ao realizar upload ou criar catálogo.");
     } finally {
       setUploading(false);
     }
