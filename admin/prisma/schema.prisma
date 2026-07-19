@@ -331,8 +331,10 @@ model Quote {
   partner_id  String?
   partner     ProfessionalPartner? @relation("PartnerQuotes", fields: [partner_id], references: [id], onDelete: SetNull)
   items       QuoteItem[]
+  createdAt   DateTime    @default(now())
 
   @@index([partner_id])
+  @@index([createdAt])
 }
 
 model QuoteItem {

@@ -80,6 +80,7 @@ interface Quote {
   desconto: number;
   valor_final: number;
   validade: Date | string;
+  createdAt?: Date | string | null;
   aprovado_em?: string | Date | null;
   observacoes: string | null;
   project: Project;
@@ -102,8 +103,10 @@ export default function QuotesList({
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "APPROVED">("ALL");
-  const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor">("validade");
+  const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor" | "criacao">("validade");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -377,7 +380,11 @@ export default function QuotesList({
       (filterStatus === "ACTIVE" && !expired && !q.aprovado_em) ||
       (filterStatus === "EXPIRED" && expired && !q.aprovado_em);
 
-    return matchesSearch && matchesStatus;
+    const createdKey = q.createdAt ? toISODateBR(q.createdAt) : "";
+    const matchesCreatedFrom = !createdFrom || (createdKey !== "" && createdKey >= createdFrom);
+    const matchesCreatedTo = !createdTo || (createdKey !== "" && createdKey <= createdTo);
+
+    return matchesSearch && matchesStatus && matchesCreatedFrom && matchesCreatedTo;
   });
 
   // Ordenação
@@ -394,6 +401,9 @@ export default function QuotesList({
     } else if (sortBy === "validade") {
       valA = new Date(a.validade).getTime();
       valB = new Date(b.validade).getTime();
+    } else if (sortBy === "criacao") {
+      valA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     } else if (sortBy === "status") {
       const getStatusPriority = (q: Quote) => {
         if (q.aprovado_em) return 3;
@@ -414,7 +424,7 @@ export default function QuotesList({
 
   useEffect(() => {
     setPage(1);
-  }, [search, filterStatus, sortBy, sortOrder]);
+  }, [search, createdFrom, createdTo, filterStatus, sortBy, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(sortedQuotes.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -530,12 +540,53 @@ export default function QuotesList({
           </div>
         </div>
 
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="space-y-1 flex-1 min-w-0">
+            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Data de criação (de)
+            </label>
+            <Input
+              type="date"
+              value={createdFrom}
+              onChange={(e) => setCreatedFrom(e.target.value)}
+              className="bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+            />
+          </div>
+          <div className="space-y-1 flex-1 min-w-0">
+            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Data de criação (até)
+            </label>
+            <Input
+              type="date"
+              value={createdTo}
+              min={createdFrom || undefined}
+              onChange={(e) => setCreatedTo(e.target.value)}
+              className="bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+            />
+          </div>
+          {(createdFrom || createdTo) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+              onClick={() => {
+                setCreatedFrom("");
+                setCreatedTo("");
+              }}
+            >
+              Limpar datas
+            </Button>
+          )}
+        </div>
+
         {/* Ordenação */}
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Organizar por:</span>
           {([
             { key: "client", label: "Cliente" },
             { key: "bairro", label: "Bairro" },
+            { key: "criacao", label: "Criação" },
             { key: "validade", label: "Validade" },
             { key: "status", label: "Status" },
             { key: "valor", label: "Valor" },

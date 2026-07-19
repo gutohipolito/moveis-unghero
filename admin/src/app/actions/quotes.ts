@@ -153,6 +153,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           desconto: Number(quote.desconto),
           valor_final: Number(quote.valor_final),
           validade: quote.validade.toISOString(),
+          createdAt: quote.createdAt.toISOString(),
           observacoes: quote.observacoes
         },
         version: nextVersion 
@@ -363,7 +364,7 @@ export async function getQuotes() {
         items: true
       },
       orderBy: {
-        validade: "desc"
+        createdAt: "desc"
       }
     });
 
@@ -373,6 +374,7 @@ export async function getQuotes() {
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),
       validade: q.validade instanceof Date ? q.validade.toISOString() : q.validade,
+      createdAt: q.createdAt instanceof Date ? q.createdAt.toISOString() : q.createdAt,
       aprovado_em: q.aprovado_em instanceof Date ? q.aprovado_em.toISOString() : q.aprovado_em,
       project: q.project ? {
         ...q.project,
