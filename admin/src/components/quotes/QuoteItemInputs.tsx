@@ -1,85 +1,195 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { flushSync } from "react-dom";
 import { Plus, X, ListPlus } from "lucide-react";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 
+function useDropdownPosition(open: boolean, anchorRef: React.RefObject<HTMLElement | null>) {
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const update = () => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(rect.width, 260),
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    update();
+    const onScroll = () => update();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [open, anchorRef]);
+
+  return pos;
+}
+
 /**
- * Campo de descrição com sugestões de descrições salvas.
- * - Permanece livre para digitação.
- * - Só sugere itens do cadastro de "Descrição do item".
+ * Campo de título/descrição com sugestões de itens pré-cadastrados.
+ * - Clique ou digitação abre a lista.
+ * - Se o texto bater com um existente, no blur normaliza para o cadastrado.
+ * - Se for novo, o pai cadastra automaticamente (onCommitNew / onNormalizeExisting).
  */
 export function DescriptionCombobox({
   value,
   presets,
   onChangeText,
   onSelectPreset,
+  onCommitNew,
   className,
+  showLabel = true,
 }: {
   value: string;
   presets: QuoteItemPresetDTO[];
   onChangeText: (text: string) => void;
   onSelectPreset: (preset: QuoteItemPresetDTO) => void;
+  /** Chamado no blur quando o texto não existe ainda — cadastra e devolve o preset. */
+  onCommitNew?: (text: string) => void | Promise<void>;
   className?: string;
+  showLabel?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const committingRef = useRef(false);
+  const pos = useDropdownPosition(open, inputRef);
+
+  useEffect(() => setMounted(true), []);
 
   const matches = useMemo(() => {
     const q = value.trim().toLowerCase();
     const base = q
       ? presets.filter((p) => p.descricao.toLowerCase().includes(q))
       : presets;
-    return base.slice(0, 8);
+    return base.slice(0, 12);
   }, [value, presets]);
 
-  const showList = open && matches.length > 0;
+  const exactMatch = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return null;
+    return presets.find((p) => p.descricao.toLowerCase() === q) ?? null;
+  }, [value, presets]);
+
+  const showList = open && mounted && pos !== null;
+
+  async function handleBlurCommit() {
+    if (committingRef.current) return;
+    const text = value.trim();
+    if (!text) return;
+
+    const existing =
+      presets.find((p) => p.descricao.toLowerCase() === text.toLowerCase()) ?? null;
+    if (existing) {
+      if (existing.descricao !== value) onSelectPreset(existing);
+      return;
+    }
+    if (onCommitNew) {
+      committingRef.current = true;
+      try {
+        await onCommitNew(text);
+      } finally {
+        committingRef.current = false;
+      }
+    }
+  }
+
+  const dropdown =
+    showList && pos ? (
+      <div
+        className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+        style={{ top: pos.top, left: pos.left, width: pos.width }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
+      >
+        {matches.length === 0 ? (
+          <div className="px-3 py-2.5 text-[11px] text-slate-500">
+            {value.trim()
+              ? "Nenhum pré-cadastro com esse nome — será cadastrado ao sair do campo."
+              : "Nenhum item pré-cadastrado ainda."}
+          </div>
+        ) : (
+          matches.map((p) => {
+            const isExact = exactMatch?.id === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  onSelectPreset(p);
+                  setOpen(false);
+                  if (blurTimer.current) clearTimeout(blurTimer.current);
+                }}
+                className={`w-full text-left px-3 py-2 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer flex items-center gap-1.5 ${
+                  isExact ? "bg-amber-50/80" : ""
+                }`}
+              >
+                <ListPlus className="h-3 w-3 text-slate-300 shrink-0" />
+                <span className="text-xs font-bold text-slate-800">{p.descricao}</span>
+                {isExact ? (
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-amber-700">
+                    Já cadastrado
+                  </span>
+                ) : null}
+              </button>
+            );
+          })
+        )}
+      </div>
+    ) : null;
 
   return (
     <div className="relative">
+      {showLabel ? (
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+          Título do item
+        </label>
+      ) : null}
       <input
+        ref={inputRef}
         type="text"
         required
         value={value}
+        autoComplete="off"
         onChange={(e) => {
           onChangeText(e.target.value);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
         onBlur={() => {
-          blurTimer.current = setTimeout(() => setOpen(false), 120);
+          blurTimer.current = setTimeout(() => {
+            setOpen(false);
+            void handleBlurCommit();
+          }, 140);
         }}
         className={
           className ??
           "w-full bg-white border border-slate-200 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] focus-visible:border-[hsl(28_85%_45%)] px-3 py-1.5 h-9 text-xs font-semibold rounded-lg outline-none transition-all"
         }
       />
-      {showList && (
-        <div
-          className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
-          onMouseDown={(e) => {
-            // Evita que o blur feche antes do clique.
-            e.preventDefault();
-          }}
-        >
-          {matches.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => {
-                onSelectPreset(p);
-                setOpen(false);
-                if (blurTimer.current) clearTimeout(blurTimer.current);
-              }}
-              className="w-full text-left px-3 py-2 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer flex items-center gap-1.5"
-            >
-              <ListPlus className="h-3 w-3 text-slate-300 shrink-0" />
-              <span className="text-xs font-bold text-slate-800">{p.descricao}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {exactMatch && value.trim() && value.trim() !== exactMatch.descricao ? (
+        <p className="mt-1 text-[9px] text-amber-700 font-semibold">
+          Já existe “{exactMatch.descricao}” — selecione na lista ou saia do campo para usar o
+          cadastrado.
+        </p>
+      ) : null}
+      {mounted && dropdown ? createPortal(dropdown, document.body) : null}
     </div>
   );
 }
@@ -87,27 +197,31 @@ export function DescriptionCombobox({
 /**
  * Editor de detalhes do item em "chips".
  * - `suggestions`: detalhes salvos no cadastro de "Detalhes do item".
- * Saída continua sendo um array de strings (compatível com subitens).
- *
- * Importante: o texto digitado e ainda não confirmado com Enter também é
- * consolidado no blur / submit — senão o PDF saía só com o título do item.
+ * - Novos textos são cadastrados via `onCommitNew`.
  */
 export function DetailsEditor({
   subitens,
   suggestions,
   onChange,
+  onCommitNew,
 }: {
   subitens: string[];
   suggestions: string[];
   onChange: (next: string[]) => void;
+  onCommitNew?: (texto: string) => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftRef = useRef(draft);
   const subitensRef = useRef(subitens);
+  const inputRef = useRef<HTMLInputElement>(null);
   draftRef.current = draft;
   subitensRef.current = subitens;
+  const pos = useDropdownPosition(open, inputRef);
+
+  useEffect(() => setMounted(true), []);
 
   const currentSet = useMemo(
     () => new Set(subitens.map((s) => s.toLowerCase())),
@@ -123,10 +237,15 @@ export function DetailsEditor({
           !currentSet.has(s.toLowerCase()) &&
           (q ? s.toLowerCase().includes(q) : true)
       )
-      .slice(0, 8);
+      .slice(0, 12);
   }, [suggestions, currentSet, q]);
 
-  function commitDraft(from = draftRef.current) {
+  const exactSuggestion = useMemo(() => {
+    if (!q) return null;
+    return suggestions.find((s) => s.toLowerCase() === q) ?? null;
+  }, [suggestions, q]);
+
+  async function commitDraft(from = draftRef.current) {
     const t = from.trim();
     if (!t) return false;
     const current = subitensRef.current;
@@ -134,13 +253,25 @@ export function DetailsEditor({
       setDraft("");
       return false;
     }
+
+    const existing =
+      suggestions.find((s) => s.toLowerCase() === t.toLowerCase()) ?? null;
+    if (existing) {
+      onChange([...current, existing]);
+      setDraft("");
+      return true;
+    }
+
     onChange([...current, t]);
     setDraft("");
+    if (onCommitNew) {
+      await onCommitNew(t);
+    }
     return true;
   }
 
   function addDetail(v: string) {
-    commitDraft(v);
+    void commitDraft(v);
     setOpen(false);
   }
 
@@ -148,7 +279,41 @@ export function DetailsEditor({
     onChange(subitens.filter((_, i) => i !== idx));
   }
 
-  const showDropdown = open && matches.length > 0;
+  const showDropdown = open && mounted && pos !== null;
+
+  const dropdown =
+    showDropdown && pos ? (
+      <div
+        className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-xl max-h-56 overflow-y-auto"
+        style={{ top: pos.top, left: pos.left, width: pos.width }}
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        {matches.length === 0 ? (
+          <div className="px-3 py-2 text-[11px] text-slate-500">
+            {draft.trim()
+              ? "Novo detalhe — será cadastrado ao confirmar."
+              : "Nenhum detalhe pré-cadastrado ainda."}
+          </div>
+        ) : (
+          matches.map((s) => (
+            <button
+              key={`gl-${s}`}
+              type="button"
+              onClick={() => {
+                addDetail(s);
+                if (blurTimer.current) clearTimeout(blurTimer.current);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer flex items-center gap-1.5 ${
+                exactSuggestion?.toLowerCase() === s.toLowerCase() ? "bg-amber-50/80" : ""
+              }`}
+            >
+              <ListPlus className="h-3 w-3 text-slate-400 shrink-0" />
+              {s}
+            </button>
+          ))
+        )}
+      </div>
+    ) : null;
 
   return (
     <div className="mt-2">
@@ -181,21 +346,22 @@ export function DetailsEditor({
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1">
             <input
+              ref={inputRef}
               type="text"
               value={draft}
               data-quote-detail-draft="true"
+              autoComplete="off"
               onChange={(e) => {
                 setDraft(e.target.value);
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
+              onClick={() => setOpen(true)}
               onBlur={() => {
-                // Consolida o texto pendente imediatamente (flushSync) para que
-                // um clique em "Salvar" já enxergue o detalhe no estado pai.
                 flushSync(() => {
-                  commitDraft();
+                  void commitDraft();
                 });
-                blurTimer.current = setTimeout(() => setOpen(false), 120);
+                blurTimer.current = setTimeout(() => setOpen(false), 140);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -205,27 +371,7 @@ export function DetailsEditor({
               }}
               className="w-full bg-slate-50 md:bg-white border border-slate-200 text-[10px] font-medium rounded-md px-2.5 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)]"
             />
-            {showDropdown && (
-              <div
-                className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto"
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                {matches.map((s) => (
-                  <button
-                    key={`gl-${s}`}
-                    type="button"
-                    onClick={() => {
-                      addDetail(s);
-                      if (blurTimer.current) clearTimeout(blurTimer.current);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <ListPlus className="h-3 w-3 text-slate-400 shrink-0" />
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            {mounted && dropdown ? createPortal(dropdown, document.body) : null}
           </div>
           <button
             type="button"
@@ -240,8 +386,8 @@ export function DetailsEditor({
       </div>
 
       <p className="mt-1 text-[9px] text-slate-400">
-        Texto informativo (sem quantidade nem valor). Confirme com Enter ou ao
-        sair do campo — no PDF aparece abaixo do item, separado por •.
+        Texto informativo (sem quantidade nem valor). Confirme com Enter ou ao sair do campo — no PDF
+        aparece abaixo do item, separado por •.
       </p>
     </div>
   );

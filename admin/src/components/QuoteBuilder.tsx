@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers, Building2, BadgeCheck, Images } from "lucide-react";
 import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
-import { listQuoteItemPresets, listQuoteDetailPresets } from "@/app/actions/quoteItemPresets";
+import { listQuoteItemPresets, listQuoteDetailPresets, createQuoteItemPreset, createQuoteDetailPreset } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 import {
   DescriptionCombobox,
   DetailsEditor,
   flushPendingQuoteDetailDrafts,
 } from "@/components/quotes/QuoteItemInputs";
+import { Dialog } from "@/components/ui/dialog";
 import { getParceiros } from "@/app/actions/parceiros";
 import { formatPartnerRegistro, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 import type { PartnerType } from "@prisma/client";
@@ -94,16 +95,17 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [partnerId, setPartnerId] = useState<string>("");
   const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [briefingData, setBriefingData] = useState<any | null>(null);
-  const [clientOrigem, setClientOrigem] = useState<string>("");
   const [activeBuilderTab, setActiveBuilderTab] = useState<"items" | "briefing">("items");
+  const hasBriefing = Boolean(briefingData);
 
   useEffect(() => {
     async function loadBriefing() {
       const res = await getProjectBriefingAction(projectId);
       if (res.success) {
         setBriefingData(res.briefing);
-        setClientOrigem(res.clientOrigem || "");
+        if (!res.briefing) setActiveBuilderTab("items");
       }
     }
     loadBriefing();
@@ -176,6 +178,32 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         item.id === id ? { ...item, descricao: preset.descricao } : item
       )
     );
+  };
+
+  const ensureItemPreset = async (itemId: string, text: string) => {
+    const res = await createQuoteItemPreset({ descricao: text });
+    if (!res.success) return;
+    setPresets((prev) => {
+      if (prev.some((p) => p.id === res.preset.id)) return prev;
+      return [...prev, res.preset].sort((a, b) =>
+        a.descricao.localeCompare(b.descricao, "pt-BR")
+      );
+    });
+    applyPreset(itemId, res.preset);
+  };
+
+  const ensureDetailPreset = async (texto: string) => {
+    const res = await createQuoteDetailPreset({ texto });
+    if (!res.success) return;
+    setGlobalDetails((prev) => {
+      const exists = prev.some((d) => d.toLowerCase() === res.detail.texto.toLowerCase());
+      if (exists) {
+        return prev.map((d) =>
+          d.toLowerCase() === res.detail.texto.toLowerCase() ? res.detail.texto : d
+        );
+      }
+      return [...prev, res.detail.texto].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    });
   };
 
   // Adicionar uma nova linha de item vazia (Item Livre)
@@ -320,21 +348,49 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const valorFinal = Math.max(0, subtotal - desconto);
 
-  // Submit
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
+    flushPendingQuoteDetailDrafts();
+    const currentItems = itemsRef.current;
+    if (currentItems.length === 0) {
+      showError("Orçamento vazio", "Adicione pelo menos um item comercial antes de salvar.");
+      return;
+    }
+    setConfirmOpen(true);
+  };
 
-    // Consolida detalhes digitados mas ainda não confirmados com Enter
-    // (blur síncrono + ref atualizado no re-render do flushSync).
+  // Submit após confirmação do resumo
+  const handleConfirmSave = async () => {
     flushPendingQuoteDetailDrafts();
     const currentItems = itemsRef.current;
 
     if (currentItems.length === 0) {
+      setConfirmOpen(false);
       showError("Orçamento vazio", "Adicione pelo menos um item comercial antes de salvar.");
       return;
     }
 
     setLoading(true);
+    setConfirmOpen(false);
+
+    // Garante pré-cadastro de títulos e detalhes novos usados nesta proposta.
+    const titles = Array.from(
+      new Set(
+        currentItems
+          .filter((i) => !i.inventoryItemId && !i.showcaseProductId)
+          .map((i) => i.descricao.trim())
+          .filter(Boolean)
+      )
+    );
+    const details = Array.from(
+      new Set(
+        currentItems.flatMap((i) => (i.subitens || []).map((s) => s.trim()).filter(Boolean))
+      )
+    );
+    await Promise.all([
+      ...titles.map((t) => createQuoteItemPreset({ descricao: t })),
+      ...details.map((t) => createQuoteDetailPreset({ texto: t })),
+    ]);
 
     const currentSubtotal = currentItems.reduce((sum, item) => sum + item.valor_total, 0);
     const currentValorFinal = Math.max(0, currentSubtotal - desconto);
@@ -406,8 +462,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         </div>
       )}
 
-      {/* Abas opcionais para leads vindo de formulário */}
-      {clientOrigem === "FORMULARIO" && (
+      {/* Abas só quando há briefing preenchido para o lead */}
+      {hasBriefing && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl">
           <button
             type="button"
@@ -437,7 +493,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       )}
 
       {activeBuilderTab === "items" && (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmitRequest} className="space-y-5">
         
         {/* Bloco 1: Template e validade */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -536,7 +592,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         </div>
 
         {/* Bloco 2: Tabela Dinâmica de Itens */}
-        <div className="rounded-xl border border-border/40 bg-white overflow-hidden">
+        <div className="rounded-xl border border-border/40 bg-white overflow-visible">
           <div className="p-3 sm:p-4 bg-slate-50 border-b border-border/40 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <span className="text-xs font-bold uppercase tracking-wider text-foreground">
               Itens do orçamento
@@ -555,7 +611,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
           </div>
 
           {/* Visualização em Tabela para Desktop / Tablet (hidden md:block) */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto overflow-y-visible">
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/40 bg-black/5 text-muted-foreground text-xs font-semibold uppercase">
@@ -635,6 +691,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                                 subitens={item.subitens || []}
                                 suggestions={detailSuggestions}
                                 onChange={(next) => handleUpdateSubitens(item.id, next)}
+                                onCommitNew={ensureDetailPreset}
                               />
                             </div>
                           ) : (
@@ -644,11 +701,13 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                                 presets={presets}
                                 onChangeText={(text) => handleUpdateItem(item.id, "descricao", text)}
                                 onSelectPreset={(preset) => applyPreset(item.id, preset)}
+                                onCommitNew={(text) => ensureItemPreset(item.id, text)}
                               />
                               <DetailsEditor
                                 subitens={item.subitens || []}
                                 suggestions={detailSuggestions}
                                 onChange={(next) => handleUpdateSubitens(item.id, next)}
+                                onCommitNew={ensureDetailPreset}
                               />
                             </div>
                           )}
@@ -759,7 +818,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                     <div className="space-y-3.5">
                       <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                          Descrição do Insumo / Serviço
+                          Título do item
                         </label>
                         {isStockItem ? (
                           <div className="space-y-1.5">
@@ -806,6 +865,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               subitens={item.subitens || []}
                               suggestions={detailSuggestions}
                               onChange={(next) => handleUpdateSubitens(item.id, next)}
+                              onCommitNew={ensureDetailPreset}
                             />
                           </div>
                         ) : (
@@ -815,12 +875,15 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                               presets={presets}
                               onChangeText={(text) => handleUpdateItem(item.id, "descricao", text)}
                               onSelectPreset={(preset) => applyPreset(item.id, preset)}
+                              onCommitNew={(text) => ensureItemPreset(item.id, text)}
+                              showLabel={false}
                               className="w-full bg-slate-50 border border-slate-200 text-xs h-9 font-medium rounded-md px-3 outline-none focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)]"
                             />
                             <DetailsEditor
                               subitens={item.subitens || []}
                               suggestions={detailSuggestions}
                               onChange={(next) => handleUpdateSubitens(item.id, next)}
+                              onCommitNew={ensureDetailPreset}
                             />
                           </div>
                         )}
@@ -1147,6 +1210,77 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
           </div>
         </div>
       )}
+
+      <Dialog
+        isOpen={confirmOpen}
+        onClose={() => {
+          if (!loading) setConfirmOpen(false);
+        }}
+        className="max-w-md w-full"
+      >
+        <div className="space-y-4 pr-6">
+          <div>
+            <h3 className="text-lg font-bold text-foreground">Confirmar emissão</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Revise o resumo antes de gravar a proposta.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500 font-medium">Itens</span>
+              <span className="font-bold text-slate-800">{items.length}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500 font-medium">Validade</span>
+              <span className="font-bold text-slate-800">
+                {validade ? validade.split("-").reverse().join("/") : "—"}
+              </span>
+            </div>
+            {desconto > 0 ? (
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Desconto</span>
+                <span className="font-bold text-emerald-700">
+                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(desconto)}
+                </span>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-3 pt-2 border-t border-slate-200">
+              <span className="text-slate-600 font-semibold">Valor final</span>
+              <span className="font-black text-amber-700">
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}
+              </span>
+            </div>
+            {partnerId ? (
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Parceiro</span>
+                <span className="font-bold text-slate-800 text-right truncate max-w-[60%]">
+                  {partners.find((p) => p.id === partnerId)?.nome || "—"}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading}
+              onClick={() => setConfirmOpen(false)}
+            >
+              Voltar
+            </Button>
+            <Button
+              type="button"
+              className="font-bold"
+              disabled={loading}
+              onClick={() => void handleConfirmSave()}
+            >
+              {loading ? "Gravando..." : "Confirmar e emitir"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       <ActionDialogHost dialog={dialog} />
     </div>

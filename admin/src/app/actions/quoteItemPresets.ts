@@ -44,7 +44,10 @@ export async function createQuoteItemPreset(input: {
 
   try {
     const existing = await prisma.quoteItemPreset.findFirst({
-      where: { company_id: auth.companyId, descricao },
+      where: {
+        company_id: auth.companyId,
+        descricao: { equals: descricao, mode: "insensitive" },
+      },
       select: { id: true, descricao: true },
     });
     if (existing) return { success: true, preset: mapPreset(existing) };
@@ -79,7 +82,10 @@ export async function createQuoteItemPresetsBulk(input: {
     const result: QuoteItemPresetDTO[] = [];
     for (const descricao of nomes) {
       const existing = await prisma.quoteItemPreset.findFirst({
-        where: { company_id: auth.companyId, descricao },
+        where: {
+          company_id: auth.companyId,
+          descricao: { equals: descricao, mode: "insensitive" },
+        },
         select: { id: true, descricao: true },
       });
       if (existing) {
@@ -183,7 +189,10 @@ export async function createQuoteDetailPreset(input: {
 
   try {
     const existing = await prisma.quoteDetailPreset.findFirst({
-      where: { company_id: auth.companyId, texto },
+      where: {
+        company_id: auth.companyId,
+        texto: { equals: texto, mode: "insensitive" },
+      },
       select: { id: true, texto: true },
     });
     if (existing) return { success: true, detail: existing };
@@ -218,7 +227,10 @@ export async function createQuoteDetailPresetsBulk(input: {
     const result: QuoteDetailPresetDTO[] = [];
     for (const texto of textos) {
       const existing = await prisma.quoteDetailPreset.findFirst({
-        where: { company_id: auth.companyId, texto },
+        where: {
+          company_id: auth.companyId,
+          texto: { equals: texto, mode: "insensitive" },
+        },
         select: { id: true, texto: true },
       });
       if (existing) {
