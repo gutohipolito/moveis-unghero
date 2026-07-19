@@ -703,8 +703,8 @@ export default function EstoqueClient({
                     return (
                       <tr key={sup.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-10 w-auto min-w-10 max-w-20 rounded-xl border border-border bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center px-0.5">
+                          <div className="flex items-center gap-5 min-w-0">
+                            <div className="h-10 w-auto min-w-10 max-w-20 overflow-hidden shrink-0 flex items-center justify-center">
                               {sup.logoUrl ? (
                                 <img
                                   src={sup.logoUrl}
@@ -749,9 +749,30 @@ export default function EstoqueClient({
                           )}
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col items-center text-xs text-muted-foreground space-y-1">
-                            <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {sup.telefone}</span>
-                            <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {sup.email}</span>
+                          <div className="flex items-center justify-center gap-1.5">
+                            {sup.telefone ? (
+                              <a
+                                href={`tel:${sup.telefone.replace(/\D/g, "")}`}
+                                className="p-2 rounded-lg bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 transition-colors"
+                                title={sup.telefone}
+                                aria-label={`Telefone ${sup.telefone}`}
+                              >
+                                <Phone className="h-3.5 w-3.5" />
+                              </a>
+                            ) : null}
+                            {sup.email ? (
+                              <a
+                                href={`mailto:${sup.email}`}
+                                className="p-2 rounded-lg bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 transition-colors"
+                                title={sup.email}
+                                aria-label={`E-mail ${sup.email}`}
+                              >
+                                <Mail className="h-3.5 w-3.5" />
+                              </a>
+                            ) : null}
+                            {!sup.telefone && !sup.email ? (
+                              <span className="text-[10px] text-muted-foreground">—</span>
+                            ) : null}
                           </div>
                         </td>
                         <td className="p-4 text-right">

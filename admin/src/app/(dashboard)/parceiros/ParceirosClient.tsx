@@ -194,11 +194,11 @@ const PartnerCard = ({
       
       <div className="p-5 flex flex-col gap-4 flex-1">
         {/* Perfil & Cabeçalho */}
-        <div className="flex items-start gap-3.5">
+        <div className="flex items-start gap-5">
           {/* Avatar com upload rápido */}
           <div 
             onClick={(e) => e.stopPropagation()}
-            className={`relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl border border-white/60 bg-white overflow-hidden shadow-sm ring-4 ring-white/40 transition-all duration-300 group-hover/card:ring-white/80 ${privacyMode ? "blur-md select-none" : ""}`}
+            className={`relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl overflow-hidden transition-all duration-300 ${privacyMode ? "blur-md select-none" : ""}`}
           >
             {p.fotoUrl ? (
               <img
@@ -207,7 +207,7 @@ const PartnerCard = ({
                 className="h-full w-auto max-w-28 object-contain group-hover/avatar:scale-105 transition-transform duration-500"
               />
             ) : (
-              <div className={`h-16 w-16 flex items-center justify-center text-lg font-black ${palette.avatar}`}>
+              <div className={`h-16 w-16 flex items-center justify-center text-lg font-black rounded-2xl ${palette.avatar}`}>
                 {getInitials(p.nome)}
               </div>
             )}
@@ -826,7 +826,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               {/* Logo / Avatar do Parceiro */}
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Logo / Foto</label>
-                <div className="relative group w-auto min-w-16 max-w-28 h-16 rounded-xl overflow-hidden border border-border bg-background flex items-center justify-center cursor-pointer hover:border-primary transition-all px-1">
+                <div className="relative group w-auto min-w-16 max-w-28 h-16 rounded-xl overflow-hidden bg-transparent flex items-center justify-center cursor-pointer transition-all">
                   {fotoUrl ? (
                     <img src={fotoUrl} alt="Logo" className="h-full w-auto max-w-28 object-contain" />
                   ) : (
@@ -1012,7 +1012,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 <div className={`absolute inset-x-0 top-0 h-1.5 ${palette.accent}`} />
                 
                 {/* Avatar */}
-                <div className={`relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-md ring-4 ring-white px-1 ${privacyMode ? "blur-md select-none" : ""}`}>
+                <div className={`relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl overflow-hidden ${privacyMode ? "blur-md select-none" : ""}`}>
                   {p.fotoUrl ? (
                     <img
                       src={p.fotoUrl}
@@ -1020,13 +1020,13 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       className="h-full w-auto max-w-36 object-contain"
                     />
                   ) : (
-                    <div className={`h-20 w-20 flex items-center justify-center text-2xl font-black ${palette.avatar}`}>
+                    <div className={`h-20 w-20 flex items-center justify-center text-2xl font-black rounded-2xl ${palette.avatar}`}>
                       {getInitials(p.nome)}
                     </div>
                   )}
                 </div>
 
-                <div className="text-center sm:text-left min-w-0 flex-1 space-y-1.5">
+                <div className="text-center sm:text-left min-w-0 flex-1 space-y-1.5 sm:pl-1">
                   <h3 className={`font-extrabold text-slate-800 text-lg leading-tight tracking-tight ${privacyMode ? "blur-[6px] select-none" : ""}`}>
                     {p.nome}
                   </h3>
