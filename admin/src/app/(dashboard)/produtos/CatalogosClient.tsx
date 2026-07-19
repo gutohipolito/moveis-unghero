@@ -24,7 +24,86 @@ import {
   Loader2,
   Pencil,
   Search,
+  X,
 } from "lucide-react";
+
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
+
+const generateCapaFromPdf = async (pdfFile: File): Promise<File | null> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(null);
+      return;
+    }
+    const scriptId = "pdfjs-script";
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    
+    const startProcessing = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      processPdf(pdfFile, resolve);
+    };
+
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.onload = startProcessing;
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    } else if (!window.pdfjsLib) {
+      script.addEventListener("load", startProcessing);
+    } else {
+      startProcessing();
+    }
+  });
+};
+
+const processPdf = (pdfFile: File, resolve: (f: File | null) => void) => {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const arr = e.target?.result as ArrayBuffer;
+      const loadingTask = window.pdfjsLib.getDocument({ data: arr });
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
+
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) {
+        resolve(null);
+        return;
+      }
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+      }).promise;
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          resolve(null);
+          return;
+        }
+        const file = new File([blob], "capa-pdf-gerada.png", { type: "image/png" });
+        resolve(file);
+      }, "image/png");
+    } catch (err) {
+      console.error("Erro ao extrair primeira página do PDF:", err);
+      resolve(null);
+    }
+  };
+  reader.onerror = () => resolve(null);
+  reader.readAsArrayBuffer(pdfFile);
+};
 
 interface CatalogosClientProps {
   companyId: string;
@@ -44,6 +123,8 @@ export default function CatalogosClient({
   const [editing, setEditing] = useState<ProductCatalogDTO | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [viewingCatalogUrl, setViewingCatalogUrl] = useState<string | null>(null);
+  const [viewingCatalogTitle, setViewingCatalogTitle] = useState<string>("");
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -126,6 +207,19 @@ export default function CatalogosClient({
 
     setUploading(true);
     try {
+      // Se for PDF e não houver capa manual, gera a capa da primeira página automaticamente
+      let finalCapa = capa;
+      if (file.type === "application/pdf" && !capa) {
+        try {
+          const generated = await generateCapaFromPdf(file);
+          if (generated) {
+            finalCapa = generated;
+          }
+        } catch (err) {
+          console.error("Falha ao gerar capa automática do PDF:", err);
+        }
+      }
+
       // 1. Upload do PDF/Imagem do catálogo direto do navegador para o Vercel Blob
       const blob = await upload(file.name, file, {
         access: "public",
@@ -134,8 +228,8 @@ export default function CatalogosClient({
 
       // 2. Upload da capa do catálogo (se houver)
       let capaUrl = null;
-      if (capa) {
-        const capaBlob = await upload(capa.name, capa, {
+      if (finalCapa) {
+        const capaBlob = await upload(finalCapa.name, finalCapa, {
           access: "public",
           handleUploadUrl: "/api/produtos/catalogos/upload",
         });
@@ -322,15 +416,17 @@ export default function CatalogosClient({
 
                     {/* Ações (Ajustado para evitar hydration mismatch de botão em tag A) */}
                     <div className="flex gap-1.5 items-center w-full">
-                      <a
-                        href={catalog.arquivo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewingCatalogUrl(catalog.arquivo_url);
+                          setViewingCatalogTitle(catalog.titulo);
+                        }}
                         className="flex-1 h-9 rounded-xl inline-flex items-center justify-center gap-1.5 text-xs font-extrabold transition-all border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs cursor-pointer"
                       >
                         <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
                         Visualizar
-                      </a>
+                      </button>
                       <button
                         type="button"
                         onClick={() => openEdit(catalog)}
@@ -457,6 +553,38 @@ export default function CatalogosClient({
             </Button>
           </div>
         </form>
+      </Dialog>
+
+      {/* Dialog de Visualização em Modal do PDF/Catálogo */}
+      <Dialog
+        isOpen={viewingCatalogUrl !== null}
+        onClose={() => setViewingCatalogUrl(null)}
+        className="max-w-6xl w-full h-[90vh] flex flex-col p-0"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0 bg-white rounded-t-2xl">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight leading-none">
+              {viewingCatalogTitle}
+            </h3>
+            <p className="text-[10px] text-slate-450 mt-1.5 font-bold uppercase tracking-wider">Visualização Interna</p>
+          </div>
+          <button
+            onClick={() => setViewingCatalogUrl(null)}
+            className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+
+        <div className="flex-1 bg-slate-900 overflow-hidden relative min-h-[500px] rounded-b-2xl">
+          {viewingCatalogUrl && (
+            <iframe
+              src={`${viewingCatalogUrl}#toolbar=1`}
+              className="w-full h-full border-0 absolute inset-0"
+              title={viewingCatalogTitle}
+            />
+          )}
+        </div>
       </Dialog>
     </div>
   );
