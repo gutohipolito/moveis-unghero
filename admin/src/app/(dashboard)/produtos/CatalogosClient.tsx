@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import {
   updateProductCatalog,
   type ProductCatalogDTO,
 } from "@/app/actions/productCatalogs";
+import { generateCapaFromPdfFile } from "@/lib/pdfCover";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { Card } from "@/components/ui/card";
@@ -17,91 +19,12 @@ import {
   BookOpen,
   Plus,
   Trash2,
-  FileText,
   Image as ImageIcon,
   Loader2,
   Pencil,
   Search,
   Settings2,
 } from "lucide-react";
-
-declare global {
-  interface Window {
-    pdfjsLib: any;
-  }
-}
-
-const generateCapaFromPdf = async (pdfFile: File): Promise<File | null> => {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") {
-      resolve(null);
-      return;
-    }
-    const scriptId = "pdfjs-script";
-    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-    
-    const startProcessing = () => {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-      processPdf(pdfFile, resolve);
-    };
-
-    if (!script) {
-      script = document.createElement("script");
-      script.id = scriptId;
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-      script.onload = startProcessing;
-      script.onerror = () => resolve(null);
-      document.head.appendChild(script);
-    } else if (!window.pdfjsLib) {
-      script.addEventListener("load", startProcessing);
-    } else {
-      startProcessing();
-    }
-  });
-};
-
-const processPdf = (pdfFile: File, resolve: (f: File | null) => void) => {
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      const arr = e.target?.result as ArrayBuffer;
-      const loadingTask = window.pdfjsLib.getDocument({ data: arr });
-      const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-
-      const viewport = page.getViewport({ scale: 1.5 });
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) {
-        resolve(null);
-        return;
-      }
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      await page.render({
-        canvasContext: context,
-        viewport: viewport,
-      }).promise;
-
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          resolve(null);
-          return;
-        }
-        const file = new File([blob], "capa-pdf-gerada.png", { type: "image/png" });
-        resolve(file);
-      }, "image/png");
-    } catch (err) {
-      console.error("Erro ao extrair primeira página do PDF:", err);
-      resolve(null);
-    }
-  };
-  reader.onerror = () => resolve(null);
-  reader.readAsArrayBuffer(pdfFile);
-};
 
 interface CatalogosClientProps {
   companyId: string;
@@ -131,6 +54,12 @@ export default function CatalogosClient({
   const [capa, setCapa] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
+
+  const handleCapaSaved = useCallback((catalogId: string, capaUrl: string) => {
+    setCatalogs((prev) =>
+      prev.map((c) => (c.id === catalogId ? { ...c, capa_url: capaUrl } : c))
+    );
+  }, []);
 
   const filtered = catalogs.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -209,7 +138,7 @@ export default function CatalogosClient({
       let finalCapa = capa;
       if (file.type === "application/pdf" && !capa) {
         try {
-          const generated = await generateCapaFromPdf(file);
+          const generated = await generateCapaFromPdfFile(file);
           if (generated) {
             finalCapa = generated;
           }
@@ -354,62 +283,52 @@ export default function CatalogosClient({
         </Card>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
-          {filtered.map((catalog) => {
-            const isPdf = catalog.mime_type === "application/pdf";
-            const thumb = catalog.capa_url || (!isPdf ? catalog.arquivo_url : null);
-            return (
-              <div key={catalog.id} className="relative group">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (manageMode) return;
-                    setViewing(catalog);
-                  }}
-                  className={`w-full aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
-                    manageMode
-                      ? "cursor-default"
-                      : "cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-slate-300"
-                  }`}
-                  aria-label={`Abrir catálogo ${catalog.titulo}`}
-                >
-                  {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={thumb}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                    />
-                  ) : (
-                    <span className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                      <FileText className="h-10 w-10 text-rose-400" />
-                    </span>
-                  )}
-                  <span className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-black/25 via-black/5 to-transparent pointer-events-none" />
-                </button>
+          {filtered.map((catalog) => (
+            <div key={catalog.id} className="relative group">
+              <button
+                type="button"
+                onClick={() => {
+                  if (manageMode) return;
+                  setViewing(catalog);
+                }}
+                className={`w-full aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
+                  manageMode
+                    ? "cursor-default"
+                    : "cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-slate-300"
+                }`}
+                aria-label={`Abrir catálogo ${catalog.titulo}`}
+              >
+                <CatalogCoverThumb
+                  catalog={catalog}
+                  companyId={companyId}
+                  onCapaSaved={handleCapaSaved}
+                  className="group-hover:scale-[1.03] transition-transform duration-500"
+                />
+                <span className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-black/25 via-black/5 to-transparent pointer-events-none" />
+              </button>
 
-                {manageMode ? (
-                  <div className="absolute top-2 right-2 z-10 flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(catalog)}
-                      className="h-8 w-8 rounded-lg inline-flex items-center justify-center bg-white/95 border border-slate-200 text-slate-700 shadow-sm hover:bg-white"
-                      title="Editar"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(catalog)}
-                      className="h-8 w-8 rounded-lg inline-flex items-center justify-center bg-white/95 border border-slate-200 text-rose-600 shadow-sm hover:bg-rose-50"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
+              {manageMode ? (
+                <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(catalog)}
+                    className="h-8 w-8 rounded-lg inline-flex items-center justify-center bg-white/95 border border-slate-200 text-slate-700 shadow-sm hover:bg-white"
+                    title="Editar"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(catalog)}
+                    className="h-8 w-8 rounded-lg inline-flex items-center justify-center bg-white/95 border border-slate-200 text-rose-600 shadow-sm hover:bg-rose-50"
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       )}
 
