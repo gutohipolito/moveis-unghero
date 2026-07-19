@@ -63,6 +63,7 @@ export function markNotificationDelivered(id: string, delivered: Set<string>) {
 }
 
 export function pruneDeliveredIds(delivered: Set<string>, activeIds: string[]) {
+  if (activeIds.length === 0) return;
   const active = new Set(activeIds);
   let changed = false;
   for (const id of delivered) {
@@ -97,6 +98,7 @@ export function markToastDismissed(id: string, dismissed: Set<string>) {
 }
 
 export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string[]) {
+  if (activeIds.length === 0) return;
   const active = new Set(activeIds);
   let changed = false;
   for (const id of dismissed) {
@@ -108,25 +110,43 @@ export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string
   if (changed) saveDismissedToastIds(dismissed);
 }
 
+function clearedKey(companyId?: string) {
+  return companyId ? `${CLEARED_KEY}:${companyId}` : CLEARED_KEY;
+}
+
 /** IDs limpos no centro de notificações (badge/lista) — persiste entre sessões. */
-export function loadClearedNotificationIds(): Set<string> {
+export function loadClearedNotificationIds(companyId?: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = localStorage.getItem(CLEARED_KEY);
-    if (!raw) return new Set();
-    return new Set(JSON.parse(raw) as string[]);
+    const scoped = localStorage.getItem(clearedKey(companyId));
+    if (scoped) return new Set(JSON.parse(scoped) as string[]);
+
+    // Migra chave legada (sem companyId) para a chave da empresa.
+    if (companyId) {
+      const legacy = localStorage.getItem(CLEARED_KEY);
+      if (legacy) {
+        const ids = new Set(JSON.parse(legacy) as string[]);
+        saveClearedNotificationIds(ids, companyId);
+        return ids;
+      }
+    }
+    return new Set();
   } catch {
     return new Set();
   }
 }
 
-export function saveClearedNotificationIds(ids: Set<string>) {
+export function saveClearedNotificationIds(ids: Set<string>, companyId?: string) {
   if (typeof window === "undefined") return;
-  const list = [...ids].slice(-300);
-  localStorage.setItem(CLEARED_KEY, JSON.stringify(list));
+  const list = [...ids].slice(-500);
+  localStorage.setItem(clearedKey(companyId), JSON.stringify(list));
 }
 
-export function markNotificationsCleared(ids: string[], cleared: Set<string>) {
+export function markNotificationsCleared(
+  ids: string[],
+  cleared: Set<string>,
+  companyId?: string
+) {
   let changed = false;
   for (const id of ids) {
     if (!cleared.has(id)) {
@@ -134,19 +154,20 @@ export function markNotificationsCleared(ids: string[], cleared: Set<string>) {
       changed = true;
     }
   }
-  if (changed) saveClearedNotificationIds(cleared);
+  if (changed) saveClearedNotificationIds(cleared, companyId);
 }
 
-export function pruneClearedNotificationIds(cleared: Set<string>, activeIds: string[]) {
-  const active = new Set(activeIds);
-  let changed = false;
-  for (const id of cleared) {
-    if (!active.has(id)) {
-      cleared.delete(id);
-      changed = true;
-    }
-  }
-  if (changed) saveClearedNotificationIds(cleared);
+/**
+ * Não remove IDs limpos com base na lista ativa.
+ * Sync parcial/vazio apagava o histórico e o badge voltava sozinho.
+ * O teto de 500 em saveClearedNotificationIds já limita o storage.
+ */
+export function pruneClearedNotificationIds(
+  _cleared: Set<string>,
+  _activeIds: string[],
+  _companyId?: string
+) {
+  // no-op de propósito
 }
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

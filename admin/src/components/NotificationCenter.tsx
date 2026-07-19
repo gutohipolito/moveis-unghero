@@ -18,39 +18,40 @@ export default function NotificationCenter({
   const [internalOpen, setInternalOpen] = useState(false);
   const [panelItems, setPanelItems] = useState<AppNotification[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
-  const clearedOnOpenRef = useRef(false);
 
   const open = isOpen ?? internalOpen;
-
   const { notifications, clearNotifications } = useNotificationContext();
+  const notificationsRef = useRef(notifications);
+  notificationsRef.current = notifications;
 
-  const setOpen = (value: boolean) => {
+  const setMenuOpen = (value: boolean) => {
     if (onOpenChange) onOpenChange(value);
     else setInternalOpen(value);
   };
 
-  // Ao abrir: mostra snapshot e marca como limpas (badge some).
-  useEffect(() => {
-    if (!open) {
-      clearedOnOpenRef.current = false;
+  const requestOpen = (value: boolean) => {
+    if (value && !open) {
+      const snapshot = [...notificationsRef.current];
+      setPanelItems(snapshot);
+      if (snapshot.length > 0) {
+        clearNotifications(snapshot.map((n) => n.id));
+      }
+    }
+    if (!value) {
       setPanelItems([]);
-      return;
     }
+    setMenuOpen(value);
+  };
 
-    if (clearedOnOpenRef.current) return;
-    clearedOnOpenRef.current = true;
-
-    const snapshot = [...notifications];
-    setPanelItems(snapshot);
-    if (snapshot.length > 0) {
-      clearNotifications(snapshot.map((n) => n.id));
-    }
-  }, [open, notifications, clearNotifications]);
+  // Fecha via outro menu do header (notes/reminders) sem passar por requestOpen.
+  useEffect(() => {
+    if (!open) setPanelItems([]);
+  }, [open]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        requestOpen(false);
       }
     }
     if (open) {
@@ -60,18 +61,16 @@ export default function NotificationCenter({
   }, [open]);
 
   const handleClearAll = () => {
-    const ids = panelItems.length > 0
-      ? panelItems.map((n) => n.id)
-      : notifications.map((n) => n.id);
+    const ids =
+      panelItems.length > 0
+        ? panelItems.map((n) => n.id)
+        : notificationsRef.current.map((n) => n.id);
     clearNotifications(ids);
     setPanelItems([]);
   };
 
-  // Com painel aberto o badge some na hora; fechado usa a lista já filtrada.
-  const badgeCount = open ? 0 : notifications.length;
-  const urgentCount = open
-    ? 0
-    : notifications.filter((n) => n.priority === "high").length;
+  const badgeCount = notifications.length;
+  const urgentCount = notifications.filter((n) => n.priority === "high").length;
   const listItems = open ? panelItems : notifications;
   const listCount = listItems.length;
 
@@ -79,7 +78,7 @@ export default function NotificationCenter({
     <div className="relative" ref={panelRef}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => requestOpen(!open)}
         className="notification-trigger"
         aria-label="Notificações"
         aria-expanded={open}
@@ -137,15 +136,17 @@ export default function NotificationCenter({
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    onClick={() => setOpen(false)}
+                    onClick={() => requestOpen(false)}
                     className={`notification-item ${item.priority === "high" ? "notification-item-urgent" : ""}`}
                   >
                     <div className="flex items-start gap-2.5">
-                      <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                        item.priority === "high"
-                          ? "bg-red-500/10 text-red-600"
-                          : "bg-primary/10 text-primary"
-                      }`}>
+                      <span
+                        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                          item.priority === "high"
+                            ? "bg-red-500/10 text-red-600"
+                            : "bg-primary/10 text-primary"
+                        }`}
+                      >
                         {item.priority === "high" ? (
                           <CircleAlert className="h-3.5 w-3.5" />
                         ) : (

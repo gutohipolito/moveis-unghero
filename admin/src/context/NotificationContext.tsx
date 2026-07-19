@@ -31,7 +31,6 @@ import {
   loadNotificationPrefs,
   markNotificationDelivered,
   markToastDismissed,
-  pruneClearedNotificationIds,
   pruneDeliveredIds,
   pruneDismissedToastIds,
   saveClearedNotificationIds,
@@ -99,6 +98,7 @@ export function NotificationProvider({
   const router = useRouter();
   const [activeNotifications, setActiveNotifications] = useState(initialNotifications);
   const [clearedIds, setClearedIds] = useState<Set<string>>(() => new Set());
+  const [clearedReady, setClearedReady] = useState(false);
   const [toasts, setToasts] = useState<InAppToast[]>([]);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPrefs());
   const [browserPermission, setBrowserPermission] = useState<BrowserPermission>(() =>
@@ -115,11 +115,14 @@ export function NotificationProvider({
   const dismissedToastRef = useRef<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set(initialNotifications.map((n) => n.id)));
   const toastKeysRef = useRef<Set<string>>(new Set());
+  const clearedIdsRef = useRef<Set<string>>(clearedIds);
+  clearedIdsRef.current = clearedIds;
 
-  const notifications = useMemo(
-    () => activeNotifications.filter((n) => !clearedIds.has(n.id)),
-    [activeNotifications, clearedIds]
-  );
+  const notifications = useMemo(() => {
+    // Evita flash do badge antigo antes de ler o localStorage.
+    if (!clearedReady) return [];
+    return activeNotifications.filter((n) => !clearedIds.has(n.id));
+  }, [activeNotifications, clearedIds, clearedReady]);
 
   const deliverInAppToasts = useCallback(
     (items: AppNotification[]) => {
@@ -190,16 +193,10 @@ export function NotificationProvider({
       pruneDeliveredIds(deliveredRef.current, nextIds);
       pruneDismissedToastIds(dismissedToastRef.current, nextIds);
 
-      setClearedIds((prev) => {
-        const nextCleared = new Set(prev);
-        pruneClearedNotificationIds(nextCleared, nextIds);
-        return nextCleared.size === prev.size && [...nextCleared].every((id) => prev.has(id))
-          ? prev
-          : nextCleared;
-      });
-
       if (options?.deliverNew) {
-        const newItems = next.filter((n) => !knownIdsRef.current.has(n.id));
+        const newItems = next.filter(
+          (n) => !knownIdsRef.current.has(n.id) && !clearedIdsRef.current.has(n.id)
+        );
         if (newItems.length > 0) {
           deliverInAppToasts(newItems);
           await deliverToBrowser(newItems);
@@ -216,8 +213,11 @@ export function NotificationProvider({
     setBrowserPermission(getBrowserPermission());
     deliveredRef.current = loadDeliveredNotificationIds();
     dismissedToastRef.current = loadDismissedToastIds();
-    setClearedIds(loadClearedNotificationIds());
-  }, []);
+    const loaded = loadClearedNotificationIds(companyId);
+    setClearedIds(loaded);
+    clearedIdsRef.current = loaded;
+    setClearedReady(true);
+  }, [companyId]);
 
   useEffect(() => {
     if (!pushSupported || !prefs.push) {
@@ -409,18 +409,24 @@ export function NotificationProvider({
     [dismissToast, router]
   );
 
-  const clearNotifications = useCallback((ids?: string[]) => {
-    setClearedIds((prev) => {
-      const targetIds =
-        ids ?? activeNotifications.map((n) => n.id).filter((id) => !prev.has(id));
-      if (targetIds.length === 0) return prev;
+  const clearNotifications = useCallback(
+    (ids?: string[]) => {
+      setClearedIds((prev) => {
+        const targetIds =
+          ids && ids.length > 0
+            ? ids
+            : activeNotifications.map((n) => n.id).filter((id) => !prev.has(id));
+        if (targetIds.length === 0) return prev;
 
-      const next = new Set(prev);
-      for (const id of targetIds) next.add(id);
-      saveClearedNotificationIds(next);
-      return next;
-    });
-  }, [activeNotifications]);
+        const next = new Set(prev);
+        for (const id of targetIds) next.add(id);
+        saveClearedNotificationIds(next, companyId);
+        clearedIdsRef.current = next;
+        return next;
+      });
+    },
+    [activeNotifications, companyId]
+  );
 
   const value: NotificationContextValue = {
     notifications,
