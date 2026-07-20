@@ -557,69 +557,50 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             {(() => {
               const selected = partners.find((p) => p.id === partnerId);
               if (!selected) return null;
-              const style = PARTNER_TYPE_STYLES[selected.tipo as PartnerType] ?? PARTNER_TYPE_STYLES.OUTROS;
-              const RoleIcon = style.icon;
+              const roleLabel =
+                PARTNER_ROLE_LABEL[selected.tipo] ??
+                PARTNER_TYPE_STYLES[selected.tipo as PartnerType]?.label ??
+                "Parceiro";
               const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
               return (
-                <div
-                  className="relative overflow-hidden rounded-xl p-3 w-fit max-w-sm space-y-2 text-slate-800 text-xs border border-amber-400/40 bg-linear-to-br from-amber-50/90 via-white to-slate-50/60 shadow-[0_6px_22px_-6px_rgba(180,130,40,0.35)] ring-1 ring-amber-300/30"
-                >
+                <div className="relative overflow-hidden rounded-xl p-3.5 w-fit max-w-sm space-y-1 text-slate-800 text-xs border border-amber-400/40 bg-linear-to-br from-amber-50/90 via-white to-slate-50/60 shadow-[0_6px_22px_-6px_rgba(180,130,40,0.35)] ring-1 ring-amber-300/30">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 shrink-0">
-                      <div className="h-full w-full rounded-full overflow-hidden border-2 border-amber-300/70 shadow-inner bg-amber-50 flex items-center justify-center">
-                        {selected.fotoUrl ? (
-                          <img
-                            src={selected.fotoUrl}
-                            alt={selected.nome}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-xs font-black tracking-wide text-amber-800/80">
-                            {getPartnerInitials(selected.nome)}
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className="absolute -bottom-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-linear-to-br from-amber-300 to-amber-600 text-white shadow-md ring-2 ring-white"
-                        title="Parceiro verificado"
-                        aria-label="Parceiro verificado"
-                      >
-                        <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
-                      </span>
+                    <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden border-2 border-amber-300/70 shadow-inner bg-amber-50 flex items-center justify-center">
+                      {selected.fotoUrl ? (
+                        <img
+                          src={selected.fotoUrl}
+                          alt={selected.nome}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs font-black tracking-wide text-amber-800/80">
+                          {getPartnerInitials(selected.nome)}
+                        </span>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex items-center gap-1 min-w-0">
-                        <p className="text-xs font-extrabold text-slate-900 truncate">
+                        <p className="text-sm font-extrabold text-slate-900 truncate tracking-tight">
                           {selected.nome}
                         </p>
                         <BadgeCheck
-                          className="h-4 w-4 shrink-0 text-amber-500 fill-amber-400/25"
-                          aria-hidden
+                          className="h-4 w-4 shrink-0 text-amber-500 fill-amber-400/30"
+                          aria-label="Parceiro verificado"
                         />
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}
-                        >
-                          <RoleIcon className="h-2 w-2" />
-                          {style.label}
-                        </span>
-                        <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700/80">
-                          Verificado
-                        </span>
-                      </div>
+                      <p className="text-[10px] font-semibold text-amber-800/70 tracking-wide">
+                        {roleLabel}
+                      </p>
                       {selected.escritorio ? (
-                        <p className="text-[10px] font-semibold text-slate-500 truncate">
+                        <p className="text-[10px] font-medium text-slate-500 truncate">
                           {selected.escritorio}
                         </p>
                       ) : null}
                       {registro ? (
-                        <p className="text-[10px] font-bold text-slate-400 truncate">
-                          {registro}
-                        </p>
+                        <p className="text-[10px] font-medium text-slate-400 truncate">{registro}</p>
                       ) : null}
                       {!selected.escritorio && !registro && selected.cidade ? (
-                        <p className="text-[10px] font-semibold text-slate-400">{selected.cidade}</p>
+                        <p className="text-[10px] font-medium text-slate-400">{selected.cidade}</p>
                       ) : null}
                     </div>
                   </div>
