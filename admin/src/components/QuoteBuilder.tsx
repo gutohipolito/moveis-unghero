@@ -394,24 +394,17 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
     setLoading(true);
     setConfirmOpen(false);
 
-    // Garante pré-cadastro de títulos e detalhes novos usados nesta proposta.
+    // Garante pré-cadastro de títulos novos (blur pode não ter ocorrido antes do save).
+    // Detalhes só são cadastrados ao digitar vírgula no campo de detalhes.
     const titles = Array.from(
       new Set(
         currentItems
           .filter((i) => !i.inventoryItemId && !i.showcaseProductId)
           .map((i) => i.descricao.trim())
-          .filter(Boolean)
+          .filter((t) => t && !getPricingTextWarning(t))
       )
     );
-    const details = Array.from(
-      new Set(
-        currentItems.flatMap((i) => (i.subitens || []).map((s) => s.trim()).filter(Boolean))
-      )
-    );
-    await Promise.all([
-      ...titles.map((t) => createQuoteItemPreset({ descricao: t })),
-      ...details.map((t) => createQuoteDetailPreset({ texto: t })),
-    ]);
+    await Promise.all(titles.map((t) => createQuoteItemPreset({ descricao: t })));
 
     const currentSubtotal = currentItems.reduce((sum, item) => sum + item.valor_total, 0);
     const currentValorFinal = Math.max(0, currentSubtotal - desconto);

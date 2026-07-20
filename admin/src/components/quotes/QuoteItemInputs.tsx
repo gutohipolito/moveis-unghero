@@ -41,9 +41,9 @@ function useDropdownPosition(open: boolean, anchorRef: React.RefObject<HTMLEleme
 
 /**
  * Campo de título/descrição com sugestões de itens pré-cadastrados.
- * - Clique ou digitação abre a lista.
+ * - Clique ou digitação abre a lista (não cadastra enquanto digita).
  * - Se o texto bater com um existente, no blur normaliza para o cadastrado.
- * - Se for novo, o pai cadastra automaticamente (onCommitNew / onNormalizeExisting).
+ * - Se for novo, cadastra só ao sair do campo (blur), e nunca se houver aviso de preço.
  */
 export function DescriptionCombobox({
   value,
@@ -101,6 +101,8 @@ export function DescriptionCombobox({
       if (existing.descricao !== value) onSelectPreset(existing);
       return;
     }
+    // Não cadastra título com preço/quantidade no texto.
+    if (getPricingTextWarning(text)) return;
     if (onCommitNew) {
       committingRef.current = true;
       try {
@@ -123,7 +125,9 @@ export function DescriptionCombobox({
         {matches.length === 0 ? (
           <div className="px-3 py-2.5 text-[11px] text-slate-500">
             {value.trim()
-              ? "Nenhum pré-cadastro com esse nome — será cadastrado ao sair do campo."
+              ? pricingWarning
+                ? "Corrija o aviso de preço/quantidade — este título não será cadastrado."
+                : "Nenhum pré-cadastro com esse nome — será cadastrado ao sair do campo."
               : "Nenhum item pré-cadastrado ainda."}
           </div>
         ) : (
@@ -205,7 +209,7 @@ export function DescriptionCombobox({
 /**
  * Editor de detalhes do item em "chips".
  * - `suggestions`: detalhes salvos no cadastro de "Detalhes do item".
- * - Novos textos são cadastrados via `onCommitNew`.
+ * - Novos textos são cadastrados só ao digitar vírgula (Enter/blur só adicionam ao item).
  */
 export function DetailsEditor({
   subitens,
@@ -255,38 +259,69 @@ export function DetailsEditor({
 
   const pricingWarning = useMemo(() => getPricingTextWarning(draft), [draft]);
 
-  async function commitDraft(from = draftRef.current) {
-    const t = from.trim();
-    if (!t) return false;
+  /** Adiciona um ou mais detalhes ao item; `register` grava no cadastro de presets. */
+  async function commitTexts(rawTexts: string[], register: boolean) {
     const current = subitensRef.current;
-    if (current.some((s) => s.toLowerCase() === t.toLowerCase())) {
-      setDraft("");
-      return false;
+    const next = [...current];
+    const toRegister: string[] = [];
+
+    for (const raw of rawTexts) {
+      const t = raw.trim();
+      if (!t) continue;
+      if (next.some((s) => s.toLowerCase() === t.toLowerCase())) continue;
+      if (getPricingTextWarning(t)) continue;
+
+      const existing =
+        suggestions.find((s) => s.toLowerCase() === t.toLowerCase()) ?? null;
+      const final = existing ?? t;
+      next.push(final);
+      if (register && !existing) toRegister.push(final);
     }
 
-    const existing =
-      suggestions.find((s) => s.toLowerCase() === t.toLowerCase()) ?? null;
-    if (existing) {
-      onChange([...current, existing]);
-      setDraft("");
-      return true;
+    if (next.length !== current.length) {
+      onChange(next);
     }
-
-    onChange([...current, t]);
-    setDraft("");
     if (onCommitNew) {
-      await onCommitNew(t);
+      for (const t of toRegister) {
+        await onCommitNew(t);
+      }
     }
-    return true;
+    return next.length > current.length;
   }
 
-  function addDetail(v: string) {
-    void commitDraft(v);
+  async function commitDraft(from = draftRef.current, register = false) {
+    const t = from.trim();
+    if (!t) return false;
+    // Mantém o texto no campo para o aviso de preço continuar visível.
+    if (getPricingTextWarning(t)) return false;
+    const ok = await commitTexts([from], register);
+    setDraft("");
+    return ok;
+  }
+
+  function addDetail(v: string, register = false) {
+    void commitDraft(v, register);
     setOpen(false);
   }
 
   function removeDetail(idx: number) {
     onChange(subitens.filter((_, i) => i !== idx));
+  }
+
+  function handleDraftChange(raw: string) {
+    if (!raw.includes(",")) {
+      setDraft(raw);
+      setOpen(true);
+      return;
+    }
+    const parts = raw.split(",");
+    const rest = parts.pop() ?? "";
+    const completed = parts.map((p) => p.trim()).filter(Boolean);
+    setDraft(rest);
+    setOpen(true);
+    if (completed.length > 0) {
+      void commitTexts(completed, true);
+    }
   }
 
   const showDropdown = open && mounted && pos !== null;
@@ -301,7 +336,7 @@ export function DetailsEditor({
         {matches.length === 0 ? (
           <div className="px-3 py-2 text-[11px] text-slate-500">
             {draft.trim()
-              ? "Novo detalhe — será cadastrado ao confirmar."
+              ? "Novo detalhe — digite vírgula para cadastrar."
               : "Nenhum detalhe pré-cadastrado ainda."}
           </div>
         ) : (
@@ -310,7 +345,7 @@ export function DetailsEditor({
               key={`gl-${s}`}
               type="button"
               onClick={() => {
-                addDetail(s);
+                addDetail(s, false);
                 if (blurTimer.current) clearTimeout(blurTimer.current);
               }}
               className={`w-full text-left px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer flex items-center gap-1.5 ${
@@ -361,22 +396,19 @@ export function DetailsEditor({
               value={draft}
               data-quote-detail-draft="true"
               autoComplete="off"
-              onChange={(e) => {
-                setDraft(e.target.value);
-                setOpen(true);
-              }}
+              onChange={(e) => handleDraftChange(e.target.value)}
               onFocus={() => setOpen(true)}
               onClick={() => setOpen(true)}
               onBlur={() => {
                 flushSync(() => {
-                  void commitDraft();
+                  void commitDraft(draftRef.current, false);
                 });
                 blurTimer.current = setTimeout(() => setOpen(false), 140);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  addDetail(draft);
+                  addDetail(draft, false);
                 }
               }}
               className="w-full bg-slate-50 md:bg-white border border-slate-200 text-[10px] font-medium rounded-md px-2.5 py-2 outline-none focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)]"
@@ -385,7 +417,7 @@ export function DetailsEditor({
           </div>
           <button
             type="button"
-            onClick={() => addDetail(draft)}
+            onClick={() => addDetail(draft, false)}
             disabled={!draft.trim()}
             className="shrink-0 h-8 w-8 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:text-amber-600 hover:border-amber-200 disabled:opacity-40 cursor-pointer transition-colors"
             title="Adicionar detalhe"
@@ -401,8 +433,8 @@ export function DetailsEditor({
         </p>
       ) : (
         <p className="mt-1 text-[9px] text-slate-400">
-          Texto informativo (sem quantidade nem valor). Confirme com Enter ou ao sair do campo — no PDF
-          aparece abaixo do item, separado por •.
+          Digite a vírgula para cadastrar o detalhe. Enter ou sair do campo só adiciona neste
+          orçamento — no PDF aparece abaixo do item, separado por •.
         </p>
       )}
     </div>
