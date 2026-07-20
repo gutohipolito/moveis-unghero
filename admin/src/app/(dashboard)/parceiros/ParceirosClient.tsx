@@ -17,6 +17,7 @@ import {
   PARTNER_TYPE_STYLES,
   PARTNER_TYPES,
   formatPartnerRegistro,
+  getPartnerRoleLabel,
   partnerRegistroLabel,
 } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -255,7 +256,7 @@ const PartnerCard = ({
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${palette.badge}`}>
                 <Icon className="h-2.5 w-2.5" />
-                {style.label}
+                {getPartnerRoleLabel(p.tipo, p.nome)}
               </span>
               
               {p.cidade && (
@@ -1033,7 +1034,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
                     <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${palette.badge}`}>
                       <Icon className="h-3 w-3" />
-                      {style.label}
+                      {getPartnerRoleLabel(p.tipo, p.nome)}
                     </span>
                     {p.cidade && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">

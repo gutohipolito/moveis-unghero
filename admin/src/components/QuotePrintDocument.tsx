@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuoteSubitensLine } from "@/lib/quoteItems";
-import { formatPartnerRegistro } from "@/lib/partnerTypes";
+import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 
 export const QUOTE_PRINT_FACTORY = {
   name: "Móveis Unghero LTDA",
@@ -16,15 +16,6 @@ export const QUOTE_PRINT_FACTORY = {
   emailHref: "mailto:moveisunghero@gmail.com",
   site: "moveisunghero.com.br",
   siteHref: "https://moveisunghero.com.br",
-};
-
-export const PARTNER_ROLE_LABEL: Record<string, string> = {
-  ARQUITETO: "Arquiteto",
-  DESIGNER_INTERIORES: "Designer de Interiores",
-  PROJETISTA: "Projetista de Móveis",
-  DECORADOR: "Decorador",
-  ENGENHEIRO: "Engenheiro",
-  OUTROS: "Parceiro",
 };
 
 const COMMERCIAL_NOTES = [
@@ -459,7 +450,7 @@ export default function QuotePrintDocument({
   topBar,
 }: QuotePrintDocumentProps) {
   const partnerRoleLabel = quote.partner
-    ? PARTNER_ROLE_LABEL[String(quote.partner.tipo)] ?? "Arquiteto"
+    ? getPartnerRoleLabel(quote.partner.tipo, quote.partner.nome)
     : null;
   const partnerRegistro = quote.partner
     ? formatPartnerRegistro(quote.partner.tipo, quote.partner.registro_profissional)

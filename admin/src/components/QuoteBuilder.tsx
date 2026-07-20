@@ -19,8 +19,7 @@ import {
 } from "@/components/quotes/QuoteItemInputs";
 import { Dialog } from "@/components/ui/dialog";
 import { getParceiros } from "@/app/actions/parceiros";
-import { formatPartnerRegistro, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
-import type { PartnerType } from "@prisma/client";
+import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { addCalendarDaysISO, toISODateBR } from "@/lib/brazilDate";
 import { getPricingTextWarning } from "@/lib/quoteItems";
 
@@ -41,15 +40,6 @@ function getPartnerInitials(name: string) {
   }
   return name.substring(0, 2).toUpperCase();
 }
-
-const PARTNER_ROLE_LABEL: Record<string, string> = {
-  ARQUITETO: "Arquiteto",
-  DESIGNER_INTERIORES: "Designer de Interiores",
-  PROJETISTA: "Projetista de Móveis",
-  DECORADOR: "Decorador",
-  ENGENHEIRO: "Engenheiro",
-  OUTROS: "Parceiro",
-};
 
 interface QuoteBuilderProps {
   projectId: string;
@@ -543,17 +533,14 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               {partners.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nome}
-                  {PARTNER_ROLE_LABEL[p.tipo] ? ` — ${PARTNER_ROLE_LABEL[p.tipo]}` : ""}
+                  {` — ${getPartnerRoleLabel(p.tipo, p.nome)}`}
                 </option>
               ))}
             </Select>
             {(() => {
               const selected = partners.find((p) => p.id === partnerId);
               if (!selected) return null;
-              const roleLabel =
-                PARTNER_ROLE_LABEL[selected.tipo] ??
-                PARTNER_TYPE_STYLES[selected.tipo as PartnerType]?.label ??
-                "Parceiro";
+              const roleLabel = getPartnerRoleLabel(selected.tipo, selected.nome);
               const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
               return (
                 <div className="relative overflow-hidden rounded-xl p-3.5 w-fit max-w-sm space-y-1 text-slate-800 text-xs border border-amber-400/40 bg-linear-to-br from-amber-50/90 via-white to-slate-50/60 shadow-[0_6px_22px_-6px_rgba(180,130,40,0.35)] ring-1 ring-amber-300/30">

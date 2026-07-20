@@ -17,6 +17,138 @@ export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
   OUTROS: "Outros",
 };
 
+/** Rótulos de exibição (orçamento/PDF) — OUTROS como "Parceiro". */
+export const PARTNER_ROLE_LABELS: Record<string, string> = {
+  ARQUITETO: "Arquiteto",
+  DESIGNER_INTERIORES: "Designer de Interiores",
+  PROJETISTA: "Projetista de Móveis",
+  DECORADOR: "Decorador",
+  ENGENHEIRO: "Engenheiro",
+  OUTROS: "Parceiro",
+};
+
+const NAME_PREFIXES = new Set([
+  "dr",
+  "dra",
+  "sr",
+  "sra",
+  "eng",
+  "arq",
+  "prof",
+  "profa",
+]);
+
+/** Nomes masculinos que terminam em "a". */
+const MASCULINE_ENDING_IN_A = new Set(["luca", "joshua", "nikola", "attila"]);
+
+/**
+ * Nomes femininos comuns que não terminam em "a"
+ * (heurística para PT-BR; não cobre 100% dos casos).
+ */
+const FEMININE_WITHOUT_A = new Set([
+  "alice",
+  "aline",
+  "andreine",
+  "beatriz",
+  "carmen",
+  "cristiane",
+  "dolores",
+  "elaine",
+  "ester",
+  "esther",
+  "fabiane",
+  "helen",
+  "heloise",
+  "iasmin",
+  "ines",
+  "inez",
+  "ingrid",
+  "irene",
+  "iris",
+  "isabel",
+  "isabele",
+  "isabelle",
+  "ivone",
+  "jazmin",
+  "jeni",
+  "jennifer",
+  "jenny",
+  "jennyfer",
+  "karen",
+  "kelly",
+  "lais",
+  "liliane",
+  "lourdes",
+  "luciane",
+  "mabel",
+  "marlene",
+  "mercedes",
+  "michele",
+  "michelle",
+  "natalie",
+  "nathalie",
+  "nicole",
+  "rachel",
+  "raquel",
+  "rosane",
+  "ruth",
+  "sharon",
+  "simone",
+  "socorro",
+  "yasmin",
+]);
+
+function normalizeNameToken(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+/** Primeiro nome próprio, ignorando tratamentos (Dra., Arq., etc.). */
+export function getFirstGivenName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  let i = 0;
+  while (i < parts.length) {
+    const token = normalizeNameToken(parts[i].replace(/\./g, ""));
+    if (NAME_PREFIXES.has(token)) {
+      i += 1;
+      continue;
+    }
+    break;
+  }
+  return normalizeNameToken(parts[i] ?? "");
+}
+
+/** Heurística PT-BR: indica se o nome próprio parece feminino. */
+export function isLikelyFeminineName(fullName: string): boolean {
+  const first = getFirstGivenName(fullName);
+  if (!first) return false;
+  if (FEMININE_WITHOUT_A.has(first)) return true;
+  if (/(ane|ene|ine|elle|elly)$/.test(first)) return true;
+  if (first.endsWith("a") && !MASCULINE_ENDING_IN_A.has(first)) return true;
+  return false;
+}
+
+/**
+ * Rótulo do tipo de parceiro, com flexão de gênero quando aplicável.
+ * Hoje: Arquiteto → Arquiteta para nomes femininos.
+ */
+export function getPartnerRoleLabel(
+  tipo: PartnerType | string,
+  nome?: string | null
+): string {
+  if (tipo === "ARQUITETO") {
+    return nome && isLikelyFeminineName(nome) ? "Arquiteta" : "Arquiteto";
+  }
+  return (
+    PARTNER_ROLE_LABELS[String(tipo)] ??
+    PARTNER_TYPE_LABELS[tipo as PartnerType] ??
+    "Parceiro"
+  );
+}
+
 /** Ordem e tipos exibidos no formulário público e no cadastro interno. */
 export const PARTNER_SIGNUP_TYPES: PartnerType[] = [
   "ARQUITETO",
