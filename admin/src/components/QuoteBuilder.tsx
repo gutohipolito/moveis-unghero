@@ -561,31 +561,51 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               const RoleIcon = style.icon;
               const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
               return (
-                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50 p-3 shadow-sm w-fit max-w-sm space-y-2 text-slate-800 text-xs">
+                <div
+                  className="relative overflow-hidden rounded-xl p-3 w-fit max-w-sm space-y-2 text-slate-800 text-xs border border-amber-400/40 bg-linear-to-br from-amber-50/90 via-white to-slate-50/60 shadow-[0_6px_22px_-6px_rgba(180,130,40,0.35)] ring-1 ring-amber-300/30"
+                >
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`h-11 w-11 shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center ${style.avatar}`}
-                    >
-                      {selected.fotoUrl ? (
-                        <img
-                          src={selected.fotoUrl}
-                          alt={selected.nome}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs font-black tracking-wide">
-                          {getPartnerInitials(selected.nome)}
-                        </span>
-                      )}
+                    <div className="relative h-12 w-12 shrink-0">
+                      <div className="h-full w-full rounded-full overflow-hidden border-2 border-amber-300/70 shadow-inner bg-amber-50 flex items-center justify-center">
+                        {selected.fotoUrl ? (
+                          <img
+                            src={selected.fotoUrl}
+                            alt={selected.nome}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs font-black tracking-wide text-amber-800/80">
+                            {getPartnerInitials(selected.nome)}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-linear-to-br from-amber-300 to-amber-600 text-white shadow-md ring-2 ring-white"
+                        title="Parceiro verificado"
+                        aria-label="Parceiro verificado"
+                      >
+                        <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
+                      </span>
                     </div>
                     <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <p className="text-xs font-extrabold text-slate-900 truncate">
+                          {selected.nome}
+                        </p>
+                        <BadgeCheck
+                          className="h-4 w-4 shrink-0 text-amber-500 fill-amber-400/25"
+                          aria-hidden
+                        />
+                      </div>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="text-xs font-extrabold text-slate-800 truncate">{selected.nome}</p>
                         <span
                           className={`inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}
                         >
                           <RoleIcon className="h-2 w-2" />
                           {style.label}
+                        </span>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700/80">
+                          Verificado
                         </span>
                       </div>
                       {selected.escritorio ? (
@@ -618,15 +638,20 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             <span className="text-xs font-bold uppercase tracking-wider text-foreground">
               Itens do orçamento
             </span>
-            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Button type="button" onClick={handleAddItem} size="sm" variant="outline" className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-1" /> Item livre
               </Button>
-              <Button type="button" onClick={handleAddItemFromShowcase} size="sm" variant="outline" className="w-full sm:w-auto border-amber-200 text-amber-800 hover:bg-amber-50">
-                <Images className="h-4 w-4 mr-1 text-amber-700" /> Do mostruário
-              </Button>
-              <Button type="button" onClick={handleAddItemFromStock} size="sm" variant="outline" className="w-full sm:w-auto border-cyan-200 text-cyan-700 hover:bg-cyan-50 col-span-2 sm:col-span-1">
-                <Plus className="h-4 w-4 mr-1 text-cyan-600" /> Do estoque
+              <Button
+                type="button"
+                onClick={handleAddItemFromStock}
+                size="sm"
+                variant="outline"
+                disabled
+                title="Temporariamente indisponível — em alinhamento"
+                className="w-full sm:w-auto border-slate-200 text-slate-400 cursor-not-allowed opacity-60"
+              >
+                <Plus className="h-4 w-4 mr-1" /> Do estoque
               </Button>
             </div>
           </div>
