@@ -63,7 +63,7 @@ export default function ActionDialog({
 
         <div className="space-y-2">
           <h3 className="text-lg font-bold text-foreground">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">{message}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{message}</p>
         </div>
 
         <div className={`flex gap-3 w-full pt-2 ${isConfirm ? "" : "justify-center"}`}>

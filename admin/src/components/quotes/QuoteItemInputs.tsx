@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { flushSync } from "react-dom";
 import { Plus, X, ListPlus } from "lucide-react";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
+import { getPricingTextWarning } from "@/lib/quoteItems";
 
 function useDropdownPosition(open: boolean, anchorRef: React.RefObject<HTMLElement | null>) {
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -84,6 +85,8 @@ export function DescriptionCombobox({
     if (!q) return null;
     return presets.find((p) => p.descricao.toLowerCase() === q) ?? null;
   }, [value, presets]);
+
+  const pricingWarning = useMemo(() => getPricingTextWarning(value), [value]);
 
   const showList = open && mounted && pos !== null;
 
@@ -183,6 +186,11 @@ export function DescriptionCombobox({
           "w-full bg-white border border-slate-200 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] focus-visible:border-[hsl(28_85%_45%)] px-3 py-1.5 h-9 text-xs font-semibold rounded-lg outline-none transition-all"
         }
       />
+      {pricingWarning ? (
+        <p className="mt-1 text-[10px] text-rose-600 font-semibold leading-snug">
+          {pricingWarning}
+        </p>
+      ) : null}
       {exactMatch && value.trim() && value.trim() !== exactMatch.descricao ? (
         <p className="mt-1 text-[9px] text-amber-700 font-semibold">
           Já existe “{exactMatch.descricao}” — selecione na lista ou saia do campo para usar o
@@ -244,6 +252,8 @@ export function DetailsEditor({
     if (!q) return null;
     return suggestions.find((s) => s.toLowerCase() === q) ?? null;
   }, [suggestions, q]);
+
+  const pricingWarning = useMemo(() => getPricingTextWarning(draft), [draft]);
 
   async function commitDraft(from = draftRef.current) {
     const t = from.trim();
@@ -385,10 +395,16 @@ export function DetailsEditor({
         </div>
       </div>
 
-      <p className="mt-1 text-[9px] text-slate-400">
-        Texto informativo (sem quantidade nem valor). Confirme com Enter ou ao sair do campo — no PDF
-        aparece abaixo do item, separado por •.
-      </p>
+      {pricingWarning ? (
+        <p className="mt-1 text-[10px] text-rose-600 font-semibold leading-snug">
+          {pricingWarning}
+        </p>
+      ) : (
+        <p className="mt-1 text-[9px] text-slate-400">
+          Texto informativo (sem quantidade nem valor). Confirme com Enter ou ao sair do campo — no PDF
+          aparece abaixo do item, separado por •.
+        </p>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { getParceiros } from "@/app/actions/parceiros";
 import { formatPartnerRegistro, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 import type { PartnerType } from "@prisma/client";
 import { addCalendarDaysISO, toISODateBR } from "@/lib/brazilDate";
+import { getPricingTextWarning } from "@/lib/quoteItems";
 
 interface PartnerOption {
   id: string;
@@ -356,6 +357,26 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       showError("Orçamento vazio", "Adicione pelo menos um item comercial antes de salvar.");
       return;
     }
+
+    const pricingProblems = currentItems.flatMap((item, idx) => {
+      const issues: string[] = [];
+      const titleWarn = getPricingTextWarning(item.descricao);
+      if (titleWarn) issues.push(`Item ${idx + 1} (título): ${item.descricao}`);
+      for (const detail of item.subitens || []) {
+        if (getPricingTextWarning(detail)) {
+          issues.push(`Item ${idx + 1} (detalhe): ${detail}`);
+        }
+      }
+      return issues;
+    });
+    if (pricingProblems.length > 0) {
+      showError(
+        "Preço/quantidade no texto",
+        `Remova valores e quantidades do título/detalhes e use os campos Valor e Qtd:\n• ${pricingProblems.slice(0, 4).join("\n• ")}`
+      );
+      return;
+    }
+
     setConfirmOpen(true);
   };
 
@@ -615,8 +636,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/40 bg-black/5 text-muted-foreground text-xs font-semibold uppercase">
-                  <th className="p-3 w-5/12">Descrição do Insumo / Serviço</th>
-                  <th className="p-3 w-28">Categoria</th>
+                  <th className="p-3 w-[38%]">Descrição do Insumo / Serviço</th>
+                  <th className="p-3 w-44 min-w-[11rem]">Categoria</th>
                   <th className="p-3 w-20 text-center">Qtd</th>
                   <th className="p-3 w-40">Valor / Precificação</th>
                   <th className="p-3 w-32">Total</th>
@@ -712,12 +733,12 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             </div>
                           )}
                         </td>
-                        <td className="p-3">
+                        <td className="p-3 min-w-[11rem]">
                           <Select
                             disabled={isStockItem}
                             value={item.tipo_custo}
                             onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
-                            className="h-9 py-1 px-3 text-xs bg-white border border-slate-200 focus:ring-1 focus:ring-[hsl(28_85%_45%)] rounded-lg transition-all cursor-pointer font-semibold text-slate-700 disabled:opacity-60"
+                            className="h-9 py-1 px-2 text-xs bg-white border border-slate-200 focus:ring-1 focus:ring-[hsl(28_85%_45%)] rounded-lg transition-all cursor-pointer font-semibold text-slate-700 disabled:opacity-60 w-full min-w-[10.5rem]"
                           >
                             <option value="MOVEIS_MDF">MDF/Marcenaria</option>
                             <option value="FERRAGENS_ESPECIAIS">Ferragens Esp.</option>
@@ -1216,7 +1237,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         onClose={() => {
           if (!loading) setConfirmOpen(false);
         }}
-        className="max-w-md w-full"
+        className="max-w-lg w-full"
       >
         <div className="space-y-4 pr-6">
           <div>
@@ -1259,6 +1280,38 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 </span>
               </div>
             ) : null}
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 max-h-52 overflow-y-auto">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Itens da proposta
+            </p>
+            <ul className="space-y-2">
+              {items.map((item, idx) => (
+                <li
+                  key={item.id}
+                  className="text-xs border-b border-slate-100 last:border-0 pb-2 last:pb-0"
+                >
+                  <p className="font-bold text-slate-800">
+                    <span className="text-slate-400 font-semibold mr-1">{idx + 1}.</span>
+                    {item.descricao || "Sem título"}
+                    <span className="text-slate-400 font-medium">
+                      {" "}
+                      · qtd {item.quantidade} ·{" "}
+                      {new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      }).format(item.valor_total)}
+                    </span>
+                  </p>
+                  {(item.subitens || []).length > 0 ? (
+                    <p className="text-[11px] text-slate-500 mt-0.5 pl-4 leading-snug">
+                      {(item.subitens || []).join(" • ")}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
