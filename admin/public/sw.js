@@ -1,4 +1,4 @@
-const CACHE_VERSION = "mu-admin-v5";
+const CACHE_VERSION = "mu-admin-v6";
 
 self.addEventListener("push", (event) => {
   let payload = {
@@ -83,9 +83,12 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/_next/")) return;
   if (url.pathname.startsWith("/quotes/")) return;
 
+  // Navegações: SEMPRE rede. Não servir uma página em cache no lugar de outra
+  // (isso causava "voltar de tela" no mobile quando a rede oscilava).
+  // Só usa o cache da própria URL como último recurso offline.
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("/crm").then((r) => r || fetch(event.request)))
+      fetch(event.request).catch(() => caches.match(event.request))
     );
     return;
   }

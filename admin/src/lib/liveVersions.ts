@@ -382,13 +382,12 @@ export async function getCompanyLiveVersions(
   const projectWhere = companyProjectWhere(companyId);
 
   const [
-    crmProjects,
+    projects,
     crmTimeline,
     factoryEnvs,
     factorySla,
     agendaTasks,
     quotes,
-    projects,
     clients,
     financeiro,
     logistica,
@@ -419,7 +418,6 @@ export async function getCompanyLiveVersions(
     fingerprintSla(companyId),
     fingerprintTasks(companyId),
     fingerprintQuotes(companyId),
-    fingerprintProjects(companyId),
     fingerprintClients(companyId),
     fingerprintInstallments(companyId),
     fingerprintLogistica(companyId),
@@ -432,7 +430,7 @@ export async function getCompanyLiveVersions(
   ]);
 
   const versions: LiveVersions = {
-    crm: `${crmProjects}|${crmTimeline}`,
+    crm: `${projects}|${crmTimeline}`,
     factory: `${factoryEnvs}|${factorySla}`,
     agenda: agendaTasks,
     quotes,
@@ -444,7 +442,7 @@ export async function getCompanyLiveVersions(
     cadastros,
     parceiros,
     colaboradores,
-    bi: `${crmProjects}|${parceiros}`,
+    bi: `${projects}|${parceiros}`,
     portal,
     workspace,
   };

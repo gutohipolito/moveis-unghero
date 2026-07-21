@@ -5,8 +5,8 @@ import type { LiveVersions } from "@/lib/liveEntities";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const SSE_POLL_MS = 3_000;
-const SSE_HEARTBEAT_MS = 15_000;
+const SSE_POLL_MS = 15_000;
+const SSE_HEARTBEAT_MS = 20_000;
 
 export async function GET(request: Request) {
   const auth = await getAuthContext();

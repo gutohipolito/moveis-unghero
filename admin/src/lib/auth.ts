@@ -20,6 +20,15 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: true,
   },
+  session: {
+    // Guarda a sessão num cookie assinado por 5 min, evitando ida ao banco
+    // em toda navegação/server action. Mudanças de cargo/empresa refletem
+    // em até 5 minutos.
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   user: {
     additionalFields: {
       company_id: {
