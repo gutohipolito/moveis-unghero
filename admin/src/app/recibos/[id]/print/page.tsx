@@ -37,6 +37,7 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
   return (
     <ReceiptPrintDocument
       receipt={{
+        id: receipt.id,
         numero: receipt.numero,
         valor: Number(receipt.valor),
         referente: receipt.referente,

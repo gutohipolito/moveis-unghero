@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReceiptPrintDocument from "@/components/ReceiptPrintDocument";
 import ReceiptPublicPrintBar from "@/components/ReceiptPublicPrintBar";
 import { getPaymentReceiptByShareCode } from "@/app/actions/receipts";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
+
+export const metadata: Metadata = {
+  title: "Recibo de pagamento — Móveis Unghero",
+  robots: { index: false, follow: false, nocache: true },
+};
 
 interface PublicReceiptPageProps {
   params: Promise<{ code: string }>;
@@ -16,6 +22,7 @@ export default async function PublicReceiptPage({ params }: PublicReceiptPagePro
   return (
     <ReceiptPrintDocument
       receipt={{
+        id: receipt.id,
         numero: receipt.numero,
         valor: receipt.valor,
         referente: receipt.referente,

@@ -7,6 +7,7 @@ import {
 } from "@/lib/currencyExtenso";
 
 export type ReceiptPrintData = {
+  id: string;
   numero: number;
   valor: number;
   referente: string;
@@ -167,6 +168,9 @@ export default function ReceiptPrintDocument({
                   Recibo de pagamento
                 </p>
                 <p className="text-xs font-black text-neutral-800">Nº {numeroLabel}</p>
+                <p className="text-[8px] uppercase tracking-wider text-neutral-400">
+                  Controle {receipt.id.slice(0, 8).toUpperCase()}
+                </p>
               </div>
             </header>
 
@@ -244,16 +248,22 @@ export default function ReceiptPrintDocument({
                     {f.name} — CNPJ {f.cnpj}
                   </p>
                 </div>
-                <div className="text-center space-y-1 pt-[30px]">
-                  <div className="border-t border-neutral-800 mx-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-800">
-                    Pagador
-                  </p>
-                  <p className="text-[9px] font-bold text-neutral-600">
+                <div className="text-center space-y-1 pt-[19px]">
+                  <p
+                    className="text-[18px] italic leading-none text-blue-800"
+                    style={{ fontFamily: "Georgia, serif" }}
+                  >
                     {receipt.cliente_nome}
                   </p>
-                  <p className="text-[9px] text-neutral-500">
+                  <div className="border-t border-blue-700/70 mx-4" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-800">
+                    Identificação do pagador
+                  </p>
+                  <p className="text-[9px] text-blue-700">
                     {receipt.cliente_documento}
+                  </p>
+                  <p className="text-[8px] text-neutral-400">
+                    Identificação automática — não constitui assinatura eletrônica
                   </p>
                 </div>
               </div>

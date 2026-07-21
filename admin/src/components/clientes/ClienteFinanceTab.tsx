@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,18 @@ import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialo
 import ReceiptIssueDialog, {
   type ReceiptIssuePrefill,
 } from "@/components/finance/ReceiptIssueDialog";
+import {
+  listClientPaymentReceipts,
+  type PaymentReceiptDTO,
+} from "@/app/actions/receipts";
 import type { ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import { toISODateBR } from "@/lib/brazilDate";
+import { labelPaymentMethod } from "@/lib/paymentMethods";
 import {
   CheckCircle2,
   CreditCard,
   ExternalLink,
+  FileText,
   Loader2,
   Plus,
   Receipt,
@@ -45,6 +51,27 @@ export default function ClienteFinanceTab({
   const [payingId, setPayingId] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
+  const [receipts, setReceipts] = useState<PaymentReceiptDTO[]>([]);
+  const [loadingReceipts, setLoadingReceipts] = useState(true);
+
+  async function refreshReceipts() {
+    const res = await listClientPaymentReceipts(clientId);
+    if (res.success) setReceipts(res.receipts);
+    setLoadingReceipts(false);
+  }
+
+  useEffect(() => {
+    let active = true;
+    setLoadingReceipts(true);
+    void listClientPaymentReceipts(clientId).then((res) => {
+      if (!active) return;
+      if (res.success) setReceipts(res.receipts);
+      setLoadingReceipts(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [clientId]);
 
   async function refreshPayments() {
     const res = await getClientPaymentsAction(clientId);
@@ -240,6 +267,84 @@ export default function ClienteFinanceTab({
             })}
           </div>
         )}
+
+        <section className="border-t border-border/40 pt-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <Receipt className="h-4 w-4 text-amber-600" />
+                Recibos emitidos
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                Histórico permanente para reabrir, imprimir ou reenviar ao cliente.
+              </p>
+            </div>
+            {!loadingReceipts ? (
+              <span className="text-[10px] font-bold text-muted-foreground bg-slate-100 px-2.5 py-1 rounded-full">
+                {receipts.length} recibo{receipts.length === 1 ? "" : "s"}
+              </span>
+            ) : null}
+          </div>
+
+          {loadingReceipts ? (
+            <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando recibos...
+            </div>
+          ) : receipts.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border/60 px-4 py-5 text-center text-xs text-muted-foreground">
+              Nenhum recibo emitido para este cliente.
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              {receipts.map((receipt) => (
+                <div
+                  key={receipt.id}
+                  className="rounded-xl border border-border/50 bg-white/70 px-3.5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div className="min-w-0 flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-foreground">
+                        Recibo nº {String(receipt.numero).padStart(4, "0")}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {receipt.referente}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(receipt.data_recebimento).toLocaleDateString("pt-BR")}
+                        {" · "}
+                        {labelPaymentMethod(receipt.metodo_pagamento)}
+                        {" · "}
+                        {receipt.quitacao === "TOTAL" ? "Quitação total" : "Quitação parcial"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                    <strong className="text-sm font-black text-foreground privacy-value">
+                      {receipt.valor.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </strong>
+                    <Link
+                      href={`/recibos/${receipt.id}/print`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 text-[10px] font-bold text-foreground hover:bg-slate-50"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Abrir
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </Card>
 
       <InstallmentLaunchDialog
@@ -256,6 +361,7 @@ export default function ClienteFinanceTab({
         clientName={clientName}
         projects={projectOptions}
         prefill={receiptPrefill}
+        onIssued={() => void refreshReceipts()}
       />
     </>
   );

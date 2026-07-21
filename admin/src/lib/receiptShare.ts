@@ -18,7 +18,8 @@ export function buildReceiptShortUrl(code: string) {
   return `${getReceiptShortBaseUrl()}${RECEIPT_SHORT_PATH}/${code}`;
 }
 
-export function generateReceiptShareCode(length = 8) {
+/** 12 caracteres (~60 bits) para reduzir risco de descoberta do link público. */
+export function generateReceiptShareCode(length = 12) {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(bytes, (byte) => SHARE_CODE_ALPHABET[byte % SHARE_CODE_ALPHABET.length]).join(
     ""

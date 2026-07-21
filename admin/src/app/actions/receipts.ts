@@ -256,6 +256,43 @@ export async function createPaymentReceipt(
   }
 }
 
+/** Lista os recibos já emitidos para o cliente no histórico financeiro. */
+export async function listClientPaymentReceipts(
+  clientId: string
+): Promise<
+  | { success: true; receipts: PaymentReceiptDTO[] }
+  | { success: false; receipts: []; error: string }
+> {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, receipts: [], error: "Não autenticado." };
+  }
+
+  try {
+    const client = await prisma.client.findFirst({
+      where: { id: clientId, company_id: auth.companyId },
+      select: { id: true },
+    });
+    if (!client) {
+      return { success: false, receipts: [], error: "Cliente não encontrado." };
+    }
+
+    const receipts = await prisma.paymentReceipt.findMany({
+      where: { client_id: clientId, company_id: auth.companyId },
+      orderBy: [{ data_recebimento: "desc" }, { numero: "desc" }],
+    });
+
+    return { success: true, receipts: receipts.map(mapReceipt) };
+  } catch (error) {
+    console.error("Erro ao listar recibos:", error);
+    return {
+      success: false,
+      receipts: [],
+      error: "Não foi possível carregar o histórico de recibos.",
+    };
+  }
+}
+
 export async function getPaymentReceiptForPrint(receiptId: string) {
   const auth = await getAuthContext();
   if (!auth) return null;
