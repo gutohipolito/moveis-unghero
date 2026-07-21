@@ -206,21 +206,28 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
       .filter(Boolean);
 
     const createdNames = await prisma.$transaction(async (tx) => {
-      await tx.quote.updateMany({
-        where: { project_id: projectId, id: { not: quoteId } },
-        data: { aprovado_em: null },
-      });
-
       await tx.quote.update({
         where: { id: quoteId },
         data: { aprovado_em: approvedAt },
       });
 
+      // Permite múltiplas propostas aprovadas no mesmo projeto (ex.: orçamentos
+      // de cômodos diferentes). O valor previsto passa a ser a soma de todos os
+      // orçamentos aprovados, e não mais o último aprovado.
+      const approvedQuotes = await tx.quote.findMany({
+        where: { project_id: projectId, aprovado_em: { not: null } },
+        select: { valor_final: true },
+      });
+      const totalAprovado = approvedQuotes.reduce(
+        (sum, q) => sum + Number(q.valor_final),
+        0
+      );
+
       await tx.project.update({
         where: { id: projectId },
         data: {
           status_geral: "APROVADO",
-          valor_previsto: quote.valor_final,
+          valor_previsto: totalAprovado,
         },
       });
 

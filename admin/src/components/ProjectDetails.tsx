@@ -633,7 +633,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
   const handleApproveQuote = (quote: Quote) => {
     if (quote.aprovado_em || approvingQuoteId) return;
-    if (project.quotes.some((q) => q.aprovado_em)) return;
 
     confirmAction({
       title: "Aprovar proposta?",
@@ -642,24 +641,30 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       onConfirm: async () => {
         const approvedAt = new Date().toISOString();
         setApprovingQuoteId(quote.id);
-        setProject((prev) => ({
-          ...prev,
-          status_geral: "APROVADO",
-          valor_previsto: quote.valor_final,
-          quotes: prev.quotes.map((q) =>
-            q.id === quote.id ? { ...q, aprovado_em: approvedAt } : { ...q, aprovado_em: null }
-          ),
-          timeline: [
-            {
-              id: `local-time-${Date.now()}`,
-              acao: `Proposta comercial v${quote.versao} foi APROVADA pelo cliente.`,
-              data: approvedAt,
-              interno_sotamente: false,
-              user: { name: "Vendas" },
-            },
-            ...prev.timeline,
-          ],
-        }));
+        setProject((prev) => {
+          const updatedQuotes = prev.quotes.map((q) =>
+            q.id === quote.id ? { ...q, aprovado_em: approvedAt } : q
+          );
+          const totalAprovado = updatedQuotes
+            .filter((q) => q.aprovado_em)
+            .reduce((sum, q) => sum + Number(q.valor_final), 0);
+          return {
+            ...prev,
+            status_geral: "APROVADO",
+            valor_previsto: totalAprovado,
+            quotes: updatedQuotes,
+            timeline: [
+              {
+                id: `local-time-${Date.now()}`,
+                acao: `Proposta comercial v${quote.versao} foi APROVADA pelo cliente.`,
+                data: approvedAt,
+                interno_sotamente: false,
+                user: { name: "Vendas" },
+              },
+              ...prev.timeline,
+            ],
+          };
+        });
 
         const res = await approveQuote(project.id, quote.id, quote.versao);
         setApprovingQuoteId(null);
@@ -1461,9 +1466,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           project.quotes.length === 1 &&
                           !project.quotes.some((item) => item.aprovado_em));
                       const isApproving = approvingQuoteId === q.id;
-                      const hasOtherApproved = project.quotes.some(
-                        (item) => item.id !== q.id && item.aprovado_em
-                      );
 
                       return (
                       <div
@@ -1510,7 +1512,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <button
                               type="button"
                               onClick={() => handleApproveQuote(q)}
-                              disabled={!!approvingQuoteId || hasOtherApproved}
+                              disabled={!!approvingQuoteId}
                               className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <CheckCircle2 className={`h-4 w-4 mr-1.5 ${isApproving ? "animate-pulse" : ""}`} />

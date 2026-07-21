@@ -320,9 +320,7 @@ export default function QuotesList({
         // Atualização otimista: aprova este e desaprova os demais do mesmo projeto.
         setQuotes((prev) =>
           prev.map((q) =>
-            q.project_id === quote.project_id
-              ? { ...q, aprovado_em: q.id === quote.id ? approvedAt : null }
-              : q
+            q.id === quote.id ? { ...q, aprovado_em: approvedAt } : q
           )
         );
 
