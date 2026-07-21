@@ -11,12 +11,36 @@ import {
 import { buildInstallmentDueNotifications } from "@/lib/installmentDueAlerts";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
 
+const NOTIF_TTL_MS = 30_000;
+type NotifCacheEntry = { at: number; data: AppNotification[] };
+const notifCache = new Map<string, NotifCacheEntry>();
+
+/** Invalida o cache de notificações de uma empresa (após mudanças relevantes). */
+export function invalidateCompanyNotifications(companyId?: string) {
+  if (companyId) {
+    for (const key of notifCache.keys()) {
+      if (key.startsWith(`${companyId}:`)) notifCache.delete(key);
+    }
+  } else {
+    notifCache.clear();
+  }
+}
+
 export async function fetchCompanyNotifications(
   companyId: string,
   viewerRole?: string
 ): Promise<AppNotification[]> {
   if (isDatabaseOffline()) {
     return [];
+  }
+
+  // As notificações são derivadas (follow-up, SLA, parcelas) e não precisam ser
+  // recalculadas a cada navegação. Um TTL curto evita ~6 consultas por página,
+  // enquanto o live-sync mantém o cliente atualizado.
+  const cacheKey = `${companyId}:${viewerRole ?? ""}`;
+  const cached = notifCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < NOTIF_TTL_MS) {
+    return cached.data;
   }
 
   // Chamados de insumos são direcionados à Diretoria (ADMIN).
@@ -136,7 +160,7 @@ export async function fetchCompanyNotifications(
     }))
   );
 
-  return mergeNotifications(
+  const merged = mergeNotifications(
     followUp,
     slaNotifications,
     invoiceNotifications,
@@ -144,4 +168,7 @@ export async function fetchCompanyNotifications(
     installmentNotifications,
     supplyNotifications
   );
+
+  notifCache.set(cacheKey, { at: Date.now(), data: merged });
+  return merged;
 }

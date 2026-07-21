@@ -235,6 +235,11 @@ model Project {
   expenses              Expense[]
   contracts             Contract[]
   paymentReceipts       PaymentReceipt[]
+
+  @@index([client_id])
+  @@index([status_geral])
+  @@index([partner_id])
+  @@index([responsavel_id])
 }
 
 enum ProjectStatus {
@@ -274,6 +279,10 @@ model Environment {
   capa_attachment_id   String?
 
   attachments EnvironmentAttachment[]
+
+  @@index([project_id])
+  @@index([responsavel_id])
+  @@index([ajudante_id])
 }
 
 enum EnvironmentAttachmentCategory {
@@ -342,6 +351,7 @@ model Quote {
   approvals   QuoteApproval[]
   createdAt   DateTime    @default(now())
 
+  @@index([project_id])
   @@index([partner_id])
   @@index([createdAt])
 }
@@ -553,6 +563,8 @@ model Task {
   data        DateTime
   status      String   @default("PENDENTE") // PENDENTE, CONCLUIDA
   tipo        TaskType @default(OUTROS)
+
+  @@index([project_id])
 }
 
 enum TaskType {
@@ -577,6 +589,9 @@ model Installment {
   total_parcelas    Int?
   grupo_id          String?
   paymentReceipts   PaymentReceipt[]
+
+  @@index([project_id])
+  @@index([status])
 }
 
 enum PaymentMethod {
