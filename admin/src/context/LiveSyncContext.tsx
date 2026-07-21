@@ -13,8 +13,11 @@ import React, {
 import type { LiveEntityKey, LiveVersions } from "@/lib/liveEntities";
 import { getChangedLiveEntities } from "@/lib/liveVersions";
 
-const FALLBACK_POLL_VISIBLE_MS = 10_000;
-const FALLBACK_POLL_HIDDEN_MS = 60_000;
+// Polling curto no cliente (sem SSE persistente). Evita manter uma função
+// serverless aberta o tempo todo na Vercel e permite o Neon escalar a zero
+// quando ninguém está usando (abas ocultas usam intervalo bem maior).
+const POLL_VISIBLE_MS = 25_000;
+const POLL_HIDDEN_MS = 5 * 60_000;
 
 type LiveSubscriber = {
   id: string;
@@ -78,7 +81,7 @@ export function LiveSyncProvider({
       if (!response.ok) throw new Error("versions_fetch_failed");
       const data = (await response.json()) as { versions: LiveVersions };
       applyVersions(data.versions);
-      setConnection((current) => (current === "live" ? "live" : "polling"));
+      setConnection("polling");
       return true;
     } catch {
       setConnection("offline");
@@ -87,85 +90,45 @@ export function LiveSyncProvider({
   }, [applyVersions]);
 
   useEffect(() => {
-    let eventSource: EventSource | null = null;
-    let fallbackTimer: number | undefined;
+    let timer: number | undefined;
     let closed = false;
 
-    const startFallbackPolling = () => {
-      if (fallbackTimer) return;
-
-      const tick = () => {
-        void fetchVersions();
-      };
-
-      fallbackTimer = window.setInterval(
-        tick,
-        document.visibilityState === "visible"
-          ? FALLBACK_POLL_VISIBLE_MS
-          : FALLBACK_POLL_HIDDEN_MS
-      );
+    const schedule = () => {
+      if (closed) return;
+      if (timer) window.clearTimeout(timer);
+      const delay =
+        document.visibilityState === "visible" ? POLL_VISIBLE_MS : POLL_HIDDEN_MS;
+      timer = window.setTimeout(tick, delay);
     };
 
-    const connect = () => {
-      if (closed || typeof EventSource === "undefined") {
-        setConnection("polling");
+    const tick = () => {
+      if (closed) return;
+      // Só consulta quando a aba está visível — abas ocultas ficam ociosas
+      // para o Neon poder dormir e não gastar compute/execução à toa.
+      if (document.visibilityState === "visible") {
         void fetchVersions();
-        startFallbackPolling();
-        return;
       }
-
-      setConnection("connecting");
-      eventSource = new EventSource("/api/live");
-
-      eventSource.onopen = () => {
-        setConnection("live");
-      };
-
-      eventSource.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data) as {
-            type?: string;
-            versions?: LiveVersions;
-            changed?: LiveEntityKey[];
-          };
-
-          if (payload.type === "versions" && payload.versions) {
-            applyVersions(payload.versions, payload.changed);
-            setConnection("live");
-          }
-        } catch {
-          // Ignora mensagens inválidas.
-        }
-      };
-
-      eventSource.onerror = () => {
-        eventSource?.close();
-        eventSource = null;
-        setConnection("polling");
-        void fetchVersions();
-        startFallbackPolling();
-      };
+      schedule();
     };
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
         void fetchVersions();
-        if (!eventSource && !fallbackTimer) {
-          connect();
-        }
+        schedule();
       }
     };
 
-    connect();
+    setConnection("polling");
+    void fetchVersions();
+    schedule();
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       closed = true;
-      eventSource?.close();
-      if (fallbackTimer) window.clearInterval(fallbackTimer);
+      if (timer) window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [applyVersions, companyId, fetchVersions]);
+  }, [companyId, fetchVersions]);
 
   const subscribe = useCallback((subscriber: Omit<LiveSubscriber, "id">) => {
     const entry: LiveSubscriber = { ...subscriber, id: createSubscriberId() };
