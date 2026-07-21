@@ -38,6 +38,7 @@ Durante a configuração do deploy na Vercel, você precisará adicionar as segu
 | `BETTER_AUTH_URL` | URL de produção do seu admin: `https://admin.moveisunghero.com.br` | Domínio final |
 | `NEXT_PUBLIC_BETTER_AUTH_URL` | Mesma URL pública descrita acima: `https://admin.moveisunghero.com.br` | Domínio final |
 | `ADMIN_SETUP_SECRET` | Secret para criar o primeiro administrador via `/api/create-admin-prod` | Gerado via terminal |
+| `ALLOW_ADMIN_BOOTSTRAP` | Deve ficar **ausente** em produção. Só use `true` temporariamente para criar/recriar o admin; depois remova. | — |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Chave pública VAPID para push mobile (Web Push) | `npm run generate-vapid` |
 | `VAPID_PRIVATE_KEY` | Chave privada VAPID — **nunca commitar** | `npm run generate-vapid` |
 | `VAPID_SUBJECT` | Contato do remetente push (ex: `mailto:contato@moveisunghero.com.br`) | E-mail da empresa |

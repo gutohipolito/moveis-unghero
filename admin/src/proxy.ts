@@ -23,6 +23,12 @@ const PROTECTED_PREFIXES = [
   "/financeiro",
   "/projects",
   "/cliente/dashboard",
+  "/permissoes",
+  "/settings",
+  "/chamados",
+  "/melhorias",
+  "/produtos",
+  "/sem-acesso",
 ];
 
 function isPublicPath(pathname: string) {
@@ -46,6 +52,18 @@ function getSessionToken(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Fecha cadastro público de operadores via Better Auth.
+  // Criação de colaborador usa auth.api.signUpEmail no servidor (não passa pelo proxy).
+  if (
+    pathname.startsWith("/api/auth/sign-up") ||
+    pathname.includes("/sign-up/email")
+  ) {
+    return NextResponse.json(
+      { message: "Cadastro público desativado. Operadores são criados pela equipe." },
+      { status: 403 }
+    );
+  }
 
   if (isPublicPath(pathname)) {
     const sessionToken = getSessionToken(request);
@@ -84,6 +102,7 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/api/auth/:path*",
     "/bi/:path*",
     "/marketing/:path*",
     "/avaliar",
@@ -100,6 +119,12 @@ export const config = {
     "/logistica/:path*",
     "/financeiro/:path*",
     "/projects/:path*",
+    "/permissoes/:path*",
+    "/settings/:path*",
+    "/chamados/:path*",
+    "/melhorias/:path*",
+    "/produtos/:path*",
+    "/sem-acesso",
     "/cliente/login",
     "/cliente/dashboard/:path*",
   ],

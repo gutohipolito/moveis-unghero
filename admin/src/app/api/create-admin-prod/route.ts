@@ -4,6 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { ADMIN_EMAIL } from "@/lib/constants";
 
 async function handleCreateAdmin(request: NextRequest) {
+  // Exige flag explícita além do secret — se alguém deixar ADMIN_SETUP_SECRET
+  // na Vercel por esquecimento, o endpoint continua fechado.
+  if (process.env.ALLOW_ADMIN_BOOTSTRAP !== "true") {
+    return NextResponse.json(
+      { success: false, error: "Bootstrap de admin desativado." },
+      { status: 404 }
+    );
+  }
+
   const setupSecret = process.env.ADMIN_SETUP_SECRET;
   if (!setupSecret) {
     return NextResponse.json(
