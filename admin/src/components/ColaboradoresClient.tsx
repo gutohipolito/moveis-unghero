@@ -41,6 +41,8 @@ interface ColaboradorItem {
 interface ColaboradoresClientProps {
   initialColaboradores: ColaboradorItem[];
   companyId: string;
+  /** Só admin@moveisunghero.com.br pode criar/editar/excluir operadores. */
+  canManageUsers: boolean;
 }
 
 const CARGO_BADGES: Record<
@@ -132,7 +134,11 @@ function resetCreateForm(
   setImage("");
 }
 
-export default function ColaboradoresClient({ initialColaboradores, companyId }: ColaboradoresClientProps) {
+export default function ColaboradoresClient({
+  initialColaboradores,
+  companyId,
+  canManageUsers,
+}: ColaboradoresClientProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorItem[]>(initialColaboradores);
   const [search, setSearch] = useState("");
   const [filterCargo, setFilterCargo] = useState<string>("ALL");
@@ -384,13 +390,15 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
           </select>
         </div>
 
-        <Button
-          onClick={openCreate}
-          className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
-        >
-          <UserPlus className="h-4 w-4" />
-          Adicionar Colaborador
-        </Button>
+        {canManageUsers ? (
+          <Button
+            onClick={openCreate}
+            className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
+          >
+            <UserPlus className="h-4 w-4" />
+            Adicionar Colaborador
+          </Button>
+        ) : null}
       </div>
 
       {filtered.length === 0 ? (
@@ -476,6 +484,7 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                   </div>
 
                   {/* Ações no Rodapé */}
+                  {canManageUsers ? (
                   <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
                     <Button
                       variant="outline"
@@ -498,6 +507,9 @@ export default function ColaboradoresClient({ initialColaboradores, companyId }:
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  ) : (
+                    <div className="mt-auto pt-3 border-t border-slate-100" />
+                  )}
                 </div>
               </Card>
             );

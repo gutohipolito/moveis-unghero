@@ -10,8 +10,26 @@ import {
   getAuthContext,
   requireEnvironmentInCompany,
   requireUserInCompany,
+  type AuthContext,
 } from "@/lib/auth-guard";
 import { capitalizeText } from "@/lib/utils";
+
+function isPrimaryAdmin(authCtx: AuthContext) {
+  return authCtx.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
+
+function denyUnlessPrimaryAdmin(authCtx: AuthContext | null) {
+  if (!authCtx) {
+    return { success: false as const, error: "Não autenticado" };
+  }
+  if (!isPrimaryAdmin(authCtx)) {
+    return {
+      success: false as const,
+      error: "Somente o administrador principal pode gerenciar cadastros de operadores.",
+    };
+  }
+  return null;
+}
 
 // Retorna todos os colaboradores ativos da mesma empresa
 export async function getColaboradores(companyId: string) {
@@ -57,12 +75,8 @@ export async function createColaborador(data: {
   image?: string;
 }) {
   const authCtx = await getAuthContext();
-  if (!authCtx) {
-    return { success: false, error: "Não autenticado" };
-  }
-  if (authCtx.cargo !== "ADMIN") {
-    return { success: false, error: "Acesso negado" };
-  }
+  const denied = denyUnlessPrimaryAdmin(authCtx);
+  if (denied) return denied;
 
   try {
     // 1. Garante que não haja duplicidade de e-mail
@@ -80,7 +94,7 @@ export async function createColaborador(data: {
         email: data.email,
         password: data.senhaRaw,
         name: capitalizeText(data.name),
-        company_id: authCtx.companyId,
+        company_id: authCtx!.companyId,
         cargo: data.cargo,
       },
     });
@@ -118,15 +132,11 @@ export async function updateColaborador(
   }
 ) {
   const authCtx = await getAuthContext();
-  if (!authCtx) {
-    return { success: false, error: "Não autenticado" };
-  }
-  if (authCtx.cargo !== "ADMIN") {
-    return { success: false, error: "Acesso negado" };
-  }
+  const denied = denyUnlessPrimaryAdmin(authCtx);
+  if (denied) return denied;
   
   try {
-    await requireUserInCompany(userId, authCtx.companyId);
+    await requireUserInCompany(userId, authCtx!.companyId);
   } catch (error) {
     return {
       success: false,
@@ -166,14 +176,10 @@ export async function updateColaborador(
 // Exclui um colaborador e remove sessões e contas associadas
 export async function deleteColaborador(userId: string) {
   const authCtx = await getAuthContext();
-  if (!authCtx) {
-    return { success: false, error: "Não autenticado" };
-  }
-  if (authCtx.cargo !== "ADMIN") {
-    return { success: false, error: "Acesso negado" };
-  }
+  const denied = denyUnlessPrimaryAdmin(authCtx);
+  if (denied) return denied;
   try {
-    await requireUserInCompany(userId, authCtx.companyId);
+    await requireUserInCompany(userId, authCtx!.companyId);
   } catch (error) {
     return {
       success: false,

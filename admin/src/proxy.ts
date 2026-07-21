@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { parseClientSessionToken } from "@/lib/clientSession";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 
 const PUBLIC_PATHS = new Set(["/login", "/cliente/login", "/briefing", "/cadastro-parceiro"]);
 
@@ -31,6 +32,9 @@ const PROTECTED_PREFIXES = [
   "/sem-acesso",
 ];
 
+/** Login: 8 tentativas / 15 min por IP (freia força-bruta). */
+const LOGIN_RATE = { limit: 8, windowMs: 15 * 60 * 1000 };
+
 function isPublicPath(pathname: string) {
   if (PUBLIC_PATHS.has(pathname)) return true;
   return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -50,19 +54,48 @@ function getSessionToken(request: NextRequest) {
   );
 }
 
+function isAuthSignUp(pathname: string) {
+  return pathname.startsWith("/api/auth/sign-up") || pathname.includes("/sign-up/email");
+}
+
+function isAuthSignIn(pathname: string, method: string) {
+  if (method !== "POST") return false;
+  return (
+    pathname.startsWith("/api/auth/sign-in") ||
+    pathname.includes("/sign-in/email")
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Fecha cadastro público de operadores via Better Auth.
   // Criação de colaborador usa auth.api.signUpEmail no servidor (não passa pelo proxy).
-  if (
-    pathname.startsWith("/api/auth/sign-up") ||
-    pathname.includes("/sign-up/email")
-  ) {
+  if (isAuthSignUp(pathname)) {
     return NextResponse.json(
       { message: "Cadastro público desativado. Operadores são criados pela equipe." },
       { status: 403 }
     );
+  }
+
+  if (isAuthSignIn(pathname, request.method)) {
+    const ip = getRequestIp(request.headers);
+    const result = checkRateLimit(`signin:${ip}`, LOGIN_RATE);
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          message: `Muitas tentativas de login. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(result.retryAfterSec),
+            "X-RateLimit-Limit": String(LOGIN_RATE.limit),
+            "X-RateLimit-Remaining": "0",
+          },
+        }
+      );
+    }
   }
 
   if (isPublicPath(pathname)) {

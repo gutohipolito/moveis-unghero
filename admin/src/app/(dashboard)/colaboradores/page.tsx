@@ -6,24 +6,28 @@ import ColaboradoresClient from "@/components/ColaboradoresClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
+import { ADMIN_EMAIL } from "@/lib/constants";
+import type { Role } from "@prisma/client";
 
 export default async function ColaboradoresPage() {
   await guardModule("colaboradores");
-  // Obtém a sessão de administrador real ou bypass
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
+  const canManageUsers =
+    (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-  // Busca a lista física no Neon
   const res = await getColaboradores(companyId);
 
-  // Mapeia para o formato serializável exigido no cliente
-  const colaboradores = res.success && res.colaboradores ? res.colaboradores.map((c: any) => ({
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    cargo: c.cargo,
-    createdAt: c.createdAt
-  })) : [];
+  const colaboradores =
+    res.success && res.colaboradores
+      ? res.colaboradores.map((c) => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          cargo: c.cargo as Role,
+          createdAt: c.createdAt,
+        }))
+      : [];
 
   return (
     <div className="space-y-6">
@@ -36,6 +40,7 @@ export default async function ColaboradoresPage() {
             items={[
               "Cadastre quem tem acesso ao painel e defina o cargo de cada um.",
               "O cargo determina os módulos visíveis (veja em Permissões).",
+              "Somente o administrador principal pode criar ou alterar operadores.",
               "Para arquitetos e projetistas externos, use Projetistas e Arquitetos.",
             ]}
           />
@@ -45,8 +50,9 @@ export default async function ColaboradoresPage() {
       <SettingsSectionTabs />
 
       <ColaboradoresClient
-        initialColaboradores={colaboradores} 
-        companyId={companyId} 
+        initialColaboradores={colaboradores}
+        companyId={companyId}
+        canManageUsers={canManageUsers}
       />
     </div>
   );

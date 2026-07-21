@@ -28,6 +28,12 @@ export default function LoginPage() {
 
       if (res.ok && data) {
         window.location.href = "/crm";
+      } else if (res.status === 429) {
+        showError(
+          "Muitas tentativas",
+          data?.message || "Aguarde alguns minutos e tente novamente."
+        );
+        setLoading(false);
       } else {
         showError("Login inválido", data?.message || "E-mail ou senha incorretos.");
         setLoading(false);
