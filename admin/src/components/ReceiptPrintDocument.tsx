@@ -176,9 +176,6 @@ export default function ReceiptPrintDocument({
                 {parcelaLabel ? (
                   <p className="text-xs font-black text-neutral-800">{parcelaLabel}</p>
                 ) : null}
-                <p className="text-[8px] uppercase tracking-wider text-neutral-400">
-                  Controle {receipt.id.slice(0, 8).toUpperCase()}
-                </p>
               </div>
             </header>
 
@@ -256,15 +253,17 @@ export default function ReceiptPrintDocument({
                     {f.name} — CNPJ {f.cnpj}
                   </p>
                 </div>
-                <div className="text-center space-y-1 pt-[30px]">
-                  <div className="border-t border-neutral-700 mx-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-700">
+                <div className="text-center space-y-1 pt-[30px] text-[#3f3f46]">
+                  {/* Espaço em branco para assinatura manuscrita do pagador */}
+                  <div className="h-[30px]" aria-hidden />
+                  <div className="border-t border-[#3f3f46] mx-4" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">
                     Pagador
                   </p>
-                  <p className="text-[9px] font-bold text-neutral-700">
+                  <p className="text-[9px] font-bold">
                     {receipt.cliente_nome}
                   </p>
-                  <p className="text-[9px] text-neutral-600">
+                  <p className="text-[9px]">
                     {receipt.cliente_documento}
                   </p>
                 </div>
