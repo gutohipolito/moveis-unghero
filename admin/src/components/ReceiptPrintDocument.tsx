@@ -23,6 +23,11 @@ export type ReceiptPrintData = {
 
 export function receiptPrintStylesCss() {
   return `
+    @font-face {
+      font-family: "CladenirSignature";
+      src: url("/fonts/cladenir-signature.woff2") format("woff2");
+      font-display: swap;
+    }
     @page {
       size: A4 portrait;
       margin: 0;
@@ -221,26 +226,35 @@ export default function ReceiptPrintDocument({
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 pt-16">
-                <div className="text-center space-y-2">
+                <div className="text-center space-y-1">
+                  <p
+                    className="text-[30px] leading-none text-neutral-900"
+                    style={{ fontFamily: '"CladenirSignature", cursive' }}
+                  >
+                    Cladenir Unghero
+                  </p>
                   <div className="border-t border-neutral-800 mx-4" />
                   <p className="text-[10px] font-black uppercase tracking-widest">
-                    {f.name}
+                    Cladenir Unghero
                   </p>
                   <p className="text-[9px] text-neutral-500 uppercase tracking-wide">
-                    CNPJ {f.cnpj}
+                    Responsável Comercial
                   </p>
-                  {receipt.emitido_por_nome ? (
-                    <p className="text-[9px] text-neutral-500">
-                      Emitido por {receipt.emitido_por_nome}
-                    </p>
-                  ) : null}
+                  <p className="text-[9px] text-neutral-400">
+                    {f.name} — CNPJ {f.cnpj}
+                  </p>
                 </div>
-                <div className="text-center space-y-2">
-                  <div className="border-t border-neutral-300 mx-4" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    Pagador (ciente)
+                <div className="text-center space-y-1 pt-[30px]">
+                  <div className="border-t border-neutral-800 mx-4" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-800">
+                    Pagador
                   </p>
-                  <p className="text-[9px] text-neutral-400">Assinatura opcional</p>
+                  <p className="text-[9px] font-bold text-neutral-600">
+                    {receipt.cliente_nome}
+                  </p>
+                  <p className="text-[9px] text-neutral-500">
+                    {receipt.cliente_documento}
+                  </p>
                 </div>
               </div>
             </main>
