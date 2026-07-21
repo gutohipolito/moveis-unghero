@@ -149,11 +149,13 @@ model Client {
   lgpd_aceite_em    DateTime?
   marketing_aceite  Boolean   @default(false)
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
   attachments  ClientAttachment[]
   contracts    Contract[]
   paymentReceipts PaymentReceipt[]
 
   @@index([company_id, telefone_digits])
+  @@index([company_id, updatedAt])
 }
 
 enum Origin {
@@ -280,9 +282,13 @@ model Environment {
 
   attachments EnvironmentAttachment[]
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   @@index([project_id])
   @@index([responsavel_id])
   @@index([ajudante_id])
+  @@index([updatedAt])
 }
 
 enum EnvironmentAttachmentCategory {
@@ -350,10 +356,12 @@ model Quote {
   items       QuoteItem[]
   approvals   QuoteApproval[]
   createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
 
   @@index([project_id])
   @@index([partner_id])
   @@index([createdAt])
+  @@index([updatedAt])
 }
 
 enum QuoteItemStatus {
@@ -563,8 +571,10 @@ model Task {
   data        DateTime
   status      String   @default("PENDENTE") // PENDENTE, CONCLUIDA
   tipo        TaskType @default(OUTROS)
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@index([project_id])
+  @@index([updatedAt])
 }
 
 enum TaskType {
@@ -589,9 +599,11 @@ model Installment {
   total_parcelas    Int?
   grupo_id          String?
   paymentReceipts   PaymentReceipt[]
+  updatedAt         DateTime @default(now()) @updatedAt
 
   @@index([project_id])
   @@index([status])
+  @@index([updatedAt])
 }
 
 enum PaymentMethod {
@@ -663,6 +675,10 @@ model CatalogItem {
   slug        String?
   ordem       Int           @default(0)
   ativo       Boolean       @default(true)
+  updatedAt   DateTime      @default(now()) @updatedAt
+
+  @@index([group_id])
+  @@index([updatedAt])
 }
 
 model OperatorNote {

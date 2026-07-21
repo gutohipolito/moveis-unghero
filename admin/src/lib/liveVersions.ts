@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
 import type { LiveEntityKey, LiveVersions } from "@/lib/liveEntities";
 import type { Prisma } from "@prisma/client";
 
@@ -7,374 +6,194 @@ function companyProjectWhere(companyId: string) {
   return { client: { company_id: companyId } };
 }
 
-async function fingerprintEnvironments(where: Prisma.EnvironmentWhereInput) {
-  const rows = await prisma.environment.findMany({
-    where,
-    select: {
-      id: true,
-      status: true,
-      responsavel_id: true,
-      ajudante_id: true,
-    },
-    orderBy: { id: "asc" },
-  });
-
-  return buildLiveSnapshotVersion(rows);
+/** Versão leve: count + max(updatedAt). Detecta qualquer write sem varrer linhas. */
+function versionFromAgg(agg: {
+  _count: number | { _all?: number } | true;
+  _max: { updatedAt: Date | null };
+}) {
+  const count =
+    typeof agg._count === "number"
+      ? agg._count
+      : typeof agg._count === "object" && agg._count && "_all" in agg._count
+        ? Number(agg._count._all ?? 0)
+        : 0;
+  return `${count}:${agg._max.updatedAt?.toISOString() ?? ""}`;
 }
 
 async function fingerprintProjects(companyId: string) {
-  const rows = await prisma.project.findMany({
+  const agg = await prisma.project.aggregate({
     where: companyProjectWhere(companyId),
-    select: {
-      id: true,
-      status_geral: true,
-      updatedAt: true,
-      valor_previsto: true,
-      ultimo_contato_em: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
+  return versionFromAgg(agg);
+}
 
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      status: row.status_geral,
-      updatedAt: row.updatedAt.toISOString(),
-      valor: Number(row.valor_previsto),
-      contato: row.ultimo_contato_em?.toISOString() ?? "",
-    }))
-  );
+async function fingerprintEnvironments(where: Prisma.EnvironmentWhereInput) {
+  const agg = await prisma.environment.aggregate({
+    where,
+    _count: true,
+    _max: { updatedAt: true },
+  });
+  return versionFromAgg(agg);
 }
 
 async function fingerprintInstallments(companyId: string) {
-  const rows = await prisma.installment.findMany({
+  const agg = await prisma.installment.aggregate({
     where: { project: companyProjectWhere(companyId) },
-    select: {
-      id: true,
-      status: true,
-      valor: true,
-      data_vencimento: true,
-      data_pagamento: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      status: row.status,
-      valor: Number(row.valor),
-      vencimento: row.data_vencimento.toISOString(),
-      pagamento: row.data_pagamento?.toISOString() ?? "",
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintClients(companyId: string) {
-  const rows = await prisma.client.findMany({
+  const agg = await prisma.client.aggregate({
     where: { company_id: companyId },
-    select: {
-      id: true,
-      nome: true,
-      status: true,
-      cidade: true,
-      telefone: true,
-      createdAt: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      status: row.status,
-      nome: row.nome,
-      cidade: row.cidade,
-      telefone: row.telefone,
-      createdAt: row.createdAt.toISOString(),
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintTasks(companyId: string) {
-  const rows = await prisma.task.findMany({
+  const agg = await prisma.task.aggregate({
     where: { project: companyProjectWhere(companyId) },
-    select: {
-      id: true,
-      status: true,
-      data: true,
-      titulo: true,
-      responsavel: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      status: row.status,
-      data: row.data.toISOString(),
-      titulo: row.titulo,
-      responsavel: row.responsavel,
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintQuotes(companyId: string) {
-  const rows = await prisma.quote.findMany({
-    where: { project: companyProjectWhere(companyId) },
-    select: {
-      id: true,
-      valor_final: true,
-      validade: true,
-      versao: true,
-      _count: { select: { items: true } },
-    },
-    orderBy: { id: "asc" },
-  });
+  const projectWhere = companyProjectWhere(companyId);
+  const [quotes, items] = await Promise.all([
+    prisma.quote.aggregate({
+      where: { project: projectWhere },
+      _count: true,
+      _max: { updatedAt: true },
+      _sum: { valor_final: true },
+    }),
+    // Itens cobrem aprovação parcial / revisão de preço mesmo quando o Quote não é tocado.
+    prisma.quoteItem.groupBy({
+      by: ["status"],
+      where: { quote: { project: projectWhere } },
+      _count: { _all: true },
+      _sum: { valor_total: true },
+    }),
+  ]);
 
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      valor: Number(row.valor_final),
-      validade: row.validade.toISOString(),
-      versao: row.versao,
-      items: row._count.items,
-    }))
-  );
+  const itemsSig = items
+    .map(
+      (row) =>
+        `${row.status}:${row._count._all}:${Number(row._sum.valor_total ?? 0)}`
+    )
+    .sort()
+    .join(",");
+
+  return `${versionFromAgg(quotes)}:${Number(quotes._sum.valor_final ?? 0)}|${itemsSig}`;
 }
 
 async function fingerprintInventory(companyId: string) {
   const [inventory, suppliers] = await Promise.all([
-    prisma.inventoryItem.findMany({
+    prisma.inventoryItem.aggregate({
       where: { company_id: companyId },
-      select: {
-        id: true,
-        quantidade: true,
-        preco_custo: true,
-        ativo: true,
-        updatedAt: true,
-      },
-      orderBy: { id: "asc" },
+      _count: true,
+      _max: { updatedAt: true },
     }),
-    prisma.supplier.findMany({
+    prisma.supplier.aggregate({
       where: { company_id: companyId },
-      select: {
-        id: true,
-        ativo: true,
-        updatedAt: true,
-      },
-      orderBy: { id: "asc" },
+      _count: true,
+      _max: { updatedAt: true },
     }),
   ]);
 
-  return buildLiveSnapshotVersion([
-    ...inventory.map((row) => ({
-      kind: "item",
-      id: row.id,
-      qtd: row.quantidade,
-      preco: Number(row.preco_custo),
-      ativo: row.ativo ? 1 : 0,
-      updatedAt: row.updatedAt.toISOString(),
-    })),
-    ...suppliers.map((row) => ({
-      kind: "supplier",
-      id: row.id,
-      ativo: row.ativo ? 1 : 0,
-      updatedAt: row.updatedAt.toISOString(),
-    })),
-  ]);
+  return `i:${versionFromAgg(inventory)}|s:${versionFromAgg(suppliers)}`;
 }
 
 async function fingerprintCatalog(companyId: string) {
-  const rows = await prisma.catalogItem.findMany({
+  const agg = await prisma.catalogItem.aggregate({
     where: { group: { company_id: companyId } },
-    select: {
-      id: true,
-      label: true,
-      slug: true,
-      ordem: true,
-      ativo: true,
-      group_id: true,
-    },
-    orderBy: [{ group_id: "asc" }, { ordem: "asc" }, { id: "asc" }],
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      label: row.label,
-      slug: row.slug ?? "",
-      ordem: row.ordem,
-      ativo: row.ativo,
-      group_id: row.group_id,
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintPartners(companyId: string) {
-  const rows = await prisma.professionalPartner.findMany({
+  const agg = await prisma.professionalPartner.aggregate({
     where: { company_id: companyId },
-    select: {
-      id: true,
-      nome: true,
-      ativo: true,
-      updatedAt: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      nome: row.nome,
-      ativo: row.ativo ? 1 : 0,
-      updatedAt: row.updatedAt.toISOString(),
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintColaboradores(companyId: string) {
-  const rows = await prisma.user.findMany({
+  const agg = await prisma.user.aggregate({
     where: { company_id: companyId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      cargo: true,
-      createdAt: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      cargo: row.cargo,
-      createdAt: row.createdAt.toISOString(),
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintLogistica(companyId: string) {
-  const rows = await prisma.project.findMany({
+  const agg = await prisma.project.aggregate({
     where: {
       ...companyProjectWhere(companyId),
       status_geral: { in: ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"] },
     },
-    select: {
-      id: true,
-      status_geral: true,
-      updatedAt: true,
-    },
-    orderBy: { id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.id,
-      status: row.status_geral,
-      updatedAt: row.updatedAt.toISOString(),
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintSla(companyId: string) {
-  const rows = await prisma.projectSlaState.findMany({
+  const agg = await prisma.projectSlaState.aggregate({
     where: { project: companyProjectWhere(companyId) },
-    select: {
-      project_id: true,
-      current_stage: true,
-      stage_started_at: true,
-      extension_days: true,
-      nota_fiscal_emitida: true,
-      updatedAt: true,
-    },
-    orderBy: { project_id: "asc" },
+    _count: true,
+    _max: { updatedAt: true },
   });
-
-  return buildLiveSnapshotVersion(
-    rows.map((row) => ({
-      id: row.project_id,
-      stage: row.current_stage,
-      started: row.stage_started_at.toISOString(),
-      extension: row.extension_days,
-      nf: row.nota_fiscal_emitida ? 1 : 0,
-      updatedAt: row.updatedAt.toISOString(),
-    }))
-  );
+  return versionFromAgg(agg);
 }
 
 async function fingerprintPortal(userId: string) {
-  const [tasks, timeCards] = await Promise.all([
-    prisma.environment.findMany({
+  const [envs, timeCards] = await Promise.all([
+    prisma.environment.aggregate({
       where: { responsavel_id: userId },
-      select: { id: true, status: true },
-      orderBy: { id: "asc" },
+      _count: true,
+      _max: { updatedAt: true },
     }),
-    prisma.timeCard.findMany({
+    prisma.timeCard.aggregate({
       where: { user_id: userId },
-      select: {
-        id: true,
-        data: true,
-        entrada: true,
-        almoco_in: true,
-        almoco_out: true,
-        saida: true,
-        horas: true,
-      },
-      orderBy: { data: "desc" },
-      take: 14,
+      _count: true,
+      _max: { data: true },
     }),
   ]);
 
-  return buildLiveSnapshotVersion([
-    ...tasks.map((row) => ({ kind: "task", id: row.id, status: row.status })),
-    ...timeCards.map((row) => ({
-      kind: "ponto",
-      id: row.id,
-      data: row.data.toISOString(),
-      entrada: row.entrada?.toISOString() ?? "",
-      saida: row.saida?.toISOString() ?? "",
-      horas: row.horas ? Number(row.horas) : "",
-    })),
-  ]);
+  return `e:${versionFromAgg(envs)}|t:${timeCards._count}:${timeCards._max.data?.toISOString() ?? ""}`;
 }
 
 async function fingerprintWorkspace(userId: string, companyId: string) {
   const [notes, reminders] = await Promise.all([
-    prisma.operatorNote.findMany({
+    prisma.operatorNote.aggregate({
       where: { user_id: userId, company_id: companyId },
-      select: { id: true, pinned: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
+      _count: true,
+      _max: { updatedAt: true },
     }),
-    prisma.operatorReminder.findMany({
+    prisma.operatorReminder.aggregate({
       where: { user_id: userId, company_id: companyId },
-      select: { id: true, done: true, due_at: true, updatedAt: true },
-      orderBy: { due_at: "asc" },
+      _count: true,
+      _max: { updatedAt: true },
     }),
   ]);
 
-  return buildLiveSnapshotVersion([
-    ...notes.map((row) => ({
-      kind: "note",
-      id: row.id,
-      pinned: row.pinned ? 1 : 0,
-      updatedAt: row.updatedAt.toISOString(),
-    })),
-    ...reminders.map((row) => ({
-      kind: "reminder",
-      id: row.id,
-      done: row.done ? 1 : 0,
-      due: row.due_at.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    })),
-  ]);
+  return `n:${versionFromAgg(notes)}|r:${versionFromAgg(reminders)}`;
 }
 
-/** Versões leves por domínio — usadas pelo SSE para detectar mudanças. */
+/** Versões leves por domínio — agregados (count + max updatedAt), sem varrer linhas. */
 export async function getCompanyLiveVersions(
   companyId: string,
   userId?: string
