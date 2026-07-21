@@ -22,6 +22,9 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { getParceiros } from "@/app/actions/parceiros";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
+import ReceiptIssueDialog, {
+  type ReceiptIssuePrefill,
+} from "@/components/finance/ReceiptIssueDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
@@ -39,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
-import { formatDateBR } from "@/lib/brazilDate";
+import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import {
@@ -67,6 +70,7 @@ import {
   Sparkles,
   Calendar,
   ChevronDown,
+  Receipt,
 } from "lucide-react";
 
 interface Environment {
@@ -299,6 +303,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
   const [approvingQuoteId, setApprovingQuoteId] = useState<string | null>(null);
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
   const [newTaskForm, setNewTaskForm] = useState({
@@ -1597,9 +1603,27 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 Controle o recebimento de entradas, parcelas e saldo devedor do contrato.
               </p>
             </div>
-            <Button onClick={() => setIsAddInstallmentOpen(true)} size="sm" className="btn-metallic">
-              <Plus className="h-4 w-4 mr-1.5" /> Lançar Parcela
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  setReceiptPrefill({
+                    projectId: project.id,
+                    referente: "Pagamento referente a móveis planejados",
+                    quitacao: "PARCIAL",
+                  });
+                  setReceiptOpen(true);
+                }}
+              >
+                <Receipt className="h-4 w-4" /> Recibo avulso
+              </Button>
+              <Button onClick={() => setIsAddInstallmentOpen(true)} size="sm" className="btn-metallic">
+                <Plus className="h-4 w-4 mr-1.5" /> Lançar Parcela
+              </Button>
+            </div>
           </div>
 
           {/* Indicadores Financeiros Rápidos */}
@@ -1724,15 +1748,43 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            {!isPaid && (
-                              <Button 
-                                onClick={() => handlePayInstallment(ins.id)} 
-                                size="sm" 
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] py-1 h-7 font-bold"
-                              >
-                                Quitar
-                              </Button>
-                            )}
+                            <div className="flex flex-col items-end gap-1.5">
+                              {!isPaid ? (
+                                <Button 
+                                  onClick={() => handlePayInstallment(ins.id)} 
+                                  size="sm" 
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] py-1 h-7 font-bold"
+                                >
+                                  Quitar
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-[10px] py-1 h-7 font-bold gap-1"
+                                  onClick={() => {
+                                    setReceiptPrefill({
+                                      installmentId: ins.id,
+                                      projectId: project.id,
+                                      valor: ins.valor,
+                                      metodo: ins.metodo_pagamento || "PIX",
+                                      dataRecebimento: ins.data_pagamento
+                                        ? toISODateBR(ins.data_pagamento)
+                                        : toISODateBR(),
+                                      tipo: ins.tipo,
+                                      numero_parcela: ins.numero_parcela,
+                                      total_parcelas: ins.total_parcelas,
+                                      quitacao: "PARCIAL",
+                                    });
+                                    setReceiptOpen(true);
+                                  }}
+                                >
+                                  <Receipt className="h-3 w-3" />
+                                  Recibo
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1934,6 +1986,20 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           },
         ]}
         onSuccess={refreshInstallmentsFromServer}
+      />
+
+      <ReceiptIssueDialog
+        open={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        clientId={project.client.id}
+        clientName={project.client.nome}
+        projects={[
+          {
+            id: project.id,
+            label: project.status_geral,
+          },
+        ]}
+        prefill={receiptPrefill}
       />
 
       {/* Modal - Novo Agendamento / Tarefa */}

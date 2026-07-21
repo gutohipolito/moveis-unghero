@@ -439,6 +439,7 @@ export default function ClienteDetailsClient({
           {activeTab === "finance" && (
             <ClienteFinanceTab
               clientId={client.id}
+              clientName={client.nome}
               projects={projects}
               payments={payments}
               onPaymentsChange={setPayments}

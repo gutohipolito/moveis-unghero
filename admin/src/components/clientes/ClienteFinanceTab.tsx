@@ -10,17 +10,23 @@ import {
 } from "@/app/actions/cliente";
 import { payInstallment } from "@/app/actions/operations";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
+import ReceiptIssueDialog, {
+  type ReceiptIssuePrefill,
+} from "@/components/finance/ReceiptIssueDialog";
 import type { ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
+import { toISODateBR } from "@/lib/brazilDate";
 import {
   CheckCircle2,
   CreditCard,
   ExternalLink,
   Loader2,
   Plus,
+  Receipt,
 } from "lucide-react";
 
 interface ClienteFinanceTabProps {
   clientId: string;
+  clientName: string;
   projects: ClientProjectSummary[];
   payments: Payment[];
   onPaymentsChange: (payments: Payment[]) => void;
@@ -29,6 +35,7 @@ interface ClienteFinanceTabProps {
 
 export default function ClienteFinanceTab({
   clientId,
+  clientName,
   projects,
   payments,
   onPaymentsChange,
@@ -36,6 +43,8 @@ export default function ClienteFinanceTab({
 }: ClienteFinanceTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
 
   async function refreshPayments() {
     const res = await getClientPaymentsAction(clientId);
@@ -49,7 +58,35 @@ export default function ClienteFinanceTab({
     setPayingId(null);
   }
 
+  function openAvulsoReceipt() {
+    setReceiptPrefill({
+      referente: "Pagamento referente a móveis planejados",
+      quitacao: "PARCIAL",
+    });
+    setReceiptOpen(true);
+  }
+
+  function openInstallmentReceipt(pay: Payment) {
+    setReceiptPrefill({
+      installmentId: pay.id,
+      projectId: pay.projectId,
+      valor: pay.valor,
+      metodo: pay.metodoCodigo || undefined,
+      dataRecebimento: pay.pagoEm ? toISODateBR(pay.pagoEm) : toISODateBR(),
+      tipo: pay.tipo,
+      numero_parcela: pay.numeroParcela,
+      total_parcelas: pay.totalParcelas,
+      descricao: pay.descricao,
+      quitacao: "PARCIAL",
+    });
+    setReceiptOpen(true);
+  }
+
   const canAdd = projects.length > 0;
+  const projectOptions = projects.map((p) => ({
+    id: p.id,
+    label: `${p.status_geral} · ${p.id.slice(0, 8)}`,
+  }));
 
   return (
     <>
@@ -64,10 +101,18 @@ export default function ClienteFinanceTab({
               antes do vencimento para você preparar cobrança ou recebimento.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full">
               {payments.length} parcela{payments.length === 1 ? "" : "s"}
             </span>
+            <Button
+              type="button"
+              variant="outline"
+              className="text-xs font-bold gap-1.5"
+              onClick={openAvulsoReceipt}
+            >
+              <Receipt className="h-4 w-4" /> Recibo avulso
+            </Button>
             <Button
               type="button"
               className="text-xs font-bold gap-1.5 btn-metallic"
@@ -91,13 +136,23 @@ export default function ClienteFinanceTab({
         ) : payments.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl space-y-3">
             <p>Nenhuma parcela lançada ainda.</p>
-            <Button
-              type="button"
-              className="text-xs font-bold gap-1.5 btn-metallic"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" /> Criar plano de parcelas
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-xs font-bold gap-1.5"
+                onClick={openAvulsoReceipt}
+              >
+                <Receipt className="h-4 w-4" /> Emitir recibo avulso
+              </Button>
+              <Button
+                type="button"
+                className="text-xs font-bold gap-1.5 btn-metallic"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" /> Criar plano de parcelas
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -146,9 +201,21 @@ export default function ClienteFinanceTab({
                         {pay.status}
                       </span>
                       {pay.pagoEm ? (
-                        <span className="text-[9px] font-semibold text-emerald-600 text-center">
-                          Pago em: {new Date(pay.pagoEm).toLocaleDateString("pt-BR")}
-                        </span>
+                        <>
+                          <span className="text-[9px] font-semibold text-emerald-600 text-center">
+                            Pago em: {new Date(pay.pagoEm).toLocaleDateString("pt-BR")}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-[10px] font-bold h-7 px-2 gap-1"
+                            onClick={() => openInstallmentReceipt(pay)}
+                          >
+                            <Receipt className="h-3 w-3" />
+                            Emitir recibo
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           type="button"
@@ -180,6 +247,15 @@ export default function ClienteFinanceTab({
         onClose={() => setIsModalOpen(false)}
         projects={projects}
         onSuccess={refreshPayments}
+      />
+
+      <ReceiptIssueDialog
+        open={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        clientId={clientId}
+        clientName={clientName}
+        projects={projectOptions}
+        prefill={receiptPrefill}
       />
     </>
   );

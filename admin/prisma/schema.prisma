@@ -30,6 +30,7 @@ model Company {
   suggestions    Suggestion[]
   contractTemplates ContractTemplate[]
   contracts         Contract[]
+  paymentReceipts   PaymentReceipt[]
 }
 
 model User {
@@ -147,6 +148,7 @@ model Client {
   createdAt    DateTime  @default(now())
   attachments  ClientAttachment[]
   contracts    Contract[]
+  paymentReceipts PaymentReceipt[]
 
   @@index([company_id, telefone_digits])
 }
@@ -229,6 +231,7 @@ model Project {
   supplyTickets         SupplyTicket[]
   expenses              Expense[]
   contracts             Contract[]
+  paymentReceipts       PaymentReceipt[]
 }
 
 enum ProjectStatus {
@@ -517,6 +520,7 @@ model Installment {
   numero_parcela    Int?
   total_parcelas    Int?
   grupo_id          String?
+  paymentReceipts   PaymentReceipt[]
 }
 
 enum PaymentMethod {
@@ -977,4 +981,50 @@ model Contract {
   @@index([company_id, status])
   @@index([client_id])
   @@index([project_id])
+}
+
+enum ReceiptQuitacao {
+  TOTAL
+  PARCIAL
+}
+
+/** Recibo de pagamento emitido pela empresa (PJ) ao cliente. */
+model PaymentReceipt {
+  id                String          @id @default(uuid())
+  company_id        String
+  company           Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  client_id         String
+  client            Client          @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  project_id        String?
+  project           Project?        @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  installment_id    String?
+  installment       Installment?    @relation(fields: [installment_id], references: [id], onDelete: SetNull)
+
+  numero            Int
+  valor             Decimal         @db.Decimal(12, 2)
+  referente         String          @db.Text
+  metodo_pagamento  PaymentMethod   @default(PIX)
+  data_recebimento  DateTime
+  cidade_emissao    String          @default("Farroupilha")
+  quitacao          ReceiptQuitacao @default(PARCIAL)
+
+  cliente_nome      String
+  cliente_documento String
+  cliente_endereco  String?
+
+  emitido_por_id    String?
+  emitido_por_nome  String?
+  observacoes       String?
+
+  share_code        String?         @unique
+  shared_at         DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([company_id, numero])
+  @@index([company_id])
+  @@index([client_id])
+  @@index([project_id])
+  @@index([installment_id])
 }

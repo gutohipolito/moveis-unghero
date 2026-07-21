@@ -1,0 +1,35 @@
+import { notFound } from "next/navigation";
+import ReceiptPrintDocument from "@/components/ReceiptPrintDocument";
+import ReceiptPublicPrintBar from "@/components/ReceiptPublicPrintBar";
+import { getPaymentReceiptByShareCode } from "@/app/actions/receipts";
+import { labelPaymentMethod } from "@/lib/paymentMethods";
+
+interface PublicReceiptPageProps {
+  params: Promise<{ code: string }>;
+}
+
+export default async function PublicReceiptPage({ params }: PublicReceiptPageProps) {
+  const { code } = await params;
+  const receipt = await getPaymentReceiptByShareCode(code);
+  if (!receipt) notFound();
+
+  return (
+    <ReceiptPrintDocument
+      receipt={{
+        numero: receipt.numero,
+        valor: receipt.valor,
+        referente: receipt.referente,
+        metodoLabel: labelPaymentMethod(receipt.metodo_pagamento),
+        data_recebimento: receipt.data_recebimento,
+        cidade_emissao: receipt.cidade_emissao,
+        quitacao: receipt.quitacao,
+        cliente_nome: receipt.cliente_nome,
+        cliente_documento: receipt.cliente_documento,
+        cliente_endereco: receipt.cliente_endereco,
+        emitido_por_nome: receipt.emitido_por_nome,
+        observacoes: receipt.observacoes,
+      }}
+      topBar={<ReceiptPublicPrintBar />}
+    />
+  );
+}

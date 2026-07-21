@@ -607,6 +607,7 @@ export interface Payment {
   status: "PAGO" | "PENDENTE" | "ATRASADO";
   pagoEm?: string;
   metodo?: string;
+  metodoCodigo?: string;
   tipo: "ENTRADA" | "PARCELA";
   numeroParcela?: number;
   totalParcelas?: number;
@@ -688,6 +689,7 @@ function mapInstallmentToPayment(
       ? inst.data_pagamento.toISOString().split("T")[0]
       : undefined,
     metodo,
+    metodoCodigo: inst.metodo_pagamento,
     tipo: inst.tipo === "ENTRADA" ? "ENTRADA" : "PARCELA",
     numeroParcela: inst.numero_parcela ?? undefined,
     totalParcelas: inst.total_parcelas ?? undefined,
