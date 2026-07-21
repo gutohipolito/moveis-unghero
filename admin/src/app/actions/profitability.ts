@@ -48,17 +48,32 @@ export async function getProjectProfitability(): Promise<{
         client: { select: { nome: true } },
         installments: { select: { valor: true, status: true } },
         expenses: { select: { valor: true, status: true } },
-        quotes: { select: { valor_final: true, aprovado_em: true } },
+        quotes: {
+          select: {
+            valor_final: true,
+            aprovado_em: true,
+            approvals: { select: { valor_aprovado: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
     const rows: ProjectProfitRow[] = projects
       .map((p) => {
-        const approved = p.quotes.find((q) => q.aprovado_em);
-        const receita = approved
-          ? Number(approved.valor_final)
-          : Number(p.valor_previsto);
+        const approvalSum = p.quotes.reduce(
+          (sum, q) =>
+            sum +
+            q.approvals.reduce((inner, a) => inner + Number(a.valor_aprovado), 0),
+          0
+        );
+        const approvedLegacy = p.quotes.find((q) => q.aprovado_em);
+        const receita =
+          approvalSum > 0
+            ? approvalSum
+            : approvedLegacy
+              ? Number(approvedLegacy.valor_final)
+              : Number(p.valor_previsto);
 
         const recebido = p.installments
           .filter((i) => i.status === "PAGO")
@@ -85,7 +100,7 @@ export async function getProjectProfitability(): Promise<{
           custoPago,
           margem,
           margemPct,
-          temAprovado: !!approved,
+          temAprovado: approvalSum > 0 || !!approvedLegacy,
         };
       })
       // Mostra apenas obras com receita ou custo relevante.

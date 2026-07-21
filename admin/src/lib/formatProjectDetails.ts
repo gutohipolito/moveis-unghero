@@ -45,6 +45,15 @@ export type ProjectDetailsPayload = {
     validade: string;
     observacoes: string | null;
     aprovado_em: string | null;
+    items: Array<{
+      id: string;
+      descricao: string;
+      quantidade: number;
+      valor_unitario: number;
+      valor_total: number;
+      status: string;
+      aprovado_em: string | null;
+    }>;
   }>;
   tasks: Array<{
     id: string;
@@ -92,7 +101,23 @@ const projectInclude = {
   client: true,
   environments: true,
   files: true,
-  quotes: { orderBy: { versao: "desc" as const } },
+  quotes: {
+    orderBy: { versao: "desc" as const },
+    include: {
+      items: {
+        orderBy: { id: "asc" as const },
+        select: {
+          id: true,
+          descricao: true,
+          quantidade: true,
+          valor_unitario: true,
+          valor_total: true,
+          status: true,
+          aprovado_em: true,
+        },
+      },
+    },
+  },
   tasks: true,
   installments: true,
   responsavel: true,
@@ -160,6 +185,15 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       validade: q.validade.toISOString(),
       observacoes: q.observacoes,
       aprovado_em: q.aprovado_em ? q.aprovado_em.toISOString() : null,
+      items: (q.items || []).map((item) => ({
+        id: item.id,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        valor_unitario: Number(item.valor_unitario),
+        valor_total: Number(item.valor_total),
+        status: item.status,
+        aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
+      })),
     })),
     tasks: project.tasks.map((t) => ({
       id: t.id,

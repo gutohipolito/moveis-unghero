@@ -29,7 +29,6 @@ import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { usePermissions } from "@/context/PermissionsContext";
 import { 
-  approveQuote,
   deleteQuote,
   getProjectsForQuotes, 
   getQuotes,
@@ -43,8 +42,11 @@ import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
+import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
+import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 /** Tempo em que o valor final fica visível após clicar no olho; depois volta a ocultar. */
@@ -57,6 +59,8 @@ interface QuoteItem {
   tipo_custo: string;
   valor_unitario: number;
   valor_total: number;
+  status?: string | null;
+  aprovado_em?: string | Date | null;
 }
 
 interface Client {
@@ -105,10 +109,12 @@ export default function QuotesList({
   const [search, setSearch] = useState("");
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "APPROVED">("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "APPROVED" | "PARTIAL">("ALL");
   const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor" | "criacao">("validade");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [approvalQuote, setApprovalQuote] = useState<Quote | null>(null);
+  const [revisionQuote, setRevisionQuote] = useState<Quote | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
   // Valores sempre começam ocultos nesta tela (não usa preferência global salva).
@@ -308,34 +314,16 @@ export default function QuotesList({
   };
 
   const handleApproveQuote = (quote: Quote) => {
-    if (quote.aprovado_em || approvingId) return;
-
-    confirmAction({
-      title: "Aprovar proposta?",
-      message: `A versão ${quote.versao} de ${quote.project.client.nome} será aprovada e o projeto passará para o status Aprovado.`,
-      confirmLabel: "Sim, aprovar",
-      onConfirm: async () => {
-        setApprovingId(quote.id);
-        const approvedAt = new Date().toISOString();
-        // Atualização otimista: aprova este e desaprova os demais do mesmo projeto.
-        setQuotes((prev) =>
-          prev.map((q) =>
-            q.id === quote.id ? { ...q, aprovado_em: approvedAt } : q
-          )
-        );
-
-        const res = await approveQuote(quote.project_id, quote.id, quote.versao);
-        setApprovingId(null);
-
-        if (res.success) {
-          showSuccess("Proposta aprovada", `Versão ${quote.versao} aprovada com sucesso.`);
-          syncQuotes();
-        } else {
-          showError("Erro ao aprovar", res.error ?? "Não foi possível aprovar a proposta.");
-          syncQuotes();
-        }
-      },
-    });
+    if (approvingId) return;
+    const summary = summarizeQuoteItems(
+      (quote.items || []).map((i) => ({
+        id: i.id,
+        valor_total: Number(i.valor_total),
+        status: i.status,
+      }))
+    );
+    if (!summary.hasPending) return;
+    setApprovalQuote(quote);
   };
 
   const formatCurrency = (val: number) => {
@@ -372,11 +360,19 @@ export default function QuotesList({
       (q.project.client.bairro && q.project.client.bairro.toLowerCase().includes(search.toLowerCase()));
 
     const expired = isExpired(q.validade);
-    const matchesStatus = 
+    const summary = summarizeQuoteItems(
+      (q.items || []).map((i) => ({
+        id: i.id,
+        valor_total: Number(i.valor_total),
+        status: i.status,
+      }))
+    );
+    const matchesStatus =
       filterStatus === "ALL" ||
-      (filterStatus === "APPROVED" && q.aprovado_em !== null && q.aprovado_em !== undefined) ||
-      (filterStatus === "ACTIVE" && !expired && !q.aprovado_em) ||
-      (filterStatus === "EXPIRED" && expired && !q.aprovado_em);
+      (filterStatus === "APPROVED" && summary.hasApproved && !summary.hasPending) ||
+      (filterStatus === "PARTIAL" && summary.isPartiallyApproved) ||
+      (filterStatus === "ACTIVE" && !expired && summary.hasPending) ||
+      (filterStatus === "EXPIRED" && expired && summary.hasPending);
 
     const createdKey = q.createdAt ? toISODateBR(q.createdAt) : "";
     const matchesCreatedFrom = !createdFrom || (createdKey !== "" && createdKey >= createdFrom);
@@ -404,7 +400,15 @@ export default function QuotesList({
       valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     } else if (sortBy === "status") {
       const getStatusPriority = (q: Quote) => {
-        if (q.aprovado_em) return 3;
+        const summary = summarizeQuoteItems(
+          (q.items || []).map((i) => ({
+            id: i.id,
+            valor_total: Number(i.valor_total),
+            status: i.status,
+          }))
+        );
+        if (summary.hasApproved && !summary.hasPending) return 4;
+        if (summary.isPartiallyApproved) return 3;
         if (isExpired(q.validade)) return 1;
         return 2;
       };
@@ -535,6 +539,14 @@ export default function QuotesList({
             >
               Aprovados
             </Button>
+            <Button
+              variant={filterStatus === "PARTIAL" ? "default" : "outline"}
+              className={filterStatus === "PARTIAL" ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-slate-200 text-amber-700 hover:bg-amber-50"}
+              size="sm"
+              onClick={() => setFilterStatus("PARTIAL")}
+            >
+              Parciais
+            </Button>
           </div>
         </div>
 
@@ -641,11 +653,21 @@ export default function QuotesList({
                 pagedQuotes.map((q) => {
                   const expired = isExpired(q.validade);
                   const daysLeft = getDaysUntilExpiry(q.validade);
-                  const isApproved = !!q.aprovado_em;
-                  // Alerta de validade apenas para orçamentos ainda em aberto
-                  const rowExpired = expired && !isApproved;
-                  const nearDanger = !isApproved && !expired && daysLeft <= 3;
-                  const nearWarning = !isApproved && !expired && daysLeft > 3 && daysLeft <= 7;
+                  const summary = summarizeQuoteItems(
+                    (q.items || []).map((i) => ({
+                      id: i.id,
+                      valor_total: Number(i.valor_total),
+                      status: i.status,
+                    }))
+                  );
+                  const isFullyApproved = summary.hasApproved && !summary.hasPending;
+                  const isPartial = summary.isPartiallyApproved;
+                  const hasPending = summary.hasPending;
+                  const statusLabel = quoteCommercialLabel(summary);
+                  // Alerta de validade apenas para orçamentos ainda com pendência
+                  const rowExpired = expired && hasPending;
+                  const nearDanger = hasPending && !expired && daysLeft <= 3;
+                  const nearWarning = hasPending && !expired && daysLeft > 3 && daysLeft <= 7;
 
                   let dateClass = "text-slate-600";
                   if (rowExpired) dateClass = "text-rose-700 font-bold";
@@ -672,8 +694,8 @@ export default function QuotesList({
                       <td className="py-4 px-4 text-sm text-slate-600">
                         {q.project.client.bairro || "Não informado"}
                       </td>
-                      <td className={`py-4 px-4 text-sm ${isApproved ? "text-slate-400" : dateClass}`}>
-                        {isApproved ? (
+                      <td className={`py-4 px-4 text-sm ${!hasPending ? "text-slate-400" : dateClass}`}>
+                        {!hasPending ? (
                           <span className="text-slate-400">—</span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5">
@@ -692,9 +714,18 @@ export default function QuotesList({
                         )}
                       </td>
                       <td className="py-4 px-4 text-sm">
-                        {q.aprovado_em ? (
+                        {isFullyApproved ? (
                           <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">
                             ✓ Aprovado
+                          </span>
+                        ) : isPartial ? (
+                          <span className="inline-flex flex-col items-start gap-0.5">
+                            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded-full text-xs font-bold">
+                              {statusLabel}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatCurrency(summary.approvedTotal)} aprov. · {formatCurrency(summary.pendingTotal)} pend.
+                            </span>
                           </span>
                         ) : expired ? (
                           <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full text-xs font-medium">
@@ -721,18 +752,29 @@ export default function QuotesList({
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
                         {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}
-                        <div className="flex items-center gap-2 w-[20.5rem] max-w-full ml-auto">
-                          {!isApproved && (
+                        <div className="flex items-center gap-2 w-[22rem] max-w-full ml-auto">
+                          {hasPending && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 shrink-0 disabled:opacity-50 active:scale-100"
                               onClick={() => handleApproveQuote(q)}
                               disabled={approvingId === q.id}
-                              title="Aprovar proposta"
+                              title="Registrar aprovação"
                             >
                               <CheckCircle2 className={`h-3.5 w-3.5 ${approvingId === q.id ? "animate-pulse" : ""}`} />
-                              {approvingId === q.id ? "Aprovando..." : "Aprovar"}
+                              {isPartial ? "Aprovar itens" : "Aprovar"}
+                            </Button>
+                          )}
+                          {hasPending && (isPartial || expired) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 h-8 shrink-0 px-2"
+                              onClick={() => setRevisionQuote(q)}
+                              title="Revisar valores pendentes"
+                            >
+                              Revisar
                             </Button>
                           )}
 
@@ -740,13 +782,13 @@ export default function QuotesList({
                             href={`/quotes/${q.id}/print`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={isApproved ? "min-w-0 flex-1" : "shrink-0"}
+                            className={!hasPending ? "min-w-0 flex-1" : "shrink-0"}
                           >
                             <Button
                               variant="outline"
                               size="sm"
                               className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 active:scale-100 ${
-                                isApproved ? "w-full justify-center" : ""
+                                !hasPending ? "w-full justify-center" : ""
                               }`}
                               title="Visualizar PDF / Imprimir"
                             >
@@ -757,13 +799,13 @@ export default function QuotesList({
 
                           <Link
                             href={`/projects/${q.project_id}`}
-                            className={isApproved ? "min-w-0 flex-1" : "shrink-0"}
+                            className={!hasPending ? "min-w-0 flex-1" : "shrink-0"}
                           >
                             <Button
                               variant="outline"
                               size="sm"
                               className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 active:scale-100 ${
-                                isApproved ? "w-full justify-center" : ""
+                                !hasPending ? "w-full justify-center" : ""
                               }`}
                               title="Ver Detalhes do Projeto"
                             >
@@ -772,13 +814,13 @@ export default function QuotesList({
                             </Button>
                           </Link>
 
-                          {(!isApproved || isAdmin) && (
+                          {(!summary.hasApproved || isAdmin) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2 shrink-0 active:scale-100"
-                              onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, isApproved)}
-                              title={isApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
+                              onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, summary.hasApproved)}
+                              title={summary.hasApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1056,6 +1098,55 @@ export default function QuotesList({
         </div>
       </Dialog>
       <QuoteItemPresetsManager isOpen={isPresetsOpen} onClose={() => setIsPresetsOpen(false)} />
+      <QuoteApprovalDialog
+        open={!!approvalQuote}
+        onClose={() => setApprovalQuote(null)}
+        quote={
+          approvalQuote
+            ? {
+                id: approvalQuote.id,
+                project_id: approvalQuote.project_id,
+                versao: approvalQuote.versao,
+                subtotal: approvalQuote.subtotal,
+                desconto: approvalQuote.desconto,
+                clientName: approvalQuote.project.client.nome,
+                items: approvalQuote.items || [],
+              }
+            : null
+        }
+        onApproved={({ remainingPending, valorAprovado }) => {
+          showSuccess(
+            remainingPending > 0 ? "Aprovação parcial registrada" : "Proposta aprovada",
+            remainingPending > 0
+              ? `R$ ${valorAprovado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} aprovados. Ainda restam ${remainingPending} item(ns).`
+              : `Versão ${approvalQuote?.versao ?? ""} aprovada com sucesso.`
+          );
+          syncQuotes();
+        }}
+      />
+      <QuotePendingRevisionDialog
+        open={!!revisionQuote}
+        onClose={() => setRevisionQuote(null)}
+        quote={
+          revisionQuote
+            ? {
+                id: revisionQuote.id,
+                project_id: revisionQuote.project_id,
+                versao: revisionQuote.versao,
+                validade:
+                  typeof revisionQuote.validade === "string"
+                    ? revisionQuote.validade
+                    : new Date(revisionQuote.validade).toISOString(),
+                clientName: revisionQuote.project.client.nome,
+                items: revisionQuote.items || [],
+              }
+            : null
+        }
+        onRevised={() => {
+          showSuccess("Valores revisados", "Itens pendentes atualizados com sucesso.");
+          syncQuotes();
+        }}
+      />
       <ActionDialogHost dialog={dialog} />
     </div>
   );

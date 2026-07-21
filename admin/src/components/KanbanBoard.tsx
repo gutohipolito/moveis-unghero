@@ -24,6 +24,7 @@ import {
 } from "@/lib/crmFollowUpPrefs";
 import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
+import CommercialPendingPanel from "@/components/CommercialPendingPanel";
 import { labelOrigin } from "@/lib/navLabels";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -31,7 +32,10 @@ import { Button } from "@/components/ui/button";
 import { SegmentControl } from "@/components/ui/segment-control";
 import { Input } from "@/components/ui/input";
 import { maskPhoneLastDigits } from "@/lib/phone";
-import { 
+import {
+  getCommercialPendingQuotes,
+} from "@/app/actions/quotes";
+import {
   Plus, 
   MapPin, 
   Phone, 
@@ -304,7 +308,8 @@ export default function KanbanBoard({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
   const [didDrag, setDidDrag] = useState(false);
-  const [boardView, setBoardView] = useState<"funil" | "perdas">("funil");
+  const [boardView, setBoardView] = useState<"funil" | "perdas" | "pendencias">("funil");
+  const [pendingCount, setPendingCount] = useState(0);
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
   // Cards começam minimizados; só entram neste set quando o operador expande.
@@ -332,6 +337,19 @@ export default function KanbanBoard({
     sync: syncCrm,
     enabled: !activeDragId && !loading && !isEditLeadOpen && !lossModalProject,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await getCommercialPendingQuotes();
+      if (!cancelled && res.success) {
+        setPendingCount(res.data.length);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projects, boardView]);
 
   useEffect(() => {
     return () => {
@@ -1049,6 +1067,11 @@ export default function KanbanBoard({
             aria-label="Visualização do funil"
             options={[
               { value: "funil", label: "Funil ativo" },
+              {
+                value: "pendencias",
+                label: "Pendências comerciais",
+                badge: pendingCount,
+              },
               { value: "perdas", label: "Perdas", badge: lostProjects.length },
             ]}
           />
@@ -1115,7 +1138,20 @@ export default function KanbanBoard({
         )}
       </div>
 
-      {boardView === "perdas" ? (
+      {boardView === "pendencias" ? (
+        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
+          <CommercialPendingPanel
+            onNotify={(type, title, message) => {
+              if (type === "success") showSuccess(title, message);
+              else showError(title, message);
+              void getCommercialPendingQuotes().then((res) => {
+                if (res.success) setPendingCount(res.data.length);
+              });
+              void syncCrm();
+            }}
+          />
+        </div>
+      ) : boardView === "perdas" ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Leads que não converteram. Você pode reativá-los para o funil quando fizer sentido retomar a negociação.

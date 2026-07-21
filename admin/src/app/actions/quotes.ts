@@ -14,6 +14,12 @@ import {
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import { parseISODateOnlyBrazil } from "@/lib/brazilDate";
+import {
+  computeApprovalValue,
+  suggestProportionalDiscount,
+  summarizeQuoteItems,
+} from "@/lib/quoteApproval";
+import { randomUUID } from "crypto";
 
 export type ItemType = 
   | "MOVEIS_MDF"
@@ -171,8 +177,17 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
   }
 }
 
-// Atualiza o status do orçamento e, se aprovado, cria ambientes na fila da fábrica
-export async function approveQuote(projectId: string, quoteId: string, version: number) {
+// Registra aprovação (total ou parcial) de itens do orçamento
+export async function approveQuote(
+  projectId: string,
+  quoteId: string,
+  version: number,
+  options?: {
+    itemIds?: string[];
+    desconto?: number;
+    observacoes?: string;
+  }
+) {
   const auth = await getAuthContext();
   if (!auth) {
     return { success: false, error: "Não autenticado" };
@@ -190,36 +205,109 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
     const quote = await prisma.quote.findFirst({
       where: { id: quoteId, project_id: projectId },
       select: {
+        id: true,
+        subtotal: true,
+        desconto: true,
         valor_final: true,
-        items: { select: { descricao: true }, orderBy: { id: "asc" } },
+        items: {
+          select: {
+            id: true,
+            descricao: true,
+            valor_total: true,
+            status: true,
+          },
+          orderBy: { id: "asc" },
+        },
       },
     });
     if (!quote) {
       return { success: false, error: "Orçamento não encontrado" };
     }
 
-    const approvedAt = new Date();
+    const pendingItems = quote.items.filter((item) => item.status === "PENDENTE");
+    if (pendingItems.length === 0) {
+      return { success: false, error: "Não há itens pendentes para aprovar neste orçamento." };
+    }
 
-    // Ambientes a criar a partir dos itens principais (sem subitens).
-    const itemNames = quote.items
-      .map((item) => capitalizeText((item.descricao || "").trim()))
-      .filter(Boolean);
+    const requestedIds = options?.itemIds?.length
+      ? new Set(options.itemIds)
+      : new Set(pendingItems.map((item) => item.id));
+
+    const selectedItems = pendingItems.filter((item) => requestedIds.has(item.id));
+    if (selectedItems.length === 0) {
+      return { success: false, error: "Selecione ao menos um item pendente para aprovar." };
+    }
+
+    // Itens já aprovados são ignorados (idempotência): só processamos pendentes.
+    const selectedSubtotal = selectedItems.reduce(
+      (sum, item) => sum + Number(item.valor_total),
+      0
+    );
+    const quoteSubtotal = Number(quote.subtotal);
+    const quoteDesconto = Number(quote.desconto);
+    const suggested = suggestProportionalDiscount(
+      quoteDesconto,
+      quoteSubtotal,
+      selectedSubtotal
+    );
+    const desconto =
+      typeof options?.desconto === "number" && Number.isFinite(options.desconto)
+        ? Math.max(0, Math.round(options.desconto * 100) / 100)
+        : suggested;
+
+    if (desconto > selectedSubtotal) {
+      return {
+        success: false,
+        error: "O desconto da aprovação não pode ser maior que o subtotal dos itens selecionados.",
+      };
+    }
+
+    const valorAprovado = computeApprovalValue(selectedSubtotal, desconto);
+    const approvedAt = new Date();
+    const actorId = await ensureActorUserId();
 
     const createdNames = await prisma.$transaction(async (tx) => {
-      await tx.quote.update({
-        where: { id: quoteId },
-        data: { aprovado_em: approvedAt },
+      const approval = await tx.quoteApproval.create({
+        data: {
+          id: randomUUID(),
+          quote_id: quoteId,
+          subtotal: selectedSubtotal,
+          desconto,
+          valor_aprovado: valorAprovado,
+          aprovado_em: approvedAt,
+          aprovado_por_id: actorId,
+          observacoes: options?.observacoes?.trim() || null,
+        },
       });
 
-      // Permite múltiplas propostas aprovadas no mesmo projeto (ex.: orçamentos
-      // de cômodos diferentes). O valor previsto passa a ser a soma de todos os
-      // orçamentos aprovados, e não mais o último aprovado.
-      const approvedQuotes = await tx.quote.findMany({
-        where: { project_id: projectId, aprovado_em: { not: null } },
-        select: { valor_final: true },
+      await tx.quoteItem.updateMany({
+        where: { id: { in: selectedItems.map((item) => item.id) }, status: "PENDENTE" },
+        data: {
+          status: "APROVADO",
+          aprovado_em: approvedAt,
+          aprovado_por_id: actorId,
+          approval_id: approval.id,
+        },
       });
-      const totalAprovado = approvedQuotes.reduce(
-        (sum, q) => sum + Number(q.valor_final),
+
+      // Mantém Quote.aprovado_em como marcador da primeira aprovação (compatibilidade).
+      const existingQuote = await tx.quote.findUnique({
+        where: { id: quoteId },
+        select: { aprovado_em: true },
+      });
+      await tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          aprovado_em: existingQuote?.aprovado_em ?? approvedAt,
+        },
+      });
+
+      const approvals = await tx.quoteApproval.findMany({
+        where: { quote: { project_id: projectId } },
+        select: { valor_aprovado: true },
+      });
+      const totalAprovado = approvals.reduce(
+        (sum, a) => sum + Number(a.valor_aprovado),
         0
       );
 
@@ -233,16 +321,53 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
 
       const existingEnvs = await tx.environment.findMany({
         where: { project_id: projectId },
-        select: { nome: true },
+        select: { id: true, nome: true, quote_item_id: true },
       });
+      const linkedItemIds = new Set(
+        existingEnvs.map((e) => e.quote_item_id).filter((id): id is string => Boolean(id))
+      );
       const existingNames = new Set(
         existingEnvs.map((e) => e.nome.trim().toLowerCase())
       );
 
       const created: string[] = [];
-      for (const nome of itemNames) {
+      for (const item of selectedItems) {
+        if (linkedItemIds.has(item.id)) continue;
+
+        const nome = capitalizeText((item.descricao || "").trim());
+        if (!nome) continue;
+
         const key = nome.toLowerCase();
-        if (existingNames.has(key)) continue;
+        // Reusa ambiente existente com mesmo nome se ainda não vinculado.
+        const reusable = existingEnvs.find(
+          (e) => !e.quote_item_id && e.nome.trim().toLowerCase() === key
+        );
+        if (reusable) {
+          await tx.environment.update({
+            where: { id: reusable.id },
+            data: { quote_item_id: item.id },
+          });
+          linkedItemIds.add(item.id);
+          continue;
+        }
+
+        if (existingNames.has(key)) {
+          // Nome já existe vinculado a outro item — cria com sufixo curto.
+          const uniqueNome = `${nome} (${item.id.slice(0, 4)})`;
+          await tx.environment.create({
+            data: {
+              project_id: projectId,
+              nome: uniqueNome,
+              tipo: inferEnvironmentTypeFromName(nome),
+              status: "PRONTO_PRODUCAO",
+              quote_item_id: item.id,
+            },
+          });
+          existingNames.add(uniqueNome.toLowerCase());
+          linkedItemIds.add(item.id);
+          created.push(uniqueNome);
+          continue;
+        }
 
         await tx.environment.create({
           data: {
@@ -250,26 +375,36 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
             nome,
             tipo: inferEnvironmentTypeFromName(nome),
             status: "PRONTO_PRODUCAO",
+            quote_item_id: item.id,
           },
         });
         existingNames.add(key);
+        linkedItemIds.add(item.id);
         created.push(nome);
       }
 
       return created;
     });
 
+    const remainingPending = pendingItems.length - selectedItems.length;
+    const partialLabel =
+      remainingPending > 0
+        ? ` Aprovação parcial: ${selectedItems.length} item(ns); ${remainingPending} ainda pendente(s).`
+        : " Todos os itens pendentes deste orçamento foram aprovados.";
+
     const envSummary =
       createdNames.length > 0
         ? ` Ambientes criados e enviados à Fila de Produção: ${createdNames.join(", ")}.`
-        : itemNames.length > 0
-          ? " Ambientes do orçamento já existiam no projeto."
-          : "";
+        : "";
+
+    const itemNames = selectedItems
+      .map((item) => capitalizeText((item.descricao || "").trim()))
+      .filter(Boolean);
 
     await prisma.timeline.create({
       data: {
         project_id: projectId,
-        acao: `Proposta comercial v${version} foi APROVADA pelo cliente. Projeto movido para Aprovados.${envSummary}`,
+        acao: `Proposta comercial v${version}: aprovado(s) ${itemNames.join(", ") || `${selectedItems.length} item(ns)`} (R$ ${valorAprovado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}). Projeto em Aprovados.${partialLabel}${envSummary}`,
         interno_sotamente: false,
         user_id: await ensureActorUserId(),
       },
@@ -279,12 +414,363 @@ export async function approveQuote(projectId: string, quoteId: string, version: 
     revalidatePath("/clientes", "layout");
     revalidatePath("/factory");
     revalidatePath("/crm");
-    return { success: true, createdEnvironments: createdNames };
+    revalidatePath("/quotes");
+    return {
+      success: true,
+      createdEnvironments: createdNames,
+      approvedItemIds: selectedItems.map((i) => i.id),
+      valorAprovado,
+      desconto,
+      remainingPending,
+    };
   } catch (error) {
     console.error("Erro na Server Action approveQuote:", error);
     return { success: false, error: error instanceof Error ? error.message : "Erro ao aprovar orçamento no banco remoto" };
   }
 }
+
+export async function rejectQuoteItems(
+  projectId: string,
+  quoteId: string,
+  version: number,
+  itemIds: string[]
+) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  if (!itemIds?.length) {
+    return { success: false, error: "Selecione ao menos um item para recusar." };
+  }
+
+  try {
+    const items = await prisma.quoteItem.findMany({
+      where: {
+        id: { in: itemIds },
+        quote_id: quoteId,
+        quote: { project_id: projectId },
+        status: "PENDENTE",
+      },
+      select: { id: true, descricao: true },
+    });
+    if (items.length === 0) {
+      return { success: false, error: "Nenhum item pendente encontrado para recusar." };
+    }
+
+    await prisma.quoteItem.updateMany({
+      where: { id: { in: items.map((i) => i.id) } },
+      data: { status: "RECUSADO" },
+    });
+
+    await prisma.timeline.create({
+      data: {
+        project_id: projectId,
+        acao: `Proposta comercial v${version}: item(ns) recusado(s): ${items.map((i) => i.descricao).join(", ")}.`,
+        interno_sotamente: true,
+        user_id: await ensureActorUserId(),
+      },
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/crm");
+    revalidatePath("/quotes");
+    return { success: true, rejectedItemIds: items.map((i) => i.id) };
+  } catch (error) {
+    console.error("Erro na Server Action rejectQuoteItems:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao recusar itens",
+    };
+  }
+}
+
+export async function revisePendingQuoteItems(input: {
+  projectId: string;
+  quoteId: string;
+  version: number;
+  validade?: string;
+  motivo?: string;
+  items: Array<{
+    id: string;
+    valor_unitario: number;
+    valor_total: number;
+    quantidade?: number;
+  }>;
+}) {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(input.projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  if (!input.items?.length && !input.validade) {
+    return { success: false, error: "Informe itens para revisar ou uma nova validade." };
+  }
+
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: { id: input.quoteId, project_id: input.projectId },
+      select: {
+        id: true,
+        desconto: true,
+        items: {
+          select: {
+            id: true,
+            status: true,
+            valor_unitario: true,
+            valor_total: true,
+            quantidade: true,
+            descricao: true,
+          },
+        },
+      },
+    });
+    if (!quote) {
+      return { success: false, error: "Orçamento não encontrado" };
+    }
+
+    const actorId = await ensureActorUserId();
+    const updates = input.items || [];
+    const pendingById = new Map(
+      quote.items.filter((i) => i.status === "PENDENTE").map((i) => [i.id, i])
+    );
+
+    for (const upd of updates) {
+      if (!pendingById.has(upd.id)) {
+        return {
+          success: false,
+          error: "Somente itens pendentes podem ter valores revisados.",
+        };
+      }
+      if (upd.valor_unitario < 0 || upd.valor_total < 0) {
+        return { success: false, error: "Valores não podem ser negativos." };
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const upd of updates) {
+        const current = pendingById.get(upd.id)!;
+        const newUnit = Math.round(upd.valor_unitario * 100) / 100;
+        const newTotal = Math.round(upd.valor_total * 100) / 100;
+        if (
+          Number(current.valor_unitario) === newUnit &&
+          Number(current.valor_total) === newTotal
+        ) {
+          continue;
+        }
+
+        await tx.quoteItemPriceHistory.create({
+          data: {
+            id: randomUUID(),
+            quote_item_id: upd.id,
+            valor_unitario_anterior: current.valor_unitario,
+            valor_total_anterior: current.valor_total,
+            valor_unitario_novo: newUnit,
+            valor_total_novo: newTotal,
+            motivo: input.motivo?.trim() || null,
+            alterado_por_id: actorId,
+          },
+        });
+
+        await tx.quoteItem.update({
+          where: { id: upd.id },
+          data: {
+            valor_unitario: newUnit,
+            valor_total: newTotal,
+            ...(typeof upd.quantidade === "number" && upd.quantidade > 0
+              ? { quantidade: upd.quantidade }
+              : {}),
+          },
+        });
+      }
+
+      const refreshed = await tx.quoteItem.findMany({
+        where: { quote_id: input.quoteId },
+        select: { valor_total: true, status: true },
+      });
+      const subtotal = refreshed.reduce((sum, i) => sum + Number(i.valor_total), 0);
+      const desconto = Math.min(Number(quote.desconto), subtotal);
+      const valorFinal = computeApprovalValue(subtotal, desconto);
+
+      await tx.quote.update({
+        where: { id: input.quoteId },
+        data: {
+          subtotal,
+          desconto,
+          valor_final: valorFinal,
+          ...(input.validade
+            ? { validade: parseISODateOnlyBrazil(input.validade) }
+            : {}),
+        },
+      });
+    });
+
+    const changedNames = updates
+      .map((u) => pendingById.get(u.id)?.descricao)
+      .filter(Boolean);
+
+    await prisma.timeline.create({
+      data: {
+        project_id: input.projectId,
+        acao: `Proposta comercial v${input.version}: valores pendentes revisados${
+          changedNames.length ? ` (${changedNames.join(", ")})` : ""
+        }${input.validade ? `; validade renovada para ${input.validade}` : ""}.`,
+        interno_sotamente: true,
+        user_id: actorId,
+      },
+    });
+
+    revalidatePath(`/projects/${input.projectId}`);
+    revalidatePath("/quotes");
+    revalidatePath("/crm");
+    return { success: true };
+  } catch (error) {
+    console.error("Erro na Server Action revisePendingQuoteItems:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao revisar itens pendentes",
+    };
+  }
+}
+
+/** Lista orçamentos com itens pendentes para a aba Pendências comerciais. */
+export async function getCommercialPendingQuotes() {
+  const auth = await getAuthContext();
+  if (!auth) {
+    return { success: false, error: "Não autenticado", data: [] as CommercialPendingQuote[] };
+  }
+
+  try {
+    const quotes = await prisma.quote.findMany({
+      where: {
+        project: { client: { company_id: auth.companyId } },
+        items: { some: { status: "PENDENTE" } },
+        OR: [
+          { items: { some: { status: "APROVADO" } } },
+          {
+            project: {
+              status_geral: {
+                in: ["APROVADO", "CONFERENCIA_TECNICA", "PRODUCAO", "INSTALACAO"],
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        project: {
+          include: {
+            client: { select: { id: true, nome: true, cidade: true, telefone: true } },
+          },
+        },
+        items: {
+          select: {
+            id: true,
+            descricao: true,
+            valor_total: true,
+            status: true,
+            quantidade: true,
+            valor_unitario: true,
+          },
+        },
+      },
+      orderBy: { validade: "asc" },
+    });
+
+    const data: CommercialPendingQuote[] = quotes.map((q) => {
+      const summary = summarizeQuoteItems(
+        q.items.map((i) => ({
+          id: i.id,
+          valor_total: Number(i.valor_total),
+          status: i.status,
+        }))
+      );
+      return {
+        id: q.id,
+        project_id: q.project_id,
+        versao: q.versao,
+        validade: q.validade.toISOString(),
+        createdAt: q.createdAt.toISOString(),
+        aprovado_em: q.aprovado_em ? q.aprovado_em.toISOString() : null,
+        valor_final: Number(q.valor_final),
+        desconto: Number(q.desconto),
+        subtotal: Number(q.subtotal),
+        project: {
+          id: q.project.id,
+          status_geral: q.project.status_geral,
+          valor_previsto: Number(q.project.valor_previsto),
+          client: q.project.client,
+        },
+        items: q.items.map((i) => ({
+          id: i.id,
+          descricao: i.descricao,
+          quantidade: i.quantidade,
+          valor_unitario: Number(i.valor_unitario),
+          valor_total: Number(i.valor_total),
+          status: i.status,
+        })),
+        pendingTotal: summary.pendingTotal,
+        approvedTotal: summary.approvedTotal,
+        pendingCount: summary.pendingCount,
+        approvedCount: summary.approvedCount,
+      };
+    });
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Erro na Server Action getCommercialPendingQuotes:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao listar pendências",
+      data: [] as CommercialPendingQuote[],
+    };
+  }
+}
+
+export type CommercialPendingQuote = {
+  id: string;
+  project_id: string;
+  versao: number;
+  validade: string;
+  createdAt: string;
+  aprovado_em: string | null;
+  valor_final: number;
+  desconto: number;
+  subtotal: number;
+  project: {
+    id: string;
+    status_geral: string;
+    valor_previsto: number;
+    client: { id: string; nome: string; cidade: string; telefone: string };
+  };
+  items: Array<{
+    id: string;
+    descricao: string;
+    quantidade: number;
+    valor_unitario: number;
+    valor_total: number;
+    status: string;
+  }>;
+  pendingTotal: number;
+  approvedTotal: number;
+  pendingCount: number;
+  approvedCount: number;
+};
 
 // Remove um orçamento (aprovados: apenas Administrador / cargo ADMIN)
 export async function deleteQuote(projectId: string, quoteId: string, version: number) {
@@ -324,11 +810,26 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
       await tx.quoteItem.deleteMany({
         where: { quote_id: quoteId }
       });
-      // 2. Remove quote
+      // 2. Remove quote (approvals em cascata)
       await tx.quote.delete({
         where: { id: quoteId }
       });
-      // 3. Registra na timeline
+
+      // 3. Recalcula valor previsto com base nos eventos de aprovação restantes
+      const approvals = await tx.quoteApproval.findMany({
+        where: { quote: { project_id: projectId } },
+        select: { valor_aprovado: true },
+      });
+      const totalAprovado = approvals.reduce(
+        (sum, a) => sum + Number(a.valor_aprovado),
+        0
+      );
+      await tx.project.update({
+        where: { id: projectId },
+        data: { valor_previsto: totalAprovado },
+      });
+
+      // 4. Registra na timeline
       await tx.timeline.create({
         data: {
           project_id: projectId,
@@ -390,7 +891,9 @@ export async function getQuotes() {
       items: q.items.map(item => ({
         ...item,
         valor_unitario: Number(item.valor_unitario),
-        valor_total: Number(item.valor_total)
+        valor_total: Number(item.valor_total),
+        status: item.status,
+        aprovado_em: item.aprovado_em instanceof Date ? item.aprovado_em.toISOString() : item.aprovado_em,
       }))
     }));
 

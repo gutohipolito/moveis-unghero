@@ -48,6 +48,8 @@ export type QuotePrintItem = {
   subitens?: string[] | null;
   produto_nome?: string | null;
   produto_imagem_url?: string | null;
+  status?: string | null;
+  aprovado_em?: string | null;
 };
 
 export type QuotePrintPartner = {
@@ -70,6 +72,10 @@ export type QuotePrintData = {
   observacoes?: string | null;
   items: QuotePrintItem[];
   partner: QuotePrintPartner;
+  approvedTotal?: number;
+  pendingTotal?: number;
+  rejectedTotal?: number;
+  lastUpdatedAt?: string | null;
 };
 
 function formatCurrency(val: number) {
@@ -567,9 +573,25 @@ export default function QuotePrintDocument({
                         item.subitens && item.subitens.length > 0
                           ? formatQuoteSubitensLine(item.subitens)
                           : "";
+                      const isApproved = item.status === "APROVADO";
+                      const isRejected = item.status === "RECUSADO";
 
                       return (
-                        <tr key={idx}>
+                        <tr
+                          key={idx}
+                          className={
+                            isApproved
+                              ? "bg-emerald-50/90 text-emerald-950"
+                              : isRejected
+                                ? "bg-neutral-100 text-neutral-500"
+                                : undefined
+                          }
+                          style={
+                            isApproved || isRejected
+                              ? { WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }
+                              : undefined
+                          }
+                        >
                           <td className={`${cellPad} leading-relaxed`}>
                             <div className="flex gap-2.5 items-start">
                               {item.produto_imagem_url ? (
@@ -581,12 +603,26 @@ export default function QuotePrintDocument({
                                 />
                               ) : null}
                               <div className="min-w-0">
-                                {item.produto_nome ? (
-                                  <p className="text-[9px] font-bold uppercase tracking-wide text-neutral-500 mb-0.5">
-                                    {item.produto_nome}
-                                  </p>
-                                ) : null}
-                                <p className="font-semibold text-neutral-950">{item.descricao}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                  {item.produto_nome ? (
+                                    <p className="text-[9px] font-bold uppercase tracking-wide text-neutral-500">
+                                      {item.produto_nome}
+                                    </p>
+                                  ) : null}
+                                  {isApproved ? (
+                                    <span className="text-[8px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-600 text-white">
+                                      Aprovado
+                                    </span>
+                                  ) : null}
+                                  {isRejected ? (
+                                    <span className="text-[8px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded bg-neutral-400 text-white">
+                                      Não incluso
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <p className={`font-semibold ${isApproved ? "text-emerald-950" : "text-neutral-950"}`}>
+                                  {item.descricao}
+                                </p>
                                 {subitensLine ? (
                                   <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
                                     {subitensLine}
@@ -601,7 +637,7 @@ export default function QuotePrintDocument({
                           <td className={`${cellPad} text-right font-medium text-neutral-600`}>
                             {formatCurrency(item.valor_unitario)}
                           </td>
-                          <td className={`${cellPad} text-right font-extrabold text-neutral-950`}>
+                          <td className={`${cellPad} text-right font-extrabold ${isApproved ? "text-emerald-900" : "text-neutral-950"}`}>
                             {formatCurrency(item.valor_total)}
                           </td>
                         </tr>
@@ -612,7 +648,7 @@ export default function QuotePrintDocument({
               </div>
 
               <div className="flex justify-end -mt-1">
-                <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[200px] space-y-0.5">
+                <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[220px] space-y-0.5">
                   {quote.desconto > 0 ? (
                     <p className="text-[9px] text-emerald-700 font-semibold text-right">
                       Desconto: -{formatCurrency(quote.desconto)}
@@ -626,6 +662,21 @@ export default function QuotePrintDocument({
                       {formatCurrency(quote.valor_final)}
                     </span>
                   </div>
+                  {typeof quote.approvedTotal === "number" && quote.approvedTotal > 0 ? (
+                    <p className="text-[9px] text-emerald-800 font-bold text-right">
+                      Já aprovado: {formatCurrency(quote.approvedTotal)}
+                    </p>
+                  ) : null}
+                  {typeof quote.pendingTotal === "number" && quote.pendingTotal > 0 ? (
+                    <p className="text-[9px] text-amber-800 font-semibold text-right">
+                      Ainda pendente: {formatCurrency(quote.pendingTotal)}
+                    </p>
+                  ) : null}
+                  {quote.lastUpdatedAt ? (
+                    <p className="text-[8px] text-neutral-500 text-right pt-0.5">
+                      Atualizado em {quote.lastUpdatedAt}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 

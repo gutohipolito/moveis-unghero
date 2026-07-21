@@ -8,6 +8,7 @@ import QuotePrintDocument from "@/components/QuotePrintDocument";
 import { parseQuoteSubitens } from "@/lib/quoteItems";
 import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePdfShare";
 import { formatDateBR } from "@/lib/brazilDate";
+import { summarizeQuoteItems } from "@/lib/quoteApproval";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -21,6 +22,10 @@ type LoadedPrintQuote = {
   observacoes: string | null;
   validade: Date;
   pdfPublicUrl: string | null;
+  approvedTotal?: number;
+  pendingTotal?: number;
+  rejectedTotal?: number;
+  lastUpdatedAt?: string | null;
   partner: {
     nome: string;
     tipo: string;
@@ -44,6 +49,8 @@ type LoadedPrintQuote = {
     subitens: string[];
     produto_nome: string | null;
     produto_imagem_url: string | null;
+    status?: string | null;
+    aprovado_em?: string | null;
   }>;
 };
 
@@ -96,6 +103,25 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         pdf_share_url: dbQuote.pdf_share_url,
       });
 
+      const items = dbQuote.items.map((item) => ({
+        id: item.id,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        valor_unitario: Number(item.valor_unitario),
+        valor_total: Number(item.valor_total),
+        subitens: parseQuoteSubitens(item.subitens),
+        produto_nome: item.showcaseProduct?.nome ?? null,
+        produto_imagem_url: item.showcaseProduct?.imagem_url ?? null,
+        status: item.status,
+        aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
+      }));
+      const summary = summarizeQuoteItems(items);
+      const lastApproved = items
+        .map((i) => i.aprovado_em)
+        .filter(Boolean)
+        .sort()
+        .at(-1);
+
       quote = {
         id: dbQuote.id,
         project_id: dbQuote.project_id,
@@ -106,15 +132,13 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         pdfPublicUrl,
         partner: dbQuote.partner,
         project: dbQuote.project,
-        items: dbQuote.items.map((item) => ({
-          descricao: item.descricao,
-          quantidade: item.quantidade,
-          valor_unitario: Number(item.valor_unitario),
-          valor_total: Number(item.valor_total),
-          subitens: parseQuoteSubitens(item.subitens),
-          produto_nome: item.showcaseProduct?.nome ?? null,
-          produto_imagem_url: item.showcaseProduct?.imagem_url ?? null,
-        })),
+        approvedTotal: summary.approvedTotal,
+        pendingTotal: summary.pendingTotal,
+        rejectedTotal: summary.rejectedTotal,
+        lastUpdatedAt: lastApproved
+          ? formatDateBR(lastApproved)
+          : formatDateBR(dbQuote.createdAt),
+        items,
       };
     }
   } catch (error) {

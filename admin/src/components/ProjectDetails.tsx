@@ -15,10 +15,13 @@ import {
   type EnvironmentStatus,
   type FileType
 } from "@/app/actions/project";
-import { approveQuote, deleteQuote } from "@/app/actions/quotes";
+import { deleteQuote } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
+import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
+import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { getParceiros } from "@/app/actions/parceiros";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
@@ -108,6 +111,15 @@ interface Quote {
   validade: string;
   observacoes: string;
   aprovado_em: string | null;
+  items?: Array<{
+    id: string;
+    descricao: string;
+    quantidade: number;
+    valor_unitario: number;
+    valor_total: number;
+    status?: string | null;
+    aprovado_em?: string | null;
+  }>;
 }
 
 interface Installment {
@@ -302,6 +314,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
   const [approvingQuoteId, setApprovingQuoteId] = useState<string | null>(null);
+  const [approvalQuote, setApprovalQuote] = useState<Quote | null>(null);
+  const [revisionQuote, setRevisionQuote] = useState<Quote | null>(null);
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
@@ -632,54 +646,23 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   };
 
   const handleApproveQuote = (quote: Quote) => {
-    if (quote.aprovado_em || approvingQuoteId) return;
+    if (approvingQuoteId) return;
+    const summary = summarizeQuoteItems(
+      (quote.items || []).map((i) => ({
+        id: i.id,
+        valor_total: Number(i.valor_total),
+        status: i.status,
+      }))
+    );
+    if (!summary.hasPending) return;
+    setApprovalQuote(quote);
+  };
 
-    confirmAction({
-      title: "Aprovar proposta?",
-      message: `A versão ${quote.versao} será aprovada e o projeto passará para o status Aprovado.`,
-      confirmLabel: "Sim, aprovar",
-      onConfirm: async () => {
-        const approvedAt = new Date().toISOString();
-        setApprovingQuoteId(quote.id);
-        setProject((prev) => {
-          const updatedQuotes = prev.quotes.map((q) =>
-            q.id === quote.id ? { ...q, aprovado_em: approvedAt } : q
-          );
-          const totalAprovado = updatedQuotes
-            .filter((q) => q.aprovado_em)
-            .reduce((sum, q) => sum + Number(q.valor_final), 0);
-          return {
-            ...prev,
-            status_geral: "APROVADO",
-            valor_previsto: totalAprovado,
-            quotes: updatedQuotes,
-            timeline: [
-              {
-                id: `local-time-${Date.now()}`,
-                acao: `Proposta comercial v${quote.versao} foi APROVADA pelo cliente.`,
-                data: approvedAt,
-                interno_sotamente: false,
-                user: { name: "Vendas" },
-              },
-              ...prev.timeline,
-            ],
-          };
-        });
-
-        const res = await approveQuote(project.id, quote.id, quote.versao);
-        setApprovingQuoteId(null);
-
-        if (res.success) {
-          showSuccess("Proposta aprovada", `Versão ${quote.versao} aprovada com sucesso.`);
-        } else {
-          showError("Erro ao aprovar", res.error ?? "Não foi possível aprovar a proposta.");
-          const refreshed = await getProjectDetailsAction(project.id);
-          if (refreshed.success && refreshed.project) {
-            setProject(refreshed.project as Project);
-          }
-        }
-      },
-    });
+  const refreshProjectFromServer = async () => {
+    const refreshed = await getProjectDetailsAction(project.id);
+    if (refreshed.success && refreshed.project) {
+      setProject(refreshed.project as Project);
+    }
   };
 
   const handleDeleteProjectQuote = (quote: { id: string; versao: number; aprovado_em?: string | null }) => {
@@ -1419,6 +1402,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   validade: newQuoteData.quote.validade.toISOString ? newQuoteData.quote.validade.toISOString() : new Date(newQuoteData.quote.validade).toISOString(),
                   observacoes: newQuoteData.quote.observacoes,
                   aprovado_em: null,
+                  items: [],
                 };
                 
                 setProject({
@@ -1460,30 +1444,42 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 ) : (
                   <div className="divide-y divide-border/30">
                     {project.quotes.map((q) => {
-                      const isApproved =
-                        !!q.aprovado_em ||
-                        (project.status_geral === "APROVADO" &&
-                          project.quotes.length === 1 &&
-                          !project.quotes.some((item) => item.aprovado_em));
+                      const summary = summarizeQuoteItems(
+                        (q.items || []).map((i) => ({
+                          id: i.id,
+                          valor_total: Number(i.valor_total),
+                          status: i.status,
+                        }))
+                      );
+                      const isFullyApproved = summary.hasApproved && !summary.hasPending;
+                      const isPartial = summary.isPartiallyApproved;
+                      const hasPending = summary.hasPending;
+                      const statusLabel = quoteCommercialLabel(summary);
                       const isApproving = approvingQuoteId === q.id;
 
                       return (
                       <div
                         key={q.id}
                         className={`p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
-                          isApproved
+                          isFullyApproved
                             ? "border-2 border-emerald-500 bg-emerald-50/60 shadow-sm shadow-emerald-500/10"
-                            : "hover:bg-slate-100"
+                            : isPartial
+                              ? "border-2 border-amber-400 bg-amber-50/50"
+                              : "hover:bg-slate-100"
                         }`}
                       >
                         <div className="space-y-1.5 flex-1">
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-2.5 flex-wrap">
                             <h4 className="font-bold text-base text-foreground leading-none">
                               Proposta Comercial v{q.versao}
                             </h4>
-                            {isApproved ? (
+                            {isFullyApproved ? (
                               <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                                 Aprovada
+                              </span>
+                            ) : isPartial ? (
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                                {statusLabel}
                               </span>
                             ) : (
                               <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
@@ -1496,6 +1492,20 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             {q.desconto > 0 && <span className="text-amber-500 font-medium">Desconto: -{formatCurrency(q.desconto)}</span>}
                             <span>Valor Final: <strong className="text-primary font-bold">{formatCurrency(q.valor_final)}</strong></span>
                           </div>
+                          {(summary.hasApproved || summary.hasPending) && (
+                            <p className="text-xs text-muted-foreground">
+                              {summary.hasApproved && (
+                                <span className="text-emerald-700 font-semibold mr-3">
+                                  Aprovado: {formatCurrency(summary.approvedTotal)} ({summary.approvedCount})
+                                </span>
+                              )}
+                              {summary.hasPending && (
+                                <span className="text-amber-700 font-semibold">
+                                  Pendente: {formatCurrency(summary.pendingTotal)} ({summary.pendingCount})
+                                </span>
+                              )}
+                            </p>
+                          )}
                           {q.observacoes && (
                             <p className="text-xs text-muted-foreground/80 line-clamp-1 italic">
                               "{q.observacoes}"
@@ -1504,7 +1514,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
-                          {isApproved ? (
+                          {isFullyApproved ? (
                             <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-600 text-white cursor-default select-none shadow-sm">
                               <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovado
                             </span>
@@ -1516,7 +1526,16 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <CheckCircle2 className={`h-4 w-4 mr-1.5 ${isApproving ? "animate-pulse" : ""}`} />
-                              {isApproving ? "Aprovando..." : "Aprovar Proposta"}
+                              {isPartial ? "Registrar aprovação" : "Aprovar Proposta"}
+                            </button>
+                          )}
+                          {hasPending && (
+                            <button
+                              type="button"
+                              onClick={() => setRevisionQuote(q)}
+                              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 transition-all cursor-pointer"
+                            >
+                              Revisar pendentes
                             </button>
                           )}
 
@@ -1528,11 +1547,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <FileText className="h-4 w-4 mr-1.5" /> Gerar PDF
                           </Link>
 
-                          {(!isApproved || isAdmin) && (
+                          {(!summary.hasApproved || isAdmin) && (
                             <button
                               onClick={() => handleDeleteProjectQuote(q)}
                               className="p-2 rounded-lg hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors cursor-pointer"
-                              title={isApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
+                              title={summary.hasApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -2104,6 +2123,52 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           </div>
         </form>
       </Dialog>
+      <QuoteApprovalDialog
+        open={!!approvalQuote}
+        onClose={() => setApprovalQuote(null)}
+        quote={
+          approvalQuote
+            ? {
+                id: approvalQuote.id,
+                project_id: project.id,
+                versao: approvalQuote.versao,
+                subtotal: approvalQuote.subtotal,
+                desconto: approvalQuote.desconto,
+                clientName: project.client.nome,
+                items: approvalQuote.items || [],
+              }
+            : null
+        }
+        onApproved={async ({ remainingPending, valorAprovado }) => {
+          showSuccess(
+            remainingPending > 0 ? "Aprovação parcial registrada" : "Proposta aprovada",
+            remainingPending > 0
+              ? `R$ ${valorAprovado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} aprovados. Ainda restam itens pendentes.`
+              : `Versão ${approvalQuote?.versao ?? ""} aprovada com sucesso.`
+          );
+          await refreshProjectFromServer();
+        }}
+      />
+      <QuotePendingRevisionDialog
+        open={!!revisionQuote}
+        onClose={() => setRevisionQuote(null)}
+        quote={
+          revisionQuote
+            ? {
+                id: revisionQuote.id,
+                project_id: project.id,
+                versao: revisionQuote.versao,
+                validade: revisionQuote.validade,
+                clientName: project.client.nome,
+                items: revisionQuote.items || [],
+              }
+            : null
+        }
+        onRevised={async () => {
+          showSuccess("Valores revisados", "Itens pendentes atualizados com sucesso.");
+          await refreshProjectFromServer();
+        }}
+      />
       <ActionDialogHost dialog={dialog} />
     </div>
   );
