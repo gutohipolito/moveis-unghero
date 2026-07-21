@@ -308,7 +308,13 @@ export default function ClienteFinanceTab({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-black text-foreground">
-                        Recibo nº {String(receipt.numero).padStart(4, "0")}
+                        Recibo
+                        {receipt.parcela_numero && receipt.parcela_total
+                          ? ` · Parcela ${String(receipt.parcela_numero).padStart(
+                              2,
+                              "0"
+                            )}/${String(receipt.parcela_total).padStart(2, "0")}`
+                          : ""}
                       </p>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {receipt.referente}

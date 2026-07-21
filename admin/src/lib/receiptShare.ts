@@ -66,13 +66,12 @@ export function resolveReceiptPublicUrl(shareCode?: string | null) {
 
 export function buildReceiptWhatsAppMessage(input: {
   clientName: string;
-  receiptNumero: number;
   valorLabel: string;
   receiptUrl: string;
 }) {
   const first = input.clientName.trim().split(/\s+/)[0] || "cliente";
   return (
-    `Olá ${first}! Segue o recibo nº ${String(input.receiptNumero).padStart(4, "0")} ` +
+    `Olá ${first}! Segue o recibo de pagamento ` +
     `no valor de ${input.valorLabel} emitido pela Móveis Unghero:\n\n${input.receiptUrl}`
   );
 }

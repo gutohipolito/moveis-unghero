@@ -8,8 +8,9 @@ import {
 
 export type ReceiptPrintData = {
   id: string;
-  numero: number;
   valor: number;
+  parcela_numero?: number | null;
+  parcela_total?: number | null;
   referente: string;
   metodoLabel: string;
   data_recebimento: Date | string;
@@ -131,7 +132,12 @@ export default function ReceiptPrintDocument({
   const valorLabel = formatCurrencyBRL(receipt.valor);
   const valorExtenso = currencyToExtenso(receipt.valor);
   const dataLabel = formatContractDateLong(receipt.data_recebimento);
-  const numeroLabel = String(receipt.numero).padStart(4, "0");
+  const parcelaLabel =
+    receipt.parcela_numero && receipt.parcela_total
+      ? `Parcela ${String(receipt.parcela_numero).padStart(2, "0")}/${String(
+          receipt.parcela_total
+        ).padStart(2, "0")}`
+      : null;
   const quitacaoLabel =
     receipt.quitacao === "TOTAL"
       ? "quitação total da obrigação referida"
@@ -167,7 +173,9 @@ export default function ReceiptPrintDocument({
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
                   Recibo de pagamento
                 </p>
-                <p className="text-xs font-black text-neutral-800">Nº {numeroLabel}</p>
+                {parcelaLabel ? (
+                  <p className="text-xs font-black text-neutral-800">{parcelaLabel}</p>
+                ) : null}
                 <p className="text-[8px] uppercase tracking-wider text-neutral-400">
                   Controle {receipt.id.slice(0, 8).toUpperCase()}
                 </p>
@@ -248,22 +256,16 @@ export default function ReceiptPrintDocument({
                     {f.name} — CNPJ {f.cnpj}
                   </p>
                 </div>
-                <div className="text-center space-y-1 pt-[19px]">
-                  <p
-                    className="text-[18px] italic leading-none text-blue-800"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
+                <div className="text-center space-y-1 pt-[30px]">
+                  <div className="border-t border-neutral-700 mx-4" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-700">
+                    Pagador
+                  </p>
+                  <p className="text-[9px] font-bold text-neutral-700">
                     {receipt.cliente_nome}
                   </p>
-                  <div className="border-t border-blue-700/70 mx-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-800">
-                    Identificação do pagador
-                  </p>
-                  <p className="text-[9px] text-blue-700">
+                  <p className="text-[9px] text-neutral-600">
                     {receipt.cliente_documento}
-                  </p>
-                  <p className="text-[8px] text-neutral-400">
-                    Identificação automática — não constitui assinatura eletrônica
                   </p>
                 </div>
               </div>

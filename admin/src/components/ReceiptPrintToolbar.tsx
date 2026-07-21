@@ -13,7 +13,6 @@ import { formatCurrencyBRL } from "@/lib/currencyExtenso";
 
 interface ReceiptPrintToolbarProps {
   receiptId: string;
-  receiptNumero: number;
   valor: number;
   clientName: string;
   clientPhone: string;
@@ -23,7 +22,6 @@ interface ReceiptPrintToolbarProps {
 
 export default function ReceiptPrintToolbar({
   receiptId,
-  receiptNumero,
   valor,
   clientName,
   clientPhone,
@@ -70,7 +68,6 @@ export default function ReceiptPrintToolbar({
       const url = await ensureShareLink();
       const message = buildReceiptWhatsAppMessage({
         clientName,
-        receiptNumero,
         valorLabel: formatCurrencyBRL(valor),
         receiptUrl: url,
       });

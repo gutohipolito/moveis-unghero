@@ -38,8 +38,9 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
     <ReceiptPrintDocument
       receipt={{
         id: receipt.id,
-        numero: receipt.numero,
         valor: Number(receipt.valor),
+        parcela_numero: receipt.parcela_numero,
+        parcela_total: receipt.parcela_total,
         referente: receipt.referente,
         metodoLabel: labelPaymentMethod(receipt.metodo_pagamento),
         data_recebimento: receipt.data_recebimento,
@@ -54,7 +55,6 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
       topBar={
         <ReceiptPrintToolbar
           receiptId={receipt.id}
-          receiptNumero={receipt.numero}
           valor={Number(receipt.valor)}
           clientName={receipt.cliente_nome}
           clientPhone={receipt.client?.telefone || ""}

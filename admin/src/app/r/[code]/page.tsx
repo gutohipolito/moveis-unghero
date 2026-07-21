@@ -23,8 +23,9 @@ export default async function PublicReceiptPage({ params }: PublicReceiptPagePro
     <ReceiptPrintDocument
       receipt={{
         id: receipt.id,
-        numero: receipt.numero,
         valor: receipt.valor,
+        parcela_numero: receipt.parcela_numero,
+        parcela_total: receipt.parcela_total,
         referente: receipt.referente,
         metodoLabel: labelPaymentMethod(receipt.metodo_pagamento),
         data_recebimento: receipt.data_recebimento,

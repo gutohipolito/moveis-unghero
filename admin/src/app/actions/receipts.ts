@@ -13,6 +13,8 @@ export type PaymentReceiptDTO = {
   id: string;
   numero: number;
   valor: number;
+  parcela_numero: number | null;
+  parcela_total: number | null;
   referente: string;
   metodo_pagamento: PaymentMethod;
   data_recebimento: string;
@@ -39,6 +41,8 @@ function mapReceipt(row: {
   id: string;
   numero: number;
   valor: Prisma.Decimal | number;
+  parcela_numero: number | null;
+  parcela_total: number | null;
   referente: string;
   metodo_pagamento: PaymentMethod;
   data_recebimento: Date;
@@ -59,6 +63,8 @@ function mapReceipt(row: {
     id: row.id,
     numero: row.numero,
     valor: toNumber(row.valor),
+    parcela_numero: row.parcela_numero,
+    parcela_total: row.parcela_total,
     referente: row.referente,
     metodo_pagamento: row.metodo_pagamento,
     data_recebimento: row.data_recebimento.toISOString(),
@@ -110,6 +116,8 @@ function parseDateInput(value: string | undefined | null): Date {
 export type CreatePaymentReceiptInput = {
   clientId: string;
   valor: number;
+  parcela_numero?: number | null;
+  parcela_total?: number | null;
   referente: string;
   metodo_pagamento?: string;
   data_recebimento?: string;
@@ -134,6 +142,22 @@ export async function createPaymentReceipt(
   const referente = (input.referente || "").trim();
   if (!referente) {
     return { success: false, error: "Informe o motivo do recebimento (referente a)." };
+  }
+
+  let parcelaNumero = input.parcela_numero ?? null;
+  let parcelaTotal = input.parcela_total ?? null;
+  if (
+    (parcelaNumero !== null || parcelaTotal !== null) &&
+    (!Number.isInteger(parcelaNumero) ||
+      !Number.isInteger(parcelaTotal) ||
+      Number(parcelaNumero) < 1 ||
+      Number(parcelaTotal) < 1 ||
+      Number(parcelaNumero) > Number(parcelaTotal))
+  ) {
+    return {
+      success: false,
+      error: "Informe uma parcela válida (atual menor ou igual ao total).",
+    };
   }
 
   try {
@@ -192,6 +216,10 @@ export async function createPaymentReceipt(
       if (!installment) return { success: false, error: "Parcela não encontrada." };
       projectId = installment.project_id;
       if (!input.metodo_pagamento) metodo = installment.metodo_pagamento;
+      if (installment.numero_parcela && installment.total_parcelas) {
+        parcelaNumero = installment.numero_parcela;
+        parcelaTotal = installment.total_parcelas;
+      }
     } else if (projectId) {
       const project = await prisma.project.findFirst({
         where: { id: projectId, client_id: client.id, client: { company_id: auth.companyId } },
@@ -231,6 +259,8 @@ export async function createPaymentReceipt(
           installment_id: installmentId,
           numero,
           valor,
+          parcela_numero: parcelaNumero,
+          parcela_total: parcelaTotal,
           referente,
           metodo_pagamento: metodo,
           data_recebimento: parseDateInput(input.data_recebimento),

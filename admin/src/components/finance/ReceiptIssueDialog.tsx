@@ -66,6 +66,9 @@ export default function ReceiptIssueDialog({
   const [metodo, setMetodo] = useState<PaymentMethod>("PIX");
   const [dataRecebimento, setDataRecebimento] = useState(toISODateBR());
   const [quitacao, setQuitacao] = useState<"TOTAL" | "PARCIAL">("PARCIAL");
+  const [parcelado, setParcelado] = useState(false);
+  const [parcelaNumero, setParcelaNumero] = useState("");
+  const [parcelaTotal, setParcelaTotal] = useState("");
   const [projectId, setProjectId] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -98,6 +101,15 @@ export default function ReceiptIssueDialog({
     );
     setDataRecebimento(prefill?.dataRecebimento || toISODateBR());
     setQuitacao(prefill?.quitacao || (prefill?.installmentId ? "PARCIAL" : "PARCIAL"));
+    const hasParcel =
+      Boolean(prefill?.numero_parcela) && Boolean(prefill?.total_parcelas);
+    setParcelado(hasParcel);
+    setParcelaNumero(
+      prefill?.numero_parcela ? String(prefill.numero_parcela) : ""
+    );
+    setParcelaTotal(
+      prefill?.total_parcelas ? String(prefill.total_parcelas) : ""
+    );
     setProjectId(prefill?.projectId || "");
     setObservacoes("");
     setError(null);
@@ -120,11 +132,26 @@ export default function ReceiptIssueDialog({
       setError("Informe a que se refere o pagamento.");
       return;
     }
+    const parcelaAtual = parcelado ? Number(parcelaNumero) : null;
+    const totalParcelas = parcelado ? Number(parcelaTotal) : null;
+    if (
+      parcelado &&
+      (!Number.isInteger(parcelaAtual) ||
+        !Number.isInteger(totalParcelas) ||
+        Number(parcelaAtual) < 1 ||
+        Number(totalParcelas) < 1 ||
+        Number(parcelaAtual) > Number(totalParcelas))
+    ) {
+      setError("Informe uma parcela válida (atual menor ou igual ao total).");
+      return;
+    }
 
     setSaving(true);
     const res = await createPaymentReceipt({
       clientId,
       valor,
+      parcela_numero: parcelaAtual,
+      parcela_total: totalParcelas,
       referente: referente.trim(),
       metodo_pagamento:
         prefill?.installmentId &&
@@ -220,6 +247,54 @@ export default function ReceiptIssueDialog({
               required
             />
           </div>
+        </div>
+
+        <div className="rounded-lg border border-border/60 bg-slate-50/70 p-3 space-y-3">
+          <label className="flex items-center gap-2 text-xs font-bold text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={parcelado}
+              onChange={(e) => {
+                setParcelado(e.target.checked);
+                if (!e.target.checked) {
+                  setParcelaNumero("");
+                  setParcelaTotal("");
+                }
+              }}
+              className="h-4 w-4 accent-amber-600"
+            />
+            Pagamento parcelado
+          </label>
+          {parcelado ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Parcela atual *
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={parcelaNumero}
+                  onChange={(e) => setParcelaNumero(e.target.value)}
+                  placeholder="Ex.: 2"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Total de parcelas *
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={parcelaTotal}
+                  onChange={(e) => setParcelaTotal(e.target.value)}
+                  placeholder="Ex.: 10"
+                  required
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
