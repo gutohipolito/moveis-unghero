@@ -2,11 +2,16 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { guardModule } from "@/lib/moduleAccess";
 import { getColaboradores } from "@/app/actions/colaboradores";
+import { getUserPreferences } from "@/app/actions/preferences";
 import ColaboradoresClient from "@/components/ColaboradoresClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import { ADMIN_EMAIL } from "@/lib/constants";
+import {
+  COLABORADORES_VIEW_PREF_KEY,
+  type ColaboradoresViewMode,
+} from "@/lib/teamFuncoes";
 import type { Role } from "@prisma/client";
 
 export default async function ColaboradoresPage() {
@@ -16,7 +21,14 @@ export default async function ColaboradoresPage() {
   const canManageUsers =
     (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-  const res = await getColaboradores(companyId);
+  const [res, preferences] = await Promise.all([
+    getColaboradores(companyId),
+    getUserPreferences(),
+  ]);
+
+  const savedView = preferences?.[COLABORADORES_VIEW_PREF_KEY];
+  const initialViewMode: ColaboradoresViewMode =
+    savedView === "list" ? "list" : "grid";
 
   const colaboradores =
     res.success && res.colaboradores
@@ -45,6 +57,7 @@ export default async function ColaboradoresPage() {
               "Cadastre a equipe com funções operacionais (marceneiro, montador, etc.).",
               "Dá para marcar mais de uma função por pessoa.",
               "Acesso ao painel é opcional: pode cadastrar só o nome e liberar login depois.",
+              "Escolha visualizar em grade ou lista — a preferência fica salva por operador.",
               "Somente o administrador principal gerencia cadastros.",
             ]}
           />
@@ -57,6 +70,7 @@ export default async function ColaboradoresPage() {
         initialColaboradores={colaboradores}
         companyId={companyId}
         canManageUsers={canManageUsers}
+        initialViewMode={initialViewMode}
       />
     </div>
   );

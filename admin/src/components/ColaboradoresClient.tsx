@@ -9,12 +9,17 @@ import {
   ensureFactoryTeamSeeded,
 } from "@/app/actions/colaboradores";
 import { getColaboradoresLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { updateUserPreference } from "@/app/actions/preferences";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import {
   TEAM_FUNCAO_IDS,
   TEAM_FUNCAO_META,
+  COLABORADORES_VIEW_PREF_KEY,
+  FUNCAO_BANNER_PATTERN_STYLE,
   isInternalTeamEmail,
+  primaryFuncaoId,
+  type ColaboradoresViewMode,
   type TeamFuncaoId,
 } from "@/lib/teamFuncoes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -38,6 +43,8 @@ import {
   Pencil,
   Lock,
   Unlock,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 interface ColaboradorItem {
@@ -56,72 +63,26 @@ interface ColaboradoresClientProps {
   initialColaboradores: ColaboradorItem[];
   companyId: string;
   canManageUsers: boolean;
+  initialViewMode?: ColaboradoresViewMode;
 }
 
-const CARGO_BADGES: Record<
+const CARGO_META: Record<
   Role,
   {
     label: string;
     shortLabel: string;
-    bg: string;
-    text: string;
-    border: string;
-    avatar: string;
-    accent: string;
     icon: React.ComponentType<{ className?: string }>;
   }
 > = {
-  ADMIN: {
-    label: "Diretoria",
-    shortLabel: "Admin",
-    bg: "bg-purple-500/10",
-    text: "text-purple-700",
-    border: "border-purple-500/20",
-    avatar: "bg-purple-500/15 text-purple-700 border-purple-500/25",
-    accent: "bg-gradient-to-br from-purple-500 to-purple-700",
-    icon: ShieldCheck,
-  },
-  COMERCIAL: {
-    label: "Comercial",
-    shortLabel: "Vendas",
-    bg: "bg-blue-500/10",
-    text: "text-blue-700",
-    border: "border-blue-500/20",
-    avatar: "bg-blue-500/15 text-blue-700 border-blue-500/25",
-    accent: "bg-gradient-to-br from-blue-500 to-indigo-600",
-    icon: BadgePercent,
-  },
-  PROJETISTA: {
-    label: "Projetista",
-    shortLabel: "Projetos",
-    bg: "bg-cyan-500/10",
-    text: "text-cyan-700",
-    border: "border-cyan-500/20",
-    avatar: "bg-cyan-500/15 text-cyan-700 border-cyan-500/25",
-    accent: "bg-gradient-to-br from-violet-500 to-purple-600",
-    icon: UserCheck,
-  },
-  PRODUCAO: {
-    label: "Fábrica",
-    shortLabel: "Produção",
-    bg: "bg-amber-500/10",
-    text: "text-amber-700",
-    border: "border-amber-500/20",
-    avatar: "bg-amber-500/15 text-amber-700 border-amber-500/25",
-    accent: "bg-gradient-to-br from-amber-500 to-orange-600",
-    icon: Hammer,
-  },
-  FINANCEIRO: {
-    label: "Financeiro",
-    shortLabel: "Finanças",
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-700",
-    border: "border-emerald-500/20",
-    avatar: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25",
-    accent: "bg-gradient-to-br from-emerald-500 to-teal-600",
-    icon: Wallet,
-  },
+  ADMIN: { label: "Diretoria", shortLabel: "Admin", icon: ShieldCheck },
+  COMERCIAL: { label: "Comercial", shortLabel: "Vendas", icon: BadgePercent },
+  PROJETISTA: { label: "Projetista", shortLabel: "Projetos", icon: UserCheck },
+  PRODUCAO: { label: "Fábrica", shortLabel: "Produção", icon: Hammer },
+  FINANCEIRO: { label: "Financeiro", shortLabel: "Finanças", icon: Wallet },
 };
+
+const FALLBACK_BANNER = "bg-slate-500";
+const FALLBACK_AVATAR = "bg-slate-100 text-slate-700 border-slate-200";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -131,22 +92,77 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-function primaryFuncaoAccent(funcoes: string[] | undefined, cargo: Role) {
-  const first = funcoes?.[0];
-  if (first && first in TEAM_FUNCAO_META) {
-    return `bg-gradient-to-br ${TEAM_FUNCAO_META[first as TeamFuncaoId].accent}`;
+function resolveFuncaoVisual(funcoes: string[] | undefined) {
+  const primary = primaryFuncaoId(funcoes);
+  if (!primary) {
+    return { banner: FALLBACK_BANNER, avatar: FALLBACK_AVATAR, primary: null as TeamFuncaoId | null };
   }
-  return CARGO_BADGES[cargo]?.accent || "bg-gradient-to-br from-slate-400 to-slate-600";
+  const meta = TEAM_FUNCAO_META[primary];
+  return { banner: meta.banner, avatar: meta.avatar, primary };
+}
+
+function FuncaoChips({ funcoes }: { funcoes: TeamFuncaoId[] }) {
+  if (funcoes.length === 0) {
+    return <span className="text-[10px] text-slate-400 italic">Sem função definida</span>;
+  }
+  return (
+    <>
+      {funcoes.map((f) => {
+        const meta = TEAM_FUNCAO_META[f];
+        return (
+          <span
+            key={f}
+            className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-lg border ${meta.bg} ${meta.text} ${meta.border}`}
+          >
+            {meta.label}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+function AvatarBlock({
+  name,
+  image,
+  avatarClass,
+  size = "lg",
+}: {
+  name: string;
+  image?: string | null;
+  avatarClass: string;
+  size?: "lg" | "md";
+}) {
+  const sizeClass =
+    size === "lg"
+      ? "w-16 h-16 text-lg rounded-2xl border-4"
+      : "w-11 h-11 text-sm rounded-xl border-2";
+  return (
+    <div
+      className={`${sizeClass} flex items-center justify-center font-bold border-white shadow-md shrink-0 overflow-hidden ${avatarClass}`}
+    >
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        getInitials(name)
+      )}
+    </div>
+  );
 }
 
 export default function ColaboradoresClient({
   initialColaboradores,
   companyId,
   canManageUsers,
+  initialViewMode = "grid",
 }: ColaboradoresClientProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorItem[]>(initialColaboradores);
   const [search, setSearch] = useState("");
   const [filterFuncao, setFilterFuncao] = useState<string>("ALL");
+  const [viewMode, setViewMode] = useState<ColaboradoresViewMode>(
+    initialViewMode === "list" ? "list" : "grid"
+  );
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ColaboradorItem | null>(null);
@@ -197,6 +213,11 @@ export default function ColaboradoresClient({
     setFuncoes((prev) =>
       prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     );
+  };
+
+  const setViewAndPersist = (mode: ColaboradoresViewMode) => {
+    setViewMode(mode);
+    void updateUserPreference(COLABORADORES_VIEW_PREF_KEY, mode);
   };
 
   const syncColaboradores = useCallback(async () => {
@@ -359,6 +380,194 @@ export default function ColaboradoresClient({
     (c) => c.tem_acesso === false || isInternalTeamEmail(c.email)
   ).length;
 
+  const renderGridCard = (c: ColaboradorItem) => {
+    const cargoMeta = CARGO_META[c.cargo] || CARGO_META.PRODUCAO;
+    const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const isProtected = c.email === ADMIN_EMAIL;
+    const semAcesso = c.tem_acesso === false || isInternalTeamEmail(c.email);
+    const funcoesList = (c.funcoes || []).filter((f): f is TeamFuncaoId =>
+      (TEAM_FUNCAO_IDS as readonly string[]).includes(f)
+    );
+    const visual = resolveFuncaoVisual(funcoesList);
+    const primaryLabel = visual.primary
+      ? TEAM_FUNCAO_META[visual.primary].label
+      : cargoMeta.label;
+
+    return (
+      <Card
+        key={c.id}
+        className="bg-white border border-slate-100/90 hover:border-slate-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative"
+      >
+        <div className={`h-20 w-full ${visual.banner} relative overflow-hidden`}>
+          <div className="absolute inset-0" style={FUNCAO_BANNER_PATTERN_STYLE} />
+          {semAcesso ? (
+            <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-black/25 backdrop-blur px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+              <Lock className="h-2.5 w-2.5" />
+              Sem acesso
+            </span>
+          ) : (
+            <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+              <Unlock className="h-2.5 w-2.5" />
+              Painel
+            </span>
+          )}
+        </div>
+
+        <div className="px-5 pb-5 flex flex-col flex-1 gap-3 -mt-8 relative z-10">
+          <div className="flex items-end justify-between gap-3">
+            <AvatarBlock name={c.name} image={c.image} avatarClass={visual.avatar} />
+            {visual.primary ? (
+              <span
+                className={`inline-flex items-center text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0 mb-1 ${TEAM_FUNCAO_META[visual.primary].bg} ${TEAM_FUNCAO_META[visual.primary].text} ${TEAM_FUNCAO_META[visual.primary].border}`}
+              >
+                {TEAM_FUNCAO_META[visual.primary].shortLabel}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="min-w-0">
+            <h3 className="font-extrabold text-slate-800 text-[15px] leading-tight tracking-tight truncate">
+              {c.name}
+            </h3>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              {primaryLabel}
+              {semAcesso ? " · só operação" : " · acesso liberado"}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+            <FuncaoChips funcoes={funcoesList} />
+          </div>
+
+          <div className="space-y-1.5 text-xs text-slate-500 pt-1">
+            {!semAcesso && (
+              <p className="flex items-center gap-2 min-w-0">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <span className="truncate font-semibold">{c.email}</span>
+              </p>
+            )}
+            <p className="flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span className="font-medium">Desde {formattedDate}</span>
+            </p>
+          </div>
+
+          {canManageUsers ? (
+            <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openEdit(c)}
+                className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
+                disabled={loading}
+              >
+                <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
+                Editar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => requestDelete(c)}
+                className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl cursor-pointer"
+                disabled={isProtected || loading}
+                title="Remover colaborador"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-auto pt-3 border-t border-slate-100" />
+          )}
+        </div>
+      </Card>
+    );
+  };
+
+  const renderListRow = (c: ColaboradorItem) => {
+    const cargoMeta = CARGO_META[c.cargo] || CARGO_META.PRODUCAO;
+    const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const isProtected = c.email === ADMIN_EMAIL;
+    const semAcesso = c.tem_acesso === false || isInternalTeamEmail(c.email);
+    const funcoesList = (c.funcoes || []).filter((f): f is TeamFuncaoId =>
+      (TEAM_FUNCAO_IDS as readonly string[]).includes(f)
+    );
+    const visual = resolveFuncaoVisual(funcoesList);
+
+    return (
+      <div
+        key={c.id}
+        className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-slate-50/80 transition-colors"
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="relative shrink-0">
+            <div className={`absolute -inset-0.5 rounded-xl ${visual.banner} opacity-90`} />
+            <div className="relative">
+              <AvatarBlock name={c.name} image={c.image} avatarClass={visual.avatar} size="md" />
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold text-slate-800 text-sm truncate">{c.name}</h3>
+              {semAcesso ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+                  <Lock className="h-2.5 w-2.5" />
+                  Sem acesso
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+                  <Unlock className="h-2.5 w-2.5" />
+                  Painel
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+              {cargoMeta.label}
+              {!semAcesso ? ` · ${c.email}` : ""}
+              {" · "}
+              desde {formattedDate}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              <FuncaoChips funcoes={funcoesList} />
+            </div>
+          </div>
+        </div>
+
+        {canManageUsers ? (
+          <div className="flex gap-2 sm:shrink-0 pl-14 sm:pl-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEdit(c)}
+              className="text-[11px] font-extrabold h-8 rounded-lg border-slate-200 hover:bg-white cursor-pointer"
+              disabled={loading}
+            >
+              <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
+              Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => requestDelete(c)}
+              className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-8 px-2.5 rounded-lg cursor-pointer"
+              disabled={isProtected || loading}
+              title="Remover colaborador"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-500">
@@ -372,7 +581,7 @@ export default function ColaboradoresClient({
         </span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
         <div className="flex flex-col sm:flex-row gap-2 flex-1">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -397,15 +606,52 @@ export default function ColaboradoresClient({
           </select>
         </div>
 
-        {canManageUsers ? (
-          <Button
-            onClick={openCreate}
-            className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
+        <div className="flex items-center gap-2">
+          <div
+            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm"
+            role="group"
+            aria-label="Modo de visualização"
           >
-            <UserPlus className="h-4 w-4" />
-            Adicionar Colaborador
-          </Button>
-        ) : null}
+            <button
+              type="button"
+              onClick={() => setViewAndPersist("grid")}
+              className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              }`}
+              title="Ver em grade"
+              aria-pressed={viewMode === "grid"}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Grade
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewAndPersist("list")}
+              className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                viewMode === "list"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              }`}
+              title="Ver em lista"
+              aria-pressed={viewMode === "list"}
+            >
+              <List className="h-3.5 w-3.5" />
+              Lista
+            </button>
+          </div>
+
+          {canManageUsers ? (
+            <Button
+              onClick={openCreate}
+              className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
+            >
+              <UserPlus className="h-4 w-4" />
+              Adicionar Colaborador
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -415,135 +661,14 @@ export default function ColaboradoresClient({
             Nenhum colaborador encontrado com os filtros selecionados.
           </p>
         </Card>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {filtered.map((c) => {
-            const badge = CARGO_BADGES[c.cargo] || CARGO_BADGES.PRODUCAO;
-            const BadgeIcon = badge.icon;
-            const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            });
-            const isProtected = c.email === ADMIN_EMAIL;
-            const semAcesso = c.tem_acesso === false || isInternalTeamEmail(c.email);
-            const funcoesList = (c.funcoes || []).filter((f): f is TeamFuncaoId =>
-              (TEAM_FUNCAO_IDS as readonly string[]).includes(f)
-            );
-
-            return (
-              <Card
-                key={c.id}
-                className="bg-white border border-slate-100/90 hover:border-slate-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative"
-              >
-                <div className={`h-20 w-full ${primaryFuncaoAccent(funcoesList, c.cargo)} relative`}>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),transparent_45%)]" />
-                  {semAcesso && (
-                    <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-black/25 backdrop-blur px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                      <Lock className="h-2.5 w-2.5" />
-                      Sem acesso
-                    </span>
-                  )}
-                  {!semAcesso && (
-                    <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                      <Unlock className="h-2.5 w-2.5" />
-                      Painel
-                    </span>
-                  )}
-                </div>
-
-                <div className="px-5 pb-5 flex flex-col flex-1 gap-3 -mt-8 relative z-10">
-                  <div className="flex items-end justify-between gap-3">
-                    <div
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-lg border-4 border-white shadow-md shrink-0 overflow-hidden ${badge.avatar}`}
-                    >
-                      {c.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
-                      ) : (
-                        getInitials(c.name)
-                      )}
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0 mb-1 ${badge.bg} ${badge.text} ${badge.border}`}
-                    >
-                      <BadgeIcon className="h-3 w-3" />
-                      {badge.shortLabel}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-slate-800 text-[15px] leading-tight tracking-tight truncate">
-                      {c.name}
-                    </h3>
-                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                      {badge.label}
-                      {semAcesso ? " · só operação" : " · acesso liberado"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 min-h-[28px]">
-                    {funcoesList.length > 0 ? (
-                      funcoesList.map((f) => {
-                        const meta = TEAM_FUNCAO_META[f];
-                        return (
-                          <span
-                            key={f}
-                            className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-lg border ${meta.bg} ${meta.text} ${meta.border}`}
-                          >
-                            {meta.label}
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <span className="text-[10px] text-slate-400 italic">Sem função definida</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5 text-xs text-slate-500 pt-1">
-                    {!semAcesso && (
-                      <p className="flex items-center gap-2 min-w-0">
-                        <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                        <span className="truncate font-semibold">{c.email}</span>
-                      </p>
-                    )}
-                    <p className="flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="font-medium">Desde {formattedDate}</span>
-                    </p>
-                  </div>
-
-                  {canManageUsers ? (
-                    <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(c)}
-                        className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
-                        disabled={loading}
-                      >
-                        <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => requestDelete(c)}
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl cursor-pointer"
-                        disabled={isProtected || loading}
-                        title="Remover colaborador"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="mt-auto pt-3 border-t border-slate-100" />
-                  )}
-                </div>
-              </Card>
-            );
-          })}
+          {filtered.map(renderGridCard)}
         </div>
+      ) : (
+        <Card className="bg-white border border-slate-100/90 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
+          {filtered.map(renderListRow)}
+        </Card>
       )}
 
       <Dialog

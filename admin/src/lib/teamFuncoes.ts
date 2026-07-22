@@ -10,9 +10,22 @@ export const TEAM_FUNCAO_IDS = [
 
 export type TeamFuncaoId = (typeof TEAM_FUNCAO_IDS)[number];
 
+export const COLABORADORES_VIEW_PREF_KEY = "colaboradoresViewMode";
+export type ColaboradoresViewMode = "grid" | "list";
+
 export const TEAM_FUNCAO_META: Record<
   TeamFuncaoId,
-  { label: string; shortLabel: string; bg: string; text: string; border: string; accent: string }
+  {
+    label: string;
+    shortLabel: string;
+    bg: string;
+    text: string;
+    border: string;
+    /** Tarja / avatar — mesma família de cor por função */
+    banner: string;
+    avatar: string;
+    accentHex: string;
+  }
 > = {
   MARCENEIRO: {
     label: "Marceneiro",
@@ -20,7 +33,9 @@ export const TEAM_FUNCAO_META: Record<
     bg: "bg-amber-500/10",
     text: "text-amber-800",
     border: "border-amber-500/25",
-    accent: "from-amber-500 to-orange-500",
+    banner: "bg-amber-600",
+    avatar: "bg-amber-100 text-amber-800 border-amber-200",
+    accentHex: "#d97706",
   },
   AJUDANTE: {
     label: "Ajudante",
@@ -28,7 +43,9 @@ export const TEAM_FUNCAO_META: Record<
     bg: "bg-slate-500/10",
     text: "text-slate-700",
     border: "border-slate-400/30",
-    accent: "from-slate-500 to-slate-600",
+    banner: "bg-slate-600",
+    avatar: "bg-slate-100 text-slate-700 border-slate-200",
+    accentHex: "#475569",
   },
   MONTADOR: {
     label: "Montador",
@@ -36,7 +53,9 @@ export const TEAM_FUNCAO_META: Record<
     bg: "bg-sky-500/10",
     text: "text-sky-800",
     border: "border-sky-500/25",
-    accent: "from-sky-500 to-cyan-500",
+    banner: "bg-sky-600",
+    avatar: "bg-sky-100 text-sky-800 border-sky-200",
+    accentHex: "#0284c7",
   },
   PROJETISTA: {
     label: "Projetista",
@@ -44,7 +63,9 @@ export const TEAM_FUNCAO_META: Record<
     bg: "bg-violet-500/10",
     text: "text-violet-800",
     border: "border-violet-500/25",
-    accent: "from-violet-500 to-purple-500",
+    banner: "bg-violet-600",
+    avatar: "bg-violet-100 text-violet-800 border-violet-200",
+    accentHex: "#7c3aed",
   },
   COMERCIAL: {
     label: "Comercial",
@@ -52,7 +73,9 @@ export const TEAM_FUNCAO_META: Record<
     bg: "bg-blue-500/10",
     text: "text-blue-800",
     border: "border-blue-500/25",
-    accent: "from-blue-500 to-indigo-500",
+    banner: "bg-blue-600",
+    avatar: "bg-blue-100 text-blue-800 border-blue-200",
+    accentHex: "#2563eb",
   },
   ADMINISTRATIVO: {
     label: "Administrativo",
@@ -60,9 +83,19 @@ export const TEAM_FUNCAO_META: Record<
     bg: "bg-emerald-500/10",
     text: "text-emerald-800",
     border: "border-emerald-500/25",
-    accent: "from-emerald-500 to-teal-500",
+    banner: "bg-emerald-600",
+    avatar: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    accentHex: "#059669",
   },
 };
+
+/** Pattern diagonal reutilizável na tarja dos cards. */
+export const FUNCAO_BANNER_PATTERN_STYLE = {
+  backgroundImage: [
+    "repeating-linear-gradient(-45deg, transparent, transparent 7px, rgba(255,255,255,0.14) 7px, rgba(255,255,255,0.14) 14px)",
+    "radial-gradient(circle at 85% 20%, rgba(255,255,255,0.2), transparent 42%)",
+  ].join(", "),
+} as const;
 
 export function isTeamFuncaoId(value: string): value is TeamFuncaoId {
   return (TEAM_FUNCAO_IDS as readonly string[]).includes(value);
@@ -76,6 +109,11 @@ export function normalizeFuncoes(values: string[] | null | undefined): TeamFunca
     if (isTeamFuncaoId(key)) unique.add(key);
   }
   return Array.from(unique);
+}
+
+export function primaryFuncaoId(funcoes: string[] | null | undefined): TeamFuncaoId | null {
+  const normalized = normalizeFuncoes(funcoes);
+  return normalized[0] ?? null;
 }
 
 /** Cargo de painel sugerido a partir das funções operacionais. */
