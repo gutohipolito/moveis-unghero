@@ -289,11 +289,15 @@ export async function getColaboradoresLiveSnapshot(companyId: string) {
     const result = await getColaboradores(auth.companyId);
     const colaboradores =
       result.success && result.colaboradores
-        ? result.colaboradores.map((colaborador: { id: string; name: string; email: string; cargo: string; createdAt: Date }) => ({
+        ? result.colaboradores.map((colaborador) => ({
             id: colaborador.id,
             name: colaborador.name,
             email: colaborador.email,
             cargo: colaborador.cargo,
+            areaAtuacao: colaborador.areaAtuacao,
+            funcoes: colaborador.funcoes,
+            tem_acesso: colaborador.tem_acesso,
+            image: colaborador.image,
             createdAt: colaborador.createdAt,
           }))
         : [];
@@ -303,6 +307,8 @@ export async function getColaboradoresLiveSnapshot(companyId: string) {
         id: colaborador.id,
         email: colaborador.email,
         cargo: colaborador.cargo,
+        funcoes: (colaborador.funcoes || []).join(","),
+        tem_acesso: colaborador.tem_acesso ? 1 : 0,
       }))
     );
 

@@ -25,6 +25,10 @@ export default async function ColaboradoresPage() {
           name: c.name,
           email: c.email,
           cargo: c.cargo as Role,
+          areaAtuacao: c.areaAtuacao,
+          funcoes: c.funcoes,
+          tem_acesso: c.tem_acesso,
+          image: c.image,
           createdAt: c.createdAt,
         }))
       : [];
@@ -38,10 +42,10 @@ export default async function ColaboradoresPage() {
           <TooltipBody
             title="Equipe interna"
             items={[
-              "Cadastre quem tem acesso ao painel e defina o cargo de cada um.",
-              "O cargo determina os módulos visíveis (veja em Permissões).",
-              "Somente o administrador principal pode criar ou alterar operadores.",
-              "Para arquitetos e projetistas externos, use Projetistas e Arquitetos.",
+              "Cadastre a equipe com funções operacionais (marceneiro, montador, etc.).",
+              "Dá para marcar mais de uma função por pessoa.",
+              "Acesso ao painel é opcional: pode cadastrar só o nome e liberar login depois.",
+              "Somente o administrador principal gerencia cadastros.",
             ]}
           />
         }

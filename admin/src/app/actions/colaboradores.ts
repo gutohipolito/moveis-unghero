@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { ADMIN_EMAIL } from "@/lib/constants";
+import { ADMIN_EMAIL, DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import {
@@ -13,6 +13,12 @@ import {
   type AuthContext,
 } from "@/lib/auth-guard";
 import { capitalizeText } from "@/lib/utils";
+import {
+  buildInternalTeamEmail,
+  normalizeFuncoes,
+  suggestCargoFromFuncoes,
+  type TeamFuncaoId,
+} from "@/lib/teamFuncoes";
 
 function isPrimaryAdmin(authCtx: AuthContext) {
   return authCtx.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
@@ -29,6 +35,19 @@ function denyUnlessPrimaryAdmin(authCtx: AuthContext | null) {
     };
   }
   return null;
+}
+
+function areaLabelFromFuncoes(funcoes: TeamFuncaoId[]) {
+  if (!funcoes.length) return null;
+  const labels: Record<TeamFuncaoId, string> = {
+    MARCENEIRO: "Marcenaria",
+    AJUDANTE: "Ajudante",
+    MONTADOR: "Montagem",
+    PROJETISTA: "Projetos",
+    COMERCIAL: "Comercial",
+    ADMINISTRATIVO: "Administrativo",
+  };
+  return funcoes.map((f) => labels[f]).join(" · ");
 }
 
 // Retorna todos os colaboradores ativos da mesma empresa
@@ -64,38 +83,79 @@ export async function getColaboradores(companyId: string) {
   }
 }
 
-// Cria um colaborador na base com Better Auth
+// Cria um colaborador. Sem acesso: só nome + funções (sem login). Com acesso: e-mail + senha.
 export async function createColaborador(data: {
   name: string;
-  email: string;
-  cargo: Role;
-  senhaRaw: string;
+  email?: string;
+  cargo?: Role;
+  senhaRaw?: string;
   companyId: string;
   areaAtuacao?: string;
+  funcoes?: string[];
   image?: string;
+  temAcesso?: boolean;
 }) {
   const authCtx = await getAuthContext();
   const denied = denyUnlessPrimaryAdmin(authCtx);
   if (denied) return denied;
 
-  try {
-    // 1. Garante que não haja duplicidade de e-mail
-    const existing = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+  const funcoes = normalizeFuncoes(data.funcoes);
+  const temAcesso = data.temAcesso !== false && Boolean(data.email && data.senhaRaw);
+  const cargo =
+    data.cargo ||
+    (suggestCargoFromFuncoes(funcoes) as Role);
+  const areaAtuacao =
+    data.areaAtuacao?.trim() || areaLabelFromFuncoes(funcoes) || null;
 
+  try {
+    if (!temAcesso) {
+      const email = buildInternalTeamEmail(data.name);
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return {
+          success: false,
+          error: "Já existe um colaborador com este nome na equipe (sem acesso).",
+        };
+      }
+
+      const dbUser = await prisma.user.create({
+        data: {
+          id: crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 8),
+          name: capitalizeText(data.name),
+          email,
+          emailVerified: false,
+          company_id: authCtx!.companyId || data.companyId || DEFAULT_COMPANY_ID,
+          cargo,
+          areaAtuacao,
+          funcoes,
+          tem_acesso: false,
+          ...(data.image ? { image: data.image.trim() } : {}),
+        },
+      });
+
+      revalidatePath("/colaboradores");
+      revalidatePath("/crm");
+      revalidatePath("/factory");
+      return { success: true, user: dbUser };
+    }
+
+    const email = (data.email || "").trim().toLowerCase();
+    if (!email || !data.senhaRaw) {
+      return { success: false, error: "E-mail e senha são obrigatórios para liberar acesso." };
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return { success: false, error: "Este e-mail já está sendo utilizado por outro colaborador." };
     }
 
-    // 2. Cria o usuário e conta no Better Auth nativo
     const newUser = await auth.api.signUpEmail({
       body: {
-        email: data.email,
+        email,
         password: data.senhaRaw,
         name: capitalizeText(data.name),
         company_id: authCtx!.companyId,
-        cargo: data.cargo,
+        cargo,
       },
     });
 
@@ -107,12 +167,16 @@ export async function createColaborador(data: {
       where: { id: newUser.user.id },
       data: {
         name: capitalizeText(data.name),
-        ...(data.areaAtuacao ? { areaAtuacao: capitalizeText(data.areaAtuacao) } : {}),
+        areaAtuacao,
+        funcoes,
+        tem_acesso: true,
         ...(data.image ? { image: data.image.trim() } : {}),
-      }
+      },
     });
 
     revalidatePath("/colaboradores");
+    revalidatePath("/crm");
+    revalidatePath("/factory");
     return { success: true, user: dbUser };
   } catch (error: any) {
     console.error("Erro ao cadastrar colaborador:", error);
@@ -128,6 +192,7 @@ export async function updateColaborador(
     email?: string;
     cargo?: Role;
     areaAtuacao?: string | null;
+    funcoes?: string[];
     image?: string | null;
   }
 ) {
@@ -154,18 +219,34 @@ export async function updateColaborador(
       }
     }
 
+    const funcoes =
+      data.funcoes !== undefined ? normalizeFuncoes(data.funcoes) : undefined;
+    const areaAtuacao =
+      data.areaAtuacao !== undefined
+        ? data.areaAtuacao
+          ? capitalizeText(data.areaAtuacao)
+          : funcoes
+            ? areaLabelFromFuncoes(funcoes)
+            : null
+        : funcoes
+          ? areaLabelFromFuncoes(funcoes)
+          : undefined;
+
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.name !== undefined ? { name: capitalizeText(data.name) } : {}),
         ...(data.email !== undefined ? { email: data.email.trim() } : {}),
         ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
-        ...(data.areaAtuacao !== undefined ? { areaAtuacao: data.areaAtuacao ? capitalizeText(data.areaAtuacao) : null } : {}),
+        ...(areaAtuacao !== undefined ? { areaAtuacao } : {}),
+        ...(funcoes !== undefined ? { funcoes } : {}),
         ...(data.image !== undefined ? { image: data.image?.trim() || null } : {}),
       },
     });
 
     revalidatePath("/colaboradores");
+    revalidatePath("/crm");
+    revalidatePath("/factory");
     return { success: true, user: updated };
   } catch (error: any) {
     console.error("Erro ao atualizar colaborador:", error);
@@ -291,4 +372,61 @@ export async function updateEnvironmentAjudante(environmentId: string, ajudanteI
     console.error("Erro ao atualizar ajudante do cômodo:", error);
     return { success: false, error: error.message };
   }
+}
+
+const FACTORY_TEAM_SEED: Array<{ name: string; funcoes: TeamFuncaoId[] }> = [
+  { name: "Alessandro (Nene)", funcoes: ["MARCENEIRO"] },
+  { name: "Lauro", funcoes: ["MARCENEIRO"] },
+  { name: "Guimorvan", funcoes: ["MARCENEIRO"] },
+  { name: "Vitor", funcoes: ["AJUDANTE"] },
+  { name: "Moisés", funcoes: ["MONTADOR"] },
+  { name: "Robert", funcoes: ["MONTADOR"] },
+  { name: "Manoel", funcoes: ["PROJETISTA"] },
+  { name: "Ana", funcoes: ["PROJETISTA"] },
+];
+
+/** Cadastra a equipe operacional (sem login) se ainda não existir. */
+export async function ensureFactoryTeamSeeded(companyId?: string) {
+  const authCtx = await getAuthContext();
+  const denied = denyUnlessPrimaryAdmin(authCtx);
+  if (denied) return denied;
+
+  const targetCompany = companyId || authCtx!.companyId || DEFAULT_COMPANY_ID;
+  let created = 0;
+  let skipped = 0;
+
+  for (const member of FACTORY_TEAM_SEED) {
+    const email = buildInternalTeamEmail(member.name);
+    const existing = await prisma.user.findFirst({
+      where: {
+        company_id: targetCompany,
+        OR: [{ email }, { name: { equals: member.name, mode: "insensitive" } }],
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      skipped += 1;
+      continue;
+    }
+
+    await prisma.user.create({
+      data: {
+        id: crypto.randomUUID().replace(/-/g, ""),
+        name: capitalizeText(member.name),
+        email,
+        emailVerified: false,
+        company_id: targetCompany,
+        cargo: suggestCargoFromFuncoes(member.funcoes) as Role,
+        funcoes: member.funcoes,
+        areaAtuacao: areaLabelFromFuncoes(member.funcoes),
+        tem_acesso: false,
+      },
+    });
+    created += 1;
+  }
+
+  revalidatePath("/colaboradores");
+  revalidatePath("/crm");
+  revalidatePath("/factory");
+  return { success: true as const, created, skipped };
 }

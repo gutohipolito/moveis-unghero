@@ -46,8 +46,10 @@ model User {
   company_id    String
   company       Company    @relation(fields: [company_id], references: [id])
   senha         String?    // Opcional pois o login social/Better Auth usa senha na tabela Account
-  cargo         Role       // ADMIN, COMERCIAL, PROJETISTA, PRODUCAO, FINANCEIRO
-  areaAtuacao   String?
+  cargo         Role       // ADMIN, COMERCIAL, PROJETISTA, PRODUCAO, FINANCEIRO — acesso ao painel
+  areaAtuacao   String?    // legado (texto livre); preferir `funcoes`
+  funcoes       String[]   @default([]) // funções operacionais (MARCENEIRO, MONTADOR, …) — pode ter várias
+  tem_acesso    Boolean    @default(true) // false = equipe operacional sem login no painel
   preferences   Json?      // Preferências de UI por usuário (ex.: itens por página nas listas)
   
   // Relations

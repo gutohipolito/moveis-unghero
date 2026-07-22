@@ -1,31 +1,43 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Role } from "@prisma/client";
-import { createColaborador, deleteColaborador, updateColaborador } from "@/app/actions/colaboradores";
+import {
+  createColaborador,
+  deleteColaborador,
+  updateColaborador,
+  ensureFactoryTeamSeeded,
+} from "@/app/actions/colaboradores";
 import { getColaboradoresLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ADMIN_EMAIL } from "@/lib/constants";
+import {
+  TEAM_FUNCAO_IDS,
+  TEAM_FUNCAO_META,
+  isInternalTeamEmail,
+  type TeamFuncaoId,
+} from "@/lib/teamFuncoes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { 
-  Users, 
-  UserPlus, 
-  Search, 
-  Trash2, 
-  Loader2, 
-  ShieldCheck, 
-  UserCheck, 
-  Hammer, 
-  BadgePercent, 
+import {
+  Users,
+  UserPlus,
+  Search,
+  Trash2,
+  Loader2,
+  ShieldCheck,
+  UserCheck,
+  Hammer,
+  BadgePercent,
   Wallet,
   Mail,
   Calendar,
   Pencil,
-  Briefcase,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
 interface ColaboradorItem {
@@ -34,6 +46,8 @@ interface ColaboradorItem {
   email: string;
   cargo: Role;
   areaAtuacao?: string | null;
+  funcoes?: string[];
+  tem_acesso?: boolean;
   image?: string | null;
   createdAt: Date;
 }
@@ -41,7 +55,6 @@ interface ColaboradorItem {
 interface ColaboradoresClientProps {
   initialColaboradores: ColaboradorItem[];
   companyId: string;
-  /** Só admin@moveisunghero.com.br pode criar/editar/excluir operadores. */
   canManageUsers: boolean;
 }
 
@@ -65,7 +78,7 @@ const CARGO_BADGES: Record<
     text: "text-purple-700",
     border: "border-purple-500/20",
     avatar: "bg-purple-500/15 text-purple-700 border-purple-500/25",
-    accent: "bg-gradient-to-r from-purple-500 to-purple-600",
+    accent: "bg-gradient-to-br from-purple-500 to-purple-700",
     icon: ShieldCheck,
   },
   COMERCIAL: {
@@ -75,7 +88,7 @@ const CARGO_BADGES: Record<
     text: "text-blue-700",
     border: "border-blue-500/20",
     avatar: "bg-blue-500/15 text-blue-700 border-blue-500/25",
-    accent: "bg-gradient-to-r from-blue-500 to-blue-600",
+    accent: "bg-gradient-to-br from-blue-500 to-indigo-600",
     icon: BadgePercent,
   },
   PROJETISTA: {
@@ -85,7 +98,7 @@ const CARGO_BADGES: Record<
     text: "text-cyan-700",
     border: "border-cyan-500/20",
     avatar: "bg-cyan-500/15 text-cyan-700 border-cyan-500/25",
-    accent: "bg-gradient-to-r from-cyan-500 to-cyan-600",
+    accent: "bg-gradient-to-br from-violet-500 to-purple-600",
     icon: UserCheck,
   },
   PRODUCAO: {
@@ -95,7 +108,7 @@ const CARGO_BADGES: Record<
     text: "text-amber-700",
     border: "border-amber-500/20",
     avatar: "bg-amber-500/15 text-amber-700 border-amber-500/25",
-    accent: "bg-gradient-to-r from-amber-500 to-orange-500",
+    accent: "bg-gradient-to-br from-amber-500 to-orange-600",
     icon: Hammer,
   },
   FINANCEIRO: {
@@ -105,7 +118,7 @@ const CARGO_BADGES: Record<
     text: "text-emerald-700",
     border: "border-emerald-500/20",
     avatar: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25",
-    accent: "bg-gradient-to-r from-emerald-500 to-emerald-600",
+    accent: "bg-gradient-to-br from-emerald-500 to-teal-600",
     icon: Wallet,
   },
 };
@@ -118,20 +131,12 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-function resetCreateForm(
-  setName: (v: string) => void,
-  setEmail: (v: string) => void,
-  setPassword: (v: string) => void,
-  setCargo: (v: Role) => void,
-  setAreaAtuacao: (v: string) => void,
-  setImage: (v: string) => void
-) {
-  setName("");
-  setEmail("");
-  setPassword("");
-  setCargo("PRODUCAO");
-  setAreaAtuacao("");
-  setImage("");
+function primaryFuncaoAccent(funcoes: string[] | undefined, cargo: Role) {
+  const first = funcoes?.[0];
+  if (first && first in TEAM_FUNCAO_META) {
+    return `bg-gradient-to-br ${TEAM_FUNCAO_META[first as TeamFuncaoId].accent}`;
+  }
+  return CARGO_BADGES[cargo]?.accent || "bg-gradient-to-br from-slate-400 to-slate-600";
 }
 
 export default function ColaboradoresClient({
@@ -141,41 +146,57 @@ export default function ColaboradoresClient({
 }: ColaboradoresClientProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorItem[]>(initialColaboradores);
   const [search, setSearch] = useState("");
-  const [filterCargo, setFilterCargo] = useState<string>("ALL");
+  const [filterFuncao, setFilterFuncao] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ColaboradorItem | null>(null);
-  
+  const [seedDone, setSeedDone] = useState(false);
+
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<Role>("PRODUCAO");
-  const [areaAtuacao, setAreaAtuacao] = useState("");
+  const [funcoes, setFuncoes] = useState<TeamFuncaoId[]>([]);
   const [image, setImage] = useState("");
   const [password, setPassword] = useState("");
+  const [temAcesso, setTemAcesso] = useState(false);
 
-  const openCreate = () => {
-    setEditing(null);
+  const resetForm = () => {
     setName("");
     setEmail("");
     setPassword("");
     setCargo("PRODUCAO");
-    setAreaAtuacao("");
+    setFuncoes([]);
     setImage("");
+    setTemAcesso(false);
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    resetForm();
     setIsCreateOpen(true);
   };
 
   const openEdit = (c: ColaboradorItem) => {
     setEditing(c);
     setName(c.name);
-    setEmail(c.email);
+    setEmail(isInternalTeamEmail(c.email) ? "" : c.email);
     setCargo(c.cargo);
-    setAreaAtuacao(c.areaAtuacao || "");
+    setFuncoes((c.funcoes || []).filter((f): f is TeamFuncaoId =>
+      (TEAM_FUNCAO_IDS as readonly string[]).includes(f)
+    ));
     setImage(c.image || "");
     setPassword("");
+    setTemAcesso(c.tem_acesso !== false && !isInternalTeamEmail(c.email));
     setIsCreateOpen(true);
+  };
+
+  const toggleFuncao = (id: TeamFuncaoId) => {
+    setFuncoes((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
   };
 
   const syncColaboradores = useCallback(async () => {
@@ -190,25 +211,49 @@ export default function ColaboradoresClient({
     enabled: !loading && !isCreateOpen,
   });
 
+  useEffect(() => {
+    if (!canManageUsers || seedDone) return;
+    let cancelled = false;
+    (async () => {
+      const res = await ensureFactoryTeamSeeded(companyId);
+      if (cancelled) return;
+      setSeedDone(true);
+      if (res.success && res.created > 0) {
+        await syncColaboradores();
+        showSuccess(
+          "Equipe cadastrada",
+          `${res.created} colaborador(es) operacional(is) adicionado(s) sem acesso ao painel.`
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canManageUsers, companyId, seedDone, syncColaboradores, showSuccess]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || (!editing && !password)) {
-      showError(
-        "Campos obrigatórios",
-        "Preencha nome, e-mail e senha para prosseguir."
-      );
+    if (!name.trim()) {
+      showError("Nome obrigatório", "Informe o nome do colaborador.");
+      return;
+    }
+    if (funcoes.length === 0) {
+      showError("Função obrigatória", "Selecione ao menos uma função operacional.");
+      return;
+    }
+    if (temAcesso && !editing && (!email.trim() || !password)) {
+      showError("Acesso ao painel", "Para liberar acesso, informe e-mail e senha.");
       return;
     }
 
     setLoading(true);
 
     if (editing) {
-      // Modo Edição
       const res = await updateColaborador(editing.id, {
         name,
-        email,
+        ...(temAcesso && email.trim() ? { email: email.trim() } : {}),
         cargo,
-        areaAtuacao,
+        funcoes,
         image,
       });
 
@@ -222,78 +267,76 @@ export default function ColaboradoresClient({
                   email: res.user.email,
                   cargo: res.user.cargo as Role,
                   areaAtuacao: res.user.areaAtuacao,
+                  funcoes: res.user.funcoes,
+                  tem_acesso: res.user.tem_acesso,
                   image: res.user.image,
                 }
               : c
           )
         );
         setIsCreateOpen(false);
-        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
-        showSuccess(
-          "Cadastro atualizado",
-          `Os dados de ${res.user.name} foram salvos com sucesso.`
-        );
+        setEditing(null);
+        resetForm();
+        showSuccess("Cadastro atualizado", `Os dados de ${res.user.name} foram salvos.`);
       } else {
-        showError(
-          "Não foi possível atualizar",
-          res.error || "Ocorreu um erro ao atualizar os dados."
-        );
+        showError("Não foi possível atualizar", res.error || "Erro ao salvar.");
       }
     } else {
-      // Modo Criação
       const res = await createColaborador({
         name,
-        email,
+        email: temAcesso ? email.trim() : undefined,
         cargo,
-        senhaRaw: password,
+        senhaRaw: temAcesso ? password : undefined,
         companyId,
-        areaAtuacao,
-        image,
+        funcoes,
+        image: image || undefined,
+        temAcesso,
       });
 
       if (res.success && res.user) {
-        const cargoLabel = CARGO_BADGES[res.user.cargo as Role]?.label || res.user.cargo;
-        setColaboradores([
-          ...colaboradores,
+        setColaboradores((prev) => [
+          ...prev,
           {
             id: res.user.id,
             name: res.user.name,
             email: res.user.email,
             cargo: res.user.cargo as Role,
             areaAtuacao: res.user.areaAtuacao,
+            funcoes: res.user.funcoes,
+            tem_acesso: res.user.tem_acesso,
             image: res.user.image,
             createdAt: new Date(res.user.createdAt),
           },
         ]);
         setIsCreateOpen(false);
-        resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
+        resetForm();
         showSuccess(
-          "Colaborador cadastrado",
-          `${res.user.name} foi adicionado à equipe como ${cargoLabel}.`
+          "Colaborador adicionado",
+          temAcesso
+            ? `${res.user.name} foi cadastrado com acesso ao painel.`
+            : `${res.user.name} entrou na equipe (sem login por enquanto).`
         );
       } else {
-        showError(
-          "Não foi possível cadastrar",
-          res.error || "Ocorreu um erro ao salvar o colaborador. Tente novamente."
-        );
+        showError("Não foi possível cadastrar", res.error || "Erro ao criar.");
       }
     }
+
     setLoading(false);
   };
 
-  const requestDelete = (target: ColaboradorItem) => {
+  const requestDelete = (c: ColaboradorItem) => {
     confirmAction({
-      title: "Remover colaborador?",
-      message: `${target.name} será removido da equipe e perderá acesso ao painel. Esta ação não pode ser desfeita.`,
-      confirmLabel: "Sim, remover",
+      title: "Remover colaborador",
+      message: `Remover ${c.name} da equipe?`,
+      confirmLabel: "Remover",
       onConfirm: async () => {
         setLoading(true);
-        const res = await deleteColaborador(target.id);
+        const res = await deleteColaborador(c.id);
         if (res.success) {
-          setColaboradores((prev) => prev.filter((c) => c.id !== target.id));
-          showSuccess("Colaborador removido", `${target.name} foi removido da equipe com sucesso.`);
+          setColaboradores((prev) => prev.filter((x) => x.id !== c.id));
+          showSuccess("Removido", `${c.name} foi removido da equipe.`);
         } else {
-          showError("Não foi possível remover", res.error || "Erro ao remover colaborador. Tente novamente.");
+          showError("Erro", res.error || "Não foi possível remover.");
         }
         setLoading(false);
       },
@@ -301,92 +344,56 @@ export default function ColaboradoresClient({
   };
 
   const filtered = colaboradores.filter((c) => {
+    const q = search.trim().toLowerCase();
     const matchesSearch =
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase());
-    const matchesCargo = filterCargo === "ALL" || c.cargo === filterCargo;
-    return matchesSearch && matchesCargo;
+      !q ||
+      c.name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      (c.funcoes || []).some((f) => f.toLowerCase().includes(q));
+    const matchesFuncao =
+      filterFuncao === "ALL" || (c.funcoes || []).includes(filterFuncao);
+    return matchesSearch && matchesFuncao;
   });
 
-  const total = colaboradores.length;
-  const producaoCount = colaboradores.filter((c) => c.cargo === "PRODUCAO").length;
-  const comercialCount = colaboradores.filter((c) => c.cargo === "COMERCIAL").length;
-  const adminCount = colaboradores.filter((c) => c.cargo === "ADMIN").length;
+  const semAcessoCount = colaboradores.filter(
+    (c) => c.tem_acesso === false || isInternalTeamEmail(c.email)
+  ).length;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-[hsl(28_85%_95%)] text-[hsl(28_85%_45%)] rounded-lg">
-            <Users className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-              Total de Colaboradores
-            </span>
-            <strong className="text-xl text-foreground font-extrabold">{total} pessoas</strong>
-          </div>
-        </Card>
-
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-amber-500/10 text-amber-400 rounded-lg">
-            <Hammer className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-              Chão de Fábrica
-            </span>
-            <strong className="text-xl text-foreground font-extrabold">{producaoCount} marceneiros</strong>
-          </div>
-        </Card>
-
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-lg">
-            <BadgePercent className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-              Equipe de Vendas
-            </span>
-            <strong className="text-xl text-foreground font-extrabold">{comercialCount} comerciais</strong>
-          </div>
-        </Card>
-
-        <Card className="p-4 glass-card border-border flex items-center gap-4">
-          <div className="p-3 bg-purple-500/10 text-purple-400 rounded-lg">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-              Gestores / ADMIN
-            </span>
-            <strong className="text-xl text-foreground font-extrabold">{adminCount} diretores</strong>
-          </div>
-        </Card>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-500">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1">
+          <Users className="h-3.5 w-3.5" />
+          {colaboradores.length} na equipe
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-800 px-3 py-1">
+          <Lock className="h-3.5 w-3.5" />
+          {semAcessoCount} sem acesso ao painel
+        </span>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 flex-1 max-w-2xl">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row gap-2 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Buscar por nome ou e-mail..."
-              className="pl-9 bg-muted/40 border-border text-sm h-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou função…"
+              className="pl-9 h-10"
             />
           </div>
           <select
-            value={filterCargo}
-            onChange={(e) => setFilterCargo(e.target.value)}
+            value={filterFuncao}
+            onChange={(e) => setFilterFuncao(e.target.value)}
             className="h-10 rounded-lg border border-border bg-muted/40 text-foreground text-sm px-3 font-medium cursor-pointer outline-none min-w-[180px]"
           >
-            <option value="ALL">Todos os cargos</option>
-            <option value="ADMIN">Diretoria</option>
-            <option value="COMERCIAL">Comercial</option>
-            <option value="PROJETISTA">Projetista</option>
-            <option value="PRODUCAO">Fábrica</option>
-            <option value="FINANCEIRO">Financeiro</option>
+            <option value="ALL">Todas as funções</option>
+            {TEAM_FUNCAO_IDS.map((id) => (
+              <option key={id} value={id}>
+                {TEAM_FUNCAO_META[id].label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -411,16 +418,7 @@ export default function ColaboradoresClient({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {filtered.map((c) => {
-            const badge = CARGO_BADGES[c.cargo] || {
-              label: c.cargo,
-              shortLabel: c.cargo,
-              bg: "bg-muted",
-              text: "text-muted-foreground",
-              border: "border-border",
-              avatar: "bg-muted text-muted-foreground border-border",
-              accent: "bg-gradient-to-r from-muted to-muted",
-              icon: Users,
-            };
+            const badge = CARGO_BADGES[c.cargo] || CARGO_BADGES.PRODUCAO;
             const BadgeIcon = badge.icon;
             const formattedDate = new Date(c.createdAt).toLocaleDateString("pt-BR", {
               day: "2-digit",
@@ -428,85 +426,116 @@ export default function ColaboradoresClient({
               year: "numeric",
             });
             const isProtected = c.email === ADMIN_EMAIL;
+            const semAcesso = c.tem_acesso === false || isInternalTeamEmail(c.email);
+            const funcoesList = (c.funcoes || []).filter((f): f is TeamFuncaoId =>
+              (TEAM_FUNCAO_IDS as readonly string[]).includes(f)
+            );
 
             return (
               <Card
                 key={c.id}
-                className="bg-white border border-slate-100 hover:border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative"
+                className="bg-white border border-slate-100/90 hover:border-slate-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative"
               >
-                <div className={`h-1.5 w-full ${badge.accent}`} />
+                <div className={`h-20 w-full ${primaryFuncaoAccent(funcoesList, c.cargo)} relative`}>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),transparent_45%)]" />
+                  {semAcesso && (
+                    <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-black/25 backdrop-blur px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                      <Lock className="h-2.5 w-2.5" />
+                      Sem acesso
+                    </span>
+                  )}
+                  {!semAcesso && (
+                    <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                      <Unlock className="h-2.5 w-2.5" />
+                      Painel
+                    </span>
+                  )}
+                </div>
 
-                <div className="p-5 flex flex-col flex-1 gap-4">
-                  {/* Cabeçalho do Card */}
-                  <div className="flex items-center justify-between gap-3">
-                    {/* Avatar robusto e premium */}
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg border shrink-0 ring-4 ring-slate-50 transition-all duration-300 group-hover/card:ring-slate-100 shadow-inner overflow-hidden ${badge.avatar}`}>
+                <div className="px-5 pb-5 flex flex-col flex-1 gap-3 -mt-8 relative z-10">
+                  <div className="flex items-end justify-between gap-3">
+                    <div
+                      className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-lg border-4 border-white shadow-md shrink-0 overflow-hidden ${badge.avatar}`}
+                    >
                       {c.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
                       ) : (
                         getInitials(c.name)
                       )}
                     </div>
-                    {/* Badge do Cargo (User Role) */}
-                    <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shrink-0 mb-1 ${badge.bg} ${badge.text} ${badge.border}`}
+                    >
                       <BadgeIcon className="h-3 w-3" />
                       {badge.shortLabel}
                     </span>
                   </div>
 
-                  {/* Nome e Cargo */}
                   <div className="min-w-0">
-                    <h3 className="font-extrabold text-slate-800 text-sm leading-tight tracking-tight group-hover/card:text-indigo-650 transition-colors truncate">{c.name}</h3>
-                    <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{badge.label}</span>
-                  </div>
-
-                  {/* Área de Atuação em Destaque */}
-                  <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                    <Briefcase className="h-3.5 w-3.5 text-slate-450 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[8px] font-black text-slate-450 uppercase tracking-widest block leading-none">Área de Atuação</span>
-                      <span className="text-[10px] font-bold text-slate-700 truncate block mt-1">
-                        {c.areaAtuacao || <span className="text-slate-400 font-normal italic">Operação Geral</span>}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* E-mail e Admissão */}
-                  <div className="space-y-1.5 text-xs text-slate-500">
-                    <p className="flex items-center gap-2 min-w-0">
-                      <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="truncate font-semibold">{c.email}</span>
+                    <h3 className="font-extrabold text-slate-800 text-[15px] leading-tight tracking-tight truncate">
+                      {c.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                      {badge.label}
+                      {semAcesso ? " · só operação" : " · acesso liberado"}
                     </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+                    {funcoesList.length > 0 ? (
+                      funcoesList.map((f) => {
+                        const meta = TEAM_FUNCAO_META[f];
+                        return (
+                          <span
+                            key={f}
+                            className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-lg border ${meta.bg} ${meta.text} ${meta.border}`}
+                          >
+                            {meta.label}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">Sem função definida</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-slate-500 pt-1">
+                    {!semAcesso && (
+                      <p className="flex items-center gap-2 min-w-0">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <span className="truncate font-semibold">{c.email}</span>
+                      </p>
+                    )}
                     <p className="flex items-center gap-2">
                       <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="font-medium">Admitido em {formattedDate}</span>
+                      <span className="font-medium">Desde {formattedDate}</span>
                     </p>
                   </div>
 
-                  {/* Ações no Rodapé */}
                   {canManageUsers ? (
-                  <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEdit(c)}
-                      className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all cursor-pointer"
-                      disabled={loading}
-                    >
-                      <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => requestDelete(c)}
-                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl transition-all cursor-pointer"
-                      disabled={isProtected || loading}
-                      title="Remover colaborador"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEdit(c)}
+                        className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
+                        disabled={loading}
+                      >
+                        <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => requestDelete(c)}
+                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl cursor-pointer"
+                        disabled={isProtected || loading}
+                        title="Remover colaborador"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   ) : (
                     <div className="mt-auto pt-3 border-t border-slate-100" />
                   )}
@@ -523,7 +552,7 @@ export default function ColaboradoresClient({
           if (loading) return;
           setIsCreateOpen(false);
           setEditing(null);
-          resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
+          resetForm();
         }}
         className="max-w-md"
       >
@@ -537,82 +566,93 @@ export default function ColaboradoresClient({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Nome completo</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+              <label className="text-xs font-semibold text-muted-foreground">Nome</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">E-mail corporativo</label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Foto de perfil (URL)</label>
-              <Input
-                type="url"
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Cargo (User Role)</label>
-                <select
-                  value={cargo}
-                  onChange={(e) => setCargo(e.target.value as Role)}
-                  className="w-full h-10 rounded-lg border border-border bg-card text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
-                >
-                  <option value="PRODUCAO">Fábrica</option>
-                  <option value="COMERCIAL">Comercial</option>
-                  <option value="PROJETISTA">Projetista</option>
-                  <option value="FINANCEIRO">Financeiro</option>
-                  <option value="ADMIN">Diretoria</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Área de Atuação</label>
-                <select
-                  value={areaAtuacao}
-                  onChange={(e) => setAreaAtuacao(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-card text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
-                >
-                  <option value="">Selecione uma área...</option>
-                  <option value="Fábrica / Marcenaria">Fábrica / Marcenaria</option>
-                  <option value="Projetos 3D / Design">Projetos 3D / Design</option>
-                  <option value="Comercial / Vendas">Comercial / Vendas</option>
-                  <option value="Administrativo">Administrativo</option>
-                  <option value="Financeiro">Financeiro</option>
-                  <option value="Montagem Externa">Montagem Externa</option>
-                  <option value="Instalação e Logística">Instalação e Logística</option>
-                  <option value="Diretoria">Diretoria</option>
-                  <option value="Outros">Outros</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground">
-                {editing ? "Senha provisória (Deixe em branco para não alterar)" : "Senha provisória"}
+                Funções operacionais (pode marcar mais de uma)
               </label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required={!editing}
-                minLength={6}
-              />
+              <div className="flex flex-wrap gap-2">
+                {TEAM_FUNCAO_IDS.map((id) => {
+                  const meta = TEAM_FUNCAO_META[id];
+                  const active = funcoes.includes(id);
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => toggleFuncao(id)}
+                      className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                        active
+                          ? `${meta.bg} ${meta.text} ${meta.border}`
+                          : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      {meta.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Foto (URL, opcional)</label>
+              <Input type="url" value={image} onChange={(e) => setImage(e.target.value)} />
+            </div>
+
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={temAcesso}
+                onChange={(e) => setTemAcesso(e.target.checked)}
+                className="rounded border-slate-300"
+                disabled={Boolean(editing && !isInternalTeamEmail(editing.email) && editing.tem_acesso !== false)}
+              />
+              <span className="text-xs font-semibold text-slate-700">
+                Liberar acesso ao painel (e-mail e senha)
+              </span>
+            </label>
+
+            {temAcesso && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">E-mail</label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required={temAcesso && !editing}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Cargo no painel</label>
+                  <select
+                    value={cargo}
+                    onChange={(e) => setCargo(e.target.value as Role)}
+                    className="w-full h-10 rounded-lg border border-border bg-card text-foreground text-sm px-3 font-medium cursor-pointer outline-none"
+                  >
+                    <option value="PRODUCAO">Fábrica</option>
+                    <option value="COMERCIAL">Comercial</option>
+                    <option value="PROJETISTA">Projetista</option>
+                    <option value="FINANCEIRO">Financeiro</option>
+                    <option value="ADMIN">Diretoria</option>
+                  </select>
+                </div>
+                {!editing && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Senha provisória</label>
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required={temAcesso}
+                      minLength={6}
+                    />
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="flex gap-3 pt-2">
               <Button
@@ -622,13 +662,17 @@ export default function ColaboradoresClient({
                 onClick={() => {
                   setIsCreateOpen(false);
                   setEditing(null);
-                  resetCreateForm(setName, setEmail, setPassword, setCargo, setAreaAtuacao, setImage);
+                  resetForm();
                 }}
                 disabled={loading}
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 font-semibold btn-metallic cursor-pointer" disabled={loading}>
+              <Button
+                type="submit"
+                className="flex-1 font-semibold btn-metallic cursor-pointer"
+                disabled={loading}
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? "Salvar" : "Cadastrar"}
               </Button>
             </div>
