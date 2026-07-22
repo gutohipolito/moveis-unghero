@@ -376,7 +376,7 @@ function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
               <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
               <span>
                 <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
-                <strong className="text-neutral-900">50% na entrega</strong>
+                <strong className="text-neutral-900">50% na entrega</strong>.
               </span>
             </li>
           </ul>
@@ -390,14 +390,14 @@ function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
             <li className="flex gap-1.5">
               <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
               <span>
-                <strong className="text-neutral-900">35% de entrada*</strong> e o restante em{" "}
-                <strong className="text-neutral-900">5x sem juros</strong>
+                <strong className="text-neutral-900">35% de entrada*</strong> e o restante em até{" "}
+                <strong className="text-neutral-900">5x sem juros</strong>.
               </span>
             </li>
             <li className="flex gap-1.5">
               <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
               <span>
-                ou em <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo)
+                Ou em até <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo).
               </span>
             </li>
           </ul>
@@ -412,7 +412,7 @@ function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
               <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
               <span>
                 Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos (+ a taxa
-                de parcelamento do cartão)
+                de parcelamento do cartão).
               </span>
             </li>
           </ul>
@@ -675,12 +675,15 @@ export default function QuotePrintDocument({
                   </div>
                   {typeof quote.approvedTotal === "number" && quote.approvedTotal > 0 ? (
                     <p className="text-[9px] text-emerald-800 font-bold text-right">
-                      Já aprovado: {formatCurrency(quote.approvedTotal)}
+                      Já aprovado: {formatCurrency(quote.approvedTotal)}.
                     </p>
                   ) : null}
-                  {typeof quote.pendingTotal === "number" && quote.pendingTotal > 0 ? (
+                  {typeof quote.approvedTotal === "number" &&
+                  quote.approvedTotal > 0 &&
+                  typeof quote.pendingTotal === "number" &&
+                  quote.pendingTotal > 0 ? (
                     <p className="text-[9px] text-amber-800 font-semibold text-right">
-                      Ainda pendente: {formatCurrency(quote.pendingTotal)}
+                      Ainda pendente: {formatCurrency(quote.pendingTotal)}.
                     </p>
                   ) : null}
                   {quote.lastUpdatedAt ? (
