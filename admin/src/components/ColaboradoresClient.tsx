@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Role } from "@prisma/client";
 import {
   createColaborador,
@@ -40,11 +40,14 @@ import {
   Wallet,
   Mail,
   Calendar,
-  Pencil,
   Lock,
   Unlock,
   LayoutGrid,
   List,
+  Camera,
+  ImagePlus,
+  X,
+  Settings2,
 } from "lucide-react";
 
 interface ColaboradorItem {
@@ -163,10 +166,13 @@ export default function ColaboradoresClient({
   const [viewMode, setViewMode] = useState<ColaboradoresViewMode>(
     initialViewMode === "list" ? "list" : "grid"
   );
+  const [controlsUnlocked, setControlsUnlocked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ColaboradorItem | null>(null);
   const [seedDone, setSeedDone] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -218,6 +224,31 @@ export default function ColaboradoresClient({
   const setViewAndPersist = (mode: ColaboradoresViewMode) => {
     setViewMode(mode);
     void updateUserPreference(COLABORADORES_VIEW_PREF_KEY, mode);
+  };
+
+  const handleImageFile = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/colaboradores/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showError("Upload falhou", data.error || "Não foi possível enviar a foto.");
+        return;
+      }
+      setImage(data.url as string);
+      showSuccess("Foto enviada", "A imagem foi anexada ao cadastro.");
+    } catch {
+      showError("Upload falhou", "Erro de rede ao enviar a foto.");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const syncColaboradores = useCallback(async () => {
@@ -400,7 +431,21 @@ export default function ColaboradoresClient({
     return (
       <Card
         key={c.id}
-        className="bg-white border border-slate-100/90 hover:border-slate-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative"
+        role={canManageUsers ? "button" : undefined}
+        tabIndex={canManageUsers ? 0 : undefined}
+        onClick={() => {
+          if (canManageUsers && !loading) openEdit(c);
+        }}
+        onKeyDown={(e) => {
+          if (!canManageUsers || loading) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openEdit(c);
+          }
+        }}
+        className={`bg-white border border-slate-100/90 hover:border-slate-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative ${
+          canManageUsers ? "cursor-pointer" : ""
+        }`}
       >
         <div className={`h-20 w-full ${visual.banner} relative overflow-hidden`}>
           <div className="absolute inset-0" style={FUNCAO_BANNER_PATTERN_STYLE} />
@@ -456,31 +501,25 @@ export default function ColaboradoresClient({
             </p>
           </div>
 
-          {canManageUsers ? (
-            <div className="mt-auto pt-3 border-t border-slate-100 flex gap-2">
+          {canManageUsers && controlsUnlocked ? (
+            <div className="mt-auto pt-3 border-t border-slate-100 flex justify-end">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => openEdit(c)}
-                className="flex-1 text-[11px] font-extrabold h-9 rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
-                disabled={loading}
-              >
-                <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
-                Editar
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => requestDelete(c)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  requestDelete(c);
+                }}
                 className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-9 px-3 rounded-xl cursor-pointer"
                 disabled={isProtected || loading}
                 title="Remover colaborador"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                Remover
               </Button>
             </div>
           ) : (
-            <div className="mt-auto pt-3 border-t border-slate-100" />
+            <div className="mt-auto pt-3" />
           )}
         </div>
       </Card>
@@ -504,7 +543,21 @@ export default function ColaboradoresClient({
     return (
       <div
         key={c.id}
-        className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-slate-50/80 transition-colors"
+        role={canManageUsers ? "button" : undefined}
+        tabIndex={canManageUsers ? 0 : undefined}
+        onClick={() => {
+          if (canManageUsers && !loading) openEdit(c);
+        }}
+        onKeyDown={(e) => {
+          if (!canManageUsers || loading) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openEdit(c);
+          }
+        }}
+        className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 hover:bg-slate-50/80 transition-colors ${
+          canManageUsers ? "cursor-pointer" : ""
+        }`}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="relative shrink-0">
@@ -540,27 +593,21 @@ export default function ColaboradoresClient({
           </div>
         </div>
 
-        {canManageUsers ? (
+        {canManageUsers && controlsUnlocked ? (
           <div className="flex gap-2 sm:shrink-0 pl-14 sm:pl-0">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openEdit(c)}
-              className="text-[11px] font-extrabold h-8 rounded-lg border-slate-200 hover:bg-white cursor-pointer"
-              disabled={loading}
-            >
-              <Pencil className="h-3 w-3 mr-1.5 text-slate-500" />
-              Editar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => requestDelete(c)}
+              onClick={(e) => {
+                e.stopPropagation();
+                requestDelete(c);
+              }}
               className="text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 border-slate-200 h-8 px-2.5 rounded-lg cursor-pointer"
               disabled={isProtected || loading}
               title="Remover colaborador"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Remover
             </Button>
           </div>
         ) : null}
@@ -643,13 +690,42 @@ export default function ColaboradoresClient({
           </div>
 
           {canManageUsers ? (
-            <Button
-              onClick={openCreate}
-              className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
-            >
-              <UserPlus className="h-4 w-4" />
-              Adicionar Colaborador
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setControlsUnlocked((v) => !v)}
+                className={`font-semibold text-xs px-3 h-10 rounded-lg flex items-center gap-1.5 cursor-pointer ${
+                  controlsUnlocked
+                    ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                    : "border-slate-200"
+                }`}
+                title={
+                  controlsUnlocked
+                    ? "Ocultar botões de remoção"
+                    : "Liberar controles de remoção nos cards"
+                }
+              >
+                {controlsUnlocked ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5" />
+                    Ocultar controles
+                  </>
+                ) : (
+                  <>
+                    <Settings2 className="h-3.5 w-3.5" />
+                    Liberar controles
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={openCreate}
+                className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
+              >
+                <UserPlus className="h-4 w-4" />
+                Adicionar Colaborador
+              </Button>
+            </>
           ) : null}
         </div>
       </div>
@@ -683,7 +759,11 @@ export default function ColaboradoresClient({
       >
         <div className="space-y-4 pr-6">
           <div className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-indigo-650" />
+            {editing ? (
+              <Camera className="h-5 w-5 text-indigo-650" />
+            ) : (
+              <UserPlus className="h-5 w-5 text-indigo-650" />
+            )}
             <h3 className="font-bold text-lg text-foreground">
               {editing ? "Editar Colaborador" : "Novo Colaborador"}
             </h3>
@@ -721,9 +801,55 @@ export default function ColaboradoresClient({
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Foto (URL, opcional)</label>
-              <Input type="url" value={image} onChange={(e) => setImage(e.target.value)} />
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Foto</label>
+              <div className="flex items-center gap-3">
+                <div className="relative h-16 w-16 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0">
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt="Prévia" className="h-full w-full object-cover" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    className="hidden"
+                    onChange={(e) => void handleImageFile(e.target.files?.[0])}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 justify-start text-xs font-semibold cursor-pointer"
+                    disabled={loading || uploadingImage}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {image ? "Trocar foto" : "Enviar foto"}
+                  </Button>
+                  {image ? (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-red-600 cursor-pointer w-fit"
+                      onClick={() => setImage("")}
+                      disabled={loading || uploadingImage}
+                    >
+                      <X className="h-3 w-3" />
+                      Remover foto
+                    </button>
+                  ) : (
+                    <p className="text-[10px] text-slate-400">JPG, PNG ou WEBP até 5 MB</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 cursor-pointer">
