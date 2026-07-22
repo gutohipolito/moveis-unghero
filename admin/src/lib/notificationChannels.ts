@@ -14,6 +14,7 @@ export interface NotificationPreferences {
 const PREFS_KEY = "mu_notification_prefs";
 const DELIVERED_KEY = "mu_notification_delivered";
 const TOAST_DISMISSED_KEY = "mu_toast_dismissed";
+const ANNOUNCED_KEY = "mu_notification_announced";
 const CLEARED_KEY = "mu_notification_cleared";
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
@@ -108,6 +109,48 @@ export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string
     }
   }
   if (changed) saveDismissedToastIds(dismissed);
+}
+
+/** IDs que já tocaram som / abriram toast nesta sessão — evita eco a cada poll. */
+export function loadAnnouncedNotificationIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = sessionStorage.getItem(ANNOUNCED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveAnnouncedNotificationIds(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  const list = [...ids].slice(-300);
+  sessionStorage.setItem(ANNOUNCED_KEY, JSON.stringify(list));
+}
+
+export function markNotificationsAnnounced(ids: string[], announced: Set<string>) {
+  let changed = false;
+  for (const id of ids) {
+    if (!announced.has(id)) {
+      announced.add(id);
+      changed = true;
+    }
+  }
+  if (changed) saveAnnouncedNotificationIds(announced);
+}
+
+export function pruneAnnouncedIds(announced: Set<string>, activeIds: string[]) {
+  if (activeIds.length === 0) return;
+  const active = new Set(activeIds);
+  let changed = false;
+  for (const id of announced) {
+    if (!active.has(id)) {
+      announced.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) saveAnnouncedNotificationIds(announced);
 }
 
 function clearedKey(companyId?: string) {

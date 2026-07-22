@@ -25,12 +25,15 @@ import {
   type BrowserPermission,
 } from "@/lib/browserNotifications";
 import {
+  loadAnnouncedNotificationIds,
   loadClearedNotificationIds,
   loadDeliveredNotificationIds,
   loadDismissedToastIds,
   loadNotificationPrefs,
   markNotificationDelivered,
+  markNotificationsAnnounced,
   markToastDismissed,
+  pruneAnnouncedIds,
   pruneDeliveredIds,
   pruneDismissedToastIds,
   saveClearedNotificationIds,
@@ -52,6 +55,8 @@ import InAppNotificationStack from "@/components/InAppNotificationStack";
 const POLL_VISIBLE_MS = 30 * 1000;
 const POLL_HIDDEN_MS = 5 * 60 * 1000;
 const INITIAL_SYNC_MS = 3 * 1000;
+/** Evita dois chimes seguidos por race de poll/navegação. */
+const CHIME_COOLDOWN_MS = 8 * 1000;
 
 export interface InAppToast extends AppNotification {
   toastKey: string;
@@ -113,9 +118,13 @@ export function NotificationProvider({
 
   const deliveredRef = useRef<Set<string>>(new Set());
   const dismissedToastRef = useRef<Set<string>>(new Set());
+  const announcedRef = useRef<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set(initialNotifications.map((n) => n.id)));
   const toastKeysRef = useRef<Set<string>>(new Set());
   const clearedIdsRef = useRef<Set<string>>(clearedIds);
+  const syncingRef = useRef(false);
+  const lastChimeAtRef = useRef(0);
+  const seededKnownRef = useRef(false);
   clearedIdsRef.current = clearedIds;
 
   const notifications = useMemo(() => {
@@ -123,6 +132,14 @@ export function NotificationProvider({
     if (!clearedReady) return [];
     return activeNotifications.filter((n) => !clearedIds.has(n.id));
   }, [activeNotifications, clearedIds, clearedReady]);
+
+  const playChimeOnce = useCallback((urgent: boolean) => {
+    if (!prefs.sound) return;
+    const now = Date.now();
+    if (now - lastChimeAtRef.current < CHIME_COOLDOWN_MS) return;
+    lastChimeAtRef.current = now;
+    playNotificationChime({ urgent });
+  }, [prefs.sound]);
 
   const deliverInAppToasts = useCallback(
     (items: AppNotification[]) => {
@@ -132,24 +149,33 @@ export function NotificationProvider({
       if (toastable.length === 0) return;
 
       const fresh = toastable.filter(
-        (n) => !dismissedToastRef.current.has(n.id) && !toastKeysRef.current.has(n.id)
+        (n) =>
+          !dismissedToastRef.current.has(n.id) &&
+          !toastKeysRef.current.has(n.id) &&
+          !announcedRef.current.has(n.id)
       );
       if (fresh.length === 0) return;
 
-      if (prefs.sound) {
-        playNotificationChime({ urgent: fresh.some((n) => n.priority === "high") });
+      // Marca antes do setState para evitar race entre polls concorrentes.
+      for (const item of fresh) {
+        toastKeysRef.current.add(item.id);
       }
+      markNotificationsAnnounced(
+        fresh.map((n) => n.id),
+        announcedRef.current
+      );
+
+      playChimeOnce(fresh.some((n) => n.priority === "high"));
 
       setToasts((prev) => {
         const next = [...prev];
         for (const item of fresh) {
-          toastKeysRef.current.add(item.id);
           next.push({ ...item, toastKey: item.id });
         }
         return next.slice(-4);
       });
     },
-    [prefs.sound]
+    [playChimeOnce]
   );
 
   const deliverToBrowser = useCallback(
@@ -162,7 +188,9 @@ export function NotificationProvider({
       const undelivered = items.filter((n) => !deliveredRef.current.has(n.id));
       if (undelivered.length === 0) return;
 
-      const playSound = prefs.sound;
+      // Som customizado já toca no toast in-app; no browser usamos silent
+      // para não somar o bip do SO a cada poll.
+      const playSound = false;
 
       if (summaryOnly && undelivered.length > 1) {
         const urgent = undelivered.filter((n) => n.priority === "high").length;
@@ -179,32 +207,48 @@ export function NotificationProvider({
         markNotificationDelivered(item.id, deliveredRef.current);
       }
     },
-    [browserPermission, prefs.browser, prefs.sound, router]
+    [browserPermission, prefs.browser, router]
   );
 
   const syncNotifications = useCallback(
     async (options?: { deliverNew?: boolean }) => {
-      const res = await getNotifications(companyId);
-      if (!res.success) return;
+      if (syncingRef.current) return;
+      syncingRef.current = true;
 
-      const next = res.notifications;
-      const nextIds = next.map((n) => n.id);
+      try {
+        const res = await getNotifications(companyId);
+        if (!res.success) return;
 
-      pruneDeliveredIds(deliveredRef.current, nextIds);
-      pruneDismissedToastIds(dismissedToastRef.current, nextIds);
+        const next = res.notifications;
+        const nextIds = next.map((n) => n.id);
 
-      if (options?.deliverNew) {
-        const newItems = next.filter(
-          (n) => !knownIdsRef.current.has(n.id) && !clearedIdsRef.current.has(n.id)
-        );
-        if (newItems.length > 0) {
-          deliverInAppToasts(newItems);
-          await deliverToBrowser(newItems);
+        pruneDeliveredIds(deliveredRef.current, nextIds);
+        pruneDismissedToastIds(dismissedToastRef.current, nextIds);
+        pruneAnnouncedIds(announcedRef.current, nextIds);
+
+        if (options?.deliverNew) {
+          const newItems = next.filter(
+            (n) =>
+              !knownIdsRef.current.has(n.id) &&
+              !clearedIdsRef.current.has(n.id) &&
+              !announcedRef.current.has(n.id)
+          );
+          if (newItems.length > 0) {
+            deliverInAppToasts(newItems);
+            await deliverToBrowser(newItems);
+            markNotificationsAnnounced(
+              newItems.map((n) => n.id),
+              announcedRef.current
+            );
+          }
         }
-      }
 
-      knownIdsRef.current = new Set(nextIds);
-      setActiveNotifications(next);
+        // Une IDs conhecidos — nunca encolhe por snapshot stale do layout.
+        for (const id of nextIds) knownIdsRef.current.add(id);
+        setActiveNotifications(next);
+      } finally {
+        syncingRef.current = false;
+      }
     },
     [companyId, deliverInAppToasts, deliverToBrowser]
   );
@@ -213,10 +257,29 @@ export function NotificationProvider({
     setBrowserPermission(getBrowserPermission());
     deliveredRef.current = loadDeliveredNotificationIds();
     dismissedToastRef.current = loadDismissedToastIds();
+    announcedRef.current = loadAnnouncedNotificationIds();
     const loaded = loadClearedNotificationIds(companyId);
     setClearedIds(loaded);
     clearedIdsRef.current = loaded;
     setClearedReady(true);
+
+    // Seed inicial: marca o que já existia no SSR como conhecido/anunciado
+    // para não tocar som de alertas antigos ao abrir o painel.
+    seededKnownRef.current = false;
+    knownIdsRef.current = new Set();
+    toastKeysRef.current = new Set();
+
+    for (const n of initialNotifications) {
+      knownIdsRef.current.add(n.id);
+      announcedRef.current.add(n.id);
+      toastKeysRef.current.add(n.id);
+    }
+    markNotificationsAnnounced(
+      initialNotifications.map((n) => n.id),
+      announcedRef.current
+    );
+    seededKnownRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed no mount / troca de empresa
   }, [companyId]);
 
   useEffect(() => {
@@ -231,8 +294,11 @@ export function NotificationProvider({
   }, [pushSupported, prefs.push]);
 
   useEffect(() => {
+    // Atualiza lista visual do SSR sem reabrir alertas já conhecidos.
     setActiveNotifications(initialNotifications);
-    knownIdsRef.current = new Set(initialNotifications.map((n) => n.id));
+    for (const n of initialNotifications) {
+      knownIdsRef.current.add(n.id);
+    }
   }, [initialNotifications]);
 
   useEffect(() => {
@@ -249,34 +315,37 @@ export function NotificationProvider({
   }, [router]);
 
   useEffect(() => {
-    const initialTimer = setTimeout(() => {
-      void syncNotifications({ deliverNew: true });
-    }, INITIAL_SYNC_MS);
+    let cancelled = false;
+    let intervalId = 0;
 
-    const tick = () => {
-      void syncNotifications({ deliverNew: true });
+    const runSync = () => {
+      if (!cancelled) void syncNotifications({ deliverNew: true });
     };
 
-    let interval = window.setInterval(
-      tick,
-      document.visibilityState === "visible" ? POLL_VISIBLE_MS : POLL_HIDDEN_MS
-    );
+    const initialTimer = window.setTimeout(runSync, INITIAL_SYNC_MS);
 
-    const onVisible = () => {
-      window.clearInterval(interval);
-      if (document.visibilityState === "visible") {
-        void syncNotifications({ deliverNew: true });
-      }
-      interval = window.setInterval(
-        tick,
+    const armInterval = () => {
+      window.clearInterval(intervalId);
+      intervalId = window.setInterval(
+        runSync,
         document.visibilityState === "visible" ? POLL_VISIBLE_MS : POLL_HIDDEN_MS
       );
     };
 
+    armInterval();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        runSync();
+      }
+      armInterval();
+    };
+
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      clearTimeout(initialTimer);
-      window.clearInterval(interval);
+      cancelled = true;
+      window.clearTimeout(initialTimer);
+      window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [syncNotifications]);
@@ -304,14 +373,21 @@ export function NotificationProvider({
     const res = await getNotifications(companyId);
     const pending = res.notifications;
     setActiveNotifications(pending);
-    knownIdsRef.current = new Set(pending.map((n) => n.id));
+    for (const n of pending) {
+      knownIdsRef.current.add(n.id);
+    }
 
     if (pending.length > 0) {
+      playChimeOnce(pending.some((n) => n.priority === "high"));
       await deliverToBrowser(pending, { summaryOnly: pending.length > 1 });
+      markNotificationsAnnounced(
+        pending.map((n) => n.id),
+        announcedRef.current
+      );
     }
 
     return true;
-  }, [companyId, deliverToBrowser, prefs]);
+  }, [companyId, deliverToBrowser, playChimeOnce, prefs]);
 
   const disableBrowserNotifications = useCallback(() => {
     const nextPrefs = { ...prefs, browser: false };
