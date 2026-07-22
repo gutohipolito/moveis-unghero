@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
 import { PARTNER_ORIGEM_OPTIONS, PARTNER_SIGNUP_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
+import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 
@@ -115,17 +116,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes, registroProfissional, origem]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 11) value = value.slice(0, 11);
-    
-    if (value.length > 6) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-    } else if (value.length > 2) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    } else if (value.length > 0) {
-      value = `(${value}`;
-    }
-    setTelefone(value);
+    setTelefone(formatPhoneInput(e.target.value));
   };
 
   const handleSelectTipo = (value: PartnerType) => {
@@ -182,9 +173,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         return;
       }
       if (telefone.trim()) {
-        const cleanTel = telefone.replace(/\D/g, "");
-        if (![10, 11].includes(cleanTel.length)) {
-          setError("Por favor, insira um WhatsApp/Telefone válido com DDD.");
+        if (!isValidBrPhoneDigits(telefone)) {
+          setError("Por favor, insira um WhatsApp/Telefone válido com DDD (fixo ou celular).");
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
@@ -268,9 +258,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       return;
     }
     if (telefone.trim()) {
-      const cleanTel = telefone.replace(/\D/g, "");
-      if (![10, 11].includes(cleanTel.length)) {
-        setError("Por favor, insira um WhatsApp/Telefone válido com DDD.");
+      if (!isValidBrPhoneDigits(telefone)) {
+        setError("Por favor, insira um WhatsApp/Telefone válido com DDD (fixo ou celular).");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -580,11 +569,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   <input
                     required
                     type="tel"
-                    placeholder="(54) 99999-9999"
+                    placeholder={PHONE_PLACEHOLDER}
                     value={telefone}
                     onChange={handleTelefoneChange}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
+                  <p className="text-[10px] text-slate-400">Celular ou fixo com DDD</p>
                 </div>
 
                 <div className="space-y-1.5">

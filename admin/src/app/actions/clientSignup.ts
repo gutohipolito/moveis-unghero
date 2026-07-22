@@ -6,6 +6,7 @@ import { capitalizeText } from "@/lib/utils";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { stripConsentFromObservacoes } from "@/lib/clientConsent";
+import { isValidBrPhoneDigits } from "@/lib/phone";
 
 export interface ClientSignupData {
   tipo_pessoa?: TipoPessoa;
@@ -36,6 +37,12 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     }
     if (!telefone) {
       return { success: false, error: "Informe um telefone/WhatsApp para contato." };
+    }
+    if (!isValidBrPhoneDigits(telefone)) {
+      return {
+        success: false,
+        error: "Informe um telefone válido com DDD (fixo ou celular).",
+      };
     }
     if (!data.lgpd_aceite) {
       return {

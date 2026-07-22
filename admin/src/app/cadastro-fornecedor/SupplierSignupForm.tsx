@@ -19,6 +19,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { submitPublicSupplierSignupAction, SupplierSignupData } from "@/app/actions/supplierSignup";
+import { formatPhoneInput } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 
 const TOTAL_STEPS = 5;
@@ -252,7 +253,7 @@ export default function SupplierSignupForm({
           const rawTel = `${json.ddd_telefone_1}`;
           const cleanTel = rawTel.replace(/\D/g, "");
           if (cleanTel.length === 10 || cleanTel.length === 11) {
-            setTelefone(`(${cleanTel.slice(0, 2)}) ${cleanTel.slice(2, 7)}-${cleanTel.slice(7)}`);
+            setTelefone(formatPhoneInput(cleanTel));
           } else {
             setTelefone(rawTel);
           }
@@ -309,17 +310,7 @@ export default function SupplierSignupForm({
   };
 
   const handlePhoneChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 11) value = value.slice(0, 11);
-    
-    if (value.length > 6) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-    } else if (value.length > 2) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    } else if (value.length > 0) {
-      value = `(${value}`;
-    }
-    setter(value);
+    setter(formatPhoneInput(e.target.value));
   };
 
   const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {

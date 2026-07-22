@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { submitPublicClientSignupAction } from "@/app/actions/clientSignup";
 import type { TipoPessoa } from "@/lib/clientDocument";
+import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 
@@ -145,16 +146,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   ]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 11) value = value.slice(0, 11);
-    if (value.length > 6) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-    } else if (value.length > 2) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    } else if (value.length > 0) {
-      value = `(${value}`;
-    }
-    setTelefone(value);
+    setTelefone(formatPhoneInput(e.target.value));
   };
 
   async function fetchAddressByCep(cepValue: string) {
@@ -430,7 +422,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="space-y-1.5">
               <h2 className="text-lg font-black text-slate-100 leading-tight">Seus dados de contato</h2>
-              <p className="text-xs text-slate-400 font-semibold">Precisamos do nome e do WhatsApp para falar com você.</p>
+              <p className="text-xs text-slate-400 font-semibold">Precisamos do nome e de um telefone (WhatsApp ou fixo) para falar com você.</p>
             </div>
 
             <div className="space-y-4">
@@ -456,8 +448,12 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                     type="tel"
                     value={telefone}
                     onChange={handleTelefoneChange}
+                    placeholder={PHONE_PLACEHOLDER}
                     className={inputClass}
                   />
+                  <p className="text-[10px] text-slate-400">
+                    Celular: (xx) xxxxx-xxxx · Fixo: (xx) xxxx-xxxx
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <label className={labelClass}>

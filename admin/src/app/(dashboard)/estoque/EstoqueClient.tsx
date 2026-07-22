@@ -22,6 +22,7 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { compressImageFile } from "@/lib/imageCompression";
+import { formatPhoneInput } from "@/lib/phone";
 import { 
   Package, 
   Users, 
@@ -186,16 +187,14 @@ export default function EstoqueClient({
       if (json.nome_fantasia) setSupplierNomeFantasia(json.nome_fantasia);
       if (json.email) setSupplierEmail(json.email);
 
-      if (json.ddd_telefone_1) {
-        const cleanTel = `${json.ddd_telefone_1}`.replace(/\D/g, "");
-        if (cleanTel.length === 10 || cleanTel.length === 11) {
-          setSupplierTelefone(
-            `(${cleanTel.slice(0, 2)}) ${cleanTel.slice(2, cleanTel.length === 11 ? 7 : 6)}-${cleanTel.slice(cleanTel.length === 11 ? 7 : 6)}`
-          );
-        } else {
-          setSupplierTelefone(`${json.ddd_telefone_1}`);
+        if (json.ddd_telefone_1) {
+          const cleanTel = `${json.ddd_telefone_1}`.replace(/\D/g, "");
+          if (cleanTel.length === 10 || cleanTel.length === 11) {
+            setSupplierTelefone(formatPhoneInput(cleanTel));
+          } else {
+            setSupplierTelefone(`${json.ddd_telefone_1}`);
+          }
         }
-      }
     } catch {
       setCnpjError("Não foi possível consultar o CNPJ agora.");
     } finally {

@@ -14,7 +14,7 @@ import {
   HelpCircle,
   Loader2,
 } from "lucide-react";
-import { formatPhoneInput } from "@/lib/phone";
+import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { labelOrigin, labelStatus } from "@/lib/navLabels";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import type { Origin } from "@/app/actions/kanban";
@@ -339,8 +339,10 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
                   type="tel"
                   value={data.telefone}
                   onChange={(e) => set("telefone", formatPhoneInput(e.target.value))}
+                  placeholder={PHONE_PLACEHOLDER}
                   className={inputClass}
                 />
+                <p className="text-[10px] text-slate-400">Celular ou fixo com DDD</p>
               </div>
               <div className="space-y-1.5">
                 <label className={labelClass}>E-mail</label>

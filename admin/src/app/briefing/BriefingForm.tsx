@@ -22,6 +22,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { submitPublicBriefingAction } from "@/app/actions/briefing";
+import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 
@@ -270,17 +271,7 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
   ]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 11) value = value.slice(0, 11);
-    
-    if (value.length > 6) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-    } else if (value.length > 2) {
-      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    } else if (value.length > 0) {
-      value = `(${value}`;
-    }
-    setTelefone(value);
+    setTelefone(formatPhoneInput(e.target.value));
   };
 
   const toggleAmbiente = (id: string) => {
@@ -1218,11 +1209,12 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                   <input
                     required
                     type="tel"
-                    placeholder="(54) 99999-9999"
+                    placeholder={PHONE_PLACEHOLDER}
                     value={telefone}
                     onChange={handleTelefoneChange}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                   />
+                  <p className="text-[10px] text-slate-400">Celular ou fixo com DDD</p>
                 </div>
 
                 <div className="space-y-1.5">
