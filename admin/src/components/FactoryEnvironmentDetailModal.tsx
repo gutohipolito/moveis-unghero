@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -46,9 +47,20 @@ import {
   Download,
   Loader2,
   Check,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const TECH_AUTOSAVE_MS = 900;
+
+type AttachmentFilter = EnvironmentAttachmentCategory | "ALL";
+type PreviewTarget = {
+  id: string;
+  url: string;
+  nome: string;
+  mime_type: string;
+};
 
 export type FactoryEnvironmentItem = FactoryBoardEnvironment;
 
@@ -126,9 +138,13 @@ export default function FactoryEnvironmentDetailModal({
   const [capaId, setCapaId] = useState<string | null>(null);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadCategory, setUploadCategory] =
+  const [filterCategory, setFilterCategory] = useState<AttachmentFilter>("ALL");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingCategory, setPendingCategory] =
     useState<EnvironmentAttachmentCategory>("FOTO");
+  const [preview, setPreview] = useState<PreviewTarget | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const techSnapshot = useCallback(
     () =>
@@ -200,6 +216,10 @@ export default function FactoryEnvironmentDetailModal({
     setTechMessage(null);
     setTechError(null);
     setAttachmentError(null);
+    setFilterCategory("ALL");
+    setPendingFiles([]);
+    setPendingCategory("FOTO");
+    setPreview(null);
     setTechReady(false);
     setTechDirty(false);
     setMateriais(item.materiais ?? "");
@@ -308,6 +328,54 @@ export default function FactoryEnvironmentDetailModal({
     };
   }, [item?.id, tab]);
 
+  useEffect(() => {
+    if (!preview) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopImmediatePropagation();
+        setPreview(null);
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setPreview((current) => {
+          if (!current) return current;
+          const list =
+            filterCategory === "ALL"
+              ? attachments.filter((f) => isImageMime(f.mime_type))
+              : attachments.filter(
+                  (f) => f.categoria === filterCategory && isImageMime(f.mime_type)
+                );
+          if (list.length < 2) return current;
+          const idx = list.findIndex((f) => f.id === current.id);
+          const next = list[(idx - 1 + list.length) % list.length];
+          return { id: next.id, url: next.url, nome: next.nome, mime_type: next.mime_type };
+        });
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setPreview((current) => {
+          if (!current) return current;
+          const list =
+            filterCategory === "ALL"
+              ? attachments.filter((f) => isImageMime(f.mime_type))
+              : attachments.filter(
+                  (f) => f.categoria === filterCategory && isImageMime(f.mime_type)
+                );
+          if (list.length < 2) return current;
+          const idx = list.findIndex((f) => f.id === current.id);
+          const next = list[(idx + 1) % list.length];
+          return { id: next.id, url: next.url, nome: next.nome, mime_type: next.mime_type };
+        });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [preview, attachments, filterCategory]);
+
   if (!item) return null;
 
   const currentItem = item;
@@ -362,11 +430,13 @@ export default function FactoryEnvironmentDetailModal({
         observacoes,
       });
     }
+    setPreview(null);
+    setPendingFiles([]);
     onClose();
   }
 
-  async function handleUpload(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
+  async function handleUpload(files: File[], categoria: EnvironmentAttachmentCategory) {
+    if (files.length === 0) return;
     setUploading(true);
     setAttachmentError(null);
 
@@ -374,10 +444,10 @@ export default function FactoryEnvironmentDetailModal({
       let nextCount = attachments.length;
       let firstImageAsCover = attachments.length === 0;
 
-      for (const file of Array.from(fileList)) {
+      for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("categoria", uploadCategory);
+        formData.append("categoria", categoria);
         const setCover = firstImageAsCover && file.type.startsWith("image/");
         if (setCover) {
           formData.append("setAsCover", "true");
@@ -405,11 +475,27 @@ export default function FactoryEnvironmentDetailModal({
           onBoardPatch(currentItem.id, { attachmentCount: nextCount });
         }
       }
+
+      setFilterCategory(categoria);
+      setPendingFiles([]);
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : "Erro no upload");
     } finally {
       setUploading(false);
     }
+  }
+
+  function queueFilesForUpload(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    setPendingFiles(files);
+    setPendingCategory(filterCategory === "ALL" ? "FOTO" : filterCategory);
+    setAttachmentError(null);
+  }
+
+  async function confirmPendingUpload() {
+    if (pendingFiles.length === 0) return;
+    await handleUpload(pendingFiles, pendingCategory);
   }
 
   async function handleDeleteAttachment(attachmentId: string) {
@@ -450,6 +536,35 @@ export default function FactoryEnvironmentDetailModal({
     { id: "producao", label: "Produção", icon: Factory },
     { id: "comodos", label: "Outros cômodos", icon: Layers },
   ];
+
+  const filteredAttachments =
+    filterCategory === "ALL"
+      ? attachments
+      : attachments.filter((file) => file.categoria === filterCategory);
+
+  const previewableAttachments = filteredAttachments.filter((file) => isImageMime(file.mime_type));
+  const previewIndex = preview
+    ? previewableAttachments.findIndex((file) => file.id === preview.id)
+    : -1;
+
+  function openPreview(file: EnvironmentAttachmentDTO) {
+    if (!isImageMime(file.mime_type)) return;
+    setPreview({
+      id: file.id,
+      url: file.url,
+      nome: file.nome,
+      mime_type: file.mime_type,
+    });
+  }
+
+  function showAdjacentPreview(delta: number) {
+    if (previewIndex < 0 || previewableAttachments.length === 0) return;
+    const next =
+      previewableAttachments[
+        (previewIndex + delta + previewableAttachments.length) % previewableAttachments.length
+      ];
+    openPreview(next);
+  }
 
   return (
     <Dialog isOpen={!!item} onClose={handleModalClose} className="max-w-3xl">
@@ -604,46 +719,166 @@ export default function FactoryEnvironmentDetailModal({
         {tab === "arquivos" && (
           <section className="space-y-4">
             <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-                <label className="flex-1 space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Categoria</span>
-                  <select
-                    value={uploadCategory}
-                    onChange={(e) =>
-                      setUploadCategory(e.target.value as EnvironmentAttachmentCategory)
-                    }
-                    className="w-full h-9 text-sm bg-background border border-border rounded-lg px-3"
-                  >
-                    {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground cursor-pointer hover:opacity-90">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Enviar arquivos</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    JPG, PNG, WEBP ou PDF até 10 MB. Depois escolha a categoria.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={uploading || pendingFiles.length > 0}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground cursor-pointer hover:opacity-90 disabled:opacity-60"
+                >
                   {uploading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Upload className="h-4 w-4 mr-2" />
                   )}
-                  {uploading ? "Enviando…" : "Enviar arquivo"}
-                  <input
-                    type="file"
-                    accept={ENVIRONMENT_ATTACHMENT_ACCEPT}
-                    multiple
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(e) => {
-                      void handleUpload(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
+                  {uploading ? "Enviando…" : "Selecionar arquivos"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ENVIRONMENT_ATTACHMENT_ACCEPT}
+                  multiple
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    queueFilesForUpload(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                JPG, PNG, WEBP ou PDF até 10 MB. Isolado por cômodo e empresa.
+
+              {pendingFiles.length > 0 && (
+                <div className="rounded-lg border border-primary/25 bg-background p-3 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">
+                        {pendingFiles.length} arquivo{pendingFiles.length > 1 ? "s" : ""} pronto
+                        {pendingFiles.length > 1 ? "s" : ""} para enviar
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[280px]">
+                        {pendingFiles.map((f) => f.name).join(", ")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPendingFiles([])}
+                      className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                      title="Cancelar seleção"
+                      disabled={uploading}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Salvar nesta categoria
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => {
+                        const active = pendingCategory === cat.value;
+                        return (
+                          <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => setPendingCategory(cat.value)}
+                            disabled={uploading}
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-colors ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-secondary/60 text-muted-foreground border-border hover:text-foreground"
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 h-9 text-xs font-semibold"
+                      onClick={() => setPendingFiles([])}
+                      disabled={uploading}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 h-9 text-xs font-semibold"
+                      onClick={() => void confirmPendingUpload()}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      Confirmar envio
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                Filtrar por categoria
               </p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setFilterCategory("ALL")}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-colors ${
+                    filterCategory === "ALL"
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  Todas
+                  <span
+                    className={`min-w-[1.25rem] text-center rounded-full px-1 text-[10px] ${
+                      filterCategory === "ALL" ? "bg-white/20" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {attachments.length}
+                  </span>
+                </button>
+                {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => {
+                  const count = attachments.filter((a) => a.categoria === cat.value).length;
+                  const active = filterCategory === cat.value;
+                  return (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => setFilterCategory(cat.value)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-colors ${
+                        active
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      {cat.label}
+                      <span
+                        className={`min-w-[1.25rem] text-center rounded-full px-1 text-[10px] ${
+                          active ? "bg-white/20" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {attachmentError && (
@@ -658,9 +893,13 @@ export default function FactoryEnvironmentDetailModal({
               </p>
             ) : attachments.length === 0 ? (
               <p className="text-xs text-muted-foreground">Nenhum arquivo neste cômodo ainda.</p>
+            ) : filteredAttachments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhum arquivo nesta categoria. Escolha outra ou envie um novo.
+              </p>
             ) : (
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {attachments.map((file) => {
+                {filteredAttachments.map((file) => {
                   const isCover = capaId === file.id;
                   const image = isImageMime(file.mime_type);
                   return (
@@ -671,12 +910,19 @@ export default function FactoryEnvironmentDetailModal({
                       }`}
                     >
                       {image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={file.url}
-                          alt={file.nome}
-                          className="w-full h-28 object-cover rounded-lg border border-border"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => openPreview(file)}
+                          className="block w-full text-left cursor-pointer group"
+                          title="Ampliar imagem"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={file.url}
+                            alt={file.nome}
+                            className="w-full h-28 object-cover rounded-lg border border-border group-hover:opacity-95 transition-opacity"
+                          />
+                        </button>
                       ) : (
                         <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
                           PDF / documento
@@ -693,20 +939,38 @@ export default function FactoryEnvironmentDetailModal({
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-1">
+                        {image ? (
+                          <button
+                            type="button"
+                            onClick={() => openPreview(file)}
+                            className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary cursor-pointer"
+                          >
+                            Ampliar
+                          </button>
+                        ) : (
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Abrir PDF
+                          </a>
+                        )}
                         <a
                           href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
+                          download={file.nome}
                           className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary"
                         >
                           <Download className="h-3 w-3" />
-                          Abrir
+                          Baixar
                         </a>
                         {image && (
                           <button
                             type="button"
                             onClick={() => void handleSetCover(file.id)}
-                            className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary"
+                            className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary cursor-pointer"
                           >
                             <Star className={`h-3 w-3 ${isCover ? "fill-current text-amber-500" : ""}`} />
                             {isCover ? "Capa" : "Definir capa"}
@@ -715,7 +979,7 @@ export default function FactoryEnvironmentDetailModal({
                         <button
                           type="button"
                           onClick={() => void handleDeleteAttachment(file.id)}
-                          className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-red-200 text-red-700 hover:bg-red-50"
+                          className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-red-200 text-red-700 hover:bg-red-50 cursor-pointer"
                         >
                           <Trash2 className="h-3 w-3" />
                           Excluir
@@ -896,6 +1160,76 @@ export default function FactoryEnvironmentDetailModal({
           </Button>
         </div>
       </div>
+
+      {preview && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/80 p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Visualização da imagem"
+              onClick={() => setPreview(null)}
+            >
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                className="absolute top-4 right-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 cursor-pointer"
+                aria-label="Fechar visualização"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {previewableAttachments.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      showAdjacentPreview(-1);
+                    }}
+                    className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 cursor-pointer"
+                    aria-label="Imagem anterior"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      showAdjacentPreview(1);
+                    }}
+                    className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 cursor-pointer"
+                    aria-label="Próxima imagem"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              ) : null}
+
+              <div
+                className="max-w-5xl w-full flex flex-col items-center gap-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={preview.url}
+                  alt={preview.nome}
+                  className="max-h-[min(78dvh,calc(100dvh-7rem))] max-w-full rounded-lg object-contain shadow-2xl"
+                />
+                <p className="text-sm text-white/90 font-medium text-center px-4 truncate max-w-full">
+                  {preview.nome}
+                  {previewIndex >= 0 ? (
+                    <span className="text-white/60 font-normal">
+                      {" "}
+                      · {previewIndex + 1}/{previewableAttachments.length}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </Dialog>
   );
 }
