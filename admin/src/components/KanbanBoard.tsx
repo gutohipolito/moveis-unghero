@@ -27,6 +27,10 @@ import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
 import CommercialPendingPanel from "@/components/CommercialPendingPanel";
 import { labelOrigin } from "@/lib/navLabels";
+import {
+  formatStageEntryLabel,
+  shouldShowStageEntryDate,
+} from "@/lib/crmStageDate";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -39,7 +43,8 @@ import {
 import {
   Plus, 
   MapPin, 
-  Phone, 
+  Phone,
+  Calendar,
   AlertTriangle,
   BellRing,
   RotateCcw,
@@ -69,6 +74,7 @@ interface Project {
   createdAt?: string | null;
   motivo_perda?: string | null;
   observacoes?: string | null;
+  stage_entered_at?: string | null;
   conf_tecnica_resp1_id?: string | null;
   conf_tecnica_resp1Nome?: string | null;
   conf_tecnica_resp2_id?: string | null;
@@ -527,6 +533,10 @@ export default function KanbanBoard({
             valor_previsto: data.valor_previsto,
             status_geral: data.status_geral,
             observacoes: data.observacoes,
+            stage_entered_at:
+              data.status_geral !== p.status_geral
+                ? new Date().toISOString()
+                : p.stage_entered_at,
           };
         }
         return p;
@@ -594,7 +604,7 @@ export default function KanbanBoard({
     
     // - Atualiza o estado local imediatamente (Optimistic Update)
     const originalProjects = [...projects];
-    const updated = projects.map(p => p.id === id ? { ...p, status_geral: targetStatus } : p);
+    const updated = projects.map(p => p.id === id ? { ...p, status_geral: targetStatus, stage_entered_at: new Date().toISOString() } : p);
     setProjects(updated);
     
     // Reseta drag over feedback
@@ -622,7 +632,7 @@ export default function KanbanBoard({
     if (!next) return;
 
     const originalProjects = [...projects];
-    setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: next } : p)));
+    setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: next, stage_entered_at: new Date().toISOString() } : p)));
 
     const result = await updateProjectStatus(project.id, next);
     if (!result.success) {
@@ -923,14 +933,24 @@ export default function KanbanBoard({
               <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
                 {project.client.nome}
               </h4>
-              <p className="flex items-center text-xs text-muted-foreground">
-                <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
-                <span className="tabular-nums">
-                  {valuesHidden
-                    ? maskPhoneLastDigits(project.client.telefone, 4)
-                    : project.client.telefone}
-                </span>
-              </p>
+              {shouldShowStageEntryDate(project.status_geral) ? (
+                <p className="flex items-center text-[11px] text-muted-foreground/90">
+                  <Calendar className="h-3 w-3 mr-1 opacity-70 shrink-0" />
+                  <span className="tabular-nums tracking-tight">
+                    {formatStageEntryLabel(project.status_geral, project.stage_entered_at) ||
+                      "Data não registrada"}
+                  </span>
+                </p>
+              ) : (
+                <p className="flex items-center text-xs text-muted-foreground">
+                  <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
+                  <span className="tabular-nums">
+                    {valuesHidden
+                      ? maskPhoneLastDigits(project.client.telefone, 4)
+                      : project.client.telefone}
+                  </span>
+                </p>
+              )}
             </div>
 
             <button

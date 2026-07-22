@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveStageEntryAt } from "@/lib/crmStageDate";
 
 export const CRM_PROJECT_SELECT = {
   id: true,
@@ -13,6 +14,12 @@ export const CRM_PROJECT_SELECT = {
   conf_tecnica_resp2_id: true,
   conf_tecnica_resp1: { select: { id: true, name: true } },
   conf_tecnica_resp2: { select: { id: true, name: true } },
+  quotes: {
+    where: { aprovado_em: { not: null } },
+    select: { aprovado_em: true },
+    orderBy: { aprovado_em: "asc" as const },
+    take: 1,
+  },
   timeline: {
     select: {
       id: true,
@@ -86,7 +93,20 @@ export async function fetchCrmProjects(companyId: string) {
       return [];
     });
 
-  return projectsResult.map((project) => ({
+  return projectsResult.map((project) => {
+    const timeline = project.timeline
+      ? project.timeline.map((entry) => ({
+          id: entry.id,
+          acao: entry.acao,
+          data: entry.data ? new Date(entry.data).toISOString() : new Date().toISOString(),
+          user: entry.user,
+        }))
+      : [];
+    const firstQuoteApprovedAt = project.quotes[0]?.aprovado_em
+      ? new Date(project.quotes[0].aprovado_em).toISOString()
+      : null;
+
+    return {
     id: project.id,
     valor_previsto: Number(project.valor_previsto),
     status_geral: project.status_geral,
@@ -101,14 +121,12 @@ export async function fetchCrmProjects(companyId: string) {
     conf_tecnica_resp1Nome: project.conf_tecnica_resp1?.name || null,
     conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
     conf_tecnica_resp2Nome: project.conf_tecnica_resp2?.name || null,
-    timeline: project.timeline
-      ? project.timeline.map((entry) => ({
-          id: entry.id,
-          acao: entry.acao,
-          data: entry.data ? new Date(entry.data).toISOString() : new Date().toISOString(),
-          user: entry.user,
-        }))
-      : [],
+    stage_entered_at: resolveStageEntryAt(
+      project.status_geral,
+      timeline,
+      firstQuoteApprovedAt
+    ),
+    timeline,
     client: project.client,
     briefing: project.briefing
       ? {
@@ -118,5 +136,6 @@ export async function fetchCrmProjects(companyId: string) {
             : null,
         }
       : null,
-  }));
+  };
+  });
 }
