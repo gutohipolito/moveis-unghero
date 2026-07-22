@@ -290,6 +290,14 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
     return "Fábrica: Montagem Interna (80%)";
   };
 
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
 export default function KanbanBoard({
   initialProjects,
   companyId,
@@ -953,7 +961,31 @@ export default function KanbanBoard({
               )}
             </div>
 
-            <button
+            <div className="flex items-start gap-1.5 shrink-0">
+              {(project.conf_tecnica_resp1Nome || project.conf_tecnica_resp2Nome) &&
+                (project.status_geral === "APROVADO" ||
+                  project.status_geral === "CONFERENCIA_TECNICA" ||
+                  project.status_geral === "PRODUCAO") && (
+                  <div className="flex items-center -space-x-1 pt-0.5">
+                    {project.conf_tecnica_resp1Nome && (
+                      <span
+                        className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card bg-emerald-600 text-[9px] font-bold text-white"
+                        title={`Conf. técnica: ${project.conf_tecnica_resp1Nome}`}
+                      >
+                        {getInitials(project.conf_tecnica_resp1Nome)}
+                      </span>
+                    )}
+                    {project.conf_tecnica_resp2Nome && (
+                      <span
+                        className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card bg-secondary text-[9px] font-bold text-muted-foreground"
+                        title={`Conf. técnica: ${project.conf_tecnica_resp2Nome}`}
+                      >
+                        {getInitials(project.conf_tecnica_resp2Nome)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
@@ -969,6 +1001,7 @@ export default function KanbanBoard({
                 <ChevronUp className="h-3.5 w-3.5" />
               )}
             </button>
+            </div>
           </div>
 
           {followMessage ? (
