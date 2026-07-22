@@ -543,9 +543,9 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               const roleLabel = getPartnerRoleLabel(selected.tipo, selected.nome);
               const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
               return (
-                <div className="relative overflow-hidden rounded-xl p-3.5 w-fit max-w-sm space-y-1 text-slate-800 text-xs border border-amber-400/40 bg-linear-to-br from-amber-50/90 via-white to-slate-50/60 shadow-[0_6px_22px_-6px_rgba(180,130,40,0.35)] ring-1 ring-amber-300/30">
+                <div className="relative overflow-hidden rounded-xl p-3.5 w-fit max-w-sm space-y-1 text-slate-800 text-xs border border-amber-500/50 bg-white shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)]">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden border-2 border-amber-300/70 shadow-inner bg-amber-50 flex items-center justify-center">
+                    <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden border border-amber-500/45 bg-neutral-50 flex items-center justify-center">
                       {selected.fotoUrl ? (
                         <img
                           src={selected.fotoUrl}
@@ -553,7 +553,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-xs font-black tracking-wide text-amber-800/80">
+                        <span className="text-xs font-black tracking-wide text-slate-600">
                           {getPartnerInitials(selected.nome)}
                         </span>
                       )}
@@ -564,11 +564,11 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                           {selected.nome}
                         </p>
                         <BadgeCheck
-                          className="h-4 w-4 shrink-0 text-amber-500 fill-amber-400/30"
+                          className="h-4 w-4 shrink-0 text-amber-600 fill-amber-400/25"
                           aria-label="Parceiro verificado"
                         />
                       </div>
-                      <p className="text-[10px] font-semibold text-amber-800/70 tracking-wide">
+                      <p className="text-[10px] font-semibold text-slate-500 tracking-wide">
                         {roleLabel}
                       </p>
                       {selected.escritorio ? (

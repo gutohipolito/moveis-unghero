@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CalendarClock, ShieldCheck, Wrench } from "lucide-react";
+import { BadgeCheck, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
@@ -208,6 +208,11 @@ export function quotePrintStylesCss() {
     }
     .print-quote-footer {
       border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .print-partner-card {
+      border: 1px solid rgba(217, 119, 6, 0.5);
+      background: #ffffff;
+      box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.22);
     }
     .print-footer-link {
       color: #ffffff;
@@ -520,8 +525,8 @@ export default function QuotePrintDocument({
                   </div>
 
                   {quote.partner ? (
-                    <div className="w-full p-3 rounded-lg border border-neutral-200 bg-neutral-50/50 text-[10px] text-neutral-600 space-y-1 shadow-sm leading-tight flex items-center gap-3">
-                      <div className="h-16 w-16 shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center">
+                    <div className="print-partner-card w-full p-3 rounded-xl border border-amber-500/50 bg-white text-[10px] text-neutral-600 space-y-1 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)] leading-tight flex items-center gap-3">
+                      <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden border border-amber-500/45 bg-neutral-50 flex items-center justify-center">
                         {quote.partner.fotoUrl ? (
                           <img
                             src={quote.partner.fotoUrl}
@@ -535,12 +540,18 @@ export default function QuotePrintDocument({
                         )}
                       </div>
                       <div className="min-w-0 flex-1 space-y-0.5 text-left">
-                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block mb-0.5">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <p className="font-bold text-neutral-900 text-xs leading-snug truncate">
+                            {quote.partner.nome}
+                          </p>
+                          <BadgeCheck
+                            className="h-3.5 w-3.5 shrink-0 text-amber-600 fill-amber-400/25"
+                            aria-label="Parceiro verificado"
+                          />
+                        </div>
+                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block">
                           {partnerRoleLabel}
                         </span>
-                        <p className="font-bold text-neutral-900 text-xs leading-snug">
-                          {quote.partner.nome}
-                        </p>
                         {quote.partner.escritorio ? (
                           <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
                         ) : null}
