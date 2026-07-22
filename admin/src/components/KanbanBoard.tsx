@@ -141,7 +141,7 @@ interface KanbanBoardProps {
   initialProjects: Project[];
   companyId: string;
   initialFollowUpSla?: Partial<FollowUpSlaConfig> | null;
-  colaboradores?: Array<{ id: string; name: string; cargo: string }>;
+  colaboradores?: Array<{ id: string; name: string; cargo: string; image?: string | null }>;
   clients?: Array<{
     id: string;
     nome: string;
@@ -296,6 +296,44 @@ function getInitials(name: string) {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }
   return name.substring(0, 2).toUpperCase();
+}
+
+function PersonAvatar({
+  name,
+  image,
+  title,
+  tone = "primary",
+}: {
+  name: string;
+  image?: string | null;
+  title: string;
+  tone?: "primary" | "secondary";
+}) {
+  const toneClass =
+    tone === "primary"
+      ? "bg-emerald-600 text-white"
+      : "bg-secondary text-muted-foreground";
+
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image}
+        alt={name}
+        title={title}
+        className="h-6 w-6 rounded-full object-cover ring-2 ring-card"
+      />
+    );
+  }
+
+  return (
+    <span
+      className={`flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card text-[9px] font-bold ${toneClass}`}
+      title={title}
+    >
+      {getInitials(name)}
+    </span>
+  );
 }
 
 export default function KanbanBoard({
@@ -968,20 +1006,26 @@ export default function KanbanBoard({
                   project.status_geral === "PRODUCAO") && (
                   <div className="flex items-center -space-x-1 pt-0.5">
                     {project.conf_tecnica_resp1Nome && (
-                      <span
-                        className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card bg-emerald-600 text-[9px] font-bold text-white"
+                      <PersonAvatar
+                        name={project.conf_tecnica_resp1Nome}
+                        image={
+                          colaboradores.find((c) => c.id === project.conf_tecnica_resp1_id)
+                            ?.image
+                        }
                         title={`Conf. técnica: ${project.conf_tecnica_resp1Nome}`}
-                      >
-                        {getInitials(project.conf_tecnica_resp1Nome)}
-                      </span>
+                        tone="primary"
+                      />
                     )}
                     {project.conf_tecnica_resp2Nome && (
-                      <span
-                        className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card bg-secondary text-[9px] font-bold text-muted-foreground"
+                      <PersonAvatar
+                        name={project.conf_tecnica_resp2Nome}
+                        image={
+                          colaboradores.find((c) => c.id === project.conf_tecnica_resp2_id)
+                            ?.image
+                        }
                         title={`Conf. técnica: ${project.conf_tecnica_resp2Nome}`}
-                      >
-                        {getInitials(project.conf_tecnica_resp2Nome)}
-                      </span>
+                        tone="secondary"
+                      />
                     )}
                   </div>
                 )}

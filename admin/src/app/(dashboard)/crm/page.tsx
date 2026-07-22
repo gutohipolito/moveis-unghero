@@ -28,6 +28,7 @@ export default async function CRMPage() {
           id: c.id,
           name: c.name,
           cargo: String(c.cargo),
+          image: c.image ?? null,
         }))
       : [];
   const initialFollowUpSla = resolveFollowUpSla(
