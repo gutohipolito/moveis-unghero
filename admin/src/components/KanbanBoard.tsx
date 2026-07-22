@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import { updateProjectDetails } from "@/app/actions/project";
 import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import {
@@ -68,6 +69,10 @@ interface Project {
   createdAt?: string | null;
   motivo_perda?: string | null;
   observacoes?: string | null;
+  conf_tecnica_resp1_id?: string | null;
+  conf_tecnica_resp1Nome?: string | null;
+  conf_tecnica_resp2_id?: string | null;
+  conf_tecnica_resp2Nome?: string | null;
   timeline?: Array<{
     id: string;
     acao: string;
@@ -130,6 +135,7 @@ interface KanbanBoardProps {
   initialProjects: Project[];
   companyId: string;
   initialFollowUpSla?: Partial<FollowUpSlaConfig> | null;
+  colaboradores?: Array<{ id: string; name: string; cargo: string }>;
   clients?: Array<{
     id: string;
     nome: string;
@@ -259,9 +265,9 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
   LEAD: "Prospecção: Cadastro e qualificação de novos contatos interessados em móveis sob medida.",
   ORCAMENTO: "Orçamentos: Levantamento de necessidades do cliente e formulação de propostas comerciais.",
   NEGOCIACAO: "Negociação: Apresentação da proposta, rodadas de negociação e termos do contrato comercial.",
-  CONFERENCIA_TECNICA: "Conf. Técnica: Medição final no imóvel do cliente e refinamento técnico do projeto para produção.",
-  APROVADO: "Aprovados: Projetos validados tecnicamente, contratos assinados e prontos para a produção.",
-  PRODUCAO: "Produção: Detalhamento de planos de corte e fabricação das peças na marcenaria.",
+  APROVADO: "Aprovados: orçamento aprovado. Atribua até 2 responsáveis pela conferência técnica no cliente antes de avançar.",
+  CONFERENCIA_TECNICA: "Conf. Técnica: visita/revisão no cliente. Ao concluir, avance para Produção — aí o projeto entra na fila da fábrica.",
+  PRODUCAO: "Produção: projeto liberado para o chão de fábrica. O card fica atenuado e a fila de produção assume.",
   INSTALACAO: "Instalação: Logística de transporte e montagem dos móveis no endereço do cliente.",
   FINALIZADO: "Finalizados: Conferência final pós-instalação, termo de encerramento assinado e entrega final realizada.",
 };
@@ -282,6 +288,7 @@ export default function KanbanBoard({
   initialProjects,
   companyId,
   clients = [],
+  colaboradores = [],
   initialFollowUpSla = null,
 }: KanbanBoardProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -972,6 +979,123 @@ export default function KanbanBoard({
                       Último contato: há {getDaysSinceContact(project)} dia(s)
                     </p>
                   ) : null}
+
+                  {(project.status_geral === "APROVADO" ||
+                    project.status_geral === "CONFERENCIA_TECNICA") && (
+                    <div
+                      className="space-y-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-[9px] font-semibold uppercase tracking-wide block text-emerald-800">
+                        Conf. Técnica — responsáveis
+                      </span>
+                      <select
+                        value={project.conf_tecnica_resp1_id || "none"}
+                        disabled={loading || colaboradores.length === 0}
+                        onChange={async (e) => {
+                          const nextId = e.target.value;
+                          const prev = project.conf_tecnica_resp1_id || null;
+                          const nome =
+                            nextId === "none"
+                              ? null
+                              : colaboradores.find((c) => c.id === nextId)?.name || null;
+                          setProjects((list) =>
+                            list.map((p) =>
+                              p.id === project.id
+                                ? {
+                                    ...p,
+                                    conf_tecnica_resp1_id: nextId === "none" ? null : nextId,
+                                    conf_tecnica_resp1Nome: nome,
+                                  }
+                                : p
+                            )
+                          );
+                          const res = await updateProjectDetails(project.id, {
+                            conf_tecnica_resp1_id: nextId,
+                          });
+                          if (!res.success) {
+                            setProjects((list) =>
+                              list.map((p) =>
+                                p.id === project.id
+                                  ? {
+                                      ...p,
+                                      conf_tecnica_resp1_id: prev,
+                                      conf_tecnica_resp1Nome: project.conf_tecnica_resp1Nome || null,
+                                    }
+                                  : p
+                              )
+                            );
+                            showError("Erro", res.error || "Não foi possível salvar o responsável.");
+                          }
+                        }}
+                        className="w-full h-8 rounded-lg border border-emerald-200 bg-white text-[10px] font-semibold text-slate-700 px-2 cursor-pointer outline-none"
+                      >
+                        <option value="none">Responsável 1…</option>
+                        {colaboradores.map((c) => (
+                          <option
+                            key={c.id}
+                            value={c.id}
+                            disabled={c.id === project.conf_tecnica_resp2_id}
+                          >
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={project.conf_tecnica_resp2_id || "none"}
+                        disabled={loading || colaboradores.length === 0}
+                        onChange={async (e) => {
+                          const nextId = e.target.value;
+                          const prev = project.conf_tecnica_resp2_id || null;
+                          const nome =
+                            nextId === "none"
+                              ? null
+                              : colaboradores.find((c) => c.id === nextId)?.name || null;
+                          setProjects((list) =>
+                            list.map((p) =>
+                              p.id === project.id
+                                ? {
+                                    ...p,
+                                    conf_tecnica_resp2_id: nextId === "none" ? null : nextId,
+                                    conf_tecnica_resp2Nome: nome,
+                                  }
+                                : p
+                            )
+                          );
+                          const res = await updateProjectDetails(project.id, {
+                            conf_tecnica_resp2_id: nextId,
+                          });
+                          if (!res.success) {
+                            setProjects((list) =>
+                              list.map((p) =>
+                                p.id === project.id
+                                  ? {
+                                      ...p,
+                                      conf_tecnica_resp2_id: prev,
+                                      conf_tecnica_resp2Nome: project.conf_tecnica_resp2Nome || null,
+                                    }
+                                  : p
+                              )
+                            );
+                            showError("Erro", res.error || "Não foi possível salvar o responsável.");
+                          }
+                        }}
+                        className="w-full h-8 rounded-lg border border-emerald-200 bg-white text-[10px] font-semibold text-slate-700 px-2 cursor-pointer outline-none"
+                      >
+                        <option value="none">Responsável 2 (opcional)…</option>
+                        {colaboradores.map((c) => (
+                          <option
+                            key={c.id}
+                            value={c.id}
+                            disabled={c.id === project.conf_tecnica_resp1_id}
+                          >
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {(project.status_geral === "PRODUCAO" ||
                     project.status_geral === "INSTALACAO" ||

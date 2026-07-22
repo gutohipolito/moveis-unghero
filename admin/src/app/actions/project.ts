@@ -8,6 +8,7 @@ import {
   getAuthContext,
   requireEnvironmentInCompany,
   requireProjectInCompany,
+  requireUserInCompany,
 } from "@/lib/auth-guard";
 import { capitalizeText } from "@/lib/utils";
 
@@ -288,6 +289,8 @@ export async function updateProjectDetails(
   data: {
     data_entrega_prevista?: string | null;
     responsavel_id?: string | null;
+    conf_tecnica_resp1_id?: string | null;
+    conf_tecnica_resp2_id?: string | null;
     observacoes?: string | null;
     partner_id?: string | null;
   }
@@ -306,13 +309,23 @@ export async function updateProjectDetails(
   }
 
   try {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (data.data_entrega_prevista !== undefined) {
       updateData.data_entrega_prevista = data.data_entrega_prevista ? new Date(data.data_entrega_prevista) : null;
     }
     if (data.responsavel_id !== undefined) {
       updateData.responsavel_id = data.responsavel_id === "none" ? null : data.responsavel_id;
+    }
+    if (data.conf_tecnica_resp1_id !== undefined) {
+      const id = data.conf_tecnica_resp1_id === "none" ? null : data.conf_tecnica_resp1_id;
+      if (id) await requireUserInCompany(id, auth.companyId);
+      updateData.conf_tecnica_resp1_id = id;
+    }
+    if (data.conf_tecnica_resp2_id !== undefined) {
+      const id = data.conf_tecnica_resp2_id === "none" ? null : data.conf_tecnica_resp2_id;
+      if (id) await requireUserInCompany(id, auth.companyId);
+      updateData.conf_tecnica_resp2_id = id;
     }
     if (data.partner_id !== undefined) {
       updateData.partner_id = data.partner_id === "none" ? null : data.partner_id;
@@ -333,6 +346,7 @@ export async function updateProjectDetails(
     );
 
     revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/crm");
     return { success: true };
   } catch (error: any) {
     console.warn("Erro ao atualizar detalhes do projeto:", error);

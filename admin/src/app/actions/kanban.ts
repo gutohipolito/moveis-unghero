@@ -96,6 +96,9 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
     });
 
     revalidateCrmPaths();
+    if (newStatus === "PRODUCAO" || newStatus === "INSTALACAO") {
+      revalidatePath("/factory");
+    }
     return { success: true };
   } catch (error) {
     console.warn("Falha ao atualizar status no banco:", error);
@@ -589,6 +592,9 @@ export async function updateProjectCommercialAction(
     });
 
     revalidateCrmPaths();
+    if (newStatus === "PRODUCAO" || newStatus === "INSTALACAO") {
+      revalidatePath("/factory");
+    }
     return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar projeto comercial:", error);

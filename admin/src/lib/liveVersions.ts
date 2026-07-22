@@ -228,10 +228,7 @@ export async function getCompanyLiveVersions(
     fingerprintEnvironments({
       project: {
         ...projectWhere,
-        OR: [
-          { files: { some: { aprovado_producao: true } } },
-          { status_geral: { in: ["APROVADO", "PRODUCAO"] } },
-        ],
+        status_geral: { in: ["PRODUCAO", "INSTALACAO"] },
       },
     }),
     fingerprintSla(companyId),

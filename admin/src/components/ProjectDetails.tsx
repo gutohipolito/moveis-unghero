@@ -171,6 +171,10 @@ interface Project {
   data_entrega_prevista?: string | null;
   responsavel_id?: string | null;
   responsavelNome?: string | null;
+  conf_tecnica_resp1_id?: string | null;
+  conf_tecnica_resp1Nome?: string | null;
+  conf_tecnica_resp2_id?: string | null;
+  conf_tecnica_resp2Nome?: string | null;
   partner_id?: string | null;
   partner?: {
     nome: string;
@@ -257,11 +261,20 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
   // Estados para Controle Operacional do Projeto (Responsável, Entrega, Parceiro e Observações)
   const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
+  const [confResp1Id, setConfResp1Id] = useState(project.conf_tecnica_resp1_id || "none");
+  const [confResp2Id, setConfResp2Id] = useState(project.conf_tecnica_resp2_id || "none");
   const [dataEntrega, setDataEntrega] = useState(project.data_entrega_prevista ? project.data_entrega_prevista.split("T")[0] : "");
   const [observacoesProj, setObservacoesProj] = useState(project.observacoes || "");
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [partners, setPartners] = useState<any[]>([]);
   const [partnerId, setPartnerId] = useState(project.partner_id || "none");
+  const showConfTecnica =
+    project.status_geral === "APROVADO" ||
+    project.status_geral === "CONFERENCIA_TECNICA" ||
+    project.status_geral === "PRODUCAO" ||
+    project.status_geral === "INSTALACAO";
+  const canEditConfTecnica =
+    project.status_geral === "APROVADO" || project.status_geral === "CONFERENCIA_TECNICA";
 
   useEffect(() => {
     async function loadPartners() {
@@ -278,17 +291,25 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     const res = await updateProjectDetails(project.id, {
       data_entrega_prevista: dataEntrega || null,
       responsavel_id: responsavelId,
+      conf_tecnica_resp1_id: confResp1Id,
+      conf_tecnica_resp2_id: confResp2Id,
       observacoes: observacoesProj,
       partner_id: partnerId
     });
 
     if (res.success) {
       const selected = colaboradores.find(c => c.id === responsavelId);
+      const selectedConf1 = colaboradores.find(c => c.id === confResp1Id);
+      const selectedConf2 = colaboradores.find(c => c.id === confResp2Id);
       const selectedPartner = partners.find(p => p.id === partnerId);
       setProject(prev => ({
         ...prev,
         responsavel_id: responsavelId === "none" ? null : responsavelId,
         responsavelNome: selected ? selected.name : null,
+        conf_tecnica_resp1_id: confResp1Id === "none" ? null : confResp1Id,
+        conf_tecnica_resp1Nome: selectedConf1 ? selectedConf1.name : null,
+        conf_tecnica_resp2_id: confResp2Id === "none" ? null : confResp2Id,
+        conf_tecnica_resp2Nome: selectedConf2 ? selectedConf2.name : null,
         partner_id: partnerId === "none" ? null : partnerId,
         partner: selectedPartner ? { nome: selectedPartner.nome, tipo: selectedPartner.tipo } : null,
         data_entrega_prevista: dataEntrega ? new Date(dataEntrega).toISOString() : null,
@@ -961,6 +982,25 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     </strong>
                   </div>
 
+                  {showConfTecnica && (
+                    <div className="sm:col-span-3 bg-emerald-50/60 border border-emerald-100 rounded-xl p-3.5 space-y-2">
+                      <div className="flex items-center gap-1.5 text-emerald-800 font-bold uppercase text-[9px] tracking-wider">
+                        <User className="h-3.5 w-3.5" />
+                        Responsáveis — Conferência Técnica
+                      </div>
+                      <p className="text-sm text-slate-800 font-semibold">
+                        {[project.conf_tecnica_resp1Nome, project.conf_tecnica_resp2Nome]
+                          .filter(Boolean)
+                          .join(" · ") || "Nenhum responsável atribuído"}
+                      </p>
+                      {canEditConfTecnica && (
+                        <p className="text-[10px] text-emerald-800/80 font-medium">
+                          Use “Editar Controle” para atribuir até 2 colaboradores. Depois avance o card para Conf. Técnica e, ao concluir, para Produção (aí entra na fábrica).
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {project.observacoes && (
                     <div className="sm:col-span-3 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1 text-slate-600">
                       <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">Observações do Projeto:</span>
@@ -1011,6 +1051,45 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       ))}
                     </select>
                   </div>
+
+                  {canEditConfTecnica && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Conf. Técnica — Responsável 1
+                        </label>
+                        <select
+                          value={confResp1Id}
+                          onChange={(e) => setConfResp1Id(e.target.value)}
+                          className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs px-3 font-semibold cursor-pointer outline-none"
+                        >
+                          <option value="none">Selecionar…</option>
+                          {colaboradores.map((c) => (
+                            <option key={c.id} value={c.id} disabled={c.id === confResp2Id}>
+                              {c.name} ({c.cargo})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Conf. Técnica — Responsável 2
+                        </label>
+                        <select
+                          value={confResp2Id}
+                          onChange={(e) => setConfResp2Id(e.target.value)}
+                          className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs px-3 font-semibold cursor-pointer outline-none"
+                        >
+                          <option value="none">Opcional…</option>
+                          {colaboradores.map((c) => (
+                            <option key={c.id} value={c.id} disabled={c.id === confResp1Id}>
+                              {c.name} ({c.cargo})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
 
                   <div className="sm:col-span-3 space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Observações do Projeto</label>

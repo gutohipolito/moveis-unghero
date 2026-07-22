@@ -58,6 +58,8 @@ model User {
   ambientes_como_ajudante      Environment[] @relation("UserAjudante")
   timecards     TimeCard[]
   projetos_sob_responsabilidade  Project[]     @relation("ProjectResponsavel")
+  projetos_conf_tecnica_resp1    Project[]     @relation("ProjectConfTecnicaResp1")
+  projetos_conf_tecnica_resp2    Project[]     @relation("ProjectConfTecnicaResp2")
   operatorNotes     OperatorNote[]
   operatorReminders OperatorReminder[]
   clientAttachments ClientAttachment[] @relation("ClientAttachmentUploader")
@@ -227,6 +229,11 @@ model Project {
   data_entrega_prevista DateTime?
   responsavel_id        String?
   responsavel           User?         @relation("ProjectResponsavel", fields: [responsavel_id], references: [id])
+  // Responsáveis da conferência técnica no cliente (até 2), atribuídos em Aprovados
+  conf_tecnica_resp1_id String?
+  conf_tecnica_resp1    User?         @relation("ProjectConfTecnicaResp1", fields: [conf_tecnica_resp1_id], references: [id])
+  conf_tecnica_resp2_id String?
+  conf_tecnica_resp2    User?         @relation("ProjectConfTecnicaResp2", fields: [conf_tecnica_resp2_id], references: [id])
   partner_id            String?
   partner               ProfessionalPartner? @relation("PartnerProjects", fields: [partner_id], references: [id])
   observacoes           String?
@@ -242,6 +249,8 @@ model Project {
   @@index([status_geral])
   @@index([partner_id])
   @@index([responsavel_id])
+  @@index([conf_tecnica_resp1_id])
+  @@index([conf_tecnica_resp2_id])
 }
 
 enum ProjectStatus {

@@ -19,6 +19,10 @@ export type ProjectDetailsPayload = {
   data_entrega_prevista: string | null;
   responsavel_id: string | null;
   responsavelNome: string | null;
+  conf_tecnica_resp1_id: string | null;
+  conf_tecnica_resp1Nome: string | null;
+  conf_tecnica_resp2_id: string | null;
+  conf_tecnica_resp2Nome: string | null;
   observacoes: string;
   environments: Array<{ id: string; nome: string; tipo: string; status: string }>;
   files: Array<{
@@ -121,6 +125,8 @@ const projectInclude = {
   tasks: true,
   installments: true,
   responsavel: true,
+  conf_tecnica_resp1: { select: { id: true, name: true } },
+  conf_tecnica_resp2: { select: { id: true, name: true } },
   briefing: true,
   timeline: {
     include: { user: { select: { name: true } } },
@@ -154,6 +160,10 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       : null,
     responsavel_id: project.responsavel_id || null,
     responsavelNome: project.responsavel?.name || null,
+    conf_tecnica_resp1_id: project.conf_tecnica_resp1_id || null,
+    conf_tecnica_resp1Nome: project.conf_tecnica_resp1?.name || null,
+    conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
+    conf_tecnica_resp2Nome: project.conf_tecnica_resp2?.name || null,
     observacoes: project.observacoes || "",
     environments: project.environments.map((env) => ({
       id: env.id,

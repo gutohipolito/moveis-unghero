@@ -23,10 +23,8 @@ export async function fetchFactoryBoard(companyId: string) {
         where: {
           project: {
             client: { company_id: companyId },
-            OR: [
-              { files: { some: { aprovado_producao: true } } },
-              { status_geral: { in: ["APROVADO", "PRODUCAO"] } },
-            ],
+            // Só entra na fila da fábrica após ir para Produção (ou Instalação).
+            status_geral: { in: ["PRODUCAO", "INSTALACAO"] },
           },
         },
         select: {

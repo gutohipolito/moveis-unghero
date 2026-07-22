@@ -9,6 +9,10 @@ export const CRM_PROJECT_SELECT = {
   updatedAt: true,
   motivo_perda: true,
   observacoes: true,
+  conf_tecnica_resp1_id: true,
+  conf_tecnica_resp2_id: true,
+  conf_tecnica_resp1: { select: { id: true, name: true } },
+  conf_tecnica_resp2: { select: { id: true, name: true } },
   timeline: {
     select: {
       id: true,
@@ -93,6 +97,10 @@ export async function fetchCrmProjects(companyId: string) {
     updatedAt: project.updatedAt ? new Date(project.updatedAt).toISOString() : null,
     motivo_perda: project.motivo_perda || null,
     observacoes: project.observacoes || null,
+    conf_tecnica_resp1_id: project.conf_tecnica_resp1_id || null,
+    conf_tecnica_resp1Nome: project.conf_tecnica_resp1?.name || null,
+    conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
+    conf_tecnica_resp2Nome: project.conf_tecnica_resp2?.name || null,
     timeline: project.timeline
       ? project.timeline.map((entry) => ({
           id: entry.id,
