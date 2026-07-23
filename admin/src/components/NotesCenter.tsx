@@ -125,11 +125,18 @@ export default function NotesCenter({
       {open && (
         <div className="notification-panel">
           <div className="notification-panel-header">
-            <p className="text-sm font-bold text-foreground">Notas</p>
+            <div className="notification-panel-heading">
+              <p className="notification-panel-title">Notas</p>
+              <p className="notification-panel-subtitle">
+                Anotações rápidas do dia a dia.
+              </p>
+            </div>
             {notes.length > 0 && (
-              <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                {notes.length} nota{notes.length !== 1 ? "s" : ""}
-              </span>
+              <div className="notification-panel-meta">
+                <span className="notification-panel-count">
+                  {notes.length} nota{notes.length !== 1 ? "s" : ""}
+                </span>
+              </div>
             )}
           </div>
 

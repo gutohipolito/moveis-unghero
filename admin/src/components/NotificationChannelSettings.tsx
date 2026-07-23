@@ -38,8 +38,8 @@ export default function NotificationChannelSettings() {
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between gap-3 px-1">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5 px-1">
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
             Canais de alerta
           </p>
@@ -47,7 +47,7 @@ export default function NotificationChannelSettings() {
             Escolha onde receber as notificações do sistema.
           </p>
         </div>
-        <BellRing className="h-4 w-4 text-primary shrink-0" />
+        <BellRing className="h-4 w-4 text-primary shrink-0 mt-0.5" />
       </div>
 
       <div className="rounded-xl border border-border bg-background/70 p-3">
@@ -56,13 +56,13 @@ export default function NotificationChannelSettings() {
             <Monitor className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <div>
+            <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+              <div className="min-w-0 flex-1 basis-[8rem]">
                 <p className="text-xs font-bold text-foreground">Alertas no navegador</p>
                 <p className="text-[10px] text-muted-foreground">Enquanto estiver usando este dispositivo.</p>
               </div>
               {browserActive && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
                   <Check className="h-2.5 w-2.5" /> Ativo
                 </span>
               )}
@@ -131,13 +131,13 @@ export default function NotificationChannelSettings() {
             <Smartphone className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <div>
+            <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+              <div className="min-w-0 flex-1 basis-[8rem]">
                 <p className="text-xs font-bold text-foreground">Push mobile</p>
                 <p className="text-[10px] text-muted-foreground">Mesmo com o painel fechado.</p>
               </div>
               {pushActive && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
                   <Check className="h-2.5 w-2.5" /> Ativo
                 </span>
               )}

@@ -146,11 +146,18 @@ export default function RemindersCenter({
       {open && (
         <div className="notification-panel">
           <div className="notification-panel-header">
-            <p className="text-sm font-bold text-foreground">Lembretes</p>
+            <div className="notification-panel-heading">
+              <p className="notification-panel-title">Lembretes</p>
+              <p className="notification-panel-subtitle">
+                Compromissos e avisos pessoais.
+              </p>
+            </div>
             {activeCount > 0 && (
-              <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                {activeCount} pendente{activeCount !== 1 ? "s" : ""}
-              </span>
+              <div className="notification-panel-meta">
+                <span className="notification-panel-count">
+                  {activeCount} pendente{activeCount !== 1 ? "s" : ""}
+                </span>
+              </div>
             )}
           </div>
 

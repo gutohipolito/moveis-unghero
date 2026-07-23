@@ -768,10 +768,73 @@ body {
 
 .notification-panel-header {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.5rem 0.75rem;
   padding: 0.875rem 1rem;
   border-bottom: 1px solid hsl(var(--border));
+}
+
+.notification-panel-heading {
+  min-width: 0;
+  flex: 1 1 10rem;
+}
+
+.notification-panel-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: hsl(var(--foreground));
+}
+
+.notification-panel-subtitle {
+  margin: 0.125rem 0 0;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: hsl(var(--muted-foreground));
+}
+
+.notification-panel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.375rem 0.5rem;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.notification-panel-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.notification-panel-clear {
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.notification-panel-clear:hover {
+  color: hsl(var(--foreground));
 }
 
 .notification-list {

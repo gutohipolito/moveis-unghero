@@ -96,28 +96,26 @@ export default function NotificationCenter({
       {open && (
         <div className="notification-panel">
           <div className="notification-panel-header">
-            <div>
-              <p className="text-sm font-bold text-foreground">Notificações do sistema</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+            <div className="notification-panel-heading">
+              <p className="notification-panel-title">Notificações do sistema</p>
+              <p className="notification-panel-subtitle">
                 Prazos, pendências e atividades importantes.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {listCount > 0 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Limpar todas
-                  </button>
-                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                    {listCount} nova{listCount !== 1 ? "s" : ""}
-                  </span>
-                </>
-              )}
-            </div>
+            {listCount > 0 && (
+              <div className="notification-panel-meta">
+                <span className="notification-panel-count">
+                  {listCount} nova{listCount !== 1 ? "s" : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="notification-panel-clear"
+                >
+                  Limpar todas
+                </button>
+              </div>
+            )}
           </div>
 
           {listItems.length === 0 ? (
@@ -153,9 +151,9 @@ export default function NotificationCenter({
                           <Bell className="h-3.5 w-3.5" />
                         )}
                       </span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-foreground">{item.title}</p>
-                        <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                        <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 break-words">
                           {item.message}
                         </p>
                       </div>
