@@ -18,6 +18,7 @@ type LoadedPrintQuote = {
   id: string;
   project_id: string;
   template_tipo: string;
+  codigo: string | null;
   desconto: number;
   valor_final: number;
   observacoes: string | null;
@@ -127,6 +128,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         id: dbQuote.id,
         project_id: dbQuote.project_id,
         template_tipo: dbQuote.template_tipo,
+        codigo: dbQuote.codigo,
         desconto: Number(dbQuote.desconto),
         valor_final: Number(dbQuote.valor_final),
         observacoes: dbQuote.observacoes,

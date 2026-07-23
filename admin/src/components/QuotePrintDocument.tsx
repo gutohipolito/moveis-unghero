@@ -3,6 +3,7 @@ import { BadgeCheck, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
+import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 
 export const QUOTE_PRINT_FACTORY = {
   name: "Móveis Unghero LTDA",
@@ -68,6 +69,8 @@ export type QuotePrintClient = {
 
 export type QuotePrintData = {
   template_tipo?: string | null;
+  codigo?: string | null;
+  id?: string;
   desconto: number;
   valor_final: number;
   observacoes?: string | null;
@@ -474,6 +477,10 @@ export default function QuotePrintDocument({
   const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
   const isComparative = quote.template_tipo === "COMPARATIVO";
+  const quoteCodigo =
+    quote.id || quote.codigo
+      ? formatQuoteCodigo({ id: quote.id || "", codigo: quote.codigo })
+      : null;
 
   return (
     <div className="print-shell bg-slate-100 text-black min-h-screen font-sans print:bg-white print:min-h-0">
@@ -493,6 +500,11 @@ export default function QuotePrintDocument({
                     Cliente
                   </span>
                   <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
+                  {quoteCodigo ? (
+                    <p className="text-[10px] font-mono font-bold text-neutral-600 tracking-wide">
+                      Orçamento {quoteCodigo}
+                    </p>
+                  ) : null}
                   <div className="text-xs text-neutral-600 space-y-0.5">
                     <p>
                       <span className="font-semibold text-neutral-700">Cidade:</span> {client.cidade}

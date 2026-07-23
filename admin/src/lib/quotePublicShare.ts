@@ -65,7 +65,9 @@ export async function loadPublicQuoteByShareCode(code: string) {
     .at(-1);
 
   const quote: QuotePrintData = {
+    id: dbQuote.id,
     template_tipo: dbQuote.template_tipo,
+    codigo: dbQuote.codigo,
     desconto: Number(dbQuote.desconto),
     valor_final: Number(dbQuote.valor_final),
     observacoes: dbQuote.observacoes,

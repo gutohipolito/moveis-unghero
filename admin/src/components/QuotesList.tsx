@@ -44,6 +44,7 @@ import QuoteBuilder from "@/components/QuoteBuilder";
 import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
 import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
 import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
+import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
@@ -80,6 +81,7 @@ interface Quote {
   id: string;
   project_id: string;
   versao: number;
+  codigo?: string | null;
   template_tipo?: string | null;
   subtotal: number;
   desconto: number;
@@ -353,10 +355,11 @@ export default function QuotesList({
 
   // Filtragem
   const filteredQuotes = quotes.filter(q => {
+    const code = formatQuoteCodigo(q).toLowerCase();
     const matchesSearch = 
       q.project.client.nome.toLowerCase().includes(search.toLowerCase()) ||
       q.id.toLowerCase().includes(search.toLowerCase()) ||
-      `orc-${q.id.substring(0, 5)}`.toLowerCase().includes(search.toLowerCase()) ||
+      code.includes(search.toLowerCase()) ||
       q.project.client.cidade.toLowerCase().includes(search.toLowerCase()) ||
       (q.project.client.bairro && q.project.client.bairro.toLowerCase().includes(search.toLowerCase()));
 
@@ -683,7 +686,7 @@ export default function QuotesList({
                     >
                       <td className="py-4 px-4 text-sm font-medium text-slate-700">
                         <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-xs">
-                          ORC-{q.id.substring(0, 5).toUpperCase()}
+                          {formatQuoteCodigo(q)}
                         </span>
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-800 font-semibold">
@@ -853,9 +856,9 @@ export default function QuotesList({
       <Dialog
         isOpen={isCreateOpen}
         onClose={handleCancelCreate}
-        className={selectedProjectId ? "max-w-5xl modal-panel-quote" : "max-w-lg"}
+        className={selectedProjectId ? "max-w-7xl modal-panel-quote" : "max-w-lg"}
         viewportClassName={selectedProjectId ? "modal-viewport-quote" : undefined}
-        bodyClassName="px-4 py-4 sm:px-5 sm:py-5"
+        bodyClassName="px-4 py-4 sm:px-6 sm:py-6"
       >
         <div className="space-y-4">
           <div className="flex items-start gap-3 border-b border-slate-100 pb-4 pr-8">

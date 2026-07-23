@@ -957,7 +957,7 @@ body {
 }
 
 .modal-panel-quote {
-  max-width: min(100%, 64rem);
+  max-width: min(100%, 80rem);
 }
 
 @media (max-width: 767px) {

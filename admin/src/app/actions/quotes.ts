@@ -23,6 +23,7 @@ import {
   isComparativeTemplate,
   normalizeQuoteTemplateId,
 } from "@/lib/quoteTemplates";
+import { buildQuoteCodigoBase } from "@/lib/quoteCodigo";
 import { randomUUID } from "crypto";
 
 export type ItemType = 
@@ -104,12 +105,29 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
 
       const templateTipo = normalizeQuoteTemplateId(data.template_tipo);
 
+      const projectClient = await tx.project.findUnique({
+        where: { id: projectId },
+        select: { client: { select: { nome: true } } },
+      });
+      const clientName = projectClient?.client.nome || "Cliente";
+      const codigoBase = buildQuoteCodigoBase(clientName);
+      let codigo = codigoBase;
+      for (let attempt = 2; attempt <= 50; attempt++) {
+        const clash = await tx.quote.findFirst({
+          where: { codigo },
+          select: { id: true },
+        });
+        if (!clash) break;
+        codigo = `${codigoBase}-${attempt}`;
+      }
+
       // 2. Cria a Quote
       const quote = await tx.quote.create({
         data: {
           project_id: projectId,
           versao: nextVersion,
           template_tipo: templateTipo,
+          codigo,
           subtotal: data.subtotal,
           desconto: data.desconto,
           valor_final: data.valor_final,
@@ -165,6 +183,8 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           id: quote.id,
           project_id: quote.project_id,
           versao: quote.versao,
+          codigo: quote.codigo,
+          template_tipo: quote.template_tipo,
           subtotal: Number(quote.subtotal),
           desconto: Number(quote.desconto),
           valor_final: Number(quote.valor_final),

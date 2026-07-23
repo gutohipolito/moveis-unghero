@@ -22,6 +22,7 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
 import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
 import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
+import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { getParceiros } from "@/app/actions/parceiros";
 import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
@@ -105,6 +106,7 @@ interface TimelineEvent {
 interface Quote {
   id: string;
   versao: number;
+  codigo?: string | null;
   template_tipo?: string | null;
   subtotal: number;
   desconto: number;
@@ -1476,6 +1478,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 const newQuote: Quote = {
                   id: newQuoteData.quote.id,
                   versao: newQuoteData.version,
+                  codigo: newQuoteData.quote.codigo ?? null,
+                  template_tipo: newQuoteData.quote.template_tipo ?? null,
                   subtotal: newQuoteData.quote.subtotal,
                   desconto: newQuoteData.quote.desconto,
                   valor_final: newQuoteData.quote.valor_final,
@@ -1551,7 +1555,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2.5 flex-wrap">
                             <h4 className="font-bold text-base text-foreground leading-none">
-                              Proposta Comercial v{q.versao}
+                              {formatQuoteCodigo(q)}
+                              <span className="text-muted-foreground font-semibold text-sm ml-2">
+                                · Proposta v{q.versao}
+                              </span>
                             </h4>
                             {isFullyApproved ? (
                               <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">
