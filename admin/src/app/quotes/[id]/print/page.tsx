@@ -17,6 +17,7 @@ interface PrintPageProps {
 type LoadedPrintQuote = {
   id: string;
   project_id: string;
+  template_tipo: string;
   desconto: number;
   valor_final: number;
   observacoes: string | null;
@@ -125,6 +126,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
       quote = {
         id: dbQuote.id,
         project_id: dbQuote.project_id,
+        template_tipo: dbQuote.template_tipo,
         desconto: Number(dbQuote.desconto),
         valor_final: Number(dbQuote.valor_final),
         observacoes: dbQuote.observacoes,

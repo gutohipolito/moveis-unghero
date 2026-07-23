@@ -192,6 +192,7 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
                 subtotal: approvalQuote.subtotal,
                 desconto: approvalQuote.desconto,
                 clientName: approvalQuote.project.client.nome,
+                template_tipo: approvalQuote.template_tipo,
                 items: approvalQuote.items,
               }
             : null

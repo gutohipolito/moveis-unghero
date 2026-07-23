@@ -105,6 +105,7 @@ interface TimelineEvent {
 interface Quote {
   id: string;
   versao: number;
+  template_tipo?: string | null;
   subtotal: number;
   desconto: number;
   valor_final: number;
@@ -2214,6 +2215,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 subtotal: approvalQuote.subtotal,
                 desconto: approvalQuote.desconto,
                 clientName: project.client.nome,
+                template_tipo: approvalQuote.template_tipo,
                 items: approvalQuote.items || [],
               }
             : null

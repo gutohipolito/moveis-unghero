@@ -43,6 +43,7 @@ export type ProjectDetailsPayload = {
   quotes: Array<{
     id: string;
     versao: number;
+    template_tipo?: string;
     subtotal: number;
     desconto: number;
     valor_final: number;
@@ -189,6 +190,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
     quotes: project.quotes.map((q) => ({
       id: q.id,
       versao: q.versao,
+      template_tipo: q.template_tipo,
       subtotal: Number(q.subtotal),
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),

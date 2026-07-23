@@ -19,6 +19,10 @@ import {
   suggestProportionalDiscount,
   summarizeQuoteItems,
 } from "@/lib/quoteApproval";
+import {
+  isComparativeTemplate,
+  normalizeQuoteTemplateId,
+} from "@/lib/quoteTemplates";
 import { randomUUID } from "crypto";
 
 export type ItemType = 
@@ -98,11 +102,14 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
         ? Math.max(...existingQuotes.map(q => q.versao)) + 1 
         : 1;
 
+      const templateTipo = normalizeQuoteTemplateId(data.template_tipo);
+
       // 2. Cria a Quote
       const quote = await tx.quote.create({
         data: {
           project_id: projectId,
           versao: nextVersion,
+          template_tipo: templateTipo,
           subtotal: data.subtotal,
           desconto: data.desconto,
           valor_final: data.valor_final,
@@ -133,10 +140,13 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
       }
 
       // 4. Cria evento na Timeline
+      const timelineValue = isComparativeTemplate(templateTipo)
+        ? `Proposta comparativa v${nextVersion} criada com ${data.items.length} opção(ões)`
+        : `Orçamento comercial v${nextVersion} criado no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.valor_final)}`;
       await tx.timeline.create({
         data: {
           project_id: projectId,
-          acao: `Orçamento comercial v${nextVersion} criado no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.valor_final)}`,
+          acao: timelineValue,
           interno_sotamente: false,
           user_id: await ensureActorUserId()
         }
@@ -206,6 +216,7 @@ export async function approveQuote(
       where: { id: quoteId, project_id: projectId },
       select: {
         id: true,
+        template_tipo: true,
         subtotal: true,
         desconto: true,
         valor_final: true,
@@ -224,6 +235,8 @@ export async function approveQuote(
       return { success: false, error: "Orçamento não encontrado" };
     }
 
+    const comparative = isComparativeTemplate(quote.template_tipo);
+
     const pendingItems = quote.items.filter((item) => item.status === "PENDENTE");
     if (pendingItems.length === 0) {
       return { success: false, error: "Não há itens pendentes para aprovar neste orçamento." };
@@ -231,12 +244,30 @@ export async function approveQuote(
 
     const requestedIds = options?.itemIds?.length
       ? new Set(options.itemIds)
-      : new Set(pendingItems.map((item) => item.id));
+      : comparative
+        ? new Set<string>()
+        : new Set(pendingItems.map((item) => item.id));
 
     const selectedItems = pendingItems.filter((item) => requestedIds.has(item.id));
     if (selectedItems.length === 0) {
-      return { success: false, error: "Selecione ao menos um item pendente para aprovar." };
+      return {
+        success: false,
+        error: comparative
+          ? "Selecione exatamente uma opção para aprovar nesta proposta comparativa."
+          : "Selecione ao menos um item pendente para aprovar.",
+      };
     }
+
+    if (comparative && selectedItems.length !== 1) {
+      return {
+        success: false,
+        error: "Proposta comparativa: aprove exatamente uma opção. As demais serão recusadas automaticamente.",
+      };
+    }
+
+    const rejectedOnApprove = comparative
+      ? pendingItems.filter((item) => !requestedIds.has(item.id))
+      : [];
 
     // Itens já aprovados são ignorados (idempotência): só processamos pendentes.
     const selectedSubtotal = selectedItems.reduce(
@@ -289,6 +320,16 @@ export async function approveQuote(
           approval_id: approval.id,
         },
       });
+
+      if (rejectedOnApprove.length > 0) {
+        await tx.quoteItem.updateMany({
+          where: {
+            id: { in: rejectedOnApprove.map((item) => item.id) },
+            status: "PENDENTE",
+          },
+          data: { status: "RECUSADO" },
+        });
+      }
 
       // Mantém Quote.aprovado_em como marcador da primeira aprovação (compatibilidade).
       const existingQuote = await tx.quote.findUnique({
@@ -386,9 +427,14 @@ export async function approveQuote(
       return created;
     });
 
-    const remainingPending = pendingItems.length - selectedItems.length;
-    const partialLabel =
-      remainingPending > 0
+    const remainingPending = comparative
+      ? 0
+      : pendingItems.length - selectedItems.length;
+    const partialLabel = comparative
+      ? rejectedOnApprove.length > 0
+        ? ` Proposta comparativa: opção escolhida aprovada; ${rejectedOnApprove.length} alternativa(s) recusada(s).`
+        : " Proposta comparativa: opção escolhida aprovada."
+      : remainingPending > 0
         ? ` Aprovação parcial: ${selectedItems.length} item(ns); ${remainingPending} ainda pendente(s).`
         : " Todos os itens pendentes deste orçamento foram aprovados.";
 
@@ -660,6 +706,7 @@ export async function getCommercialPendingQuotes() {
     const quotes = await prisma.quote.findMany({
       where: {
         project: { client: { company_id: auth.companyId } },
+        template_tipo: { not: "COMPARATIVO" },
         items: { some: { status: "PENDENTE" } },
         OR: [
           { items: { some: { status: "APROVADO" } } },
@@ -704,6 +751,7 @@ export async function getCommercialPendingQuotes() {
         id: q.id,
         project_id: q.project_id,
         versao: q.versao,
+        template_tipo: q.template_tipo,
         validade: q.validade.toISOString(),
         createdAt: q.createdAt.toISOString(),
         aprovado_em: q.aprovado_em ? q.aprovado_em.toISOString() : null,
@@ -746,6 +794,7 @@ export type CommercialPendingQuote = {
   id: string;
   project_id: string;
   versao: number;
+  template_tipo?: string;
   validade: string;
   createdAt: string;
   aprovado_em: string | null;

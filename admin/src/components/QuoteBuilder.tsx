@@ -9,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers, Building2, BadgeCheck, Images } from "lucide-react";
-import { QUOTE_TEMPLATE_BASICO, QUOTE_TEMPLATE_ID, QUOTE_TEMPLATE_LABEL } from "@/lib/quoteTemplates";
+import {
+  QUOTE_TEMPLATE_IDS,
+  QUOTE_TEMPLATE_LABELS,
+  getQuoteTemplate,
+  isComparativeTemplate,
+  type QuoteTemplateId,
+} from "@/lib/quoteTemplates";
 import { listQuoteItemPresets, listQuoteDetailPresets, createQuoteItemPreset, createQuoteDetailPreset } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 import {
@@ -63,13 +69,11 @@ interface QuoteItemInput {
   subitens?: string[];
 }
 
-// Template único ativo no sistema
-const ACTIVE_TEMPLATE = QUOTE_TEMPLATE_BASICO;
-
 export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel, embedded = false }: QuoteBuilderProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
-  const [observacoes, setObservacoes] = useState(ACTIVE_TEMPLATE.observacoes);
+  const [templateTipo, setTemplateTipo] = useState<QuoteTemplateId>("BASICO");
+  const [observacoes, setObservacoes] = useState("");
   const [validade, setValidade] = useState(() => {
     // Validade padrão: 15 dias a partir de hoje (calendário de São Paulo)
     return addCalendarDaysISO(toISODateBR(), 15);
@@ -90,6 +94,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [briefingData, setBriefingData] = useState<any | null>(null);
   const [activeBuilderTab, setActiveBuilderTab] = useState<"items" | "briefing">("items");
   const hasBriefing = Boolean(briefingData);
+  const isComparative = isComparativeTemplate(templateTipo);
 
   useEffect(() => {
     async function loadBriefing() {
@@ -405,7 +410,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       valor_final: currentValorFinal,
       validade,
       observacoes,
-      template_tipo: QUOTE_TEMPLATE_ID,
+      template_tipo: templateTipo,
       partnerId: partnerId || null,
       items: currentItems.map((item) => ({
         descricao: item.descricao,
@@ -505,9 +510,27 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
               Template de Proposta
             </label>
-            <div className="h-10 flex items-center px-3 rounded-lg border border-border/40 bg-secondary/30 text-sm font-semibold text-foreground">
-              {QUOTE_TEMPLATE_LABEL}
-            </div>
+            <Select
+              value={templateTipo}
+              onChange={(e) => {
+                const next = e.target.value as QuoteTemplateId;
+                setTemplateTipo(next);
+                const tpl = getQuoteTemplate(next);
+                if (!observacoes.trim()) setObservacoes(tpl.observacoes);
+              }}
+              className="h-10"
+            >
+              {QUOTE_TEMPLATE_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {QUOTE_TEMPLATE_LABELS[id]}
+                </option>
+              ))}
+            </Select>
+            {isComparative ? (
+              <p className="mt-1.5 text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1.5 leading-snug">
+                PDF sem valor total. Na aprovação o cliente escolhe 1 opção; as demais ficam recusadas e o orçamento não entra em pendências comerciais.
+              </p>
+            ) : null}
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">

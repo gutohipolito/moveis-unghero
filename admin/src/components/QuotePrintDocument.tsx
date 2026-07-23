@@ -67,6 +67,7 @@ export type QuotePrintClient = {
 };
 
 export type QuotePrintData = {
+  template_tipo?: string | null;
   desconto: number;
   valor_final: number;
   observacoes?: string | null;
@@ -472,6 +473,7 @@ export default function QuotePrintDocument({
   const isPaged = density === "paged";
   const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
+  const isComparative = quote.template_tipo === "COMPARATIVO";
 
   return (
     <div className="print-shell bg-slate-100 text-black min-h-screen font-sans print:bg-white print:min-h-0">
@@ -565,14 +567,18 @@ export default function QuotePrintDocument({
               </section>
 
               <p className="text-[11px] text-neutral-500 leading-relaxed">
-                Relação completa de marcenaria sob medida, ferragens e serviços.
+                {isComparative
+                  ? "Proposta comparativa — escolha uma das opções abaixo. Cada item tem seu próprio valor; não há soma total."
+                  : "Relação completa de marcenaria sob medida, ferragens e serviços."}
               </p>
 
               <div className="overflow-hidden border border-neutral-200 rounded-xl">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b border-neutral-200 text-neutral-500 uppercase font-bold bg-neutral-50/50 text-[10px]">
-                      <th className={`${cellPad} w-7/12`}>Descrição Detalhada do Item</th>
+                      <th className={`${cellPad} w-7/12`}>
+                        {isComparative ? "Opção / Descrição Detalhada" : "Descrição Detalhada do Item"}
+                      </th>
                       <th className={`${cellPad} text-center w-1/12`}>Qtd</th>
                       <th className={`${cellPad} text-right w-2/12`}>Unitário</th>
                       <th className={`${cellPad} text-right w-2/12`}>Total</th>
@@ -658,41 +664,54 @@ export default function QuotePrintDocument({
                 </table>
               </div>
 
-              <div className="flex justify-end -mt-1">
-                <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[220px] space-y-0.5">
-                  {quote.desconto > 0 ? (
-                    <p className="text-[9px] text-emerald-700 font-semibold text-right">
-                      Desconto: -{formatCurrency(quote.desconto)}
-                    </p>
-                  ) : null}
-                  <div className="flex items-baseline justify-end gap-1.5">
-                    <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wide">
-                      Investimento total:
-                    </span>
-                    <span className="text-base font-black text-neutral-950">
-                      {formatCurrency(quote.valor_final)}
-                    </span>
+              {!isComparative ? (
+                <div className="flex justify-end -mt-1">
+                  <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[220px] space-y-0.5">
+                    {quote.desconto > 0 ? (
+                      <p className="text-[9px] text-emerald-700 font-semibold text-right">
+                        Desconto: -{formatCurrency(quote.desconto)}
+                      </p>
+                    ) : null}
+                    <div className="flex items-baseline justify-end gap-1.5">
+                      <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wide">
+                        Investimento total:
+                      </span>
+                      <span className="text-base font-black text-neutral-950">
+                        {formatCurrency(quote.valor_final)}
+                      </span>
+                    </div>
+                    {typeof quote.approvedTotal === "number" && quote.approvedTotal > 0 ? (
+                      <p className="text-[9px] text-emerald-800 font-bold text-right">
+                        Já aprovado: {formatCurrency(quote.approvedTotal)}.
+                      </p>
+                    ) : null}
+                    {typeof quote.approvedTotal === "number" &&
+                    quote.approvedTotal > 0 &&
+                    typeof quote.pendingTotal === "number" &&
+                    quote.pendingTotal > 0 ? (
+                      <p className="text-[9px] text-amber-800 font-semibold text-right">
+                        Ainda pendente: {formatCurrency(quote.pendingTotal)}.
+                      </p>
+                    ) : null}
+                    {quote.lastUpdatedAt ? (
+                      <p className="text-[8px] text-neutral-500 text-right pt-0.5">
+                        Atualizado em {quote.lastUpdatedAt}
+                      </p>
+                    ) : null}
                   </div>
-                  {typeof quote.approvedTotal === "number" && quote.approvedTotal > 0 ? (
-                    <p className="text-[9px] text-emerald-800 font-bold text-right">
-                      Já aprovado: {formatCurrency(quote.approvedTotal)}.
-                    </p>
-                  ) : null}
-                  {typeof quote.approvedTotal === "number" &&
-                  quote.approvedTotal > 0 &&
-                  typeof quote.pendingTotal === "number" &&
-                  quote.pendingTotal > 0 ? (
-                    <p className="text-[9px] text-amber-800 font-semibold text-right">
-                      Ainda pendente: {formatCurrency(quote.pendingTotal)}.
-                    </p>
-                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-3.5 py-2.5">
+                  <p className="text-[10px] font-semibold text-amber-900 leading-snug">
+                    Proposta comparativa: os valores acima são por opção. Não há investimento total — o cliente escolhe uma alternativa.
+                  </p>
                   {quote.lastUpdatedAt ? (
-                    <p className="text-[8px] text-neutral-500 text-right pt-0.5">
+                    <p className="text-[8px] text-amber-800/70 mt-1">
                       Atualizado em {quote.lastUpdatedAt}
                     </p>
                   ) : null}
                 </div>
-              </div>
+              )}
 
               {quote.observacoes?.trim() ? (
                 <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">

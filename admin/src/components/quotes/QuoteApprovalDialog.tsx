@@ -10,6 +10,7 @@ import {
   computeApprovalValue,
   suggestProportionalDiscount,
 } from "@/lib/quoteApproval";
+import { isComparativeTemplate } from "@/lib/quoteTemplates";
 
 export type ApprovalDialogItem = {
   id: string;
@@ -30,6 +31,7 @@ interface QuoteApprovalDialogProps {
     subtotal: number;
     desconto: number;
     clientName: string;
+    template_tipo?: string | null;
     items: ApprovalDialogItem[];
   } | null;
   onApproved?: (result: {
@@ -52,6 +54,7 @@ export default function QuoteApprovalDialog({
   quote,
   onApproved,
 }: QuoteApprovalDialogProps) {
+  const comparative = isComparativeTemplate(quote?.template_tipo);
   const pendingItems = useMemo(
     () => (quote?.items || []).filter((i) => !i.status || i.status === "PENDENTE"),
     [quote]
@@ -63,21 +66,26 @@ export default function QuoteApprovalDialog({
 
   useEffect(() => {
     if (!open || !quote) return;
-    const ids = new Set(pendingItems.map((i) => i.id));
-    setSelected(ids);
-    const selectedSubtotalInit = pendingItems.reduce(
-      (s, i) => s + Number(i.valor_total),
-      0
-    );
-    const suggested = suggestProportionalDiscount(
-      Number(quote.desconto),
-      Number(quote.subtotal),
-      selectedSubtotalInit
-    );
-    setDescontoText(suggested.toFixed(2).replace(".", ","));
+    if (comparative) {
+      setSelected(new Set());
+      setDescontoText("0");
+    } else {
+      const ids = new Set(pendingItems.map((i) => i.id));
+      setSelected(ids);
+      const selectedSubtotalInit = pendingItems.reduce(
+        (s, i) => s + Number(i.valor_total),
+        0
+      );
+      const suggested = suggestProportionalDiscount(
+        Number(quote.desconto),
+        Number(quote.subtotal),
+        selectedSubtotalInit
+      );
+      setDescontoText(suggested.toFixed(2).replace(".", ","));
+    }
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when dialog opens / quote changes
-  }, [open, quote?.id]);
+  }, [open, quote?.id, comparative]);
 
   const selectedItems = pendingItems.filter((i) => selected.has(i.id));
   const selectedSubtotal = selectedItems.reduce((s, i) => s + Number(i.valor_total), 0);
@@ -96,6 +104,10 @@ export default function QuoteApprovalDialog({
     : 0;
 
   const toggle = (id: string) => {
+    if (comparative) {
+      setSelected(new Set([id]));
+      return;
+    }
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -113,7 +125,11 @@ export default function QuoteApprovalDialog({
 
   const handleApprove = async () => {
     if (!quote || selected.size === 0) {
-      setError("Selecione ao menos um item.");
+      setError(comparative ? "Selecione a opção escolhida pelo cliente." : "Selecione ao menos um item.");
+      return;
+    }
+    if (comparative && selected.size !== 1) {
+      setError("Proposta comparativa: selecione exatamente uma opção.");
       return;
     }
     if (desconto > selectedSubtotal) {
@@ -173,11 +189,12 @@ export default function QuoteApprovalDialog({
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            Registrar aprovação
+            {comparative ? "Aprovar opção escolhida" : "Registrar aprovação"}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {quote.clientName} · Proposta v{quote.versao}. Selecione os itens
-            aprovados pelo cliente.
+            {comparative
+              ? `${quote.clientName} · Proposta comparativa v${quote.versao}. Selecione a única opção fechada pelo cliente — as demais serão recusadas automaticamente.`
+              : `${quote.clientName} · Proposta v${quote.versao}. Selecione os itens aprovados pelo cliente.`}
           </p>
         </div>
 
@@ -187,23 +204,29 @@ export default function QuoteApprovalDialog({
           </p>
         ) : (
           <>
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={selectAll}
-                className="text-primary font-semibold hover:underline"
-              >
-                Selecionar todos
-              </button>
-              <span className="text-muted-foreground">·</span>
-              <button
-                type="button"
-                onClick={clearAll}
-                className="text-muted-foreground font-semibold hover:underline"
-              >
-                Limpar
-              </button>
-            </div>
+            {!comparative ? (
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={selectAll}
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Selecionar todos
+                </button>
+                <span className="text-muted-foreground">·</span>
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-muted-foreground font-semibold hover:underline"
+                >
+                  Limpar
+                </button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-amber-800 bg-amber-500/10 border border-amber-500/20 rounded-md px-2.5 py-1.5 leading-snug">
+                Escolha exclusiva: só a opção marcada entra em Aprovados. O PDF permanece no projeto e não vai para pendências comerciais.
+              </p>
+            )}
 
             <div className="max-h-64 overflow-y-auto rounded-xl border border-border/60 divide-y divide-border/40">
               {pendingItems.map((item) => {
@@ -216,7 +239,8 @@ export default function QuoteApprovalDialog({
                     }`}
                   >
                     <input
-                      type="checkbox"
+                      type={comparative ? "radio" : "checkbox"}
+                      name={comparative ? "comparative-option" : undefined}
                       className="mt-1 h-4 w-4 accent-emerald-600"
                       checked={checked}
                       onChange={() => toggle(item.id)}
@@ -239,30 +263,34 @@ export default function QuoteApprovalDialog({
 
             <div className="rounded-xl border border-border/60 bg-slate-50/80 p-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal selecionado</span>
+                <span className="text-muted-foreground">
+                  {comparative ? "Valor da opção" : "Subtotal selecionado"}
+                </span>
                 <strong>{formatCurrency(selectedSubtotal)}</strong>
               </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Desconto desta aprovação</span>
-                  <p className="text-[11px] text-muted-foreground/80">
-                    Sugerido proporcional: {formatCurrency(suggested)}{" "}
-                    <button
-                      type="button"
-                      className="text-primary font-semibold hover:underline"
-                      onClick={applySuggestedDiscount}
-                    >
-                      aplicar
-                    </button>
-                  </p>
+              {!comparative ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Desconto desta aprovação</span>
+                    <p className="text-[11px] text-muted-foreground/80">
+                      Sugerido proporcional: {formatCurrency(suggested)}{" "}
+                      <button
+                        type="button"
+                        className="text-primary font-semibold hover:underline"
+                        onClick={applySuggestedDiscount}
+                      >
+                        aplicar
+                      </button>
+                    </p>
+                  </div>
+                  <Input
+                    value={descontoText}
+                    onChange={(e) => setDescontoText(e.target.value)}
+                    className="w-32 text-right h-9"
+                    inputMode="decimal"
+                  />
                 </div>
-                <Input
-                  value={descontoText}
-                  onChange={(e) => setDescontoText(e.target.value)}
-                  className="w-32 text-right h-9"
-                  inputMode="decimal"
-                />
-              </div>
+              ) : null}
               <div className="flex justify-between text-sm border-t border-border/50 pt-3">
                 <span className="font-semibold text-foreground">Valor aprovado</span>
                 <strong className="text-emerald-700 text-base">
@@ -285,15 +313,17 @@ export default function QuoteApprovalDialog({
           </Button>
           {pendingItems.length > 0 && (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-rose-200 text-rose-700 hover:bg-rose-50"
-                onClick={handleRejectSelected}
-                disabled={saving || selected.size === 0}
-              >
-                Recusar selecionados
-              </Button>
+              {!comparative ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                  onClick={handleRejectSelected}
+                  disabled={saving || selected.size === 0}
+                >
+                  Recusar selecionados
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -304,6 +334,8 @@ export default function QuoteApprovalDialog({
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...
                   </>
+                ) : comparative ? (
+                  "Confirmar opção escolhida"
                 ) : (
                   "Confirmar aprovação"
                 )}
