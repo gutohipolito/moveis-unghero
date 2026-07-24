@@ -7,6 +7,7 @@ import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { maskPhone } from "@/lib/maskSensitive";
 import {
@@ -1651,77 +1652,55 @@ export default function KanbanBoard({
         </form>
       </Dialog>
 
-      {/* Modal - Editar Card do Kanban */}
-      <Dialog isOpen={isEditLeadOpen} onClose={() => setIsEditLeadOpen(false)} className="max-w-3xl w-full">
+      {/* Modal - Card do Kanban / Negociação */}
+      <Dialog
+        isOpen={isEditLeadOpen}
+        onClose={() => setIsEditLeadOpen(false)}
+        className="max-w-2xl w-full overflow-hidden shadow-2xl"
+        bodyClassName="p-0 overflow-y-auto max-h-[min(94vh,920px)]"
+        fullscreen={isMobile}
+      >
         {(() => {
-          const currentProject = projects.find(p => p.id === editingProjectId);
-          const hasBriefing = !!currentProject?.briefing;
+          const currentProject = projects.find((p) => p.id === editingProjectId);
+          if (!currentProject) return null;
+          const hasBriefing = !!currentProject.briefing;
+          const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(
+            currentProject.status_geral as ProjectStatus
+          );
 
           return (
-            <>
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <h3 className="text-lg font-bold tracking-tight text-gradient-gold">
-                    Painel de Negociação & CRM
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Acompanhamento e registro da negociação comercial com o cliente.
-                  </p>
-                </div>
-
-                {hasBriefing && currentProject.briefing && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400">Score de Qualificação:</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-black text-white ${
-                      currentProject.briefing.score >= 80 
-                        ? "bg-emerald-600" 
-                        : currentProject.briefing.score >= 50 
-                          ? "bg-amber-500" 
-                          : "bg-rose-500"
-                    }`}>
-                      {currentProject.briefing.score} ({
-                        currentProject.briefing.score >= 80 
-                          ? "Quente" 
-                          : currentProject.briefing.score >= 50 
-                            ? "Morno" 
-                            : "Frio"
-                      })
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Seletor de abas se houver briefing */}
-              {hasBriefing && (
-                <div className="flex flex-wrap border-b border-slate-100 my-4 gap-3 sm:gap-4 text-xs font-bold">
+            <div className="flex flex-col min-h-0">
+              {hasBriefing ? (
+                <div className="flex border-b border-slate-200/80 bg-white sticky top-0 z-20">
                   <button
                     type="button"
                     onClick={() => setActiveModalTab("negociacao")}
-                    className={`pb-2 transition-all border-b-2 cursor-pointer ${
-                      activeModalTab === "negociacao" 
-                        ? "border-primary text-primary" 
-                        : "border-transparent text-muted-foreground hover:text-slate-700"
+                    className={`flex-1 py-3 text-xs font-bold transition-colors cursor-pointer ${
+                      activeModalTab === "negociacao"
+                        ? "text-amber-900 border-b-2 border-amber-600 bg-amber-50/40"
+                        : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    Negociação Comercial
+                    Negociação
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveModalTab("briefing")}
-                    className={`pb-2 transition-all border-b-2 cursor-pointer flex items-center gap-1 ${
-                      activeModalTab === "briefing" 
-                        ? "border-primary text-primary" 
-                        : "border-transparent text-muted-foreground hover:text-slate-700"
+                    className={`flex-1 py-3 text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 ${
+                      activeModalTab === "briefing"
+                        ? "text-amber-900 border-b-2 border-amber-600 bg-amber-50/40"
+                        : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
                     <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                    Briefing de Qualificação
+                    Briefing
                   </button>
                 </div>
-              )}
+              ) : null}
 
-              {activeModalTab === "briefing" && currentProject?.briefing ? (
-                <div className="space-y-5 animate-in fade-in duration-200">
+              {activeModalTab === "briefing" && currentProject.briefing ? (
+                <div className="p-5 sm:p-6 bg-[#f8f7f5]">
+<div className="space-y-5 animate-in fade-in duration-200">
                   {/* Grid de duas colunas assimétricas para UX Copilot */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                     
@@ -2025,238 +2004,45 @@ export default function KanbanBoard({
                     </Button>
                   </div>
                 </div>
+                </div>
               ) : (
-                <form onSubmit={handleEditLeadSubmit} className="space-y-4">
-                  {/* Script Comercial de Abordagem AI no topo da Negociação */}
-                  {currentProject?.briefing?.roteiro_sugerido && (
-                    <div className="p-4 bg-gradient-to-br from-amber-500/[0.02] to-amber-600/[0.06] border border-amber-500/20 rounded-2xl space-y-3 shadow-sm">
-                      <div className="flex items-center justify-between border-b border-amber-500/10 pb-2.5 flex-wrap gap-2">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-[hsl(28_85%_30%)]">
-                          <Sparkles className="h-4 w-4 text-amber-500 shrink-0 animate-pulse" />
-                          Roteiro Comercial Sugerido
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (currentProject.briefing?.roteiro_sugerido) {
-                                navigator.clipboard.writeText(currentProject.briefing.roteiro_sugerido);
-                                setCopiedScript(true);
-                                setTimeout(() => setCopiedScript(false), 2000);
-                              }
-                            }}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all duration-200 cursor-pointer ${
-                              copiedScript 
-                                ? "bg-emerald-500 border-emerald-600 text-white shadow-sm" 
-                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                            }`}
-                          >
-                            {copiedScript ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            {copiedScript ? "Copiado!" : "Copiar"}
-                          </button>
-                          <a
-                            href={sensitive.whatsappHref(currentProject.client.telefone) || undefined}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 border border-emerald-600 text-white text-[10px] font-bold shadow-sm active:scale-95 transition-all duration-200 cursor-pointer"
-                          >
-                            <Send className="h-3 w-3" />
-                            WhatsApp
-                          </a>
-                        </div>
-                      </div>
-                      <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line font-medium bg-white/70 border border-slate-200/40 rounded-xl p-3.5 select-all">
-                        {currentProject.briefing.roteiro_sugerido}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Visualização de Dados do Cliente - Somente Leitura */}
-                  <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="col-span-2 sm:col-span-1">
-                      <span className="font-semibold text-slate-400 block mb-0.5">Cliente</span>
-                      <strong className="text-neutral-900 truncate block">{leadForm.nome}</strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-400 block mb-0.5">WhatsApp / Telefone</span>
-                      <strong className="text-neutral-900 block">{sensitive.phone(leadForm.telefone)}</strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-400 block mb-0.5">E-mail</span>
-                      <strong className="text-neutral-900 truncate block">{leadForm.email}</strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-400 block mb-0.5">Cidade de Entrega</span>
-                      <strong className="text-neutral-900 block">{leadForm.cidade}</strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-400 block mb-0.5">Origem do Lead</span>
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase mt-0.5">
-                        {labelOrigin(leadForm.origem)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Dica de Venda Dinâmica por Etapa */}
-                  {(() => {
-                    const tips: Record<string, string> = {
-                      LEAD: "💡 Qualificação Inicial: Apresente o histórico da Móveis Unghero, entenda as necessidades básicas de ambientes e agende a medição técnica.",
-                      ORCAMENTO: "💡 Elaboração de Proposta: Foco em layout funcional. Tente agendar uma reunião presencial para apresentar a proposta e justificar os materiais.",
-                      NEGOCIACAO: "💡 Negociação Ativa: Apresente flexibilidade nas parcelas de pagamento e reforce o compromisso de prazo para incentivar a assinatura.",
-                      CONFERENCIA_TECNICA: "💡 Conferência e SLA: Revise as restrições de montagem, elevador ou acessos da obra. Fotografe os locais e confirme a planta técnica.",
-                      APROVADO: "💡 Fechamento Concluído: Revise e valide todo o memorial descritivo com o cliente. O projeto está prestes a entrar na fila de corte da marcenaria.",
-                      PRODUCAO: "💡 Produção em Andamento: Compartilhe o andamento das peças sendo usinadas com o cliente. O pós-venda começa mantendo o cliente seguro!"
-                    };
-                    const tipText = tips[editingStatusGeral] || "💡 Gestão de Projetos: Acompanhe o SLA operacional para assegurar o cumprimento de prazos contratados.";
-                    return (
-                      <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800 leading-relaxed font-medium">
-                        {tipText}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Edição de Dados Comerciais */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                        Valor Previsto do Projeto (R$)
-                      </label>
-                      <Input
-                        type="number"
-                        required={!isReadOnly}
-                        value={leadForm.valor_previsto}
-                        onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-                        disabled={isReadOnly}
-                        className="text-xs h-10 font-bold text-neutral-800 disabled:opacity-60"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                        Etapa do Funil Comercial
-                      </label>
-                      <select
-                        value={editingStatusGeral}
-                        onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
-                        disabled={isReadOnly}
-                        className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {(() => {
-                          const opts = [...STATUS_OPTIONS];
-                          if (!opts.some(o => o.id === editingStatusGeral)) {
-                            const allStatuses: Record<string, string> = {
-                              INSTALACAO: "Instalação",
-                              FINALIZADO: "Finalizados",
-                              PERDIDO: "Perdido"
-                            };
-                            opts.push({ id: editingStatusGeral, title: allStatuses[editingStatusGeral] || editingStatusGeral });
-                          }
-                          return opts.map(col => (
-                            <option key={col.id} value={col.id}>{col.title}</option>
-                          ));
-                        })()}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Observações Gerais da Negociação */}
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                      Observações & Anotações da Negociação
-                    </label>
-                    <textarea
-                      value={editingObservacoes}
-                      onChange={(e) => setEditingObservacoes(e.target.value)}
-                      rows={3}
-                      disabled={isReadOnly}
-                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium resize-none leading-relaxed disabled:opacity-60"
-                    />
-                  </div>
-
-                  {/* Nova Seção: Linha do Tempo e Histórico de Contato */}
-                  <div className="border-t border-border/40 pt-4 space-y-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
-                      Linha do Tempo & Histórico da Venda
-                    </span>
-
-                    {/* Novo Registro de Timeline */}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newTimelineText}
-                        onChange={(e) => setNewTimelineText(e.target.value)}
-                        placeholder="Registrar anotação de conversa ou follow-up realizado hoje..."
-                        disabled={isReadOnly}
-                        className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium disabled:opacity-50"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTimeline(e);
-                          }
-                        }}
-                      />
-                      <Button 
-                        type="button" 
-                        onClick={handleAddTimeline} 
-                        disabled={isReadOnly || loading || !newTimelineText.trim()}
-                        className="px-4 py-2 font-bold text-xs h-9"
-                      >
-                        Salvar Nota
-                      </Button>
-                    </div>
-
-                    {/* Lista Scrollable da Timeline */}
-                    <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 max-h-48 overflow-y-auto space-y-3">
-                      {editingProjectTimeline.length === 0 ? (
-                        <p className="text-center py-4 text-[11px] text-muted-foreground">
-                          Nenhum histórico de contato registrado ainda.
-                        </p>
-                      ) : (
-                        editingProjectTimeline.map((item, idx) => (
-                          <div key={item.id || idx} className="flex gap-3 text-xs leading-relaxed items-start border-l-2 border-slate-200 pl-3 ml-1.5 py-0.5">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-neutral-800 font-medium">{item.acao}</p>
-                              <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 mt-0.5">
-                                <span>{new Date(item.data).toLocaleString("pt-BR")}</span>
-                                {item.user?.name && (
-                                  <>
-                                    <span>•</span>
-                                    <span>Por: {item.user.name}</span>
-                                  </>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-4 border-t border-border/40 mt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsEditLeadOpen(false)}
-                      disabled={loading}
-                      className="text-xs font-bold cursor-pointer w-full sm:w-auto"
-                    >
-                      {isReadOnly ? "Fechar" : "Fechar sem salvar"}
-                    </Button>
-                    {!isReadOnly && (
-                      <Button 
-                        type="submit" 
-                        disabled={loading} 
-                        className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none w-full sm:w-auto"
-                      >
-                        {loading ? "Salvando..." : "Salvar Alterações"}
-                      </Button>
-                    )}
-                  </div>
-                </form>
+                <KanbanNegotiationPanel
+                  project={currentProject}
+                  leadForm={leadForm}
+                  setLeadForm={setLeadForm}
+                  editingStatusGeral={editingStatusGeral}
+                  setEditingStatusGeral={setEditingStatusGeral}
+                  editingObservacoes={editingObservacoes}
+                  setEditingObservacoes={setEditingObservacoes}
+                  timeline={editingProjectTimeline}
+                  newTimelineText={newTimelineText}
+                  setNewTimelineText={setNewTimelineText}
+                  onAddTimeline={handleAddTimeline}
+                  onSubmit={handleEditLeadSubmit}
+                  onClose={() => setIsEditLeadOpen(false)}
+                  onMarkContacted={() => handleMarkContacted(currentProject)}
+                  onMarkLost={
+                    canMarkLoss && !isReadOnly
+                      ? () => {
+                          setLossModalProject(currentProject);
+                          setLossMotivo("");
+                          setIsEditLeadOpen(false);
+                        }
+                      : undefined
+                  }
+                  followUpSla={followUpSla}
+                  loading={loading}
+                  isReadOnly={isReadOnly}
+                  displayPhone={sensitive.phone(leadForm.telefone)}
+                  displayEmail={sensitive.email(leadForm.email)}
+                  whatsappHref={sensitive.whatsappHref(currentProject.client.telefone)}
+                />
               )}
-            </>
+            </div>
           );
         })()}
       </Dialog>
+
       <ActionDialogHost dialog={dialog} />
     </div>
   );
