@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { isReadOnlyRole } from "@/lib/permissions";
 import type { Role } from "@prisma/client";
 
 export interface AuthContext {
@@ -37,6 +38,13 @@ export async function requireAdmin(): Promise<AuthContext> {
     throw new Error("Acesso negado");
   }
   return auth;
+}
+
+/** Bloqueia mutações para contas VIEWER (somente leitura). */
+export function assertCanWrite(auth: AuthContext) {
+  if (isReadOnlyRole(auth.cargo)) {
+    throw new Error("Conta somente leitura. Esta ação não é permitida.");
+  }
 }
 
 export function assertCompanyAccess(auth: AuthContext, companyId: string) {

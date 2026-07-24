@@ -62,6 +62,10 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     redirect("/login");
   }
 
+  if (session.user.cargo === "VIEWER") {
+    redirect("/quotes");
+  }
+
   const { id } = await params;
   const companyId = session.user.company_id || "mock-company-id";
 

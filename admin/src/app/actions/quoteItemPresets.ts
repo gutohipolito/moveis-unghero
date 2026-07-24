@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-guard";
+import { requireAuth , assertCanWrite } from "@/lib/auth-guard";
 import { getModuleAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import {
@@ -23,6 +23,7 @@ export async function listQuoteItemPresets(): Promise<{
   presets: QuoteItemPresetDTO[];
 }> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   try {
     const rows = await prisma.quoteItemPreset.findMany({
       where: { company_id: auth.companyId },
@@ -40,6 +41,7 @@ export async function createQuoteItemPreset(input: {
   descricao: string;
 }): Promise<PresetResult> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const descricao = capitalizeText((input.descricao ?? "").trim());
   if (!descricao) return { success: false, error: "Informe a descrição do item." };
 
@@ -69,6 +71,7 @@ export async function createQuoteItemPresetsBulk(input: {
   descricoes: string[];
 }): Promise<{ success: boolean; presets: QuoteItemPresetDTO[]; error?: string }> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const nomes = Array.from(
     new Set(
       (input.descricoes ?? [])
@@ -112,6 +115,7 @@ export async function updateQuoteItemPreset(
   input: { descricao: string }
 ): Promise<PresetResult> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const descricao = capitalizeText((input.descricao ?? "").trim());
   if (!descricao) return { success: false, error: "Informe a descrição do item." };
 
@@ -139,6 +143,7 @@ export async function deleteQuoteItemPreset(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const existing = await prisma.quoteItemPreset.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },
@@ -168,6 +173,7 @@ export async function listQuoteDetailPresets(): Promise<{
   details: QuoteDetailPresetDTO[];
 }> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   try {
     const rows = await prisma.quoteDetailPreset.findMany({
       where: { company_id: auth.companyId },
@@ -185,6 +191,7 @@ export async function createQuoteDetailPreset(input: {
   texto: string;
 }): Promise<DetailPresetResult> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const texto = capitalizeText((input.texto ?? "").trim());
   if (!texto) return { success: false, error: "Informe o detalhe." };
 
@@ -214,6 +221,7 @@ export async function createQuoteDetailPresetsBulk(input: {
   textos: string[];
 }): Promise<{ success: boolean; details: QuoteDetailPresetDTO[]; error?: string }> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const textos = Array.from(
     new Set(
       (input.textos ?? [])
@@ -257,6 +265,7 @@ export async function updateQuoteDetailPreset(
   input: { texto: string }
 ): Promise<DetailPresetResult> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const texto = capitalizeText((input.texto ?? "").trim());
   if (!texto) return { success: false, error: "Informe o detalhe." };
 
@@ -284,6 +293,7 @@ export async function deleteQuoteDetailPreset(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await requireAuth();
+  assertCanWrite(auth);
   const existing = await prisma.quoteDetailPreset.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },

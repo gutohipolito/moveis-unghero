@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ContractStatus, Prisma } from "@prisma/client";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import {
   DEFAULT_CONTRACT_TEMPLATE,
@@ -174,7 +174,7 @@ export async function createContractTemplate(
     clausula_extra?: string | null;
   }
 ) {
-  const auth = await getModuleAccess("contratos");
+  const auth = await getWriteAccess("contratos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);
@@ -219,7 +219,7 @@ export async function updateContractTemplate(
     ativo?: boolean;
   }
 ) {
-  const auth = await getModuleAccess("contratos");
+  const auth = await getWriteAccess("contratos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   const existing = await prisma.contractTemplate.findFirst({
@@ -251,7 +251,7 @@ export async function updateContractTemplate(
 }
 
 export async function deleteContractTemplate(id: string) {
-  const auth = await getModuleAccess("contratos");
+  const auth = await getWriteAccess("contratos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   const existing = await prisma.contractTemplate.findFirst({
@@ -375,7 +375,7 @@ function normalizeClauses(data: ContractFormInput) {
 }
 
 export async function createContract(companyId: string, data: ContractFormInput) {
-  const auth = await getModuleAccess("contratos");
+  const auth = await getWriteAccess("contratos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);
@@ -431,7 +431,7 @@ export async function createContract(companyId: string, data: ContractFormInput)
 }
 
 export async function updateContract(id: string, data: ContractFormInput) {
-  const auth = await getModuleAccess("contratos");
+  const auth = await getWriteAccess("contratos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   const existing = await prisma.contract.findFirst({
@@ -487,7 +487,7 @@ export async function updateContract(id: string, data: ContractFormInput) {
 }
 
 export async function deleteContract(id: string) {
-  const auth = await getModuleAccess("contratos");
+  const auth = await getWriteAccess("contratos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   const existing = await prisma.contract.findFirst({

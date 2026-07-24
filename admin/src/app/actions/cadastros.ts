@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { CATALOG_GROUP_META } from "@/lib/catalogGroups";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 
 export interface CatalogItemDTO {
@@ -192,7 +192,7 @@ export async function createCatalogItem(
   groupSlug: string,
   data: { label: string; slug?: string; parentId?: string | null }
 ) {
-  const auth = await getModuleAccess("cadastros");
+  const auth = await getWriteAccess("cadastros");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -247,7 +247,7 @@ export async function updateCatalogItem(
   itemId: string,
   data: { label?: string; ativo?: boolean; ordem?: number }
 ) {
-  const auth = await getModuleAccess("cadastros");
+  const auth = await getWriteAccess("cadastros");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -282,7 +282,7 @@ export async function updateCatalogItem(
 }
 
 export async function deleteCatalogItem(itemId: string) {
-  const auth = await getModuleAccess("cadastros");
+  const auth = await getWriteAccess("cadastros");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

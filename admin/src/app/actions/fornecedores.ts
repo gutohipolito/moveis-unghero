@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import {requireModuleAccess, requireWriteAccess } from "@/lib/moduleAccess";
 
 const GENERAL_ALLOWLIST = new Set([
   "nome",
@@ -109,7 +109,7 @@ export async function updateSupplierCrmAction(
   }
 ) {
   try {
-    const auth = await requireModuleAccess("estoque");
+    const auth = await requireWriteAccess("estoque");
     const existing = await prisma.supplier.findFirst({
       where: { id, company_id: auth.companyId },
     });
@@ -198,7 +198,7 @@ export async function addSupplierCrmHistoryLogAction(
   text: string
 ) {
   try {
-    const auth = await requireModuleAccess("estoque");
+    const auth = await requireWriteAccess("estoque");
     const existing = await prisma.supplier.findFirst({
       where: { id, company_id: auth.companyId },
     });
@@ -244,7 +244,7 @@ export async function updateSupplierGeneralAction(
   data: Record<string, unknown>
 ) {
   try {
-    const auth = await requireModuleAccess("estoque");
+    const auth = await requireWriteAccess("estoque");
     const existing = await prisma.supplier.findFirst({
       where: { id, company_id: auth.companyId },
     });

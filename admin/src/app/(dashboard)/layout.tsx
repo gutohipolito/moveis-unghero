@@ -36,11 +36,13 @@ export default async function DashboardLayout({
   }));
 
   return (
-    <PrivacyProvider>
+    <PrivacyProvider privacyLocked={role === "VIEWER"}>
       <script
         dangerouslySetInnerHTML={{
           __html:
-            "(function(){try{if(localStorage.getItem('unghero_privacy_v2')!=='false'){document.body.classList.add('privacy-active');}}catch(e){}})();",
+            role === "VIEWER"
+              ? "(function(){try{document.body.classList.add('privacy-active');}catch(e){}})();"
+              : "(function(){try{if(localStorage.getItem('unghero_privacy_v2')!=='false'){document.body.classList.add('privacy-active');}}catch(e){}})();",
         }}
       />
       <NotificationProvider

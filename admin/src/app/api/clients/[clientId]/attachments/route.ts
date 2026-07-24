@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext, requireClientInCompany } from "@/lib/auth-guard";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import { requireWriteAccess } from "@/lib/moduleAccess";
 import { putSensitiveBlob } from "@/lib/secureBlob";
 import {
   CLIENT_ATTACHMENT_MAX_BYTES,
@@ -66,7 +66,7 @@ export async function POST(
 ) {
   let auth;
   try {
-    auth = await requireModuleAccess("clientes");
+    auth = await requireWriteAccess("clientes");
   } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }

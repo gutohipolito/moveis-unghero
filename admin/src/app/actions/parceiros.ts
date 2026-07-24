@@ -4,7 +4,7 @@ import { PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 
 export interface ParceiroDTO {
@@ -129,7 +129,7 @@ export async function createParceiro(
     portfolioUrl?: string;
   }
 ) {
-  const auth = await getModuleAccess("parceiros");
+  const auth = await getWriteAccess("parceiros");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -191,7 +191,7 @@ export async function updateParceiro(
     portfolioUrl?: string;
   }
 ) {
-  const auth = await getModuleAccess("parceiros");
+  const auth = await getWriteAccess("parceiros");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -252,7 +252,7 @@ export async function updateParceiro(
 }
 
 export async function deleteParceiro(id: string) {
-  const auth = await getModuleAccess("parceiros");
+  const auth = await getWriteAccess("parceiros");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

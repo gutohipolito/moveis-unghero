@@ -4,7 +4,8 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
 import { updateProjectDetails } from "@/app/actions/project";
 import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
-import { useLiveEntity } from "@/context/LiveSyncContext";
+import { useLiveEntity } from "@/context/LiveSyncContext"
+import { usePermissions } from "@/context/PermissionsContext";
 import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
@@ -356,6 +357,7 @@ export default function KanbanBoard({
   colaboradores = [],
   initialFollowUpSla = null,
 }: KanbanBoardProps) {
+  const { isReadOnly } = usePermissions();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -459,6 +461,7 @@ export default function KanbanBoard({
   };
 
   const toggleSensitiveVisibility = () => {
+    if (isReadOnly) return;
     if (valuesHidden) {
       setValuesHidden(false);
       clearRevealTimeout();

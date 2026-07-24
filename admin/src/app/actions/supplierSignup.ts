@@ -6,7 +6,7 @@ import { capitalizeText } from "@/lib/utils";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { headers } from "next/headers";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import {requireModuleAccess, requireWriteAccess } from "@/lib/moduleAccess";
 
 export interface SupplierSignupData {
   company_id?: string;
@@ -80,7 +80,7 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
     let companyId: string;
 
     if (data.viaPainel) {
-      const auth = await requireModuleAccess("estoque");
+      const auth = await requireWriteAccess("estoque");
       companyId = auth.companyId;
     } else {
       const ip = getRequestIp(await headers());

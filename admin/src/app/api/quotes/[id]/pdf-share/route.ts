@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext } from "@/lib/auth-guard";
+import { getAuthContext, assertCanWrite } from "@/lib/auth-guard";
 import {
   buildQuotePdfShortUrl,
   generateUniqueQuotePdfShareCode,
@@ -16,6 +16,14 @@ export async function POST(
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+  try {
+    assertCanWrite(auth);
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Conta somente leitura. Esta ação não é permitida." },
+      { status: 403 }
+    );
   }
 
   const { id: quoteId } = await context.params;

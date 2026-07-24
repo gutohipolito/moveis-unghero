@@ -2,7 +2,7 @@
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
-import { getAuthContext } from "@/lib/auth-guard";
+import { getAuthContext , assertCanWrite } from "@/lib/auth-guard";
 
 function mapNote(row: {
   id: string;
@@ -128,6 +128,7 @@ export async function createOperatorNote(content: string): Promise<{
 
   try {
     const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
     if (!auth) {
       return { success: false, error: "Não autenticado" };
     }
@@ -152,6 +153,7 @@ export async function deleteOperatorNote(id: string): Promise<{ success: boolean
 
   try {
     const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
     if (!auth) {
       return { success: false };
     }
@@ -172,6 +174,7 @@ export async function toggleOperatorNotePin(id: string): Promise<{ success: bool
 
   try {
     const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
     if (!auth) {
       return { success: false };
     }
@@ -231,6 +234,7 @@ export async function createOperatorReminder(
 
   try {
     const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
     if (!auth) {
       return { success: false, error: "Não autenticado" };
     }
@@ -256,6 +260,7 @@ export async function toggleOperatorReminderDone(id: string): Promise<{ success:
 
   try {
     const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
     if (!auth) {
       return { success: false };
     }
@@ -282,6 +287,7 @@ export async function deleteOperatorReminder(id: string): Promise<{ success: boo
 
   try {
     const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
     if (!auth) {
       return { success: false };
     }

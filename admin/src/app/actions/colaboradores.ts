@@ -12,7 +12,7 @@ import {
   requireUserInCompany,
   type AuthContext,
 } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import {
   buildInternalTeamEmail,
@@ -96,7 +96,7 @@ export async function createColaborador(data: {
   image?: string;
   temAcesso?: boolean;
 }) {
-  const authCtx = await getModuleAccess("colaboradores");
+  const authCtx = await getWriteAccess("colaboradores");
   const denied = denyUnlessPrimaryAdmin(authCtx);
   if (denied) return denied;
 
@@ -197,7 +197,7 @@ export async function updateColaborador(
     image?: string | null;
   }
 ) {
-  const authCtx = await getModuleAccess("colaboradores");
+  const authCtx = await getWriteAccess("colaboradores");
   const denied = denyUnlessPrimaryAdmin(authCtx);
   if (denied) return denied;
   
@@ -257,7 +257,7 @@ export async function updateColaborador(
 
 // Exclui um colaborador e remove sessões e contas associadas
 export async function deleteColaborador(userId: string) {
-  const authCtx = await getModuleAccess("colaboradores");
+  const authCtx = await getWriteAccess("colaboradores");
   const denied = denyUnlessPrimaryAdmin(authCtx);
   if (denied) return denied;
   try {
@@ -309,7 +309,7 @@ export async function deleteColaborador(userId: string) {
 
 // Associa um responsável da fábrica a um cômodo/ambiente
 export async function updateEnvironmentResponsavel(environmentId: string, responsavelId: string | null) {
-  const authCtx = await getModuleAccess("factory");
+  const authCtx = await getWriteAccess("factory");
   if (!authCtx) {
     return { success: false, error: "Não autenticado" };
   }
@@ -343,7 +343,7 @@ export async function updateEnvironmentResponsavel(environmentId: string, respon
 
 // Associa um ajudante opcional da fábrica a um cômodo/ambiente
 export async function updateEnvironmentAjudante(environmentId: string, ajudanteId: string | null) {
-  const authCtx = await getModuleAccess("factory");
+  const authCtx = await getWriteAccess("factory");
   if (!authCtx) {
     return { success: false, error: "Não autenticado" };
   }
@@ -388,7 +388,7 @@ const FACTORY_TEAM_SEED: Array<{ name: string; funcoes: TeamFuncaoId[] }> = [
 
 /** Cadastra a equipe operacional (sem login) se ainda não existir. */
 export async function ensureFactoryTeamSeeded(companyId?: string) {
-  const authCtx = await getModuleAccess("colaboradores");
+  const authCtx = await getWriteAccess("colaboradores");
   const denied = denyUnlessPrimaryAdmin(authCtx);
   if (denied) return denied;
 

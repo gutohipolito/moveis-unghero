@@ -44,7 +44,13 @@ export const ALL_MODULE_KEYS = [
 ];
 
 /** Cargos que podem ter permissões editadas na matriz (ADMIN é sempre total). */
-export const EDITABLE_ROLES: Role[] = ["COMERCIAL", "PROJETISTA", "PRODUCAO", "FINANCEIRO"];
+export const EDITABLE_ROLES: Role[] = [
+  "COMERCIAL",
+  "PROJETISTA",
+  "PRODUCAO",
+  "FINANCEIRO",
+  "VIEWER",
+];
 
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Diretoria",
@@ -52,7 +58,21 @@ export const ROLE_LABELS: Record<Role, string> = {
   PROJETISTA: "Projetista",
   PRODUCAO: "Fábrica",
   FINANCEIRO: "Financeiro",
+  VIEWER: "Somente leitura",
 };
+
+/** Cargo que só visualiza — sem mutações, sem olho aberto, sem PDF de orçamento. */
+export function isReadOnlyRole(role: Role | string | null | undefined): boolean {
+  return role === "VIEWER";
+}
+
+/**
+ * Módulos padrão do VIEWER quando a matriz ainda não foi configurada.
+ * Sem settings/colaboradores/permissoes (já bloqueados por ADMIN_ONLY).
+ */
+export const VIEWER_DEFAULT_MODULES = CONFIGURABLE_MODULE_KEYS.filter(
+  (k) => k !== "cadastros"
+);
 
 /** Mapa persistido: cargo -> lista de chaves de módulos configuráveis permitidos. */
 export type CompanyPermissions = Partial<Record<Role, string[]>>;
@@ -76,7 +96,10 @@ export function resolveAllowedModules(
 
   const always = Array.from(ALWAYS_ALLOWED_MODULES);
   const configured = permissions?.[role];
-  if (!configured) return [...CONFIGURABLE_MODULE_KEYS, ...always];
+  if (!configured) {
+    if (role === "VIEWER") return [...VIEWER_DEFAULT_MODULES, ...always];
+    return [...CONFIGURABLE_MODULE_KEYS, ...always];
+  }
 
   // Mantém apenas chaves válidas e configuráveis, sempre incluindo as liberadas a todos.
   return [...configured.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k)), ...always];

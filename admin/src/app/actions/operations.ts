@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { logProjectTimeline } from "@/app/actions/timeline";
 import { checkProjectPaymentComplete } from "@/app/actions/productionSla";
 import { getAuthContext, requireProjectInCompany } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import type { PaymentMethod } from "@/lib/paymentMethods";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 
@@ -48,7 +48,7 @@ async function revalidateInstallmentPaths(projectId: string) {
 }
 
 export async function createInstallment(projectId: string, data: CreateInstallmentInput) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -111,7 +111,7 @@ export async function createInstallmentPlan(
   projectId: string,
   data: CreateInstallmentPlanInput
 ) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -179,7 +179,7 @@ export async function createInstallmentPlan(
 }
 
 export async function payInstallment(projectId: string, installmentId: string) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -235,7 +235,7 @@ export async function createTask(
     tipo: "VISITA_COMERCIAL" | "MEDICAO_TECNICA" | "ENTREGA_MOVEIS" | "INSTALACAO" | "OUTROS";
   }
 ) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -293,7 +293,7 @@ export async function toggleTaskStatus(
   taskId: string,
   completed: boolean
 ) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

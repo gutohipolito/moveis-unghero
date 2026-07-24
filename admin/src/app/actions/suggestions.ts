@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import {requireModuleAccess, requireWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import type { SuggestionDTO, SuggestionStatus } from "@/lib/suggestions";
 
@@ -63,7 +63,7 @@ export async function createSuggestion(input: {
   titulo: string;
   descricao?: string | null;
 }): Promise<SuggestionResult> {
-  const auth = await requireModuleAccess("melhorias");
+  const auth = await requireWriteAccess("melhorias");
 
   const titulo = capitalizeText((input.titulo ?? "").trim());
   const descricao = (input.descricao ?? "").trim();
@@ -92,7 +92,7 @@ export async function setSuggestionDone(
   id: string,
   done: boolean
 ): Promise<SuggestionResult> {
-  const auth = await requireModuleAccess("melhorias");
+  const auth = await requireWriteAccess("melhorias");
 
   const existing = await prisma.suggestion.findFirst({
     where: { id, company_id: auth.companyId },
@@ -122,7 +122,7 @@ export async function setSuggestionDone(
 export async function deleteSuggestion(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireModuleAccess("melhorias");
+  const auth = await requireWriteAccess("melhorias");
 
   const existing = await prisma.suggestion.findFirst({
     where: { id, company_id: auth.companyId },

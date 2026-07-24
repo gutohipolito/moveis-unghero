@@ -9,7 +9,18 @@ import { Eye, EyeOff } from "lucide-react";
  * (telefone, e-mail, CPF/CNPJ). Os dados vêm OCULTOS por padrão.
  */
 export default function SensitiveToggle() {
-  const { sensitiveHidden, toggleSensitive } = usePrivacy();
+  const { sensitiveHidden, toggleSensitive, privacyLocked } = usePrivacy();
+
+  if (privacyLocked) {
+    return (
+      <span
+        className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-100 text-slate-400 border border-border shadow-xs cursor-not-allowed"
+        title="Conta somente leitura: dados sensíveis sempre ocultos"
+      >
+        <EyeOff className="h-4.5 w-4.5" />
+      </span>
+    );
+  }
 
   return (
     <button

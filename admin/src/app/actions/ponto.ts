@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getAuthContext } from "@/lib/auth-guard";
+import { getAuthContext , assertCanWrite } from "@/lib/auth-guard";
 
 // Busca os pontos batidos pelo colaborador no mês atual
 export async function getMyTimeCards(_userId: string) {
@@ -53,6 +53,7 @@ export async function registerPonto(
   tipo: "entrada" | "almoco_in" | "almoco_out" | "saida"
 ) {
   const auth = await getAuthContext();
+  if (auth) assertCanWrite(auth);
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

@@ -18,7 +18,7 @@ import {
   getAuthContext,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 
 function mapSlaRow(
   row: {
@@ -206,7 +206,7 @@ export async function updateProjectSlaStage(
   projectId: string,
   stageKey: ProductionSlaStageKey
 ): Promise<{ success: boolean; sla?: ProjectSlaView; error?: string }> {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -254,7 +254,7 @@ export async function updateProjectSlaStage(
 }
 
 export async function markNotaFiscalEmitida(projectId: string) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -292,7 +292,7 @@ export async function markNotaFiscalEmitida(projectId: string) {
 }
 
 export async function checkProjectPaymentComplete(projectId: string) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) return { fullyPaid: false };
   try {
     await requireProjectInCompany(projectId, auth.companyId);

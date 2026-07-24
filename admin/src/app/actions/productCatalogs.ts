@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 
 export interface ProductCatalogDTO {
   id: string;
@@ -92,7 +92,7 @@ export async function updateProductCatalog(
     capa_url?: string | null;
   }
 ): Promise<{ success: boolean; catalog?: ProductCatalogDTO; error?: string }> {
-  const auth = await getModuleAccess("produtos");
+  const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);
@@ -135,7 +135,7 @@ export async function deleteProductCatalog(
   companyId: string,
   id: string
 ): Promise<{ success: boolean; error?: string; arquivo_url?: string; capa_url?: string | null }> {
-  const auth = await getModuleAccess("produtos");
+  const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);

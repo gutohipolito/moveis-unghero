@@ -38,6 +38,7 @@ import {
   Hammer,
   BadgePercent,
   Wallet,
+  Eye,
   Mail,
   Calendar,
   Lock,
@@ -82,6 +83,7 @@ const CARGO_META: Record<
   PROJETISTA: { label: "Projetista", shortLabel: "Projetos", icon: UserCheck },
   PRODUCAO: { label: "Fábrica", shortLabel: "Produção", icon: Hammer },
   FINANCEIRO: { label: "Financeiro", shortLabel: "Finanças", icon: Wallet },
+  VIEWER: { label: "Somente leitura", shortLabel: "Leitura", icon: Eye },
 };
 
 const FALLBACK_BANNER = "bg-slate-500";

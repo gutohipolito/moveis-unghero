@@ -5,6 +5,7 @@ import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import SuggestionFab from "@/components/melhorias/SuggestionFab";
+import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 
@@ -133,6 +134,7 @@ export default function DashboardLayoutWrapper({
         {header}
 
         <main className="flex-1 px-[var(--space-4)] py-[var(--space-4)] sm:px-[var(--space-5)] md:px-[var(--space-6)] md:py-[var(--space-6)] overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-[var(--space-6)]">
+          <ReadOnlyBanner />
           <div className="w-full space-y-[var(--space-5)]">{children}</div>
         </main>
       </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { putSensitiveBlob } from "@/lib/secureBlob";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import { requireWriteAccess } from "@/lib/moduleAccess";
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = new Set([
@@ -16,7 +16,7 @@ const ALLOWED_MIME_TYPES = new Set([
 export async function POST(request: NextRequest) {
   let auth;
   try {
-    auth = await requireModuleAccess("estoque");
+    auth = await requireWriteAccess("estoque");
   } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }

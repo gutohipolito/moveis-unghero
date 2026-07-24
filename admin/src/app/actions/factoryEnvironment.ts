@@ -3,7 +3,7 @@
 import { del } from "@vercel/blob";
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import { getAuthContext, requireEnvironmentInCompany } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { prisma } from "@/lib/prisma";
 import {
   countTechSheetFields,
@@ -90,7 +90,7 @@ export async function saveEnvironmentTechSheet(
     observacoes_fabrica?: string;
   }
 ) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   try {
@@ -177,7 +177,7 @@ export async function listEnvironmentAttachments(environmentId: string) {
 }
 
 export async function deleteEnvironmentAttachment(environmentId: string, attachmentId: string) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   try {
@@ -230,7 +230,7 @@ export async function setEnvironmentCoverAttachment(
   environmentId: string,
   attachmentId: string | null
 ) {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   try {

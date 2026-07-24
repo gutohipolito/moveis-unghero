@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 
 export interface Supplier {
@@ -167,7 +167,7 @@ export async function getInventoryAndSuppliers(companyId: string) {
 export async function createSupplierAction(
   data: Omit<Supplier, "id"> & { company_id: string; logoUrl?: string | null }
 ) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -214,7 +214,7 @@ export async function updateSupplierAction(
   companyId: string,
   data: Partial<Supplier> & { logoUrl?: string | null }
 ) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -271,7 +271,7 @@ export async function updateSupplierAction(
 }
 
 export async function deleteSupplierAction(id: string, companyId: string) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -308,7 +308,7 @@ export async function deleteSupplierAction(id: string, companyId: string) {
 export async function createInventoryItemAction(
   data: Omit<InventoryItem, "id" | "supplierName"> & { company_id: string }
 ) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -361,7 +361,7 @@ export async function updateInventoryItemAction(
   companyId: string,
   data: Partial<InventoryItem>
 ) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -421,7 +421,7 @@ export async function updateInventoryItemAction(
 }
 
 export async function deleteInventoryItemAction(id: string, companyId: string) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -459,7 +459,7 @@ export async function deductInventoryAction(
   companyId: string,
   itemsToDeduct: Array<{ itemId: string; quantity: number }>
 ) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -545,7 +545,7 @@ export async function importInventoryBulkAction(
   rows: InventoryImportRow[],
   options?: { defaultCategoria?: string; skipEmpty?: boolean }
 ) {
-  const auth = await getModuleAccess("estoque");
+  const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

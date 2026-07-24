@@ -1,7 +1,12 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext, requireAuth, type AuthContext } from "@/lib/auth-guard";
+import {
+  assertCanWrite,
+  getAuthContext,
+  requireAuth,
+  type AuthContext,
+} from "@/lib/auth-guard";
 import {
   canAccessModule,
   resolveAllowedModules,
@@ -54,6 +59,22 @@ export async function requireModuleAccess(moduleKey: string): Promise<AuthContex
 export async function getModuleAccess(moduleKey: string): Promise<AuthContext | null> {
   try {
     return await requireModuleAccess(moduleKey);
+  } catch {
+    return null;
+  }
+}
+
+/** Exige módulo + permissão de escrita (rejeita VIEWER). */
+export async function requireWriteAccess(moduleKey: string): Promise<AuthContext> {
+  const auth = await requireModuleAccess(moduleKey);
+  assertCanWrite(auth);
+  return auth;
+}
+
+/** Soft write: null se sem auth, sem módulo ou somente leitura. */
+export async function getWriteAccess(moduleKey: string): Promise<AuthContext | null> {
+  try {
+    return await requireWriteAccess(moduleKey);
   } catch {
     return null;
   }

@@ -83,6 +83,7 @@ enum Role {
   PROJETISTA
   PRODUCAO
   FINANCEIRO
+  VIEWER
 }
 
 model Session {

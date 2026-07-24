@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 
 export type ShowcaseProductDTO = {
@@ -111,7 +111,7 @@ export async function createShowcaseProduct(
     ativo?: boolean;
   }
 ) {
-  const auth = await getModuleAccess("produtos");
+  const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);
@@ -174,7 +174,7 @@ export async function updateShowcaseProduct(
     ativo?: boolean;
   }
 ) {
-  const auth = await getModuleAccess("produtos");
+  const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);
@@ -227,7 +227,7 @@ export async function updateShowcaseProduct(
 }
 
 export async function deleteShowcaseProduct(companyId: string, productId: string) {
-  const auth = await getModuleAccess("produtos");
+  const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
   try {
     assertCompanyAccess(auth, companyId);

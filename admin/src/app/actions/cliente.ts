@@ -22,7 +22,7 @@ import { labelPaymentMethod } from "@/lib/paymentMethods";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
-import { getModuleAccess } from "@/lib/moduleAccess";
+import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 
 type Origin = 
   | "SITE"
@@ -318,7 +318,7 @@ export async function createClientAction(formData: {
   obs_imovel?: string;
   obs_entrega?: string;
 }) {
-  const auth = await getModuleAccess("clientes");
+  const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -415,7 +415,7 @@ export async function updateClientAction(
     obs_entrega?: string;
   }
 ) {
-  const auth = await getModuleAccess("clientes");
+  const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -471,7 +471,7 @@ export async function updateClientAction(
 
 // 4. Excluir Cliente
 export async function deleteClientAction(clientId: string) {
-  const auth = await getModuleAccess("clientes");
+  const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -555,7 +555,7 @@ export async function importClientsAction(
   }>,
   companyId: string
 ) {
-  const auth = await getModuleAccess("clientes");
+  const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -929,7 +929,7 @@ export async function addActivityAction(
   titulo: string,
   descricao: string
 ) {
-  const auth = await getModuleAccess("clientes");
+  const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -994,7 +994,7 @@ export async function updateClientObservacoesAction(
   clientId: string,
   observacoes: string
 ) {
-  const auth = await getModuleAccess("clientes");
+  const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

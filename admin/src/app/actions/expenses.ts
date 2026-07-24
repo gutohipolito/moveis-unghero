@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import {requireModuleAccess, requireWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import type {
   ExpenseDTO,
@@ -92,7 +92,7 @@ function addMonths(base: Date, n: number): Date {
 export async function createExpense(
   input: CreateExpenseInput
 ): Promise<{ success: boolean; created?: number; error?: string }> {
-  const auth = await requireModuleAccess("financeiro");
+  const auth = await requireWriteAccess("financeiro");
 
   const descricao = capitalizeText((input.descricao ?? "").trim());
   if (!descricao) return { success: false, error: "Informe a descrição da despesa." };
@@ -169,7 +169,7 @@ export async function payExpense(
   id: string,
   metodo_pagamento?: string | null
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireModuleAccess("financeiro");
+  const auth = await requireWriteAccess("financeiro");
   const existing = await prisma.expense.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },
@@ -199,7 +199,7 @@ export async function payExpense(
 export async function reopenExpense(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireModuleAccess("financeiro");
+  const auth = await requireWriteAccess("financeiro");
   const existing = await prisma.expense.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },
@@ -223,7 +223,7 @@ export async function reopenExpense(
 export async function deleteExpense(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireModuleAccess("financeiro");
+  const auth = await requireWriteAccess("financeiro");
   const existing = await prisma.expense.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },

@@ -105,7 +105,7 @@ export default function QuotesList({
   companyId,
   initialPageSize = 20,
 }: QuotesListProps) {
-  const { isAdmin } = usePermissions();
+  const { isAdmin, isReadOnly } = usePermissions();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -175,7 +175,10 @@ export default function QuotesList({
     setValuesHidden(true);
   };
 
+  const valuesAreHidden = isReadOnly || valuesHidden;
+
   const toggleQuoteValuesVisibility = () => {
+    if (isReadOnly) return;
     if (valuesHidden) {
       setValuesHidden(false);
       clearRevealTimeout();
@@ -464,38 +467,51 @@ export default function QuotesList({
         }
         actions={
           <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setIsPresetsOpen(true)}
-              variant="outline"
-              className="gap-1.5"
-              title="Gerenciar itens salvos para reutilizar nos orçamentos"
-            >
-              <Bookmark className="h-4 w-4" />
-              <span className="hidden sm:inline">Itens salvos</span>
-            </Button>
-            <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
-              <Plus className="h-4 w-4" />
-              Novo orçamento
-            </Button>
+            {!isReadOnly && (
+              <>
+                <Button
+                  onClick={() => setIsPresetsOpen(true)}
+                  variant="outline"
+                  className="gap-1.5"
+                  title="Gerenciar itens salvos para reutilizar nos orçamentos"
+                >
+                  <Bookmark className="h-4 w-4" />
+                  <span className="hidden sm:inline">Itens salvos</span>
+                </Button>
+                <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Novo orçamento
+                </Button>
+              </>
+            )}
           </div>
         }
       >
-        <button
-          type="button"
-          onClick={toggleQuoteValuesVisibility}
-          className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
-          title={
-            valuesHidden
-              ? "Mostrar valores finais (oculta de novo em 30s)"
-              : "Ocultar valores finais"
-          }
-        >
-          {valuesHidden ? (
-            <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
-          ) : (
-            <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
-          )}
-        </button>
+        {isReadOnly ? (
+          <span
+            className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-100 text-slate-400 border border-border shadow-xs cursor-not-allowed"
+            title="Conta somente leitura: valores sempre ocultos"
+          >
+            <EyeOff className="h-4.5 w-4.5" />
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={toggleQuoteValuesVisibility}
+            className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
+            title={
+              valuesHidden
+                ? "Mostrar valores finais (oculta de novo em 30s)"
+                : "Ocultar valores finais"
+            }
+          >
+            {valuesAreHidden ? (
+              <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
+            ) : (
+              <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
+            )}
+          </button>
+        )}
       </PageHeader>
 
       {/* Filtros e Busca */}
@@ -746,7 +762,7 @@ export default function QuotesList({
                       <td className="py-4 px-4 text-sm text-slate-800 font-bold">
                         <span
                           className={`inline-block tabular-nums transition-[filter] duration-300 ${
-                            valuesHidden
+                            valuesAreHidden
                               ? "blur-[5px] select-none pointer-events-none"
                               : "blur-0"
                           }`}
@@ -757,7 +773,7 @@ export default function QuotesList({
                       <td className="py-4 px-4 text-sm text-right">
                         {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}
                         <div className="flex items-center gap-2 w-[22rem] max-w-full ml-auto">
-                          {hasPending && (
+                          {!isReadOnly && hasPending && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -770,7 +786,7 @@ export default function QuotesList({
                               {isPartial ? "Aprovar itens" : "Aprovar"}
                             </Button>
                           )}
-                          {hasPending && (isPartial || expired) && (
+                          {!isReadOnly && hasPending && (isPartial || expired) && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -782,6 +798,18 @@ export default function QuotesList({
                             </Button>
                           )}
 
+                          {isReadOnly ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled
+                              className="border-slate-200 text-slate-400 h-8 shrink-0 flex items-center gap-1.5 cursor-not-allowed"
+                              title="Conta somente leitura: visualização de PDF bloqueada"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                              PDF
+                            </Button>
+                          ) : (
                           <Link
                             href={`/quotes/${q.id}/print`}
                             target="_blank"
@@ -800,6 +828,7 @@ export default function QuotesList({
                               PDF
                             </Button>
                           </Link>
+                          )}
 
                           <Link
                             href={`/projects/${q.project_id}`}
@@ -818,7 +847,7 @@ export default function QuotesList({
                             </Button>
                           </Link>
 
-                          {(!summary.hasApproved || isAdmin) && (
+                          {!isReadOnly && (!summary.hasApproved || isAdmin) && (
                             <Button
                               variant="ghost"
                               size="sm"
