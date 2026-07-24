@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireModuleAccess } from "@/lib/moduleAccess";
 import type { ExpenseCategory, ExpenseNature } from "@/lib/expenses";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export interface DreMonth {
   month: string; // YYYY-MM
@@ -121,7 +122,10 @@ export async function getDreData(
       );
     }
 
-    return { success: true, data: { months, categoriesByMonth } };
+    return {
+      success: true,
+      data: maybeRedactForViewer({ months, categoriesByMonth }, auth.cargo),
+    };
   } catch (error) {
     console.error("Erro ao calcular DRE:", error);
     return { success: false, data: empty };

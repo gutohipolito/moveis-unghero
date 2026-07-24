@@ -2,7 +2,9 @@ import { getColaboradores } from "@/app/actions/colaboradores";
 import { ensureProjectSla, getProjectSla } from "@/app/actions/productionSla";
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
+import { getAuthContext } from "@/lib/auth-guard";
 import { formatProjectDetails, projectInclude } from "@/lib/formatProjectDetails";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { notFound } from "next/navigation";
 import ProjectDetails from "@/components/ProjectDetails";
 
@@ -42,8 +44,10 @@ export default async function ProjectPage({ params }: RouteParams) {
       : [];
 
   const formattedProject = formatProjectDetails(project);
+  const auth = await getAuthContext();
+  const safeProject = maybeRedactForViewer(formattedProject, auth?.cargo);
 
-  const hasProductionApproval = formattedProject.files.some((f) => f.aprovado_producao);
+  const hasProductionApproval = safeProject.files.some((f) => f.aprovado_producao);
   let initialSla = null;
   if (hasProductionApproval) {
     await ensureProjectSla(id);
@@ -53,7 +57,7 @@ export default async function ProjectPage({ params }: RouteParams) {
   return (
     <div className="space-y-6">
       <ProjectDetails
-        initialProject={formattedProject as any}
+        initialProject={safeProject as any}
         companyId={userCompanyId}
         colaboradores={colaboradores}
         isMock={false}

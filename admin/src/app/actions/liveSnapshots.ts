@@ -17,6 +17,7 @@ import { fetchCrmProjects } from "@/lib/crmProjects";
 import { fetchAgendaEvents, fetchFactoryBoard } from "@/lib/factoryBoard";
 import { buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
 import { prisma } from "@/lib/prisma";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 async function assertCompanyAccess(companyId: string) {
   const auth = await getAuthContext();
@@ -143,7 +144,11 @@ export async function getFinanceiroLiveSnapshot(companyId: string) {
       formatted.map((item) => ({ id: item.id, status: item.status, valor: item.valor }))
     );
 
-    return { success: true as const, installments: formatted, version };
+    return {
+      success: true as const,
+      installments: maybeRedactForViewer(formatted, auth.cargo),
+      version,
+    };
   } catch (error) {
     console.warn("Falha ao sincronizar financeiro:", error);
     return { success: false as const, error: "Não foi possível sincronizar financeiro." };
@@ -194,7 +199,12 @@ export async function getLogisticaLiveSnapshot(companyId: string) {
       ...veiculos.map((veiculo) => ({ kind: "veiculo", id: veiculo.id, label: veiculo.label })),
     ]);
 
-    return { success: true as const, projects: formattedProjects, veiculos, version };
+    return {
+      success: true as const,
+      projects: maybeRedactForViewer(formattedProjects, auth.cargo),
+      veiculos,
+      version,
+    };
   } catch (error) {
     console.warn("Falha ao sincronizar logística:", error);
     return { success: false as const, error: "Não foi possível sincronizar logística." };
@@ -405,8 +415,8 @@ export async function getBiLiveSnapshot(companyId: string) {
 
     return {
       success: true as const,
-      projects: formattedProjects,
-      quotes: formattedQuotes,
+      projects: maybeRedactForViewer(formattedProjects, auth.cargo),
+      quotes: maybeRedactForViewer(formattedQuotes, auth.cargo),
       environments: fbRes.environments,
       version,
     };

@@ -23,6 +23,7 @@ import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatc
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 type Origin = 
   | "SITE"
@@ -288,7 +289,13 @@ export async function getClients(companyId: string) {
       orderBy: { nome: "asc" },
     });
 
-    return { success: true, clients: clients.map((c) => formatClientRecord(c)) };
+    return {
+      success: true,
+      clients: maybeRedactForViewer(
+        clients.map((c) => formatClientRecord(c)),
+        auth.cargo
+      ),
+    };
   } catch (error) {
     console.warn("Falha de conexão na listagem de clientes.", error);
     setDatabaseOffline(true);
@@ -782,7 +789,10 @@ export async function getClientPaymentsAction(clientId: string): Promise<{
 
   try {
     const { payments } = await loadClientActivitiesAndPayments(clientId);
-    return { success: true, payments };
+    return {
+      success: true,
+      payments: maybeRedactForViewer(payments, auth.cargo),
+    };
   } catch (error) {
     console.error("Erro ao carregar parcelas do cliente:", error);
     return { success: false, payments: [], error: "Não foi possível carregar as parcelas." };
@@ -913,9 +923,9 @@ export async function getClientDetailsAction(clientId: string) {
 
     return {
       success: true,
-      client: formattedClient,
+      client: maybeRedactForViewer(formattedClient, auth.cargo),
       activities: activitiesWithRegistration,
-      payments,
+      payments: maybeRedactForViewer(payments, auth.cargo),
       attachments,
     };
   } catch (e) {

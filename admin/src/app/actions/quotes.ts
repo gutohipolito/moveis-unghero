@@ -25,6 +25,7 @@ import {
   normalizeQuoteTemplateId,
 } from "@/lib/quoteTemplates";
 import { buildQuoteCodigoBase } from "@/lib/quoteCodigo";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { randomUUID } from "crypto";
 
 export type ItemType = 
@@ -800,7 +801,7 @@ export async function getCommercialPendingQuotes() {
       };
     });
 
-    return { success: true, data };
+    return { success: true, data: maybeRedactForViewer(data, auth.cargo) };
   } catch (error) {
     console.error("Erro na Server Action getCommercialPendingQuotes:", error);
     return {
@@ -967,7 +968,10 @@ export async function getQuotes() {
       }))
     }));
 
-    return { success: true, data: serializedQuotes };
+    return {
+      success: true,
+      data: maybeRedactForViewer(serializedQuotes, auth.cargo),
+    };
   } catch (error) {
     console.warn("Erro ao buscar orçamentos:", error);
     return { success: false, error: "Erro de conexão ao banco de dados", data: [] };
@@ -1003,7 +1007,10 @@ export async function getProjectsForQuotes() {
         cidade: p.client.cidade
       }
     }));
-    return { success: true, data: serializedProjects };
+    return {
+      success: true,
+      data: maybeRedactForViewer(serializedProjects, auth.cargo),
+    };
   } catch (error) {
     console.warn("Erro ao buscar projetos para orçamentos:", error);
     return { success: false, error: "Erro de conexão ao banco de dados", data: [] };

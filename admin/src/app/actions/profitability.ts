@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireModuleAccess } from "@/lib/moduleAccess";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export interface ProjectProfitRow {
   projectId: string;
@@ -113,7 +114,10 @@ export async function getProjectProfitability(): Promise<{
 
     return {
       success: true,
-      data: { rows, totalReceita, totalCusto, totalMargem, totalRecebido },
+      data: maybeRedactForViewer(
+        { rows, totalReceita, totalCusto, totalMargem, totalRecebido },
+        auth.cargo
+      ),
     };
   } catch (error) {
     console.error("Erro ao calcular rentabilidade:", error);

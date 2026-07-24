@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { getAuthContext } from "@/lib/auth-guard";
 import { resolveStageEntryAt } from "@/lib/crmStageDate";
 import { toQuoteViewStats, type QuoteViewStats } from "@/lib/quoteViewTracking";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export const CRM_PROJECT_SELECT = {
   id: true,
@@ -101,7 +103,7 @@ export async function fetchCrmProjects(companyId: string) {
       return [];
     });
 
-  return projectsResult.map((project) => {
+  const mapped = projectsResult.map((project) => {
     const timeline = project.timeline
       ? project.timeline.map((entry) => ({
           id: entry.id,
@@ -131,36 +133,39 @@ export async function fetchCrmProjects(companyId: string) {
       : null;
 
     return {
-    id: project.id,
-    valor_previsto: Number(project.valor_previsto),
-    status_geral: project.status_geral,
-    ultimo_contato_em: project.ultimo_contato_em
-      ? new Date(project.ultimo_contato_em).toISOString()
-      : null,
-    createdAt: project.createdAt ? new Date(project.createdAt).toISOString() : null,
-    updatedAt: project.updatedAt ? new Date(project.updatedAt).toISOString() : null,
-    motivo_perda: project.motivo_perda || null,
-    observacoes: project.observacoes || null,
-    conf_tecnica_resp1_id: project.conf_tecnica_resp1_id || null,
-    conf_tecnica_resp1Nome: project.conf_tecnica_resp1?.name || null,
-    conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
-    conf_tecnica_resp2Nome: project.conf_tecnica_resp2?.name || null,
-    stage_entered_at: resolveStageEntryAt(
-      project.status_geral,
+      id: project.id,
+      valor_previsto: Number(project.valor_previsto),
+      status_geral: project.status_geral,
+      ultimo_contato_em: project.ultimo_contato_em
+        ? new Date(project.ultimo_contato_em).toISOString()
+        : null,
+      createdAt: project.createdAt ? new Date(project.createdAt).toISOString() : null,
+      updatedAt: project.updatedAt ? new Date(project.updatedAt).toISOString() : null,
+      motivo_perda: project.motivo_perda || null,
+      observacoes: project.observacoes || null,
+      conf_tecnica_resp1_id: project.conf_tecnica_resp1_id || null,
+      conf_tecnica_resp1Nome: project.conf_tecnica_resp1?.name || null,
+      conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
+      conf_tecnica_resp2Nome: project.conf_tecnica_resp2?.name || null,
+      stage_entered_at: resolveStageEntryAt(
+        project.status_geral,
+        timeline,
+        firstQuoteApprovedAt
+      ),
+      quoteShare,
       timeline,
-      firstQuoteApprovedAt
-    ),
-    quoteShare,
-    timeline,
-    client: project.client,
-    briefing: project.briefing
-      ? {
-          ...project.briefing,
-          createdAt: project.briefing.createdAt
-            ? new Date(project.briefing.createdAt).toISOString()
-            : null,
-        }
-      : null,
-  };
+      client: project.client,
+      briefing: project.briefing
+        ? {
+            ...project.briefing,
+            createdAt: project.briefing.createdAt
+              ? new Date(project.briefing.createdAt).toISOString()
+              : null,
+          }
+        : null,
+    };
   });
+
+  const auth = await getAuthContext();
+  return maybeRedactForViewer(mapped, auth?.cargo);
 }

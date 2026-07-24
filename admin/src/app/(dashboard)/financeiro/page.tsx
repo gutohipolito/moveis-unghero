@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
+import { getAuthContext } from "@/lib/auth-guard";
 import FinanceiroClient from "./FinanceiroClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export default async function FinanceiroPage() {
   await guardModule("financeiro");
@@ -40,6 +42,9 @@ export default async function FinanceiroPage() {
     clientName: ins.project.client.nome,
   }));
 
+  const auth = await getAuthContext();
+  const safeInstallments = maybeRedactForViewer(formattedInsts, auth?.cargo);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -62,7 +67,7 @@ export default async function FinanceiroPage() {
 
       <FinanceSectionTabs />
 
-      <FinanceiroClient initialInstallments={formattedInsts} companyId={userCompanyId} />
+      <FinanceiroClient initialInstallments={safeInstallments} companyId={userCompanyId} />
     </div>
   );
 }

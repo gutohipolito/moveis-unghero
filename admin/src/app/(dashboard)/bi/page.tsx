@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
+import { getAuthContext } from "@/lib/auth-guard";
 import { fetchFactoryBoard } from "@/lib/factoryBoard";
 import BiClient from "./BiClient";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export default async function BIPage() {
   await guardModule("bi");
@@ -20,8 +22,9 @@ export default async function BIPage() {
       loadBiQuotes(userCompanyId),
       fetchFactoryBoard(userCompanyId),
     ]);
-    projects = pRes;
-    quotes = qRes;
+    const auth = await getAuthContext();
+    projects = maybeRedactForViewer(pRes, auth?.cargo);
+    quotes = maybeRedactForViewer(qRes, auth?.cargo);
     factoryEnvironments = fbRes.environments;
   } catch (error) {
     console.warn("Falha ao se conectar com banco de dados no BI.", error);

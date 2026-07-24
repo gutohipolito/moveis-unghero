@@ -10,6 +10,7 @@ import {
   DEFAULT_CONTRACT_TEMPLATE,
   buildClientAddress,
 } from "@/lib/contractTemplates";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export type ContractTemplateDTO = {
   id: string;
@@ -313,7 +314,7 @@ export async function getContracts(companyId: string) {
 
   return {
     success: true as const,
-    contracts: contracts.map(mapContract),
+    contracts: maybeRedactForViewer(contracts.map(mapContract), auth.cargo),
   };
 }
 
@@ -334,7 +335,10 @@ export async function getContractById(id: string) {
     return { success: false as const, error: "Contrato não encontrado." };
   }
 
-  return { success: true as const, contract: mapContract(contract) };
+  return {
+    success: true as const,
+    contract: maybeRedactForViewer(mapContract(contract), auth.cargo),
+  };
 }
 
 export type ContractFormInput = {
@@ -560,19 +564,25 @@ export async function getContractFormOptions(companyId: string) {
 
   return {
     success: true as const,
-    clients: clients.map((c) => ({
-      id: c.id,
-      nome: c.nome,
-      documento: c.tipo_pessoa === "PJ" ? c.cnpj || "" : c.cpf || "",
-      endereco: buildClientAddress(c),
-    })),
-    projects: projects.map((p) => ({
-      id: p.id,
-      client_id: p.client_id,
-      client_nome: p.client.nome,
-      valor_previsto: toNumber(p.valor_previsto),
-      status_geral: p.status_geral,
-      data_entrega_prevista: p.data_entrega_prevista,
-    })),
+    clients: maybeRedactForViewer(
+      clients.map((c) => ({
+        id: c.id,
+        nome: c.nome,
+        documento: c.tipo_pessoa === "PJ" ? c.cnpj || "" : c.cpf || "",
+        endereco: buildClientAddress(c),
+      })),
+      auth.cargo
+    ),
+    projects: maybeRedactForViewer(
+      projects.map((p) => ({
+        id: p.id,
+        client_id: p.client_id,
+        client_nome: p.client.nome,
+        valor_previsto: toNumber(p.valor_previsto),
+        status_geral: p.status_geral,
+        data_entrega_prevista: p.data_entrega_prevista,
+      })),
+      auth.cargo
+    ),
   };
 }

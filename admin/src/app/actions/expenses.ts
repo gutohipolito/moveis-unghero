@@ -11,6 +11,7 @@ import type {
   ExpenseCategory,
   ExpenseNature,
 } from "@/lib/expenses";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 type ExpenseRow = Prisma.ExpenseGetPayload<{
   include: {
@@ -71,7 +72,10 @@ export async function listExpenses(): Promise<{
       include: EXPENSE_INCLUDE,
       orderBy: { data_vencimento: "asc" },
     });
-    return { success: true, expenses: rows.map(mapExpense) };
+    return {
+      success: true,
+      expenses: maybeRedactForViewer(rows.map(mapExpense), auth.cargo),
+    };
   } catch (error) {
     console.error("Erro ao listar despesas:", error);
     return { success: false, expenses: [] };

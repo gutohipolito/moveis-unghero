@@ -2,9 +2,11 @@ import { getCatalogItemsBySlug } from "@/app/actions/cadastros";
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
+import { getAuthContext } from "@/lib/auth-guard";
 import LogisticaClient from "./LogisticaClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export default async function LogisticaPage() {
   await guardModule("logistica");
@@ -37,6 +39,9 @@ export default async function LogisticaPage() {
     },
   }));
 
+  const auth = await getAuthContext();
+  const safeProjects = maybeRedactForViewer(formattedProjects, auth?.cargo);
+
   const veiculosRes = await getCatalogItemsBySlug(userCompanyId, "veiculos");
   const veiculos = veiculosRes.items.map((item) => ({
     id: item.id,
@@ -61,7 +66,7 @@ export default async function LogisticaPage() {
       />
 
       <LogisticaClient
-        initialProjects={formattedProjects}
+        initialProjects={safeProjects}
         veiculos={veiculos}
         companyId={userCompanyId}
       />

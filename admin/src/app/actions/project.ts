@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export type EnvironmentType = 
   | "COZINHA"
@@ -404,7 +405,7 @@ export async function getProjectDetailsAction(projectId: string) {
 
     return {
       success: true,
-      project: formattedProject,
+      project: maybeRedactForViewer(formattedProject, auth.cargo),
       colaboradores,
       sla,
     };

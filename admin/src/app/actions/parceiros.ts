@@ -6,6 +6,7 @@ import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
+import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export interface ParceiroDTO {
   id: string;
@@ -105,7 +106,10 @@ export async function getParceiros(companyId: string) {
       } as unknown as ParceiroDTO;
     });
 
-    return { success: true as const, parceiros: mapped };
+    return {
+      success: true as const,
+      parceiros: maybeRedactForViewer(mapped, auth.cargo),
+    };
   } catch (error) {
     console.error("Erro ao buscar parceiros:", error);
     return { success: false as const, error: "Falha ao carregar parceiros.", parceiros: [] as ParceiroDTO[] };
