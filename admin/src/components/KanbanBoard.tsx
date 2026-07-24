@@ -1031,17 +1031,23 @@ export default function KanbanBoard({
                 {project.client.nome}
               </h4>
               {shouldShowStageEntryDate(project.status_geral) ? (
-                <p className="flex items-center text-[11px] text-muted-foreground/90">
-                  <Calendar className="h-3 w-3 mr-1 opacity-70 shrink-0" />
-                  <span className="tabular-nums tracking-tight">
+                <p className="flex items-center gap-1 text-[11px] text-muted-foreground/90 min-w-0">
+                  <Calendar className="h-3 w-3 opacity-70 shrink-0" />
+                  <span
+                    className="tabular-nums tracking-tight whitespace-nowrap truncate"
+                    title={
+                      formatStageEntryLabel(project.status_geral, project.stage_entered_at) ||
+                      "Data não registrada"
+                    }
+                  >
                     {formatStageEntryLabel(project.status_geral, project.stage_entered_at) ||
                       "Data não registrada"}
                   </span>
                 </p>
               ) : (
-                <p className="flex items-center text-xs text-muted-foreground">
-                  <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
-                  <span className="tabular-nums">
+                <p className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+                  <Phone className="h-3 w-3 opacity-80 text-primary shrink-0" />
+                  <span className="tabular-nums whitespace-nowrap truncate">
                     {valuesAreHidden
                       ? maskPhone(project.client.telefone)
                       : project.client.telefone}
