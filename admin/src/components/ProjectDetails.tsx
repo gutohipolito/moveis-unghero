@@ -122,6 +122,8 @@ interface Quote {
   pdf_view_count?: number;
   pdf_first_viewed_at?: string | null;
   pdf_last_viewed_at?: string | null;
+  pdf_last_device?: string | null;
+  pdf_last_os?: string | null;
   items?: Array<{
     id: string;
     descricao: string;
@@ -1626,11 +1628,22 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                                     : "bg-sky-50 text-sky-800 border-sky-200"
                                 }`}
                                 title={
-                                  viewStats.firstViewedAt
-                                    ? `Primeira abertura: ${new Date(viewStats.firstViewedAt).toLocaleString("pt-BR")}`
-                                    : viewStats.sharedAt
+                                  [
+                                    viewStats.firstViewedAt
+                                      ? `Primeira abertura: ${new Date(viewStats.firstViewedAt).toLocaleString("pt-BR")}`
+                                      : null,
+                                    viewStats.lastViewedAt
+                                      ? `Última: ${new Date(viewStats.lastViewedAt).toLocaleString("pt-BR")}`
+                                      : null,
+                                    viewStats.lastDeviceLabel
+                                      ? `Dispositivo: ${viewStats.lastDeviceLabel}`
+                                      : null,
+                                    viewStats.sharedAt && !viewStats.firstViewedAt
                                       ? `Link gerado em ${new Date(viewStats.sharedAt).toLocaleString("pt-BR")}`
-                                      : undefined
+                                      : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ") || undefined
                                 }
                               >
                                 <Eye className="h-3 w-3" />

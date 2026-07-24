@@ -23,6 +23,8 @@ export const CRM_PROJECT_SELECT = {
       pdf_view_count: true,
       pdf_first_viewed_at: true,
       pdf_last_viewed_at: true,
+      pdf_last_device: true,
+      pdf_last_os: true,
     },
     orderBy: [{ pdf_shared_at: "desc" }, { aprovado_em: "asc" }],
   },

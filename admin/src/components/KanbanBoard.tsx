@@ -27,7 +27,7 @@ import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
 import CommercialPendingPanel from "@/components/CommercialPendingPanel";
 import { labelOrigin } from "@/lib/navLabels";
-import { formatQuoteViewLabel } from "@/lib/quoteViewTracking";
+import { formatQuoteViewLabel, toQuoteViewStats } from "@/lib/quoteViewTracking";
 import {
   formatStageEntryLabel,
   shouldShowStageEntryDate,
@@ -142,6 +142,9 @@ interface Project {
     firstViewedAt: string | null;
     lastViewedAt: string | null;
     neverOpened: boolean;
+    lastDevice?: string | null;
+    lastOs?: string | null;
+    lastDeviceLabel?: string | null;
   } | null;
 }
 
@@ -885,13 +888,14 @@ export default function KanbanBoard({
     const stageStatus = colId ?? project.status_geral;
     const theme = getStageTheme(stageStatus);
     const quoteShareLabel = formatQuoteViewLabel(
-      project.quoteShare ?? {
-        sharedAt: null,
-        viewCount: 0,
-        firstViewedAt: null,
-        lastViewedAt: null,
-        neverOpened: false,
-      }
+      toQuoteViewStats({
+        pdf_shared_at: project.quoteShare?.sharedAt,
+        pdf_view_count: project.quoteShare?.viewCount,
+        pdf_first_viewed_at: project.quoteShare?.firstViewedAt,
+        pdf_last_viewed_at: project.quoteShare?.lastViewedAt,
+        pdf_last_device: project.quoteShare?.lastDevice,
+        pdf_last_os: project.quoteShare?.lastOs,
+      })
     );
     const showQuoteShareBadge =
       Boolean(quoteShareLabel) &&
@@ -1093,7 +1097,9 @@ export default function KanbanBoard({
               title={
                 project.quoteShare?.neverOpened
                   ? "O link da proposta foi enviado, mas o cliente ainda não abriu."
-                  : "Aberturas do link público da proposta."
+                  : project.quoteShare?.lastDeviceLabel
+                    ? `Última abertura: ${project.quoteShare.lastDeviceLabel}`
+                    : "Aberturas do link público da proposta."
               }
             >
               <Eye className="h-3 w-3 shrink-0" />

@@ -55,6 +55,8 @@ export type ProjectDetailsPayload = {
     pdf_view_count?: number;
     pdf_first_viewed_at?: string | null;
     pdf_last_viewed_at?: string | null;
+    pdf_last_device?: string | null;
+    pdf_last_os?: string | null;
     items: Array<{
       id: string;
       descricao: string;
@@ -211,6 +213,8 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       pdf_last_viewed_at: q.pdf_last_viewed_at
         ? q.pdf_last_viewed_at.toISOString()
         : null,
+      pdf_last_device: q.pdf_last_device ?? null,
+      pdf_last_os: q.pdf_last_os ?? null,
       items: (q.items || []).map((item) => ({
         id: item.id,
         descricao: item.descricao,
