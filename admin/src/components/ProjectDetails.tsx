@@ -253,12 +253,38 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("environments");
   const searchParams = useSearchParams();
+
+  const defaultTab = (() => {
+    const fromUrl = searchParams?.get("tab");
+    if (
+      fromUrl &&
+      ["environments", "quotes", "briefing", "finances", "tasks", "files", "timeline"].includes(fromUrl)
+    ) {
+      return fromUrl;
+    }
+    const status = initialProject.status_geral;
+    if (status === "LEAD" || status === "ORCAMENTO" || status === "NEGOCIACAO") {
+      return (initialProject.quotes?.length ?? 0) > 0 ? "quotes" : "briefing";
+    }
+    if (status === "APROVADO" || status === "CONFERENCIA_TECNICA") return "quotes";
+    if (status === "PRODUCAO" || status === "INSTALACAO") return "environments";
+    if (status === "FINALIZADO") return "finances";
+    return "quotes";
+  })();
+
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => {
     if (initialOpenCreateQuote || searchParams?.get("createQuote") === "true") {
       setIsCreatingQuote(true);
+    }
+    const fromUrl = searchParams?.get("tab");
+    if (
+      fromUrl &&
+      ["environments", "quotes", "briefing", "finances", "tasks", "files", "timeline"].includes(fromUrl)
+    ) {
+      setActiveTab(fromUrl);
     }
   }, [searchParams, initialOpenCreateQuote]);
 
@@ -799,7 +825,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   });
 
   return (
-    <div className="space-y-6 min-w-0 max-w-full overflow-x-hidden">
+    <div className="space-y-6 min-w-0 max-w-full">
       {/* Botão de Voltar e Banner de Mock */}
       {!embedded ? (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1173,40 +1199,49 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             onChange={(e) => setActiveTab(e.target.value)}
             className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
           >
-            <option value="environments">Ambientes ({project.environments.length})</option>
             <option value="quotes">Orçamentos ({project.quotes?.length || 0})</option>
             <option value="briefing">Formulário</option>
-            <option value="finances">Financeiro ({project.installments?.length || 0})</option>
+            <option value="timeline">Histórico ({filteredTimeline.length})</option>
             <option value="tasks">Tarefas ({project.tasks?.length || 0})</option>
-            <option value="files">Arquivos Técnicos ({project.files.length})</option>
-            <option value="timeline">Histórico & Notas ({filteredTimeline.length})</option>
+            <option value="finances">Financeiro ({project.installments?.length || 0})</option>
+            <option value="environments">Ambientes ({project.environments.length})</option>
+            <option value="files">Arquivos ({project.files.length})</option>
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
 
-        <TabsList className="hidden sm:inline-flex">
-          <TabsTrigger value="environments">
-            <Layers className="h-4 w-4 mr-2 shrink-0" /> Ambientes ({project.environments.length})
-          </TabsTrigger>
-          <TabsTrigger value="quotes">
-            <DollarSign className="h-4 w-4 mr-2 shrink-0" /> Orçamentos ({project.quotes?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="briefing">
-            <FileText className="h-4 w-4 mr-2 shrink-0" /> Formulário
-          </TabsTrigger>
-          <TabsTrigger value="finances">
-            <DollarSign className="h-4 w-4 mr-2 shrink-0" /> Financeiro ({project.installments?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="tasks">
-            <CheckCircle2 className="h-4 w-4 mr-2 shrink-0" /> Tarefas ({project.tasks?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="files">
-            <FileText className="h-4 w-4 mr-2 shrink-0" /> Arquivos Técnicos ({project.files.length})
-          </TabsTrigger>
-          <TabsTrigger value="timeline">
-            <Clock className="h-4 w-4 mr-2 shrink-0" /> Histórico & Notas ({filteredTimeline.length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="project-tabs-scroll hidden sm:block">
+          <TabsList className="!flex h-auto w-max min-w-full max-w-none flex-nowrap items-center justify-start gap-0.5 overflow-visible">
+            <TabsTrigger value="quotes" className="text-xs md:text-sm">
+              <DollarSign className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Orçamentos ({project.quotes?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="briefing" className="text-xs md:text-sm">
+              <FileText className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Formulário
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="text-xs md:text-sm">
+              <Clock className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Histórico ({filteredTimeline.length})
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="text-xs md:text-sm">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Tarefas ({project.tasks?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="finances" className="text-xs md:text-sm">
+              <Receipt className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Financeiro ({project.installments?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="environments" className="text-xs md:text-sm">
+              <Layers className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Ambientes ({project.environments.length})
+            </TabsTrigger>
+            <TabsTrigger value="files" className="text-xs md:text-sm">
+              <FileText className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Arquivos ({project.files.length})
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Tab 1: Ambientes */}
         <TabsContent value="environments" className="space-y-4">
