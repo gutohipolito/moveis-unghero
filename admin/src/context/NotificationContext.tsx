@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { getNotifications } from "@/app/actions/notifications";
 import {
   isInAppToastNotification,
+  isStickyReminderNotification,
   type AppNotification,
 } from "@/lib/notifications";
 import {
@@ -25,6 +26,7 @@ import {
   type BrowserPermission,
 } from "@/lib/browserNotifications";
 import {
+  isToastSnoozed,
   loadAnnouncedNotificationIds,
   loadClearedNotificationIds,
   loadDeliveredNotificationIds,
@@ -36,9 +38,12 @@ import {
   pruneAnnouncedIds,
   pruneDeliveredIds,
   pruneDismissedToastIds,
+  pruneSnoozedToasts,
   saveClearedNotificationIds,
   saveNotificationPrefs,
+  snoozeToast,
   type NotificationPreferences,
+  type ToastSnoozeOption,
 } from "@/lib/notificationChannels";
 import { playNotificationChime, primeNotificationSound } from "@/lib/notificationSound";
 import {
@@ -57,6 +62,7 @@ const POLL_HIDDEN_MS = 5 * 60 * 1000;
 const INITIAL_SYNC_MS = 3 * 1000;
 /** Evita dois chimes seguidos por race de poll/navegação. */
 const CHIME_COOLDOWN_MS = 8 * 1000;
+const MAX_VISIBLE_TOASTS = 3;
 
 export interface InAppToast extends AppNotification {
   toastKey: string;
@@ -81,6 +87,7 @@ interface NotificationContextValue {
   testBrowserNotification: () => Promise<boolean>;
   testPushNotification: () => Promise<boolean>;
   dismissToast: (id: string) => void;
+  snoozeToastReminder: (id: string, option: ToastSnoozeOption) => void;
   openToast: (id: string, href: string) => void;
   /** Marca notificações como limpas (some do badge/lista). */
   clearNotifications: (ids?: string[]) => void;
@@ -141,16 +148,58 @@ export function NotificationProvider({
     playNotificationChime({ urgent });
   }, [prefs.sound]);
 
+  const canShowToast = useCallback((n: AppNotification) => {
+    return (
+      isInAppToastNotification(n) &&
+      !dismissedToastRef.current.has(n.id) &&
+      !isToastSnoozed(n.id) &&
+      !clearedIdsRef.current.has(n.id)
+    );
+  }, []);
+
+  const surfaceStickyReminders = useCallback(
+    (items: AppNotification[], { chime = false }: { chime?: boolean } = {}) => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+
+      const sticky = items
+        .filter((n) => isStickyReminderNotification(n) && canShowToast(n))
+        .filter((n) => !toastKeysRef.current.has(n.id))
+        .slice(0, MAX_VISIBLE_TOASTS);
+
+      if (sticky.length === 0) return;
+
+      for (const item of sticky) {
+        toastKeysRef.current.add(item.id);
+      }
+
+      if (chime) {
+        markNotificationsAnnounced(
+          sticky.map((n) => n.id),
+          announcedRef.current
+        );
+        playChimeOnce(sticky.some((n) => n.priority === "high"));
+      }
+
+      setToasts((prev) => {
+        const next = [...prev];
+        for (const item of sticky) {
+          if (!next.some((t) => t.toastKey === item.id)) {
+            next.push({ ...item, toastKey: item.id });
+          }
+        }
+        return next.slice(0, MAX_VISIBLE_TOASTS);
+      });
+    },
+    [canShowToast, playChimeOnce]
+  );
+
   const deliverInAppToasts = useCallback(
     (items: AppNotification[]) => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
 
-      const toastable = items.filter(isInAppToastNotification);
-      if (toastable.length === 0) return;
-
-      const fresh = toastable.filter(
+      const fresh = items.filter(
         (n) =>
-          !dismissedToastRef.current.has(n.id) &&
+          canShowToast(n) &&
           !toastKeysRef.current.has(n.id) &&
           !announcedRef.current.has(n.id)
       );
@@ -172,10 +221,10 @@ export function NotificationProvider({
         for (const item of fresh) {
           next.push({ ...item, toastKey: item.id });
         }
-        return next.slice(-4);
+        return next.slice(-MAX_VISIBLE_TOASTS);
       });
     },
-    [playChimeOnce]
+    [canShowToast, playChimeOnce]
   );
 
   const deliverToBrowser = useCallback(
@@ -225,6 +274,7 @@ export function NotificationProvider({
         pruneDeliveredIds(deliveredRef.current, nextIds);
         pruneDismissedToastIds(dismissedToastRef.current, nextIds);
         pruneAnnouncedIds(announcedRef.current, nextIds);
+        pruneSnoozedToasts(nextIds);
 
         if (options?.deliverNew) {
           const newItems = next.filter(
@@ -241,16 +291,22 @@ export function NotificationProvider({
               announcedRef.current
             );
           }
+          surfaceStickyReminders(next);
         }
 
         // Une IDs conhecidos — nunca encolhe por snapshot stale do layout.
         for (const id of nextIds) knownIdsRef.current.add(id);
         setActiveNotifications(next);
+        setToasts((prev) =>
+          prev.filter(
+            (t) => nextIds.includes(t.toastKey) && !isToastSnoozed(t.toastKey)
+          )
+        );
       } finally {
         syncingRef.current = false;
       }
     },
-    [companyId, deliverInAppToasts, deliverToBrowser]
+    [companyId, deliverInAppToasts, deliverToBrowser, surfaceStickyReminders]
   );
 
   useEffect(() => {
@@ -265,6 +321,7 @@ export function NotificationProvider({
 
     // Seed inicial: marca o que já existia no SSR como conhecido/anunciado
     // para não tocar som de alertas antigos ao abrir o painel.
+    // Lembretes sticky continuam elegíveis (não entram em toastKeys).
     seededKnownRef.current = false;
     knownIdsRef.current = new Set();
     toastKeysRef.current = new Set();
@@ -272,13 +329,19 @@ export function NotificationProvider({
     for (const n of initialNotifications) {
       knownIdsRef.current.add(n.id);
       announcedRef.current.add(n.id);
-      toastKeysRef.current.add(n.id);
+      if (!isStickyReminderNotification(n)) {
+        toastKeysRef.current.add(n.id);
+      }
     }
     markNotificationsAnnounced(
       initialNotifications.map((n) => n.id),
       announcedRef.current
     );
     seededKnownRef.current = true;
+
+    window.setTimeout(() => {
+      surfaceStickyReminders(initialNotifications);
+    }, 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed no mount / troca de empresa
   }, [companyId]);
 
@@ -474,6 +537,13 @@ export function NotificationProvider({
 
   const dismissToast = useCallback((id: string) => {
     markToastDismissed(id, dismissedToastRef.current);
+    toastKeysRef.current.add(id);
+    setToasts((prev) => prev.filter((t) => t.toastKey !== id));
+  }, []);
+
+  const snoozeToastReminder = useCallback((id: string, option: ToastSnoozeOption) => {
+    snoozeToast(id, option);
+    toastKeysRef.current.delete(id);
     setToasts((prev) => prev.filter((t) => t.toastKey !== id));
   }, []);
 
@@ -523,6 +593,7 @@ export function NotificationProvider({
     testBrowserNotification,
     testPushNotification,
     dismissToast,
+    snoozeToastReminder,
     openToast,
     clearNotifications,
     refreshNotifications: () => syncNotifications({ deliverNew: false }),
@@ -531,7 +602,12 @@ export function NotificationProvider({
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <InAppNotificationStack toasts={toasts} onDismiss={dismissToast} onOpen={openToast} />
+      <InAppNotificationStack
+        toasts={toasts}
+        onDismiss={dismissToast}
+        onOpen={openToast}
+        onSnooze={snoozeToastReminder}
+      />
     </NotificationContext.Provider>
   );
 }

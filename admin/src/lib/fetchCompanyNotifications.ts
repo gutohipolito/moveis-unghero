@@ -5,6 +5,9 @@ import {
   buildSlaNotifications,
   buildBriefingNotifications,
   buildSupplyTicketNotifications,
+  buildQuoteStaleNotifications,
+  buildLeadNoQuoteNotifications,
+  buildQuoteExpiringNotifications,
   mergeNotifications,
   type AppNotification,
 } from "@/lib/notifications";
@@ -64,52 +67,125 @@ export async function fetchCompanyNotifications(
           .catch(() => [])
       : [];
 
-  const [projects, slaAlerts, invoicePending, briefings, pendingInstallments] =
-    await Promise.all([
-      prisma.project.findMany({
-        where: {
-          status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
+  const commercialStatuses = ["LEAD", "ORCAMENTO", "NEGOCIACAO", "CONFERENCIA_TECNICA"] as const;
+  const staleSharedBefore = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  const leadMinAge = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  const expiringUntil = new Date();
+  expiringUntil.setHours(23, 59, 59, 999);
+  expiringUntil.setDate(expiringUntil.getDate() + 2);
+
+  const [
+    projects,
+    slaAlerts,
+    invoicePending,
+    briefings,
+    pendingInstallments,
+    sharedQuotes,
+    projectsWithoutQuote,
+    expiringQuotes,
+  ] = await Promise.all([
+    prisma.project.findMany({
+      where: {
+        status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
+        client: { company_id: companyId },
+      },
+      select: {
+        id: true,
+        status_geral: true,
+        ultimo_contato_em: true,
+        createdAt: true,
+        client: { select: { nome: true } },
+      },
+    }),
+    getSlaAlertProjects(companyId),
+    getInvoicePendingProjects(companyId),
+    prisma.leadBriefing.findMany({
+      where: {
+        project: {
+          status_geral: "LEAD",
           client: { company_id: companyId },
         },
-        select: {
-          id: true,
-          status_geral: true,
-          ultimo_contato_em: true,
-          createdAt: true,
-          client: { select: { nome: true } },
-        },
-      }),
-      getSlaAlertProjects(companyId),
-      getInvoicePendingProjects(companyId),
-      prisma.leadBriefing.findMany({
-        where: {
-          project: {
-            status_geral: "LEAD",
-            client: { company_id: companyId },
+      },
+      include: {
+        project: {
+          include: {
+            client: { select: { nome: true } },
           },
         },
-        include: {
-          project: {
-            include: {
-              client: { select: { nome: true } },
-            },
-          },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.installment.findMany({
+      where: {
+        status: { in: ["PENDENTE", "ATRASADO"] },
+        project: { client: { company_id: companyId } },
+      },
+      include: {
+        project: {
+          include: { client: { select: { id: true, nome: true } } },
         },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.installment.findMany({
-        where: {
-          status: { in: ["PENDENTE", "ATRASADO"] },
-          project: { client: { company_id: companyId } },
+      },
+      orderBy: { data_vencimento: "asc" },
+    }),
+    prisma.quote.findMany({
+      where: {
+        pdf_shared_at: { not: null, lte: staleSharedBefore },
+        aprovado_em: null,
+        project: {
+          status_geral: { in: [...commercialStatuses] },
+          client: { company_id: companyId },
         },
-        include: {
-          project: {
-            include: { client: { select: { id: true, nome: true } } },
-          },
+        items: { some: { status: "PENDENTE" } },
+      },
+      select: {
+        id: true,
+        project_id: true,
+        codigo: true,
+        pdf_shared_at: true,
+        project: { select: { client: { select: { nome: true } } } },
+        _count: { select: { items: { where: { status: "PENDENTE" } } } },
+      },
+      orderBy: { pdf_shared_at: "asc" },
+      take: 40,
+    }),
+    prisma.project.findMany({
+      where: {
+        status_geral: { in: ["LEAD", "ORCAMENTO"] },
+        createdAt: { lte: leadMinAge },
+        client: { company_id: companyId },
+        quotes: { none: {} },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        client: { select: { nome: true } },
+        _count: { select: { quotes: true } },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 40,
+    }),
+    prisma.quote.findMany({
+      where: {
+        aprovado_em: null,
+        validade: { lte: expiringUntil },
+        project: {
+          status_geral: { in: [...commercialStatuses] },
+          client: { company_id: companyId },
         },
-        orderBy: { data_vencimento: "asc" },
-      }),
-    ]);
+        items: { some: { status: "PENDENTE" } },
+      },
+      select: {
+        id: true,
+        project_id: true,
+        codigo: true,
+        validade: true,
+        project: { select: { client: { select: { nome: true } } } },
+        _count: { select: { items: { where: { status: "PENDENTE" } } } },
+      },
+      orderBy: { validade: "asc" },
+      take: 40,
+    }),
+  ]);
 
   const followUp = buildFollowUpNotifications(
     projects.map((p) => ({
@@ -160,13 +236,49 @@ export async function fetchCompanyNotifications(
     }))
   );
 
+  const quoteStaleNotifications = buildQuoteStaleNotifications(
+    sharedQuotes
+      .filter((q): q is typeof q & { pdf_shared_at: Date } => Boolean(q.pdf_shared_at))
+      .map((q) => ({
+        id: q.id,
+        project_id: q.project_id,
+        codigo: q.codigo,
+        pdf_shared_at: q.pdf_shared_at,
+        clientName: q.project.client.nome,
+        pendingCount: q._count.items,
+      }))
+  );
+
+  const leadNoQuoteNotifications = buildLeadNoQuoteNotifications(
+    projectsWithoutQuote.map((p) => ({
+      id: p.id,
+      createdAt: p.createdAt,
+      clientName: p.client.nome,
+      quoteCount: p._count.quotes,
+    }))
+  );
+
+  const quoteExpiringNotifications = buildQuoteExpiringNotifications(
+    expiringQuotes.map((q) => ({
+      id: q.id,
+      project_id: q.project_id,
+      codigo: q.codigo,
+      validade: q.validade,
+      clientName: q.project.client.nome,
+      pendingCount: q._count.items,
+    }))
+  );
+
   const merged = mergeNotifications(
     followUp,
     slaNotifications,
     invoiceNotifications,
     briefingNotifications,
     installmentNotifications,
-    supplyNotifications
+    supplyNotifications,
+    quoteStaleNotifications,
+    leadNoQuoteNotifications,
+    quoteExpiringNotifications
   );
 
   notifCache.set(cacheKey, { at: Date.now(), data: merged });

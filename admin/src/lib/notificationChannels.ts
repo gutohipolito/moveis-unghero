@@ -213,6 +213,80 @@ export function pruneClearedNotificationIds(
   // no-op de propósito
 }
 
+/** Snooze de toasts — “Lembrar depois” (persiste entre sessões). */
+const SNOOZE_KEY = "mu_toast_snooze";
+
+export type ToastSnoozeOption = "1h" | "tomorrow" | "3d";
+
+export function resolveSnoozeUntil(option: ToastSnoozeOption, from = new Date()): Date {
+  const next = new Date(from);
+  if (option === "1h") {
+    next.setHours(next.getHours() + 1);
+    return next;
+  }
+  if (option === "3d") {
+    next.setDate(next.getDate() + 3);
+    next.setHours(9, 0, 0, 0);
+    return next;
+  }
+  // amanhã às 9h (fuso local do operador)
+  next.setDate(next.getDate() + 1);
+  next.setHours(9, 0, 0, 0);
+  return next;
+}
+
+function loadSnoozeMap(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(SNOOZE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveSnoozeMap(map: Record<string, number>) {
+  if (typeof window === "undefined") return;
+  const entries = Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 200);
+  localStorage.setItem(SNOOZE_KEY, JSON.stringify(Object.fromEntries(entries)));
+}
+
+export function isToastSnoozed(id: string, now = Date.now()): boolean {
+  const until = loadSnoozeMap()[id];
+  return typeof until === "number" && until > now;
+}
+
+export function snoozeToast(id: string, option: ToastSnoozeOption) {
+  const map = loadSnoozeMap();
+  map[id] = resolveSnoozeUntil(option).getTime();
+  saveSnoozeMap(map);
+}
+
+export function pruneSnoozedToasts(activeIds: string[]) {
+  if (activeIds.length === 0) return;
+  const active = new Set(activeIds);
+  const map = loadSnoozeMap();
+  const now = Date.now();
+  let changed = false;
+  for (const [id, until] of Object.entries(map)) {
+    if (!active.has(id) || until <= now) {
+      delete map[id];
+      changed = true;
+    }
+  }
+  if (changed) saveSnoozeMap(map);
+}
+
+export const TOAST_SNOOZE_OPTIONS: { id: ToastSnoozeOption; label: string }[] = [
+  { id: "1h", label: "Em 1 hora" },
+  { id: "tomorrow", label: "Amanhã de manhã" },
+  { id: "3d", label: "Em 3 dias" },
+];
+
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {
   in_app: "No painel",
   browser: "Navegador",
