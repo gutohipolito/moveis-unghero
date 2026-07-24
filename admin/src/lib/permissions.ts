@@ -72,6 +72,7 @@ export function isReadOnlyRole(role: Role | string | null | undefined): boolean 
  */
 export const VIEWER_BLOCKED_MODULES = new Set([
   "cadastros",
+  "estoque",
   "financeiro",
   "logistica",
 ]);
