@@ -35,6 +35,12 @@ const PROTECTED_PREFIXES = [
 /** Login: 8 tentativas / 15 min por IP (freia força-bruta). */
 const LOGIN_RATE = { limit: 8, windowMs: 15 * 60 * 1000 };
 
+/** Links públicos compartilháveis: freia enumeração de códigos. */
+const SHARE_RATE = { limit: 60, windowMs: 15 * 60 * 1000 };
+
+/** Forms públicos (quando passam pelo proxy). */
+const PUBLIC_FORM_RATE = { limit: 20, windowMs: 60 * 60 * 1000 };
+
 function isPublicPath(pathname: string) {
   if (PUBLIC_PATHS.has(pathname)) return true;
   return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -66,8 +72,41 @@ function isAuthSignIn(pathname: string, method: string) {
   );
 }
 
+function isPublicSharePath(pathname: string) {
+  return (
+    pathname.startsWith("/o/") ||
+    pathname.startsWith("/c/") ||
+    pathname.startsWith("/r/")
+  );
+}
+
+function isPublicFormPath(pathname: string) {
+  return (
+    pathname === "/briefing" ||
+    pathname === "/cadastro" ||
+    pathname === "/cadastro-parceiro" ||
+    pathname === "/cadastro-fornecedor" ||
+    pathname.startsWith("/api/public/")
+  );
+}
+
+function rateLimitedJson(message: string, retryAfterSec: number, limit: number) {
+  return NextResponse.json(
+    { message },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(retryAfterSec),
+        "X-RateLimit-Limit": String(limit),
+        "X-RateLimit-Remaining": "0",
+      },
+    }
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const ip = getRequestIp(request.headers);
 
   // Fecha cadastro público de operadores via Better Auth.
   // Criação de colaborador usa auth.api.signUpEmail no servidor (não passa pelo proxy).
@@ -79,21 +118,33 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthSignIn(pathname, request.method)) {
-    const ip = getRequestIp(request.headers);
     const result = checkRateLimit(`signin:${ip}`, LOGIN_RATE);
     if (!result.ok) {
-      return NextResponse.json(
-        {
-          message: `Muitas tentativas de login. Aguarde ${result.retryAfterSec}s e tente novamente.`,
-        },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(result.retryAfterSec),
-            "X-RateLimit-Limit": String(LOGIN_RATE.limit),
-            "X-RateLimit-Remaining": "0",
-          },
-        }
+      return rateLimitedJson(
+        `Muitas tentativas de login. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        result.retryAfterSec,
+        LOGIN_RATE.limit
+      );
+    }
+  }
+
+  if (isPublicSharePath(pathname)) {
+    const result = checkRateLimit(`share:${ip}`, SHARE_RATE);
+    if (!result.ok) {
+      return new NextResponse("Muitas requisições. Tente novamente em breve.", {
+        status: 429,
+        headers: { "Retry-After": String(result.retryAfterSec) },
+      });
+    }
+  }
+
+  if (isPublicFormPath(pathname) && request.method === "POST") {
+    const result = checkRateLimit(`public-form:${ip}`, PUBLIC_FORM_RATE);
+    if (!result.ok) {
+      return rateLimitedJson(
+        `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        result.retryAfterSec,
+        PUBLIC_FORM_RATE.limit
       );
     }
   }
@@ -136,6 +187,7 @@ export const config = {
     "/",
     "/login",
     "/api/auth/:path*",
+    "/api/public/:path*",
     "/bi/:path*",
     "/marketing/:path*",
     "/avaliar",
@@ -160,5 +212,12 @@ export const config = {
     "/sem-acesso",
     "/cliente/login",
     "/cliente/dashboard/:path*",
+    "/briefing",
+    "/cadastro",
+    "/cadastro-parceiro",
+    "/cadastro-fornecedor",
+    "/o/:path*",
+    "/c/:path*",
+    "/r/:path*",
   ],
 };

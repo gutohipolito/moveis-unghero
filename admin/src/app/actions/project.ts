@@ -10,6 +10,7 @@ import {
   requireProjectInCompany,
   requireUserInCompany,
 } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 
 export type EnvironmentType = 
@@ -38,7 +39,7 @@ export type FileType =
 
 // Atualiza o status geral do projeto
 export async function updateProjectGeneralStatus(projectId: string, newStatus: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -66,7 +67,7 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
 
 // Atualiza o status individual de um ambiente do projeto
 export async function updateEnvironmentStatus(projectId: string, envId: string, newStatus: EnvironmentStatus) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -119,7 +120,7 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
 // Adiciona um novo ambiente ao projeto
 export async function addEnvironment(projectId: string, nomeInput: string, tipo: EnvironmentType) {
   const nome = capitalizeText(nomeInput);
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -158,7 +159,7 @@ export async function addEnvironment(projectId: string, nomeInput: string, tipo:
 
 // Adiciona um novo evento/nota de timeline ao projeto
 export async function addTimelineEvent(projectId: string, acao: string, interno: boolean) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -198,7 +199,7 @@ export async function addTimelineEvent(projectId: string, acao: string, interno:
 
 // Altera a liberação do arquivo para produção (Flag de corte na fábrica)
 export async function toggleFileApproval(projectId: string, fileId: string, approved: boolean) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -237,7 +238,7 @@ export async function toggleFileApproval(projectId: string, fileId: string, appr
 
 // Upload de arquivo simulado (ou real R2 se chaves configuradas)
 export async function uploadProjectFile(projectId: string, data: { tipo: FileType; nome_arquivo: string; url?: string }) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -295,7 +296,7 @@ export async function updateProjectDetails(
     partner_id?: string | null;
   }
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -355,7 +356,7 @@ export async function updateProjectDetails(
 }
 
 export async function getProjectDetailsAction(projectId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

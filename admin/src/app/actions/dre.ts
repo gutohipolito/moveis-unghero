@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-guard";
+import { requireModuleAccess } from "@/lib/moduleAccess";
 import type { ExpenseCategory, ExpenseNature } from "@/lib/expenses";
 
 export interface DreMonth {
@@ -31,7 +31,7 @@ const monthKey = (d: Date) =>
 export async function getDreData(
   monthsBack = 12
 ): Promise<{ success: boolean; data: DreData }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
   const empty: DreData = { months: [], categoriesByMonth: {} };
 
   const now = new Date();

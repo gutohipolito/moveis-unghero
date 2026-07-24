@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { putSensitiveBlob } from "@/lib/secureBlob";
-import { requireModuleAccess } from "@/lib/moduleAccess";
+import { put } from "@vercel/blob";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
   "application/vnd.ms-excel",
@@ -10,23 +10,30 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "text/plain",
 ]);
 
+/** Cadastro público de fornecedor: 6 uploads / hora por IP. */
+const PUBLIC_UPLOAD_RATE = { limit: 6, windowMs: 60 * 60 * 1000 };
+
 export async function POST(request: NextRequest) {
-  let auth;
-  try {
-    auth = await requireModuleAccess("estoque");
-  } catch {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  const ip = getRequestIp(request.headers);
+  const rate = checkRateLimit(`public-supplier-upload:${ip}`, PUBLIC_UPLOAD_RATE);
+  if (!rate.ok) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Muitos uploads. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfterSec) },
+      }
+    );
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
-      {
-        success: false,
-        error: "Armazenamento de arquivos não configurado. Adicione BLOB_READ_WRITE_TOKEN.",
-      },
+      { success: false, error: "Armazenamento temporariamente indisponível." },
       { status: 503 }
     );
   }
@@ -59,20 +66,24 @@ export async function POST(request: NextRequest) {
 
     const safeName = file.name.replace(/[^\w.\-() ]+/g, "_").slice(0, 120);
     const ext = safeName.includes(".") ? safeName.split(".").pop() : mimeType.split("/")[1];
-    const pathname = `suppliers/${auth.companyId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const pathname = `suppliers/public-signup/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
-    const blob = await putSensitiveBlob(pathname, file, { contentType: mimeType });
+    // Cadastro público: store público (links entram no CRM sem proxy de sessão).
+    const blob = await put(pathname, file, {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: mimeType,
+    });
 
     return NextResponse.json({
       success: true,
-      url: blob.clientUrl,
-      blobUrl: blob.url,
+      url: blob.url,
       name: safeName,
       sizeBytes: file.size,
       mimeType,
     });
   } catch (error) {
-    console.error("Erro no upload de arquivo do fornecedor:", error);
+    console.error("Erro no upload público de fornecedor:", error);
     return NextResponse.json(
       { success: false, error: "Não foi possível salvar o arquivo." },
       { status: 500 }

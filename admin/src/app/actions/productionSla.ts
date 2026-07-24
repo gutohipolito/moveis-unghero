@@ -18,6 +18,7 @@ import {
   getAuthContext,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 
 function mapSlaRow(
   row: {
@@ -42,7 +43,7 @@ function mapSlaRow(
 }
 
 export async function ensureProjectSla(projectId: string): Promise<ProjectSlaView | null> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) return null;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
@@ -81,7 +82,7 @@ export async function ensureProjectSla(projectId: string): Promise<ProjectSlaVie
 }
 
 export async function getCompanySlaStates(companyId: string): Promise<ProjectSlaView[]> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) return [];
   try {
     assertCompanyAccess(auth, companyId);
@@ -109,7 +110,7 @@ export async function getCompanySlaStates(companyId: string): Promise<ProjectSla
 }
 
 export async function getProjectSla(projectId: string): Promise<ProjectSlaView | null> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) return null;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
@@ -135,7 +136,7 @@ export async function verifySlaStage(
   completed: boolean,
   extraDays?: number
 ): Promise<{ success: boolean; error?: string; sla?: ProjectSlaView }> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -205,7 +206,7 @@ export async function updateProjectSlaStage(
   projectId: string,
   stageKey: ProductionSlaStageKey
 ): Promise<{ success: boolean; sla?: ProjectSlaView; error?: string }> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -253,7 +254,7 @@ export async function updateProjectSlaStage(
 }
 
 export async function markNotaFiscalEmitida(projectId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -291,7 +292,7 @@ export async function markNotaFiscalEmitida(projectId: string) {
 }
 
 export async function checkProjectPaymentComplete(projectId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) return { fullyPaid: false };
   try {
     await requireProjectInCompany(projectId, auth.companyId);
@@ -314,7 +315,7 @@ export async function checkProjectPaymentComplete(projectId: string) {
 }
 
 export async function getSlaAlertProjects(companyId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) return [];
   try {
     assertCompanyAccess(auth, companyId);
@@ -327,7 +328,7 @@ export async function getSlaAlertProjects(companyId: string) {
 }
 
 export async function getInvoicePendingProjects(companyId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("factory");
   if (!auth) return [];
   try {
     assertCompanyAccess(auth, companyId);

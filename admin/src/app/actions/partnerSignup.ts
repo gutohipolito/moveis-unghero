@@ -4,6 +4,9 @@ import { PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
+import { resolvePublicCompanyId } from "@/lib/publicCompany";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { headers } from "next/headers";
 
 export interface PartnerSignupData {
   nome: string;
@@ -25,6 +28,18 @@ function cleanPhone(phone: string) {
 
 export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
   try {
+    const ip = getRequestIp(await headers());
+    const rate = checkRateLimit(`public-partner-signup:${ip}`, {
+      limit: 8,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rate.ok) {
+      return {
+        success: false,
+        error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+      };
+    }
+
     const nome = data.nome?.trim();
     if (!nome || nome.length < 3) {
       return { success: false, error: "Informe seu nome completo." };
@@ -42,14 +57,7 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
       return { success: false, error: "Informe telefone ou e-mail para contato." };
     }
 
-    let companyId = data.company_id;
-    if (!companyId) {
-      const firstCompany = await prisma.company.findFirst();
-      if (!firstCompany) {
-        return { success: false, error: "Nenhuma empresa cadastrada no sistema." };
-      }
-      companyId = firstCompany.id;
-    }
+    const companyId = resolvePublicCompanyId();
 
     const orConditions: { email?: { equals: string; mode: "insensitive" }; telefone?: { contains: string } }[] = [];
     if (email) {

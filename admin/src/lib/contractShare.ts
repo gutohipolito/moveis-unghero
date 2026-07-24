@@ -18,7 +18,7 @@ export function buildContractShortUrl(code: string) {
   return `${getContractShortBaseUrl()}${CONTRACT_SHORT_PATH}/${code}`;
 }
 
-export function generateContractShareCode(length = 8) {
+export function generateContractShareCode(length = 12) {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(bytes, (byte) => SHARE_CODE_ALPHABET[byte % SHARE_CODE_ALPHABET.length]).join(
     ""

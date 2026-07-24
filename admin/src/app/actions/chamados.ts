@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireAdmin } from "@/lib/auth-guard";
+import { requireAdmin } from "@/lib/auth-guard";
+import { requireModuleAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import { labelProjectStatus } from "@/lib/navLabels";
 import type {
@@ -73,7 +74,7 @@ export async function listSupplyTickets(): Promise<{
   success: boolean;
   tickets: SupplyTicketDTO[];
 }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("chamados");
   try {
     const rows = await prisma.supplyTicket.findMany({
       where: { company_id: auth.companyId },
@@ -90,7 +91,7 @@ export async function listSupplyTickets(): Promise<{
 export async function createSupplyTicket(
   input: CreateSupplyTicketInput
 ): Promise<SupplyTicketResult> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("chamados");
 
   const titulo = capitalizeText((input.titulo ?? "").trim());
   const descricao = (input.descricao ?? "").trim();
@@ -174,7 +175,7 @@ export async function setSupplyTicketStatus(
 
 /** Cancela um chamado. Permitido ao autor (se ainda aberto) ou a um admin. */
 export async function cancelSupplyTicket(id: string): Promise<SupplyTicketResult> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("chamados");
 
   const existing = await prisma.supplyTicket.findFirst({
     where: { id, company_id: auth.companyId },

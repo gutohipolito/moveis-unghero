@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
+import { resolvePublicCompanyId } from "@/lib/publicCompany";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { headers } from "next/headers";
+import { requireModuleAccess } from "@/lib/moduleAccess";
 
 export interface SupplierSignupData {
   company_id?: string;
@@ -73,6 +77,26 @@ function cleanCnpj(cnpj: string) {
 
 export async function submitPublicSupplierSignupAction(data: SupplierSignupData) {
   try {
+    let companyId: string;
+
+    if (data.viaPainel) {
+      const auth = await requireModuleAccess("estoque");
+      companyId = auth.companyId;
+    } else {
+      const ip = getRequestIp(await headers());
+      const rate = checkRateLimit(`public-supplier-signup:${ip}`, {
+        limit: 6,
+        windowMs: 60 * 60 * 1000,
+      });
+      if (!rate.ok) {
+        return {
+          success: false,
+          error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+        };
+      }
+      companyId = resolvePublicCompanyId();
+    }
+
     const nome = data.nome?.trim();
     if (!nome) {
       return { success: false, error: "A Razão Social é obrigatória." };
@@ -96,15 +120,6 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
     const categoria = data.categoria?.trim();
     if (!categoria) {
       return { success: false, error: "A categoria principal é obrigatória." };
-    }
-
-    let companyId = data.company_id;
-    if (!companyId) {
-      const firstCompany = await prisma.company.findFirst();
-      if (!firstCompany) {
-        return { success: false, error: "Nenhuma empresa cadastrada no sistema." };
-      }
-      companyId = firstCompany.id;
     }
 
     // Verificar CNPJ duplicado

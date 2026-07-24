@@ -19,7 +19,7 @@ export function buildQuotePdfShortUrl(code: string) {
   return `${getQuotePdfShortBaseUrl()}${QUOTE_PDF_SHORT_PATH}/${code}`;
 }
 
-export function generateQuotePdfShareCode(length = 8) {
+export function generateQuotePdfShareCode(length = 12) {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(bytes, (byte) => SHARE_CODE_ALPHABET[byte % SHARE_CODE_ALPHABET.length]).join("");
 }

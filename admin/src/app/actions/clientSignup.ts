@@ -7,6 +7,9 @@ import type { TipoPessoa } from "@/lib/clientDocument";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { stripConsentFromObservacoes } from "@/lib/clientConsent";
 import { isValidBrPhoneDigits } from "@/lib/phone";
+import { resolvePublicCompanyId } from "@/lib/publicCompany";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { headers } from "next/headers";
 
 export interface ClientSignupData {
   tipo_pessoa?: TipoPessoa;
@@ -29,6 +32,18 @@ export interface ClientSignupData {
 
 export async function submitPublicClientSignupAction(data: ClientSignupData) {
   try {
+    const ip = getRequestIp(await headers());
+    const rate = checkRateLimit(`public-client-signup:${ip}`, {
+      limit: 8,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rate.ok) {
+      return {
+        success: false,
+        error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+      };
+    }
+
     const nome = data.nome?.trim();
     const telefone = data.telefone?.trim();
 
@@ -51,14 +66,8 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
       };
     }
 
-    let companyId = data.company_id;
-    if (!companyId) {
-      const firstCompany = await prisma.company.findFirst();
-      if (!firstCompany) {
-        return { success: false, error: "Nenhuma empresa cadastrada no sistema." };
-      }
-      companyId = firstCompany.id;
-    }
+    // Ignora company_id do cliente (IDOR / tenant pollution).
+    const companyId = resolvePublicCompanyId();
 
     const tipoPessoa: TipoPessoa = data.tipo_pessoa === "PJ" ? "PJ" : "PF";
     const documentoDigits = data.documento?.replace(/\D/g, "") || "";

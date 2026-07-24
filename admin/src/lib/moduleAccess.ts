@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext } from "@/lib/auth-guard";
+import { getAuthContext, requireAuth, type AuthContext } from "@/lib/auth-guard";
 import {
   canAccessModule,
   resolveAllowedModules,
@@ -34,6 +34,28 @@ export async function guardModule(moduleKey: string): Promise<void> {
   const permissions = await getCompanyPermissions(auth.companyId);
   if (!canAccessModule(permissions, auth.cargo, moduleKey)) {
     redirect("/sem-acesso");
+  }
+}
+
+/**
+ * Guarda para server actions e API routes. Exige sessão + permissão de módulo.
+ * Lança erro (não redireciona) — o caller deve mapear para JSON/resultado.
+ */
+export async function requireModuleAccess(moduleKey: string): Promise<AuthContext> {
+  const auth = await requireAuth();
+  const permissions = await getCompanyPermissions(auth.companyId);
+  if (!canAccessModule(permissions, auth.cargo, moduleKey)) {
+    throw new Error("Acesso negado");
+  }
+  return auth;
+}
+
+/** Variante soft: null se não autenticado ou sem permissão de módulo. */
+export async function getModuleAccess(moduleKey: string): Promise<AuthContext | null> {
+  try {
+    return await requireModuleAccess(moduleKey);
+  } catch {
+    return null;
   }
 }
 

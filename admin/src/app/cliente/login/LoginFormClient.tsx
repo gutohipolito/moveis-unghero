@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 
 interface LoginFormClientProps {
-  loginAction: (data: { identificador: string; cpf: string }) => Promise<{ success: boolean; clientId?: string; error?: string }>;
+  loginAction: (data: { identificador: string; cpf: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 export default function LoginFormClient({ loginAction }: LoginFormClientProps) {
@@ -28,7 +28,7 @@ export default function LoginFormClient({ loginAction }: LoginFormClientProps) {
 
     const res = await loginAction({ identificador, cpf });
     
-    if (res.success && res.clientId) {
+    if (res.success) {
       // Redireciona para o painel do cliente
       router.push("/cliente/dashboard");
     } else {

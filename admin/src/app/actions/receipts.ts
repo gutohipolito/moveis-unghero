@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { PaymentMethod, Prisma, ReceiptQuitacao } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 import { buildClientAddress } from "@/lib/contractTemplates";
 import { formatDocumentLabel } from "@/lib/currencyExtenso";
 import { labelPaymentMethod, type PaymentMethod as MethodLabel } from "@/lib/paymentMethods";
@@ -131,7 +132,7 @@ export type CreatePaymentReceiptInput = {
 export async function createPaymentReceipt(
   input: CreatePaymentReceiptInput
 ): Promise<{ success: true; receipt: PaymentReceiptDTO } | { success: false; error: string }> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("financeiro");
   if (!auth) return { success: false, error: "Não autenticado." };
 
   const valor = Number(input.valor);
@@ -293,7 +294,7 @@ export async function listClientPaymentReceipts(
   | { success: true; receipts: PaymentReceiptDTO[] }
   | { success: false; receipts: []; error: string }
 > {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("financeiro");
   if (!auth) {
     return { success: false, receipts: [], error: "Não autenticado." };
   }
@@ -324,7 +325,7 @@ export async function listClientPaymentReceipts(
 }
 
 export async function getPaymentReceiptForPrint(receiptId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("financeiro");
   if (!auth) return null;
 
   const receipt = await prisma.paymentReceipt.findFirst({

@@ -9,6 +9,9 @@ import {
   normalizeClientEmail,
   resolveClientContactFields,
 } from "@/lib/clientMatch";
+import { resolvePublicCompanyId } from "@/lib/publicCompany";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { headers } from "next/headers";
 
 export interface BriefingSubmitData {
   nome: string;
@@ -49,15 +52,20 @@ export interface BriefingSubmitData {
 
 export async function submitPublicBriefingAction(data: BriefingSubmitData) {
   try {
-    // 1. Resolver a empresa (Company)
-    let companyId = data.company_id;
-    if (!companyId) {
-      const firstCompany = await prisma.company.findFirst();
-      if (!firstCompany) {
-        return { success: false, error: "Nenhuma empresa cadastrada no sistema." };
-      }
-      companyId = firstCompany.id;
+    const ip = getRequestIp(await headers());
+    const rate = checkRateLimit(`public-briefing:${ip}`, {
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rate.ok) {
+      return {
+        success: false,
+        error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+      };
     }
+
+    // Ignora company_id do cliente (IDOR / tenant pollution).
+    const companyId = resolvePublicCompanyId();
 
     // 2. Resolver o usuário comercial para a timeline
     const commercialUser = await prisma.user.findFirst({
@@ -95,16 +103,16 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
         },
       });
     } else {
+      // Cliente existente: não sobrescreve identidade (e-mail/telefone/bairro) pelo form público.
+      // Apenas completa campos vazios de forma segura.
       client = await prisma.client.update({
         where: { id: client.id },
         data: {
-          origem: "FORMULARIO",
-          telefone_digits: contact.phoneDigits || client.telefone_digits,
-          telefone: contact.phoneDigits ? contact.telefone : client.telefone,
-          ...(cleanEmail && !isPlaceholderClientEmail(cleanEmail) ? { email: cleanEmail } : {}),
           ...(data.bairro?.trim() && !client.bairro ? { bairro: capitalizeText(data.bairro) } : {}),
-          ...(client.cidade.includes(" - ") || client.cidade.includes(" – ")
-            ? { cidade: capitalizeText(data.cidade) }
+          ...(cleanEmail &&
+          !isPlaceholderClientEmail(cleanEmail) &&
+          isPlaceholderClientEmail(client.email)
+            ? { email: cleanEmail }
             : {}),
         },
       });

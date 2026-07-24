@@ -3,12 +3,26 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_EMAIL } from "@/lib/constants";
 
+/**
+ * Bootstrap de admin — desabilitado por padrão.
+ * Só funciona com ALLOW_ADMIN_BOOTSTRAP=true + ADMIN_SETUP_SECRET.
+ * Em produção (VERCEL_ENV=production) exige também ALLOW_ADMIN_BOOTSTRAP_PROD=true
+ * para evitar reativação acidental só com o flag de bootstrap.
+ */
 async function handleCreateAdmin(request: NextRequest) {
-  // Exige flag explícita além do secret — se alguém deixar ADMIN_SETUP_SECRET
-  // na Vercel por esquecimento, o endpoint continua fechado.
   if (process.env.ALLOW_ADMIN_BOOTSTRAP !== "true") {
     return NextResponse.json(
       { success: false, error: "Bootstrap de admin desativado." },
+      { status: 404 }
+    );
+  }
+
+  if (
+    process.env.VERCEL_ENV === "production" &&
+    process.env.ALLOW_ADMIN_BOOTSTRAP_PROD !== "true"
+  ) {
+    return NextResponse.json(
+      { success: false, error: "Bootstrap de admin desativado em produção." },
       { status: 404 }
     );
   }
@@ -33,9 +47,9 @@ async function handleCreateAdmin(request: NextRequest) {
     );
   }
 
-  if (!password || typeof password !== "string") {
+  if (!password || typeof password !== "string" || password.length < 12) {
     return NextResponse.json(
-      { success: false, error: "Campo password é obrigatório." },
+      { success: false, error: "Campo password é obrigatório (mín. 12 caracteres)." },
       { status: 400 }
     );
   }
@@ -50,7 +64,7 @@ async function handleCreateAdmin(request: NextRequest) {
       {
         success: false,
         error:
-          "Já existe um administrador no sistema. Remova ADMIN_SETUP_SECRET após o bootstrap.",
+          "Já existe um administrador no sistema. Remova ALLOW_ADMIN_BOOTSTRAP após o bootstrap.",
       },
       { status: 403 }
     );

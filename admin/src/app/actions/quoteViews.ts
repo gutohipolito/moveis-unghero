@@ -2,6 +2,7 @@
 
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { requireAuth, requireProjectInCompany } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 
 export type QuoteViewHistoryItem = {

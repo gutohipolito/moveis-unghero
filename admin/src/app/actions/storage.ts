@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 import { prisma } from "@/lib/prisma";
 
 export interface StorageUsage {

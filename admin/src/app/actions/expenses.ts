@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-guard";
+import { requireModuleAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import type {
   ExpenseDTO,
@@ -64,7 +64,7 @@ export async function listExpenses(): Promise<{
   success: boolean;
   expenses: ExpenseDTO[];
 }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
   try {
     const rows = await prisma.expense.findMany({
       where: { company_id: auth.companyId },
@@ -92,7 +92,7 @@ function addMonths(base: Date, n: number): Date {
 export async function createExpense(
   input: CreateExpenseInput
 ): Promise<{ success: boolean; created?: number; error?: string }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
 
   const descricao = capitalizeText((input.descricao ?? "").trim());
   if (!descricao) return { success: false, error: "Informe a descrição da despesa." };
@@ -169,7 +169,7 @@ export async function payExpense(
   id: string,
   metodo_pagamento?: string | null
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
   const existing = await prisma.expense.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },
@@ -199,7 +199,7 @@ export async function payExpense(
 export async function reopenExpense(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
   const existing = await prisma.expense.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },
@@ -223,7 +223,7 @@ export async function reopenExpense(
 export async function deleteExpense(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
   const existing = await prisma.expense.findFirst({
     where: { id, company_id: auth.companyId },
     select: { id: true },

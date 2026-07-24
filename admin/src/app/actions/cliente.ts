@@ -7,7 +7,7 @@ import {
   resolveClientDocument,
   type TipoPessoa,
 } from "@/lib/clientDocument";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -20,6 +20,9 @@ import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { labelProjectStatus } from "@/lib/navLabels";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
+import { resolvePublicCompanyId } from "@/lib/publicCompany";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { getModuleAccess } from "@/lib/moduleAccess";
 
 type Origin = 
   | "SITE"
@@ -178,17 +181,32 @@ async function migrateLegacyClientDocumentsIfNeeded() {
 
 export async function loginCliente(data: { identificador: string; cpf: string }) {
   const cookieStore = await cookies();
+  const headerStore = await headers();
   const idLimpo = data.identificador.trim().toLowerCase();
   const cpfLimpo = cleanCpf(data.cpf);
   const isProduction = process.env.NODE_ENV === "production";
+
+  const ip = getRequestIp(headerStore);
+  const rate = checkRateLimit(`cliente-login:${ip}:${idLimpo}`, {
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.ok) {
+    return {
+      success: false,
+      error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+    };
+  }
 
   if (isDatabaseOffline()) {
     return { success: false, error: "Serviço temporariamente indisponível. Tente novamente." };
   }
 
   try {
+    const companyId = resolvePublicCompanyId();
     const client = await prisma.client.findFirst({
       where: {
+        company_id: companyId,
         OR: [{ email: idLimpo }, { telefone: idLimpo }],
       },
     });
@@ -213,9 +231,10 @@ export async function loginCliente(data: { identificador: string; cpf: string })
       path: "/",
       httpOnly: true,
       secure: isProduction,
+      sameSite: "lax",
       maxAge: 60 * 60 * 24,
     });
-    return { success: true, clientId: client.id };
+    return { success: true };
   } catch (error) {
     console.warn("Banco offline no login de cliente.", error);
     setDatabaseOffline(true);
@@ -233,7 +252,7 @@ export async function logoutCliente() {
 
 // 1. Listar Clientes
 export async function getClients(companyId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado", clients: [] };
   }
@@ -299,7 +318,7 @@ export async function createClientAction(formData: {
   obs_imovel?: string;
   obs_entrega?: string;
 }) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -396,7 +415,7 @@ export async function updateClientAction(
     obs_entrega?: string;
   }
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -452,7 +471,7 @@ export async function updateClientAction(
 
 // 4. Excluir Cliente
 export async function deleteClientAction(clientId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -536,7 +555,7 @@ export async function importClientsAction(
   }>,
   companyId: string
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -743,7 +762,7 @@ export async function getClientPaymentsAction(clientId: string): Promise<{
   payments: Payment[];
   error?: string;
 }> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, payments: [], error: "Não autenticado" };
   }
@@ -814,7 +833,7 @@ function buildRegistrationActivity(
 }
 
 export async function getClientDetailsAction(clientId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -910,7 +929,7 @@ export async function addActivityAction(
   titulo: string,
   descricao: string
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -975,7 +994,7 @@ export async function updateClientObservacoesAction(
   clientId: string,
   observacoes: string
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

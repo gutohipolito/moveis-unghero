@@ -8,6 +8,7 @@ import {
   requireClientInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 
 export type ProjectStatus =
@@ -35,7 +36,7 @@ function revalidateCrmPaths() {
 }
 
 export async function updateProjectStatus(projectId: string, newStatus: ProjectStatus) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -107,7 +108,7 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
 }
 
 export async function markProjectContacted(projectId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -149,7 +150,7 @@ export async function markProjectContacted(projectId: string) {
 }
 
 export async function markProjectAsLost(projectId: string, motivo?: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -195,7 +196,7 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
 }
 
 export async function restoreProjectFromLoss(projectId: string, newStatus: ProjectStatus = "LEAD") {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -261,7 +262,7 @@ export async function createLead(formData: {
   obs_imovel?: string;
   obs_entrega?: string;
 }) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -388,7 +389,7 @@ export async function updateProjectAction(
     obs_entrega?: string;
   }
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -442,7 +443,7 @@ export async function updateProjectAction(
 }
 
 export async function addProjectTimelineAction(projectId: string, text: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -496,7 +497,7 @@ export async function updateProjectCommercialAction(
     observacoes?: string;
   }
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

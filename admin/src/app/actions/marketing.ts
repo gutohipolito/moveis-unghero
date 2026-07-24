@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { fetchGa4Dashboard } from "@/lib/ga4";
 import type { MarketingDashboardData, MarketingPeriod } from "@/lib/marketing";
 import { getAuthContext } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 
 const getCachedGa4Dashboard = (period: MarketingPeriod) =>
   unstable_cache(
@@ -15,7 +16,7 @@ const getCachedGa4Dashboard = (period: MarketingPeriod) =>
 export async function getMarketingDashboard(
   period: MarketingPeriod = "30"
 ): Promise<MarketingDashboardData> {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("marketing");
   if (!auth) {
     return { configured: false, period };
   }

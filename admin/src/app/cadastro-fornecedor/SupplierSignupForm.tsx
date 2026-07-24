@@ -335,7 +335,7 @@ export default function SupplierSignupForm({
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/fornecedores/upload", {
+      const response = await fetch("/api/public/supplier-upload", {
         method: "POST",
         body: formData,
       });

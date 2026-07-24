@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitPublicClientSignupAction } from "@/app/actions/clientSignup";
+import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 
 const ALLOWED_ORIGINS = new Set([
   "https://moveisunghero.com.br",
@@ -28,6 +29,24 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const headers = corsHeaders(request.headers.get("origin"));
 
+  const ip = getRequestIp(request.headers);
+  const rate = checkRateLimit(`api-public-client-signup:${ip}`, {
+    limit: 8,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!rate.ok) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+      },
+      {
+        status: 429,
+        headers: { ...headers, "Retry-After": String(rate.retryAfterSec) },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -41,6 +60,7 @@ export async function POST(request: NextRequest) {
   const data = (body ?? {}) as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === "string" ? v : undefined);
 
+  // company_id do body é ignorado de propósito (resolvePublicCompanyId no action).
   const result = await submitPublicClientSignupAction({
     tipo_pessoa: str(data.tipo_pessoa) === "PJ" ? "PJ" : "PF",
     documento: str(data.documento),
@@ -55,7 +75,6 @@ export async function POST(request: NextRequest) {
     uf: str(data.uf),
     tipo_imovel: str(data.tipo_imovel),
     observacoes: str(data.observacoes),
-    company_id: str(data.company_id),
     lgpd_aceite: data.lgpd_aceite === true || data.lgpd_aceite === "true",
     marketing_aceite: data.marketing_aceite === true || data.marketing_aceite === "true",
   });

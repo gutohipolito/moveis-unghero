@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
+import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext, requireClientInCompany } from "@/lib/auth-guard";
+import { requireModuleAccess } from "@/lib/moduleAccess";
+import { putSensitiveBlob } from "@/lib/secureBlob";
 import {
   CLIENT_ATTACHMENT_MAX_BYTES,
   CLIENT_ATTACHMENT_MIME_TYPES,
 } from "@/lib/clientAttachments";
 import type { ClientAttachmentType } from "@prisma/client";
+
+function toClientUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.endsWith("blob.vercel-storage.com")) return url;
+    // Extrai pathname após o host do blob (ex.: /clients/co/file.pdf)
+    const pathname = parsed.pathname.replace(/^\//, "");
+    return `/api/secure-blob?pathname=${encodeURIComponent(pathname)}&fallback=${encodeURIComponent(url)}`;
+  } catch {
+    return url;
+  }
+}
 
 function mapAttachment(record: {
   id: string;
@@ -23,7 +37,7 @@ function mapAttachment(record: {
     id: record.id,
     nome: record.nome,
     mime_type: record.mime_type,
-    url: record.url,
+    url: toClientUrl(record.url),
     tipo: record.tipo,
     size_bytes: record.size_bytes,
     createdAt: record.createdAt.toISOString(),
@@ -50,8 +64,10 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ clientId: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
+  let auth;
+  try {
+    auth = await requireModuleAccess("clientes");
+  } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
 
@@ -102,11 +118,7 @@ export async function POST(
   const pathname = `clients/${auth.companyId}/${clientId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
   try {
-    const blob = await put(pathname, file, {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType: mimeType,
-    });
+    const blob = await putSensitiveBlob(pathname, file, { contentType: mimeType });
 
     const tipo: ClientAttachmentType = mimeType.startsWith("image/") ? "FOTO" : "DOCUMENTO";
 

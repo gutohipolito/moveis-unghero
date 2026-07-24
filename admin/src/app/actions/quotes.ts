@@ -11,6 +11,7 @@ import {
   requireClientInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
+import { getModuleAccess } from "@/lib/moduleAccess";
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import { parseISODateOnlyBrazil } from "@/lib/brazilDate";
@@ -53,7 +54,7 @@ export interface CreateQuoteInput {
 
 // Cria um novo orçamento com controle de versão
 export async function createQuote(projectId: string, data: CreateQuoteInput) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -218,7 +219,7 @@ export async function approveQuote(
     observacoes?: string;
   }
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -501,7 +502,7 @@ export async function rejectQuoteItems(
   version: number,
   itemIds: string[]
 ) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -572,7 +573,7 @@ export async function revisePendingQuoteItems(input: {
     quantidade?: number;
   }>;
 }) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -717,7 +718,7 @@ export async function revisePendingQuoteItems(input: {
 
 /** Lista orçamentos com itens pendentes para a aba Pendências comerciais. */
 export async function getCommercialPendingQuotes() {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado", data: [] as CommercialPendingQuote[] };
   }
@@ -843,7 +844,7 @@ export type CommercialPendingQuote = {
 
 // Remove um orçamento (aprovados: apenas Administrador / cargo ADMIN)
 export async function deleteQuote(projectId: string, quoteId: string, version: number) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -921,7 +922,7 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
 
 // Busca orçamentos da empresa do usuário logado
 export async function getQuotes() {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado", data: [] };
   }
@@ -975,7 +976,7 @@ export async function getQuotes() {
 
 // Busca todos os projetos ativos para seleção no construtor de orçamentos
 export async function getProjectsForQuotes() {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado", data: [] };
   }
@@ -1011,7 +1012,7 @@ export async function getProjectsForQuotes() {
 
 // Cria um projeto temporário para um cliente existente
 export async function createProjectForClient(clientId: string, companyId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -1063,7 +1064,7 @@ export async function createQuickClientAndProject(data: {
   cidade: string;
   companyId: string;
 }) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
@@ -1141,7 +1142,7 @@ export async function createQuickClientAndProject(data: {
 }
 
 export async function getProjectBriefingAction(projectId: string) {
-  const auth = await getAuthContext();
+  const auth = await getModuleAccess("quotes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

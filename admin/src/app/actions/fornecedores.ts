@@ -4,13 +4,67 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
+import { requireModuleAccess } from "@/lib/moduleAccess";
 
-export async function getSupplierByIdAction(id: string, companyId: string) {
+const GENERAL_ALLOWLIST = new Set([
+  "nome",
+  "nomeFantasia",
+  "cnpj",
+  "inscricaoEstadual",
+  "categoria",
+  "subcategoria",
+  "site",
+  "instagram",
+  "linkedin",
+  "anoFundacao",
+  "numFuncionarios",
+  "possuiShowroom",
+  "contatoRepresentante",
+  "contatoCargo",
+  "telefone",
+  "contatoWhatsapp",
+  "email",
+  "contatoSegundo",
+  "contatoTelefoneSecundario",
+  "contatoCidade",
+  "contatoEstado",
+  "contatoEndereco",
+  "contatoCep",
+  "produtosFornecidos",
+  "marcasRepresentadas",
+  "produtosCatalogoUrl",
+  "produtosTabelaPrecosUrl",
+  "produtosLinkCatalogoOnline",
+  "produtosSobEncomenda",
+  "produtosQuantidadeMinima",
+  "produtosTempoFabricacao",
+  "comercialCondicoesPagamento",
+  "comercialDescontoMarceneiros",
+  "comercialTabelaDiferenciada",
+  "comercialRepresentanteExclusivo",
+  "comercialPedidoMinimo",
+  "comercialFreteGratisAcima",
+  "comercialComissao",
+  "comercialObservacoes",
+  "logisticaCidadeEstoque",
+  "logisticaPrazoMedioEntrega",
+  "logisticaEntregaPropria",
+  "logisticaTransportadora",
+  "logisticaRetiradaLocal",
+  "logisticaEstadosAtendidos",
+  "logisticaFazEntregasUrgentes",
+  "logisticaPossuiRastreamento",
+  "logisticaAreaCobertura",
+  "ativo",
+]);
+
+export async function getSupplierByIdAction(id: string, _companyId?: string) {
   try {
+    const auth = await requireModuleAccess("estoque");
     const supplier = await prisma.supplier.findFirst({
       where: {
         id,
-        company_id: companyId,
+        company_id: auth.companyId,
       },
     });
 
@@ -21,13 +75,20 @@ export async function getSupplierByIdAction(id: string, companyId: string) {
     return { success: true, supplier };
   } catch (error) {
     console.error("Erro ao buscar fornecedor:", error);
-    return { success: false, error: "Não foi possível carregar o fornecedor." };
+    return {
+      success: false,
+      error: error instanceof Error && error.message === "Acesso negado"
+        ? "Acesso negado"
+        : error instanceof Error && error.message === "Não autenticado"
+          ? "Não autenticado"
+          : "Não foi possível carregar o fornecedor.",
+    };
   }
 }
 
 export async function updateSupplierCrmAction(
   id: string,
-  companyId: string,
+  _companyId: string | undefined,
   data: {
     crmStatus?: string;
     crmNota?: number | null;
@@ -43,20 +104,21 @@ export async function updateSupplierCrmAction(
     crmResponsavelInterno?: string | null;
     crmObservacoes?: string | null;
     crmTags?: string[];
-    crmUploads?: any; // JSON array
-    crmHistorico?: any; // JSON array
+    crmUploads?: unknown;
+    crmHistorico?: unknown;
   }
 ) {
   try {
+    const auth = await requireModuleAccess("estoque");
     const existing = await prisma.supplier.findFirst({
-      where: { id, company_id: companyId },
+      where: { id, company_id: auth.companyId },
     });
 
     if (!existing) {
       return { success: false, error: "Fornecedor não encontrado." };
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.SupplierUpdateInput = {};
 
     if (data.crmStatus !== undefined) updateData.crmStatus = data.crmStatus;
     if (data.crmNota !== undefined) updateData.crmNota = data.crmNota;
@@ -65,40 +127,48 @@ export async function updateSupplierCrmAction(
     if (data.crmAtendimento !== undefined) updateData.crmAtendimento = data.crmAtendimento;
     if (data.crmPreco !== undefined) updateData.crmPreco = data.crmPreco;
     if (data.crmPosVenda !== undefined) updateData.crmPosVenda = data.crmPosVenda;
-    
+
     if (data.crmUltimaCompra !== undefined) {
       updateData.crmUltimaCompra = data.crmUltimaCompra ? new Date(data.crmUltimaCompra) : null;
     }
     if (data.crmUltimoOrcamento !== undefined) {
-      updateData.crmUltimoOrcamento = data.crmUltimoOrcamento ? new Date(data.crmUltimoOrcamento) : null;
+      updateData.crmUltimoOrcamento = data.crmUltimoOrcamento
+        ? new Date(data.crmUltimoOrcamento)
+        : null;
     }
     if (data.crmUltimoContato !== undefined) {
       updateData.crmUltimoContato = data.crmUltimoContato ? new Date(data.crmUltimoContato) : null;
     }
-    
+
     if (data.crmValorTotalComprado !== undefined) {
-      updateData.crmValorTotalComprado = data.crmValorTotalComprado !== null 
-        ? new Prisma.Decimal(data.crmValorTotalComprado) 
-        : null;
+      updateData.crmValorTotalComprado =
+        data.crmValorTotalComprado !== null
+          ? new Prisma.Decimal(data.crmValorTotalComprado)
+          : null;
     }
-    
-    if (data.crmResponsavelInterno !== undefined) updateData.crmResponsavelInterno = data.crmResponsavelInterno;
+
+    if (data.crmResponsavelInterno !== undefined) {
+      updateData.crmResponsavelInterno = data.crmResponsavelInterno;
+    }
     if (data.crmObservacoes !== undefined) updateData.crmObservacoes = data.crmObservacoes;
     if (data.crmTags !== undefined) updateData.crmTags = data.crmTags;
-    if (data.crmUploads !== undefined) updateData.crmUploads = data.crmUploads;
-    if (data.crmHistorico !== undefined) updateData.crmHistorico = data.crmHistorico;
+    if (data.crmUploads !== undefined) {
+      updateData.crmUploads = data.crmUploads as Prisma.InputJsonValue;
+    }
+    if (data.crmHistorico !== undefined) {
+      updateData.crmHistorico = data.crmHistorico as Prisma.InputJsonValue;
+    }
 
-    // Se mudou o status, registrar no histórico
     if (data.crmStatus && data.crmStatus !== existing.crmStatus) {
-      const historicoAtual = Array.isArray(existing.crmHistorico) 
-        ? [...existing.crmHistorico] 
+      const historicoAtual = Array.isArray(existing.crmHistorico)
+        ? [...(existing.crmHistorico as unknown[])]
         : [];
-      
+
       historicoAtual.push({
         data: new Date().toISOString(),
         acao: `Status alterado de "${existing.crmStatus}" para "${data.crmStatus}".`,
       });
-      updateData.crmHistorico = historicoAtual;
+      updateData.crmHistorico = historicoAtual as Prisma.InputJsonValue;
     }
 
     const updated = await prisma.supplier.update({
@@ -112,28 +182,35 @@ export async function updateSupplierCrmAction(
     return { success: true, supplier: updated };
   } catch (error) {
     console.error("Erro ao atualizar CRM do fornecedor:", error);
-    return { success: false, error: "Não foi possível salvar as alterações de CRM." };
+    return {
+      success: false,
+      error:
+        error instanceof Error && (error.message === "Acesso negado" || error.message === "Não autenticado")
+          ? error.message
+          : "Não foi possível salvar as alterações de CRM.",
+    };
   }
 }
 
 export async function addSupplierCrmHistoryLogAction(
   id: string,
-  companyId: string,
+  _companyId: string | undefined,
   text: string
 ) {
   try {
+    const auth = await requireModuleAccess("estoque");
     const existing = await prisma.supplier.findFirst({
-      where: { id, company_id: companyId },
+      where: { id, company_id: auth.companyId },
     });
 
     if (!existing) {
       return { success: false, error: "Fornecedor não encontrado." };
     }
 
-    const historicoAtual = Array.isArray(existing.crmHistorico) 
-      ? [...existing.crmHistorico] 
+    const historicoAtual = Array.isArray(existing.crmHistorico)
+      ? [...(existing.crmHistorico as unknown[])]
       : [];
-    
+
     historicoAtual.push({
       data: new Date().toISOString(),
       acao: text.trim(),
@@ -142,7 +219,7 @@ export async function addSupplierCrmHistoryLogAction(
     const updated = await prisma.supplier.update({
       where: { id },
       data: {
-        crmHistorico: historicoAtual,
+        crmHistorico: historicoAtual as Prisma.InputJsonValue,
         crmUltimoContato: new Date(),
       },
     });
@@ -151,104 +228,50 @@ export async function addSupplierCrmHistoryLogAction(
     return { success: true, supplier: updated };
   } catch (error) {
     console.error("Erro ao adicionar histórico:", error);
-    return { success: false, error: "Não foi possível adicionar o histórico." };
+    return {
+      success: false,
+      error:
+        error instanceof Error && (error.message === "Acesso negado" || error.message === "Não autenticado")
+          ? error.message
+          : "Não foi possível adicionar o histórico.",
+    };
   }
 }
 
 export async function updateSupplierGeneralAction(
   id: string,
-  companyId: string,
-  data: {
-    // Info Geral
-    nome?: string;
-    nomeFantasia?: string | null;
-    cnpj?: string;
-    inscricaoEstadual?: string | null;
-    categoria?: string;
-    subcategoria?: string | null;
-    site?: string | null;
-    instagram?: string | null;
-    linkedin?: string | null;
-    anoFundacao?: number | null;
-    numFuncionarios?: string | null;
-    possuiShowroom?: boolean | null;
-
-    // Contato
-    contatoRepresentante?: string | null;
-    contatoCargo?: string | null;
-    telefone?: string;
-    contatoWhatsapp?: string | null;
-    email?: string;
-    contatoSegundo?: string | null;
-    contatoTelefoneSecundario?: string | null;
-    contatoCidade?: string | null;
-    contatoEstado?: string | null;
-    contatoEndereco?: string | null;
-    contatoCep?: string | null;
-
-    // Produtos
-    produtosFornecidos?: string | null;
-    marcasRepresentadas?: string | null;
-    produtosCatalogoUrl?: string | null;
-    produtosTabelaPrecosUrl?: string | null;
-    produtosLinkCatalogoOnline?: string | null;
-    produtosSobEncomenda?: boolean | null;
-    produtosQuantidadeMinima?: string | null;
-    produtosTempoFabricacao?: string | null;
-
-    // Comercial
-    comercialCondicoesPagamento?: string[];
-    comercialDescontoMarceneiros?: boolean | null;
-    comercialTabelaDiferenciada?: boolean | null;
-    comercialRepresentanteExclusivo?: boolean | null;
-    comercialPedidoMinimo?: string | null;
-    comercialFreteGratisAcima?: string | null;
-    comercialComissao?: string | null;
-    comercialObservacoes?: string | null;
-
-    // Logística
-    logisticaCidadeEstoque?: string | null;
-    logisticaPrazoMedioEntrega?: string | null;
-    logisticaEntregaPropria?: boolean | null;
-    logisticaTransportadora?: boolean | null;
-    logisticaRetiradaLocal?: boolean | null;
-    logisticaEstadosAtendidos?: string[];
-    logisticaFazEntregasUrgentes?: boolean | null;
-    logisticaPossuiRastreamento?: boolean | null;
-    logisticaAreaCobertura?: string | null;
-    
-    // Status Ativo
-    ativo?: boolean;
-  }
+  _companyId: string | undefined,
+  data: Record<string, unknown>
 ) {
   try {
+    const auth = await requireModuleAccess("estoque");
     const existing = await prisma.supplier.findFirst({
-      where: { id, company_id: companyId },
+      where: { id, company_id: auth.companyId },
     });
 
     if (!existing) {
       return { success: false, error: "Fornecedor não encontrado." };
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
-    // Mapeamento dinâmico
-    Object.keys(data).forEach((key) => {
-      const val = (data as any)[key];
-      if (val !== undefined) {
-        if (key === "nome" && val) {
-          updateData.nome = capitalizeText(val.trim());
-        } else if (key === "contatoRepresentante" && val) {
-          updateData.contatoRepresentante = capitalizeText(val.trim());
-        } else if (key === "email" && val) {
-          updateData.email = val.trim().toLowerCase();
-        } else if (key === "cnpj" && val) {
-          updateData.cnpj = val.replace(/\D/g, "");
-        } else {
-          updateData[key] = val;
-        }
+    for (const key of Object.keys(data)) {
+      if (!GENERAL_ALLOWLIST.has(key)) continue;
+      const val = data[key];
+      if (val === undefined) continue;
+
+      if (key === "nome" && typeof val === "string" && val) {
+        updateData.nome = capitalizeText(val.trim());
+      } else if (key === "contatoRepresentante" && typeof val === "string" && val) {
+        updateData.contatoRepresentante = capitalizeText(val.trim());
+      } else if (key === "email" && typeof val === "string" && val) {
+        updateData.email = val.trim().toLowerCase();
+      } else if (key === "cnpj" && typeof val === "string" && val) {
+        updateData.cnpj = val.replace(/\D/g, "");
+      } else {
+        updateData[key] = val;
       }
-    });
+    }
 
     const updated = await prisma.supplier.update({
       where: { id },
@@ -261,6 +284,12 @@ export async function updateSupplierGeneralAction(
     return { success: true, supplier: updated };
   } catch (error) {
     console.error("Erro ao atualizar fornecedor:", error);
-    return { success: false, error: "Não foi possível salvar os dados do fornecedor." };
+    return {
+      success: false,
+      error:
+        error instanceof Error && (error.message === "Acesso negado" || error.message === "Não autenticado")
+          ? error.message
+          : "Não foi possível salvar os dados do fornecedor.",
+    };
   }
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-guard";
+import { requireModuleAccess } from "@/lib/moduleAccess";
 
 export interface ProjectProfitRow {
   projectId: string;
@@ -28,7 +28,7 @@ export async function getProjectProfitability(): Promise<{
   success: boolean;
   data: ProfitabilityData;
 }> {
-  const auth = await requireAuth();
+  const auth = await requireModuleAccess("financeiro");
   const empty: ProfitabilityData = {
     rows: [],
     totalReceita: 0,
