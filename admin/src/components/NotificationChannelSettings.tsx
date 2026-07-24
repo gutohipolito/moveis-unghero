@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   BellRing,
   Check,
+  LayoutPanelTop,
   Loader2,
   Monitor,
   Smartphone,
@@ -24,6 +25,7 @@ export default function NotificationChannelSettings() {
     disableBrowserNotifications,
     toggleNotificationSound,
     testBrowserNotification,
+    testInAppToast,
     pushSupported,
     pushConfigured,
     pushActive,
@@ -48,6 +50,31 @@ export default function NotificationChannelSettings() {
           </p>
         </div>
         <BellRing className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+      </div>
+
+      <div className="rounded-xl border border-border bg-background/70 p-3">
+        <div className="flex items-start gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+            <LayoutPanelTop className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-foreground">Alerta no painel</p>
+              <p className="text-[10px] text-muted-foreground">
+                Toast sticky no estilo macOS (Fechar / Lembrar depois).
+              </p>
+            </div>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => testInAppToast()}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground"
+              >
+                Testar toast
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border bg-background/70 p-3">

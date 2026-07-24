@@ -86,6 +86,8 @@ interface NotificationContextValue {
   toggleNotificationSound: () => void;
   testBrowserNotification: () => Promise<boolean>;
   testPushNotification: () => Promise<boolean>;
+  /** Exibe um toast de exemplo no estilo do painel (macOS). */
+  testInAppToast: () => void;
   dismissToast: (id: string) => void;
   snoozeToastReminder: (id: string, option: ToastSnoozeOption) => void;
   openToast: (id: string, href: string) => void;
@@ -535,6 +537,29 @@ export function NotificationProvider({
     );
   }, [prefs.sound]);
 
+  const testInAppToast = useCallback(() => {
+    const id = `toast-demo-${Date.now()}`;
+    const demo: InAppToast = {
+      id,
+      toastKey: id,
+      type: "quote_stale",
+      priority: "normal",
+      title: "Retomar proposta enviada",
+      message: "Cliente Exemplo — DFCS-230726 enviada há 5 dias, ainda sem fechamento.",
+      href: "/crm",
+      createdAt: new Date().toISOString(),
+    };
+
+    void primeNotificationSound().then(() => {
+      playChimeOnce(false);
+    });
+
+    toastKeysRef.current.add(id);
+    setToasts((prev) => [...prev.filter((t) => !t.toastKey.startsWith("toast-demo-")), demo].slice(
+      -MAX_VISIBLE_TOASTS
+    ));
+  }, [playChimeOnce]);
+
   const dismissToast = useCallback((id: string) => {
     markToastDismissed(id, dismissedToastRef.current);
     toastKeysRef.current.add(id);
@@ -592,6 +617,7 @@ export function NotificationProvider({
     toggleNotificationSound,
     testBrowserNotification,
     testPushNotification,
+    testInAppToast,
     dismissToast,
     snoozeToastReminder,
     openToast,
