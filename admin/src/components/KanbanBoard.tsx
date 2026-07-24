@@ -6,6 +6,9 @@ import { updateProjectDetails } from "@/app/actions/project";
 import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
+import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
+import { maskPhone } from "@/lib/maskSensitive";
 import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
@@ -358,6 +361,8 @@ export default function KanbanBoard({
   initialFollowUpSla = null,
 }: KanbanBoardProps) {
   const { isReadOnly } = usePermissions();
+  const sensitive = useSensitiveDisplay();
+  const privacyHidden = isReadOnly || sensitive.hide;
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -392,6 +397,7 @@ export default function KanbanBoard({
   const [copiedScript, setCopiedScript] = useState(false);
   // Dados sensíveis sempre começam ocultos nesta tela (não usa preferência global).
   const [valuesHidden, setValuesHidden] = useState(true);
+  const valuesAreHidden = isReadOnly || valuesHidden;
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [followUpSla, setFollowUpSla] = useState<FollowUpSlaConfig>(() =>
     resolveFollowUpSla(initialFollowUpSla)
@@ -1023,8 +1029,8 @@ export default function KanbanBoard({
                 <p className="flex items-center text-xs text-muted-foreground">
                   <Phone className="h-3 w-3 mr-1 opacity-80 text-primary shrink-0" />
                   <span className="tabular-nums">
-                    {valuesHidden
-                      ? maskPhoneLastDigits(project.client.telefone, 4)
+                    {valuesAreHidden
+                      ? maskPhone(project.client.telefone)
                       : project.client.telefone}
                   </span>
                 </p>
@@ -1352,7 +1358,7 @@ export default function KanbanBoard({
 
                   <div className="flex items-center gap-2">
                     <a
-                      href={`https://api.whatsapp.com/send?phone=55${project.client.telefone.replace(/\D/g, "")}`}
+                      href={sensitive.whatsappHref(project.client.telefone) || undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       onPointerDown={(e) => e.stopPropagation()}
@@ -1428,10 +1434,13 @@ export default function KanbanBoard({
             onClick={toggleSensitiveVisibility}
             className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
             title={
-              valuesHidden
+              isReadOnly
+                ? "Conta somente leitura: valores e telefone sempre ocultos"
+                : valuesHidden
                 ? "Mostrar totais e telefone (oculta de novo em 30s)"
                 : "Ocultar totais e telefone"
             }
+            disabled={isReadOnly}
           >
             {valuesHidden ? (
               <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
@@ -1550,13 +1559,7 @@ export default function KanbanBoard({
                   </span>
                 </div>
                 {colSum > 0 && (
-                  <span
-                    className={`text-xs font-bold text-foreground shrink-0 ml-2 tabular-nums transition-[filter] duration-300 ${
-                      valuesHidden ? "blur-[5px] select-none" : "blur-0"
-                    }`}
-                  >
-                    {formatCurrency(colSum)}
-                  </span>
+                  <PrivacyMoney value={colSum} className="text-xs font-bold text-foreground shrink-0 ml-2" />
                 )}
               </div>
 
@@ -1791,7 +1794,7 @@ export default function KanbanBoard({
                               </button>
 
                               <a
-                                href={`https://api.whatsapp.com/send?phone=55${currentProject.client.telefone.replace(/\D/g, "")}`}
+                                href={sensitive.whatsappHref(currentProject.client.telefone) || undefined}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 border border-emerald-600 text-white text-[10px] font-bold shadow-sm active:scale-95 transition-all duration-200 cursor-pointer"
@@ -2033,7 +2036,7 @@ export default function KanbanBoard({
                             {copiedScript ? "Copiado!" : "Copiar"}
                           </button>
                           <a
-                            href={`https://api.whatsapp.com/send?phone=55${currentProject.client.telefone.replace(/\D/g, "")}`}
+                            href={sensitive.whatsappHref(currentProject.client.telefone) || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 border border-emerald-600 text-white text-[10px] font-bold shadow-sm active:scale-95 transition-all duration-200 cursor-pointer"
@@ -2057,7 +2060,7 @@ export default function KanbanBoard({
                     </div>
                     <div>
                       <span className="font-semibold text-slate-400 block mb-0.5">WhatsApp / Telefone</span>
-                      <strong className="text-neutral-900 block">{leadForm.telefone}</strong>
+                      <strong className="text-neutral-900 block">{sensitive.phone(leadForm.telefone)}</strong>
                     </div>
                     <div>
                       <span className="font-semibold text-slate-400 block mb-0.5">E-mail</span>

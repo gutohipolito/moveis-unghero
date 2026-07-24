@@ -744,7 +744,14 @@ export default function QuotesList({
                               {statusLabel}
                             </span>
                             <span className="text-[10px] text-muted-foreground">
-                              {formatCurrency(summary.approvedTotal)} aprov. · {formatCurrency(summary.pendingTotal)} pend.
+                              {valuesAreHidden ? (
+                                <>R$ ••••• aprov. · R$ ••••• pend.</>
+                              ) : (
+                                <>
+                                  {formatCurrency(summary.approvedTotal)} aprov. ·{" "}
+                                  {formatCurrency(summary.pendingTotal)} pend.
+                                </>
+                              )}
                             </span>
                           </span>
                         ) : expired ? (

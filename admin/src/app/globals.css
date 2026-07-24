@@ -1610,6 +1610,13 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
   pointer-events: none !important;
 }
 
+/* VIEWER: reforço — valores com privacy-value somem visualmente (placeholder do componente + blur). */
+body.viewer-privacy-lock .privacy-value {
+  filter: blur(7px) !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

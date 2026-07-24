@@ -21,6 +21,10 @@ import {
   partnerRegistroLabel,
 } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { usePrivacy } from "@/context/PrivacyContext";
+import { usePermissions } from "@/context/PermissionsContext";
+import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -174,14 +178,13 @@ const PartnerCard = ({
 }: PartnerCardProps) => {
   const style = PARTNER_TYPE_STYLES[p.tipo];
   const Icon = style.icon;
+  const sensitive = useSensitiveDisplay();
   const projectCount = p.projects?.length ?? 0;
   const totalLinkedValue = (p.projects ?? []).reduce(
     (sum, proj) => sum + Number(proj.valor_previsto || 0),
     0
   );
   const registroLabel = formatPartnerRegistro(p.tipo, p.registro_profissional);
-  const formatCurrency = (val: number) =>
-    val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const palette = getPartnerPalette(p.id);
 
@@ -316,7 +319,7 @@ const PartnerCard = ({
             </span>
           </div>
           <p className="text-lg font-black tracking-tight text-slate-800 tabular-nums leading-none">
-            {formatCurrency(totalLinkedValue)}
+            <PrivacyMoney value={totalLinkedValue} />
           </p>
           <p className="text-[9px] font-semibold text-slate-400">
             Valor total dos projetos no CRM
@@ -326,16 +329,26 @@ const PartnerCard = ({
         {/* Contatos Rápidos em Grid */}
         <div className="grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
           {p.telefone ? (
+            sensitive.whatsappHref(p.telefone) ? (
             <a
-              href={`https://wa.me/${p.telefone.replace(/\D/g, "")}`}
+              href={sensitive.whatsappHref(p.telefone)!}
               target="_blank"
               rel="noreferrer"
               className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-100 hover:border-emerald-250 text-slate-500 hover:text-emerald-600 transition-all gap-1 cursor-pointer"
-              title={`Falar no WhatsApp: ${p.telefone}`}
+              title={`Falar no WhatsApp: ${sensitive.phone(p.telefone)}`}
             >
               <Phone className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">WhatsApp</span>
             </a>
+            ) : (
+            <div
+              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 gap-1 cursor-not-allowed"
+              title="Contato oculto"
+            >
+              <Phone className="h-4 w-4 shrink-0" />
+              <span className="text-[9px] font-bold">WhatsApp</span>
+            </div>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
               <Phone className="h-4 w-4 shrink-0" />
@@ -344,6 +357,15 @@ const PartnerCard = ({
           )}
 
           {p.email ? (
+            sensitive.hide ? (
+            <div
+              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 gap-1 cursor-not-allowed"
+              title="E-mail oculto"
+            >
+              <Mail className="h-4 w-4 shrink-0" />
+              <span className="text-[9px] font-bold">E-mail</span>
+            </div>
+            ) : (
             <a
               href={`mailto:${p.email}`}
               className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 border border-slate-100 hover:border-blue-250 text-slate-500 hover:text-blue-600 transition-all gap-1 cursor-pointer"
@@ -352,6 +374,7 @@ const PartnerCard = ({
               <Mail className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">E-mail</span>
             </a>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
               <Mail className="h-4 w-4 shrink-0" />
@@ -385,6 +408,9 @@ const PartnerCard = ({
 export default function ParceirosClient({ initialParceiros, companyId }: ParceirosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
+  const { isReadOnly } = usePermissions();
+  const { privacyLocked } = usePrivacy();
+  const sensitive = useSensitiveDisplay();
 
   const [parceiros, setParceiros] = useState<ParceiroDTO[]>(initialParceiros);
   const [search, setSearch] = useState("");
@@ -399,6 +425,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   
   const [privacyMode, setPrivacyMode] = useState(false);
+  const effectivePrivacyMode = privacyLocked || isReadOnly || privacyMode;
   const [viewingPartner, setViewingPartner] = useState<ParceiroDTO | null>(null);
 
   React.useEffect(() => {
@@ -730,7 +757,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 />
               </InfoTooltip>
               <button
-                onClick={() => setPrivacyMode(!privacyMode)}
+                onClick={() => { if (!privacyLocked && !isReadOnly) setPrivacyMode(!privacyMode); }}
+                disabled={privacyLocked || isReadOnly}
                 className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-650 transition-colors cursor-pointer border border-slate-200 bg-white shadow-sm"
                 title={privacyMode ? "Mostrar nomes e fotos" : "Ocultar nomes e fotos (Modo Privacidade)"}
               >
@@ -788,7 +816,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               <PartnerCard
                 key={p.id}
                 p={p}
-                privacyMode={privacyMode}
+                privacyMode={effectivePrivacyMode}
                 uploadingId={uploadingId}
                 handleUploadImage={handleUploadImage}
                 handleDeleteImage={handleDeleteImage}
@@ -1067,13 +1095,13 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     {p.telefone && (
                       <p className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span><strong>WhatsApp:</strong> {p.telefone}</span>
+                        <span><strong>WhatsApp:</strong> {sensitive.phone(p.telefone)}</span>
                       </p>
                     )}
                     {p.email && (
                       <p className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span><strong>E-mail:</strong> {p.email}</span>
+                        <span><strong>E-mail:</strong> {sensitive.email(p.email)}</span>
                       </p>
                     )}
                     {p.portfolioUrl && (
@@ -1103,7 +1131,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wide block">Total em Projetos</span>
-                      <span className="text-xl font-black text-slate-800 leading-none">{formatCurrency(totalLinkedValue)}</span>
+                      <PrivacyMoney value={totalLinkedValue} as="span" className="text-xl font-black text-slate-800 leading-none" />
                     </div>
                   </div>
                 </div>

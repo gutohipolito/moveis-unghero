@@ -18,6 +18,10 @@ export default async function ContractPrintPage({ params }: PrintPageProps) {
     redirect("/login");
   }
 
+  if (session.user.cargo === "VIEWER") {
+    redirect("/contratos");
+  }
+
   const { id } = await params;
   const companyId = session.user.company_id || "mock-company-id";
 

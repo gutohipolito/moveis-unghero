@@ -46,6 +46,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
+import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
@@ -254,6 +256,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false }: ProjectDetailsProps) {
   const { isAdmin } = usePermissions();
+  const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
   const isFormLead = project.client.origem === "FORMULARIO";
   const hasNoQuote = !project.quotes || project.quotes.length === 0;
@@ -913,13 +916,13 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               <div className="flex items-start min-w-0">
                 <Phone className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
                 <span className="min-w-0">
-                  WhatsApp: <span className="text-foreground font-medium break-all">{project.client.telefone}</span>
+                  WhatsApp: <span className="text-foreground font-medium break-all">{sensitive.phone(project.client.telefone)}</span>
                 </span>
               </div>
               <div className="flex items-start min-w-0">
                 <Mail className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
                 <span className="min-w-0">
-                  E-mail: <span className="text-foreground font-medium break-all">{project.client.email}</span>
+                  E-mail: <span className="text-foreground font-medium break-all">{sensitive.email(project.client.email)}</span>
                 </span>
               </div>
               <div className="flex items-start min-w-0">
@@ -1153,7 +1156,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 {isBlocked ? (
                   <span className="text-rose-600 font-bold text-sm block leading-normal">🔒 Bloqueado (Sem Orçamento)</span>
                 ) : (
-                  formatCurrency(project.valor_previsto)
+                  <PrivacyMoney value={project.valor_previsto} className="text-2xl font-bold tracking-tight text-gradient-gold" />
                 )}
               </span>
             </div>
@@ -1652,20 +1655,30 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             ) : null}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                            <span>Subtotal: <strong className="text-foreground">{formatCurrency(q.subtotal)}</strong></span>
-                            {q.desconto > 0 && <span className="text-amber-500 font-medium">Desconto: -{formatCurrency(q.desconto)}</span>}
-                            <span>Valor Final: <strong className="text-primary font-bold">{formatCurrency(q.valor_final)}</strong></span>
+                            <span>
+                              Subtotal:{" "}
+                              <PrivacyMoney value={q.subtotal} as="strong" className="text-foreground" />
+                            </span>
+                            {q.desconto > 0 && (
+                              <span className="text-amber-500 font-medium inline-flex items-center gap-1">
+                                Desconto: -<PrivacyMoney value={q.desconto} />
+                              </span>
+                            )}
+                            <span>
+                              Valor Final:{" "}
+                              <PrivacyMoney value={q.valor_final} as="strong" className="text-primary font-bold" />
+                            </span>
                           </div>
                           {(summary.hasApproved || summary.hasPending) && (
                             <p className="text-xs text-muted-foreground">
                               {summary.hasApproved && (
-                                <span className="text-emerald-700 font-semibold mr-3">
-                                  Aprovado: {formatCurrency(summary.approvedTotal)} ({summary.approvedCount})
+                                <span className="text-emerald-700 font-semibold mr-3 inline-flex items-center gap-1">
+                                  Aprovado: <PrivacyMoney value={summary.approvedTotal} /> ({summary.approvedCount})
                                 </span>
                               )}
                               {summary.hasPending && (
-                                <span className="text-amber-700 font-semibold">
-                                  Pendente: {formatCurrency(summary.pendingTotal)} ({summary.pendingCount})
+                                <span className="text-amber-700 font-semibold inline-flex items-center gap-1">
+                                  Pendente: <PrivacyMoney value={summary.pendingTotal} /> ({summary.pendingCount})
                                 </span>
                               )}
                             </p>
@@ -1815,28 +1828,30 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-4 bg-card/25 border-border/40">
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Valor do Contrato</span>
-              <strong className="text-lg text-foreground font-extrabold">{formatCurrency(project.valor_previsto)}</strong>
+              <PrivacyMoney value={project.valor_previsto} as="strong" className="text-lg text-foreground font-extrabold" />
             </Card>
             <Card className="p-4 bg-card/25 border-border/40">
               <span className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider block">Valor Recebido</span>
-              <strong className="text-lg text-emerald-400 font-extrabold">
-                {formatCurrency(
-                  project.installments
-                    .filter(ins => ins.status === "PAGO")
-                    .reduce((acc, curr) => acc + curr.valor, 0)
-                )}
-              </strong>
+              <PrivacyMoney
+                as="strong"
+                className="text-lg text-emerald-400 font-extrabold"
+                value={project.installments
+                  .filter((ins) => ins.status === "PAGO")
+                  .reduce((acc, curr) => acc + curr.valor, 0)}
+              />
             </Card>
             <Card className="p-4 bg-card/25 border-border/40">
               <span className="text-[10px] text-amber-500/80 font-bold uppercase tracking-wider block">Saldo Pendente</span>
-              <strong className="text-lg text-amber-400 font-extrabold">
-                {formatCurrency(
-                  project.valor_previsto - 
+              <PrivacyMoney
+                as="strong"
+                className="text-lg text-amber-400 font-extrabold"
+                value={
+                  project.valor_previsto -
                   project.installments
-                    .filter(ins => ins.status === "PAGO")
+                    .filter((ins) => ins.status === "PAGO")
                     .reduce((acc, curr) => acc + curr.valor, 0)
-                )}
-              </strong>
+                }
+              />
             </Card>
           </div>
 
@@ -1907,7 +1922,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               : "—"}
                           </td>
                           <td className="p-4 text-right font-black text-foreground">
-                            {formatCurrency(ins.valor)}
+                            <PrivacyMoney value={ins.valor} />
                           </td>
                           <td className="p-4 text-center font-medium">
                             {new Date(ins.data_vencimento).toLocaleDateString("pt-BR")}

@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import {
   createContract,
   createContractTemplate,
@@ -498,7 +499,7 @@ export default function ContratosClient({
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{c.titulo}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatContractCurrency(c.valor)} ·{" "}
+                      <PrivacyMoney value={Number(c.valor) || 0} /> ·{" "}
                       {formatContractDateShort(c.data_contrato)}
                       {c.template?.nome ? ` · ${c.template.nome}` : ""}
                     </p>

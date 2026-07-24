@@ -19,6 +19,10 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
     redirect("/login");
   }
 
+  if (session.user.cargo === "VIEWER") {
+    redirect("/financeiro");
+  }
+
   const { id } = await params;
   const companyId = session.user.company_id || "mock-company-id";
 

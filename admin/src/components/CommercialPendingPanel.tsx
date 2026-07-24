@@ -11,6 +11,8 @@ import {
 import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
 import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
+import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { usePermissions } from "@/context/PermissionsContext";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -28,6 +30,7 @@ interface CommercialPendingPanelProps {
 }
 
 export default function CommercialPendingPanel({ onNotify }: CommercialPendingPanelProps) {
+  const { isReadOnly } = usePermissions();
   const [quotes, setQuotes] = useState<CommercialPendingQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvalQuote, setApprovalQuote] = useState<CommercialPendingQuote | null>(null);
@@ -77,7 +80,7 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
           <h3 className="text-base font-bold text-foreground">Pendências comerciais</h3>
           <p className="text-sm text-muted-foreground">
             {quotes.length} orçamento(s) com itens ainda em aberto · total pendente{" "}
-            <strong className="text-amber-800">{formatCurrency(totalPending)}</strong>
+            <PrivacyMoney value={totalPending} as="strong" className="text-amber-800" />
           </p>
         </div>
       </div>
@@ -122,11 +125,11 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Já aprovado</span>
-                  <strong className="text-emerald-700">{formatCurrency(q.approvedTotal)}</strong>
+                  <strong className="text-emerald-700"><PrivacyMoney value={q.approvedTotal} /></strong>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Ainda pendente</span>
-                  <strong className="text-amber-800">{formatCurrency(q.pendingTotal)}</strong>
+                  <strong className="text-amber-800"><PrivacyMoney value={q.pendingTotal} /></strong>
                 </div>
                 <div className="flex justify-between text-xs pt-1">
                   <span className="text-muted-foreground">Validade</span>
@@ -141,7 +144,7 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
                   .filter((i) => i.status === "PENDENTE")
                   .map((i) => (
                     <li key={i.id} className="truncate">
-                      • {i.descricao} ({formatCurrency(i.valor_total)})
+                      • {i.descricao} (<PrivacyMoney value={i.valor_total} />)
                     </li>
                   ))}
               </ul>

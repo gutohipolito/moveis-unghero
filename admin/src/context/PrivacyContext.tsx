@@ -34,8 +34,13 @@ export function PrivacyProvider({
       setPrivacyMode(true);
       setSensitiveHidden(true);
       document.body.classList.add("privacy-active");
-      return;
+      document.body.classList.add("viewer-privacy-lock");
+      return () => {
+        document.body.classList.remove("viewer-privacy-lock");
+      };
     }
+
+    document.body.classList.remove("viewer-privacy-lock");
 
     const stored = localStorage.getItem("unghero_privacy_v2");
     const active = stored !== "false";
