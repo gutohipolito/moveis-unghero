@@ -11,6 +11,7 @@ import {
   PackageOpen,
   UserRound,
   CalendarClock,
+  ChevronDown,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -46,21 +47,21 @@ export default function InAppNotificationStack({
   onOpen,
   onSnooze,
 }: InAppNotificationStackProps) {
-  const [openSnoozeId, setOpenSnoozeId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuId = useId();
   const stackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!openSnoozeId) return;
+    if (!openMenuId) return;
 
     function onPointerDown(event: MouseEvent) {
       if (!stackRef.current?.contains(event.target as Node)) {
-        setOpenSnoozeId(null);
+        setOpenMenuId(null);
       }
     }
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpenSnoozeId(null);
+      if (event.key === "Escape") setOpenMenuId(null);
     }
 
     document.addEventListener("mousedown", onPointerDown);
@@ -69,7 +70,7 @@ export default function InAppNotificationStack({
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [openSnoozeId]);
+  }, [openMenuId]);
 
   if (toasts.length === 0) return null;
 
@@ -84,7 +85,8 @@ export default function InAppNotificationStack({
       {toasts.map((toast) => {
         const { actionLabel, accent } = getInAppToastMeta(toast);
         const Icon = TOAST_ICONS[toast.type] ?? ClipboardList;
-        const snoozeOpen = openSnoozeId === toast.toastKey;
+        const menuOpen = openMenuId === toast.toastKey;
+        const optionsMenuId = `${menuId}-${toast.toastKey}`;
 
         return (
           <article
@@ -103,60 +105,65 @@ export default function InAppNotificationStack({
               <X className="h-3 w-3" strokeWidth={2.5} />
             </button>
 
-            <button
-              type="button"
-              className="in-app-toast-main"
-              onClick={() => onOpen(toast.toastKey, toast.href)}
-            >
-              <div className="in-app-toast-icon-wrap" aria-hidden>
-                <img src="/logo.png" alt="" className="in-app-toast-icon" />
-                <span className="in-app-toast-icon-badge">
-                  <Icon className="h-3 w-3" />
-                </span>
-              </div>
-
-              <div className="in-app-toast-body">
-                <p className="in-app-toast-title">{toast.title}</p>
-                <p className="in-app-toast-message">{toast.message}</p>
-              </div>
-            </button>
-
-            <div className="in-app-toast-actions">
+            <div className="in-app-toast-row">
               <button
                 type="button"
-                className="in-app-toast-action"
+                className="in-app-toast-main"
                 onClick={() => onOpen(toast.toastKey, toast.href)}
               >
-                {actionLabel}
+                <div className="in-app-toast-icon-wrap" aria-hidden>
+                  <img src="/logo.png" alt="" className="in-app-toast-icon" />
+                  <span className="in-app-toast-icon-badge">
+                    <Icon className="h-3 w-3" />
+                  </span>
+                </div>
+
+                <div className="in-app-toast-body">
+                  <p className="in-app-toast-title">{toast.title}</p>
+                  <p className="in-app-toast-message">{toast.message}</p>
+                </div>
               </button>
-              <div className="in-app-toast-snooze">
+
+              <div className="in-app-toast-options">
                 <button
                   type="button"
-                  className="in-app-toast-action in-app-toast-action-muted"
-                  aria-expanded={snoozeOpen}
-                  aria-controls={`${menuId}-${toast.toastKey}`}
+                  className="in-app-toast-options-btn"
+                  aria-expanded={menuOpen}
+                  aria-haspopup="menu"
+                  aria-controls={optionsMenuId}
                   onClick={() =>
-                    setOpenSnoozeId((prev) =>
+                    setOpenMenuId((prev) =>
                       prev === toast.toastKey ? null : toast.toastKey
                     )
                   }
                 >
-                  Lembrar depois
+                  Opções
+                  <ChevronDown className="h-3 w-3 opacity-80" strokeWidth={2.5} />
                 </button>
-                {snoozeOpen ? (
-                  <div
-                    id={`${menuId}-${toast.toastKey}`}
-                    className="in-app-toast-snooze-menu"
-                    role="menu"
-                  >
+
+                {menuOpen ? (
+                  <div id={optionsMenuId} className="in-app-toast-options-menu" role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="in-app-toast-options-item"
+                      onClick={() => {
+                        setOpenMenuId(null);
+                        onOpen(toast.toastKey, toast.href);
+                      }}
+                    >
+                      {actionLabel}
+                    </button>
+                    <div className="in-app-toast-options-sep" role="separator" />
+                    <p className="in-app-toast-options-label">Lembrar depois</p>
                     {TOAST_SNOOZE_OPTIONS.map((option) => (
                       <button
                         key={option.id}
                         type="button"
                         role="menuitem"
-                        className="in-app-toast-snooze-item"
+                        className="in-app-toast-options-item"
                         onClick={() => {
-                          setOpenSnoozeId(null);
+                          setOpenMenuId(null);
                           onSnooze(toast.toastKey, option.id);
                         }}
                       >

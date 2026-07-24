@@ -61,7 +61,7 @@ export default function NotificationChannelSettings() {
             <div className="min-w-0">
               <p className="text-xs font-bold text-foreground">Alerta no painel</p>
               <p className="text-[10px] text-muted-foreground">
-                Toast sticky no estilo macOS (Fechar / Lembrar depois).
+                Toast sticky no estilo macOS (botão Opções).
               </p>
             </div>
             <div className="mt-2">

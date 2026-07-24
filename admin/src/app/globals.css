@@ -1036,7 +1036,7 @@ body {
   }
 }
 
-/* Toast in-app estilo macOS Tips — canto superior direito */
+/* Toast in-app estilo macOS — canto superior direito */
 .in-app-toast-stack {
   position: fixed;
   top: 1rem;
@@ -1061,32 +1061,29 @@ body {
 .in-app-toast {
   pointer-events: auto;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  padding: 0.875rem 1rem 0.75rem;
-  border-radius: 1.35rem;
+  padding: 0.875rem 0.875rem 0.75rem;
+  border-radius: 1.15rem;
   color: hsl(0 0% 98%);
-  background: hsl(0 0% 14% / 0.82);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
-  border: 1px solid hsl(0 0% 100% / 0.12);
+  background: hsl(0 0% 7% / 0.92);
+  backdrop-filter: blur(32px) saturate(1.5);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  border: 1px solid hsl(0 0% 100% / 0.1);
   box-shadow:
-    0 0 0 0.5px hsl(0 0% 0% / 0.35),
-    0 12px 40px hsl(0 0% 0% / 0.35),
-    0 2px 8px hsl(0 0% 0% / 0.2),
-    inset 0 1px 0 hsl(0 0% 100% / 0.08);
+    0 0 0 0.5px hsl(0 0% 0% / 0.55),
+    0 14px 44px hsl(0 0% 0% / 0.45),
+    0 2px 8px hsl(0 0% 0% / 0.28),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06);
   animation: in-app-toast-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .in-app-toast[data-priority="high"] {
-  background: hsl(0 0% 16% / 0.88);
-  border-color: hsl(38 92% 55% / 0.28);
+  background: hsl(0 0% 8% / 0.94);
+  border-color: hsl(38 92% 55% / 0.22);
   box-shadow:
-    0 0 0 0.5px hsl(38 70% 40% / 0.25),
-    0 12px 40px hsl(0 0% 0% / 0.38),
-    0 2px 8px hsl(0 0% 0% / 0.22),
-    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+    0 0 0 0.5px hsl(38 70% 40% / 0.22),
+    0 14px 44px hsl(0 0% 0% / 0.48),
+    0 2px 8px hsl(0 0% 0% / 0.28),
+    inset 0 1px 0 hsl(0 0% 100% / 0.07);
 }
 
 .in-app-toast[data-accent="briefing"] .in-app-toast-icon-badge {
@@ -1132,12 +1129,21 @@ body {
   }
 }
 
+.in-app-toast-row {
+  position: relative;
+  display: block;
+  min-height: 4.5rem;
+  padding-right: 0.15rem;
+  padding-bottom: 0.15rem;
+}
+
 .in-app-toast-main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   width: 100%;
-  padding: 0;
+  min-width: 0;
+  padding: 0 5.25rem 1.85rem 0;
   margin: 0;
   border: 0;
   background: transparent;
@@ -1149,6 +1155,7 @@ body {
 .in-app-toast-icon-wrap {
   position: relative;
   flex-shrink: 0;
+  margin-top: 0.1rem;
 }
 
 .in-app-toast-icon {
@@ -1156,11 +1163,11 @@ body {
   height: 2.375rem;
   border-radius: 0.7rem;
   object-fit: contain;
-  background: hsl(0 0% 8%);
+  background: hsl(0 0% 4%);
   padding: 0.3rem;
   box-shadow:
-    0 1px 2px hsl(0 0% 0% / 0.35),
-    inset 0 0 0 1px hsl(0 0% 100% / 0.08);
+    0 1px 2px hsl(0 0% 0% / 0.45),
+    inset 0 0 0 1px hsl(0 0% 100% / 0.06);
 }
 
 .in-app-toast-icon-badge {
@@ -1175,13 +1182,12 @@ body {
   border-radius: 9999px;
   background: hsl(var(--primary));
   color: hsl(0 0% 100%);
-  border: 2px solid hsl(0 0% 14% / 0.95);
+  border: 2px solid hsl(0 0% 7% / 0.98);
 }
 
 .in-app-toast-body {
   flex: 1;
   min-width: 0;
-  padding-right: 0.25rem;
 }
 
 .in-app-toast-title {
@@ -1196,56 +1202,77 @@ body {
   margin-top: 0.15rem;
   font-size: 0.75rem;
   line-height: 1.35;
-  color: hsl(0 0% 100% / 0.72);
+  color: hsl(0 0% 100% / 0.68);
 }
 
-.in-app-toast-actions {
-  display: flex;
+.in-app-toast-options {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.in-app-toast-options-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding-left: calc(2.375rem + 0.75rem);
-}
-
-.in-app-toast-action {
+  justify-content: center;
+  gap: 0.2rem;
+  height: 1.625rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 9999px;
+  background: hsl(0 0% 28% / 0.95);
+  color: hsl(0 0% 96%);
   font-size: 0.6875rem;
   font-weight: 600;
-  color: hsl(210 100% 72%);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.15s ease;
-  background: transparent;
-  border: 0;
-  padding: 0;
+  box-shadow:
+    inset 0 0.5px 0 hsl(0 0% 100% / 0.12),
+    0 1px 2px hsl(0 0% 0% / 0.25);
+  transition: background 0.15s ease, transform 0.12s ease;
 }
 
-.in-app-toast-action:hover {
-  opacity: 0.85;
-  text-decoration: underline;
+.in-app-toast-options-btn:hover {
+  background: hsl(0 0% 34%);
 }
 
-.in-app-toast-action-muted {
-  color: hsl(0 0% 100% / 0.55);
+.in-app-toast-options-btn[aria-expanded="true"] {
+  background: hsl(0 0% 38%);
 }
 
-.in-app-toast-snooze {
-  position: relative;
-}
-
-.in-app-toast-snooze-menu {
+.in-app-toast-options-menu {
   position: absolute;
-  left: 0;
+  right: 0;
   bottom: calc(100% + 0.4rem);
   z-index: 5;
-  min-width: 10.5rem;
+  min-width: 11rem;
   padding: 0.35rem;
   border-radius: 0.85rem;
-  background: hsl(0 0% 12% / 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: hsl(0 0% 12% / 0.97);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   border: 1px solid hsl(0 0% 100% / 0.12);
-  box-shadow: 0 10px 28px hsl(0 0% 0% / 0.4);
+  box-shadow: 0 12px 32px hsl(0 0% 0% / 0.5);
 }
 
-.in-app-toast-snooze-item {
+.in-app-toast-options-label {
+  padding: 0.35rem 0.65rem 0.2rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: hsl(0 0% 100% / 0.42);
+}
+
+.in-app-toast-options-sep {
+  height: 1px;
+  margin: 0.3rem 0.4rem;
+  background: hsl(0 0% 100% / 0.1);
+}
+
+.in-app-toast-options-item {
   display: block;
   width: 100%;
   padding: 0.45rem 0.65rem;
@@ -1260,7 +1287,7 @@ body {
   transition: background 0.12s ease;
 }
 
-.in-app-toast-snooze-item:hover {
+.in-app-toast-options-item:hover {
   background: hsl(0 0% 100% / 0.1);
 }
 
@@ -1276,17 +1303,17 @@ body {
   height: 1.25rem;
   border-radius: 9999px;
   border: 0;
-  background: hsl(0 0% 28% / 0.95);
+  background: hsl(0 0% 24% / 0.98);
   color: hsl(0 0% 88%);
   box-shadow:
-    0 1px 3px hsl(0 0% 0% / 0.35),
+    0 1px 3px hsl(0 0% 0% / 0.4),
     inset 0 0 0 1px hsl(0 0% 100% / 0.08);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .in-app-toast-close:hover {
-  background: hsl(0 0% 38%);
+  background: hsl(0 0% 34%);
   color: hsl(0 0% 100%);
   transform: scale(1.05);
 }
