@@ -517,6 +517,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 setTemplateTipo(next);
                 const tpl = getQuoteTemplate(next);
                 if (!observacoes.trim()) setObservacoes(tpl.observacoes);
+                // Comparativo: sem total agregado no painel — zera desconto global.
+                if (isComparativeTemplate(next)) setDesconto(0);
               }}
               className="h-10"
             >
@@ -1016,39 +1018,47 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
           />
         </div>
 
-        {/* Bloco 4: Fechamento Financeiro */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch border-t border-border/40 pt-5">
-          <div className="space-y-1.5 rounded-xl border border-border/30 bg-slate-50/80 p-3">
-            <span className="text-xs text-muted-foreground block">Subtotal</span>
-            <span className="text-lg font-bold text-foreground block">
-              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(subtotal)}
-            </span>
-          </div>
+        {/* Bloco 4: Fechamento Financeiro (oculto no comparativo — só 1 opção será aprovada) */}
+        {!isComparative ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch border-t border-border/40 pt-5">
+            <div className="space-y-1.5 rounded-xl border border-border/30 bg-slate-50/80 p-3">
+              <span className="text-xs text-muted-foreground block">Subtotal</span>
+              <span className="text-lg font-bold text-foreground block">
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(subtotal)}
+              </span>
+            </div>
 
-          <div className="space-y-1.5 rounded-xl border border-border/30 bg-slate-50/80 p-3">
-            <label className="text-xs font-semibold text-muted-foreground block">Desconto (R$)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">R$</span>
-              <Input
-                type="number"
-                min="0"
-                max={subtotal}
-                className="pl-8 bg-white border-border/40 h-10"
-                value={desconto}
-                onChange={(e) => setDesconto(Math.min(subtotal, Math.max(0, Number(e.target.value))))}
-              />
+            <div className="space-y-1.5 rounded-xl border border-border/30 bg-slate-50/80 p-3">
+              <label className="text-xs font-semibold text-muted-foreground block">Desconto (R$)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">R$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max={subtotal}
+                  className="pl-8 bg-white border-border/40 h-10"
+                  value={desconto}
+                  onChange={(e) => setDesconto(Math.min(subtotal, Math.max(0, Number(e.target.value))))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-1">
+              <span className="text-xs text-muted-foreground block font-medium flex items-center">
+                <Calculator className="h-3.5 w-3.5 mr-1 text-primary" /> Valor final
+              </span>
+              <span className="text-xl sm:text-2xl font-black tracking-tight text-gradient-gold block">
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}
+              </span>
             </div>
           </div>
-
-          <div className="space-y-1.5 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-1">
-            <span className="text-xs text-muted-foreground block font-medium flex items-center">
-              <Calculator className="h-3.5 w-3.5 mr-1 text-primary" /> Valor final
-            </span>
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-gradient-gold block">
-              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}
-            </span>
+        ) : (
+          <div className="border-t border-border/40 pt-4">
+            <p className="text-xs text-muted-foreground leading-snug">
+              Neste template cada linha é uma opção com o próprio valor. Não há subtotal nem valor final da proposta.
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Baixa no Estoque Checkbox */}
         {items.some(item => item.inventoryItemId) && (
@@ -1267,7 +1277,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 {validade ? validade.split("-").reverse().join("/") : "—"}
               </span>
             </div>
-            {desconto > 0 ? (
+            {!isComparative && desconto > 0 ? (
               <div className="flex justify-between gap-3">
                 <span className="text-slate-500 font-medium">Desconto</span>
                 <span className="font-bold text-emerald-700">
@@ -1275,12 +1285,18 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                 </span>
               </div>
             ) : null}
-            <div className="flex justify-between gap-3 pt-2 border-t border-slate-200">
-              <span className="text-slate-600 font-semibold">Valor final</span>
-              <span className="font-black text-amber-700">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}
-              </span>
-            </div>
+            {!isComparative ? (
+              <div className="flex justify-between gap-3 pt-2 border-t border-slate-200">
+                <span className="text-slate-600 font-semibold">Valor final</span>
+                <span className="font-black text-amber-700">
+                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}
+                </span>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500 leading-snug">
+                Proposta comparativa: o valor aprovado será o da opção escolhida pelo cliente.
+              </div>
+            )}
             {partnerId ? (
               <div className="flex justify-between gap-3">
                 <span className="text-slate-500 font-medium">Parceiro</span>
