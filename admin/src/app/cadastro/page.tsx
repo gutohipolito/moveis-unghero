@@ -27,7 +27,8 @@ export default function CadastroClientePage() {
             Faça seu Cadastro
           </h1>
           <p className="text-xs md:text-sm text-slate-400 max-w-lg mx-auto">
-            Informe seus dados para receber atendimento e orçamento de móveis planejados sob medida.
+            Informe seus dados para receber atendimento e orçamento de móveis sob medida,
+            personalizados para o seu ambiente.
           </p>
         </div>
         <ClientSignupForm />

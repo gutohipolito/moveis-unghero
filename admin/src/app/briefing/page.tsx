@@ -31,7 +31,7 @@ export default function BriefingPage() {
             </h1>
             <p className="text-xs md:text-sm text-slate-500 max-w-lg mx-auto">
               Responda algumas perguntas rápidas sobre seu imóvel e preferências para
-              prepararmos um orçamento de móveis planejados sob medida.
+              prepararmos um orçamento de móveis sob medida, únicos para o seu espaço.
             </p>
           </div>
           <BriefingForm />

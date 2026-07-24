@@ -75,7 +75,7 @@
   ],
   "hasOfferCatalog": {
     "@type": "OfferCatalog",
-    "name": "Catálogo de Móveis Planejados sob Medida",
+    "name": "Catálogo de Móveis Sob Medida",
     "itemListElement": [
       {
         "@type": "OfferCatalogItem",
@@ -98,7 +98,7 @@
         "item": {
           "@type": "Service",
           "name": "Dormitórios sob Medida",
-          "description": "Dormitórios de casal, juvenis e infantis planejados de forma modular e evolutiva."
+          "description": "Dormitórios de casal, juvenis e infantis sob medida, únicos e pensados para crescer com a família."
         }
       },
       {

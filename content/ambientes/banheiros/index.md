@@ -6,7 +6,7 @@ slug: "banheiros"
 image: "/images/banheiros.jpg"
 ---
 
-# Banheiros Planejados: Resistência e Organização
+# Banheiros Sob Medida: Resistência e Organização
 
 O banheiro é um dos locais mais úmidos da casa e exige materiais de alta qualidade para evitar que a madeira estufe ou descole as bordas com o vapor do chuveiro. Nossos projetos unem design minimalista com ferragens protegidas contra corrosão.
 

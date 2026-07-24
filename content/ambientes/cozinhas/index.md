@@ -8,7 +8,7 @@ image: "/images/cozinhas.jpeg"
 
 # Cozinhas Planejadas: Onde a Vida Acontece
 
-A cozinha é o coração da casa. Acreditamos que ela deve unir beleza visual a um fluxo de trabalho inteligente e prático no dia a dia. Por isso, cada gaveta, prateleira e nicho é planejado de acordo com a sua rotina.
+A cozinha é o coração da casa. Acreditamos que ela deve unir beleza visual a um fluxo de trabalho inteligente e prático no dia a dia. Por isso, cada gaveta, prateleira e nicho é definido de acordo com a sua rotina.
 
 ## Especificações Técnicas de Nossos Projetos
 Para garantir que sua cozinha dure por décadas, adotamos padrões rígidos de fabricação própria em Farroupilha:

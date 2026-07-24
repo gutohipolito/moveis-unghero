@@ -92,9 +92,9 @@ export function suggestReferenteFromInstallment(input: {
   descricao?: string | null;
 }): string {
   if (input.descricao?.trim()) return input.descricao.trim();
-  if (input.tipo === "ENTRADA") return "Entrada referente a móveis planejados";
+  if (input.tipo === "ENTRADA") return "Entrada referente a móveis sob medida";
   if (input.numero_parcela && input.total_parcelas) {
-    return `Parcela ${input.numero_parcela}/${input.total_parcelas} referente a móveis planejados`;
+    return `Parcela ${input.numero_parcela}/${input.total_parcelas} referente a móveis sob medida`;
   }
-  return "Pagamento referente a móveis planejados";
+  return "Pagamento referente a móveis sob medida";
 }

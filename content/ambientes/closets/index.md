@@ -1,6 +1,6 @@
 ---
 title: "Closets e Roupeiros"
-description: "Projetos de closets e roupeiros planejados focados em organização inteligente e proteção das roupas."
+description: "Projetos de closets e roupeiros sob medida focados em organização inteligente e proteção das roupas."
 category: "ambientes"
 slug: "closets"
 image: "/images/closets.jpg"
@@ -8,7 +8,7 @@ image: "/images/closets.jpg"
 
 # Closets e Roupeiros: Organização Personalizada
 
-Um armário bem planejado economiza tempo pela manhã e ajuda a manter suas roupas arejadas e organizadas. Desenvolvemos divisórias internas sob medida para o seu estilo de vestuário: cabideiros para casacos longos, sapateiras deslizantes e gavetas com divisórias aveludadas.
+Um armário bem projetado economiza tempo pela manhã e ajuda a manter suas roupas arejadas e organizadas. Desenvolvemos divisórias internas sob medida para o seu estilo de vestuário: cabideiros para casacos longos, sapateiras deslizantes e gavetas com divisórias aveludadas.
 
 ## Diferenciais de Nossos Roupeiros e Closets
 Focamos em soluções práticas de marcenaria que tornam o armário funcional:

@@ -87,7 +87,7 @@ export default function ClienteFinanceTab({
 
   function openAvulsoReceipt() {
     setReceiptPrefill({
-      referente: "Pagamento referente a móveis planejados",
+      referente: "Pagamento referente a móveis sob medida",
       quitacao: "PARCIAL",
     });
     setReceiptOpen(true);

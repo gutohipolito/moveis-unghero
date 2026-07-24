@@ -214,7 +214,7 @@ export default function ReceiptIssueDialog({
           <Input
             value={referente}
             onChange={(e) => setReferente(e.target.value)}
-            placeholder="Ex.: Parcela 2/5 — móveis planejados"
+            placeholder="Ex.: Parcela 2/5 — móveis sob medida"
             required
           />
         </div>

@@ -60,7 +60,7 @@ export default async function Home() {
       {/* 2. SEÇÃO DE AMBIENTES */}
       <section id="ambientes" className="section" aria-labelledby="ambientes-title">
         <div className="container">
-          <h2 id="ambientes-title" className={styles.sectionTitle}>Ambientes Planejados</h2>
+          <h2 id="ambientes-title" className={styles.sectionTitle}>Ambientes Sob Medida</h2>
           <p className={styles.sectionSubtitle}>
             Aproveitamento milimétrico e escolha cuidadosa de ferragens e materiais para cada espaço da sua casa.
           </p>

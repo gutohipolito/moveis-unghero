@@ -43,7 +43,7 @@ export const MARKETING_FORMS: MarketingForm[] = [
 
 Somos a Móveis Unghero, marcenaria de alto padrão em Farroupilha/RS.
 
-Para entendermos melhor seu projeto e preparar um orçamento personalizado, preencha este formulário rápido (leva cerca de 3 minutos):
+Para entendermos melhor seu projeto e preparar um orçamento de móveis sob medida — únicos e personalizados para o seu espaço — preencha este formulário rápido (leva cerca de 3 minutos):
 
 {link}
 
@@ -54,7 +54,7 @@ Equipe Móveis Unghero`,
       {
         id: "whatsapp-retorno",
         label: "WhatsApp — Retomar contato",
-        template: `Olá! Passando para retomar nossa conversa sobre móveis planejados.
+        template: `Olá! Passando para retomar nossa conversa sobre móveis sob medida.
 
 Se preferir, pode preencher nosso formulário de qualificação por aqui — é rápido e nos ajuda a montar uma proposta mais assertiva:
 
@@ -68,7 +68,7 @@ Equipe Móveis Unghero`,
         label: "Instagram / Direct",
         template: `Oi! Que bom falar com você 😊
 
-Para agilizar seu orçamento de móveis planejados, preencha nosso formulário de qualificação:
+Para agilizar seu orçamento de móveis sob medida, preencha nosso formulário de qualificação:
 
 {link}
 
@@ -81,7 +81,7 @@ Leva poucos minutos e nossa equipe retorna em seguida!`,
 
 Agradecemos seu interesse na Móveis Unghero.
 
-Para darmos sequência ao seu orçamento de móveis planejados, solicitamos o preenchimento do formulário de qualificação no link abaixo:
+Para darmos sequência ao seu orçamento de móveis sob medida, solicitamos o preenchimento do formulário de qualificação no link abaixo:
 
 {link}
 
@@ -188,7 +188,7 @@ Equipe Móveis Unghero`,
         label: "E-mail — Proposta de parceria",
         template: `Prezado(a) profissional,
 
-A Móveis Unghero busca parceiros projetistas e arquitetos para indicações e co-projetos em móveis planejados de alto padrão.
+A Móveis Unghero busca parceiros projetistas e arquitetos para indicações e co-projetos em móveis sob medida de alto padrão.
 
 Para fazer parte da nossa rede, preencha o cadastro no link abaixo:
 
@@ -217,7 +217,7 @@ Equipe Móveis Unghero`,
 
 Somos a Móveis Unghero, marcenaria de alto padrão em Farroupilha/RS, e estamos ampliando nossa rede de fornecedores.
 
-Se você trabalha com materiais, ferragens ou acabamentos para móveis planejados e tem interesse em apresentar seu catálogo, faça o pré-cadastro neste link:
+Se você trabalha com materiais, ferragens ou acabamentos para móveis sob medida e tem interesse em apresentar seu catálogo, faça o pré-cadastro neste link:
 
 {link}
 
@@ -244,7 +244,7 @@ Equipe Móveis Unghero`,
         label: "E-mail — Solicitação de cadastro",
         template: `Prezado(a),
 
-A Móveis Unghero busca fornecedores e representantes para materiais e componentes de móveis planejados de alto padrão.
+A Móveis Unghero busca fornecedores e representantes para materiais e componentes de móveis sob medida de alto padrão.
 
 Para apresentar seu catálogo e condições comerciais, preencha a ficha cadastral no link abaixo:
 

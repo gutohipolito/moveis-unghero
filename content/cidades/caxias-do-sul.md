@@ -1,6 +1,6 @@
 ---
 title: "Móveis Sob Medida em Caxias do Sul"
-description: "Móveis sob medida e planejados em Caxias do Sul, RS. Projetos premium com montagem especializada e fábrica próxima em Farroupilha."
+description: "Móveis sob medida em Caxias do Sul, RS. Projetos premium com montagem especializada e fábrica próxima em Farroupilha."
 city: "Caxias do Sul"
 slug: "caxias-do-sul"
 ---

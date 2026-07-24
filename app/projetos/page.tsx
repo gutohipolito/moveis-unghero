@@ -9,7 +9,7 @@ export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: 'Portfólio de Projetos | Móveis Unghero',
-  description: 'Confira fotos e detalhes técnicos de projetos reais de marcenaria sob medida e móveis planejados executados pela Móveis Unghero na Serra Gaúcha.',
+  description: 'Confira fotos e detalhes técnicos de projetos reais de marcenaria sob medida executados pela Móveis Unghero na Serra Gaúcha.',
   alternates: {
     canonical: '/projetos',
   },

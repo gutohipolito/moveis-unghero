@@ -8,7 +8,7 @@ image: "/images/closets.jpg"
 
 # Apartamento Residencial sob Medida
 
-Desenvolvemos a marcenaria de um apartamento residencial inteiro em [Bento Gonçalves](/cidades/bento-goncalves), integrando [dormitórios planejados](/ambientes/dormitorios), [closet sob medida](/ambientes/closets), [salas de estar](/ambientes/salas) e [banheiros](/ambientes/banheiros) em uma linguagem moderna e com o uso de acabamentos melamínicos de tons quentes.
+Desenvolvemos a marcenaria de um apartamento residencial inteiro em [Bento Gonçalves](/cidades/bento-goncalves), integrando [dormitórios sob medida](/ambientes/dormitorios), [closet sob medida](/ambientes/closets), [salas de estar](/ambientes/salas) e [banheiros](/ambientes/banheiros) em uma linguagem moderna e com o uso de acabamentos melamínicos de tons quentes.
 
 ## Diferenciais
 - **[Closet](/ambientes/closets) Aberto**: Organização inteligente com sapateiras telescópicas deslizantes.

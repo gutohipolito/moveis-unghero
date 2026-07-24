@@ -38,7 +38,7 @@ export const CATALOG_GROUP_META: CatalogGroupMeta[] = [
   {
     slug: "tipos_comodo",
     nome: "Tipos de cômodo",
-    descricao: "Ambientes planejados vinculados aos projetos e ao chão de fábrica.",
+    descricao: "Ambientes sob medida vinculados aos projetos e ao chão de fábrica.",
     usadoEm: "Projeto → Cômodos / Chão de Fábrica",
     permiteSubitens: false,
     defaultItems: [

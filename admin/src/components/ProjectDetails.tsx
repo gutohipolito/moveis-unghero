@@ -1810,7 +1810,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 onClick={() => {
                   setReceiptPrefill({
                     projectId: project.id,
-                    referente: "Pagamento referente a móveis planejados",
+                    referente: "Pagamento referente a móveis sob medida",
                     quitacao: "PARCIAL",
                   });
                   setReceiptOpen(true);

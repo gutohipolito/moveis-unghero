@@ -1,6 +1,6 @@
 ---
 title: "Móveis Sob Medida em Farroupilha"
-description: "Móveis sob medida e planejados em Farroupilha, RS. Fabricação própria com atendimento próximo e entrega direta."
+description: "Móveis sob medida em Farroupilha, RS. Fabricação própria com atendimento próximo e entrega direta."
 city: "Farroupilha"
 slug: "farroupilha"
 ---

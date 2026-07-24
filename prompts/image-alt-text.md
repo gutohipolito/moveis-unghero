@@ -1,6 +1,6 @@
 # Prompt: Geração de Texto Alternativo para Imagens (Alt Text)
 
-Use este prompt para criar descrições precisas de imagens de móveis planejados, otimizando o SEO de imagens e a acessibilidade (a11y).
+Use este prompt para criar descrições precisas de imagens de móveis sob medida, otimizando o SEO de imagens e a acessibilidade (a11y).
 
 ```markdown
 Você é um especialista em acessibilidade digital (WCAG) e SEO de imagem. Escreva o texto alternativo (atributo alt) para uma foto de portfólio da Móveis Unghero.

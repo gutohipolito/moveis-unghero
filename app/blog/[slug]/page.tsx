@@ -184,7 +184,7 @@ export default async function BlogPostPage({ params }: Params) {
 
           {/* Sidebar CTA */}
           <aside className={styles.sidebar}>
-            <h3 className={styles.sidebarTitle}>Deseja tirar dúvidas ou solicitar orçamento de móveis planejados?</h3>
+            <h3 className={styles.sidebarTitle}>Deseja tirar dúvidas ou solicitar orçamento de móveis sob medida?</h3>
             <p style={{ fontSize: '0.95rem', marginBottom: '24px', lineHeight: '1.6' }}>
               Nossos especialistas estão prontos para desenhar seu projeto em 3D sem custos e realizar medição no local na Serra Gaúcha.
             </p>

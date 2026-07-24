@@ -147,7 +147,7 @@ export default async function CidadePage({ params }: Params) {
             Ambientes sob Medida em {data.city || data.title}
           </h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontFamily: 'var(--font-secondary)', fontSize: '1.05rem', lineHeight: '1.6' }}>
-            Projetamos e fabricamos móveis planejados para cada espaço do seu imóvel com montagem própria e atendimento dedicado em {data.city || data.title}. Explore nossas especificações técnicas e ambientes:
+            Projetamos e fabricamos móveis sob medida para cada espaço do seu imóvel com montagem própria e atendimento dedicado em {data.city || data.title}. Explore nossas especificações técnicas e ambientes:
           </p>
           <div style={{ 
             display: 'grid', 

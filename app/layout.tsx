@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Móveis Unghero | Móveis Sob Medida e Planejados",
+    title: "Móveis Unghero | Móveis Sob Medida",
     description: "Móveis sob medida desenvolvidos em Farroupilha-RS. Cozinhas, closets, dormitórios e ambientes corporativos para toda a Serra Gaúcha.",
     url: "https://moveisunghero.com.br",
     siteName: "Móveis Unghero",

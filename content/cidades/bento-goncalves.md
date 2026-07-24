@@ -1,6 +1,6 @@
 ---
 title: "Móveis Sob Medida em Bento Gonçalves"
-description: "Móveis planejados sob medida em Bento Gonçalves, RS. Projetos exclusivos de marcenaria familiar com fabricação próxima em Farroupilha."
+description: "Móveis sob medida em Bento Gonçalves, RS. Projetos exclusivos de marcenaria familiar com fabricação próxima em Farroupilha."
 city: "Bento Gonçalves"
 slug: "bento-goncalves"
 ---

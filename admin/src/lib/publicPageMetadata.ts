@@ -38,7 +38,7 @@ export const PUBLIC_PAGE_COPY = {
     title: (clientName: string) =>
       `Seu orçamento | ${clientName || "Cliente"} | ${BRAND}`,
     description:
-      "Abra este link para ver sua proposta de móveis planejados de forma simples e rápida. Qualquer dúvida, nossa equipe está à disposição.",
+      "Abra este link para ver sua proposta exclusiva. Projetos únicos e personalizados para o seu espaço, com a qualidade da Móveis Unghero.",
   },
   contract: {
     title: (clientName: string) =>
@@ -54,17 +54,17 @@ export const PUBLIC_PAGE_COPY = {
   briefing: {
     title: `Solicite seu orçamento | ${BRAND}`,
     description:
-      "Conte um pouco sobre o seu projeto de móveis planejados. É rápido e nos ajuda a preparar uma proposta sob medida para você.",
+      "Conte um pouco sobre o seu projeto. É rápido e nos ajuda a criar um móvel sob medida, único e personalizado para o seu ambiente.",
   },
   cadastroCliente: {
     title: `Faça seu cadastro | ${BRAND}`,
     description:
-      "Cadastre-se em poucos minutos para receber atendimento e orçamento de móveis planejados sob medida.",
+      "Cadastre-se em poucos minutos para receber atendimento e orçamento de móveis sob medida, feitos especialmente para o seu ambiente.",
   },
   cadastroParceiro: {
     title: `Seja nosso parceiro | ${BRAND}`,
     description:
-      "Arquitetos, designers e projetistas: cadastre-se para indicar clientes e co-projetar com a Móveis Unghero.",
+      "Arquitetos, designers e projetistas: cadastre-se para indicar clientes e co-projetar móveis sob medida com a Móveis Unghero.",
   },
   cadastroFornecedor: {
     title: `Seja nosso fornecedor | ${BRAND}`,
@@ -74,6 +74,6 @@ export const PUBLIC_PAGE_COPY = {
   portalCliente: {
     title: `Portal do cliente | ${BRAND}`,
     description:
-      "Acompanhe o andamento do seu projeto de móveis planejados com a Móveis Unghero.",
+      "Acompanhe o andamento do seu projeto de móveis sob medida com a Móveis Unghero.",
   },
 } as const;

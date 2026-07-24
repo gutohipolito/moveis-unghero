@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'FAQ Completo: 100 Dúvidas de Móveis Sob Medida | Móveis Unghero',
-    description: 'Guia completo com 100 perguntas e respostas sobre materiais, MDF, MDP, prazos, garantias, instalação e manutenção de móveis planejados.',
+    description: 'Guia completo com 100 perguntas e respostas sobre materiais, MDF, MDP, prazos, garantias, instalação e manutenção de móveis sob medida.',
     url: 'https://moveisunghero.com.br/faq',
     type: 'website',
   }

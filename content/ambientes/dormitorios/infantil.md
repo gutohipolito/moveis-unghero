@@ -1,6 +1,6 @@
 ---
-title: "Dormitórios Infantis Planejados"
-description: "Móveis infantis projetados para durar. Soluções modulares adaptáveis ao crescimento da criança e foco total em segurança."
+title: "Dormitórios Infantis Sob Medida"
+description: "Móveis infantis projetados para durar. Soluções ajustáveis ao crescimento da criança e foco total em segurança."
 category: "ambientes/dormitorios"
 slug: "infantil"
 image: "/images/dormitorios.jpg"

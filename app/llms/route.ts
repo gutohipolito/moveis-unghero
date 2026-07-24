@@ -13,7 +13,7 @@ export async function GET() {
     let responseText = `# Manifesto Móveis Unghero para LLMs\n\n`;
     responseText += `Este endpoint compila as principais informações de conteúdo técnico e local do site moveisunghero.com.br.\n\n`;
 
-    responseText += `## 1. Ambientes Planejados (Topic Clusters)\n\n`;
+    responseText += `## 1. Ambientes Sob Medida (Topic Clusters)\n\n`;
     responseText += `Estrutura de Marcenaria sob Medida residencial, de lazer e corporativa comercial.\n\n`;
 
     categorias.forEach((cat) => {

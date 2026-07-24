@@ -90,7 +90,7 @@ export default async function PrintBriefingPage({ params }: PrintPageProps) {
           <div className="space-y-1.5">
             <img src="/logo.png" alt="Móveis Unghero" className="h-10 w-auto object-contain filter brightness-0" />
             <h1 className="text-lg font-black tracking-tight text-slate-900 uppercase pt-2">Ficha de Qualificação do Lead</h1>
-            <p className="text-xs font-semibold text-slate-400">Briefing Técnico de Entrada • Móveis Planejados Sob Medida</p>
+            <p className="text-xs font-semibold text-slate-400">Briefing Técnico de Entrada • Móveis Sob Medida</p>
           </div>
           <div className="text-right space-y-1">
             <span className={`inline-block text-[10px] font-black tracking-wider px-3 py-1 rounded-md border uppercase ${classBg}`}>

@@ -41,7 +41,7 @@ export function buildGoogleReviewWhatsAppMessage(options?: {
 
   return `${greeting}
 
-Esperamos que esteja satisfeito(a) com seu projeto de móveis planejados!
+Esperamos que esteja satisfeito(a) com seu projeto de móveis sob medida!
 
 Se puder, deixe sua avaliação no Google — leva menos de 1 minuto e nos ajuda muito:
 

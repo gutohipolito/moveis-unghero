@@ -1,12 +1,12 @@
 ---
-title: "Dormitórios Planejados"
+title: "Dormitórios Sob Medida"
 description: "Dormitórios de casal, solteiro e infantis sob medida criados para proporcionar conforto, organização e relaxamento."
 category: "ambientes"
 slug: "dormitorios"
 image: "/images/dormitorios.jpg"
 ---
 
-# Dormitórios Planejados: Seu Espaço de Descanso
+# Dormitórios Sob Medida: Seu Espaço de Descanso
 
 O quarto é o refúgio pessoal da casa. Nossos projetos de dormitórios sob medida são focados em criar uma atmosfera de conforto térmico e visual, aproveitando cada centímetro para garantir que o quarto permaneça organizado e livre de poluição visual.
 
