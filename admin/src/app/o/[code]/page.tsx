@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import QuotePrintDocument from "@/components/QuotePrintDocument";
 import QuotePublicPrintBar from "@/components/QuotePublicPrintBar";
 import { loadPublicQuoteByShareCode } from "@/lib/quotePublicShare";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 import { recordQuotePublicView } from "@/lib/quoteViewTracking";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +19,12 @@ export async function generateMetadata({
   const { code } = await params;
   const data = await loadPublicQuoteByShareCode(code);
   const clientName = data?.clientName ?? "Cliente";
+  const copy = PUBLIC_PAGE_COPY.quote;
 
-  return {
-    title: `Orçamento | ${clientName} | Móveis Unghero`,
-    robots: { index: false, follow: false, nocache: true },
-  };
+  return publicPageMetadata({
+    title: copy.title(clientName),
+    description: copy.description,
+  });
 }
 
 export default async function PublicQuotePage({ params }: PublicQuotePageProps) {

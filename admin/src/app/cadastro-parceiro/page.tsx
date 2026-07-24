@@ -1,12 +1,13 @@
 import React from "react";
 import PartnerSignupForm from "./PartnerSignupForm";
 import FormLgpdNotice from "@/components/forms/FormLgpdNotice";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
-export const metadata = {
-  title: "Cadastro de Parceiros | Móveis Unghero",
-  description:
-    "Arquitetos, designers e projetistas: cadastre-se para fazer parceria com a Móveis Unghero.",
-};
+export const metadata = publicPageMetadata({
+  title: PUBLIC_PAGE_COPY.cadastroParceiro.title,
+  description: PUBLIC_PAGE_COPY.cadastroParceiro.description,
+  noIndex: false,
+});
 
 export default function CadastroParceiroPage() {
   return (

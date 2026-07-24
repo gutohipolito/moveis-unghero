@@ -12,13 +12,13 @@ export function buildQuoteWhatsAppMessage(options: QuoteWhatsAppMessageOptions) 
   const lines = [
     `Olá ${firstName}, tudo bem?`,
     "",
-    "Segue o *orçamento comercial detalhado* da Móveis Unghero:",
+    "Segue o *seu orçamento* da Móveis Unghero:",
     "",
     `Validade da proposta: ${options.validade}`,
   ];
 
   if (options.pdfUrl) {
-    lines.push("", "Acesse o orçamento:", options.pdfUrl);
+    lines.push("", "Acesse pelo link (simples e rápido):", options.pdfUrl);
   } else {
     lines.push("", "O orçamento segue em anexo nesta conversa.");
   }

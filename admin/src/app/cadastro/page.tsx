@@ -1,11 +1,13 @@
 import React from "react";
 import ClientSignupForm from "./ClientSignupForm";
 import FormLgpdNotice from "@/components/forms/FormLgpdNotice";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
-export const metadata = {
-  title: "Cadastro de Cliente | Móveis Unghero",
-  description: "Cadastre-se para receber atendimento e orçamento de móveis planejados sob medida.",
-};
+export const metadata = publicPageMetadata({
+  title: PUBLIC_PAGE_COPY.cadastroCliente.title,
+  description: PUBLIC_PAGE_COPY.cadastroCliente.description,
+  noIndex: false,
+});
 
 export default function CadastroClientePage() {
   return (

@@ -2,6 +2,12 @@ import React from "react";
 import { loginCliente } from "@/app/actions/cliente";
 import LoginFormClient from "./LoginFormClient";
 import { Sparkles } from "lucide-react";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
+
+export const metadata = publicPageMetadata({
+  title: PUBLIC_PAGE_COPY.portalCliente.title,
+  description: PUBLIC_PAGE_COPY.portalCliente.description,
+});
 
 export default function ClienteLoginPage() {
   return (
@@ -27,7 +33,7 @@ export default function ClienteLoginPage() {
             <div>
               <h2 className="text-lg font-bold text-foreground">Acessar seu Painel</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Digite os dados cadastrados no CRM da loja para acompanhar o progresso dos seus móveis.
+                Use os dados do seu cadastro para acompanhar o andamento do seu projeto de móveis.
               </p>
             </div>
 

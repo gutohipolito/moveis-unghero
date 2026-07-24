@@ -1,11 +1,13 @@
 import React from "react";
 import BriefingForm from "./BriefingForm";
 import FormLgpdNotice from "@/components/forms/FormLgpdNotice";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
-export const metadata = {
-  title: "Qualificação de Projeto | Móveis Unghero",
-  description: "Preencha o briefing de modulação 3D para o seu projeto sob medida.",
-};
+export const metadata = publicPageMetadata({
+  title: PUBLIC_PAGE_COPY.briefing.title,
+  description: PUBLIC_PAGE_COPY.briefing.description,
+  noIndex: false,
+});
 
 export default function BriefingPage() {
   return (
@@ -25,11 +27,11 @@ export default function BriefingPage() {
         <div className="w-full max-w-2xl mx-auto">
           <div className="text-center mb-6 space-y-2">
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">
-              Qualificação de Projeto
+              Conte-nos sobre o seu projeto
             </h1>
             <p className="text-xs md:text-sm text-slate-500 max-w-lg mx-auto">
-              Conte-nos sobre seu imóvel e preferências para prepararmos um orçamento de móveis
-              planejados sob medida.
+              Responda algumas perguntas rápidas sobre seu imóvel e preferências para
+              prepararmos um orçamento de móveis planejados sob medida.
             </p>
           </div>
           <BriefingForm />

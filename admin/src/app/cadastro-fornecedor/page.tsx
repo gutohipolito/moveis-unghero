@@ -1,12 +1,13 @@
 import React from "react";
 import SupplierSignupForm from "./SupplierSignupForm";
 import FormLgpdNotice from "@/components/forms/FormLgpdNotice";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
-export const metadata = {
-  title: "Cadastro de Fornecedores | Móveis Unghero",
-  description:
-    "Distribuidor ou fabricante: realize seu pré-cadastro para apresentar seus produtos e estabelecer parceria comercial com a Móveis Unghero.",
-};
+export const metadata = publicPageMetadata({
+  title: PUBLIC_PAGE_COPY.cadastroFornecedor.title,
+  description: PUBLIC_PAGE_COPY.cadastroFornecedor.description,
+  noIndex: false,
+});
 
 export default function CadastroFornecedorPage() {
   return (

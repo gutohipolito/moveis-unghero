@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ContractPrintDocument from "@/components/ContractPrintDocument";
 import ContractPublicPrintBar from "@/components/ContractPublicPrintBar";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,12 @@ export async function generateMetadata({
 }: PublicContractPageProps): Promise<Metadata> {
   const { code } = await params;
   const contract = await loadByCode(code);
-  return {
-    title: `Contrato | ${contract?.cliente_nome ?? "Cliente"} | Móveis Unghero`,
-    robots: { index: false, follow: false, nocache: true },
-  };
+  const copy = PUBLIC_PAGE_COPY.contract;
+
+  return publicPageMetadata({
+    title: copy.title(contract?.cliente_nome ?? "Cliente"),
+    description: copy.description,
+  });
 }
 
 export default async function PublicContractPage({ params }: PublicContractPageProps) {

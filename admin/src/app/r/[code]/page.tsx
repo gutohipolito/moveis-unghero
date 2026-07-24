@@ -4,11 +4,12 @@ import ReceiptPrintDocument from "@/components/ReceiptPrintDocument";
 import ReceiptPublicPrintBar from "@/components/ReceiptPublicPrintBar";
 import { getPaymentReceiptByShareCode } from "@/app/actions/receipts";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
+import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
-export const metadata: Metadata = {
-  title: "Recibo de pagamento — Móveis Unghero",
-  robots: { index: false, follow: false, nocache: true },
-};
+export const metadata: Metadata = publicPageMetadata({
+  title: PUBLIC_PAGE_COPY.receipt.title,
+  description: PUBLIC_PAGE_COPY.receipt.description,
+});
 
 interface PublicReceiptPageProps {
   params: Promise<{ code: string }>;
