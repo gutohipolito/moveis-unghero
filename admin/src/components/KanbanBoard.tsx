@@ -27,6 +27,7 @@ import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
 import CommercialPendingPanel from "@/components/CommercialPendingPanel";
 import KanbanCardQuoteViews from "@/components/KanbanCardQuoteViews";
+import HoverTooltip from "@/components/ui/HoverTooltip";
 import { labelOrigin } from "@/lib/navLabels";
 import { formatQuoteViewLabel, toQuoteViewStats } from "@/lib/quoteViewTracking";
 import {
@@ -1077,38 +1078,60 @@ export default function KanbanBoard({
           </div>
 
           {followMessage ? (
-            <div
-              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert" | "loss"]}`}
+            <HoverTooltip
+              content={
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Follow-up
+                  </p>
+                  <p>{followMessage}</p>
+                </div>
+              }
             >
-              {followLevel === "loss" ? (
-                <UserX className="h-3 w-3 shrink-0" />
-              ) : followLevel === "alert" ? (
-                <BellRing className="h-3 w-3 shrink-0" />
-              ) : (
-                <AlertTriangle className="h-3 w-3 shrink-0" />
-              )}
-              <span className="truncate">{followMessage}</span>
-            </div>
+              <div
+                className={`flex w-full min-w-0 items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${FOLLOW_UP_BADGE_STYLES[followLevel as "warning" | "alert" | "loss"]}`}
+              >
+                {followLevel === "loss" ? (
+                  <UserX className="h-3 w-3 shrink-0" />
+                ) : followLevel === "alert" ? (
+                  <BellRing className="h-3 w-3 shrink-0" />
+                ) : (
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                )}
+                <span className="truncate">{followMessage}</span>
+              </div>
+            </HoverTooltip>
           ) : null}
 
           {showQuoteShareBadge && quoteShareLabel ? (
-            <div
-              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${
-                project.quoteShare?.neverOpened
-                  ? "bg-amber-50 text-amber-800 border-amber-200"
-                  : "bg-sky-50 text-sky-800 border-sky-200"
-              }`}
-              title={
-                project.quoteShare?.neverOpened
-                  ? "O link da proposta foi enviado, mas o cliente ainda não abriu."
-                  : project.quoteShare?.lastDeviceLabel
-                    ? `Última abertura: ${project.quoteShare.lastDeviceLabel}`
-                    : "Aberturas do link público da proposta."
+            <HoverTooltip
+              content={
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Link da proposta
+                  </p>
+                  <p>{quoteShareLabel}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {project.quoteShare?.neverOpened
+                      ? "O link foi enviado, mas o cliente ainda não abriu."
+                      : project.quoteShare?.lastDeviceLabel
+                        ? `Último dispositivo: ${project.quoteShare.lastDeviceLabel}`
+                        : "Histórico completo na aba Aberturas do card."}
+                  </p>
+                </div>
               }
             >
-              <Eye className="h-3 w-3 shrink-0" />
-              <span className="truncate">{quoteShareLabel}</span>
-            </div>
+              <div
+                className={`flex w-full min-w-0 items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${
+                  project.quoteShare?.neverOpened
+                    ? "bg-amber-50 text-amber-800 border-amber-200"
+                    : "bg-sky-50 text-sky-800 border-sky-200"
+                }`}
+              >
+                <Eye className="h-3 w-3 shrink-0" />
+                <span className="truncate">{quoteShareLabel}</span>
+              </div>
+            </HoverTooltip>
           ) : null}
 
           <div
