@@ -208,6 +208,7 @@ export function buildQuoteStaleNotifications(
     pdf_shared_at: Date;
     clientName: string;
     pendingCount: number;
+    viewCount?: number;
   }[],
   minDays = 3
 ): AppNotification[] {
@@ -217,12 +218,19 @@ export function buildQuoteStaleNotifications(
       const days = Math.floor((Date.now() - q.pdf_shared_at.getTime()) / MS_DAY);
       if (days < minDays || q.pendingCount <= 0) return null;
       const code = q.codigo?.trim() || "proposta";
+      const neverOpened = (q.viewCount ?? 0) <= 0;
       return {
         id: `quote-stale-${q.id}`,
         type: "quote_stale" as const,
-        priority: days >= 7 ? ("high" as const) : ("normal" as const),
-        title: days >= 7 ? "Proposta parada há uma semana" : "Retomar proposta enviada",
-        message: `${q.clientName} — ${code} enviada há ${days} dias, ainda sem fechamento.`,
+        priority: days >= 7 || neverOpened ? ("high" as const) : ("normal" as const),
+        title: neverOpened
+          ? "Proposta enviada e não aberta"
+          : days >= 7
+            ? "Proposta parada há uma semana"
+            : "Retomar proposta enviada",
+        message: neverOpened
+          ? `${q.clientName} — ${code} enviada há ${days} dias e o cliente ainda não abriu o link.`
+          : `${q.clientName} — ${code} enviada há ${days} dias, ainda sem fechamento.`,
         href: `/projects/${q.project_id}?tab=quotes`,
         createdAt: q.pdf_shared_at.toISOString(),
         meta: {

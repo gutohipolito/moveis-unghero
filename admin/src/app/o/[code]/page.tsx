@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QuotePrintDocument from "@/components/QuotePrintDocument";
 import QuotePublicPrintBar from "@/components/QuotePublicPrintBar";
 import { loadPublicQuoteByShareCode } from "@/lib/quotePublicShare";
+import { recordQuotePublicView } from "@/lib/quoteViewTracking";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,9 @@ export default async function PublicQuotePage({ params }: PublicQuotePageProps) 
   if (!data) {
     notFound();
   }
+
+  const hdrs = await headers();
+  await recordQuotePublicView(data.quoteId, hdrs.get("user-agent"));
 
   return (
     <QuotePrintDocument

@@ -51,6 +51,10 @@ export type ProjectDetailsPayload = {
     validade: string;
     observacoes: string | null;
     aprovado_em: string | null;
+    pdf_shared_at?: string | null;
+    pdf_view_count?: number;
+    pdf_first_viewed_at?: string | null;
+    pdf_last_viewed_at?: string | null;
     items: Array<{
       id: string;
       descricao: string;
@@ -199,6 +203,14 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       validade: q.validade.toISOString(),
       observacoes: q.observacoes,
       aprovado_em: q.aprovado_em ? q.aprovado_em.toISOString() : null,
+      pdf_shared_at: q.pdf_shared_at ? q.pdf_shared_at.toISOString() : null,
+      pdf_view_count: q.pdf_view_count ?? 0,
+      pdf_first_viewed_at: q.pdf_first_viewed_at
+        ? q.pdf_first_viewed_at.toISOString()
+        : null,
+      pdf_last_viewed_at: q.pdf_last_viewed_at
+        ? q.pdf_last_viewed_at.toISOString()
+        : null,
       items: (q.items || []).map((item) => ({
         id: item.id,
         descricao: item.descricao,

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { resolveStageEntryAt } from "@/lib/crmStageDate";
+import { toQuoteViewStats, type QuoteViewStats } from "@/lib/quoteViewTracking";
 
 export const CRM_PROJECT_SELECT = {
   id: true,
@@ -15,10 +17,14 @@ export const CRM_PROJECT_SELECT = {
   conf_tecnica_resp1: { select: { id: true, name: true } },
   conf_tecnica_resp2: { select: { id: true, name: true } },
   quotes: {
-    where: { aprovado_em: { not: null } },
-    select: { aprovado_em: true },
-    orderBy: { aprovado_em: "asc" as const },
-    take: 1,
+    select: {
+      aprovado_em: true,
+      pdf_shared_at: true,
+      pdf_view_count: true,
+      pdf_first_viewed_at: true,
+      pdf_last_viewed_at: true,
+    },
+    orderBy: [{ pdf_shared_at: "desc" }, { aprovado_em: "asc" }],
   },
   timeline: {
     select: {
@@ -32,7 +38,7 @@ export const CRM_PROJECT_SELECT = {
       },
     },
     orderBy: {
-      data: "desc" as const,
+      data: "desc",
     },
   },
   client: {
@@ -77,7 +83,7 @@ export const CRM_PROJECT_SELECT = {
       createdAt: true,
     },
   },
-} as const;
+} satisfies Prisma.ProjectSelect;
 
 export async function fetchCrmProjects(companyId: string) {
   const projectsResult = await prisma.project
@@ -102,8 +108,24 @@ export async function fetchCrmProjects(companyId: string) {
           user: entry.user,
         }))
       : [];
-    const firstQuoteApprovedAt = project.quotes[0]?.aprovado_em
-      ? new Date(project.quotes[0].aprovado_em).toISOString()
+
+    const approvedQuotes = project.quotes
+      .filter((q) => q.aprovado_em)
+      .sort(
+        (a, b) =>
+          new Date(a.aprovado_em!).getTime() - new Date(b.aprovado_em!).getTime()
+      );
+    const firstQuoteApprovedAt = approvedQuotes[0]?.aprovado_em
+      ? new Date(approvedQuotes[0].aprovado_em).toISOString()
+      : null;
+
+    const sharedOpenQuote =
+      project.quotes.find((q) => q.pdf_shared_at && !q.aprovado_em) ??
+      project.quotes.find((q) => q.pdf_shared_at) ??
+      null;
+
+    const quoteShare: QuoteViewStats | null = sharedOpenQuote
+      ? toQuoteViewStats(sharedOpenQuote)
       : null;
 
     return {
@@ -126,6 +148,7 @@ export async function fetchCrmProjects(companyId: string) {
       timeline,
       firstQuoteApprovedAt
     ),
+    quoteShare,
     timeline,
     client: project.client,
     briefing: project.briefing

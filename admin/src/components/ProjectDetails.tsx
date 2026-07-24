@@ -50,6 +50,10 @@ import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import {
+  formatQuoteViewLabel,
+  toQuoteViewStats,
+} from "@/lib/quoteViewTracking";
+import {
   ArrowLeft,
   User, 
   Phone, 
@@ -114,6 +118,10 @@ interface Quote {
   validade: string;
   observacoes: string;
   aprovado_em: string | null;
+  pdf_shared_at?: string | null;
+  pdf_view_count?: number;
+  pdf_first_viewed_at?: string | null;
+  pdf_last_viewed_at?: string | null;
   items?: Array<{
     id: string;
     descricao: string;
@@ -1575,6 +1583,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       const hasPending = summary.hasPending;
                       const statusLabel = quoteCommercialLabel(summary);
                       const isApproving = approvingQuoteId === q.id;
+                      const viewStats = toQuoteViewStats(q);
+                      const viewLabel = formatQuoteViewLabel(viewStats);
 
                       return (
                       <div
@@ -1608,6 +1618,25 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                                 Validade: {formatDateBR(q.validade)}
                               </span>
                             )}
+                            {viewLabel ? (
+                              <span
+                                className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  viewStats.neverOpened
+                                    ? "bg-amber-50 text-amber-800 border-amber-200"
+                                    : "bg-sky-50 text-sky-800 border-sky-200"
+                                }`}
+                                title={
+                                  viewStats.firstViewedAt
+                                    ? `Primeira abertura: ${new Date(viewStats.firstViewedAt).toLocaleString("pt-BR")}`
+                                    : viewStats.sharedAt
+                                      ? `Link gerado em ${new Date(viewStats.sharedAt).toLocaleString("pt-BR")}`
+                                      : undefined
+                                }
+                              >
+                                <Eye className="h-3 w-3" />
+                                {viewLabel}
+                              </span>
+                            ) : null}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
                             <span>Subtotal: <strong className="text-foreground">{formatCurrency(q.subtotal)}</strong></span>

@@ -91,5 +91,6 @@ export async function loadPublicQuoteByShareCode(code: string) {
     validadeLabel,
     emissaoLabel,
     clientName: client.nome,
+    quoteId: dbQuote.id,
   };
 }

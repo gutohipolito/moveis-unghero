@@ -142,6 +142,7 @@ export async function fetchCompanyNotifications(
         project_id: true,
         codigo: true,
         pdf_shared_at: true,
+        pdf_view_count: true,
         project: { select: { client: { select: { nome: true } } } },
         _count: { select: { items: { where: { status: "PENDENTE" } } } },
       },
@@ -246,6 +247,7 @@ export async function fetchCompanyNotifications(
         pdf_shared_at: q.pdf_shared_at,
         clientName: q.project.client.nome,
         pendingCount: q._count.items,
+        viewCount: q.pdf_view_count ?? 0,
       }))
   );
 

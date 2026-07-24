@@ -27,6 +27,7 @@ import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
 import CommercialPendingPanel from "@/components/CommercialPendingPanel";
 import { labelOrigin } from "@/lib/navLabels";
+import { formatQuoteViewLabel } from "@/lib/quoteViewTracking";
 import {
   formatStageEntryLabel,
   shouldShowStageEntryDate,
@@ -134,6 +135,13 @@ interface Project {
     score: number;
     roteiro_sugerido?: string | null;
     createdAt?: string | null;
+  } | null;
+  quoteShare?: {
+    sharedAt: string | null;
+    viewCount: number;
+    firstViewedAt: string | null;
+    lastViewedAt: string | null;
+    neverOpened: boolean;
   } | null;
 }
 
@@ -876,6 +884,18 @@ export default function KanbanBoard({
     const isCollapsed = !expandedCards.has(project.id);
     const stageStatus = colId ?? project.status_geral;
     const theme = getStageTheme(stageStatus);
+    const quoteShareLabel = formatQuoteViewLabel(
+      project.quoteShare ?? {
+        sharedAt: null,
+        viewCount: 0,
+        firstViewedAt: null,
+        lastViewedAt: null,
+        neverOpened: false,
+      }
+    );
+    const showQuoteShareBadge =
+      Boolean(quoteShareLabel) &&
+      ["LEAD", "ORCAMENTO", "NEGOCIACAO"].includes(project.status_geral);
 
     const actionButtons = (
       <div className="kanban-card-actions">
@@ -1060,6 +1080,24 @@ export default function KanbanBoard({
                 <AlertTriangle className="h-3 w-3 shrink-0" />
               )}
               <span className="truncate">{followMessage}</span>
+            </div>
+          ) : null}
+
+          {showQuoteShareBadge && quoteShareLabel ? (
+            <div
+              className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-1 rounded-md border leading-tight ${
+                project.quoteShare?.neverOpened
+                  ? "bg-amber-50 text-amber-800 border-amber-200"
+                  : "bg-sky-50 text-sky-800 border-sky-200"
+              }`}
+              title={
+                project.quoteShare?.neverOpened
+                  ? "O link da proposta foi enviado, mas o cliente ainda não abriu."
+                  : "Aberturas do link público da proposta."
+              }
+            >
+              <Eye className="h-3 w-3 shrink-0" />
+              <span className="truncate">{quoteShareLabel}</span>
             </div>
           ) : null}
 
