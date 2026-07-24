@@ -583,7 +583,7 @@ export default function KanbanBoard({
 
   const handleEditLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProjectId) return;
+    if (isReadOnly || !editingProjectId) return;
     setLoading(true);
 
     const data = {
@@ -621,7 +621,7 @@ export default function KanbanBoard({
 
   const handleAddTimeline = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProjectId || !newTimelineText.trim()) return;
+    if (isReadOnly || !editingProjectId || !newTimelineText.trim()) return;
     setLoading(true);
 
     const result = await addProjectTimelineAction(editingProjectId, newTimelineText);
@@ -649,6 +649,10 @@ export default function KanbanBoard({
 
   // Drag & Drop Handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
+    if (isReadOnly) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData("text/plain", id);
     setActiveDragId(id);
     setDidDrag(false);
@@ -661,6 +665,7 @@ export default function KanbanBoard({
   };
 
   const handleDragOver = (e: React.DragEvent, columnId: ProjectStatus) => {
+    if (isReadOnly) return;
     e.preventDefault();
     if (dragOverColumn !== columnId) {
       setDragOverColumn(columnId);
@@ -669,6 +674,7 @@ export default function KanbanBoard({
 
   const handleDrop = async (e: React.DragEvent, targetStatus: ProjectStatus) => {
     e.preventDefault();
+    if (isReadOnly) return;
     const id = e.dataTransfer.getData("text/plain");
     
     // - Atualiza o estado local imediatamente (Optimistic Update)
@@ -697,6 +703,7 @@ export default function KanbanBoard({
 
   // Avança o projeto para a próxima etapa do funil (usado no mobile, onde não há drag & drop)
   const handleAdvanceStage = async (project: Project) => {
+    if (isReadOnly) return;
     const next = getNextFunnelStatus(project.status_geral);
     if (!next) return;
 
@@ -714,6 +721,7 @@ export default function KanbanBoard({
   };
 
   const handleMarkContacted = async (project: Project) => {
+    if (isReadOnly) return;
     const now = new Date().toISOString();
     setProjects(
       projects.map((p) =>
@@ -730,7 +738,7 @@ export default function KanbanBoard({
 
   const handleConfirmLoss = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lossModalProject) return;
+    if (isReadOnly || !lossModalProject) return;
     setLoading(true);
 
     const result = await markProjectAsLost(lossModalProject.id, lossMotivo);
@@ -752,6 +760,7 @@ export default function KanbanBoard({
   };
 
   const handleRestoreLoss = async (project: Project) => {
+    if (isReadOnly) return;
     setLoading(true);
     const result = await restoreProjectFromLoss(project.id, "LEAD");
     if (result.success) {
@@ -840,7 +849,7 @@ export default function KanbanBoard({
 
   // Auto-move para Perdas quando o operador ativou essa opção no SLA.
   useEffect(() => {
-    if (!followUpSla.autoMoveToLoss || autoLossRunningRef.current) return;
+    if (isReadOnly || !followUpSla.autoMoveToLoss || autoLossRunningRef.current) return;
 
     const candidates = projects.filter(
       (p) =>
@@ -888,7 +897,7 @@ export default function KanbanBoard({
       cancelled = true;
       autoLossRunningRef.current = false;
     };
-  }, [projects, followUpSla, showSuccess]);
+  }, [projects, followUpSla, showSuccess, isReadOnly]);
 
   const renderProjectCard = (project: Project, colId?: ProjectStatus) => {
     const isDraggingThis = activeDragId === project.id;
@@ -915,7 +924,7 @@ export default function KanbanBoard({
     const hasQuoteShareTab = Boolean(project.quoteShare?.sharedAt);
     const innerTab = cardInnerTab[project.id] ?? "geral";
 
-    const actionButtons = (
+    const actionButtons = !isReadOnly ? (
       <div className="kanban-card-actions">
         {showFollowUp && boardView === "funil" && (
           <button
@@ -981,19 +990,23 @@ export default function KanbanBoard({
           </button>
         )}
       </div>
-    );
+    ) : null;
 
     return (
       <div
         key={project.id}
-        draggable={boardView === "funil" && !isMobile}
+        draggable={!isReadOnly && boardView === "funil" && !isMobile}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(project)}
         className={`group kanban-card kanban-card-stage overflow-hidden border ${
           project.client.tipo_pessoa === "PJ" ? "border-indigo-500/50 shadow-xs ring-1 ring-indigo-50" : theme.cardBorder
         } ${theme.cardShadow} ${theme.cardHover} ${
-          boardView === "funil" ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+          isReadOnly
+            ? "cursor-pointer"
+            : boardView === "funil"
+              ? "cursor-grab active:cursor-grabbing"
+              : "cursor-pointer"
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
         } ${followLevel === "ok" ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${
@@ -1221,7 +1234,7 @@ export default function KanbanBoard({
                       </span>
                       <select
                         value={project.conf_tecnica_resp1_id || "none"}
-                        disabled={loading || colaboradores.length === 0}
+                        disabled={isReadOnly || loading || colaboradores.length === 0}
                         onChange={async (e) => {
                           const nextId = e.target.value;
                           const prev = project.conf_tecnica_resp1_id || null;
@@ -1273,7 +1286,7 @@ export default function KanbanBoard({
                       </select>
                       <select
                         value={project.conf_tecnica_resp2_id || "none"}
-                        disabled={loading || colaboradores.length === 0}
+                        disabled={isReadOnly || loading || colaboradores.length === 0}
                         onChange={async (e) => {
                           const nextId = e.target.value;
                           const prev = project.conf_tecnica_resp2_id || null;
@@ -1382,7 +1395,7 @@ export default function KanbanBoard({
                     </a>
 
                     {/* Avançar etapa — só no mobile, onde não há drag & drop */}
-                    {isMobile && boardView === "funil" && getNextFunnelStatus(project.status_geral) && (
+                    {!isReadOnly && isMobile && boardView === "funil" && getNextFunnelStatus(project.status_geral) && (
                       <button
                         type="button"
                         onPointerDown={(e) => e.stopPropagation()}
@@ -1465,7 +1478,7 @@ export default function KanbanBoard({
               <ChevronsDownUp className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
             )}
           </button>
-          <CrmFollowUpSlaSettings sla={followUpSla} onSave={handleSaveFollowUpSla} />
+          {!isReadOnly && <CrmFollowUpSlaSettings sla={followUpSla} onSave={handleSaveFollowUpSla} />}
         </div>
 
         {boardView === "funil" &&
@@ -2104,10 +2117,11 @@ export default function KanbanBoard({
                       </label>
                       <Input
                         type="number"
-                        required
+                        required={!isReadOnly}
                         value={leadForm.valor_previsto}
                         onChange={(e) => setLeadForm({ ...leadForm, valor_previsto: e.target.value })}
-                        className="text-xs h-10 font-bold text-neutral-800"
+                        disabled={isReadOnly}
+                        className="text-xs h-10 font-bold text-neutral-800 disabled:opacity-60"
                       />
                     </div>
                     <div>
@@ -2117,7 +2131,8 @@ export default function KanbanBoard({
                       <select
                         value={editingStatusGeral}
                         onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
-                        className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none"
+                        disabled={isReadOnly}
+                        className="w-full h-10 bg-slate-50 border border-border rounded-lg text-xs font-semibold px-2.5 focus:ring-1 focus:ring-primary cursor-pointer outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {(() => {
                           const opts = [...STATUS_OPTIONS];
@@ -2146,7 +2161,8 @@ export default function KanbanBoard({
                       value={editingObservacoes}
                       onChange={(e) => setEditingObservacoes(e.target.value)}
                       rows={3}
-                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium resize-none leading-relaxed"
+                      disabled={isReadOnly}
+                      className="w-full p-2.5 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium resize-none leading-relaxed disabled:opacity-60"
                     />
                   </div>
 
@@ -2163,7 +2179,8 @@ export default function KanbanBoard({
                         value={newTimelineText}
                         onChange={(e) => setNewTimelineText(e.target.value)}
                         placeholder="Registrar anotação de conversa ou follow-up realizado hoje..."
-                        className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium"
+                        disabled={isReadOnly}
+                        className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-border rounded-lg focus:ring-1 focus:ring-primary outline-none font-medium disabled:opacity-50"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -2174,7 +2191,7 @@ export default function KanbanBoard({
                       <Button 
                         type="button" 
                         onClick={handleAddTimeline} 
-                        disabled={loading || !newTimelineText.trim()}
+                        disabled={isReadOnly || loading || !newTimelineText.trim()}
                         className="px-4 py-2 font-bold text-xs h-9"
                       >
                         Salvar Nota
@@ -2216,15 +2233,17 @@ export default function KanbanBoard({
                       disabled={loading}
                       className="text-xs font-bold cursor-pointer w-full sm:w-auto"
                     >
-                      Fechar sem salvar
+                      {isReadOnly ? "Fechar" : "Fechar sem salvar"}
                     </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={loading} 
-                      className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none w-full sm:w-auto"
-                    >
-                      {loading ? "Salvando..." : "Salvar Alterações"}
-                    </Button>
+                    {!isReadOnly && (
+                      <Button 
+                        type="submit" 
+                        disabled={loading} 
+                        className="font-bold text-xs cursor-pointer bg-[hsl(28_85%_45%)] text-white hover:bg-[hsl(28_85%_40%)] border-none w-full sm:w-auto"
+                      >
+                        {loading ? "Salvando..." : "Salvar Alterações"}
+                      </Button>
+                    )}
                   </div>
                 </form>
               )}

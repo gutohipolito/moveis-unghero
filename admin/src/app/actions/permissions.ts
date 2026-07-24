@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import {
   CONFIGURABLE_MODULE_KEYS,
   EDITABLE_ROLES,
+  VIEWER_BLOCKED_MODULES,
   resolveAllowedModules,
   type CompanyPermissions,
 } from "@/lib/permissions";
@@ -56,7 +57,13 @@ export async function updateRolePermissionsAction(
   }
 
   const cleaned = Array.from(
-    new Set(moduleKeys.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k)))
+    new Set(
+      moduleKeys.filter((k) => {
+        if (!CONFIGURABLE_MODULE_KEYS.includes(k)) return false;
+        if (role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(k)) return false;
+        return true;
+      })
+    )
   );
 
   const company = await prisma.company.findUnique({

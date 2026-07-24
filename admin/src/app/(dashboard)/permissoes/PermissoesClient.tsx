@@ -7,6 +7,7 @@ import {
   CONFIGURABLE_MODULES,
   EDITABLE_ROLES,
   ROLE_LABELS,
+  VIEWER_BLOCKED_MODULES,
 } from "@/lib/permissions";
 import { updateRolePermissionsAction } from "@/app/actions/permissions";
 
@@ -49,6 +50,7 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
   }
 
   function toggle(role: Role, key: string) {
+    if (role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(key)) return;
     setSelected((prev) => {
       const next = new Set(prev[role]);
       if (next.has(key)) next.delete(key);
@@ -60,9 +62,12 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
   }
 
   function setAll(role: Role, on: boolean) {
+    const keys = CONFIGURABLE_MODULES.map((m) => m.key).filter(
+      (k) => !(role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(k))
+    );
     setSelected((prev) => ({
       ...prev,
-      [role]: on ? new Set(CONFIGURABLE_MODULES.map((m) => m.key)) : new Set(),
+      [role]: on ? new Set(keys) : new Set(),
     }));
     setSavedRole(null);
     setError(null);
@@ -140,26 +145,45 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
                       <div className="space-y-1">
                         {mods.map((mod) => {
                           const on = selected[role].has(mod.key);
+                          const blocked =
+                            role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(mod.key);
                           return (
                             <button
                               key={mod.key}
                               type="button"
                               onClick={() => toggle(role, mod.key)}
-                              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border text-left transition-all cursor-pointer ${
-                                on
-                                  ? "border-indigo-200 bg-indigo-50/60"
-                                  : "border-slate-150 bg-white hover:bg-slate-50"
+                              disabled={blocked}
+                              title={
+                                blocked
+                                  ? "Bloqueado para contas somente leitura"
+                                  : undefined
+                              }
+                              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border text-left transition-all ${
+                                blocked
+                                  ? "opacity-45 cursor-not-allowed border-slate-150 bg-slate-50"
+                                  : on
+                                    ? "border-indigo-200 bg-indigo-50/60 cursor-pointer"
+                                    : "border-slate-150 bg-white hover:bg-slate-50 cursor-pointer"
                               }`}
                             >
                               <span
                                 className={`h-4.5 w-4.5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                                  on ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-300"
+                                  on && !blocked
+                                    ? "bg-indigo-600 border-indigo-600"
+                                    : "bg-white border-slate-300"
                                 }`}
                               >
-                                {on && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                                {on && !blocked && (
+                                  <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                                )}
                               </span>
-                              <span className={`text-xs font-semibold ${on ? "text-slate-800" : "text-slate-500"}`}>
+                              <span
+                                className={`text-xs font-semibold ${
+                                  on && !blocked ? "text-slate-800" : "text-slate-500"
+                                }`}
+                              >
                                 {mod.label}
+                                {blocked ? " (bloqueado)" : ""}
                               </span>
                             </button>
                           );

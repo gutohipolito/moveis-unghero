@@ -67,11 +67,21 @@ export function isReadOnlyRole(role: Role | string | null | undefined): boolean 
 }
 
 /**
+ * Módulos que o VIEWER nunca acessa (mesmo se marcados na matriz).
+ * Cadastros, financeiro e logística ficam fora do escopo de visualização.
+ */
+export const VIEWER_BLOCKED_MODULES = new Set([
+  "cadastros",
+  "financeiro",
+  "logistica",
+]);
+
+/**
  * Módulos padrão do VIEWER quando a matriz ainda não foi configurada.
  * Sem settings/colaboradores/permissoes (já bloqueados por ADMIN_ONLY).
  */
 export const VIEWER_DEFAULT_MODULES = CONFIGURABLE_MODULE_KEYS.filter(
-  (k) => k !== "cadastros"
+  (k) => !VIEWER_BLOCKED_MODULES.has(k)
 );
 
 /** Mapa persistido: cargo -> lista de chaves de módulos configuráveis permitidos. */
@@ -96,13 +106,21 @@ export function resolveAllowedModules(
 
   const always = Array.from(ALWAYS_ALLOWED_MODULES);
   const configured = permissions?.[role];
+  let modules: string[];
   if (!configured) {
-    if (role === "VIEWER") return [...VIEWER_DEFAULT_MODULES, ...always];
-    return [...CONFIGURABLE_MODULE_KEYS, ...always];
+    modules =
+      role === "VIEWER"
+        ? [...VIEWER_DEFAULT_MODULES]
+        : [...CONFIGURABLE_MODULE_KEYS];
+  } else {
+    modules = configured.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k));
   }
 
-  // Mantém apenas chaves válidas e configuráveis, sempre incluindo as liberadas a todos.
-  return [...configured.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k)), ...always];
+  if (role === "VIEWER") {
+    modules = modules.filter((k) => !VIEWER_BLOCKED_MODULES.has(k));
+  }
+
+  return [...modules, ...always];
 }
 
 /** Verifica se um cargo pode acessar um módulo específico. */
