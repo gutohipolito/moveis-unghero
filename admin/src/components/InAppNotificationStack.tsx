@@ -95,6 +95,7 @@ export default function InAppNotificationStack({
             data-priority={toast.priority}
             data-accent={accent}
             data-type={toast.type}
+            data-menu-open={menuOpen ? "true" : undefined}
           >
             <button
               type="button"
@@ -137,7 +138,10 @@ export default function InAppNotificationStack({
                     }
                   >
                     Opções
-                    <ChevronDown className="h-3 w-3 opacity-80" strokeWidth={2.5} />
+                    <ChevronDown
+                      className="h-3 w-3 in-app-toast-options-chevron"
+                      strokeWidth={2.5}
+                    />
                   </button>
 
                   {menuOpen ? (

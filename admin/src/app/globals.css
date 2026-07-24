@@ -1062,25 +1062,33 @@ body {
 .in-app-toast {
   pointer-events: auto;
   position: relative;
+  z-index: 1;
   overflow: visible;
   padding: 0.75rem 0.8rem 0.65rem;
   border-radius: 1.15rem;
   color: hsl(0 0% 98%);
-  background: hsl(0 0% 6% / 0.94);
-  backdrop-filter: blur(32px) saturate(1.5);
-  -webkit-backdrop-filter: blur(32px) saturate(1.5);
-  border: 1px solid hsl(0 0% 100% / 0.1);
+  /* Mesmo fundo do sidebar (.app-sidebar) */
+  background:
+    radial-gradient(115% 55% at 50% 0%, hsl(220 22% 18% / 0.65), transparent 70%),
+    linear-gradient(180deg, hsl(222 24% 10%) 0%, hsl(224 28% 6%) 55%, hsl(226 30% 4%) 100%);
+  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+  border: 1px solid hsl(224 20% 18% / 0.9);
   box-shadow:
     0 0 0 0.5px hsl(0 0% 0% / 0.55),
     0 14px 44px hsl(0 0% 0% / 0.45),
     0 2px 8px hsl(0 0% 0% / 0.28),
     inset 0 1px 0 hsl(0 0% 100% / 0.06);
   animation: in-app-toast-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  isolation: isolate;
+}
+
+.in-app-toast[data-menu-open="true"] {
+  z-index: 40;
 }
 
 .in-app-toast[data-priority="high"] {
-  background: hsl(0 0% 7% / 0.96);
-  border-color: hsl(38 92% 55% / 0.22);
+  border-color: hsl(38 92% 55% / 0.28);
   box-shadow:
     0 0 0 0.5px hsl(38 70% 40% / 0.22),
     0 14px 44px hsl(0 0% 0% / 0.48),
@@ -1167,7 +1175,7 @@ body {
   border-radius: 9999px;
   background: hsl(var(--primary));
   color: hsl(0 0% 100%);
-  border: 2px solid hsl(0 0% 6% / 0.98);
+  border: 2px solid hsl(226 30% 4%);
 }
 
 .in-app-toast-content {
@@ -1210,52 +1218,74 @@ body {
 .in-app-toast-options {
   position: relative;
   align-self: flex-end;
-  z-index: 1;
+  z-index: 2;
 }
 
 .in-app-toast-options-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  height: 1.5rem;
-  padding: 0 0.65rem;
-  border: 0;
-  border-radius: 9999px;
-  background: hsl(0 0% 28% / 0.95);
+  gap: 0.28rem;
+  height: 1.65rem;
+  min-width: 4.75rem;
+  padding: 0 0.7rem 0 0.75rem;
+  border: 1px solid hsl(0 0% 100% / 0.12);
+  border-radius: 0.55rem;
+  background:
+    linear-gradient(180deg, hsl(222 18% 22%) 0%, hsl(224 22% 14%) 100%);
   color: hsl(0 0% 96%);
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
   box-shadow:
-    inset 0 0.5px 0 hsl(0 0% 100% / 0.12),
-    0 1px 2px hsl(0 0% 0% / 0.25);
-  transition: background 0.15s ease, transform 0.12s ease;
+    inset 0 0.5px 0 hsl(0 0% 100% / 0.14),
+    0 1px 2px hsl(0 0% 0% / 0.3);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .in-app-toast-options-btn:hover {
-  background: hsl(0 0% 34%);
+  border-color: hsl(0 0% 100% / 0.2);
+  background:
+    linear-gradient(180deg, hsl(222 18% 26%) 0%, hsl(224 22% 16%) 100%);
 }
 
 .in-app-toast-options-btn[aria-expanded="true"] {
-  background: hsl(0 0% 38%);
+  border-color: hsl(var(--sidebar-accent) / 0.45);
+  background:
+    linear-gradient(180deg, hsl(222 18% 28%) 0%, hsl(224 22% 18%) 100%);
+  color: hsl(0 0% 100%);
 }
 
+.in-app-toast-options-btn[aria-expanded="true"] .in-app-toast-options-chevron {
+  transform: rotate(180deg);
+}
+
+.in-app-toast-options-chevron {
+  transition: transform 0.18s ease;
+  opacity: 0.85;
+}
+
+/* Abre para cima: evita cair atrás do toast de baixo */
 .in-app-toast-options-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 0.35rem);
-  z-index: 5;
-  min-width: 11rem;
-  padding: 0.35rem;
+  bottom: calc(100% + 0.4rem);
+  top: auto;
+  z-index: 50;
+  min-width: 12rem;
+  padding: 0.4rem;
   border-radius: 0.85rem;
-  background: hsl(0 0% 12% / 0.97);
+  background:
+    radial-gradient(115% 55% at 50% 0%, hsl(220 22% 18% / 0.55), transparent 70%),
+    linear-gradient(180deg, hsl(222 24% 12%) 0%, hsl(224 28% 7%) 100%);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  border: 1px solid hsl(0 0% 100% / 0.12);
-  box-shadow: 0 12px 32px hsl(0 0% 0% / 0.5);
+  border: 1px solid hsl(224 20% 22% / 0.95);
+  box-shadow:
+    0 12px 36px hsl(0 0% 0% / 0.55),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06);
 }
 
 .in-app-toast-options-label {
