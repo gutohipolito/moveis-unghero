@@ -1047,6 +1047,7 @@ body {
   gap: 0.75rem;
   width: min(22.5rem, calc(100vw - 2rem));
   pointer-events: none;
+  overflow: visible;
 }
 
 @media (max-width: 767px) {
@@ -1061,10 +1062,11 @@ body {
 .in-app-toast {
   pointer-events: auto;
   position: relative;
-  padding: 0.875rem 0.875rem 0.75rem;
+  overflow: visible;
+  padding: 0.75rem 0.8rem 0.65rem;
   border-radius: 1.15rem;
   color: hsl(0 0% 98%);
-  background: hsl(0 0% 7% / 0.92);
+  background: hsl(0 0% 6% / 0.94);
   backdrop-filter: blur(32px) saturate(1.5);
   -webkit-backdrop-filter: blur(32px) saturate(1.5);
   border: 1px solid hsl(0 0% 100% / 0.1);
@@ -1077,7 +1079,7 @@ body {
 }
 
 .in-app-toast[data-priority="high"] {
-  background: hsl(0 0% 8% / 0.94);
+  background: hsl(0 0% 7% / 0.96);
   border-color: hsl(38 92% 55% / 0.22);
   box-shadow:
     0 0 0 0.5px hsl(38 70% 40% / 0.22),
@@ -1130,41 +1132,24 @@ body {
 }
 
 .in-app-toast-row {
-  position: relative;
-  display: block;
-  min-height: 4.5rem;
-  padding-right: 0.15rem;
-  padding-bottom: 0.15rem;
-}
-
-.in-app-toast-main {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  width: 100%;
-  min-width: 0;
-  padding: 0 5.25rem 1.85rem 0;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
+  gap: 0.7rem;
 }
 
 .in-app-toast-icon-wrap {
   position: relative;
   flex-shrink: 0;
-  margin-top: 0.1rem;
+  margin-top: 0.05rem;
 }
 
 .in-app-toast-icon {
-  width: 2.375rem;
-  height: 2.375rem;
-  border-radius: 0.7rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
   object-fit: contain;
   background: hsl(0 0% 4%);
-  padding: 0.3rem;
+  padding: 0.28rem;
   box-shadow:
     0 1px 2px hsl(0 0% 0% / 0.45),
     inset 0 0 0 1px hsl(0 0% 100% / 0.06);
@@ -1172,8 +1157,8 @@ body {
 
 .in-app-toast-icon-badge {
   position: absolute;
-  right: -0.3rem;
-  bottom: -0.3rem;
+  right: -0.28rem;
+  bottom: -0.28rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1182,12 +1167,29 @@ body {
   border-radius: 9999px;
   background: hsl(var(--primary));
   color: hsl(0 0% 100%);
-  border: 2px solid hsl(0 0% 7% / 0.98);
+  border: 2px solid hsl(0 0% 6% / 0.98);
 }
 
-.in-app-toast-body {
+.in-app-toast-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.in-app-toast-main {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .in-app-toast-title {
@@ -1199,16 +1201,15 @@ body {
 }
 
 .in-app-toast-message {
-  margin-top: 0.15rem;
+  margin-top: 0.12rem;
   font-size: 0.75rem;
   line-height: 1.35;
   color: hsl(0 0% 100% / 0.68);
 }
 
 .in-app-toast-options {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  align-self: flex-end;
   z-index: 1;
 }
 
@@ -1217,8 +1218,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.2rem;
-  height: 1.625rem;
-  padding: 0 0.7rem;
+  height: 1.5rem;
+  padding: 0 0.65rem;
   border: 0;
   border-radius: 9999px;
   background: hsl(0 0% 28% / 0.95);
@@ -1245,7 +1246,7 @@ body {
 .in-app-toast-options-menu {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 0.4rem);
+  top: calc(100% + 0.35rem);
   z-index: 5;
   min-width: 11rem;
   padding: 0.35rem;

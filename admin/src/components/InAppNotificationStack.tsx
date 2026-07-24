@@ -106,72 +106,72 @@ export default function InAppNotificationStack({
             </button>
 
             <div className="in-app-toast-row">
-              <button
-                type="button"
-                className="in-app-toast-main"
-                onClick={() => onOpen(toast.toastKey, toast.href)}
-              >
-                <div className="in-app-toast-icon-wrap" aria-hidden>
-                  <img src="/logo.png" alt="" className="in-app-toast-icon" />
-                  <span className="in-app-toast-icon-badge">
-                    <Icon className="h-3 w-3" />
-                  </span>
-                </div>
+              <div className="in-app-toast-icon-wrap" aria-hidden>
+                <img src="/logo.png" alt="" className="in-app-toast-icon" />
+                <span className="in-app-toast-icon-badge">
+                  <Icon className="h-3 w-3" />
+                </span>
+              </div>
 
-                <div className="in-app-toast-body">
-                  <p className="in-app-toast-title">{toast.title}</p>
-                  <p className="in-app-toast-message">{toast.message}</p>
-                </div>
-              </button>
-
-              <div className="in-app-toast-options">
+              <div className="in-app-toast-content">
                 <button
                   type="button"
-                  className="in-app-toast-options-btn"
-                  aria-expanded={menuOpen}
-                  aria-haspopup="menu"
-                  aria-controls={optionsMenuId}
-                  onClick={() =>
-                    setOpenMenuId((prev) =>
-                      prev === toast.toastKey ? null : toast.toastKey
-                    )
-                  }
+                  className="in-app-toast-main"
+                  onClick={() => onOpen(toast.toastKey, toast.href)}
                 >
-                  Opções
-                  <ChevronDown className="h-3 w-3 opacity-80" strokeWidth={2.5} />
+                  <p className="in-app-toast-title">{toast.title}</p>
+                  <p className="in-app-toast-message">{toast.message}</p>
                 </button>
 
-                {menuOpen ? (
-                  <div id={optionsMenuId} className="in-app-toast-options-menu" role="menu">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="in-app-toast-options-item"
-                      onClick={() => {
-                        setOpenMenuId(null);
-                        onOpen(toast.toastKey, toast.href);
-                      }}
-                    >
-                      {actionLabel}
-                    </button>
-                    <div className="in-app-toast-options-sep" role="separator" />
-                    <p className="in-app-toast-options-label">Lembrar depois</p>
-                    {TOAST_SNOOZE_OPTIONS.map((option) => (
+                <div className="in-app-toast-options">
+                  <button
+                    type="button"
+                    className="in-app-toast-options-btn"
+                    aria-expanded={menuOpen}
+                    aria-haspopup="menu"
+                    aria-controls={optionsMenuId}
+                    onClick={() =>
+                      setOpenMenuId((prev) =>
+                        prev === toast.toastKey ? null : toast.toastKey
+                      )
+                    }
+                  >
+                    Opções
+                    <ChevronDown className="h-3 w-3 opacity-80" strokeWidth={2.5} />
+                  </button>
+
+                  {menuOpen ? (
+                    <div id={optionsMenuId} className="in-app-toast-options-menu" role="menu">
                       <button
-                        key={option.id}
                         type="button"
                         role="menuitem"
                         className="in-app-toast-options-item"
                         onClick={() => {
                           setOpenMenuId(null);
-                          onSnooze(toast.toastKey, option.id);
+                          onOpen(toast.toastKey, toast.href);
                         }}
                       >
-                        {option.label}
+                        {actionLabel}
                       </button>
-                    ))}
-                  </div>
-                ) : null}
+                      <div className="in-app-toast-options-sep" role="separator" />
+                      <p className="in-app-toast-options-label">Lembrar depois</p>
+                      {TOAST_SNOOZE_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="menuitem"
+                          className="in-app-toast-options-item"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            onSnooze(toast.toastKey, option.id);
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           </article>
