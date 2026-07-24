@@ -1221,7 +1221,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         </div>
 
         <div className="project-tabs-scroll hidden sm:block">
-          <TabsList className="!flex h-auto w-max min-w-full max-w-none flex-nowrap items-center justify-start gap-0.5 overflow-visible">
+          <TabsList className="project-tabs-list !flex h-auto w-max min-w-full max-w-none flex-nowrap items-center justify-start gap-0.5 overflow-visible">
             <TabsTrigger value="quotes" className="text-xs md:text-sm">
               <DollarSign className="h-3.5 w-3.5 mr-1.5 shrink-0" />
               Orçamentos ({project.quotes?.length || 0})

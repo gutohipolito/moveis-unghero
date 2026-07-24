@@ -9,6 +9,46 @@ interface TabsProps {
   className?: string
 }
 
+type TabInjectProps = {
+  activeTab: string
+  setActiveTab: (value: string) => void
+}
+
+function injectTabProps(
+  children: React.ReactNode,
+  props: TabInjectProps
+): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) return child
+
+    const type = child.type as { displayName?: string } | string
+    const name =
+      typeof type === "function" || typeof type === "object"
+        ? (type as { displayName?: string }).displayName
+        : undefined
+
+    const isList = name === "TabsList" || type === TabsList
+    const isContent = name === "TabsContent" || type === TabsContent
+
+    if (isList || isContent) {
+      return React.cloneElement(child as React.ReactElement<any>, {
+        ...props,
+        children: injectTabProps(
+          (child as React.ReactElement<any>).props?.children,
+          props
+        ),
+      })
+    }
+
+    const nested = (child as React.ReactElement<any>).props?.children
+    if (nested == null) return child
+
+    return React.cloneElement(child as React.ReactElement<any>, {
+      children: injectTabProps(nested, props),
+    })
+  })
+}
+
 export function Tabs({ defaultValue, value, onValueChange, children, className }: TabsProps) {
   const [activeTab, setActiveTab] = React.useState(value || defaultValue || "")
 
@@ -29,14 +69,9 @@ export function Tabs({ defaultValue, value, onValueChange, children, className }
 
   return (
     <div className={cn("w-full min-w-0 max-w-full", className)}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<any>, {
-            activeTab,
-            setActiveTab: handleTabChange,
-          })
-        }
-        return child
+      {injectTabProps(children, {
+        activeTab,
+        setActiveTab: handleTabChange,
       })}
     </div>
   )
@@ -52,8 +87,9 @@ interface TabsListProps {
 export function TabsList({ children, className, activeTab, setActiveTab }: TabsListProps) {
   return (
     <div
+      role="tablist"
       className={cn(
-        "inline-flex h-9 max-w-full min-w-0 items-center justify-start overflow-x-auto overscroll-x-contain rounded-lg bg-secondary p-1 text-muted-foreground border border-border/40",
+        "inline-flex h-9 max-w-full min-w-0 items-center justify-start gap-0.5 overflow-x-auto overscroll-x-contain rounded-lg bg-secondary p-1 text-muted-foreground border border-border/40",
         className
       )}
     >
@@ -70,6 +106,7 @@ export function TabsList({ children, className, activeTab, setActiveTab }: TabsL
     </div>
   )
 }
+TabsList.displayName = "TabsList"
 
 interface TabsTriggerProps {
   value: string
@@ -84,9 +121,13 @@ export function TabsTrigger({ value, children, className, active, onClick }: Tab
     <button
       onClick={onClick}
       type="button"
+      role="tab"
+      aria-selected={active}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
-        active ? "bg-card text-foreground shadow-xs font-semibold border border-border/50" : "hover:text-foreground opacity-75 hover:opacity-100",
+        "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+        active
+          ? "bg-card text-foreground shadow-xs font-semibold border border-border/50"
+          : "hover:text-foreground opacity-75 hover:opacity-100",
         className
       )}
     >
@@ -94,6 +135,7 @@ export function TabsTrigger({ value, children, className, active, onClick }: Tab
     </button>
   )
 }
+TabsTrigger.displayName = "TabsTrigger"
 
 interface TabsContentProps {
   value: string
@@ -106,8 +148,12 @@ export function TabsContent({ value, children, className, activeTab }: TabsConte
   if (activeTab !== value) return null
 
   return (
-    <div className={cn("mt-4 outline-hidden animate-in fade-in duration-200", className)}>
+    <div
+      role="tabpanel"
+      className={cn("mt-4 outline-hidden animate-in fade-in duration-200", className)}
+    >
       {children}
     </div>
   )
 }
+TabsContent.displayName = "TabsContent"

@@ -1544,7 +1544,8 @@ body {
   border-radius: 9999px;
 }
 
-.project-tabs-scroll > div {
+.project-tabs-scroll .project-tabs-list,
+.project-tabs-scroll > [role="tablist"] {
   width: max-content;
   min-width: 100%;
   max-width: none;
