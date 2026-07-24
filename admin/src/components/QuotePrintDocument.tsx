@@ -234,9 +234,11 @@ function resolveAsset(assetBase: string | undefined, path: string) {
 function PrintTopHeader({
   assetBase,
   title = "Orçamento Comercial detalhado",
+  quoteCodigo,
 }: {
   assetBase?: string;
   title?: string;
+  quoteCodigo?: string | null;
 }) {
   return (
     <header
@@ -248,7 +250,14 @@ function PrintTopHeader({
         alt="Móveis Unghero"
         className="h-11 w-auto object-contain brightness-0 invert"
       />
-      <p className="text-base font-bold tracking-wide uppercase text-right">{title}</p>
+      <div className="text-right space-y-1 min-w-0">
+        <p className="text-base font-bold tracking-wide uppercase">{title}</p>
+        {quoteCodigo ? (
+          <p className="text-[11px] font-mono font-semibold tracking-wide text-neutral-300">
+            {quoteCodigo}
+          </p>
+        ) : null}
+      </div>
     </header>
   );
 }
@@ -490,7 +499,7 @@ export default function QuotePrintDocument({
 
       <div className="print-shell-inner max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
         <div className="print-page flex flex-col">
-          <PrintTopHeader assetBase={assetBase} />
+          <PrintTopHeader assetBase={assetBase} quoteCodigo={quoteCodigo} />
 
           <main className="flex-1 px-[20mm] py-6 flex flex-col justify-start gap-5">
             <div className={sectionGap}>
@@ -500,11 +509,6 @@ export default function QuotePrintDocument({
                     Cliente
                   </span>
                   <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
-                  {quoteCodigo ? (
-                    <p className="text-[10px] font-mono font-bold text-neutral-600 tracking-wide">
-                      Orçamento {quoteCodigo}
-                    </p>
-                  ) : null}
                   <div className="text-xs text-neutral-600 space-y-0.5">
                     <p>
                       <span className="font-semibold text-neutral-700">Cidade:</span> {client.cidade}
@@ -580,7 +584,7 @@ export default function QuotePrintDocument({
 
               <p className="text-[11px] text-neutral-500 leading-relaxed">
                 {isComparative
-                  ? "Proposta comparativa — escolha uma das opções abaixo. Cada item tem seu próprio valor; não há soma total."
+                  ? "Opções de proposta para o seu projeto. Cada alternativa traz seu próprio valor."
                   : "Relação completa de marcenaria sob medida, ferragens e serviços."}
               </p>
 
@@ -712,18 +716,11 @@ export default function QuotePrintDocument({
                     ) : null}
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-3.5 py-2.5">
-                  <p className="text-[10px] font-semibold text-amber-900 leading-snug">
-                    Proposta comparativa: os valores acima são por opção. Não há investimento total — o cliente escolhe uma alternativa.
-                  </p>
-                  {quote.lastUpdatedAt ? (
-                    <p className="text-[8px] text-amber-800/70 mt-1">
-                      Atualizado em {quote.lastUpdatedAt}
-                    </p>
-                  ) : null}
-                </div>
-              )}
+              ) : quote.lastUpdatedAt ? (
+                <p className="text-[8px] text-neutral-500 text-right">
+                  Atualizado em {quote.lastUpdatedAt}
+                </p>
+              ) : null}
 
               {quote.observacoes?.trim() ? (
                 <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">
