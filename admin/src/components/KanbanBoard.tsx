@@ -26,6 +26,7 @@ import {
 import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
 import CommercialPendingPanel from "@/components/CommercialPendingPanel";
+import KanbanCardQuoteViews from "@/components/KanbanCardQuoteViews";
 import { labelOrigin } from "@/lib/navLabels";
 import { formatQuoteViewLabel, toQuoteViewStats } from "@/lib/quoteViewTracking";
 import {
@@ -384,6 +385,7 @@ export default function KanbanBoard({
   const [lossMotivo, setLossMotivo] = useState("");
   // Cards começam minimizados; só entram neste set quando o operador expande.
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [cardInnerTab, setCardInnerTab] = useState<Record<string, "geral" | "aberturas">>({});
   const [copiedScript, setCopiedScript] = useState(false);
   // Dados sensíveis sempre começam ocultos nesta tela (não usa preferência global).
   const [valuesHidden, setValuesHidden] = useState(true);
@@ -900,6 +902,8 @@ export default function KanbanBoard({
     const showQuoteShareBadge =
       Boolean(quoteShareLabel) &&
       ["LEAD", "ORCAMENTO", "NEGOCIACAO"].includes(project.status_geral);
+    const hasQuoteShareTab = Boolean(project.quoteShare?.sharedAt);
+    const innerTab = cardInnerTab[project.id] ?? "geral";
 
     const actionButtons = (
       <div className="kanban-card-actions">
@@ -1114,6 +1118,58 @@ export default function KanbanBoard({
           >
             <div className="overflow-hidden">
               <div className="space-y-2 border-t border-border/70 pt-2">
+                {hasQuoteShareTab ? (
+                  <div
+                    className="inline-flex w-full items-center gap-0.5 rounded-lg bg-slate-100/90 p-0.5 border border-slate-200/70"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCardInnerTab((prev) => ({ ...prev, [project.id]: "geral" }))
+                      }
+                      className={`flex-1 rounded-md px-2 py-1 text-[9px] font-bold transition-colors ${
+                        innerTab === "geral"
+                          ? "bg-white text-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Geral
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCardInnerTab((prev) => ({ ...prev, [project.id]: "aberturas" }))
+                      }
+                      className={`flex-1 rounded-md px-2 py-1 text-[9px] font-bold transition-colors inline-flex items-center justify-center gap-1 ${
+                        innerTab === "aberturas"
+                          ? "bg-white text-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Eye className="h-3 w-3" />
+                      Aberturas
+                      {project.quoteShare?.viewCount ? (
+                        <span className="tabular-nums opacity-70">
+                          ({project.quoteShare.viewCount})
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
+                ) : null}
+
+                {innerTab === "aberturas" && hasQuoteShareTab ? (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <KanbanCardQuoteViews
+                      projectId={project.id}
+                      active={!isCollapsed && innerTab === "aberturas"}
+                    />
+                  </div>
+                ) : (
                 <div className="space-y-2">
                   {showFollowUp ? (
                     <p className="text-[10px] text-muted-foreground/80">
@@ -1262,6 +1318,7 @@ export default function KanbanBoard({
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Div Flex simples para alinhar botões sem margens negativas que quebrem as bordas */}
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40 select-none">
