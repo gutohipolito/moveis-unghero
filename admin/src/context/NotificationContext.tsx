@@ -14,7 +14,6 @@ import { useRouter } from "next/navigation";
 import { getNotifications } from "@/app/actions/notifications";
 import {
   isInAppToastNotification,
-  isStickyReminderNotification,
   type AppNotification,
 } from "@/lib/notifications";
 import {
@@ -57,12 +56,13 @@ import {
 } from "@/lib/pushClient";
 import InAppNotificationStack from "@/components/InAppNotificationStack";
 
-const POLL_VISIBLE_MS = 30 * 1000;
+const POLL_VISIBLE_MS = 60 * 1000;
 const POLL_HIDDEN_MS = 5 * 60 * 1000;
 const INITIAL_SYNC_MS = 3 * 1000;
 /** Evita dois chimes seguidos por race de poll/navegação. */
 const CHIME_COOLDOWN_MS = 8 * 1000;
-const MAX_VISIBLE_TOASTS = 3;
+/** Poucos toasts: só críticos chegam aqui. */
+const MAX_VISIBLE_TOASTS = 2;
 
 export interface InAppToast extends AppNotification {
   toastKey: string;
@@ -159,42 +159,6 @@ export function NotificationProvider({
     );
   }, []);
 
-  const surfaceStickyReminders = useCallback(
-    (items: AppNotification[], { chime = false }: { chime?: boolean } = {}) => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-
-      const sticky = items
-        .filter((n) => isStickyReminderNotification(n) && canShowToast(n))
-        .filter((n) => !toastKeysRef.current.has(n.id))
-        .slice(0, MAX_VISIBLE_TOASTS);
-
-      if (sticky.length === 0) return;
-
-      for (const item of sticky) {
-        toastKeysRef.current.add(item.id);
-      }
-
-      if (chime) {
-        markNotificationsAnnounced(
-          sticky.map((n) => n.id),
-          announcedRef.current
-        );
-        playChimeOnce(sticky.some((n) => n.priority === "high"));
-      }
-
-      setToasts((prev) => {
-        const next = [...prev];
-        for (const item of sticky) {
-          if (!next.some((t) => t.toastKey === item.id)) {
-            next.push({ ...item, toastKey: item.id });
-          }
-        }
-        return next.slice(0, MAX_VISIBLE_TOASTS);
-      });
-    },
-    [canShowToast, playChimeOnce]
-  );
-
   const deliverInAppToasts = useCallback(
     (items: AppNotification[]) => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
@@ -286,14 +250,16 @@ export function NotificationProvider({
               !announcedRef.current.has(n.id)
           );
           if (newItems.length > 0) {
-            deliverInAppToasts(newItems);
-            await deliverToBrowser(newItems);
+            const critical = newItems.filter((n) => n.priority === "high");
+            if (critical.length > 0) {
+              deliverInAppToasts(critical);
+              await deliverToBrowser(critical);
+            }
             markNotificationsAnnounced(
               newItems.map((n) => n.id),
               announcedRef.current
             );
           }
-          surfaceStickyReminders(next);
         }
 
         // Une IDs conhecidos — nunca encolhe por snapshot stale do layout.
@@ -308,7 +274,7 @@ export function NotificationProvider({
         syncingRef.current = false;
       }
     },
-    [companyId, deliverInAppToasts, deliverToBrowser, surfaceStickyReminders]
+    [companyId, deliverInAppToasts, deliverToBrowser]
   );
 
   useEffect(() => {
@@ -322,8 +288,7 @@ export function NotificationProvider({
     setClearedReady(true);
 
     // Seed inicial: marca o que já existia no SSR como conhecido/anunciado
-    // para não tocar som de alertas antigos ao abrir o painel.
-    // Lembretes sticky continuam elegíveis (não entram em toastKeys).
+    // para não abrir janela nem tocar som de alertas antigos ao abrir o painel.
     seededKnownRef.current = false;
     knownIdsRef.current = new Set();
     toastKeysRef.current = new Set();
@@ -331,19 +296,13 @@ export function NotificationProvider({
     for (const n of initialNotifications) {
       knownIdsRef.current.add(n.id);
       announcedRef.current.add(n.id);
-      if (!isStickyReminderNotification(n)) {
-        toastKeysRef.current.add(n.id);
-      }
+      toastKeysRef.current.add(n.id);
     }
     markNotificationsAnnounced(
       initialNotifications.map((n) => n.id),
       announcedRef.current
     );
     seededKnownRef.current = true;
-
-    window.setTimeout(() => {
-      surfaceStickyReminders(initialNotifications);
-    }, 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed no mount / troca de empresa
   }, [companyId]);
 
@@ -543,9 +502,9 @@ export function NotificationProvider({
       id,
       toastKey: id,
       type: "quote_stale",
-      priority: "normal",
-      title: "Retomar proposta enviada",
-      message: "Cliente Exemplo — DFCS-230726 enviada há 5 dias, ainda sem fechamento.",
+      priority: "high",
+      title: "Proposta parada há uma semana",
+      message: "Cliente Exemplo — DFCS-230726 enviada há 8 dias, ainda sem fechamento.",
       href: "/crm",
       createdAt: new Date().toISOString(),
     };

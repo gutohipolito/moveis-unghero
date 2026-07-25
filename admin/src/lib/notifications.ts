@@ -323,35 +323,18 @@ export function buildQuoteExpiringNotifications(
     .filter((n): n is NonNullable<typeof n> => Boolean(n));
 }
 
-/** Alertas visuais no painel (toast estilo macOS). */
+/** Alertas visuais no painel (toast) — só críticos (priority high). */
 export function isInAppToastNotification(notification: AppNotification): boolean {
-  switch (notification.type) {
-    case "new_briefing":
-    case "sla_due":
-    case "invoice_pending":
-    case "installment_due":
-    case "supply_ticket":
-    case "quote_stale":
-    case "lead_no_quote":
-    case "quote_expiring":
-    case "follow_up":
-      return true;
-    default:
-      return false;
-  }
+  return notification.priority === "high";
 }
 
-/** Lembretes persistentes — reaparecem ao abrir o painel até fechar ou snooze. */
-export function isStickyReminderNotification(notification: AppNotification): boolean {
-  switch (notification.type) {
-    case "quote_stale":
-    case "lead_no_quote":
-    case "quote_expiring":
-    case "follow_up":
-      return true;
-    default:
-      return false;
-  }
+/**
+ * Lembretes que reapareciam a cada abertura do painel.
+ * Desativado: a janela só dispara para alertas críticos novos;
+ * o restante continua no centro de notificações (sino).
+ */
+export function isStickyReminderNotification(_notification: AppNotification): boolean {
+  return false;
 }
 
 export type InAppToastAccent =
