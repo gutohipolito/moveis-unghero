@@ -242,8 +242,12 @@ export async function toggleAccessFavorite(companyId: string, id: string) {
   return { success: true as const, item: toDto(updated) };
 }
 
-/** Revela a senha em texto puro — apenas sob demanda, com permissão de escrita/leitura do módulo. */
-export async function revealAccessPassword(companyId: string, id: string) {
+/** Revela a senha em texto puro — exige a senha de login do operador. */
+export async function revealAccessPassword(
+  companyId: string,
+  id: string,
+  loginPassword: string
+) {
   const auth = await getModuleAccess("acessos");
   if (!auth) return { success: false as const, error: "Não autenticado", password: null as string | null };
   try {
@@ -252,6 +256,24 @@ export async function revealAccessPassword(companyId: string, id: string) {
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Acesso negado",
+      password: null as string | null,
+    };
+  }
+
+  const pwd = (loginPassword || "").trim();
+  if (!pwd) {
+    return {
+      success: false as const,
+      error: "Informe a senha do seu login no painel.",
+      password: null as string | null,
+    };
+  }
+
+  const verified = await verifyOperatorLoginPassword(auth.userId, pwd);
+  if (!verified.ok) {
+    return {
+      success: false as const,
+      error: verified.error,
       password: null as string | null,
     };
   }
@@ -273,5 +295,45 @@ export async function revealAccessPassword(companyId: string, id: string) {
       error: "Não foi possível revelar a senha. Verifique a configuração do cofre.",
       password: null as string | null,
     };
+  }
+}
+
+async function verifyOperatorLoginPassword(userId: string, loginPassword: string) {
+  try {
+    const { verifyPassword } = await import("better-auth/crypto");
+
+    const account = await prisma.account.findFirst({
+      where: {
+        userId,
+        OR: [{ providerId: "credential" }, { providerId: "email" }],
+      },
+      select: { password: true },
+    });
+
+    if (account?.password) {
+      const ok = await verifyPassword({
+        hash: account.password,
+        password: loginPassword,
+      });
+      if (ok) return { ok: true as const };
+      return { ok: false as const, error: "Senha do painel incorreta." };
+    }
+
+    // Fallback legado (User.senha em texto / hash antigo)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { senha: true },
+    });
+    if (user?.senha && user.senha === loginPassword) {
+      return { ok: true as const };
+    }
+
+    return {
+      ok: false as const,
+      error: "Não foi possível validar a senha desta conta.",
+    };
+  } catch (error) {
+    console.warn("Falha ao verificar senha do operador:", error);
+    return { ok: false as const, error: "Falha ao validar a senha do painel." };
   }
 }

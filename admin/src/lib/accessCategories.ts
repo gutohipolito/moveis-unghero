@@ -102,5 +102,12 @@ export function accessHostname(url: string | null | undefined): string | null {
 export function faviconUrlFor(url: string | null | undefined): string | null {
   const host = accessHostname(url);
   if (!host) return null;
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
+  return `/api/access-favicon?domain=${encodeURIComponent(host)}`;
+}
+
+/** URL direta (Google) — fallback se o proxy falhar. */
+export function faviconUpstreamUrlFor(url: string | null | undefined): string | null {
+  const host = accessHostname(url);
+  if (!host) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
 }

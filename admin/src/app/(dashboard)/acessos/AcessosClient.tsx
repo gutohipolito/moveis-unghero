@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createAccessCredential,
   deleteAccessCredential,
@@ -17,6 +17,10 @@ import {
   normalizeAccessUrl,
   type AccessCategory,
 } from "@/lib/accessCategories";
+import {
+  extractBrandPaletteFromImage,
+  type BrandPalette,
+} from "@/lib/faviconPalette";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -31,20 +35,14 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  Globe,
   KeyRound,
-  Landmark,
   Loader2,
-  Mail,
+  Lock,
   Pencil,
   Plus,
   Search,
-  Server,
-  Share2,
-  Sparkles,
   Star,
   Trash2,
-  AppWindow,
 } from "lucide-react";
 
 interface AcessosClientProps {
@@ -74,15 +72,8 @@ const EMPTY_FORM: FormState = {
   clearPassword: false,
 };
 
-const CATEGORY_ICONS: Record<AccessCategory, React.ComponentType<{ className?: string }>> = {
-  SITE: Globe,
-  EMAIL: Mail,
-  HOSPEDAGEM: Server,
-  REDE_SOCIAL: Share2,
-  BANCO: Landmark,
-  SOFTWARE: AppWindow,
-  OUTRO: KeyRound,
-};
+/** Após confirmar a senha do painel, libera revelações por este período (memória). */
+const VAULT_UNLOCK_MS = 10 * 60 * 1000;
 
 function getInitials(title: string) {
   const parts = title.trim().split(/\s+/).filter(Boolean);
@@ -108,7 +99,6 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
   const [items, setItems] = useState(initialItems);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | AccessCategory>("ALL");
-  const [secretsHidden, setSecretsHidden] = useState(true);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [revealingId, setRevealingId] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -117,6 +107,19 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [faviconBroken, setFaviconBroken] = useState<Record<string, boolean>>({});
+  const [palettes, setPalettes] = useState<Record<string, BrandPalette>>({});
+
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
+  const pendingRevealRef = useRef<{
+    item: AccessCredentialDTO;
+    mode: "reveal" | "copy";
+  } | null>(null);
+  const operatorPasswordRef = useRef<string | null>(null);
+  const unlockUntilRef = useRef(0);
+  const authInputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -164,26 +167,50 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
     window.setTimeout(() => setCopiedKey((cur) => (cur === key ? null : cur)), 1600);
   };
 
-  const ensureRevealed = async (item: AccessCredentialDTO) => {
-    if (revealed[item.id]) return revealed[item.id];
-    if (!item.hasPassword) return null;
-    setRevealingId(item.id);
-    const res = await revealAccessPassword(companyId, item.id);
-    setRevealingId(null);
-    if (!res.success || !res.password) {
-      showError("Senha", res.error || "Não foi possível revelar a senha.");
-      return null;
-    }
-    setRevealed((prev) => ({ ...prev, [item.id]: res.password! }));
-    return res.password;
+  const isVaultUnlocked = () =>
+    Boolean(operatorPasswordRef.current) && Date.now() < unlockUntilRef.current;
+
+  const requestOperatorAuth = (item: AccessCredentialDTO, mode: "reveal" | "copy") => {
+    pendingRevealRef.current = { item, mode };
+    setAuthPassword("");
+    setAuthError(null);
+    setAuthOpen(true);
+    window.setTimeout(() => authInputRef.current?.focus(), 80);
   };
 
-  const handleRevealToggle = async (item: AccessCredentialDTO) => {
-    if (secretsHidden) {
-      showError("Cofre fechado", "Abra o olho no topo da página para revelar senhas.");
-      return;
-    }
-    if (revealed[item.id]) {
+  const fetchSecret = useCallback(
+    async (item: AccessCredentialDTO, loginPassword: string) => {
+      setRevealingId(item.id);
+      const res = await revealAccessPassword(companyId, item.id, loginPassword);
+      setRevealingId(null);
+      return res;
+    },
+    [companyId]
+  );
+
+  const applyReveal = useCallback(
+    async (item: AccessCredentialDTO, mode: "reveal" | "copy", loginPassword: string) => {
+      const res = await fetchSecret(item, loginPassword);
+      if (!res.success || !res.password) {
+        return { ok: false as const, error: res.error || "Não foi possível revelar a senha." };
+      }
+
+      operatorPasswordRef.current = loginPassword;
+      unlockUntilRef.current = Date.now() + VAULT_UNLOCK_MS;
+      setRevealed((prev) => ({ ...prev, [item.id]: res.password! }));
+
+      if (mode === "copy") {
+        await handleCopy(`pwd-${item.id}`, res.password);
+      }
+      return { ok: true as const };
+    },
+    [fetchSecret]
+  );
+
+  const ensureRevealed = async (item: AccessCredentialDTO, mode: "reveal" | "copy") => {
+    if (!item.hasPassword) return;
+
+    if (revealed[item.id] && mode === "reveal") {
       setRevealed((prev) => {
         const next = { ...prev };
         delete next[item.id];
@@ -191,17 +218,52 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
       });
       return;
     }
-    await ensureRevealed(item);
-  };
 
-  const handleCopyPassword = async (item: AccessCredentialDTO) => {
-    if (secretsHidden) {
-      showError("Cofre fechado", "Abra o olho no topo da página para copiar senhas.");
+    if (revealed[item.id] && mode === "copy") {
+      await handleCopy(`pwd-${item.id}`, revealed[item.id]);
       return;
     }
-    const password = await ensureRevealed(item);
-    if (!password) return;
-    await handleCopy(`pwd-${item.id}`, password);
+
+    if (isVaultUnlocked() && operatorPasswordRef.current) {
+      const result = await applyReveal(item, mode, operatorPasswordRef.current);
+      if (!result.ok) {
+        operatorPasswordRef.current = null;
+        unlockUntilRef.current = 0;
+        showError("Senha", result.error);
+        requestOperatorAuth(item, mode);
+      }
+      return;
+    }
+
+    requestOperatorAuth(item, mode);
+  };
+
+  const submitOperatorAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const pending = pendingRevealRef.current;
+    if (!pending) {
+      setAuthOpen(false);
+      return;
+    }
+    const pwd = authPassword.trim();
+    if (!pwd) {
+      setAuthError("Informe a senha do seu login no painel.");
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthError(null);
+    const result = await applyReveal(pending.item, pending.mode, pwd);
+    setAuthBusy(false);
+
+    if (!result.ok) {
+      setAuthError(result.error);
+      return;
+    }
+
+    pendingRevealRef.current = null;
+    setAuthPassword("");
+    setAuthOpen(false);
   };
 
   const handleToggleFavorite = async (item: AccessCredentialDTO) => {
@@ -289,6 +351,18 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
     showSuccess(editing ? "Atualizado" : "Salvo", "Acesso guardado no cofre.");
   };
 
+  useEffect(() => {
+    if (!authOpen) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape" && !authBusy) {
+        setAuthOpen(false);
+        pendingRevealRef.current = null;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [authOpen, authBusy]);
+
   return (
     <div className="space-y-6">
       <ActionDialogHost dialog={dialog} />
@@ -301,8 +375,8 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
             title="Cofre de acessos"
             items={[
               "Guarde aqui logins compartilhados da Móveis Unghero (hospedagem, e-mail, redes, bancos).",
-              "As senhas ficam criptografadas no banco — só revelam sob demanda.",
-              "Use o olho no topo para liberar a revelação/cópia de senhas nesta tela.",
+              "As senhas ficam criptografadas no banco.",
+              "Para revelar ou copiar uma senha, confirme com a senha do seu login no painel.",
               "Somente a Diretoria acessa este módulo.",
             ]}
           />
@@ -315,68 +389,7 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
             </Button>
           ) : undefined
         }
-      >
-        <button
-          type="button"
-          onClick={() => {
-            setSecretsHidden((v) => !v);
-            if (!secretsHidden) setRevealed({});
-          }}
-          className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
-          title={
-            secretsHidden
-              ? "Liberar revelação de senhas nesta página"
-              : "Ocultar senhas reveladas"
-          }
-        >
-          {secretsHidden ? (
-            <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
-          ) : (
-            <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
-          )}
-        </button>
-      </PageHeader>
-
-      <div className="relative overflow-hidden rounded-2xl border border-amber-200/50 bg-[linear-gradient(135deg,#1c1917_0%,#292524_48%,#3f3a32_100%)] px-5 py-4 sm:px-6 sm:py-5 text-white shadow-[0_12px_40px_-18px_rgba(28,25,23,0.55)]">
-        <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-amber-400/15 blur-2xl" />
-        <div className="pointer-events-none absolute -left-6 bottom-0 h-28 w-28 rounded-full bg-amber-600/10 blur-2xl" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400/15 border border-amber-300/25 text-amber-200">
-              <KeyRound className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-200/80">
-                Cofre Unghero
-              </p>
-              <p className="text-sm sm:text-base font-semibold text-white/95 leading-snug mt-0.5">
-                {items.length === 0
-                  ? "Nenhum acesso guardado ainda"
-                  : `${items.length} acesso${items.length === 1 ? "" : "s"} · ${
-                      items.filter((i) => i.favorito).length
-                    } favorito${items.filter((i) => i.favorito).length === 1 ? "" : "s"}`}
-              </p>
-              <p className="text-xs text-white/55 mt-1 flex items-center gap-1.5">
-                <Sparkles className="h-3 w-3 text-amber-300/80" />
-                Senhas criptografadas · revelação sob demanda
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-white/70">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 border",
-                secretsHidden
-                  ? "bg-white/5 border-white/10"
-                  : "bg-amber-400/15 border-amber-300/30 text-amber-100"
-              )}
-            >
-              {secretsHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              {secretsHidden ? "Senhas protegidas" : "Revelação liberada"}
-            </span>
-          </div>
-        </div>
-      </div>
+      />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -429,9 +442,9 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((item, index) => {
             const style = ACCESS_CATEGORY_STYLES[item.categoria];
-            const Icon = CATEGORY_ICONS[item.categoria];
             const favicon = faviconUrlFor(item.url);
             const showFavicon = Boolean(favicon && !faviconBroken[item.id]);
+            const palette = palettes[item.id];
             const passwordShown = Boolean(revealed[item.id]);
             const href = normalizeAccessUrl(item.url);
 
@@ -439,22 +452,48 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
               <article
                 key={item.id}
                 className={cn(
-                  "group/card relative overflow-hidden rounded-2xl border bg-gradient-to-br shadow-[var(--shadow-sm)] transition-all duration-[var(--motion-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]",
-                  style.card,
-                  style.glow,
+                  "group/card relative overflow-hidden rounded-2xl border shadow-[var(--shadow-sm)] transition-all duration-[var(--motion-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]",
+                  !palette && "bg-gradient-to-br",
+                  !palette && style.card,
+                  !palette && style.glow,
                   "animate-[fadeInUp_0.45s_var(--ease-out)_both]"
                 )}
-                style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+                style={{
+                  animationDelay: `${Math.min(index, 8) * 40}ms`,
+                  ...(palette
+                    ? {
+                        background: `linear-gradient(155deg, ${palette.soft} 0%, ${palette.soft2} 55%, #ffffff 120%)`,
+                        borderColor: palette.border,
+                      }
+                    : undefined),
+                }}
               >
-                <div className={cn("h-1.5 w-full bg-gradient-to-r", style.ribbon)} />
+                <div
+                  className={cn("h-1.5 w-full", !palette && "bg-gradient-to-r", !palette && style.ribbon)}
+                  style={
+                    palette
+                      ? {
+                          background: `linear-gradient(90deg, ${palette.primary} 0%, ${palette.secondary} 100%)`,
+                        }
+                      : undefined
+                  }
+                />
 
                 <div className="p-4 sm:p-5 space-y-4">
                   <div className="flex items-start gap-3">
                     <div
                       className={cn(
-                        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border overflow-hidden shadow-xs",
-                        style.icon
+                        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border overflow-hidden shadow-xs bg-white/70",
+                        !palette && style.icon
                       )}
+                      style={
+                        palette
+                          ? {
+                              background: palette.iconBg,
+                              borderColor: `${palette.primary}33`,
+                            }
+                          : undefined
+                      }
                     >
                       {showFavicon ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -462,18 +501,22 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
                           src={favicon!}
                           alt=""
                           className="h-7 w-7 object-contain"
+                          onLoad={(e) => {
+                            const next = extractBrandPaletteFromImage(e.currentTarget);
+                            if (!next) return;
+                            setPalettes((prev) =>
+                              prev[item.id] ? prev : { ...prev, [item.id]: next }
+                            );
+                          }}
                           onError={() =>
                             setFaviconBroken((prev) => ({ ...prev, [item.id]: true }))
                           }
                         />
                       ) : (
-                        <span className="text-sm font-black tracking-tight">
+                        <span className="text-sm font-black tracking-tight text-slate-700">
                           {getInitials(item.titulo)}
                         </span>
                       )}
-                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-lg bg-white border border-black/5 shadow-xs text-stone-700">
-                        <Icon className="h-3 w-3" />
-                      </span>
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -503,8 +546,17 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-                            style.badge
+                            !palette && style.badge
                           )}
+                          style={
+                            palette
+                              ? {
+                                  background: palette.badgeBg,
+                                  color: palette.badgeText,
+                                  borderColor: `${palette.primary}33`,
+                                }
+                              : undefined
+                          }
                         >
                           {accessCategoryLabel(item.categoria)}
                         </span>
@@ -537,14 +589,18 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
                       mono
                       canCopy={item.hasPassword}
                       copied={copiedKey === `pwd-${item.id}`}
-                      onCopy={() => handleCopyPassword(item)}
+                      onCopy={() => void ensureRevealed(item, "copy")}
                       trailing={
                         item.hasPassword ? (
                           <button
                             type="button"
-                            onClick={() => handleRevealToggle(item)}
+                            onClick={() => void ensureRevealed(item, "reveal")}
                             className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white/80 hover:text-slate-800 transition-colors"
-                            title={passwordShown ? "Ocultar senha" : "Revelar senha"}
+                            title={
+                              passwordShown
+                                ? "Ocultar senha"
+                                : "Revelar senha (pede senha do painel)"
+                            }
                           >
                             {revealingId === item.id ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -605,6 +661,73 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
           })}
         </div>
       )}
+
+      <Dialog
+        isOpen={authOpen}
+        onClose={() => {
+          if (authBusy) return;
+          setAuthOpen(false);
+          pendingRevealRef.current = null;
+          setAuthPassword("");
+          setAuthError(null);
+        }}
+        className="max-w-sm"
+        bodyClassName="p-0"
+      >
+        <form onSubmit={submitOperatorAuth} className="flex flex-col">
+          <div className="px-5 pt-5 pb-4 border-b border-border bg-[linear-gradient(180deg,#faf8f5_0%,#ffffff_100%)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/12 text-amber-800 border border-amber-500/20 mb-3">
+              <Lock className="h-4.5 w-4.5" />
+            </div>
+            <h2 className="text-lg font-extrabold text-slate-900">Confirmar identidade</h2>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Digite a senha do seu login no painel para revelar esta chave do cofre.
+            </p>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            <Field label="Senha do painel">
+              <Input
+                ref={authInputRef}
+                type="password"
+                value={authPassword}
+                onChange={(e) => {
+                  setAuthPassword(e.target.value);
+                  setAuthError(null);
+                }}
+                placeholder="Sua senha de acesso"
+                autoComplete="current-password"
+                disabled={authBusy}
+              />
+            </Field>
+            {authError ? (
+              <p className="text-xs font-semibold text-rose-600">{authError}</p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Liberado por 10 minutos após confirmar, nesta aba.
+              </p>
+            )}
+          </div>
+          <div className="px-5 py-4 border-t border-border flex items-center justify-end gap-2 bg-slate-50/80">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={authBusy}
+              onClick={() => {
+                setAuthOpen(false);
+                pendingRevealRef.current = null;
+                setAuthPassword("");
+                setAuthError(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={authBusy} className="gap-2 min-w-28">
+              {authBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+              Confirmar
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       <Dialog
         isOpen={formOpen}
