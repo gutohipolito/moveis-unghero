@@ -11,16 +11,9 @@ import {
 } from "@/app/actions/acessos";
 import {
   ACCESS_CATEGORIES,
-  ACCESS_CATEGORY_STYLES,
   accessCategoryLabel,
-  faviconUrlFor,
-  normalizeAccessUrl,
   type AccessCategory,
 } from "@/lib/accessCategories";
-import {
-  extractBrandPaletteFromImage,
-  type BrandPalette,
-} from "@/lib/faviconPalette";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -29,20 +22,13 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { usePermissions } from "@/context/PermissionsContext";
 import { cn } from "@/lib/utils";
+import { AccessCredentialCard } from "./AccessCredentialCard";
 import {
-  Check,
-  Copy,
-  ExternalLink,
-  Eye,
-  EyeOff,
   KeyRound,
   Loader2,
   Lock,
-  Pencil,
   Plus,
   Search,
-  Star,
-  Trash2,
 } from "lucide-react";
 
 interface AcessosClientProps {
@@ -75,12 +61,6 @@ const EMPTY_FORM: FormState = {
 /** Após confirmar a senha do painel, libera revelações por este período (memória). */
 const VAULT_UNLOCK_MS = 10 * 60 * 1000;
 
-function getInitials(title: string) {
-  const parts = title.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return title.slice(0, 2).toUpperCase() || "AC";
-}
-
 async function copyText(value: string) {
   try {
     await navigator.clipboard.writeText(value);
@@ -106,8 +86,6 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
   const [editing, setEditing] = useState<AccessCredentialDTO | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [faviconBroken, setFaviconBroken] = useState<Record<string, boolean>>({});
-  const [palettes, setPalettes] = useState<Record<string, BrandPalette>>({});
 
   const [authOpen, setAuthOpen] = useState(false);
   const [authPassword, setAuthPassword] = useState("");
@@ -440,225 +418,25 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((item, index) => {
-            const style = ACCESS_CATEGORY_STYLES[item.categoria];
-            const favicon = faviconUrlFor(item.url);
-            const showFavicon = Boolean(favicon && !faviconBroken[item.id]);
-            const palette = palettes[item.id];
-            const passwordShown = Boolean(revealed[item.id]);
-            const href = normalizeAccessUrl(item.url);
-
-            return (
-              <article
-                key={item.id}
-                className={cn(
-                  "group/card relative overflow-hidden rounded-2xl border shadow-[var(--shadow-sm)] transition-all duration-[var(--motion-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]",
-                  !palette && "bg-gradient-to-br",
-                  !palette && style.card,
-                  !palette && style.glow,
-                  "animate-[fadeInUp_0.45s_var(--ease-out)_both]"
-                )}
-                style={{
-                  animationDelay: `${Math.min(index, 8) * 40}ms`,
-                  ...(palette
-                    ? {
-                        background: `linear-gradient(155deg, ${palette.soft} 0%, ${palette.soft2} 55%, #ffffff 120%)`,
-                        borderColor: palette.border,
-                      }
-                    : undefined),
-                }}
-              >
-                <div
-                  className={cn("h-1.5 w-full", !palette && "bg-gradient-to-r", !palette && style.ribbon)}
-                  style={
-                    palette
-                      ? {
-                          background: `linear-gradient(90deg, ${palette.primary} 0%, ${palette.secondary} 100%)`,
-                        }
-                      : undefined
-                  }
-                />
-
-                <div className="p-4 sm:p-5 space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border overflow-hidden shadow-xs bg-white/70",
-                        !palette && style.icon
-                      )}
-                      style={
-                        palette
-                          ? {
-                              background: palette.iconBg,
-                              borderColor: `${palette.primary}33`,
-                            }
-                          : undefined
-                      }
-                    >
-                      {showFavicon ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={favicon!}
-                          alt=""
-                          className="h-7 w-7 object-contain"
-                          onLoad={(e) => {
-                            const next = extractBrandPaletteFromImage(e.currentTarget);
-                            if (!next) return;
-                            setPalettes((prev) =>
-                              prev[item.id] ? prev : { ...prev, [item.id]: next }
-                            );
-                          }}
-                          onError={() =>
-                            setFaviconBroken((prev) => ({ ...prev, [item.id]: true }))
-                          }
-                        />
-                      ) : (
-                        <span className="text-sm font-black tracking-tight text-slate-700">
-                          {getInitials(item.titulo)}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start gap-2">
-                        <h3 className="font-extrabold text-slate-900 text-[15px] leading-tight tracking-tight truncate">
-                          {item.titulo}
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleFavorite(item)}
-                          disabled={isReadOnly}
-                          className={cn(
-                            "shrink-0 mt-0.5 rounded-md p-0.5 transition-colors",
-                            item.favorito
-                              ? "text-amber-500"
-                              : "text-slate-300 hover:text-amber-500",
-                            isReadOnly && "cursor-default"
-                          )}
-                          title={item.favorito ? "Remover dos favoritos" : "Favoritar"}
-                        >
-                          <Star
-                            className={cn("h-4 w-4", item.favorito && "fill-current")}
-                          />
-                        </button>
-                      </div>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-                            !palette && style.badge
-                          )}
-                          style={
-                            palette
-                              ? {
-                                  background: palette.badgeBg,
-                                  color: palette.badgeText,
-                                  borderColor: `${palette.primary}33`,
-                                }
-                              : undefined
-                          }
-                        >
-                          {accessCategoryLabel(item.categoria)}
-                        </span>
-                        {item.hostname && (
-                          <span className="text-[11px] font-medium text-slate-500 truncate max-w-[10rem]">
-                            {item.hostname}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <SecretRow
-                      label="Usuário"
-                      value={item.usuario || "—"}
-                      canCopy={Boolean(item.usuario)}
-                      copied={copiedKey === `user-${item.id}`}
-                      onCopy={() => item.usuario && handleCopy(`user-${item.id}`, item.usuario)}
-                    />
-                    <SecretRow
-                      label="Senha"
-                      value={
-                        !item.hasPassword
-                          ? "Sem senha"
-                          : passwordShown
-                            ? revealed[item.id]
-                            : "••••••••••••"
-                      }
-                      mono
-                      canCopy={item.hasPassword}
-                      copied={copiedKey === `pwd-${item.id}`}
-                      onCopy={() => void ensureRevealed(item, "copy")}
-                      trailing={
-                        item.hasPassword ? (
-                          <button
-                            type="button"
-                            onClick={() => void ensureRevealed(item, "reveal")}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white/80 hover:text-slate-800 transition-colors"
-                            title={
-                              passwordShown
-                                ? "Ocultar senha"
-                                : "Revelar senha (pede senha do painel)"
-                            }
-                          >
-                            {revealingId === item.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : passwordShown ? (
-                              <EyeOff className="h-3.5 w-3.5" />
-                            ) : (
-                              <Eye className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                        ) : null
-                      }
-                    />
-                  </div>
-
-                  {item.notas && (
-                    <p className="text-[12px] text-slate-600 leading-relaxed line-clamp-2 border-t border-black/5 pt-3">
-                      {item.notas}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-1.5 pt-1 border-t border-black/5">
-                    {href ? (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl px-2.5 h-8 text-xs font-bold text-slate-700 hover:bg-white/80 transition-colors"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Abrir
-                      </a>
-                    ) : null}
-                    <div className="flex-1" />
-                    {!isReadOnly && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(item)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 hover:bg-white/80 hover:text-slate-800 transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          {filtered.map((item, index) => (
+            <AccessCredentialCard
+              key={item.id}
+              item={item}
+              index={index}
+              isReadOnly={isReadOnly}
+              passwordShown={Boolean(revealed[item.id])}
+              revealedPassword={revealed[item.id]}
+              revealing={revealingId === item.id}
+              copiedUser={copiedKey === `user-${item.id}`}
+              copiedPassword={copiedKey === `pwd-${item.id}`}
+              onToggleFavorite={() => void handleToggleFavorite(item)}
+              onCopyUser={() => item.usuario && void handleCopy(`user-${item.id}`, item.usuario)}
+              onCopyPassword={() => void ensureRevealed(item, "copy")}
+              onRevealToggle={() => void ensureRevealed(item, "reveal")}
+              onEdit={() => openEdit(item)}
+              onDelete={() => handleDelete(item)}
+            />
+          ))}
         </div>
       )}
 
@@ -910,50 +688,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </span>
       {children}
     </label>
-  );
-}
-
-function SecretRow({
-  label,
-  value,
-  mono,
-  canCopy,
-  copied,
-  onCopy,
-  trailing,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  canCopy?: boolean;
-  copied?: boolean;
-  onCopy?: () => void;
-  trailing?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl bg-white/70 border border-black/5 px-3 py-2 flex items-center gap-2 min-w-0">
-      <div className="min-w-0 flex-1">
-        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-        <p
-          className={cn(
-            "text-[13px] font-semibold text-slate-800 truncate",
-            mono && "font-mono tracking-wide"
-          )}
-        >
-          {value}
-        </p>
-      </div>
-      {trailing}
-      {canCopy && onCopy && (
-        <button
-          type="button"
-          onClick={onCopy}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-800 transition-colors shrink-0"
-          title="Copiar"
-        >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      )}
-    </div>
   );
 }
