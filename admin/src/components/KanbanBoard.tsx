@@ -72,7 +72,19 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   UserX,
+  Receipt,
 } from "lucide-react";
+import ReceiptIssueDialog, {
+  type ReceiptIssuePrefill,
+} from "@/components/finance/ReceiptIssueDialog";
+
+/** Etapas em que o lembrete de recibo aparece após aprovação. */
+const RECEIPT_REMINDER_STATUSES = new Set([
+  "APROVADO",
+  "CONFERENCIA_TECNICA",
+  "PRODUCAO",
+  "INSTALACAO",
+]);
 
 interface Project {
   id: string;
@@ -87,6 +99,8 @@ interface Project {
   conf_tecnica_resp1Nome?: string | null;
   conf_tecnica_resp2_id?: string | null;
   conf_tecnica_resp2Nome?: string | null;
+  /** true quando já existe recibo vinculado a este projeto. */
+  hasPaymentReceipt?: boolean;
   timeline?: Array<{
     id: string;
     acao: string;
@@ -377,6 +391,9 @@ export default function KanbanBoard({
 
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<"negociacao" | "briefing">("negociacao");
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptProject, setReceiptProject] = useState<Project | null>(null);
+  const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
   
   // Estados comerciais e de timeline
   const [editingObservacoes, setEditingObservacoes] = useState("");
@@ -899,6 +916,17 @@ export default function KanbanBoard({
     };
   }, [projects, followUpSla, showSuccess, isReadOnly]);
 
+  const openReceiptForProject = (project: Project) => {
+    setReceiptProject(project);
+    setReceiptPrefill({
+      projectId: project.id,
+      valor: Number(project.valor_previsto) || undefined,
+      referente: "Pagamento referente a móveis sob medida",
+      quitacao: "PARCIAL",
+    });
+    setReceiptOpen(true);
+  };
+
   const renderProjectCard = (project: Project, colId?: ProjectStatus) => {
     const isDraggingThis = activeDragId === project.id;
     const followLevel = getFollowUpLevel(project, followUpSla);
@@ -922,6 +950,9 @@ export default function KanbanBoard({
       Boolean(quoteShareLabel) &&
       ["LEAD", "ORCAMENTO", "NEGOCIACAO"].includes(project.status_geral);
     const hasQuoteShareTab = Boolean(project.quoteShare?.sharedAt);
+    const needsReceiptReminder =
+      !project.hasPaymentReceipt &&
+      RECEIPT_REMINDER_STATUSES.has(project.status_geral);
     const innerTab = cardInnerTab[project.id] ?? "geral";
 
     const actionButtons = !isReadOnly ? (
@@ -1159,6 +1190,37 @@ export default function KanbanBoard({
                 <Eye className="h-3 w-3 shrink-0" />
                 <span className="truncate">{quoteShareLabel}</span>
               </div>
+            </HoverTooltip>
+          ) : null}
+
+          {needsReceiptReminder ? (
+            <HoverTooltip
+              content={
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Recibo pendente
+                  </p>
+                  <p>
+                    Proposta aprovada — emita o recibo e informe a forma de
+                    pagamento. O aviso some após a emissão.
+                  </p>
+                </div>
+              }
+            >
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isReadOnly) return;
+                  openReceiptForProject(project);
+                }}
+                disabled={isReadOnly}
+                className="flex w-full min-w-0 items-center gap-1 text-[9px] font-bold px-1.5 py-1 rounded-md border leading-tight bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Receipt className="h-3 w-3 shrink-0" />
+                <span className="truncate">Gerar recibo · informar pagamento</span>
+              </button>
             </HoverTooltip>
           ) : null}
 
@@ -2061,6 +2123,41 @@ export default function KanbanBoard({
       </Dialog>
 
       <ActionDialogHost dialog={dialog} />
+
+      {receiptProject ? (
+        <ReceiptIssueDialog
+          open={receiptOpen}
+          onClose={() => {
+            setReceiptOpen(false);
+            setReceiptProject(null);
+            setReceiptPrefill(null);
+          }}
+          clientId={receiptProject.client.id}
+          clientName={receiptProject.client.nome}
+          projects={[
+            {
+              id: receiptProject.id,
+              label: `${receiptProject.client.nome} · ${receiptProject.status_geral}`,
+            },
+          ]}
+          prefill={receiptPrefill}
+          onIssued={() => {
+            const projectId = receiptProject.id;
+            setProjects((prev) =>
+              prev.map((p) =>
+                p.id === projectId ? { ...p, hasPaymentReceipt: true } : p
+              )
+            );
+            setReceiptOpen(false);
+            setReceiptProject(null);
+            setReceiptPrefill(null);
+            showSuccess(
+              "Recibo emitido",
+              "Lembrete removido do card. Você pode abrir o PDF na ficha do cliente."
+            );
+          }}
+        />
+      ) : null}
     </div>
   );
 }

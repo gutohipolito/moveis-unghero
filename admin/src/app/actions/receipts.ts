@@ -132,8 +132,10 @@ export type CreatePaymentReceiptInput = {
 export async function createPaymentReceipt(
   input: CreatePaymentReceiptInput
 ): Promise<{ success: true; receipt: PaymentReceiptDTO } | { success: false; error: string }> {
-  const auth = await getWriteAccess("financeiro");
-  if (!auth) return { success: false, error: "Não autenticado." };
+  // Comercial emite pelo funil; Financeiro também. VIEWER continua bloqueado.
+  const auth =
+    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
+  if (!auth) return { success: false, error: "Sem permissão para emitir recibo." };
 
   const valor = Number(input.valor);
   if (!Number.isFinite(valor) || valor <= 0) {

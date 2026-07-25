@@ -87,6 +87,9 @@ export const CRM_PROJECT_SELECT = {
       createdAt: true,
     },
   },
+  _count: {
+    select: { paymentReceipts: true },
+  },
 } satisfies Prisma.ProjectSelect;
 
 export async function fetchCrmProjects(companyId: string) {
@@ -153,6 +156,7 @@ export async function fetchCrmProjects(companyId: string) {
         firstQuoteApprovedAt
       ),
       quoteShare,
+      hasPaymentReceipt: (project._count?.paymentReceipts ?? 0) > 0,
       timeline,
       client: project.client,
       briefing: project.briefing
