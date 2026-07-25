@@ -1,5 +1,9 @@
 import { isReadOnlyRole } from "@/lib/permissions";
+import { maskSensitiveInText } from "@/lib/maskSensitive";
 import type { Role } from "@prisma/client";
+
+/** Campos de texto livre que podem embutir R$ / telefone / e-mail (timeline, logs). */
+const FREE_TEXT_KEYS = new Set(["acao", "descricao", "observacoes", "message", "mensagem"]);
 
 /** Campos monetários — zerados para VIEWER (não vazam no JSON/RSC). */
 const MONEY_KEYS = new Set([
@@ -94,6 +98,10 @@ export function redactSensitivePayload<T>(data: T): T {
       }
       if (PII_KEYS.has(key)) {
         out[key] = redactPii(value);
+        continue;
+      }
+      if (FREE_TEXT_KEYS.has(key) && typeof value === "string") {
+        out[key] = maskSensitiveInText(value);
         continue;
       }
       out[key] = walk(value);

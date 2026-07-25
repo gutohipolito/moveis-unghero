@@ -9,7 +9,7 @@ import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
-import { maskPhone } from "@/lib/maskSensitive";
+import { maskEmail, maskPhone } from "@/lib/maskSensitive";
 import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
@@ -1579,7 +1579,7 @@ export default function KanbanBoard({
                   </span>
                 </div>
                 {colSum > 0 && (
-                  <PrivacyMoney value={colSum} className="text-xs font-bold text-foreground shrink-0 ml-2" />
+                  <PrivacyMoney value={colSum} className="text-xs font-bold text-foreground shrink-0 ml-2" hidden={valuesAreHidden} />
                 )}
               </div>
 
@@ -2033,9 +2033,22 @@ export default function KanbanBoard({
                   followUpSla={followUpSla}
                   loading={loading}
                   isReadOnly={isReadOnly}
-                  displayPhone={sensitive.phone(leadForm.telefone)}
-                  displayEmail={sensitive.email(leadForm.email)}
-                  whatsappHref={sensitive.whatsappHref(currentProject.client.telefone)}
+                  valuesHidden={valuesAreHidden}
+                  displayPhone={
+                    valuesAreHidden
+                      ? maskPhone(leadForm.telefone)
+                      : leadForm.telefone || "—"
+                  }
+                  displayEmail={
+                    valuesAreHidden
+                      ? maskEmail(leadForm.email)
+                      : leadForm.email || "—"
+                  }
+                  whatsappHref={
+                    valuesAreHidden
+                      ? null
+                      : sensitive.whatsappHref(currentProject.client.telefone)
+                  }
                 />
               )}
             </div>

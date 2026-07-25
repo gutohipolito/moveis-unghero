@@ -17,25 +17,29 @@ export function formatMoneyBRL(value: number) {
 export const MONEY_HIDDEN_LABEL = "R$ •••••";
 
 /**
- * Valor monetário que respeita o olho global / VIEWER.
- * Com privacyMode: não renderiza o número real (só placeholder).
+ * Valor monetário que respeita o olho global / VIEWER / olho local da página.
+ * Com privacyMode (ou `hidden`): não renderiza o número real (só placeholder).
  */
 export function PrivacyMoney({
   value,
   className,
   as: Tag = "span",
+  hidden,
 }: {
   value: number;
   className?: string;
   as?: "span" | "strong" | "p" | "td" | "div";
+  /** Se informado, sobrescreve o olho global (ex.: olho local do Kanban). */
+  hidden?: boolean;
 }) {
   const { privacyMode } = usePrivacy();
+  const isHidden = hidden ?? privacyMode;
   return (
     <Tag
       className={cn("privacy-value tabular-nums", className)}
-      title={privacyMode ? "Valor oculto" : undefined}
+      title={isHidden ? "Valor oculto" : undefined}
     >
-      {privacyMode ? MONEY_HIDDEN_LABEL : formatMoneyBRL(value)}
+      {isHidden ? MONEY_HIDDEN_LABEL : formatMoneyBRL(value)}
     </Tag>
   );
 }

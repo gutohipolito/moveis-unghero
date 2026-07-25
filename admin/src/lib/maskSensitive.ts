@@ -2,6 +2,21 @@
 
 const DOT = "•";
 
+/** Valores monetários em texto livre (ex.: histórico de eventos). */
+const MONEY_IN_TEXT_RE =
+  /R\$\s*\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|R\$\s*\d+(?:,\d{1,2})?/gi;
+
+/** E-mails em texto livre. */
+const EMAIL_IN_TEXT_RE =
+  /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+
+/**
+ * Telefones BR comuns em texto (com ou sem +55 / DDD).
+ * Conservador o bastante para não mascarar datas (dd/mm/aaaa).
+ */
+const PHONE_IN_TEXT_RE =
+  /(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?(?:9\s*)?\d{4}[-\s]?\d{4}/g;
+
 /** Oculta a primeira parte do telefone, mantendo apenas os 4 últimos dígitos. */
 export function maskPhone(telefone: string | null | undefined): string {
   const digits = (telefone || "").replace(/\D/g, "");
@@ -31,4 +46,31 @@ export function maskDocument(doc: string | null | undefined): string {
     .filter((i) => i >= 0);
   const keep = new Set(digitPositions.slice(-2));
   return chars.map((c, i) => (/\d/.test(c) && !keep.has(i) ? DOT : c)).join("");
+}
+
+/**
+ * Mascara valores sensíveis embutidos em texto livre (timeline, logs, etc.).
+ * Usado quando o olho de privacidade está fechado / conta VIEWER.
+ */
+export function maskSensitiveInText(
+  text: string | null | undefined,
+  options?: { money?: boolean; contact?: boolean }
+): string {
+  if (!text) return "";
+  const money = options?.money !== false;
+  const contact = options?.contact !== false;
+  let out = text;
+  if (money) {
+    out = out.replace(MONEY_IN_TEXT_RE, "R$ •••••");
+  }
+  if (contact) {
+    out = out.replace(EMAIL_IN_TEXT_RE, (m) => maskEmail(m));
+    out = out.replace(PHONE_IN_TEXT_RE, (m) => {
+      const digits = m.replace(/\D/g, "");
+      // Evita mascarar sequências curtas / anos isolados
+      if (digits.length < 10) return m;
+      return maskPhone(m);
+    });
+  }
+  return out;
 }

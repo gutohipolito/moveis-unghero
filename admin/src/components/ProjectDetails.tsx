@@ -1506,7 +1506,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground pr-4">
-                      {event.acao}
+                      {sensitive.text(event.acao)}
                     </p>
                   </div>
                 </div>
