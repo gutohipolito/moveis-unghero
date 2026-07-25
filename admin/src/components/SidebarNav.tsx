@@ -20,6 +20,7 @@ import {
   Lightbulb,
   FileSignature,
   Images,
+  KeyRound,
 } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -74,6 +75,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Logística e Entrega", href: "/logistica", icon: Truck, section: "Logística" },
 
   { name: "Financeiro", href: "/financeiro", icon: DollarSign, section: "Administração" },
+  { name: "Acessos", href: "/acessos", icon: KeyRound, section: "Administração" },
   {
     name: "Configurações",
     href: "/settings",

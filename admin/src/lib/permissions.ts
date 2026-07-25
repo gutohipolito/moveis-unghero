@@ -30,7 +30,12 @@ export const CONFIGURABLE_MODULES: ModuleDef[] = [
 ];
 
 /** Módulos restritos à Diretoria (ADMIN) — nunca aparecem para outros cargos. */
-export const ADMIN_ONLY_MODULES = new Set(["colaboradores", "settings", "permissoes"]);
+export const ADMIN_ONLY_MODULES = new Set([
+  "colaboradores",
+  "settings",
+  "permissoes",
+  "acessos",
+]);
 
 /** Módulos liberados para qualquer colaborador, independente de configuração. */
 export const ALWAYS_ALLOWED_MODULES = new Set(["melhorias"]);

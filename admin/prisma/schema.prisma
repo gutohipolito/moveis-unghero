@@ -31,6 +31,28 @@ model Company {
   contractTemplates ContractTemplate[]
   contracts         Contract[]
   paymentReceipts   PaymentReceipt[]
+  accessCredentials AccessCredential[]
+}
+
+/** Cofre de acessos da empresa (sites, e-mails, hospedagem, etc.). */
+model AccessCredential {
+  id         String   @id @default(uuid())
+  company_id String
+  company    Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  titulo     String
+  categoria  String   @default("SITE") // SITE | EMAIL | HOSPEDAGEM | REDE_SOCIAL | BANCO | SOFTWARE | OUTRO
+  url        String?
+  usuario    String?
+  senha_enc  String?  // AES-256-GCM (nunca em texto puro)
+  notas      String?
+  favorito   Boolean  @default(false)
+  ordem      Int      @default(0)
+  created_by String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([company_id])
+  @@index([company_id, categoria])
 }
 
 model User {
