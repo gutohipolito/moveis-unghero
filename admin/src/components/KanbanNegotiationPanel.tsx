@@ -117,6 +117,8 @@ interface KanbanNegotiationPanelProps {
   displayPhone: string;
   displayEmail: string;
   whatsappHref: string | null;
+  /** Sem abas no topo: reserva espaço sob o X de fechar no mobile. */
+  reserveCloseSpace?: boolean;
 }
 
 function formatAbsoluteDate(iso: string | null | undefined) {
@@ -153,6 +155,7 @@ export default function KanbanNegotiationPanel({
   displayPhone,
   displayEmail,
   whatsappHref,
+  reserveCloseSpace = false,
 }: KanbanNegotiationPanelProps) {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const sensitive = useSensitiveDisplay();
@@ -196,9 +199,17 @@ export default function KanbanNegotiationPanel({
         : "ok";
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col min-h-0">
+    <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0 h-full">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
       {/* Hero */}
-      <div className="relative overflow-hidden border-b border-white/10 px-5 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5 text-white bg-[linear-gradient(180deg,hsl(222_24%_12%)_0%,hsl(224_28%_7%)_55%,hsl(226_30%_5%)_100%)]">
+      <div
+        className={cn(
+          "relative overflow-hidden border-b border-white/10 px-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5 text-white bg-[linear-gradient(180deg,hsl(222_24%_12%)_0%,hsl(224_28%_7%)_55%,hsl(226_30%_5%)_100%)]",
+          reserveCloseSpace
+            ? "pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+2.75rem))] sm:pt-6"
+            : "pt-5"
+        )}
+      >
         <div
           className="pointer-events-none absolute inset-0 opacity-70"
           style={{
@@ -530,9 +541,10 @@ export default function KanbanNegotiationPanel({
           ) : null}
         </div>
       </div>
+      </div>
 
-      {/* Footer actions */}
-      <div className="sticky bottom-0 z-10 border-t border-slate-200/80 bg-white/95 backdrop-blur-md px-5 py-3.5 sm:px-6 safe-area-pb">
+      {/* Footer fixo (não sticky) — fica abaixo do scroll, com safe-area */}
+      <div className="shrink-0 z-10 border-t border-slate-200/80 bg-white px-5 pt-3.5 sm:px-6 sm:pt-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom,0px))]">
         <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div className="flex flex-wrap gap-2">
             {!isReadOnly ? (
@@ -542,7 +554,7 @@ export default function KanbanNegotiationPanel({
                   variant="outline"
                   disabled={loading}
                   onClick={onMarkContacted}
-                  className="text-xs font-bold h-9 flex-1 sm:flex-none"
+                  className="text-xs font-bold h-10 sm:h-9 flex-1 sm:flex-none"
                 >
                   Registrar contato
                 </Button>
@@ -552,7 +564,7 @@ export default function KanbanNegotiationPanel({
                     variant="outline"
                     disabled={loading}
                     onClick={onMarkLost}
-                    className="text-xs font-bold h-9 text-rose-700 border-rose-200 hover:bg-rose-50 flex-1 sm:flex-none"
+                    className="text-xs font-bold h-10 sm:h-9 text-rose-700 border-rose-200 hover:bg-rose-50 flex-1 sm:flex-none"
                   >
                     Marcar perda
                   </Button>
@@ -566,7 +578,7 @@ export default function KanbanNegotiationPanel({
               variant="outline"
               onClick={onClose}
               disabled={loading}
-              className="text-xs font-bold h-9 flex-1 sm:flex-none"
+              className="text-xs font-bold h-10 sm:h-9 flex-1 sm:flex-none"
             >
               {isReadOnly ? "Fechar" : "Cancelar"}
             </Button>
@@ -574,7 +586,7 @@ export default function KanbanNegotiationPanel({
               <Button
                 type="submit"
                 disabled={loading}
-                className="text-xs font-bold h-9 flex-1 sm:flex-none bg-[hsl(28_85%_42%)] hover:bg-[hsl(28_85%_36%)] text-white border-none"
+                className="text-xs font-bold h-10 sm:h-9 flex-1 sm:flex-none bg-[hsl(28_85%_42%)] hover:bg-[hsl(28_85%_36%)] text-white border-none"
               >
                 {loading ? "Salvando…" : "Salvar"}
               </Button>

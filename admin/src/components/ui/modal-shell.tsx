@@ -12,6 +12,7 @@ export interface ModalShellProps {
   panelClassName?: string;
   bodyClassName?: string;
   viewportClassName?: string;
+  closeClassName?: string;
   showClose?: boolean;
   closeOnBackdrop?: boolean;
   fullscreen?: boolean;
@@ -24,6 +25,7 @@ export function ModalShell({
   panelClassName,
   bodyClassName,
   viewportClassName,
+  closeClassName,
   showClose = true,
   closeOnBackdrop = true,
   fullscreen = false,
@@ -88,10 +90,10 @@ export function ModalShell({
             <button
               type="button"
               onClick={onClose}
-              className="modal-close-btn"
+              className={cn("modal-close-btn", fullscreen && "modal-close-btn-fullscreen", closeClassName)}
               aria-label="Fechar"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4.5 w-4.5" strokeWidth={2.5} />
             </button>
           ) : null}
           <div className={cn("modal-panel-body", bodyClassName)}>{children}</div>

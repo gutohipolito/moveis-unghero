@@ -368,12 +368,11 @@ export default function KanbanBoard({
   const [isMobile, setIsMobile] = useState(false);
 
   React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   }, []);
 
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
@@ -1657,7 +1656,11 @@ export default function KanbanBoard({
         isOpen={isEditLeadOpen}
         onClose={() => setIsEditLeadOpen(false)}
         className="max-w-2xl w-full overflow-hidden shadow-2xl"
-        bodyClassName="p-0 overflow-y-auto max-h-[min(94vh,920px)]"
+        bodyClassName={
+          isMobile
+            ? "modal-panel-body-fill"
+            : "p-0 overflow-y-auto max-h-[min(90svh,920px)]"
+        }
         fullscreen={isMobile}
       >
         {(() => {
@@ -1669,9 +1672,9 @@ export default function KanbanBoard({
           );
 
           return (
-            <div className="flex flex-col min-h-0">
+            <div className="flex flex-col flex-1 min-h-0 h-full">
               {hasBriefing ? (
-                <div className="flex border-b border-slate-200/80 bg-white sticky top-0 z-20">
+                <div className="flex border-b border-slate-200/80 bg-white sticky top-0 z-20 shrink-0 pr-12">
                   <button
                     type="button"
                     onClick={() => setActiveModalTab("negociacao")}
@@ -1699,7 +1702,7 @@ export default function KanbanBoard({
               ) : null}
 
               {activeModalTab === "briefing" && currentProject.briefing ? (
-                <div className="p-5 sm:p-6 bg-[#f8f7f5]">
+                <div className="p-5 sm:p-6 bg-[#f8f7f5] flex-1 min-h-0 overflow-y-auto overscroll-contain">
 <div className="space-y-5 animate-in fade-in duration-200">
                   {/* Grid de duas colunas assimétricas para UX Copilot */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -2049,6 +2052,7 @@ export default function KanbanBoard({
                       ? null
                       : sensitive.whatsappHref(currentProject.client.telefone)
                   }
+                  reserveCloseSpace={!hasBriefing}
                 />
               )}
             </div>
