@@ -3,6 +3,7 @@ import type { QuotePrintClient, QuotePrintData } from "@/components/QuotePrintDo
 import { parseQuoteSubitens } from "@/lib/quoteItems";
 import { formatDateBR } from "@/lib/brazilDate";
 import { summarizeQuoteItems } from "@/lib/quoteApproval";
+import { getPhoneLastFourDigits } from "@/lib/phone";
 
 export async function loadPublicQuoteByShareCode(code: string) {
   const normalized = code.trim().toLowerCase();
@@ -36,6 +37,7 @@ export async function loadPublicQuoteByShareCode(code: string) {
               nome: true,
               cidade: true,
               bairro: true,
+              telefone: true,
             },
           },
         },
@@ -81,9 +83,15 @@ export async function loadPublicQuoteByShareCode(code: string) {
     items,
   };
 
-  const client: QuotePrintClient = dbQuote.project.client;
+  const rawClient = dbQuote.project.client;
+  const client: QuotePrintClient = {
+    nome: rawClient.nome,
+    cidade: rawClient.cidade,
+    bairro: rawClient.bairro,
+  };
   const validadeLabel = formatDateBR(dbQuote.validade);
   const emissaoLabel = formatDateBR(dbQuote.pdf_shared_at ?? new Date());
+  const requiresPin = Boolean(getPhoneLastFourDigits(rawClient.telefone || ""));
 
   return {
     quote,
@@ -92,5 +100,6 @@ export async function loadPublicQuoteByShareCode(code: string) {
     emissaoLabel,
     clientName: client.nome,
     quoteId: dbQuote.id,
+    requiresPin,
   };
 }

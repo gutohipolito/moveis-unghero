@@ -4,10 +4,13 @@ export interface QuoteWhatsAppMessageOptions {
   clientName: string;
   validade: string;
   pdfUrl?: string;
+  /** Inclui instrução de senha (últimos 4 do celular). Default: true quando há link. */
+  includeAccessPin?: boolean;
 }
 
 export function buildQuoteWhatsAppMessage(options: QuoteWhatsAppMessageOptions) {
   const firstName = getFirstName(options.clientName);
+  const includeAccessPin = options.includeAccessPin !== false;
 
   const lines = [
     `Olá ${firstName}, tudo bem?`,
@@ -19,6 +22,12 @@ export function buildQuoteWhatsAppMessage(options: QuoteWhatsAppMessageOptions) 
 
   if (options.pdfUrl) {
     lines.push("", "Acesse pelo link (simples e rápido):", options.pdfUrl);
+    if (includeAccessPin) {
+      lines.push(
+        "",
+        "🔐 *Senha para abrir:* os *4 últimos dígitos* do seu celular cadastrado conosco."
+      );
+    }
   } else {
     lines.push("", "O orçamento segue em anexo nesta conversa.");
   }

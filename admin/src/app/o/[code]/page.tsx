@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QuotePrintDocument from "@/components/QuotePrintDocument";
+import QuotePublicAccessGate from "@/components/QuotePublicAccessGate";
 import QuotePublicPrintBar from "@/components/QuotePublicPrintBar";
+import { getFirstName } from "@/lib/google-review";
 import { loadPublicQuoteByShareCode } from "@/lib/quotePublicShare";
+import { isQuoteShareUnlocked } from "@/lib/quoteShareAccess";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 import { recordQuotePublicView } from "@/lib/quoteViewTracking";
 
@@ -29,10 +32,23 @@ export async function generateMetadata({
 
 export default async function PublicQuotePage({ params }: PublicQuotePageProps) {
   const { code } = await params;
-  const data = await loadPublicQuoteByShareCode(code);
+  const normalized = code.trim().toLowerCase();
+  const data = await loadPublicQuoteByShareCode(normalized);
 
   if (!data) {
     notFound();
+  }
+
+  if (data.requiresPin) {
+    const unlocked = await isQuoteShareUnlocked(normalized);
+    if (!unlocked) {
+      return (
+        <QuotePublicAccessGate
+          code={normalized}
+          clientFirstName={getFirstName(data.clientName)}
+        />
+      );
+    }
   }
 
   const hdrs = await headers();

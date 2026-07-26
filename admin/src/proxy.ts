@@ -5,7 +5,7 @@ import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 
 const PUBLIC_PATHS = new Set(["/login", "/cliente/login", "/briefing", "/cadastro-parceiro"]);
 
-const PUBLIC_PREFIXES = ["/api/auth"];
+const PUBLIC_PREFIXES = ["/api/auth", "/api/o/", "/api/public/"];
 
 const PROTECTED_PREFIXES = [
   "/bi",
@@ -129,6 +129,17 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/api/o/")) {
+    const result = checkRateLimit(`quote-unlock:${ip}`, SHARE_RATE);
+    if (!result.ok) {
+      return rateLimitedJson(
+        `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        result.retryAfterSec,
+        SHARE_RATE.limit
+      );
+    }
+  }
+
   if (isPublicSharePath(pathname)) {
     const result = checkRateLimit(`share:${ip}`, SHARE_RATE);
     if (!result.ok) {
@@ -189,6 +200,7 @@ export const config = {
     "/login",
     "/api/auth/:path*",
     "/api/public/:path*",
+    "/api/o/:path*",
     "/bi/:path*",
     "/marketing/:path*",
     "/avaliar",

@@ -118,12 +118,18 @@ export function quotePrintStylesCss() {
         color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
         height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
+        overflow: visible !important;
       }
       .print-page {
         width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
         height: auto !important;
         max-height: none !important;
         min-height: 0 !important;
@@ -131,14 +137,16 @@ export function quotePrintStylesCss() {
         break-after: auto !important;
         page-break-inside: auto !important;
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         box-sizing: border-box !important;
         border: none !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
         background: #ffffff !important;
         overflow: visible !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        transform: none !important;
       }
       .print-page-break {
         page-break-before: always !important;
@@ -147,14 +155,19 @@ export function quotePrintStylesCss() {
       .print-shell {
         min-height: 0 !important;
         height: auto !important;
+        width: 210mm !important;
         background: #ffffff !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: visible !important;
       }
       .print-shell-inner {
         max-width: none !important;
+        width: 210mm !important;
+        min-width: 210mm !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: visible !important;
       }
       .print-quote-header {
         background-color: #171717 !important;
@@ -173,7 +186,8 @@ export function quotePrintStylesCss() {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      .print\\:hidden {
+      .print\\:hidden,
+      .print-hidden {
         display: none !important;
       }
       .print-page > main {
@@ -185,16 +199,30 @@ export function quotePrintStylesCss() {
         text-decoration: underline;
         text-underline-offset: 2px;
       }
+      a[href]::after,
       a[href^="http"]::after,
       a[href^="mailto"]::after {
         content: none !important;
       }
     }
     @media screen {
+      .print-shell {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .print-shell-inner {
+        width: max-content;
+        max-width: none;
+        margin: 0 auto;
+        padding: 24px;
+        box-sizing: border-box;
+      }
       .print-page {
-        width: 210mm;
+        width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
         min-height: 297mm;
-        margin: 20px auto;
+        margin: 0 auto;
         box-sizing: border-box;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
@@ -497,7 +525,7 @@ export default function QuotePrintDocument({
 
       {topBar}
 
-      <div className="print-shell-inner max-w-[840px] mx-auto p-4 md:p-8 print:p-0">
+      <div className="print-shell-inner">
         <div className="print-page flex flex-col">
           <PrintTopHeader assetBase={assetBase} quoteCodigo={quoteCodigo} />
 

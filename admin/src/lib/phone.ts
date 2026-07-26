@@ -49,6 +49,24 @@ export function isLikelyMobilePhone(telefone: string): boolean {
   return local.length === 11;
 }
 
+/** Dígitos nacionais (sem +55), mantendo DDD + número local. */
+export function normalizeBrPhoneDigits(telefone: string): string {
+  const digits = telefone.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("55") && digits.length >= 12) return digits.slice(2);
+  return digits;
+}
+
+/**
+ * Senha do orçamento público: últimos 4 dígitos do telefone cadastrado.
+ * Retorna null se não houver dígitos suficientes.
+ */
+export function getPhoneLastFourDigits(telefone: string): string | null {
+  const digits = normalizeBrPhoneDigits(telefone);
+  if (digits.length < 4) return null;
+  return digits.slice(-4);
+}
+
 /** Oculta os últimos `count` dígitos do telefone (mantém o restante da formatação). */
 export function maskPhoneLastDigits(telefone: string, count = 4): string {
   if (!telefone) return telefone;

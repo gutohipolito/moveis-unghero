@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Loader2, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
+import { getPhoneLastFourDigits } from "@/lib/phone";
 import { buildQuoteWhatsAppMessage, openQuoteWhatsApp } from "@/lib/quoteWhatsApp";
 
 interface QuotePrintToolbarProps {
@@ -65,6 +66,7 @@ export default function QuotePrintToolbar({
         clientName,
         validade,
         pdfUrl: url,
+        includeAccessPin: Boolean(getPhoneLastFourDigits(clientPhone)),
       });
 
       const opened = openQuoteWhatsApp(clientPhone, message);
@@ -80,31 +82,36 @@ export default function QuotePrintToolbar({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        type="button"
-        onClick={handleWhatsApp}
-        disabled={busy || !phoneReady}
-        title={
-          phoneReady
-            ? "Enviar proposta pelo WhatsApp com link do orçamento"
-            : "Cliente sem telefone cadastrado"
-        }
-        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
-      >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-        {busy ? "Preparando..." : "Enviar no WhatsApp"}
-      </Button>
+    <div className="flex flex-col items-end gap-1.5">
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          onClick={handleWhatsApp}
+          disabled={busy || !phoneReady}
+          title={
+            phoneReady
+              ? "Enviar proposta pelo WhatsApp com link do orçamento"
+              : "Cliente sem telefone cadastrado"
+          }
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+          {busy ? "Preparando..." : "Enviar no WhatsApp"}
+        </Button>
 
-      <Button
-        type="button"
-        onClick={handlePrint}
-        disabled={busy}
-        className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
-      >
-        <Printer className="h-4 w-4" />
-        Imprimir / Salvar PDF
-      </Button>
+        <Button
+          type="button"
+          onClick={handlePrint}
+          disabled={busy}
+          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
+        >
+          <Printer className="h-4 w-4" />
+          Imprimir / Salvar PDF
+        </Button>
+      </div>
+      <p className="max-w-[340px] text-right text-[10px] text-neutral-400 leading-snug">
+        Impressão: A4 · margens Nenhuma · escala 100% · desmarque Cabeçalhos e rodapés
+      </p>
     </div>
   );
 }
