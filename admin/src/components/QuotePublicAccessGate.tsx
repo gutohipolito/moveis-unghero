@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const BG_SRC = "/img-fundo-senha-moveis-unghero.jpg";
 const LOGO_SRC = "/logo.png";
@@ -62,7 +62,11 @@ export default function QuotePublicAccessGate({
         aria-hidden
       />
       <div
-        className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/80"
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,.95), rgba(0,0,0,.7), rgba(0,0,0,1))",
+        }}
         aria-hidden
       />
 
@@ -76,34 +80,21 @@ export default function QuotePublicAccessGate({
 
           <div className="w-full rounded-2xl bg-white text-neutral-950 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.55)] border border-white/20 overflow-hidden">
             <div className="px-7 pt-7 pb-6 sm:px-8 sm:pt-8 space-y-5">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 h-10 w-10 shrink-0 rounded-full bg-neutral-900 text-amber-400 flex items-center justify-center">
-                  <Lock className="h-4 w-4" aria-hidden />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-neutral-400">
-                    Acesso protegido
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-neutral-400">
+                  Acesso protegido
+                </p>
+                <h1 className="text-xl font-bold text-neutral-950 leading-snug mt-0.5">
+                  Abrir orçamento
+                </h1>
+                {clientFirstName ? (
+                  <p className="text-sm text-neutral-600 mt-2">
+                    Olá, <span className="font-semibold text-neutral-900">{clientFirstName}</span>.
                   </p>
-                  <h1 className="text-xl font-bold text-neutral-950 leading-snug mt-0.5">
-                    Abrir orçamento
-                  </h1>
-                </div>
+                ) : null}
               </div>
 
-              <p className="text-sm text-neutral-600 leading-relaxed">
-                {clientFirstName ? (
-                  <>
-                    Olá, <span className="font-semibold text-neutral-900">{clientFirstName}</span>.{" "}
-                  </>
-                ) : null}
-                Digite a senha: os{" "}
-                <span className="font-semibold text-neutral-900">
-                  4 últimos dígitos do seu celular
-                </span>{" "}
-                cadastrado conosco.
-              </p>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 <label className="block space-y-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                     Senha (4 dígitos)
@@ -122,8 +113,12 @@ export default function QuotePublicAccessGate({
                   />
                 </label>
 
+                <p className="text-xs text-neutral-500 leading-relaxed text-center px-1">
+                  A senha é os últimos 4 dígitos do teu celular cadastrado
+                </p>
+
                 {error ? (
-                  <p className="text-sm text-rose-600 font-medium" role="alert">
+                  <p className="text-sm text-rose-600 font-medium text-center" role="alert">
                     {error}
                   </p>
                 ) : null}
@@ -134,29 +129,21 @@ export default function QuotePublicAccessGate({
                   className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-55 disabled:pointer-events-none text-white font-semibold py-3.5 transition-colors shadow-sm"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {busy ? "Validando..." : "Abrir orçamento"}
+                  {busy ? "Validando..." : "Acessar Orçamento"}
                 </button>
               </form>
             </div>
           </div>
 
-          <div className="mt-6 w-full rounded-xl border border-white/15 bg-black/35 backdrop-blur-sm px-4 py-3.5 flex gap-3 text-left">
-            <ShieldCheck
-              className="h-5 w-5 shrink-0 text-amber-400 mt-0.5"
-              aria-hidden
-            />
-            <p className="text-[12px] leading-relaxed text-white/80">
-              <span className="font-semibold text-white/95">Por que pedimos senha?</span>{" "}
-              Para proteger seus dados pessoais e comerciais, em conformidade com a{" "}
-              <span className="text-white/95">Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</span>.
-              Assim, somente você — ou quem conhece o celular cadastrado — acessa este orçamento.
-            </p>
-          </div>
+          <p className="mt-6 max-w-[360px] text-center text-[10px] leading-relaxed text-white/45">
+            Proteção de dados pessoais e comerciais conforme a LGPD (Lei nº 13.709/2018). Somente
+            você acessa este orçamento.
+          </p>
         </div>
       </main>
 
       <footer className="relative z-10 pb-6 px-5 text-center">
-        <p className="text-[11px] text-white/55 tracking-wide">
+        <p className="text-[11px] text-white/45 tracking-wide">
           © {year} Móveis Unghero LTDA. Todos os direitos reservados.
         </p>
       </footer>
