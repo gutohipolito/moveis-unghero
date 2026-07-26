@@ -85,7 +85,9 @@ function quote_render_gate(string $code, string $firstName, ?string $error = nul
 {
     $safeName = htmlspecialchars($firstName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $safeError = $error !== null ? htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : null;
-    $greeting = $safeName !== '' ? "Olá, {$safeName}. " : '';
+    $year = (int) date('Y');
+    $bg = QUOTE_ADMIN_BASE . '/img-fundo-senha-moveis-unghero.jpg';
+    $logo = QUOTE_ADMIN_BASE . '/logo.png';
 
     http_response_code(200);
     header('Content-Type: text/html; charset=utf-8');
@@ -96,26 +98,87 @@ function quote_render_gate(string $code, string $firstName, ?string $error = nul
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<title>Orçamento protegido | Móveis Unghero</title>';
     echo '<style>
-      *{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-      padding:24px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:#f5f5f5;color:#171717}
-      .card{width:100%;max-width:420px;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-      .eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#a3a3a3;margin:0 0 4px}
-      h1{font-size:22px;margin:0 0 16px}p{font-size:14px;line-height:1.55;color:#525252;margin:0 0 20px}
+      *{box-sizing:border-box}
+      html,body{margin:0;min-height:100%}
+      body{
+        min-height:100vh;min-height:100svh;display:flex;flex-direction:column;
+        font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+        color:#fff;position:relative;overflow-x:hidden;
+        background:#111 url(' . json_encode($bg) . ') center/cover no-repeat;
+      }
+      .overlay{
+        position:fixed;inset:0;z-index:0;
+        background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.6),rgba(0,0,0,.8));
+      }
+      main{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+      .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center}
+      .logo{height:48px;width:auto;object-fit:contain;filter:brightness(0) invert(1) drop-shadow(0 4px 12px rgba(0,0,0,.35));margin-bottom:32px}
+      .card{
+        width:100%;background:#fff;color:#0a0a0a;border-radius:16px;overflow:hidden;
+        border:1px solid rgba(255,255,255,.2);box-shadow:0 24px 60px -12px rgba(0,0,0,.55)
+      }
+      .card-inner{padding:28px 32px 24px}
+      .head{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
+      .lock{
+        flex-shrink:0;width:40px;height:40px;border-radius:999px;background:#171717;color:#fbbf24;
+        display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:2px
+      }
+      .eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#a3a3a3;margin:0 0 2px}
+      h1{font-size:20px;font-weight:700;margin:0;line-height:1.3;color:#0a0a0a}
+      .intro{font-size:14px;line-height:1.55;color:#525252;margin:0 0 18px}
+      .intro strong{color:#0a0a0a;font-weight:600}
       label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#737373;margin-bottom:8px}
-      input{width:100%;padding:14px 16px;border:1px solid #d4d4d4;border-radius:12px;font-size:24px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-      letter-spacing:.35em;text-align:center}input:focus{outline:2px solid rgba(217,119,6,.55);border-color:#d97706}
-      button{width:100%;margin-top:16px;border:0;border-radius:12px;padding:14px 16px;background:#d97706;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
-      button:hover{background:#b45309}.err{color:#e11d48;font-size:13px;font-weight:600;margin:12px 0 0}
-    </style></head><body><div class="card">';
-    echo '<p class="eyebrow">Orçamento protegido</p><h1>Móveis Unghero</h1>';
-    echo '<p>' . $greeting . 'Para abrir o orçamento, digite a senha: os <strong>4 últimos dígitos do seu celular</strong> cadastrado conosco.</p>';
+      input{
+        width:100%;padding:14px 16px;border:1px solid #d4d4d4;border-radius:12px;background:#fafafa;
+        font-size:24px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.45em;text-align:center;color:#0a0a0a
+      }
+      input:focus{outline:2px solid rgba(217,119,6,.55);border-color:#d97706;background:#fff}
+      button{
+        width:100%;margin-top:16px;border:0;border-radius:12px;padding:14px 16px;
+        background:#d97706;color:#fff;font-weight:700;font-size:15px;cursor:pointer
+      }
+      button:hover{background:#b45309}
+      .err{color:#e11d48;font-size:13px;font-weight:600;margin:12px 0 0}
+      .why{
+        margin-top:24px;width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;
+        border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.35);backdrop-filter:blur(8px);
+        border-radius:12px;padding:14px 16px
+      }
+      .why-icon{flex-shrink:0;color:#fbbf24;font-size:18px;line-height:1;margin-top:1px}
+      .why p{margin:0;font-size:12px;line-height:1.55;color:rgba(255,255,255,.8)}
+      .why strong{color:rgba(255,255,255,.95);font-weight:600}
+      footer{position:relative;z-index:1;padding:0 20px 24px;text-align:center}
+      footer p{margin:0;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.02em}
+    </style></head><body>';
+    echo '<div class="overlay" aria-hidden="true"></div>';
+    echo '<main><div class="wrap">';
+    echo '<img class="logo" src="' . htmlspecialchars($logo, ENT_QUOTES, 'UTF-8') . '" alt="Móveis Unghero" width="180" height="48">';
+    echo '<div class="card"><div class="card-inner">';
+    echo '<div class="head"><div class="lock" aria-hidden="true">🔒</div><div>';
+    echo '<p class="eyebrow">Acesso protegido</p><h1>Abrir orçamento</h1>';
+    echo '</div></div>';
+    echo '<p class="intro">';
+    if ($safeName !== '') {
+        echo 'Olá, <strong>' . $safeName . '</strong>. ';
+    }
+    echo 'Digite a senha: os <strong>4 últimos dígitos do seu celular</strong> cadastrado conosco.';
+    echo '</p>';
     echo '<form method="post" action="">';
     echo '<label for="pin">Senha (4 dígitos)</label>';
     echo '<input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="4" pattern="[0-9]{4}" required autofocus>';
     if ($safeError) {
         echo '<p class="err" role="alert">' . $safeError . '</p>';
     }
-    echo '<button type="submit">Abrir orçamento</button></form></div></body></html>';
+    echo '<button type="submit">Abrir orçamento</button></form>';
+    echo '</div></div>';
+    echo '<div class="why"><div class="why-icon" aria-hidden="true">🛡</div><p>';
+    echo '<strong>Por que pedimos senha?</strong> Para proteger seus dados pessoais e comerciais, em conformidade com a ';
+    echo '<strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>. ';
+    echo 'Assim, somente você — ou quem conhece o celular cadastrado — acessa este orçamento.';
+    echo '</p></div>';
+    echo '</div></main>';
+    echo '<footer><p>© ' . $year . ' Móveis Unghero LTDA. Todos os direitos reservados.</p></footer>';
+    echo '</body></html>';
     exit;
 }
 
