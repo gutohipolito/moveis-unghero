@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Receipt } from "lucide-react";
 import {
   createPaymentReceipt,
+  suggestPaymentReceiptReferente,
 } from "@/app/actions/receipts";
 import { suggestReferenteFromInstallment } from "@/lib/receiptShare";
 import {
@@ -76,43 +77,67 @@ export default function ReceiptIssueDialog({
 
   useEffect(() => {
     if (!open) return;
-    const suggested =
-      prefill?.referente ||
-      suggestReferenteFromInstallment({
-        tipo: prefill?.tipo || "PARCELA",
-        numero_parcela: prefill?.numero_parcela,
-        total_parcelas: prefill?.total_parcelas,
-        descricao: prefill?.descricao,
-      });
-    setValorText(
-      prefill?.valor != null
-        ? prefill.valor.toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        : ""
-    );
-    setReferente(suggested);
-    const metodoPrefill = prefill?.metodo;
-    setMetodo(
-      metodoPrefill && PAYMENT_METHOD_OPTIONS.some((m) => m.value === metodoPrefill)
-        ? (metodoPrefill as PaymentMethod)
-        : "PIX"
-    );
-    setDataRecebimento(prefill?.dataRecebimento || toISODateBR());
-    setQuitacao(prefill?.quitacao || (prefill?.installmentId ? "PARCIAL" : "PARCIAL"));
-    const hasParcel =
-      Boolean(prefill?.numero_parcela) && Boolean(prefill?.total_parcelas);
-    setParcelado(hasParcel);
-    setParcelaNumero(
-      prefill?.numero_parcela ? String(prefill.numero_parcela) : ""
-    );
-    setParcelaTotal(
-      prefill?.total_parcelas ? String(prefill.total_parcelas) : ""
-    );
-    setProjectId(prefill?.projectId || "");
-    setObservacoes("");
-    setError(null);
+    let cancelled = false;
+
+    const load = async () => {
+      const projectForSuggest = prefill?.projectId || "";
+      let suggested =
+        prefill?.referente ||
+        suggestReferenteFromInstallment({
+          tipo: prefill?.tipo || "PARCELA",
+          numero_parcela: prefill?.numero_parcela,
+          total_parcelas: prefill?.total_parcelas,
+          descricao: prefill?.descricao,
+        });
+
+      if (projectForSuggest && !prefill?.referente) {
+        const res = await suggestPaymentReceiptReferente({
+          projectId: projectForSuggest,
+          tipo: prefill?.tipo,
+          numero_parcela: prefill?.numero_parcela,
+          total_parcelas: prefill?.total_parcelas,
+          descricao: prefill?.descricao,
+        });
+        if (!cancelled && res.success) suggested = res.referente;
+      }
+
+      if (cancelled) return;
+
+      setValorText(
+        prefill?.valor != null
+          ? prefill.valor.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : ""
+      );
+      setReferente(suggested);
+      const metodoPrefill = prefill?.metodo;
+      setMetodo(
+        metodoPrefill && PAYMENT_METHOD_OPTIONS.some((m) => m.value === metodoPrefill)
+          ? (metodoPrefill as PaymentMethod)
+          : "PIX"
+      );
+      setDataRecebimento(prefill?.dataRecebimento || toISODateBR());
+      setQuitacao(prefill?.quitacao || (prefill?.installmentId ? "PARCIAL" : "PARCIAL"));
+      const hasParcel =
+        Boolean(prefill?.numero_parcela) && Boolean(prefill?.total_parcelas);
+      setParcelado(hasParcel);
+      setParcelaNumero(
+        prefill?.numero_parcela ? String(prefill.numero_parcela) : ""
+      );
+      setParcelaTotal(
+        prefill?.total_parcelas ? String(prefill.total_parcelas) : ""
+      );
+      setProjectId(prefill?.projectId || "");
+      setObservacoes("");
+      setError(null);
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [open, prefill]);
 
   const valor = useMemo(() => parseMoneyInput(valorText), [valorText]);
@@ -211,12 +236,17 @@ export default function ReceiptIssueDialog({
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Referente a *
           </label>
-          <Input
+          <textarea
             value={referente}
             onChange={(e) => setReferente(e.target.value)}
-            placeholder="Ex.: Parcela 2/5 — móveis sob medida"
+            placeholder={"Referente ao projeto:\n• Cozinha\n• Área Gourmet"}
             required
+            rows={5}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed resize-y min-h-[110px]"
           />
+          <p className="text-[10px] text-muted-foreground">
+            Com projeto vinculado, sugerimos os ambientes automaticamente — você pode editar.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -318,7 +348,23 @@ export default function ReceiptIssueDialog({
               </label>
               <select
                 value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setProjectId(nextId);
+                  if (!nextId) return;
+                  void suggestPaymentReceiptReferente({
+                    projectId: nextId,
+                    tipo: parcelado ? "PARCELA" : prefill?.tipo || "PARCELA",
+                    numero_parcela: parcelado
+                      ? Number(parcelaNumero) || null
+                      : prefill?.numero_parcela,
+                    total_parcelas: parcelado
+                      ? Number(parcelaTotal) || null
+                      : prefill?.total_parcelas,
+                  }).then((res) => {
+                    if (res.success) setReferente(res.referente);
+                  });
+                }}
                 className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm"
               >
                 <option value="">Sem vínculo</option>
@@ -334,13 +380,20 @@ export default function ReceiptIssueDialog({
 
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Observações (opcional)
+            Condição de pagamento (opcional)
           </label>
-          <Input
+          <textarea
             value={observacoes}
             onChange={(e) => setObservacoes(e.target.value)}
-            placeholder="Ex.: PIX recebido às 14h"
+            placeholder={
+              "Entrada correspondente a 50% do valor total do projeto.\nSaldo restante com vencimento na entrega/montagem."
+            }
+            rows={3}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed resize-y min-h-[72px]"
           />
+          <p className="text-[10px] text-muted-foreground">
+            Aparece em destaque no recibo como bloco de condição de pagamento.
+          </p>
         </div>
 
         {error ? (

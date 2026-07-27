@@ -68,11 +68,14 @@ export function buildReceiptWhatsAppMessage(input: {
   clientName: string;
   valorLabel: string;
   receiptUrl: string;
+  numeroLabel?: string | null;
 }) {
   const first = input.clientName.trim().split(/\s+/)[0] || "cliente";
+  const num = input.numeroLabel?.trim();
   return (
-    `Olá ${first}! Segue o recibo de pagamento ` +
-    `no valor de ${input.valorLabel} emitido pela Móveis Unghero:\n\n${input.receiptUrl}`
+    `Olá ${first}! Segue o recibo de pagamento` +
+    (num ? ` ${num}` : "") +
+    ` no valor de ${input.valorLabel} emitido pela Móveis Unghero:\n\n${input.receiptUrl}`
   );
 }
 
@@ -97,4 +100,71 @@ export function suggestReferenteFromInstallment(input: {
     return `Parcela ${input.numero_parcela}/${input.total_parcelas} referente a móveis sob medida`;
   }
   return "Pagamento referente a móveis sob medida";
+}
+
+/** Título curto da natureza do pagamento (entrada / parcela). */
+export function receiptPaymentNatureLabel(input: {
+  tipo?: string | null;
+  numero_parcela?: number | null;
+  total_parcelas?: number | null;
+  descricao?: string | null;
+}): string | null {
+  if (input.descricao?.trim()) return input.descricao.trim();
+  if (input.tipo === "ENTRADA") return "Entrada";
+  if (input.numero_parcela && input.total_parcelas) {
+    return `Parcela ${String(input.numero_parcela).padStart(2, "0")}/${String(
+      input.total_parcelas
+    ).padStart(2, "0")}`;
+  }
+  return null;
+}
+
+export type ReceiptReferenciaContext = {
+  titulos: string[];
+  residencia: string | null;
+  orcamentoCodigo: string | null;
+  natureza: string | null;
+};
+
+/**
+ * Texto multilinha gravado no campo `referente` (editável na emissão).
+ * Ambientes/títulos principais em linhas; códigos em linhas próprias.
+ */
+export function buildReceiptReferenteText(ctx: ReceiptReferenciaContext): string {
+  const lines: string[] = [];
+  if (ctx.natureza) lines.push(ctx.natureza);
+
+  if (ctx.titulos.length > 0) {
+    lines.push("Referente ao projeto:");
+    for (const titulo of ctx.titulos) {
+      lines.push(`• ${titulo}`);
+    }
+  } else if (!ctx.natureza) {
+    lines.push("Referente a móveis sob medida");
+  }
+
+  if (ctx.residencia) {
+    lines.push(`Residência ${ctx.residencia}`);
+  }
+  if (ctx.orcamentoCodigo) {
+    lines.push(`Orçamento: ${ctx.orcamentoCodigo}`);
+  }
+
+  return lines.join("\n");
+}
+
+/** Extrai títulos a partir do texto já gravado (recibos antigos / edição manual). */
+export function parseReferenteTitulos(referente: string): string[] {
+  return referente
+    .split(/\n/)
+    .map((line) => line.replace(/^[•\-\*]\s*/, "").trim())
+    .filter((line) => {
+      if (!line) return false;
+      if (/^referente ao projeto:?$/i.test(line)) return false;
+      if (/^resid[eê]ncia\b/i.test(line)) return false;
+      if (/^or[cç]amento:/i.test(line)) return false;
+      if (/^pedido:/i.test(line)) return false;
+      if (/^(entrada|parcela|pagamento)\b/i.test(line)) return false;
+      return true;
+    });
 }

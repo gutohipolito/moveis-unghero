@@ -18,6 +18,7 @@ interface ReceiptPrintToolbarProps {
   clientPhone: string;
   backHref?: string;
   initialShareUrl?: string | null;
+  numeroLabel?: string | null;
 }
 
 export default function ReceiptPrintToolbar({
@@ -27,6 +28,7 @@ export default function ReceiptPrintToolbar({
   clientPhone,
   backHref = "/clientes",
   initialShareUrl,
+  numeroLabel,
 }: ReceiptPrintToolbarProps) {
   const [shareUrl, setShareUrl] = useState(initialShareUrl ?? null);
   const [busy, setBusy] = useState(false);
@@ -70,6 +72,7 @@ export default function ReceiptPrintToolbar({
         clientName,
         valorLabel: formatCurrencyBRL(valor),
         receiptUrl: url,
+        numeroLabel,
       });
       const opened = openReceiptWhatsApp(clientPhone, message);
       if (!opened) {

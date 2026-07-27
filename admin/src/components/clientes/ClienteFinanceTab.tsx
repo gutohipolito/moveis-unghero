@@ -20,6 +20,7 @@ import {
 import type { ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import { toISODateBR } from "@/lib/brazilDate";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
+import { formatReceiptCodigo } from "@/lib/receiptCodigo";
 import {
   CheckCircle2,
   CreditCard,
@@ -308,7 +309,7 @@ export default function ClienteFinanceTab({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-black text-foreground">
-                        Recibo
+                        {formatReceiptCodigo(receipt.numero, receipt.data_recebimento)}
                         {receipt.parcela_numero && receipt.parcela_total
                           ? ` · Parcela ${String(receipt.parcela_numero).padStart(
                               2,
@@ -316,7 +317,7 @@ export default function ClienteFinanceTab({
                             )}/${String(receipt.parcela_total).padStart(2, "0")}`
                           : ""}
                       </p>
-                      <p className="text-[11px] text-muted-foreground truncate">
+                      <p className="text-[11px] text-muted-foreground whitespace-pre-line line-clamp-3">
                         {receipt.referente}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">

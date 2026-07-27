@@ -3,7 +3,7 @@ import { getCachedSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import ReceiptPrintDocument from "@/components/ReceiptPrintDocument";
 import ReceiptPrintToolbar from "@/components/ReceiptPrintToolbar";
-import { labelPaymentMethod } from "@/lib/paymentMethods";
+import { buildReceiptPrintPayload } from "@/app/actions/receipts";
 import {
   ensureReceiptShareCode,
   resolveReceiptPublicUrl,
@@ -37,25 +37,11 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
 
   const shareCode = await ensureReceiptShareCode(receipt.id);
   const shareUrl = resolveReceiptPublicUrl(shareCode);
+  const printData = await buildReceiptPrintPayload(receipt);
 
   return (
     <ReceiptPrintDocument
-      receipt={{
-        id: receipt.id,
-        valor: Number(receipt.valor),
-        parcela_numero: receipt.parcela_numero,
-        parcela_total: receipt.parcela_total,
-        referente: receipt.referente,
-        metodoLabel: labelPaymentMethod(receipt.metodo_pagamento),
-        data_recebimento: receipt.data_recebimento,
-        cidade_emissao: receipt.cidade_emissao,
-        quitacao: receipt.quitacao,
-        cliente_nome: receipt.cliente_nome,
-        cliente_documento: receipt.cliente_documento,
-        cliente_endereco: receipt.cliente_endereco,
-        emitido_por_nome: receipt.emitido_por_nome,
-        observacoes: receipt.observacoes,
-      }}
+      receipt={printData}
       topBar={
         <ReceiptPrintToolbar
           receiptId={receipt.id}
@@ -64,6 +50,7 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
           clientPhone={receipt.client?.telefone || ""}
           backHref={`/clientes/${receipt.client.id}`}
           initialShareUrl={shareUrl}
+          numeroLabel={printData.numeroLabel}
         />
       }
     />

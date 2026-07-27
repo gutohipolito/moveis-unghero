@@ -6,8 +6,17 @@ import {
   formatCurrencyBRL,
 } from "@/lib/currencyExtenso";
 
+export type ReceiptPrintReferencia = {
+  titulos: string[];
+  residencia: string | null;
+  orcamentoCodigo: string | null;
+  natureza: string | null;
+};
+
 export type ReceiptPrintData = {
   id: string;
+  numero?: number;
+  numeroLabel?: string;
   valor: number;
   parcela_numero?: number | null;
   parcela_total?: number | null;
@@ -21,6 +30,7 @@ export type ReceiptPrintData = {
   cliente_endereco?: string | null;
   emitido_por_nome?: string | null;
   observacoes?: string | null;
+  referencia?: ReceiptPrintReferencia | null;
 };
 
 export function receiptPrintStylesCss() {
@@ -104,6 +114,11 @@ export function receiptPrintStylesCss() {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
+      .receipt-meta-card,
+      .receipt-condition-card {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       a[href]::after,
       a[href^="http"]::after,
       a[href^="mailto"]::after {
@@ -167,6 +182,16 @@ export default function ReceiptPrintDocument({
       ? "quitação total da obrigação referida"
       : "quitação parcial da obrigação referida";
 
+  const ref = receipt.referencia;
+  const hasStructuredRef = Boolean(
+    ref &&
+      (ref.titulos.length > 0 ||
+        ref.orcamentoCodigo ||
+        ref.residencia ||
+        ref.natureza)
+  );
+  const observacoes = receipt.observacoes?.trim() || "";
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: receiptPrintStylesCss() }} />
@@ -197,13 +222,36 @@ export default function ReceiptPrintDocument({
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
                   Recibo de pagamento
                 </p>
-                {parcelaLabel ? (
-                  <p className="text-xs font-black text-neutral-800">{parcelaLabel}</p>
+                {receipt.numeroLabel ? (
+                  <p className="text-sm font-black tracking-tight text-neutral-900">
+                    {receipt.numeroLabel}
+                  </p>
                 ) : null}
               </div>
             </header>
 
-            <main className="relative z-10 flex-1 px-10 py-8 space-y-6 text-[13px] leading-relaxed font-medium">
+            <main className="relative z-10 flex-1 px-10 py-8 space-y-5 text-[13px] leading-relaxed font-medium">
+              <div className="receipt-meta-card rounded-xl bg-neutral-900 text-white px-5 py-4 grid grid-cols-2 gap-4">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+                    Recibo de pagamento
+                  </p>
+                  <p className="text-sm font-semibold text-white/90">
+                    {parcelaLabel || ref?.natureza || "Pagamento"}
+                  </p>
+                </div>
+                <div className="min-w-0 text-right space-y-1">
+                  {receipt.numeroLabel ? (
+                    <p className="text-sm font-black tracking-tight">{receipt.numeroLabel}</p>
+                  ) : null}
+                  {ref?.orcamentoCodigo ? (
+                    <p className="text-[11px] font-medium text-white/70">
+                      Orçamento {ref.orcamentoCodigo}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
               <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
@@ -238,19 +286,74 @@ export default function ReceiptPrintDocument({
                     (<strong>{valorExtenso}</strong>)
                   </>
                 ) : null}
-                , referente a <strong>{receipt.referente}</strong>, pago mediante{" "}
-                <strong>{receipt.metodoLabel}</strong>, correspondente à{" "}
-                <strong>{quitacaoLabel}</strong>.
+                , pago mediante <strong>{receipt.metodoLabel}</strong>, correspondente à{" "}
+                <strong>{quitacaoLabel}</strong>
+                {hasStructuredRef ? ", conforme referência abaixo" : null}
+                {!hasStructuredRef ? (
+                  <>
+                    , referente a <strong className="whitespace-pre-line">{receipt.referente}</strong>
+                  </>
+                ) : null}
+                .
               </p>
 
-              {receipt.observacoes?.trim() ? (
-                <p className="text-justify text-[12px] text-neutral-600 leading-relaxed">
-                  <span className="font-bold text-neutral-800">Observações: </span>
-                  {receipt.observacoes.trim()}
-                </p>
+              {hasStructuredRef && ref ? (
+                <section className="rounded-xl border border-neutral-200 bg-white px-5 py-4 space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">
+                    Referente ao projeto
+                  </p>
+                  {ref.titulos.length > 0 ? (
+                    <ul className="space-y-1">
+                      {ref.titulos.map((titulo) => (
+                        <li
+                          key={titulo}
+                          className="text-[13px] font-semibold text-neutral-900 leading-snug"
+                        >
+                          {titulo}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : ref.natureza ? (
+                    <p className="text-[13px] font-semibold text-neutral-900">{ref.natureza}</p>
+                  ) : null}
+                  <div className="space-y-0.5 pt-1 border-t border-neutral-100">
+                    {ref.residencia ? (
+                      <p className="text-[12px] text-neutral-600">
+                        Residência <span className="font-semibold text-neutral-800">{ref.residencia}</span>
+                      </p>
+                    ) : null}
+                    {ref.orcamentoCodigo ? (
+                      <p className="text-[12px] text-neutral-600">
+                        Orçamento:{" "}
+                        <span className="font-semibold text-neutral-800">{ref.orcamentoCodigo}</span>
+                      </p>
+                    ) : null}
+                  </div>
+                </section>
               ) : null}
 
-              <p className="pt-2 text-[11px] text-neutral-500 leading-relaxed">
+              {observacoes ? (
+                <section className="receipt-condition-card rounded-xl border border-sky-200/80 bg-sky-50/90 px-5 py-4">
+                  <div className="flex gap-3">
+                    <span
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[11px] font-black text-white"
+                      aria-hidden
+                    >
+                      i
+                    </span>
+                    <div className="min-w-0 space-y-1.5">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-sky-900">
+                        Condição de pagamento
+                      </p>
+                      <p className="text-[12px] leading-relaxed text-sky-950/90 whitespace-pre-line">
+                        {observacoes}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
+
+              <p className="pt-1 text-[11px] text-neutral-500 leading-relaxed">
                 Este recibo comprova o recebimento do valor acima pela pessoa jurídica emissora. Não
                 substitui nota fiscal quando a legislação exigir a emissão do documento fiscal
                 correspondente.

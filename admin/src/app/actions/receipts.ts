@@ -3,12 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { PaymentMethod, Prisma, ReceiptQuitacao } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { buildClientAddress } from "@/lib/contractTemplates";
 import { formatDocumentLabel } from "@/lib/currencyExtenso";
 import { labelPaymentMethod, type PaymentMethod as MethodLabel } from "@/lib/paymentMethods";
 import { toISODateBR } from "@/lib/brazilDate";
+import { formatReceiptCodigo } from "@/lib/receiptCodigo";
+import {
+  loadReceiptReferenciaContext,
+  suggestReceiptReferenteForProject,
+} from "@/lib/receiptReferencia";
+import {
+  parseReferenteTitulos,
+  suggestReferenteFromInstallment,
+} from "@/lib/receiptShare";
 
 export type PaymentReceiptDTO = {
   id: string;
@@ -287,6 +295,153 @@ export async function createPaymentReceipt(
     console.error("Erro ao emitir recibo:", error);
     return { success: false, error: "Não foi possível emitir o recibo." };
   }
+}
+
+/** Sugestão multilinha de “referente a” com ambientes + orçamento do projeto. */
+export async function suggestPaymentReceiptReferente(input: {
+  projectId: string;
+  tipo?: string | null;
+  numero_parcela?: number | null;
+  total_parcelas?: number | null;
+  descricao?: string | null;
+}): Promise<{ success: true; referente: string } | { success: false; error: string }> {
+  const auth =
+    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
+  if (!auth) return { success: false, error: "Sem permissão." };
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: input.projectId,
+      client: { company_id: auth.companyId },
+    },
+    select: { id: true },
+  });
+  if (!project) return { success: false, error: "Projeto não encontrado." };
+
+  const referente = await suggestReceiptReferenteForProject(project.id, {
+    tipo: input.tipo,
+    numero_parcela: input.numero_parcela,
+    total_parcelas: input.total_parcelas,
+    descricao: input.descricao,
+  });
+
+  if (!referente) {
+    return {
+      success: true,
+      referente: suggestReferenteFromInstallment({
+        tipo: input.tipo || "PARCELA",
+        numero_parcela: input.numero_parcela,
+        total_parcelas: input.total_parcelas,
+        descricao: input.descricao,
+      }),
+    };
+  }
+
+  return { success: true, referente };
+}
+
+export type ReceiptPrintPayload = {
+  id: string;
+  numero: number;
+  numeroLabel: string;
+  valor: number;
+  parcela_numero: number | null;
+  parcela_total: number | null;
+  referente: string;
+  metodoLabel: string;
+  data_recebimento: Date | string;
+  cidade_emissao: string;
+  quitacao: "TOTAL" | "PARCIAL";
+  cliente_nome: string;
+  cliente_documento: string;
+  cliente_endereco: string | null;
+  emitido_por_nome: string | null;
+  observacoes: string | null;
+  referencia: {
+    titulos: string[];
+    residencia: string | null;
+    orcamentoCodigo: string | null;
+    natureza: string | null;
+  };
+};
+
+export async function buildReceiptPrintPayload(receipt: {
+  id: string;
+  numero: number;
+  valor: number | { toString(): string };
+  parcela_numero: number | null;
+  parcela_total: number | null;
+  referente: string;
+  metodo_pagamento: PaymentMethod;
+  data_recebimento: Date;
+  cidade_emissao: string;
+  quitacao: ReceiptQuitacao;
+  cliente_nome: string;
+  cliente_documento: string;
+  cliente_endereco: string | null;
+  emitido_por_nome: string | null;
+  observacoes: string | null;
+  project_id: string | null;
+}): Promise<ReceiptPrintPayload> {
+  const valor = toNumber(receipt.valor as Prisma.Decimal | number);
+
+  let titulos: string[] = [];
+  let residencia: string | null = receipt.cliente_nome || null;
+  let orcamentoCodigo: string | null = null;
+  let natureza: string | null = null;
+
+  if (receipt.project_id) {
+    const ctx = await loadReceiptReferenciaContext(receipt.project_id, {
+      numero_parcela: receipt.parcela_numero,
+      total_parcelas: receipt.parcela_total,
+    });
+    if (ctx) {
+      titulos = ctx.titulos;
+      residencia = ctx.residencia || residencia;
+      orcamentoCodigo = ctx.orcamentoCodigo;
+      natureza = ctx.natureza;
+    }
+  }
+
+  if (titulos.length === 0) {
+    titulos = parseReferenteTitulos(receipt.referente);
+  }
+
+  if (!natureza && receipt.parcela_numero && receipt.parcela_total) {
+    natureza = `Parcela ${String(receipt.parcela_numero).padStart(2, "0")}/${String(
+      receipt.parcela_total
+    ).padStart(2, "0")}`;
+  }
+
+  if (!orcamentoCodigo) {
+    const match = receipt.referente.match(/or[cç]amento:\s*([^\n]+)/i);
+    if (match?.[1]) orcamentoCodigo = match[1].trim();
+  }
+
+  return {
+    id: receipt.id,
+    numero: receipt.numero,
+    numeroLabel: formatReceiptCodigo(receipt.numero, receipt.data_recebimento),
+    valor,
+    parcela_numero: receipt.parcela_numero,
+    parcela_total: receipt.parcela_total,
+    referente: receipt.referente,
+    metodoLabel: labelPaymentMethod(receipt.metodo_pagamento as MethodLabel),
+    data_recebimento: receipt.data_recebimento,
+    cidade_emissao: receipt.cidade_emissao,
+    quitacao: receipt.quitacao,
+    cliente_nome: receipt.cliente_nome,
+    cliente_documento: receipt.cliente_documento,
+    cliente_endereco: receipt.cliente_endereco,
+    emitido_por_nome: receipt.emitido_por_nome,
+    observacoes: receipt.observacoes,
+    referencia: {
+      titulos,
+      residencia,
+      orcamentoCodigo,
+      natureza,
+    },
+  };
 }
 
 /** Lista os recibos já emitidos para o cliente no histórico financeiro. */
