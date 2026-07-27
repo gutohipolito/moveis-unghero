@@ -75,7 +75,9 @@ export function buildReceiptWhatsAppMessage(input: {
   return (
     `Olá ${first}! Segue o recibo de pagamento` +
     (num ? ` ${num}` : "") +
-    ` no valor de ${input.valorLabel} emitido pela Móveis Unghero:\n\n${input.receiptUrl}`
+    ` no valor de ${input.valorLabel} emitido pela Móveis Unghero:\n\n` +
+    `${input.receiptUrl}\n\n` +
+    `A senha de acesso são os 4 últimos dígitos do teu celular cadastrado.`
   );
 }
 
