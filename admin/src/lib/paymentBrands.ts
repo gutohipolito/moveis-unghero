@@ -7,3 +7,37 @@ export const PAYMENT_BRANDS = [
   { id: "hipercard", src: "/payments/hipercard.svg", alt: "Hipercard", width: 36, height: 24 },
   { id: "boleto", src: "/payments/boleto.png", alt: "Boleto bancário", width: 36, height: 24 },
 ] as const;
+
+export type ReceiptPaymentBrand = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
+/** Logos para o método de pagamento do recibo (quando houver asset). */
+export function receiptPaymentBrands(
+  method: string | null | undefined
+): ReceiptPaymentBrand[] {
+  switch ((method || "").toUpperCase()) {
+    case "PIX":
+      return [{ src: "/payments/pix.svg", alt: "PIX", width: 52, height: 18 }];
+    case "BOLETO":
+      return [{ src: "/payments/boleto.png", alt: "Boleto", width: 40, height: 26 }];
+    case "CARTAO":
+      return [
+        { src: "/payments/visa.svg", alt: "Visa", width: 34, height: 22 },
+        { src: "/payments/mastercard.svg", alt: "Mastercard", width: 34, height: 22 },
+      ];
+    default:
+      return [];
+  }
+}
+
+/** @deprecated use receiptPaymentBrands */
+export function receiptPaymentBrand(
+  method: string | null | undefined
+): ReceiptPaymentBrand | null {
+  return receiptPaymentBrands(method)[0] ?? null;
+}
+

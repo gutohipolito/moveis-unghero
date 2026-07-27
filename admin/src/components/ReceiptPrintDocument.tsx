@@ -5,6 +5,7 @@ import {
   currencyToExtenso,
   formatCurrencyBRL,
 } from "@/lib/currencyExtenso";
+import { receiptPaymentBrands } from "@/lib/paymentBrands";
 
 export type ReceiptPrintReferencia = {
   titulos: string[];
@@ -22,6 +23,8 @@ export type ReceiptPrintData = {
   parcela_total?: number | null;
   referente: string;
   metodoLabel: string;
+  /** Código do método (PIX, BOLETO…) para bandeira. */
+  metodo?: string | null;
   data_recebimento: Date | string;
   cidade_emissao: string;
   quitacao: "TOTAL" | "PARCIAL";
@@ -32,6 +35,19 @@ export type ReceiptPrintData = {
   observacoes?: string | null;
   referencia?: ReceiptPrintReferencia | null;
 };
+
+/** Capitaliza a primeira letra de cada linha (condição de pagamento). */
+export function capitalizePaymentCondition(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      return trimmed.charAt(0).toLocaleUpperCase("pt-BR") + trimmed.slice(1);
+    })
+    .join("\n")
+    .trim();
+}
 
 export function receiptPrintStylesCss() {
   return `
@@ -98,9 +114,10 @@ export function receiptPrintStylesCss() {
       .print-hidden {
         display: none !important;
       }
-      .receipt-logo-header {
-        /* logo.png é branco (pensado p/ header escuro); no recibo o fundo é claro */
-        filter: brightness(0) !important;
+      .receipt-header-dark,
+      .receipt-condition-card,
+      .receipt-ref-card,
+      .receipt-pay-badge {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -111,11 +128,6 @@ export function receiptPrintStylesCss() {
       }
       .receipt-watermark img {
         filter: invert(1) brightness(0.25) !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      .receipt-meta-card,
-      .receipt-condition-card {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -190,7 +202,8 @@ export default function ReceiptPrintDocument({
         ref.residencia ||
         ref.natureza)
   );
-  const observacoes = receipt.observacoes?.trim() || "";
+  const observacoes = capitalizePaymentCondition(receipt.observacoes || "");
+  const payBrands = receiptPaymentBrands(receipt.metodo);
 
   return (
     <>
@@ -211,48 +224,30 @@ export default function ReceiptPrintDocument({
               />
             </div>
 
-            <header className="relative z-10 flex items-center justify-between gap-6 border-b border-neutral-200 px-10 pt-8 pb-5">
+            <header className="receipt-header-dark relative z-10 flex items-center justify-between gap-6 bg-neutral-900 text-white px-10 py-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoSrc}
                 alt={f.name}
-                className="receipt-logo-header h-10 w-auto object-contain brightness-0"
+                className="h-10 w-auto object-contain"
               />
-              <div className="text-right space-y-0.5 shrink-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+              <div className="text-right space-y-1 shrink-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
                   Recibo de pagamento
                 </p>
                 {receipt.numeroLabel ? (
-                  <p className="text-sm font-black tracking-tight text-neutral-900">
+                  <p className="text-sm font-black tracking-tight text-white">
                     {receipt.numeroLabel}
                   </p>
+                ) : null}
+                {parcelaLabel ? (
+                  <p className="text-[12px] font-semibold text-white/80">{parcelaLabel}</p>
                 ) : null}
               </div>
             </header>
 
-            <main className="relative z-10 flex-1 px-10 py-8 space-y-5 text-[13px] leading-relaxed font-medium">
-              <div className="receipt-meta-card rounded-xl bg-neutral-900 text-white px-5 py-4 grid grid-cols-2 gap-4">
-                <div className="min-w-0 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
-                    Recibo de pagamento
-                  </p>
-                  <p className="text-sm font-semibold text-white/90">
-                    {parcelaLabel || ref?.natureza || "Pagamento"}
-                  </p>
-                </div>
-                <div className="min-w-0 text-right space-y-1">
-                  {receipt.numeroLabel ? (
-                    <p className="text-sm font-black tracking-tight">{receipt.numeroLabel}</p>
-                  ) : null}
-                  {ref?.orcamentoCodigo ? (
-                    <p className="text-[11px] font-medium text-white/70">
-                      Orçamento {ref.orcamentoCodigo}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3 flex items-center justify-between gap-4">
+            <main className="relative z-10 flex-1 px-10 py-7 space-y-5 text-[13px] leading-relaxed font-medium">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                     Valor recebido
@@ -261,11 +256,28 @@ export default function ReceiptPrintDocument({
                     {valorLabel}
                   </p>
                 </div>
-                <div className="text-right shrink-0">
+                <div className="text-right shrink-0 space-y-1.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                     Forma de pagamento
                   </p>
-                  <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
+                  <div className="inline-flex items-center justify-end gap-2">
+                    {payBrands.length > 0 ? (
+                      <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
+                        {payBrands.map((brand) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={brand.src}
+                            src={`${assetBase}${brand.src}`}
+                            alt={brand.alt}
+                            width={brand.width}
+                            height={brand.height}
+                            className="object-contain"
+                          />
+                        ))}
+                      </span>
+                    ) : null}
+                    <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
+                  </div>
                 </div>
               </div>
 
@@ -298,58 +310,61 @@ export default function ReceiptPrintDocument({
               </p>
 
               {hasStructuredRef && ref ? (
-                <section className="rounded-xl border border-neutral-200 bg-white px-5 py-4 space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">
-                    Referente ao projeto
-                  </p>
-                  {ref.titulos.length > 0 ? (
-                    <ul className="space-y-1">
-                      {ref.titulos.map((titulo) => (
-                        <li
-                          key={titulo}
-                          className="text-[13px] font-semibold text-neutral-900 leading-snug"
-                        >
-                          {titulo}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : ref.natureza ? (
-                    <p className="text-[13px] font-semibold text-neutral-900">{ref.natureza}</p>
-                  ) : null}
-                  <div className="space-y-0.5 pt-1 border-t border-neutral-100">
-                    {ref.residencia ? (
-                      <p className="text-[12px] text-neutral-600">
-                        Residência <span className="font-semibold text-neutral-800">{ref.residencia}</span>
-                      </p>
+                <section className="receipt-ref-card overflow-hidden rounded-xl border border-neutral-200 bg-gradient-to-br from-neutral-50 via-white to-amber-50/40">
+                  <div className="border-l-[3px] border-amber-600/80 px-5 py-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500 mb-3">
+                      Referente ao projeto
+                    </p>
+
+                    {ref.titulos.length > 0 ? (
+                      <div className="space-y-0">
+                        {ref.titulos.map((titulo, index) => (
+                          <div
+                            key={`${titulo}-${index}`}
+                            className={`py-2 ${
+                              index > 0 ? "border-t border-neutral-200/80" : ""
+                            }`}
+                          >
+                            <p className="text-[14px] font-bold tracking-tight text-neutral-950 leading-snug">
+                              {titulo}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : ref.natureza ? (
+                      <p className="text-[14px] font-bold text-neutral-950">{ref.natureza}</p>
                     ) : null}
-                    {ref.orcamentoCodigo ? (
-                      <p className="text-[12px] text-neutral-600">
-                        Orçamento:{" "}
-                        <span className="font-semibold text-neutral-800">{ref.orcamentoCodigo}</span>
-                      </p>
-                    ) : null}
+
+                    {(ref.residencia || ref.orcamentoCodigo) && (
+                      <div className="mt-3.5 pt-3.5 border-t border-neutral-200/90 space-y-1.5">
+                        {ref.residencia ? (
+                          <p className="text-[12px] text-neutral-600 leading-snug">
+                            <span className="font-semibold text-neutral-500">Residência:</span>{" "}
+                            <span className="font-semibold text-neutral-900">{ref.residencia}</span>
+                          </p>
+                        ) : null}
+                        {ref.orcamentoCodigo ? (
+                          <p className="text-[12px] text-neutral-600 leading-snug">
+                            <span className="font-semibold text-neutral-500">Orçamento:</span>{" "}
+                            <span className="font-semibold text-neutral-900">
+                              {ref.orcamentoCodigo}
+                            </span>
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </section>
               ) : null}
 
               {observacoes ? (
                 <section className="receipt-condition-card rounded-xl border border-sky-200/80 bg-sky-50/90 px-5 py-4">
-                  <div className="flex gap-3">
-                    <span
-                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[11px] font-black text-white"
-                      aria-hidden
-                    >
-                      i
-                    </span>
-                    <div className="min-w-0 space-y-1.5">
-                      <p className="text-[11px] font-black uppercase tracking-wider text-sky-900">
-                        Condição de pagamento
-                      </p>
-                      <p className="text-[12px] leading-relaxed text-sky-950/90 whitespace-pre-line">
-                        {observacoes}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-[11px] font-black uppercase tracking-wider text-sky-900 mb-2">
+                    Condição de pagamento
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-sky-950/90 whitespace-pre-line">
+                    {observacoes}
+                  </p>
                 </section>
               ) : null}
 

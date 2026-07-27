@@ -349,6 +349,8 @@ export type ReceiptPrintPayload = {
   parcela_total: number | null;
   referente: string;
   metodoLabel: string;
+  /** Código do método (PIX, BOLETO…) para bandeira no impresso. */
+  metodo?: string | null;
   data_recebimento: Date | string;
   cidade_emissao: string;
   quitacao: "TOTAL" | "PARCIAL";
@@ -427,6 +429,7 @@ export async function buildReceiptPrintPayload(receipt: {
     parcela_total: receipt.parcela_total,
     referente: receipt.referente,
     metodoLabel: labelPaymentMethod(receipt.metodo_pagamento as MethodLabel),
+    metodo: receipt.metodo_pagamento,
     data_recebimento: receipt.data_recebimento,
     cidade_emissao: receipt.cidade_emissao,
     quitacao: receipt.quitacao,
