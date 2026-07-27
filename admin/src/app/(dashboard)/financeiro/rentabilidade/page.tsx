@@ -1,6 +1,5 @@
 import { guardModule } from "@/lib/moduleAccess";
 import { getProjectProfitability, type ProfitabilityData } from "@/app/actions/profitability";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
@@ -62,7 +61,6 @@ export default async function RentabilidadePage() {
             </li>
           </ul>
         </InfoTooltip>
-        <PrivacyToggle />
       </PageHeader>
 
       <FinanceSectionTabs />

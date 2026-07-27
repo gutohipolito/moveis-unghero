@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import SensitiveToggle from "@/components/SensitiveToggle";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import Link from "next/link";
 import { 
@@ -495,13 +493,11 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   items={[
                     "Cadastre clientes Pessoa Física ou Jurídica escolhendo o tipo antes.",
                     "Clique em qualquer parte da linha (fora dos botões) para abrir o cliente.",
-                    "O ícone de olho de dados oculta telefone, e-mail e documento; o de valores oculta totais financeiros.",
+                    "Os olhos do topo do painel ocultam telefone, e-mail, documento e totais financeiros (revelação temporária).",
                     "Ajuste quantos itens aparecem por página no rodapé da lista.",
                   ]}
                 />
               </InfoTooltip>
-              <PrivacyToggle />
-              <SensitiveToggle />
             </div>
             <p className="page-subtitle">
               Gerencie sua base de clientes — Pessoas Físicas e Jurídicas.

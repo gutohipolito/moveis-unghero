@@ -4,7 +4,6 @@ import { guardModule } from "@/lib/moduleAccess";
 import { getAuthContext } from "@/lib/auth-guard";
 import { fetchFactoryBoard } from "@/lib/factoryBoard";
 import BiClient from "./BiClient";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
@@ -43,13 +42,11 @@ export default async function BIPage() {
                 "Consolida projetos, valores e origem dos clientes em indicadores.",
                 "Inclui resumo do funil (ativos, negociação e perdas) e de orçamentos.",
                 "Analise desempenho por cidade, canal de origem e parceiros.",
-                "Use o modo privado (olho) para ocultar valores em apresentações.",
+                "Use os olhos do topo do painel para revelar valores (voltam a ocultar em 30s).",
               ]}
             />
           }
-        >
-          <PrivacyToggle />
-        </PageHeader>
+        />
       </div>
 
       <BiClient

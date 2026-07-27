@@ -1,6 +1,5 @@
 import { guardModule } from "@/lib/moduleAccess";
 import { getDreData, type DreData } from "@/app/actions/dre";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
@@ -32,10 +31,7 @@ export default async function DrePage() {
               "Inclui detalhamento por categoria e visão dos últimos 12 meses.",
             ]}
           />
-        }
-      >
-        <PrivacyToggle />
-      </PageHeader>
+        } />
 
       <FinanceSectionTabs />
 

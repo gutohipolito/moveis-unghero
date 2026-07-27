@@ -67,7 +67,7 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
       "Cargos e permissões por módulo (incluindo Somente leitura / VIEWER)",
       "Equipe interna com fotos, funções e cadastro sem login",
       "Cofre de acessos (logins de sistemas) na Administração",
-      "Privacidade unificada (olho) para valores e dados sensíveis",
+      "Privacidade unificada (olhos do header) com revelação temporária de 30s",
       "Notificações in-app estilo macOS, rate limit no login e endurecimento de AppSec",
       "Área de Melhorias com sugestões dos operadores",
       "Backup diário dos dados via snapshot no Neon",

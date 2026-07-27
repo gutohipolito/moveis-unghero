@@ -8,7 +8,6 @@ import {
   type ShowcaseProductDTO,
 } from "@/app/actions/produtos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import { usePrivacy } from "@/context/PrivacyContext";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
@@ -509,7 +508,6 @@ export default function ProdutosClient({
                 ]}
               />
             </InfoTooltip>
-            <PrivacyToggle />
           </div>
           <div className="mt-3">
             <ProdutosSectionTabs />

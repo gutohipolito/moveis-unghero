@@ -22,7 +22,6 @@ import {
 } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
@@ -50,8 +49,6 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Globe,
-  Eye,
-  EyeOff,
   ChevronDown,
   ChevronUp
 } from "lucide-react";
@@ -410,7 +407,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const { isReadOnly } = usePermissions();
-  const { privacyLocked } = usePrivacy();
+  const { privacyLocked, privacyMode } = usePrivacy();
   const sensitive = useSensitiveDisplay();
 
   const [parceiros, setParceiros] = useState<ParceiroDTO[]>(initialParceiros);
@@ -425,7 +422,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   
-  const [privacyMode, setPrivacyMode] = useState(false);
   const effectivePrivacyMode = privacyLocked || isReadOnly || privacyMode;
   const [viewingPartner, setViewingPartner] = useState<ParceiroDTO | null>(null);
 
@@ -754,19 +750,10 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     "Cadastre arquitetos e projetistas que indicam clientes.",
                     "Vincule um parceiro a um orçamento para dar o devido crédito.",
                     "Acompanhe indicações e desempenho de cada parceiro.",
-                    "O modo privacidade oculta nomes e fotos em apresentações.",
+                    "O olho de valores no topo do painel também oculta nomes e fotos em apresentações.",
                   ]}
                 />
               </InfoTooltip>
-              <PrivacyToggle />
-              <button
-                onClick={() => { if (!privacyLocked && !isReadOnly) setPrivacyMode(!privacyMode); }}
-                disabled={privacyLocked || isReadOnly}
-                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-650 transition-colors cursor-pointer border border-slate-200 bg-white shadow-sm"
-                title={privacyMode ? "Mostrar nomes e fotos" : "Ocultar nomes e fotos (Modo Privacidade)"}
-              >
-                {privacyMode ? <EyeOff className="h-4 w-4 text-indigo-600" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
             <p className="text-xs text-muted-foreground">
               Cadastre parceiros profissionais — arquitetos, projetistas, decoradores e engenheiros — que indicam clientes ou co-projetam com a marcenaria.
@@ -1044,7 +1031,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 <div className={`absolute inset-x-0 top-0 h-1.5 ${palette.accent}`} />
                 
                 {/* Avatar */}
-                <div className={`relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl overflow-hidden ${privacyMode ? "blur-md select-none" : ""}`}>
+                <div className={`relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl overflow-hidden ${effectivePrivacyMode ? "blur-md select-none" : ""}`}>
                   {p.fotoUrl ? (
                     <img
                       src={p.fotoUrl}
@@ -1059,7 +1046,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 </div>
 
                 <div className="text-center sm:text-left min-w-0 flex-1 space-y-1.5 sm:pl-1">
-                  <h3 className={`font-extrabold text-slate-800 text-lg leading-tight tracking-tight ${privacyMode ? "blur-[6px] select-none" : ""}`}>
+                  <h3 className={`font-extrabold text-slate-800 text-lg leading-tight tracking-tight ${effectivePrivacyMode ? "blur-[6px] select-none" : ""}`}>
                     {p.nome}
                   </h3>
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">

@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -459,7 +458,6 @@ export default function EstoqueClient({
                 ]}
               />
             </InfoTooltip>
-            <PrivacyToggle />
           </div>
           <p className="text-sm text-muted-foreground">Controle de insumos e matérias-primas da Móveis Unghero.</p>
         </div>

@@ -47,8 +47,6 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
-import PrivacyToggle from "@/components/PrivacyToggle";
-import SensitiveToggle from "@/components/SensitiveToggle";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -907,8 +905,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground break-words">
                   {project.client.nome}
                 </h2>
-                <PrivacyToggle />
-                <SensitiveToggle />
               </div>
             </div>
             

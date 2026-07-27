@@ -3,7 +3,6 @@ import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
 import { getAuthContext } from "@/lib/auth-guard";
 import FinanceiroClient from "./FinanceiroClient";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
@@ -60,10 +59,7 @@ export default async function FinanceiroPage() {
               "Use as abas para navegar entre Receber, Pagar, DRE e Rentabilidade.",
             ]}
           />
-        }
-      >
-        <PrivacyToggle />
-      </PageHeader>
+        } />
 
       <FinanceSectionTabs />
 

@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
 import { listExpenses } from "@/app/actions/expenses";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
@@ -54,10 +53,7 @@ export default async function ContasPagarPage() {
               "Marcar como paga alimenta o DRE e a rentabilidade por obra.",
             ]}
           />
-        }
-      >
-        <PrivacyToggle />
-      </PageHeader>
+        } />
 
       <FinanceSectionTabs />
 

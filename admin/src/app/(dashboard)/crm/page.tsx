@@ -49,7 +49,7 @@ export default async function CRMPage() {
                 "Em Aprovados, atribua até 2 responsáveis pela conferência técnica.",
                 "Só ao entrar em Produção o projeto aparece na fila do chão de fábrica.",
                 "No mobile, use o botão de avançar dentro do card.",
-                "Totais e telefone começam ocultos; use os olhos do topo (valores e dados sensíveis) para revelar.",
+                "Totais e telefone começam ocultos; use os olhos do topo para revelar (voltam a ocultar em 30s).",
                 "Na engrenagem, configure os prazos de aviso, alerta e perdas do follow-up.",
               ]}
             />

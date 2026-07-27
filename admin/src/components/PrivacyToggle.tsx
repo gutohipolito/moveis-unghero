@@ -1,8 +1,12 @@
 "use client";
 
 import React from "react";
-import { usePrivacy } from "@/context/PrivacyContext";
+import { usePrivacy, PRIVACY_REVEAL_MS } from "@/context/PrivacyContext";
 import { Eye, EyeOff } from "lucide-react";
+
+function revealSecondsLabel() {
+  return Math.round(PRIVACY_REVEAL_MS / 1000);
+}
 
 export default function PrivacyToggle() {
   const { privacyMode, togglePrivacy, privacyLocked } = usePrivacy();
@@ -23,7 +27,11 @@ export default function PrivacyToggle() {
       onClick={togglePrivacy}
       type="button"
       className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
-      title={privacyMode ? "Mostrar valores financeiros (R$)" : "Ocultar valores financeiros (R$)"}
+      title={
+        privacyMode
+          ? `Mostrar valores financeiros (R$) — oculta de novo em ${revealSecondsLabel()}s`
+          : "Ocultar valores financeiros (R$)"
+      }
     >
       {privacyMode ? (
         <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />

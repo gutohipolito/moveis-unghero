@@ -7,8 +7,6 @@ import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
-import PrivacyToggle from "@/components/PrivacyToggle";
-import SensitiveToggle from "@/components/SensitiveToggle";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { hasRealClientEmail } from "@/lib/clientMatch";
@@ -1461,8 +1459,6 @@ export default function KanbanBoard({
               { value: "perdas", label: "Perdas", badge: lostProjects.length },
             ]}
           />
-          <PrivacyToggle />
-          <SensitiveToggle />
           <button
             type="button"
             onClick={toggleAllCardsCollapse}

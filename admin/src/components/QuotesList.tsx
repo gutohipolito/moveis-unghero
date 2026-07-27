@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
-import PrivacyToggle from "@/components/PrivacyToggle";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePermissions } from "@/context/PermissionsContext";
 import { 
@@ -439,10 +438,7 @@ export default function QuotesList({
               </>
             )}
           </div>
-        }
-      >
-        <PrivacyToggle />
-      </PageHeader>
+        } />
 
       {/* Filtros e Busca */}
       <div className="flex flex-col gap-3 bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
