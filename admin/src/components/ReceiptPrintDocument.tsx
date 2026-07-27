@@ -206,13 +206,7 @@ export default function ReceiptPrintDocument({
       : "quitação parcial da obrigação referida";
 
   const ref = receipt.referencia;
-  const hasStructuredRef = Boolean(
-    ref &&
-      (ref.titulos.length > 0 ||
-        ref.orcamentoCodigo ||
-        ref.residencia ||
-        ref.natureza)
-  );
+  const hasStructuredRef = Boolean(ref && (ref.titulos.length > 0 || ref.natureza));
   const observacoes = capitalizePaymentCondition(receipt.observacoes || "");
   const payBrands = receiptPaymentBrands(receipt.metodo);
   const financeiro = receipt.financeiro;
@@ -367,7 +361,7 @@ export default function ReceiptPrintDocument({
                 ) : null}
                 , pago mediante <strong>{receipt.metodoLabel}</strong>, correspondente à{" "}
                 <strong>{quitacaoLabel}</strong>
-                {hasStructuredRef ? ", conforme referência abaixo" : null}
+                {hasStructuredRef ? ", conforme ambientes abaixo" : null}
                 {!hasStructuredRef ? (
                   <>
                     , referente a <strong className="whitespace-pre-line">{receipt.referente}</strong>
@@ -377,59 +371,36 @@ export default function ReceiptPrintDocument({
               </p>
 
               {hasStructuredRef && ref ? (
-                <section className="receipt-ref-card overflow-hidden rounded-xl border border-neutral-200 bg-gradient-to-br from-neutral-50 via-white to-amber-50/40">
-                  <div className="border-l-[3px] border-amber-600/80 px-5 py-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500 mb-3">
-                      Referente ao projeto
+                <section className="receipt-ref-card overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50/60">
+                  <div className="border-l-[3px] border-neutral-800 px-5 py-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500 mb-2.5">
+                      Ambientes
                     </p>
 
                     {ref.titulos.length > 0 ? (
-                      <div className="space-y-0">
+                      <ul className="space-y-1.5">
                         {ref.titulos.map((titulo, index) => (
-                          <div
+                          <li
                             key={`${titulo}-${index}`}
-                            className={`py-2 ${
-                              index > 0 ? "border-t border-neutral-200/80" : ""
-                            }`}
+                            className="text-[13px] font-semibold tracking-tight text-neutral-950 leading-snug"
                           >
-                            <p className="text-[14px] font-bold tracking-tight text-neutral-950 leading-snug">
-                              {titulo}
-                            </p>
-                          </div>
+                            {titulo}
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : ref.natureza ? (
-                      <p className="text-[14px] font-bold text-neutral-950">{ref.natureza}</p>
+                      <p className="text-[13px] font-semibold text-neutral-950">{ref.natureza}</p>
                     ) : null}
-
-                    {(ref.residencia || ref.orcamentoCodigo) && (
-                      <div className="mt-3.5 pt-3.5 border-t border-neutral-200/90 space-y-1.5">
-                        {ref.residencia ? (
-                          <p className="text-[12px] text-neutral-600 leading-snug">
-                            <span className="font-semibold text-neutral-500">Residência:</span>{" "}
-                            <span className="font-semibold text-neutral-900">{ref.residencia}</span>
-                          </p>
-                        ) : null}
-                        {ref.orcamentoCodigo ? (
-                          <p className="text-[12px] text-neutral-600 leading-snug">
-                            <span className="font-semibold text-neutral-500">Orçamento:</span>{" "}
-                            <span className="font-semibold text-neutral-900">
-                              {ref.orcamentoCodigo}
-                            </span>
-                          </p>
-                        ) : null}
-                      </div>
-                    )}
                   </div>
                 </section>
               ) : null}
 
               {observacoes ? (
-                <section className="receipt-condition-card rounded-xl border border-sky-200/80 bg-sky-50/90 px-5 py-4">
-                  <p className="text-[11px] font-black uppercase tracking-wider text-sky-900 mb-2">
+                <section className="receipt-condition-card rounded-xl border border-neutral-200 bg-neutral-50/80 px-5 py-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500 mb-1.5">
                     Condição de pagamento
                   </p>
-                  <p className="text-[12px] leading-relaxed text-sky-950/90 whitespace-pre-line">
+                  <p className="text-[12px] leading-relaxed text-neutral-700 whitespace-pre-line">
                     {observacoes}
                   </p>
                 </section>

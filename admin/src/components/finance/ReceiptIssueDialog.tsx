@@ -239,7 +239,7 @@ export default function ReceiptIssueDialog({
           <textarea
             value={referente}
             onChange={(e) => setReferente(e.target.value)}
-            placeholder={"Referente ao projeto:\n• Cozinha\n• Área Gourmet"}
+            placeholder={"Ambientes:\n• Cozinha\n• Área Gourmet"}
             required
             rows={5}
             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed resize-y min-h-[110px]"

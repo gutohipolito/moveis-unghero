@@ -130,26 +130,19 @@ export type ReceiptReferenciaContext = {
 
 /**
  * Texto multilinha gravado no campo `referente` (editável na emissão).
- * Ambientes/títulos principais em linhas; códigos em linhas próprias.
+ * Ambientes/títulos principais em linhas.
  */
 export function buildReceiptReferenteText(ctx: ReceiptReferenciaContext): string {
   const lines: string[] = [];
   if (ctx.natureza) lines.push(ctx.natureza);
 
   if (ctx.titulos.length > 0) {
-    lines.push("Referente ao projeto:");
+    lines.push("Ambientes:");
     for (const titulo of ctx.titulos) {
       lines.push(`• ${titulo}`);
     }
   } else if (!ctx.natureza) {
     lines.push("Referente a móveis sob medida");
-  }
-
-  if (ctx.residencia) {
-    lines.push(`Residência ${ctx.residencia}`);
-  }
-  if (ctx.orcamentoCodigo) {
-    lines.push(`Orçamento: ${ctx.orcamentoCodigo}`);
   }
 
   return lines.join("\n");
@@ -162,6 +155,7 @@ export function parseReferenteTitulos(referente: string): string[] {
     .map((line) => line.replace(/^[•\-\*]\s*/, "").trim())
     .filter((line) => {
       if (!line) return false;
+      if (/^ambientes:?$/i.test(line)) return false;
       if (/^referente ao projeto:?$/i.test(line)) return false;
       if (/^resid[eê]ncia\b/i.test(line)) return false;
       if (/^or[cç]amento:/i.test(line)) return false;
