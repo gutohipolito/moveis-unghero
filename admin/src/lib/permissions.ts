@@ -38,7 +38,7 @@ export const ADMIN_ONLY_MODULES = new Set([
 ]);
 
 /** Módulos liberados para qualquer colaborador, independente de configuração. */
-export const ALWAYS_ALLOWED_MODULES = new Set(["melhorias"]);
+export const ALWAYS_ALLOWED_MODULES = new Set(["melhorias", "notas-da-versao"]);
 
 export const CONFIGURABLE_MODULE_KEYS = CONFIGURABLE_MODULES.map((m) => m.key);
 

@@ -21,6 +21,7 @@ import {
   FileSignature,
   Images,
   KeyRound,
+  ScrollText,
 } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -57,6 +58,13 @@ export const NAV_SECTIONS = [
 export const NAV_ITEMS: NavItem[] = [
   { name: "Relatórios", href: "/bi", icon: LayoutDashboard, section: "Visão Geral" },
   { name: "Melhorias", href: "/melhorias", icon: Lightbulb, section: "Visão Geral" },
+  {
+    name: "Notas da versão",
+    shortName: "Notas",
+    href: "/notas-da-versao",
+    icon: ScrollText,
+    section: "Visão Geral",
+  },
 
   { name: "Marketing", href: "/marketing", icon: Star, section: "Marketing" },
 
