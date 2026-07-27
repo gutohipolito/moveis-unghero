@@ -21,13 +21,13 @@ export function receiptPaymentBrands(
 ): ReceiptPaymentBrand[] {
   switch ((method || "").toUpperCase()) {
     case "PIX":
-      return [{ src: "/payments/pix.svg", alt: "PIX", width: 52, height: 18 }];
+      return [{ src: "/payments/pix.svg", alt: "PIX", width: 34, height: 12 }];
     case "BOLETO":
-      return [{ src: "/payments/boleto.png", alt: "Boleto", width: 40, height: 26 }];
+      return [{ src: "/payments/boleto.png", alt: "Boleto", width: 28, height: 18 }];
     case "CARTAO":
       return [
-        { src: "/payments/visa.svg", alt: "Visa", width: 34, height: 22 },
-        { src: "/payments/mastercard.svg", alt: "Mastercard", width: 34, height: 22 },
+        { src: "/payments/visa.svg", alt: "Visa", width: 26, height: 16 },
+        { src: "/payments/mastercard.svg", alt: "Mastercard", width: 26, height: 16 },
       ];
     default:
       return [];

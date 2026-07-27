@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Phone } from "lucide-react";
+import { Check, Phone } from "lucide-react";
 import { QUOTE_PRINT_FACTORY } from "@/components/QuotePrintDocument";
 import { formatContractDateLong } from "@/lib/contractTemplates";
 import {
@@ -201,17 +201,19 @@ export default function ReceiptPrintDocument({
           receipt.parcela_total
         ).padStart(2, "0")}`
       : null;
-  const quitacaoLabel =
-    receipt.quitacao === "TOTAL"
-      ? "quitação total da obrigação referida"
-      : "quitação parcial da obrigação referida";
-
   const ref = receipt.referencia;
   const hasStructuredRef = Boolean(ref && (ref.titulos.length > 0 || ref.natureza));
   const observacoes = capitalizePaymentCondition(receipt.observacoes || "");
   const payBrands = receiptPaymentBrands(receipt.metodo);
   const financeiro = receipt.financeiro;
+  const projetoQuitado = Boolean(
+    financeiro && financeiro.saldoPendente <= 0.009
+  );
   const validacao = receipt.validacao;
+
+  const parcelaRefLabel = parcelaLabel
+    ? parcelaLabel.replace(/^Parcela\s+/i, "parcela ")
+    : null;
 
   return (
     <>
@@ -257,30 +259,44 @@ export default function ReceiptPrintDocument({
             <main className="relative z-10 flex-1 px-10 py-7 space-y-5 text-[13px] leading-relaxed font-medium">
               {financeiro ? (
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2 items-end">
                     <div className="min-w-0 text-left">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                         Valor total do projeto
                       </p>
-                      <p className="text-base font-black tracking-tight text-neutral-950 mt-0.5 tabular-nums">
+                      <p className="text-sm font-bold tracking-tight text-neutral-600 mt-0.5 tabular-nums">
                         {formatCurrencyBRL(financeiro.valorTotalProjeto)}
                       </p>
                     </div>
-                    <div className="min-w-0 text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                    <div className="min-w-0 text-center rounded-lg bg-amber-50/90 border border-amber-200/70 px-2 py-2 -my-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80">
                         Valor desta parcela
                       </p>
-                      <p className="text-base font-black tracking-tight text-neutral-950 mt-0.5 tabular-nums">
+                      <p className="text-xl font-black tracking-tight text-amber-950 mt-0.5 tabular-nums">
                         {formatCurrencyBRL(financeiro.valorParcela)}
                       </p>
                     </div>
                     <div className="min-w-0 text-right">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                        Saldo pendente
-                      </p>
-                      <p className="text-base font-black tracking-tight text-neutral-950 mt-0.5 tabular-nums">
-                        {formatCurrencyBRL(financeiro.saldoPendente)}
-                      </p>
+                      {projetoQuitado ? (
+                        <>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700/80">
+                            Saldo
+                          </p>
+                          <p className="inline-flex items-center justify-end gap-1 text-sm font-black tracking-tight text-emerald-700 mt-0.5">
+                            <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} aria-hidden />
+                            Projeto quitado
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                            Saldo pendente
+                          </p>
+                          <p className="text-sm font-bold tracking-tight text-neutral-600 mt-0.5 tabular-nums">
+                            {formatCurrencyBRL(financeiro.saldoPendente)}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-t border-neutral-200/80 pt-3">
@@ -289,7 +305,7 @@ export default function ReceiptPrintDocument({
                       {receipt.metodoLabel}
                     </p>
                     {payBrands.length > 0 ? (
-                      <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs shrink-0">
+                      <span className="receipt-pay-badge inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 shadow-xs shrink-0">
                         {payBrands.map((brand) => (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -308,10 +324,10 @@ export default function ReceiptPrintDocument({
               ) : (
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 flex items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80">
                       Valor recebido
                     </p>
-                    <p className="text-2xl font-black tracking-tight text-neutral-950">
+                    <p className="text-2xl font-black tracking-tight text-amber-950">
                       {valorLabel}
                     </p>
                   </div>
@@ -321,7 +337,7 @@ export default function ReceiptPrintDocument({
                       {receipt.metodoLabel}
                     </p>
                     {payBrands.length > 0 ? (
-                      <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
+                      <span className="receipt-pay-badge inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 shadow-xs">
                         {payBrands.map((brand) => (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -339,31 +355,32 @@ export default function ReceiptPrintDocument({
                 </div>
               )}
 
-              <p className="text-justify leading-[1.75] text-[13px] text-neutral-800">
-                <strong>{f.name}</strong>, inscrita no CNPJ sob o nº <strong>{f.cnpj}</strong>, com
-                sede na {f.street}, {f.neighborhood}, {f.city}, declara para os devidos fins que{" "}
-                <strong>recebeu de {receipt.cliente_nome}</strong>
-                {receipt.cliente_documento ? (
-                  <>
-                    , {receipt.cliente_documento}
-                    {receipt.cliente_endereco ? `, com endereço em ${receipt.cliente_endereco}` : ""}
-                  </>
-                ) : null}
-                , a importância de <strong>{valorLabel}</strong>
+              <p className="text-justify leading-[1.7] text-[13px] text-neutral-800">
+                Declaramos o recebimento de <strong>{valorLabel}</strong>
                 {valorExtenso ? (
                   <>
                     {" "}
                     (<strong>{valorExtenso}</strong>)
                   </>
                 ) : null}
-                , pago mediante <strong>{receipt.metodoLabel}</strong>, correspondente à{" "}
-                <strong>{quitacaoLabel}</strong>
-                {hasStructuredRef ? ", conforme ambientes abaixo" : null}
-                {!hasStructuredRef ? (
-                  <>
-                    , referente a <strong className="whitespace-pre-line">{receipt.referente}</strong>
-                  </>
+                , pagos via <strong>{receipt.metodoLabel}</strong> por{" "}
+                <strong>{receipt.cliente_nome}</strong>
+                {receipt.cliente_documento ? (
+                  <>, {receipt.cliente_documento}</>
                 ) : null}
+                {parcelaRefLabel ? (
+                  <>
+                    , referentes à <strong>{parcelaRefLabel}</strong> do projeto descrito neste
+                    documento
+                  </>
+                ) : hasStructuredRef ? (
+                  <>, referentes ao projeto descrito neste documento</>
+                ) : (
+                  <>
+                    , referentes a{" "}
+                    <strong className="whitespace-pre-line">{receipt.referente}</strong>
+                  </>
+                )}
                 .
               </p>
 
