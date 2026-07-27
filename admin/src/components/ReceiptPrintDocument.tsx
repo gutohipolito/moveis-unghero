@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { MessageCircle, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 import { QUOTE_PRINT_FACTORY } from "@/components/QuotePrintDocument";
 import { formatContractDateLong } from "@/lib/contractTemplates";
 import {
@@ -486,7 +486,14 @@ export default function ReceiptPrintDocument({
                 <div className="text-right space-y-0.5 shrink-0">
                   <p className="inline-flex items-center justify-end gap-1.5">
                     <Phone className="h-2.5 w-2.5 shrink-0 text-neutral-500" aria-hidden />
-                    <MessageCircle className="h-2.5 w-2.5 shrink-0 text-neutral-500" aria-hidden />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${assetBase}/icons/whatsapp.svg`}
+                      alt="WhatsApp"
+                      width={10}
+                      height={10}
+                      className="h-2.5 w-2.5 shrink-0 object-contain"
+                    />
                     <span className="tabular-nums leading-none">{f.whatsapp}</span>
                   </p>
                   <p>{f.email}</p>
