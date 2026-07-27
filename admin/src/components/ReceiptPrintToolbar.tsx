@@ -85,41 +85,46 @@ export default function ReceiptPrintToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 max-w-[210mm] mx-auto px-1">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-600 hover:text-neutral-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Voltar
-      </Link>
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          onClick={handleWhatsApp}
-          disabled={busy || !phoneReady}
-          title={
-            phoneReady
-              ? "Enviar recibo pelo WhatsApp"
-              : "Cliente sem telefone cadastrado"
-          }
-          className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold"
+    <div className="print:hidden flex flex-col gap-1.5 max-w-[210mm] mx-auto px-1">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-600 hover:text-neutral-900"
         >
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <MessageCircle className="h-4 w-4" />
-          )}
-          {busy ? "Preparando..." : "WhatsApp"}
-        </Button>
-        <Button
-          type="button"
-          onClick={() => window.print()}
-          disabled={busy}
-          className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold"
-        >
-          <Printer className="h-4 w-4" /> Imprimir / Salvar PDF
-        </Button>
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={handleWhatsApp}
+            disabled={busy || !phoneReady}
+            title={
+              phoneReady
+                ? "Enviar recibo pelo WhatsApp"
+                : "Cliente sem telefone cadastrado"
+            }
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold"
+          >
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MessageCircle className="h-4 w-4" />
+            )}
+            {busy ? "Preparando..." : "WhatsApp"}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => window.print()}
+            disabled={busy}
+            className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+          >
+            <Printer className="h-4 w-4" /> Imprimir / Salvar PDF
+          </Button>
+        </div>
       </div>
+      <p className="text-right text-[10px] text-neutral-500 leading-snug">
+        Impressão: A4 · margens Nenhuma · escala 100% · desmarque Cabeçalhos e rodapés
+      </p>
     </div>
   );
 }

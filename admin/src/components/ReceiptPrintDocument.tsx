@@ -40,42 +40,56 @@ export function receiptPrintStylesCss() {
         color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
         height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
+        overflow: visible !important;
       }
       .print-page {
         width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
         height: auto !important;
-        min-height: 297mm !important;
+        min-height: 0 !important;
         max-height: none !important;
         page-break-after: auto !important;
         break-after: auto !important;
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         box-sizing: border-box !important;
         border: none !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
         background: #ffffff !important;
         overflow: visible !important;
+        transform: none !important;
       }
       .print-shell {
         min-height: 0 !important;
         height: auto !important;
+        width: 210mm !important;
         background: #ffffff !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: visible !important;
       }
       .print-shell-inner {
         max-width: none !important;
+        width: 210mm !important;
+        min-width: 210mm !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: visible !important;
       }
-      .print\\:hidden {
+      .print\\:hidden,
+      .print-hidden {
         display: none !important;
       }
       .receipt-logo-header {
-        filter: invert(1) !important;
+        filter: none !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -89,6 +103,7 @@ export function receiptPrintStylesCss() {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
+      a[href]::after,
       a[href^="http"]::after,
       a[href^="mailto"]::after {
         content: none !important;
@@ -98,18 +113,26 @@ export function receiptPrintStylesCss() {
       .print-shell {
         min-height: 100vh;
         background: #e5e5e5;
-        padding: 2rem 1rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
       .print-shell-inner {
-        max-width: 210mm;
+        width: max-content;
+        max-width: none;
         margin: 0 auto;
+        padding: 24px;
+        box-sizing: border-box;
       }
       .print-page {
-        width: 210mm;
+        width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
         min-height: 297mm;
         margin: 0 auto;
+        box-sizing: border-box;
         background: #fff;
         box-shadow: 0 8px 30px rgba(0,0,0,.12);
+        overflow: visible;
       }
     }
   `;
@@ -162,14 +185,14 @@ export default function ReceiptPrintDocument({
               />
             </div>
 
-            <header className="relative z-10 flex items-center justify-between border-b border-neutral-200 px-10 pt-8 pb-5">
+            <header className="relative z-10 flex items-center justify-between gap-6 border-b border-neutral-200 px-10 pt-8 pb-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoSrc}
                 alt={f.name}
-                className="receipt-logo-header h-10 w-auto object-contain invert"
+                className="receipt-logo-header h-10 w-auto object-contain"
               />
-              <div className="text-right space-y-0.5">
+              <div className="text-right space-y-0.5 shrink-0">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
                   Recibo de pagamento
                 </p>
@@ -180,14 +203,16 @@ export default function ReceiptPrintDocument({
             </header>
 
             <main className="relative z-10 flex-1 px-10 py-8 space-y-6 text-[13px] leading-relaxed font-medium">
-              <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-                <div>
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3 flex items-center justify-between gap-4">
+                <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                     Valor recebido
                   </p>
-                  <p className="text-2xl font-black tracking-tight text-neutral-950">{valorLabel}</p>
+                  <p className="text-2xl font-black tracking-tight text-neutral-950">
+                    {valorLabel}
+                  </p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                     Forma de pagamento
                   </p>
@@ -234,7 +259,7 @@ export default function ReceiptPrintDocument({
                 {receipt.cidade_emissao}, {dataLabel}
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 pt-16">
+              <div className="grid grid-cols-2 gap-10 pt-16">
                 <div className="text-center space-y-1">
                   <p
                     className="text-[30px] leading-none text-neutral-900"
@@ -254,32 +279,25 @@ export default function ReceiptPrintDocument({
                   </p>
                 </div>
                 <div className="text-center space-y-1 pt-[30px] text-[#3f3f46]">
-                  {/* Espaço em branco para assinatura manuscrita do pagador */}
                   <div className="h-[30px]" aria-hidden />
                   <div className="border-t border-[#3f3f46] mx-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">
-                    Pagador
-                  </p>
-                  <p className="text-[9px] font-bold">
-                    {receipt.cliente_nome}
-                  </p>
-                  <p className="text-[9px]">
-                    {receipt.cliente_documento}
-                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-widest">Pagador</p>
+                  <p className="text-[9px] font-bold">{receipt.cliente_nome}</p>
+                  <p className="text-[9px]">{receipt.cliente_documento}</p>
                 </div>
               </div>
             </main>
 
             <footer className="relative z-10 mt-auto border-t border-neutral-200 px-10 py-5 text-[10px] text-neutral-600">
-              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-                <div className="space-y-0.5">
+              <div className="flex flex-row items-end justify-between gap-4">
+                <div className="space-y-0.5 min-w-0">
                   <p className="font-bold text-neutral-800">{f.name}</p>
                   <p>CNPJ {f.cnpj}</p>
                   <p>
                     {f.street} — {f.neighborhood} — {f.city}
                   </p>
                 </div>
-                <div className="sm:text-right space-y-0.5">
+                <div className="text-right space-y-0.5 shrink-0">
                   <p>{f.whatsapp}</p>
                   <p>{f.email}</p>
                   <p>{f.site}</p>
