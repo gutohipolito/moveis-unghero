@@ -440,8 +440,14 @@ export async function buildReceiptPrintPayload(
         0
       );
       const valorTotalProjeto = previsto > 0 ? previsto : somaParcelas;
+      const isParcelado =
+        Number.isInteger(receipt.parcela_numero) &&
+        Number.isInteger(receipt.parcela_total) &&
+        Number(receipt.parcela_numero) >= 1 &&
+        Number(receipt.parcela_total) >= 1;
 
-      if (valorTotalProjeto > 0) {
+      // Só exibe total / parcela / saldo quando o recibo for de pagamento parcelado.
+      if (isParcelado && valorTotalProjeto > 0) {
         const recebidoOutros = project.paymentReceipts
           .filter((row) => row.id !== receipt.id)
           .reduce((acc, row) => acc + toNumber(row.valor), 0);
