@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { MessageCircle, Phone } from "lucide-react";
 import { QUOTE_PRINT_FACTORY } from "@/components/QuotePrintDocument";
 import { formatContractDateLong } from "@/lib/contractTemplates";
 import {
@@ -256,8 +257,8 @@ export default function ReceiptPrintDocument({
             <main className="relative z-10 flex-1 px-10 py-7 space-y-5 text-[13px] leading-relaxed font-medium">
               {financeiro ? (
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 space-y-3">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="min-w-0">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="min-w-0 text-left">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                         Valor total do projeto
                       </p>
@@ -265,7 +266,7 @@ export default function ReceiptPrintDocument({
                         {formatCurrencyBRL(financeiro.valorTotalProjeto)}
                       </p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 text-center">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                         Valor desta parcela
                       </p>
@@ -273,7 +274,7 @@ export default function ReceiptPrintDocument({
                         {formatCurrencyBRL(financeiro.valorParcela)}
                       </p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 text-right">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                         Saldo pendente
                       </p>
@@ -283,27 +284,25 @@ export default function ReceiptPrintDocument({
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-t border-neutral-200/80 pt-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                      Forma de pagamento
+                    <p className="text-sm font-bold text-neutral-800">
+                      <span className="font-semibold text-neutral-500">Forma de pagamento:</span>{" "}
+                      {receipt.metodoLabel}
                     </p>
-                    <div className="inline-flex items-center justify-end gap-2">
-                      {payBrands.length > 0 ? (
-                        <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
-                          {payBrands.map((brand) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              key={brand.src}
-                              src={`${assetBase}${brand.src}`}
-                              alt={brand.alt}
-                              width={brand.width}
-                              height={brand.height}
-                              className="object-contain"
-                            />
-                          ))}
-                        </span>
-                      ) : null}
-                      <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
-                    </div>
+                    {payBrands.length > 0 ? (
+                      <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs shrink-0">
+                        {payBrands.map((brand) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={brand.src}
+                            src={`${assetBase}${brand.src}`}
+                            alt={brand.alt}
+                            width={brand.width}
+                            height={brand.height}
+                            className="object-contain"
+                          />
+                        ))}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               ) : (
@@ -316,28 +315,26 @@ export default function ReceiptPrintDocument({
                       {valorLabel}
                     </p>
                   </div>
-                  <div className="text-right shrink-0 space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                      Forma de pagamento
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <p className="text-sm font-bold text-neutral-800 text-right">
+                      <span className="font-semibold text-neutral-500">Forma de pagamento:</span>{" "}
+                      {receipt.metodoLabel}
                     </p>
-                    <div className="inline-flex items-center justify-end gap-2">
-                      {payBrands.length > 0 ? (
-                        <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
-                          {payBrands.map((brand) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              key={brand.src}
-                              src={`${assetBase}${brand.src}`}
-                              alt={brand.alt}
-                              width={brand.width}
-                              height={brand.height}
-                              className="object-contain"
-                            />
-                          ))}
-                        </span>
-                      ) : null}
-                      <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
-                    </div>
+                    {payBrands.length > 0 ? (
+                      <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
+                        {payBrands.map((brand) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={brand.src}
+                            src={`${assetBase}${brand.src}`}
+                            alt={brand.alt}
+                            width={brand.width}
+                            height={brand.height}
+                            className="object-contain"
+                          />
+                        ))}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -487,7 +484,11 @@ export default function ReceiptPrintDocument({
                   </p>
                 </div>
                 <div className="text-right space-y-0.5 shrink-0">
-                  <p>{f.whatsapp}</p>
+                  <p className="inline-flex items-center justify-end gap-1.5">
+                    <Phone className="h-2.5 w-2.5 shrink-0 text-neutral-500" aria-hidden />
+                    <MessageCircle className="h-2.5 w-2.5 shrink-0 text-neutral-500" aria-hidden />
+                    <span className="tabular-nums leading-none">{f.whatsapp}</span>
+                  </p>
                   <p>{f.email}</p>
                   <p>{f.site}</p>
                 </div>
