@@ -89,7 +89,8 @@ export function receiptPrintStylesCss() {
         display: none !important;
       }
       .receipt-logo-header {
-        filter: none !important;
+        /* logo.png é branco (pensado p/ header escuro); no recibo o fundo é claro */
+        filter: brightness(0) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -190,7 +191,7 @@ export default function ReceiptPrintDocument({
               <img
                 src={logoSrc}
                 alt={f.name}
-                className="receipt-logo-header h-10 w-auto object-contain"
+                className="receipt-logo-header h-10 w-auto object-contain brightness-0"
               />
               <div className="text-right space-y-0.5 shrink-0">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
