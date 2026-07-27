@@ -307,7 +307,7 @@ export async function createLead(formData: {
           client = await tx.client.create({
             data: {
               nome: formData.nome,
-              email: formData.email,
+              email: contact.email,
               telefone: contact.telefone,
               telefone_digits: contact.phoneDigits || null,
               cidade: formData.cidade,

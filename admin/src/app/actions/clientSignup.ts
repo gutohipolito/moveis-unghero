@@ -96,7 +96,7 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     const client = await prisma.client.create({
       data: {
         nome: capitalizeText(nome),
-        email: contact.email || "",
+        email: contact.email,
         telefone: contact.telefone,
         telefone_digits: contact.phoneDigits || null,
         cidade: data.cidade?.trim() ? capitalizeText(data.cidade.trim()) : "",

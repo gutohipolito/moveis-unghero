@@ -10,6 +10,7 @@ import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { maskEmail, maskPhone } from "@/lib/maskSensitive";
+import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
@@ -581,7 +582,7 @@ export default function KanbanBoard({
     setActiveModalTab(project.briefing ? "briefing" : "negociacao");
     setLeadForm({
       nome: project.client.nome,
-      email: project.client.email,
+      email: hasRealClientEmail(project.client.email) ? project.client.email : "",
       telefone: project.client.telefone,
       cidade: project.client.cidade,
       origem: project.client.origem as Origin,
@@ -2106,9 +2107,9 @@ export default function KanbanBoard({
                       : leadForm.telefone || "—"
                   }
                   displayEmail={
-                    valuesAreHidden
+                    valuesAreHidden && hasRealClientEmail(leadForm.email)
                       ? maskEmail(leadForm.email)
-                      : leadForm.email || "—"
+                      : formatClientEmailDisplay(leadForm.email)
                   }
                   whatsappHref={
                     valuesAreHidden

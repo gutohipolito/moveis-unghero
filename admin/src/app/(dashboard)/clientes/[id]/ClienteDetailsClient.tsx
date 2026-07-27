@@ -18,6 +18,7 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { resolveClientDocument } from "@/lib/clientDocument";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
+import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 import { formatPhoneDisplay } from "@/lib/phone";
 import { 
@@ -278,9 +279,22 @@ export default function ClienteDetailsClient({
             <div className="min-w-0">
               <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
               {sensitiveHidden ? (
-                <span className="text-sm font-semibold text-foreground select-none break-all">{maskEmail(client.email)}</span>
+                <span className="text-sm font-semibold text-foreground select-none break-all">
+                  {hasRealClientEmail(client.email)
+                    ? maskEmail(client.email)
+                    : formatClientEmailDisplay(client.email)}
+                </span>
+              ) : hasRealClientEmail(client.email) ? (
+                <a
+                  href={`mailto:${client.email}`}
+                  className="text-sm font-semibold text-primary hover:underline break-all"
+                >
+                  {formatClientEmailDisplay(client.email)}
+                </a>
               ) : (
-                <a href={`mailto:${client.email}`} className="text-sm font-semibold text-primary hover:underline break-all">{client.email}</a>
+                <span className="text-sm font-semibold text-muted-foreground break-all">
+                  {formatClientEmailDisplay(client.email)}
+                </span>
               )}
             </div>
           </div>

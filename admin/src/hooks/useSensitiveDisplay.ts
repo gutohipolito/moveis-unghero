@@ -1,6 +1,7 @@
 "use client";
 
 import { usePrivacy } from "@/context/PrivacyContext";
+import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import { maskDocument, maskEmail, maskPhone, maskSensitiveInText } from "@/lib/maskSensitive";
 
 /**
@@ -18,8 +19,10 @@ export function useSensitiveDisplay() {
     hideInText,
     phone: (value: string | null | undefined) =>
       hide ? maskPhone(value) : (value || "—"),
-    email: (value: string | null | undefined) =>
-      hide ? maskEmail(value) : (value || "—"),
+    email: (value: string | null | undefined) => {
+      if (hide && hasRealClientEmail(value)) return maskEmail(value);
+      return formatClientEmailDisplay(value);
+    },
     document: (value: string | null | undefined) =>
       hide ? maskDocument(value) : (value || "—"),
     /** Não montar link WhatsApp quando oculto (evita vazar dígitos no href). */

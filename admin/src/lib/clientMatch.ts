@@ -3,6 +3,9 @@ import type { Client } from "@prisma/client";
 import { formatPhoneDisplay } from "@/lib/phone";
 import { sanitizePublicClientEmail } from "@/lib/clientConsent";
 
+/** Texto exibido quando o cliente não tem e-mail real. */
+export const MISSING_CLIENT_EMAIL_LABEL = "(e-mail não cadastrado)";
+
 /** Dígitos do telefone BR (DDD + número), sem código do país. */
 export function normalizePhoneDigits(telefone: string): string {
   let digits = (telefone || "").replace(/\D/g, "");
@@ -12,6 +15,7 @@ export function normalizePhoneDigits(telefone: string): string {
   return digits;
 }
 
+/** @deprecated legado — não gerar mais; mantido só para casar cadastros antigos. */
 export function buildClientPlaceholderEmail(phoneDigits: string): string {
   return `${phoneDigits}@unghero.com.br`;
 }
@@ -20,9 +24,26 @@ export function normalizeClientEmail(email?: string | null): string {
   return sanitizePublicClientEmail(email);
 }
 
+/** E-mails inventados no passado (telefone@unghero / nome@avulso). */
 export function isPlaceholderClientEmail(email: string): boolean {
   const lower = normalizeClientEmail(email);
-  return lower.endsWith("@unghero.com.br") || lower.endsWith("@avulso.com");
+  if (!lower) return true;
+  return (
+    lower.endsWith("@unghero.com.br") ||
+    lower.endsWith("@avulso.com") ||
+    lower === MISSING_CLIENT_EMAIL_LABEL.toLowerCase()
+  );
+}
+
+export function hasRealClientEmail(email?: string | null): boolean {
+  const clean = normalizeClientEmail(email);
+  if (!clean || !clean.includes("@")) return false;
+  return !isPlaceholderClientEmail(clean);
+}
+
+/** Exibição amigável no painel (nunca mostra telefone@unghero). */
+export function formatClientEmailDisplay(email?: string | null): string {
+  return hasRealClientEmail(email) ? normalizeClientEmail(email) : MISSING_CLIENT_EMAIL_LABEL;
 }
 
 export type FindExistingClientParams = {
@@ -47,9 +68,10 @@ export async function findExistingClient(
   if (phoneDigits) {
     orConditions.push({ telefone_digits: phoneDigits });
   }
-  if (cleanEmail && !isPlaceholderClientEmail(cleanEmail)) {
+  if (cleanEmail && hasRealClientEmail(cleanEmail)) {
     orConditions.push({ email: cleanEmail });
   }
+  // Cadastros antigos usavam telefone@unghero.com.br como “e-mail”
   if (phoneDigits) {
     orConditions.push({ email: buildClientPlaceholderEmail(phoneDigits) });
   }
@@ -99,12 +121,8 @@ export function resolveClientContactFields(telefone: string, email?: string) {
   const phoneDigits = normalizePhoneDigits(telefone);
   const cleanEmail = normalizeClientEmail(email);
   const displayPhone = formatPhoneDisplay(telefone.trim()) || telefone.trim();
-  const resolvedEmail =
-    cleanEmail && !isPlaceholderClientEmail(cleanEmail)
-      ? cleanEmail
-      : phoneDigits
-        ? buildClientPlaceholderEmail(phoneDigits)
-        : cleanEmail;
+  // Sem e-mail real → string vazia (não inventar telefone@domínio)
+  const resolvedEmail = hasRealClientEmail(cleanEmail) ? cleanEmail : "";
 
   return {
     phoneDigits,

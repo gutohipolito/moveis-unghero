@@ -40,6 +40,7 @@ import { getClientsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
+import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 import { Pagination } from "@/components/ui/pagination";
 import { updateUserPreference } from "@/app/actions/preferences";
@@ -247,7 +248,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       tipo_pessoa: doc.tipo_pessoa,
       documento: doc.documento,
       nome: client.nome,
-      email: client.email,
+      email: hasRealClientEmail(client.email) ? client.email : "",
       telefone: client.telefone,
       cep: client.cep || "",
       endereco: client.endereco || "",
@@ -450,10 +451,22 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     );
   };
 
-  // E-mail: oculto por padrão; quando liberado, vira link mailto
+  // E-mail: oculto por padrão; quando liberado e real, vira link mailto
   const renderEmail = (client: Client) => {
+    const display = formatClientEmailDisplay(client.email);
     if (sensitiveHidden) {
-      return <span onClick={(e) => e.stopPropagation()} className="select-none">{maskEmail(client.email)}</span>;
+      return (
+        <span onClick={(e) => e.stopPropagation()} className="select-none">
+          {hasRealClientEmail(client.email) ? maskEmail(client.email) : display}
+        </span>
+      );
+    }
+    if (!hasRealClientEmail(client.email)) {
+      return (
+        <span onClick={(e) => e.stopPropagation()} className="text-muted-foreground">
+          {display}
+        </span>
+      );
     }
     return (
       <a
@@ -461,7 +474,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         onClick={(e) => e.stopPropagation()}
         className="text-primary hover:underline"
       >
-        {client.email}
+        {display}
       </a>
     );
   };

@@ -111,7 +111,7 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
           ...(data.bairro?.trim() && !client.bairro ? { bairro: capitalizeText(data.bairro) } : {}),
           ...(cleanEmail &&
           !isPlaceholderClientEmail(cleanEmail) &&
-          isPlaceholderClientEmail(client.email)
+          (!client.email?.trim() || isPlaceholderClientEmail(client.email))
             ? { email: cleanEmail }
             : {}),
         },

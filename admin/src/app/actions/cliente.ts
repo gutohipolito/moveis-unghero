@@ -374,7 +374,7 @@ export async function createClientAction(formData: {
     const client = await prisma.client.create({
       data: {
         nome: capitalizeText(formData.nome),
-        email: contact.email || formData.email,
+        email: contact.email,
         telefone: contact.telefone,
         telefone_digits: contact.phoneDigits || null,
         cidade: capitalizeText(formData.cidade),
@@ -456,12 +456,15 @@ export async function updateClientAction(
   }
 
   try {
+    const contact = resolveClientContactFields(formData.telefone, formData.email);
+
     await prisma.client.update({
       where: { id: clientId },
       data: {
         nome: capitalizeText(formData.nome),
-        email: formData.email,
-        telefone: formData.telefone,
+        email: contact.email,
+        telefone: contact.telefone,
+        telefone_digits: contact.phoneDigits || null,
         cidade: capitalizeText(formData.cidade),
         origem: formData.origem,
         status: formData.status,

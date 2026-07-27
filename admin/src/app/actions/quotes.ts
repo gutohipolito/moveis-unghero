@@ -1107,7 +1107,7 @@ export async function createQuickClientAndProject(data: {
         client = await tx.client.create({
           data: {
             nome: capitalizeText(data.nome),
-            email: data.email || `${capitalizeText(data.nome).toLowerCase().replace(/\s+/g, "")}@avulso.com`,
+            email: contact.email,
             telefone: contact.telefone,
             telefone_digits: contact.phoneDigits || null,
             cidade: capitalizeText(data.cidade),
