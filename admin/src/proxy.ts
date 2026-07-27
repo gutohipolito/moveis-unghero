@@ -29,6 +29,7 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/chamados",
   "/melhorias",
+  "/notas-da-versao",
   "/produtos",
   "/sem-acesso",
 ];
@@ -222,6 +223,7 @@ export const config = {
     "/settings/:path*",
     "/chamados/:path*",
     "/melhorias/:path*",
+    "/notas-da-versao/:path*",
     "/produtos/:path*",
     "/sem-acesso",
     "/cliente/login",
