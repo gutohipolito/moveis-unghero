@@ -201,6 +201,11 @@ export default function ReceiptPrintDocument({
           receipt.parcela_total
         ).padStart(2, "0")}`
       : null;
+  const quitacaoLabel =
+    receipt.quitacao === "TOTAL"
+      ? "quitação total da obrigação referida"
+      : "quitação parcial da obrigação referida";
+
   const ref = receipt.referencia;
   const hasStructuredRef = Boolean(ref && (ref.titulos.length > 0 || ref.natureza));
   const observacoes = capitalizePaymentCondition(receipt.observacoes || "");
@@ -366,7 +371,12 @@ export default function ReceiptPrintDocument({
                 , pagos via <strong>{receipt.metodoLabel}</strong> por{" "}
                 <strong>{receipt.cliente_nome}</strong>
                 {receipt.cliente_documento ? (
-                  <>, {receipt.cliente_documento}</>
+                  <>
+                    , {receipt.cliente_documento}
+                    {receipt.cliente_endereco
+                      ? `, com endereço em ${receipt.cliente_endereco}`
+                      : ""}
+                  </>
                 ) : null}
                 {parcelaRefLabel ? (
                   <>
@@ -381,7 +391,10 @@ export default function ReceiptPrintDocument({
                     <strong className="whitespace-pre-line">{receipt.referente}</strong>
                   </>
                 )}
-                .
+                , correspondente à <strong>{quitacaoLabel}</strong>
+                {hasStructuredRef ? ", conforme ambientes abaixo" : null}.{" "}
+                <strong>{f.name}</strong>, inscrita no CNPJ sob o nº <strong>{f.cnpj}</strong>, com
+                sede na {f.street}, {f.neighborhood}, {f.city}.
               </p>
 
               {hasStructuredRef && ref ? (
