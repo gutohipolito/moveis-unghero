@@ -47,6 +47,8 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import PrivacyToggle from "@/components/PrivacyToggle";
+import SensitiveToggle from "@/components/SensitiveToggle";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -901,9 +903,13 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               <span className="text-xs font-bold text-primary tracking-widest uppercase">
                 Cliente & Projeto
               </span>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mt-1 break-words">
-                {project.client.nome}
-              </h2>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground break-words">
+                  {project.client.nome}
+                </h2>
+                <PrivacyToggle />
+                <SensitiveToggle />
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">

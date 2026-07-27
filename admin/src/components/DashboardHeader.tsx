@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { logout } from "@/app/actions/login";
 import HeaderQuickActions from "@/components/HeaderQuickActions";
 import NotificationChannelSettings from "@/components/NotificationChannelSettings";
+import PrivacyToggle from "@/components/PrivacyToggle";
+import SensitiveToggle from "@/components/SensitiveToggle";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import {
   BellRing,
@@ -143,6 +145,11 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5" title="Privacidade da tela">
+          <PrivacyToggle />
+          <SensitiveToggle />
+        </div>
+
         <HeaderQuickActions
           companyId={companyId}
           initialNotifications={initialNotifications}

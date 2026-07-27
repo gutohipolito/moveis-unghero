@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { 
   Search, 
@@ -19,14 +19,14 @@ import {
   ArrowDownZA,
   Bookmark,
   CheckCircle2,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
+import PrivacyToggle from "@/components/PrivacyToggle";
+import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePermissions } from "@/context/PermissionsContext";
 import { 
   deleteQuote,
@@ -50,8 +50,6 @@ import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
-/** Tempo em que o valor final fica visível após clicar no olho; depois volta a ocultar. */
-const QUOTE_VALUE_REVEAL_MS = 30_000;
 
 interface QuoteItem {
   id: string;
@@ -120,9 +118,6 @@ export default function QuotesList({
   const [revisionQuote, setRevisionQuote] = useState<Quote | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
-  // Valores sempre começam ocultos nesta tela (não usa preferência global salva).
-  const [valuesHidden, setValuesHidden] = useState(true);
-  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Estados para criação direta de Orçamento
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -156,40 +151,6 @@ export default function QuotesList({
     sync: syncQuotes,
     enabled: !isCreateOpen && !isGeneratingProject,
   });
-
-  useEffect(() => {
-    return () => {
-      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
-    };
-  }, []);
-
-  const clearRevealTimeout = () => {
-    if (revealTimeoutRef.current) {
-      clearTimeout(revealTimeoutRef.current);
-      revealTimeoutRef.current = null;
-    }
-  };
-
-  const hideQuoteValues = () => {
-    clearRevealTimeout();
-    setValuesHidden(true);
-  };
-
-  const valuesAreHidden = isReadOnly || valuesHidden;
-
-  const toggleQuoteValuesVisibility = () => {
-    if (isReadOnly) return;
-    if (valuesHidden) {
-      setValuesHidden(false);
-      clearRevealTimeout();
-      revealTimeoutRef.current = setTimeout(() => {
-        setValuesHidden(true);
-        revealTimeoutRef.current = null;
-      }, QUOTE_VALUE_REVEAL_MS);
-      return;
-    }
-    hideQuoteValues();
-  };
 
   const handleOpenCreateModal = async () => {
     setIsCreateOpen(true);
@@ -330,13 +291,6 @@ export default function QuotesList({
     );
     if (!summary.hasPending) return;
     setApprovalQuote(quote);
-  };
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    }).format(val);
   };
 
   const formatDate = (dateInput: Date | string) => formatDateBR(dateInput);
@@ -487,31 +441,7 @@ export default function QuotesList({
           </div>
         }
       >
-        {isReadOnly ? (
-          <span
-            className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-100 text-slate-400 border border-border shadow-xs cursor-not-allowed"
-            title="Conta somente leitura: valores sempre ocultos"
-          >
-            <EyeOff className="h-4.5 w-4.5" />
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={toggleQuoteValuesVisibility}
-            className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
-            title={
-              valuesHidden
-                ? "Mostrar valores finais (oculta de novo em 30s)"
-                : "Ocultar valores finais"
-            }
-          >
-            {valuesAreHidden ? (
-              <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
-            ) : (
-              <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
-            )}
-          </button>
-        )}
+        <PrivacyToggle />
       </PageHeader>
 
       {/* Filtros e Busca */}
@@ -743,15 +673,9 @@ export default function QuotesList({
                             <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded-full text-xs font-bold">
                               {statusLabel}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {valuesAreHidden ? (
-                                <>R$ ••••• aprov. · R$ ••••• pend.</>
-                              ) : (
-                                <>
-                                  {formatCurrency(summary.approvedTotal)} aprov. ·{" "}
-                                  {formatCurrency(summary.pendingTotal)} pend.
-                                </>
-                              )}
+                            <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1 flex-wrap">
+                              <PrivacyMoney value={summary.approvedTotal} /> aprov. ·{" "}
+                              <PrivacyMoney value={summary.pendingTotal} /> pend.
                             </span>
                           </span>
                         ) : expired ? (
@@ -767,15 +691,7 @@ export default function QuotesList({
                         )}
                       </td>
                       <td className="py-4 px-4 text-sm text-slate-800 font-bold">
-                        <span
-                          className={`inline-block tabular-nums transition-[filter] duration-300 ${
-                            valuesAreHidden
-                              ? "blur-[5px] select-none pointer-events-none"
-                              : "blur-0"
-                          }`}
-                        >
-                          {formatCurrency(q.valor_final)}
-                        </span>
+                        <PrivacyMoney value={q.valor_final} className="inline-block" />
                       </td>
                       <td className="py-4 px-4 text-sm text-right">
                         {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}

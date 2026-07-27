@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import SensitiveToggle from "@/components/SensitiveToggle";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { getClientDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { resolveClientDocument } from "@/lib/clientDocument";
 import { usePrivacy } from "@/context/PrivacyContext";
+import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
 import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
@@ -161,12 +163,13 @@ export default function ClienteDetailsClient({
 
   const docInfo = resolveClientDocument(client);
   const { sensitiveHidden } = usePrivacy();
+  const sensitive = useSensitiveDisplay();
 
-  // Link formatado para WhatsApp com saudação
+  // Link formatado para WhatsApp com saudação (sem vazar telefone quando oculto)
   const greeting = `Olá ${getFirstName(client.nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
-  const whatsappUrl =
-    buildWhatsAppUrl(client.telefone, greeting) ||
-    `https://wa.me/?text=${encodeURIComponent(greeting)}`;
+  const whatsappUrl = sensitive.hide
+    ? null
+    : buildWhatsAppUrl(client.telefone, greeting);
 
   // Adicionar Anotação na Timeline
   const handleAddNote = async (e: React.FormEvent) => {
@@ -223,6 +226,7 @@ export default function ClienteDetailsClient({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
+              <PrivacyToggle />
               <SensitiveToggle />
               <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
                 {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
@@ -245,14 +249,23 @@ export default function ClienteDetailsClient({
               {STATUS_LABELS[client.status] || client.status}
             </span>
 
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
-            >
-              <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
-            </a>
+            {whatsappUrl ? (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
+              </a>
+            ) : (
+              <span
+                className="font-bold text-xs bg-slate-200 text-slate-500 rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 cursor-not-allowed"
+                title="Revele os dados sensíveis (olho) para abrir o WhatsApp"
+              >
+                <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
+              </span>
+            )}
           </div>
         </div>
 
@@ -266,8 +279,10 @@ export default function ClienteDetailsClient({
               <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
               {sensitiveHidden ? (
                 <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
-              ) : (
+              ) : whatsappUrl ? (
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
+              ) : (
+                <span className="text-sm font-semibold text-foreground">{formatPhoneDisplay(client.telefone) || "—"}</span>
               )}
             </div>
           </div>

@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
-import { maskSensitiveInText } from "@/lib/maskSensitive";
 import {
   getDaysSinceContact,
   getFollowUpLevel,
@@ -112,8 +111,6 @@ interface KanbanNegotiationPanelProps {
   followUpSla: FollowUpSlaConfig;
   loading: boolean;
   isReadOnly: boolean;
-  /** Olho local do Kanban: oculta totais como no VIEWER. */
-  valuesHidden?: boolean;
   displayPhone: string;
   displayEmail: string;
   whatsappHref: string | null;
@@ -151,7 +148,6 @@ export default function KanbanNegotiationPanel({
   followUpSla,
   loading,
   isReadOnly,
-  valuesHidden = true,
   displayPhone,
   displayEmail,
   whatsappHref,
@@ -159,7 +155,6 @@ export default function KanbanNegotiationPanel({
 }: KanbanNegotiationPanelProps) {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const sensitive = useSensitiveDisplay();
-  const moneyHidden = isReadOnly || valuesHidden;
 
   const daysSilent = getDaysSinceContact(project);
   const followLevel = getFollowUpLevel(project, followUpSla);
@@ -296,7 +291,6 @@ export default function KanbanNegotiationPanel({
             <PrivacyMoney
               value={Number(leadForm.valor_previsto) || project.valor_previsto || 0}
               className="text-sm font-black text-slate-900"
-              hidden={moneyHidden}
             />
           </div>
           <div className="rounded-2xl border border-black/5 bg-white/80 backdrop-blur-sm px-3.5 py-3">
@@ -525,9 +519,7 @@ export default function KanbanNegotiationPanel({
                       className="border-l-2 border-amber-400/50 pl-3 py-0.5"
                     >
                       <p className="text-xs font-medium text-slate-800 leading-snug">
-                        {moneyHidden || sensitive.hideInText
-                          ? maskSensitiveInText(item.acao)
-                          : item.acao}
+                        {sensitive.text(item.acao)}
                       </p>
                       <p className="text-[10px] text-slate-400 font-medium mt-0.5">
                         {new Date(item.data).toLocaleString("pt-BR")}

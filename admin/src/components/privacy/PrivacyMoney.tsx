@@ -32,8 +32,8 @@ export function PrivacyMoney({
   /** Se informado, sobrescreve o olho global (ex.: olho local do Kanban). */
   hidden?: boolean;
 }) {
-  const { privacyMode } = usePrivacy();
-  const isHidden = hidden ?? privacyMode;
+  const { privacyMode, privacyLocked } = usePrivacy();
+  const isHidden = privacyLocked || (hidden ?? privacyMode);
   return (
     <Tag
       className={cn("privacy-value tabular-nums", className)}

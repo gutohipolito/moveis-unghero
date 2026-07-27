@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import {
   createContract,
   createContractTemplate,
@@ -434,7 +435,9 @@ export default function ContratosClient({
             </Button>
           )
         }
-      />
+      >
+        <PrivacyToggle />
+      </PageHeader>
 
       <div className="flex gap-2 border-b border-border">
         <button

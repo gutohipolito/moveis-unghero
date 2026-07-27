@@ -22,6 +22,7 @@ import {
 } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
@@ -757,6 +758,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   ]}
                 />
               </InfoTooltip>
+              <PrivacyToggle />
               <button
                 onClick={() => { if (!privacyLocked && !isReadOnly) setPrivacyMode(!privacyMode); }}
                 disabled={privacyLocked || isReadOnly}

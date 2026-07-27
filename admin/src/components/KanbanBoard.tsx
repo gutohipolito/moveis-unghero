@@ -7,10 +7,11 @@ import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import PrivacyToggle from "@/components/PrivacyToggle";
+import SensitiveToggle from "@/components/SensitiveToggle";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
-import { maskEmail, maskPhone } from "@/lib/maskSensitive";
-import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
+import { hasRealClientEmail } from "@/lib/clientMatch";
 import {
   COMMERCIAL_LOSS_STATUSES,
 } from "@/lib/notifications";
@@ -45,7 +46,6 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SegmentControl } from "@/components/ui/segment-control";
 import { Input } from "@/components/ui/input";
-import { maskPhoneLastDigits } from "@/lib/phone";
 import {
   getCommercialPendingQuotes,
 } from "@/app/actions/quotes";
@@ -69,7 +69,6 @@ import {
   Send,
   ArrowRight,
   Eye,
-  EyeOff,
   ChevronsDownUp,
   ChevronsUpDown,
   UserX,
@@ -194,9 +193,6 @@ interface KanbanBoardProps {
     obs_entrega?: string | null;
   }>;
 }
-
-/** Tempo em que totais e telefone ficam visíveis após clicar no olho. */
-const CRM_SENSITIVE_REVEAL_MS = 30_000;
 
 const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
   { id: "LEAD", title: "Prospecção" },
@@ -378,7 +374,6 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
   const { isReadOnly } = usePermissions();
   const sensitive = useSensitiveDisplay();
-  const privacyHidden = isReadOnly || sensitive.hide;
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -413,10 +408,6 @@ export default function KanbanBoard({
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [cardInnerTab, setCardInnerTab] = useState<Record<string, "geral" | "aberturas">>({});
   const [copiedScript, setCopiedScript] = useState(false);
-  // Dados sensíveis sempre começam ocultos nesta tela (não usa preferência global).
-  const [valuesHidden, setValuesHidden] = useState(true);
-  const valuesAreHidden = isReadOnly || valuesHidden;
-  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [followUpSla, setFollowUpSla] = useState<FollowUpSlaConfig>(() =>
     resolveFollowUpSla(initialFollowUpSla)
   );
@@ -451,12 +442,6 @@ export default function KanbanBoard({
   }, [projects, boardView]);
 
   useEffect(() => {
-    return () => {
-      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
     const local = loadFollowUpSlaLocal();
     // Preferência salva no servidor tem prioridade; local cobre 1ª visita sem prop.
     if (initialFollowUpSla) {
@@ -470,32 +455,6 @@ export default function KanbanBoard({
     setFollowUpSla(next);
     saveFollowUpSlaLocal(next);
     void updateUserPreference(CRM_FOLLOW_UP_SLA_PREF_KEY, next);
-  };
-
-  const clearRevealTimeout = () => {
-    if (revealTimeoutRef.current) {
-      clearTimeout(revealTimeoutRef.current);
-      revealTimeoutRef.current = null;
-    }
-  };
-
-  const hideSensitiveValues = () => {
-    clearRevealTimeout();
-    setValuesHidden(true);
-  };
-
-  const toggleSensitiveVisibility = () => {
-    if (isReadOnly) return;
-    if (valuesHidden) {
-      setValuesHidden(false);
-      clearRevealTimeout();
-      revealTimeoutRef.current = setTimeout(() => {
-        setValuesHidden(true);
-        revealTimeoutRef.current = null;
-      }, CRM_SENSITIVE_REVEAL_MS);
-      return;
-    }
-    hideSensitiveValues();
   };
 
   const dialog = useActionDialog();
@@ -824,14 +783,6 @@ export default function KanbanBoard({
 
 
 
-  // Helper para formatar moeda
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    }).format(val);
-  };
-
   const toggleCardCollapse = (id: string) => {
     setExpandedCards((prev) => {
       const next = new Set(prev);
@@ -1081,9 +1032,7 @@ export default function KanbanBoard({
                 <p className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
                   <Phone className="h-3 w-3 opacity-80 text-primary shrink-0" />
                   <span className="tabular-nums whitespace-nowrap truncate">
-                    {valuesAreHidden
-                      ? maskPhone(project.client.telefone)
-                      : project.client.telefone}
+                    {sensitive.phone(project.client.telefone)}
                   </span>
                 </p>
               )}
@@ -1512,25 +1461,8 @@ export default function KanbanBoard({
               { value: "perdas", label: "Perdas", badge: lostProjects.length },
             ]}
           />
-          <button
-            type="button"
-            onClick={toggleSensitiveVisibility}
-            className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
-            title={
-              isReadOnly
-                ? "Conta somente leitura: valores e telefone sempre ocultos"
-                : valuesHidden
-                ? "Mostrar totais e telefone (oculta de novo em 30s)"
-                : "Ocultar totais e telefone"
-            }
-            disabled={isReadOnly}
-          >
-            {valuesHidden ? (
-              <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
-            ) : (
-              <Eye className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
-            )}
-          </button>
+          <PrivacyToggle />
+          <SensitiveToggle />
           <button
             type="button"
             onClick={toggleAllCardsCollapse}
@@ -1642,7 +1574,7 @@ export default function KanbanBoard({
                   </span>
                 </div>
                 {colSum > 0 && (
-                  <PrivacyMoney value={colSum} className="text-xs font-bold text-foreground shrink-0 ml-2" hidden={valuesAreHidden} />
+                  <PrivacyMoney value={colSum} className="text-xs font-bold text-foreground shrink-0 ml-2" />
                 )}
               </div>
 
@@ -2100,22 +2032,9 @@ export default function KanbanBoard({
                   followUpSla={followUpSla}
                   loading={loading}
                   isReadOnly={isReadOnly}
-                  valuesHidden={valuesAreHidden}
-                  displayPhone={
-                    valuesAreHidden
-                      ? maskPhone(leadForm.telefone)
-                      : leadForm.telefone || "—"
-                  }
-                  displayEmail={
-                    valuesAreHidden && hasRealClientEmail(leadForm.email)
-                      ? maskEmail(leadForm.email)
-                      : formatClientEmailDisplay(leadForm.email)
-                  }
-                  whatsappHref={
-                    valuesAreHidden
-                      ? null
-                      : sensitive.whatsappHref(currentProject.client.telefone)
-                  }
+                  displayPhone={sensitive.phone(leadForm.telefone)}
+                  displayEmail={sensitive.email(leadForm.email)}
+                  whatsappHref={sensitive.whatsappHref(currentProject.client.telefone)}
                   reserveCloseSpace={!hasBriefing}
                 />
               )}

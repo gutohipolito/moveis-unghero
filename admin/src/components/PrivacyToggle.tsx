@@ -23,7 +23,7 @@ export default function PrivacyToggle() {
       onClick={togglePrivacy}
       type="button"
       className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group"
-      title={privacyMode ? "Mostrar valores financeiros" : "Ocultar valores financeiros (Modo Apresentação)"}
+      title={privacyMode ? "Mostrar valores financeiros (R$)" : "Ocultar valores financeiros (R$)"}
     >
       {privacyMode ? (
         <EyeOff className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />

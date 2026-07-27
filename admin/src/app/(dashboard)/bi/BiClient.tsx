@@ -7,7 +7,6 @@ import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { toISODateBR } from "@/lib/brazilDate";
 import { Pagination } from "@/components/ui/pagination";
-import { usePrivacy } from "@/context/PrivacyContext";
 import {
   TrendingUp,
   DollarSign,
@@ -166,34 +165,6 @@ export default function BiClient({
   const [projects, setProjects] = useState(initialProjects);
   const [quotes, setQuotes] = useState(initialQuotes);
   const [environments, setEnvironments] = useState(initialEnvironments);
-
-  // Privacidade global integrada do projeto
-  const { privacyMode, togglePrivacy } = usePrivacy();
-
-  // 1. Forçar o modo privado a estar ATIVO por padrão ao entrar no BI (Relatórios)
-  useEffect(() => {
-    if (!privacyMode) {
-      togglePrivacy();
-    }
-  }, []); // Executado apenas na montagem
-
-  // 2. Timer de auto-ocultação: se o usuário clicar para mostrar os valores (privacyMode virar false),
-  // aguardamos 30 segundos e depois ativamos a privacidade de novo automaticamente.
-  useEffect(() => {
-    let timerId: NodeJS.Timeout;
-
-    if (!privacyMode) {
-      timerId = setTimeout(() => {
-        togglePrivacy();
-      }, 30_000); // 30 segundos
-    }
-
-    return () => {
-      if (timerId) {
-        clearTimeout(timerId);
-      }
-    };
-  }, [privacyMode, togglePrivacy]);
 
   // Estados de navegação e busca
   const [activeTab, setActiveTab] = useState<"geral" | "funil_orcamentos" | "producao" | "parceiros" | "exportar">("geral");
