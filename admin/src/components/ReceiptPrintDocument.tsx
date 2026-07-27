@@ -34,6 +34,16 @@ export type ReceiptPrintData = {
   emitido_por_nome?: string | null;
   observacoes?: string | null;
   referencia?: ReceiptPrintReferencia | null;
+  financeiro?: {
+    valorTotalProjeto: number;
+    valorParcela: number;
+    saldoPendente: number;
+  } | null;
+  validacao?: {
+    url: string;
+    qrDataUrl: string;
+    codigo: string;
+  } | null;
 };
 
 /** Capitaliza a primeira letra de cada linha (condição de pagamento). */
@@ -117,7 +127,8 @@ export function receiptPrintStylesCss() {
       .receipt-header-dark,
       .receipt-condition-card,
       .receipt-ref-card,
-      .receipt-pay-badge {
+      .receipt-pay-badge,
+      .receipt-validate-block {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -204,6 +215,8 @@ export default function ReceiptPrintDocument({
   );
   const observacoes = capitalizePaymentCondition(receipt.observacoes || "");
   const payBrands = receiptPaymentBrands(receipt.metodo);
+  const financeiro = receipt.financeiro;
+  const validacao = receipt.validacao;
 
   return (
     <>
@@ -247,39 +260,93 @@ export default function ReceiptPrintDocument({
             </header>
 
             <main className="relative z-10 flex-1 px-10 py-7 space-y-5 text-[13px] leading-relaxed font-medium">
-              <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                    Valor recebido
-                  </p>
-                  <p className="text-2xl font-black tracking-tight text-neutral-950">
-                    {valorLabel}
-                  </p>
-                </div>
-                <div className="text-right shrink-0 space-y-1.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                    Forma de pagamento
-                  </p>
-                  <div className="inline-flex items-center justify-end gap-2">
-                    {payBrands.length > 0 ? (
-                      <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
-                        {payBrands.map((brand) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={brand.src}
-                            src={`${assetBase}${brand.src}`}
-                            alt={brand.alt}
-                            width={brand.width}
-                            height={brand.height}
-                            className="object-contain"
-                          />
-                        ))}
-                      </span>
-                    ) : null}
-                    <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
+              {financeiro ? (
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                        Valor total do projeto
+                      </p>
+                      <p className="text-base font-black tracking-tight text-neutral-950 mt-0.5 tabular-nums">
+                        {formatCurrencyBRL(financeiro.valorTotalProjeto)}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                        Valor desta parcela
+                      </p>
+                      <p className="text-base font-black tracking-tight text-neutral-950 mt-0.5 tabular-nums">
+                        {formatCurrencyBRL(financeiro.valorParcela)}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                        Saldo pendente
+                      </p>
+                      <p className="text-base font-black tracking-tight text-neutral-950 mt-0.5 tabular-nums">
+                        {formatCurrencyBRL(financeiro.saldoPendente)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t border-neutral-200/80 pt-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                      Forma de pagamento
+                    </p>
+                    <div className="inline-flex items-center justify-end gap-2">
+                      {payBrands.length > 0 ? (
+                        <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
+                          {payBrands.map((brand) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={brand.src}
+                              src={`${assetBase}${brand.src}`}
+                              alt={brand.alt}
+                              width={brand.width}
+                              height={brand.height}
+                              className="object-contain"
+                            />
+                          ))}
+                        </span>
+                      ) : null}
+                      <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                      Valor recebido
+                    </p>
+                    <p className="text-2xl font-black tracking-tight text-neutral-950">
+                      {valorLabel}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0 space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                      Forma de pagamento
+                    </p>
+                    <div className="inline-flex items-center justify-end gap-2">
+                      {payBrands.length > 0 ? (
+                        <span className="receipt-pay-badge inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow-xs">
+                          {payBrands.map((brand) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={brand.src}
+                              src={`${assetBase}${brand.src}`}
+                              alt={brand.alt}
+                              width={brand.width}
+                              height={brand.height}
+                              className="object-contain"
+                            />
+                          ))}
+                        </span>
+                      ) : null}
+                      <p className="text-sm font-bold text-neutral-800">{receipt.metodoLabel}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <p className="text-justify leading-[1.75] text-[13px] text-neutral-800">
                 <strong>{f.name}</strong>, inscrita no CNPJ sob o nº <strong>{f.cnpj}</strong>, com
@@ -369,9 +436,9 @@ export default function ReceiptPrintDocument({
               ) : null}
 
               <p className="pt-1 text-[11px] text-neutral-500 leading-relaxed">
-                Este recibo comprova o recebimento do valor acima pela pessoa jurídica emissora. Não
-                substitui nota fiscal quando a legislação exigir a emissão do documento fiscal
-                correspondente.
+                Este recibo comprova o recebimento do valor descrito acima, referente à parcela
+                indicada. Não substitui a Nota Fiscal de Serviço ou de Venda, quando exigida pela
+                legislação vigente.
               </p>
 
               <p className="pt-6 text-center text-[13px] font-bold uppercase tracking-wide">
@@ -411,6 +478,32 @@ export default function ReceiptPrintDocument({
                   </div>
                 </div>
               </div>
+
+              {validacao ? (
+                <div className="flex justify-end pt-10">
+                  <div className="receipt-validate-block flex items-center gap-3.5 rounded-xl border border-neutral-200 bg-neutral-50/90 px-3.5 py-3 max-w-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={validacao.qrDataUrl}
+                      alt={`QR Code para validar ${validacao.codigo}`}
+                      width={88}
+                      height={88}
+                      className="h-[88px] w-[88px] shrink-0 rounded-md bg-white"
+                    />
+                    <div className="min-w-0 text-left space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-700">
+                        Validar autenticidade
+                      </p>
+                      <p className="text-[11px] leading-snug text-neutral-600">
+                        Escaneie para verificar este recibo.
+                      </p>
+                      <p className="text-[11px] font-bold text-neutral-900 tabular-nums">
+                        Código: {validacao.codigo}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </main>
 
             <footer className="relative z-10 mt-auto border-t border-neutral-200 px-10 py-5 text-[10px] text-neutral-600">

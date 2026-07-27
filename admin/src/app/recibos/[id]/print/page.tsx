@@ -37,7 +37,9 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
 
   const shareCode = await ensureReceiptShareCode(receipt.id);
   const shareUrl = resolveReceiptPublicUrl(shareCode);
-  const printData = await buildReceiptPrintPayload(receipt);
+  const printData = await buildReceiptPrintPayload(receipt, {
+    validateUrl: shareUrl,
+  });
 
   return (
     <ReceiptPrintDocument

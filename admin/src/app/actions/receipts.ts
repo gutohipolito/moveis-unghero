@@ -17,6 +17,7 @@ import {
   parseReferenteTitulos,
   suggestReferenteFromInstallment,
 } from "@/lib/receiptShare";
+import QRCode from "qrcode";
 
 export type PaymentReceiptDTO = {
   id: string;
@@ -365,32 +366,51 @@ export type ReceiptPrintPayload = {
     orcamentoCodigo: string | null;
     natureza: string | null;
   };
+  /** Resumo financeiro do projeto (quando houver vínculo). */
+  financeiro?: {
+    valorTotalProjeto: number;
+    valorParcela: number;
+    saldoPendente: number;
+  } | null;
+  /** Link público + QR para validação de autenticidade. */
+  validacao?: {
+    url: string;
+    qrDataUrl: string;
+    codigo: string;
+  } | null;
 };
 
-export async function buildReceiptPrintPayload(receipt: {
-  id: string;
-  numero: number;
-  valor: number | { toString(): string };
-  parcela_numero: number | null;
-  parcela_total: number | null;
-  referente: string;
-  metodo_pagamento: PaymentMethod;
-  data_recebimento: Date;
-  cidade_emissao: string;
-  quitacao: ReceiptQuitacao;
-  cliente_nome: string;
-  cliente_documento: string;
-  cliente_endereco: string | null;
-  emitido_por_nome: string | null;
-  observacoes: string | null;
-  project_id: string | null;
-}): Promise<ReceiptPrintPayload> {
+export async function buildReceiptPrintPayload(
+  receipt: {
+    id: string;
+    numero: number;
+    valor: number | { toString(): string };
+    parcela_numero: number | null;
+    parcela_total: number | null;
+    referente: string;
+    metodo_pagamento: PaymentMethod;
+    data_recebimento: Date;
+    cidade_emissao: string;
+    quitacao: ReceiptQuitacao;
+    cliente_nome: string;
+    cliente_documento: string;
+    cliente_endereco: string | null;
+    emitido_por_nome: string | null;
+    observacoes: string | null;
+    project_id: string | null;
+  },
+  opts?: {
+    validateUrl?: string | null;
+  }
+): Promise<ReceiptPrintPayload> {
   const valor = toNumber(receipt.valor as Prisma.Decimal | number);
+  const numeroLabel = formatReceiptCodigo(receipt.numero, receipt.data_recebimento);
 
   let titulos: string[] = [];
   let residencia: string | null = receipt.cliente_nome || null;
   let orcamentoCodigo: string | null = null;
   let natureza: string | null = null;
+  let financeiro: ReceiptPrintPayload["financeiro"] = null;
 
   if (receipt.project_id) {
     const ctx = await loadReceiptReferenciaContext(receipt.project_id, {
@@ -402,6 +422,41 @@ export async function buildReceiptPrintPayload(receipt: {
       residencia = ctx.residencia || residencia;
       orcamentoCodigo = ctx.orcamentoCodigo;
       natureza = ctx.natureza;
+    }
+
+    const project = await prisma.project.findFirst({
+      where: { id: receipt.project_id },
+      select: {
+        valor_previsto: true,
+        installments: { select: { valor: true } },
+        paymentReceipts: { select: { id: true, valor: true } },
+      },
+    });
+
+    if (project) {
+      const previsto = toNumber(project.valor_previsto);
+      const somaParcelas = project.installments.reduce(
+        (acc, row) => acc + toNumber(row.valor),
+        0
+      );
+      const valorTotalProjeto = previsto > 0 ? previsto : somaParcelas;
+
+      if (valorTotalProjeto > 0) {
+        const recebidoOutros = project.paymentReceipts
+          .filter((row) => row.id !== receipt.id)
+          .reduce((acc, row) => acc + toNumber(row.valor), 0);
+        const totalRecebido = recebidoOutros + valor;
+        const saldoPendente = Math.max(
+          0,
+          Math.round((valorTotalProjeto - totalRecebido) * 100) / 100
+        );
+
+        financeiro = {
+          valorTotalProjeto,
+          valorParcela: valor,
+          saldoPendente,
+        };
+      }
     }
   }
 
@@ -420,10 +475,30 @@ export async function buildReceiptPrintPayload(receipt: {
     if (match?.[1]) orcamentoCodigo = match[1].trim();
   }
 
+  let validacao: ReceiptPrintPayload["validacao"] = null;
+  const validateUrl = opts?.validateUrl?.trim() || null;
+  if (validateUrl) {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(validateUrl, {
+        width: 168,
+        margin: 1,
+        errorCorrectionLevel: "M",
+        color: { dark: "#171717", light: "#ffffff" },
+      });
+      validacao = {
+        url: validateUrl,
+        qrDataUrl,
+        codigo: numeroLabel,
+      };
+    } catch (error) {
+      console.warn("Falha ao gerar QR do recibo:", error);
+    }
+  }
+
   return {
     id: receipt.id,
     numero: receipt.numero,
-    numeroLabel: formatReceiptCodigo(receipt.numero, receipt.data_recebimento),
+    numeroLabel,
     valor,
     parcela_numero: receipt.parcela_numero,
     parcela_total: receipt.parcela_total,
@@ -444,6 +519,8 @@ export async function buildReceiptPrintPayload(receipt: {
       orcamentoCodigo,
       natureza,
     },
+    financeiro,
+    validacao,
   };
 }
 

@@ -4,6 +4,7 @@ import ReceiptPrintDocument from "@/components/ReceiptPrintDocument";
 import ReceiptPublicPrintBar from "@/components/ReceiptPublicPrintBar";
 import { buildReceiptPrintPayload } from "@/app/actions/receipts";
 import { prisma } from "@/lib/prisma";
+import { buildReceiptShortUrl } from "@/lib/receiptShare";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const metadata: Metadata = publicPageMetadata({
@@ -25,7 +26,9 @@ export default async function PublicReceiptPage({ params }: PublicReceiptPagePro
   });
   if (!receipt) notFound();
 
-  const printData = await buildReceiptPrintPayload(receipt);
+  const printData = await buildReceiptPrintPayload(receipt, {
+    validateUrl: buildReceiptShortUrl(normalized),
+  });
 
   return (
     <ReceiptPrintDocument
