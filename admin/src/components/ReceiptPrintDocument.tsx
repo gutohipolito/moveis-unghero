@@ -260,31 +260,37 @@ export default function ReceiptPrintDocument({
                 {receipt.cidade_emissao}, {dataLabel}
               </p>
 
-              <div className="grid grid-cols-2 gap-10 pt-16">
-                <div className="text-center space-y-1">
-                  <p
-                    className="text-[30px] leading-none text-neutral-900"
-                    style={{ fontFamily: '"CladenirSignature", cursive' }}
-                  >
-                    Cladenir Unghero
-                  </p>
+              <div className="grid grid-cols-2 gap-10 pt-16 items-end">
+                <div className="text-center flex flex-col">
+                  <div className="h-[44px] flex items-end justify-center pb-1">
+                    <p
+                      className="text-[30px] leading-none text-neutral-900"
+                      style={{ fontFamily: '"CladenirSignature", cursive' }}
+                    >
+                      Cladenir Unghero
+                    </p>
+                  </div>
                   <div className="border-t border-neutral-800 mx-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">
-                    Cladenir Unghero
-                  </p>
-                  <p className="text-[9px] text-neutral-500 uppercase tracking-wide">
-                    Responsável Comercial
-                  </p>
-                  <p className="text-[9px] text-neutral-400">
-                    {f.name} — CNPJ {f.cnpj}
-                  </p>
+                  <div className="space-y-1 pt-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest">
+                      Cladenir Unghero
+                    </p>
+                    <p className="text-[9px] text-neutral-500 uppercase tracking-wide">
+                      Responsável Comercial
+                    </p>
+                    <p className="text-[9px] text-neutral-400">
+                      {f.name} — CNPJ {f.cnpj}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-center space-y-1 pt-[30px] text-[#3f3f46]">
-                  <div className="h-[30px]" aria-hidden />
+                <div className="text-center flex flex-col text-[#3f3f46]">
+                  <div className="h-[44px]" aria-hidden />
                   <div className="border-t border-[#3f3f46] mx-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Pagador</p>
-                  <p className="text-[9px] font-bold">{receipt.cliente_nome}</p>
-                  <p className="text-[9px]">{receipt.cliente_documento}</p>
+                  <div className="space-y-1 pt-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest">Pagador</p>
+                    <p className="text-[9px] font-bold">{receipt.cliente_nome}</p>
+                    <p className="text-[9px]">{receipt.cliente_documento}</p>
+                  </div>
                 </div>
               </div>
             </main>
