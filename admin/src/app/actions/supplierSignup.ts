@@ -126,7 +126,7 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
     const existing = await prisma.supplier.findFirst({
       where: {
         company_id: companyId,
-        cnpj: data.cnpj,
+        OR: [{ cnpj }, { cnpj: data.cnpj.trim() }],
       },
     });
 
@@ -141,7 +141,7 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
       data: {
         company_id: companyId,
         nome: capitalizeText(nome),
-        cnpj: data.cnpj.trim(),
+        cnpj,
         email,
         telefone: data.telefone?.trim() || "",
         principal_material: categoria,

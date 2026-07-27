@@ -339,8 +339,14 @@ export async function createClientAction(formData: {
   }
 
   const tipoPessoa = formData.tipo_pessoa || "PF";
-  const cpf = tipoPessoa === "PF" ? formData.cpf || null : null;
-  const cnpj = tipoPessoa === "PJ" ? formData.cnpj || null : null;
+  const cpf =
+    tipoPessoa === "PF" && formData.cpf
+      ? formData.cpf.replace(/\D/g, "") || null
+      : null;
+  const cnpj =
+    tipoPessoa === "PJ" && formData.cnpj
+      ? formData.cnpj.replace(/\D/g, "") || null
+      : null;
 
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };
@@ -436,8 +442,14 @@ export async function updateClientAction(
   }
 
   const tipoPessoa = formData.tipo_pessoa || "PF";
-  const cpf = tipoPessoa === "PF" ? formData.cpf || null : null;
-  const cnpj = tipoPessoa === "PJ" ? formData.cnpj || null : null;
+  const cpf =
+    tipoPessoa === "PF" && formData.cpf
+      ? formData.cpf.replace(/\D/g, "") || null
+      : null;
+  const cnpj =
+    tipoPessoa === "PJ" && formData.cnpj
+      ? formData.cnpj.replace(/\D/g, "") || null
+      : null;
 
   if (isDatabaseOffline()) {
     return { success: false, error: "Banco de dados indisponível." };

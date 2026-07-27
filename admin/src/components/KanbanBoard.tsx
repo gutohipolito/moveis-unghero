@@ -545,9 +545,10 @@ export default function KanbanBoard({
     if (cleanCnpj.length === 14) {
       setLoading(true);
       try {
-        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
-        const data = await res.json();
-        if (data && !data.message) {
+        const { fetchCnpjCompany } = await import("@/lib/cnpjClient");
+        const result = await fetchCnpjCompany(cleanCnpj);
+        if (result.ok) {
+          const data = result.data;
           setLeadForm(prev => ({
             ...prev,
             cnpj: cnpjValue,

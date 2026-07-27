@@ -470,24 +470,25 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setCnpjLoading(true);
     setFormError(null);
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      const json = await res.json();
-      if (json && !json.message) {
-        setNome(json.razao_social || json.nome_fantasia || "");
-        setEscritorio(json.nome_fantasia || json.razao_social || "");
-        setEmail(json.email || "");
-        if (json.ddd_telefone_1) {
-          const tel = json.ddd_telefone_1.replace(/\D/g, "");
-          if (tel.length >= 10) {
-            setTelefone(`(${tel.substring(0, 2)}) ${tel.substring(2)}`);
-          } else {
-            setTelefone(json.ddd_telefone_1);
-          }
-        }
-        setCidade(json.municipio || "");
-      } else {
-        setFormError("CNPJ não encontrado ou inválido.");
+      const { fetchCnpjCompany } = await import("@/lib/cnpjClient");
+      const result = await fetchCnpjCompany(clean);
+      if (!result.ok) {
+        setFormError(result.error || "CNPJ não encontrado ou inválido.");
+        return;
       }
+      const json = result.data;
+      setNome(json.razao_social || json.nome_fantasia || "");
+      setEscritorio(json.nome_fantasia || json.razao_social || "");
+      setEmail(json.email || "");
+      if (json.ddd_telefone_1) {
+        const tel = json.ddd_telefone_1.replace(/\D/g, "");
+        if (tel.length >= 10) {
+          setTelefone(`(${tel.substring(0, 2)}) ${tel.substring(2)}`);
+        } else {
+          setTelefone(json.ddd_telefone_1);
+        }
+      }
+      setCidade(json.municipio || "");
     } catch (err) {
       console.error("Erro ao buscar CNPJ:", err);
       setFormError("Erro ao buscar CNPJ. Verifique a conexão.");

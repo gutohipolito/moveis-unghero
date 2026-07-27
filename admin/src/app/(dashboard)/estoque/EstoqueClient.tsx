@@ -175,26 +175,27 @@ export default function EstoqueClient({
     setCnpjLoading(true);
     setCnpjError(null);
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      const json = await res.json();
-      if (!res.ok || json?.message) {
-        setCnpjError("CNPJ não encontrado. Confira o número e tente de novo.");
+      const { fetchCnpjCompany } = await import("@/lib/cnpjClient");
+      const result = await fetchCnpjCompany(clean);
+      if (!result.ok) {
+        setCnpjError(result.error || "CNPJ não encontrado. Confira o número e tente de novo.");
         return;
       }
 
+      const json = result.data;
       lastFetchedCnpjRef.current = clean;
       if (json.razao_social) setSupplierNome(json.razao_social);
       if (json.nome_fantasia) setSupplierNomeFantasia(json.nome_fantasia);
       if (json.email) setSupplierEmail(json.email);
 
-        if (json.ddd_telefone_1) {
-          const cleanTel = `${json.ddd_telefone_1}`.replace(/\D/g, "");
-          if (cleanTel.length === 10 || cleanTel.length === 11) {
-            setSupplierTelefone(formatPhoneInput(cleanTel));
-          } else {
-            setSupplierTelefone(`${json.ddd_telefone_1}`);
-          }
+      if (json.ddd_telefone_1) {
+        const cleanTel = `${json.ddd_telefone_1}`.replace(/\D/g, "");
+        if (cleanTel.length === 10 || cleanTel.length === 11) {
+          setSupplierTelefone(formatPhoneInput(cleanTel));
+        } else {
+          setSupplierTelefone(`${json.ddd_telefone_1}`);
         }
+      }
     } catch {
       setCnpjError("Não foi possível consultar o CNPJ agora.");
     } finally {

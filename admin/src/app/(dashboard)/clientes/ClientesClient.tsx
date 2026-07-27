@@ -298,8 +298,10 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       showSuccess("Cliente cadastrado", `${form.nome} foi adicionado à base de clientes.`);
       return { success: true };
     }
-    showError("Não foi possível cadastrar", "Ocorreu um erro ao salvar o cliente. Tente novamente.");
-    return { success: false, error: "Ocorreu um erro ao salvar o cliente." };
+    const errMsg =
+      res.error || "Ocorreu um erro ao salvar o cliente. Tente novamente.";
+    showError("Não foi possível cadastrar", errMsg);
+    return { success: false, error: errMsg };
   };
 
   // Abrir modal de edição
@@ -341,8 +343,10 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       showSuccess("Cliente atualizado", `As informações de ${form.nome} foram salvas.`);
       return { success: true };
     }
-    showError("Não foi possível salvar", "Ocorreu um erro ao atualizar o cliente. Tente novamente.");
-    return { success: false, error: "Ocorreu um erro ao atualizar o cliente." };
+    const errMsg =
+      res.error || "Ocorreu um erro ao atualizar o cliente. Tente novamente.";
+    showError("Não foi possível salvar", errMsg);
+    return { success: false, error: errMsg };
   };
 
   // Excluir Cliente

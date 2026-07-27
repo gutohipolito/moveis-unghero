@@ -241,47 +241,51 @@ export default function SupplierSignupForm({
     setCnpjLoading(true);
     setError(null);
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      const json = await res.json();
-      if (json && !json.message) {
-        if (json.razao_social) setNome(json.razao_social);
-        if (json.nome_fantasia) setNomeFantasia(json.nome_fantasia);
-        if (json.email) setEmail(json.email);
-        
-        // Tratar telefone comercial
-        if (json.ddd_telefone_1) {
-          const rawTel = `${json.ddd_telefone_1}`;
-          const cleanTel = rawTel.replace(/\D/g, "");
-          if (cleanTel.length === 10 || cleanTel.length === 11) {
-            setTelefone(formatPhoneInput(cleanTel));
-          } else {
-            setTelefone(rawTel);
-          }
-        }
-        
-        // Tratar CEP
-        if (json.cep) {
-          const rawCep = `${json.cep}`;
-          const cleanCep = rawCep.replace(/\D/g, "");
-          if (cleanCep.length === 8) {
-            setContatoCep(`${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`);
-          } else {
-            setContatoCep(rawCep);
-          }
-        }
-        
-        if (json.municipio) setContatoCidade(json.municipio);
-        if (json.uf) setContatoEstado(json.uf);
-        
-        // Montar endereço completo
-        let end = json.logradouro || "";
-        if (json.numero) end += `, ${json.numero}`;
-        if (json.complemento) end += ` - ${json.complemento}`;
-        if (json.bairro) end += ` - ${json.bairro}`;
-        if (end) setContatoEndereco(end);
+      const { fetchCnpjCompany } = await import("@/lib/cnpjClient");
+      const result = await fetchCnpjCompany(clean);
+      if (!result.ok) {
+        setError(result.error || "CNPJ não encontrado ou inválido.");
+        return;
       }
+      const json = result.data;
+      if (json.razao_social) setNome(json.razao_social);
+      if (json.nome_fantasia) setNomeFantasia(json.nome_fantasia);
+      if (json.email) setEmail(json.email);
+
+      // Tratar telefone comercial
+      if (json.ddd_telefone_1) {
+        const rawTel = `${json.ddd_telefone_1}`;
+        const cleanTel = rawTel.replace(/\D/g, "");
+        if (cleanTel.length === 10 || cleanTel.length === 11) {
+          setTelefone(formatPhoneInput(cleanTel));
+        } else {
+          setTelefone(rawTel);
+        }
+      }
+
+      // Tratar CEP
+      if (json.cep) {
+        const rawCep = `${json.cep}`;
+        const cleanCep = rawCep.replace(/\D/g, "");
+        if (cleanCep.length === 8) {
+          setContatoCep(`${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`);
+        } else {
+          setContatoCep(rawCep);
+        }
+      }
+
+      if (json.municipio) setContatoCidade(json.municipio);
+      if (json.uf) setContatoEstado(json.uf);
+
+      // Montar endereço completo
+      let end = json.logradouro || "";
+      if (json.numero) end += `, ${json.numero}`;
+      if (json.complemento) end += ` - ${json.complemento}`;
+      if (json.bairro) end += ` - ${json.bairro}`;
+      if (end) setContatoEndereco(end);
     } catch (err) {
       console.error("Erro ao buscar CNPJ:", err);
+      setError("Erro ao buscar CNPJ. Verifique a conexão.");
     } finally {
       setCnpjLoading(false);
     }

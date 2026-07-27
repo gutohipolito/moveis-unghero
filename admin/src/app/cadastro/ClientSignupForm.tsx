@@ -171,18 +171,18 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
     if (clean.length !== 14) return;
     setCnpjLoading(true);
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      const json = await res.json();
-      if (json && !json.message) {
-        setNome((prev) => json.nome_fantasia || json.razao_social || prev);
-        setEmail((prev) => json.email || prev);
-        setCep((prev) => json.cep || prev);
-        setEndereco((prev) => json.logradouro || prev);
-        setNumero((prev) => json.numero || prev);
-        setBairro((prev) => json.bairro || prev);
-        setCidade((prev) => json.municipio || prev);
-        setUf((prev) => json.uf || prev);
-      }
+      const { fetchCnpjCompany } = await import("@/lib/cnpjClient");
+      const result = await fetchCnpjCompany(clean);
+      if (!result.ok) return;
+      const json = result.data;
+      setNome((prev) => json.nome_fantasia || json.razao_social || prev);
+      setEmail((prev) => json.email || prev);
+      setCep((prev) => json.cep || prev);
+      setEndereco((prev) => json.logradouro || prev);
+      setNumero((prev) => json.numero || prev);
+      setBairro((prev) => json.bairro || prev);
+      setCidade((prev) => json.municipio || prev);
+      setUf((prev) => json.uf || prev);
     } catch (err) {
       console.error("Erro ao buscar CNPJ:", err);
     } finally {
