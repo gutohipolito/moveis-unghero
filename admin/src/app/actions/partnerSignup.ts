@@ -4,6 +4,7 @@ import { PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
+import { normalizeCidade } from "@/lib/address";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { headers } from "next/headers";
@@ -90,7 +91,9 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
         tipo: data.tipo,
         email,
         telefone,
-        cidade: data.cidade?.trim() ? capitalizeText(data.cidade.trim()) : null,
+        cidade: data.cidade?.trim()
+          ? normalizeCidade(data.cidade.trim()).cidade || null
+          : null,
         escritorio: data.escritorio?.trim() ? capitalizeText(data.escritorio.trim()) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
         portfolioUrl: data.portfolio_url?.trim() || null,

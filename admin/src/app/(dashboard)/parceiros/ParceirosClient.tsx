@@ -25,6 +25,7 @@ import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
+import CityField from "@/components/forms/CityField";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -924,7 +925,12 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Cidade</label>
-                <Input value={cidade} onChange={(e) => setCidade(e.target.value)} />
+                <CityField
+                  value={cidade}
+                  onChange={setCidade}
+                  selectClassName="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                  inputClassName="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground">Telefone</label>

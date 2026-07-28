@@ -21,6 +21,10 @@ import type { TipoPessoa } from "@/lib/clientDocument";
 import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
+import { normalizeCidade, normalizeBairro } from "@/lib/address";
+import { fetchViaCep } from "@/lib/viaCep";
+import CityField from "@/components/forms/CityField";
+import BairroField from "@/components/forms/BairroField";
 
 const TIPO_IMOVEL_OPTIONS = [
   { value: "CASA", label: "Casa Residencial" },
@@ -150,20 +154,13 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   };
 
   async function fetchAddressByCep(cepValue: string) {
-    const clean = cepValue.replace(/\D/g, "");
-    if (clean.length !== 8) return;
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-      const json = await res.json();
-      if (!json.erro) {
-        setEndereco((prev) => json.logradouro || prev);
-        setBairro((prev) => json.bairro || prev);
-        setCidade((prev) => json.localidade || prev);
-        setUf((prev) => json.uf || prev);
-      }
-    } catch (err) {
-      console.error("Erro ao buscar CEP:", err);
-    }
+    const addr = await fetchViaCep(cepValue);
+    if (!addr) return;
+    const { cidade: city } = normalizeCidade(addr.localidade);
+    setEndereco((prev) => addr.logradouro || prev);
+    setBairro((prev) => normalizeBairro(addr.bairro || prev, city) || prev);
+    setCidade((prev) => city || prev);
+    setUf((prev) => addr.uf || prev);
   }
 
   async function fetchCompanyByCnpj(cnpjValue: string) {
@@ -175,14 +172,16 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       const result = await fetchCnpjCompany(clean);
       if (!result.ok) return;
       const json = result.data;
+      const { cidade: city } = normalizeCidade(json.municipio || "");
       setNome((prev) => json.nome_fantasia || json.razao_social || prev);
       setEmail((prev) => json.email || prev);
       setCep((prev) => json.cep || prev);
       setEndereco((prev) => json.logradouro || prev);
       setNumero((prev) => json.numero || prev);
-      setBairro((prev) => json.bairro || prev);
-      setCidade((prev) => json.municipio || prev);
+      setBairro((prev) => normalizeBairro(json.bairro || prev, city) || prev);
+      setCidade((prev) => city || prev);
       setUf((prev) => json.uf || prev);
+      if (json.cep) void fetchAddressByCep(json.cep);
     } catch (err) {
       console.error("Erro ao buscar CNPJ:", err);
     } finally {
@@ -525,14 +524,25 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className={labelClass}>Bairro</label>
-                  <input type="text" value={bairro} onChange={(e) => setBairro(e.target.value)} className={inputClass} />
+                  <BairroField
+                    value={bairro}
+                    onChange={setBairro}
+                    cidade={cidade}
+                    className={inputClass}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className={labelClass}>Cidade</label>
-                  <input type="text" value={cidade} onChange={(e) => setCidade(e.target.value)} className={inputClass} />
+                  <CityField
+                    value={cidade}
+                    onChange={setCidade}
+                    dark
+                    selectClassName={`${inputClass} cursor-pointer`}
+                    inputClassName={inputClass}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <label className={labelClass}>UF</label>

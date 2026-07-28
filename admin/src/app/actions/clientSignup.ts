@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
+import { normalizeAddressFields } from "@/lib/address";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { stripConsentFromObservacoes } from "@/lib/clientConsent";
@@ -93,13 +94,20 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     const contact = resolveClientContactFields(telefone, data.email);
     const observacoes = stripConsentFromObservacoes(data.observacoes?.trim() || "");
 
+    const address = normalizeAddressFields({
+      cidade: data.cidade,
+      bairro: data.bairro,
+      uf: data.uf,
+      endereco: data.endereco,
+    });
+
     const client = await prisma.client.create({
       data: {
         nome: capitalizeText(nome),
         email: contact.email,
         telefone: contact.telefone,
         telefone_digits: contact.phoneDigits || null,
-        cidade: data.cidade?.trim() ? capitalizeText(data.cidade.trim()) : "",
+        cidade: address.cidade,
         origem: "FORMULARIO",
         status: "LEAD",
         observacoes,
@@ -108,10 +116,10 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         cpf,
         cnpj,
         cep: data.cep?.trim() || null,
-        endereco: data.endereco?.trim() ? capitalizeText(data.endereco.trim()) : null,
+        endereco: address.endereco || null,
         numero: data.numero?.trim() || null,
-        bairro: data.bairro?.trim() ? capitalizeText(data.bairro.trim()) : null,
-        uf: data.uf?.trim() ? data.uf.trim().toUpperCase() : null,
+        bairro: address.bairro || null,
+        uf: address.uf,
         tipo_imovel: data.tipo_imovel?.trim() || null,
         lgpd_aceite: true,
         lgpd_aceite_em: new Date(),

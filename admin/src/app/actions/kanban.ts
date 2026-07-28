@@ -10,6 +10,8 @@ import {
 } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
+import { capitalizeText } from "@/lib/utils";
+import { normalizeAddressFields } from "@/lib/address";
 
 export type ProjectStatus =
   | "LEAD"
@@ -304,13 +306,19 @@ export async function createLead(formData: {
           linkedExistingClient = true;
         } else {
           const contact = resolveClientContactFields(formData.telefone, formData.email);
+          const address = normalizeAddressFields({
+            cidade: formData.cidade,
+            bairro: formData.bairro,
+            uf: formData.uf,
+            endereco: formData.endereco,
+          });
           client = await tx.client.create({
             data: {
-              nome: formData.nome,
+              nome: capitalizeText(formData.nome),
               email: contact.email,
               telefone: contact.telefone,
               telefone_digits: contact.phoneDigits || null,
-              cidade: formData.cidade,
+              cidade: address.cidade,
               origem: formData.origem,
               status: statusInicial,
               company_id: formData.company_id,
@@ -318,10 +326,10 @@ export async function createLead(formData: {
               cpf: formData.tipo_pessoa === "PJ" ? null : formData.cpf || null,
               cnpj: formData.tipo_pessoa === "PJ" ? formData.cnpj || null : null,
               cep: formData.cep || null,
-              endereco: formData.endereco || null,
+              endereco: address.endereco || null,
               numero: formData.numero || null,
-              bairro: formData.bairro || null,
-              uf: formData.uf || null,
+              bairro: address.bairro || null,
+              uf: address.uf,
               tipo_imovel: formData.tipo_imovel || null,
               obs_imovel: formData.obs_imovel || null,
               obs_entrega: formData.obs_entrega || null,
@@ -403,6 +411,13 @@ export async function updateProjectAction(
   }
 
   try {
+    const address = normalizeAddressFields({
+      cidade: data.cidade,
+      bairro: data.bairro,
+      uf: data.uf,
+      endereco: data.endereco,
+    });
+
     const project = await prisma.project.update({
       where: { id: projectId },
       data: {
@@ -411,18 +426,20 @@ export async function updateProjectAction(
         motivo_perda: data.status_geral === "PERDIDO" ? undefined : null,
         client: {
           update: {
-            nome: data.nome,
+            nome: capitalizeText(data.nome),
             telefone: data.telefone,
-            cidade: data.cidade,
+            cidade: address.cidade,
             origem: data.origem,
             tipo_pessoa: data.tipo_pessoa,
             cpf: data.cpf !== undefined ? data.cpf : undefined,
             cnpj: data.cnpj !== undefined ? data.cnpj : undefined,
             cep: data.cep !== undefined ? data.cep : undefined,
-            endereco: data.endereco !== undefined ? data.endereco : undefined,
+            endereco:
+              data.endereco !== undefined ? address.endereco || null : undefined,
             numero: data.numero !== undefined ? data.numero : undefined,
-            bairro: data.bairro !== undefined ? data.bairro : undefined,
-            uf: data.uf !== undefined ? data.uf : undefined,
+            bairro:
+              data.bairro !== undefined ? address.bairro || null : undefined,
+            uf: data.uf !== undefined ? address.uf : undefined,
             tipo_imovel: data.tipo_imovel !== undefined ? data.tipo_imovel : undefined,
             obs_imovel: data.obs_imovel !== undefined ? data.obs_imovel : undefined,
             obs_entrega: data.obs_entrega !== undefined ? data.obs_entrega : undefined,

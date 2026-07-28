@@ -622,28 +622,6 @@ export default function SupplierSignupForm({
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-400 block">Razão Social *</label>
-                  <input 
-                    required 
-                    type="text" 
-                    value={nome} 
-                    onChange={e => setNome(e.target.value)}
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-400 block">Nome Fantasia</label>
-                  <input 
-                    type="text" 
-                    value={nomeFantasia} 
-                    onChange={e => setNomeFantasia(e.target.value)}
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1 relative">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-bold text-slate-400 block">CNPJ *</label>
@@ -661,6 +639,7 @@ export default function SupplierSignupForm({
                     placeholder="00.000.000/0000-00" 
                     className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                   />
+                  <p className="text-[10px] text-slate-500">Informe o CNPJ primeiro para preencher os dados automaticamente.</p>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-400 block">Inscrição Estadual</label>
@@ -668,6 +647,28 @@ export default function SupplierSignupForm({
                     type="text" 
                     value={inscricaoEstadual} 
                     onChange={e => setInscricaoEstadual(e.target.value)}
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 block">Razão Social *</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={nome} 
+                    onChange={e => setNome(e.target.value)}
+                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 block">Nome Fantasia</label>
+                  <input 
+                    type="text" 
+                    value={nomeFantasia} 
+                    onChange={e => setNomeFantasia(e.target.value)}
                     className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>

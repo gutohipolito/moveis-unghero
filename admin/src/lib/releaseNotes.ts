@@ -20,7 +20,7 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
     title: "Comercial",
     items: [
       "Funil comercial (CRM) com etapas de negociação, aprovação, conferência técnica e produção",
-      "Cadastro de clientes (PF/PJ), privacidade de dados sensíveis e links WhatsApp/e-mail",
+      "Cadastro de clientes (PF/PJ) com cidade/bairro padronizados e privacidade de dados sensíveis",
       "Orçamentos com templates (incluindo Proposta Comparativa), PDF A4, condições de pagamento e modo privado",
       "Links públicos de proposta com senha pelos 4 dígitos do celular e rastreio de aberturas",
       "Aprovação parcial por item, múltiplos orçamentos aprovados e vínculo com arquitetos/parceiros",
@@ -87,6 +87,18 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
  * Cada bloco é um “pacote” de entrega, não um commit isolado.
  */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    title: "Endereços padronizados",
+    summary:
+      "Cidade e bairro mais consistentes nos cadastros — menos “Farroupilha Rs” e bairros sem acento.",
+    items: [
+      "Cidade da Serra em lista (com opção Outra) nos formulários de cliente e parceiros",
+      "Sugestão de bairros de Farroupilha ao digitar; ViaCEP compartilhado no CEP",
+      "Normalização no servidor (UF fora da cidade, Title Case e acentos canônicos)",
+      "CNPJ como primeiro campo no cadastro de fornecedor (preenche o restante)",
+      "Script de backfill para limpar registros antigos (scripts/address-backfill.ts)",
+    ],
+  },
   {
     title: "Recibos profissionais",
     summary:

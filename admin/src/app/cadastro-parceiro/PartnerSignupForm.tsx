@@ -23,25 +23,11 @@ import { PARTNER_ORIGEM_OPTIONS, PARTNER_SIGNUP_TYPES, PARTNER_TYPE_STYLES } fro
 import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
+import { CIDADES_SERRA_GAUCHA } from "@/lib/address";
 
 const TOTAL_STEPS = 5;
 
 const STEP_LABELS = ["Especialidade", "Identidade", "Contato", "Portfólio", "Parceria"] as const;
-
-const CIDADES_SERRA_GAUCHA = [
-  { value: "Farroupilha", label: "Farroupilha" },
-  { value: "Caxias do Sul", label: "Caxias do Sul" },
-  { value: "Bento Gonçalves", label: "Bento Gonçalves" },
-  { value: "Garibaldi", label: "Garibaldi" },
-  { value: "Carlos Barbosa", label: "Carlos Barbosa" },
-  { value: "Flores da Cunha", label: "Flores da Cunha" },
-  { value: "Nova Roma do Sul", label: "Nova Roma do Sul" },
-  { value: "Pinto Bandeira", label: "Pinto Bandeira" },
-  { value: "Veranópolis", label: "Veranópolis" },
-  { value: "Nova Petrópolis", label: "Nova Petrópolis" },
-  { value: "Gramado", label: "Gramado" },
-  { value: "Canela", label: "Canela" }
-];
 
 export default function PartnerSignupForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
@@ -506,8 +492,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   >
                     <option value="" className="text-slate-400">Selecione...</option>
                     {CIDADES_SERRA_GAUCHA.map((c) => (
-                      <option key={c.value} value={c.value} className="text-slate-900 font-semibold">
-                        {c.label}
+                      <option key={c} value={c} className="text-slate-900 font-semibold">
+                        {c}
                       </option>
                     ))}
                   </select>

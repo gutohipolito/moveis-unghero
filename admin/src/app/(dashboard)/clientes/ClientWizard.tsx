@@ -18,6 +18,10 @@ import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { labelOrigin, labelStatus } from "@/lib/navLabels";
 import type { TipoPessoa } from "@/lib/clientDocument";
 import type { Origin } from "@/app/actions/kanban";
+import { normalizeCidade, normalizeBairro } from "@/lib/address";
+import { fetchViaCep } from "@/lib/viaCep";
+import CityField from "@/components/forms/CityField";
+import BairroField from "@/components/forms/BairroField";
 
 export interface ClientWizardData {
   tipo_pessoa: TipoPessoa;
@@ -116,23 +120,16 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
   );
 
   async function fetchAddressByCep(cepValue: string) {
-    const cleanCep = cepValue.replace(/\D/g, "");
-    if (cleanCep.length !== 8) return;
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-      const json = await res.json();
-      if (!json.erro) {
-        setData((prev) => ({
-          ...prev,
-          endereco: json.logradouro || prev.endereco,
-          bairro: json.bairro || prev.bairro,
-          cidade: json.localidade || prev.cidade,
-          uf: json.uf || prev.uf,
-        }));
-      }
-    } catch (err) {
-      console.error("Erro ao buscar CEP:", err);
-    }
+    const addr = await fetchViaCep(cepValue);
+    if (!addr) return;
+    const { cidade } = normalizeCidade(addr.localidade);
+    setData((prev) => ({
+      ...prev,
+      endereco: addr.logradouro || prev.endereco,
+      bairro: normalizeBairro(addr.bairro || prev.bairro, cidade) || prev.bairro,
+      cidade: cidade || prev.cidade,
+      uf: addr.uf || prev.uf,
+    }));
   }
 
   async function fetchCompanyByCnpj(cnpjValue: string) {
@@ -144,6 +141,7 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
       const result = await fetchCnpjCompany(cleanCnpj);
       if (!result.ok) return;
       const json = result.data;
+      const { cidade } = normalizeCidade(json.municipio || "");
       setData((prev) => ({
         ...prev,
         nome: json.nome_fantasia || json.razao_social || prev.nome,
@@ -151,11 +149,11 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
         cep: json.cep || prev.cep,
         endereco: json.logradouro || prev.endereco,
         numero: json.numero || prev.numero,
-        bairro: json.bairro || prev.bairro,
-        cidade: json.municipio || prev.cidade,
+        bairro: normalizeBairro(json.bairro || prev.bairro, cidade) || prev.bairro,
+        cidade: cidade || prev.cidade,
         uf: json.uf || prev.uf,
       }));
-      if (json.cep) fetchAddressByCep(json.cep);
+      if (json.cep) void fetchAddressByCep(json.cep);
     } catch (err) {
       console.error("Erro ao buscar CNPJ:", err);
     } finally {
@@ -402,10 +400,10 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <label className={labelClass}>Bairro</label>
-                <input
-                  type="text"
+                <BairroField
                   value={data.bairro}
-                  onChange={(e) => set("bairro", e.target.value)}
+                  onChange={(v) => set("bairro", v)}
+                  cidade={data.cidade}
                   className={inputClass}
                 />
               </div>
@@ -414,11 +412,11 @@ export default function ClientWizard({ mode, initial, onCancel, onSubmit }: Clie
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
                 <label className={labelClass}>Cidade</label>
-                <input
-                  type="text"
+                <CityField
                   value={data.cidade}
-                  onChange={(e) => set("cidade", e.target.value)}
-                  className={inputClass}
+                  onChange={(v) => set("cidade", v)}
+                  selectClassName={`${inputClass} cursor-pointer`}
+                  inputClassName={inputClass}
                 />
               </div>
               <div className="space-y-1.5">

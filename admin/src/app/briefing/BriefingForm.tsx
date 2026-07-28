@@ -25,6 +25,7 @@ import { submitPublicBriefingAction } from "@/app/actions/briefing";
 import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
+import { BAIRROS_FARROUPILHA } from "@/lib/address";
 
 const TOTAL_STEPS = 11;
 const STEP_LABELS = [
@@ -65,34 +66,6 @@ const AMBIENTES = [
   { id: "Apartamento completo", nome: "Apartamento completo", icone: "🏢", perguntaCondicional: "Quantos ambientes?", opcoes: ["1 a 3 ambientes", "4 a 6 ambientes", "Mais de 6 ambientes"] },
   { id: "Casa completa", nome: "Casa completa", icone: "🏡", perguntaCondicional: "Quantos ambientes?", opcoes: ["1 a 3 ambientes", "4 a 6 ambientes", "Mais de 6 ambientes"] },
   { id: "Outro", nome: "Outro", icone: "✨" }
-];
-
-const BAIRROS_FARROUPILHA = [
-  "América",
-  "Belvedere",
-  "Bela Vista",
-  "Caravaggio",
-  "Centro",
-  "Cinquentenário",
-  "Colonial",
-  "Cruzeiro",
-  "Do Park",
-  "Imigrante",
-  "Industrial",
-  "Ipanema",
-  "Medianeira",
-  "Milano",
-  "Monte Pascoal",
-  "Nova Vicenza",
-  "Pio X",
-  "Planalto",
-  "Primeiro de Maio",
-  "Santa Catarina",
-  "Santo Antônio",
-  "São José",
-  "São Luiz",
-  "Vicentina",
-  "Volta Grande"
 ];
 
 export default function BriefingForm({ companyId }: { companyId?: string }) {

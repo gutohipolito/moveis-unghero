@@ -6,6 +6,7 @@ import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
+import { normalizeCidade } from "@/lib/address";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export interface ParceiroDTO {
@@ -158,7 +159,7 @@ export async function createParceiro(
         tipo: data.tipo,
         email: data.email?.trim() || null,
         telefone: data.telefone?.trim() || null,
-        cidade: data.cidade ? capitalizeText(data.cidade) : null,
+        cidade: data.cidade ? normalizeCidade(data.cidade).cidade || null : null,
         escritorio: data.escritorio ? capitalizeText(data.escritorio) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
         origem: data.origem?.trim() || null,
@@ -219,7 +220,9 @@ export async function updateParceiro(
         ...(data.tipo !== undefined ? { tipo: data.tipo } : {}),
         ...(data.email !== undefined ? { email: data.email.trim() || null } : {}),
         ...(data.telefone !== undefined ? { telefone: data.telefone.trim() || null } : {}),
-        ...(data.cidade !== undefined ? { cidade: data.cidade ? capitalizeText(data.cidade) : null } : {}),
+        ...(data.cidade !== undefined
+          ? { cidade: data.cidade ? normalizeCidade(data.cidade).cidade || null : null }
+          : {}),
         ...(data.escritorio !== undefined ? { escritorio: data.escritorio ? capitalizeText(data.escritorio) : null } : {}),
         ...(data.registro_profissional !== undefined
           ? { registro_profissional: data.registro_profissional.trim() || null }

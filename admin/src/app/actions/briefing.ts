@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { capitalizeText } from "@/lib/utils";
+import { normalizeAddressFields } from "@/lib/address";
 import {
   findExistingClient,
   isPlaceholderClientEmail,
@@ -87,6 +88,11 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
 
     const isExistingClient = Boolean(client);
 
+    const address = normalizeAddressFields({
+      cidade: data.cidade,
+      bairro: data.bairro,
+    });
+
     if (!client) {
       client = await prisma.client.create({
         data: {
@@ -94,8 +100,8 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
           email: contact.email,
           telefone: contact.telefone,
           telefone_digits: contact.phoneDigits || null,
-          cidade: capitalizeText(data.cidade),
-          bairro: data.bairro ? capitalizeText(data.bairro) : null,
+          cidade: address.cidade || "Farroupilha",
+          bairro: address.bairro || null,
           tipo_imovel: data.tipo_imovel || null,
           origem: "FORMULARIO",
           status: "LEAD",
@@ -108,7 +114,9 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
       client = await prisma.client.update({
         where: { id: client.id },
         data: {
-          ...(data.bairro?.trim() && !client.bairro ? { bairro: capitalizeText(data.bairro) } : {}),
+          ...(data.bairro?.trim() && !client.bairro
+            ? { bairro: address.bairro || null }
+            : {}),
           ...(cleanEmail &&
           !isPlaceholderClientEmail(cleanEmail) &&
           (!client.email?.trim() || isPlaceholderClientEmail(client.email))

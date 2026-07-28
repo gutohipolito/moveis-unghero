@@ -2,6 +2,7 @@
 
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { capitalizeText } from "@/lib/utils";
+import { normalizeAddressFields } from "@/lib/address";
 import {
   parseLegacyDocumentFromObs,
   resolveClientDocument,
@@ -370,6 +371,12 @@ export async function createClientAction(formData: {
     }
 
     const contact = resolveClientContactFields(formData.telefone, formData.email);
+    const address = normalizeAddressFields({
+      cidade: formData.cidade,
+      bairro: formData.bairro,
+      uf: formData.uf,
+      endereco: formData.endereco,
+    });
 
     const client = await prisma.client.create({
       data: {
@@ -377,7 +384,7 @@ export async function createClientAction(formData: {
         email: contact.email,
         telefone: contact.telefone,
         telefone_digits: contact.phoneDigits || null,
-        cidade: capitalizeText(formData.cidade),
+        cidade: address.cidade,
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
@@ -386,10 +393,10 @@ export async function createClientAction(formData: {
         cpf,
         cnpj,
         cep: formData.cep || null,
-        endereco: formData.endereco ? capitalizeText(formData.endereco) : null,
+        endereco: address.endereco || null,
         numero: formData.numero || null,
-        bairro: formData.bairro ? capitalizeText(formData.bairro) : null,
-        uf: formData.uf || null,
+        bairro: address.bairro || null,
+        uf: address.uf,
         tipo_imovel: formData.tipo_imovel || null,
         obs_imovel: formData.obs_imovel || null,
         obs_entrega: formData.obs_entrega || null,
@@ -457,6 +464,12 @@ export async function updateClientAction(
 
   try {
     const contact = resolveClientContactFields(formData.telefone, formData.email);
+    const address = normalizeAddressFields({
+      cidade: formData.cidade,
+      bairro: formData.bairro,
+      uf: formData.uf,
+      endereco: formData.endereco,
+    });
 
     await prisma.client.update({
       where: { id: clientId },
@@ -465,7 +478,7 @@ export async function updateClientAction(
         email: contact.email,
         telefone: contact.telefone,
         telefone_digits: contact.phoneDigits || null,
-        cidade: capitalizeText(formData.cidade),
+        cidade: address.cidade,
         origem: formData.origem,
         status: formData.status,
         observacoes: formData.observacoes || "",
@@ -473,10 +486,12 @@ export async function updateClientAction(
         cpf,
         cnpj,
         cep: formData.cep !== undefined ? formData.cep : undefined,
-        endereco: formData.endereco !== undefined ? (formData.endereco ? capitalizeText(formData.endereco) : null) : undefined,
+        endereco:
+          formData.endereco !== undefined ? address.endereco || null : undefined,
         numero: formData.numero !== undefined ? formData.numero : undefined,
-        bairro: formData.bairro !== undefined ? (formData.bairro ? capitalizeText(formData.bairro) : null) : undefined,
-        uf: formData.uf !== undefined ? formData.uf : undefined,
+        bairro:
+          formData.bairro !== undefined ? address.bairro || null : undefined,
+        uf: formData.uf !== undefined ? address.uf : undefined,
         tipo_imovel: formData.tipo_imovel !== undefined ? formData.tipo_imovel : undefined,
         obs_imovel: formData.obs_imovel !== undefined ? formData.obs_imovel : undefined,
         obs_entrega: formData.obs_entrega !== undefined ? formData.obs_entrega : undefined,
