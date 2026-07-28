@@ -145,7 +145,7 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5" title="Privacidade da tela">
+        <div className="flex items-center gap-1 pr-2 border-r border-border/80">
           <PrivacyToggle />
           <SensitiveToggle />
         </div>

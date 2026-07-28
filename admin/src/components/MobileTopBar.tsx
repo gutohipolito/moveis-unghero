@@ -41,7 +41,7 @@ export default function MobileTopBar({
         />
       </Link>
       <div className="mobile-topbar-actions">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 pr-1.5 border-r border-border/80">
           <PrivacyToggle />
           <SensitiveToggle />
         </div>

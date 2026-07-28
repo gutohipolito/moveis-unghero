@@ -24,6 +24,8 @@ interface HoverTooltipProps {
   side?: "top" | "bottom";
   className?: string;
   disabled?: boolean;
+  /** Delay antes de abrir (ms). Default 280; use ~80 no header. */
+  delayMs?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export default function HoverTooltip({
   side = "top",
   className = "",
   disabled = false,
+  delayMs = OPEN_DELAY_MS,
 }: HoverTooltipProps) {
   const tooltipId = useId();
   const [open, setOpen] = useState(false);
@@ -110,7 +113,7 @@ export default function HoverTooltip({
       className={`inline-flex max-w-full min-w-0 ${className}`}
       onMouseEnter={() => {
         clearTimer();
-        timerRef.current = window.setTimeout(() => setOpen(true), OPEN_DELAY_MS);
+        timerRef.current = window.setTimeout(() => setOpen(true), delayMs);
       }}
       onMouseLeave={() => {
         clearTimer();
