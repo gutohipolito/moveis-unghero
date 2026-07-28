@@ -21,7 +21,25 @@ function mapCatalog(record: {
   ativo: boolean;
   createdAt: Date;
   uploaded_by: { name: string } | null;
+  supplier_id?: string | null;
+  supplier?: {
+    nome: string;
+    nomeFantasia: string | null;
+    crmUploads: unknown;
+  } | null;
 }) {
+  const logo =
+    Array.isArray(record.supplier?.crmUploads)
+      ? (
+          record.supplier.crmUploads.find(
+            (e): e is { tipo?: string; url?: string } =>
+              !!e &&
+              typeof e === "object" &&
+              (e as { tipo?: string }).tipo === "Logo" &&
+              typeof (e as { url?: string }).url === "string"
+          ) as { url?: string } | undefined
+        )?.url ?? null
+      : null;
   return {
     id: record.id,
     titulo: record.titulo,
@@ -36,6 +54,9 @@ function mapCatalog(record: {
     ativo: record.ativo,
     createdAt: record.createdAt.toISOString(),
     uploaded_by: record.uploaded_by?.name ?? null,
+    supplier_id: record.supplier_id ?? null,
+    supplierNome: record.supplier?.nomeFantasia || record.supplier?.nome || null,
+    supplierLogoUrl: logo,
   };
 }
 
@@ -56,7 +77,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Corpo da requisição inválido." }, { status: 400 });
   }
 
-  const { titulo, descricao, marca, arquivoUrl, arquivoNome, mimeType, sizeBytes, capaUrl } = body;
+  const {
+    titulo,
+    descricao,
+    marca,
+    arquivoUrl,
+    arquivoNome,
+    mimeType,
+    sizeBytes,
+    capaUrl,
+    supplierId,
+  } = body;
 
   if (!arquivoUrl || typeof arquivoUrl !== "string") {
     return NextResponse.json({ success: false, error: "Arquivo do catálogo inválido ou URL ausente." }, { status: 400 });
@@ -85,11 +116,24 @@ export async function POST(request: NextRequest) {
   const finalDescricao =
     typeof descricao === "string" && descricao.trim() ? descricao.trim() : null;
   const finalMarca = typeof marca === "string" && marca.trim() ? marca.trim() : null;
+  const finalSupplierId =
+    typeof supplierId === "string" && supplierId.trim() ? supplierId.trim() : null;
+
+  if (finalSupplierId) {
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: finalSupplierId, company_id: auth.companyId },
+      select: { id: true },
+    });
+    if (!supplier) {
+      return NextResponse.json({ success: false, error: "Fornecedor inválido." }, { status: 400 });
+    }
+  }
 
   try {
     const created = await prisma.productCatalog.create({
       data: {
         company_id: auth.companyId,
+        supplier_id: finalSupplierId,
         titulo: finalTitulo,
         descricao: finalDescricao,
         marca: finalMarca,
@@ -100,7 +144,10 @@ export async function POST(request: NextRequest) {
         capa_url: capaUrl || null,
         uploaded_by_id: auth.userId,
       },
-      include: { uploaded_by: { select: { name: true } } },
+      include: {
+        uploaded_by: { select: { name: true } },
+        supplier: { select: { nome: true, nomeFantasia: true, crmUploads: true } },
+      },
     });
 
     return NextResponse.json({ success: true, catalog: mapCatalog(created) });

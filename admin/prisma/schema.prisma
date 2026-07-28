@@ -794,6 +794,7 @@ model Supplier {
   inventoryItems     InventoryItem[]
   expenses           Expense[]
   showcaseProducts   ShowcaseProduct[]
+  productCatalogs    ProductCatalog[]
 
   // Novos campos do Cadastro de Fornecedor
   nomeFantasia       String?
@@ -919,26 +920,29 @@ model ShowcaseProduct {
 
 /** Catálogos (PDF/imagens) para apresentar aos clientes no comercial. */
 model ProductCatalog {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   company_id     String
-  company        Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  company        Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  supplier_id    String?
+  supplier       Supplier? @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
   titulo         String
-  descricao      String?  @db.Text
+  descricao      String?   @db.Text
   marca          String?
   arquivo_url    String
   arquivo_nome   String
   mime_type      String
   size_bytes     Int?
   capa_url       String?
-  ordem          Int      @default(0)
-  ativo          Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  ordem          Int       @default(0)
+  ativo          Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   uploaded_by_id String?
-  uploaded_by    User?    @relation("ProductCatalogUploader", fields: [uploaded_by_id], references: [id], onDelete: SetNull)
+  uploaded_by    User?     @relation("ProductCatalogUploader", fields: [uploaded_by_id], references: [id], onDelete: SetNull)
 
   @@index([company_id])
   @@index([company_id, ativo])
+  @@index([company_id, supplier_id])
 }
 
 model LeadBriefing {

@@ -19,6 +19,21 @@ export interface ProductCatalogDTO {
   ativo: boolean;
   createdAt: string;
   uploaded_by: string | null;
+  supplier_id: string | null;
+  supplierNome: string | null;
+  supplierLogoUrl: string | null;
+}
+
+function extractLogoUrl(crmUploads: unknown): string | null {
+  if (!Array.isArray(crmUploads)) return null;
+  const logo = crmUploads.find(
+    (entry): entry is { tipo?: string; url?: string } =>
+      !!entry &&
+      typeof entry === "object" &&
+      (entry as { tipo?: string }).tipo === "Logo" &&
+      typeof (entry as { url?: string }).url === "string"
+  );
+  return logo?.url ?? null;
 }
 
 function mapCatalog(row: {
@@ -35,6 +50,12 @@ function mapCatalog(row: {
   ativo: boolean;
   createdAt: Date;
   uploaded_by: { name: string } | null;
+  supplier_id?: string | null;
+  supplier?: {
+    nome: string;
+    nomeFantasia: string | null;
+    crmUploads: unknown;
+  } | null;
 }): ProductCatalogDTO {
   return {
     id: row.id,
@@ -50,8 +71,16 @@ function mapCatalog(row: {
     ativo: row.ativo,
     createdAt: row.createdAt.toISOString(),
     uploaded_by: row.uploaded_by?.name ?? null,
+    supplier_id: row.supplier_id ?? null,
+    supplierNome: row.supplier?.nomeFantasia || row.supplier?.nome || null,
+    supplierLogoUrl: extractLogoUrl(row.supplier?.crmUploads) ?? null,
   };
 }
+
+const catalogInclude = {
+  uploaded_by: { select: { name: true } },
+  supplier: { select: { nome: true, nomeFantasia: true, crmUploads: true } },
+} as const;
 
 export async function listProductCatalogs(companyId: string): Promise<{
   success: boolean;
@@ -70,7 +99,7 @@ export async function listProductCatalogs(companyId: string): Promise<{
   try {
     const rows = await prisma.productCatalog.findMany({
       where: { company_id: companyId },
-      include: { uploaded_by: { select: { name: true } } },
+      include: catalogInclude,
       orderBy: [{ ordem: "asc" }, { titulo: "asc" }],
     });
     return { success: true, catalogs: rows.map(mapCatalog) };
@@ -90,6 +119,7 @@ export async function updateProductCatalog(
     ativo?: boolean;
     ordem?: number;
     capa_url?: string | null;
+    supplier_id?: string | null;
   }
 ): Promise<{ success: boolean; catalog?: ProductCatalogDTO; error?: string }> {
   const auth = await getWriteAccess("produtos");
@@ -107,6 +137,14 @@ export async function updateProductCatalog(
     });
     if (!existing) return { success: false, error: "Catálogo não encontrado." };
 
+    if (data.supplier_id) {
+      const supplier = await prisma.supplier.findFirst({
+        where: { id: data.supplier_id, company_id: companyId },
+        select: { id: true },
+      });
+      if (!supplier) return { success: false, error: "Fornecedor inválido." };
+    }
+
     const updated = await prisma.productCatalog.update({
       where: { id },
       data: {
@@ -118,8 +156,9 @@ export async function updateProductCatalog(
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         ...(data.ordem !== undefined ? { ordem: data.ordem } : {}),
         ...(data.capa_url !== undefined ? { capa_url: data.capa_url } : {}),
+        ...(data.supplier_id !== undefined ? { supplier_id: data.supplier_id || null } : {}),
       },
-      include: { uploaded_by: { select: { name: true } } },
+      include: catalogInclude,
     });
 
     revalidatePath("/produtos");

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import {
   updateProductCatalog,
@@ -26,22 +26,43 @@ import {
   Pencil,
   Search,
   Settings2,
+  ArrowLeft,
+  Building2,
 } from "lucide-react";
+
+type SupplierOption = {
+  id: string;
+  nome: string;
+  nomeFantasia: string | null;
+  logoUrl: string | null;
+};
+
+const NONE_SUPPLIER_ID = "__none__";
 
 interface CatalogosClientProps {
   companyId: string;
   initialCatalogs: ProductCatalogDTO[];
+  suppliers?: SupplierOption[];
+}
+
+function acabamentosFromDescricao(descricao: string | null): string | null {
+  if (!descricao) return null;
+  const m = descricao.match(/^Acabamentos:\s*(.+)$/m);
+  return m?.[1]?.trim() || null;
 }
 
 export default function CatalogosClient({
   companyId,
   initialCatalogs,
+  suppliers = [],
 }: CatalogosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
 
   const [catalogs, setCatalogs] = useState(initialCatalogs);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterMarca, setFilterMarca] = useState("ALL");
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [manageMode, setManageMode] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ProductCatalogDTO | null>(null);
@@ -53,10 +74,66 @@ export default function CatalogosClient({
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [marca, setMarca] = useState("");
+  const [supplierId, setSupplierId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [capa, setCapa] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
+
+  const supplierById = useMemo(() => {
+    const map = new Map<string, SupplierOption>();
+    suppliers.forEach((s) => map.set(s.id, s));
+    return map;
+  }, [suppliers]);
+
+  const supplierTiles = useMemo(() => {
+    const counts = new Map<string, number>();
+    let orphans = 0;
+    for (const c of catalogs) {
+      if (c.supplier_id) counts.set(c.supplier_id, (counts.get(c.supplier_id) || 0) + 1);
+      else orphans += 1;
+    }
+    const tiles: { id: string; nome: string; logoUrl: string | null; count: number }[] = [];
+    for (const [id, count] of counts) {
+      const s = supplierById.get(id);
+      tiles.push({
+        id,
+        nome:
+          s?.nomeFantasia ||
+          s?.nome ||
+          catalogs.find((c) => c.supplier_id === id)?.supplierNome ||
+          "Fornecedor",
+        logoUrl:
+          s?.logoUrl ||
+          catalogs.find((c) => c.supplier_id === id)?.supplierLogoUrl ||
+          null,
+        count,
+      });
+    }
+    tiles.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    if (orphans > 0) {
+      tiles.push({ id: NONE_SUPPLIER_ID, nome: "Sem fornecedor", logoUrl: null, count: orphans });
+    }
+    return tiles;
+  }, [catalogs, supplierById]);
+
+  const showingSuppliers = !manageMode && selectedSupplierId == null;
+
+  const scopeCatalogs = useMemo(() => {
+    if (manageMode || selectedSupplierId == null) return catalogs;
+    if (selectedSupplierId === NONE_SUPPLIER_ID) {
+      return catalogs.filter((c) => !c.supplier_id);
+    }
+    return catalogs.filter((c) => c.supplier_id === selectedSupplierId);
+  }, [catalogs, manageMode, selectedSupplierId]);
+
+  const marcas = useMemo(() => {
+    const set = new Set<string>();
+    scopeCatalogs.forEach((c) => {
+      if (c.marca?.trim()) set.add(c.marca.trim());
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [scopeCatalogs]);
 
   const handleCapaSaved = useCallback((catalogId: string, capaUrl: string) => {
     setCatalogs((prev) =>
@@ -64,22 +141,34 @@ export default function CatalogosClient({
     );
   }, []);
 
-  const filtered = catalogs.filter((c) => {
+  const filtered = scopeCatalogs.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
+    const matchesSearch =
+      !q ||
       c.titulo.toLowerCase().includes(q) ||
       (c.marca || "").toLowerCase().includes(q) ||
       (c.descricao || "").toLowerCase().includes(q) ||
-      c.arquivo_nome.toLowerCase().includes(q)
-    );
+      (c.supplierNome || "").toLowerCase().includes(q) ||
+      c.arquivo_nome.toLowerCase().includes(q);
+    const matchesMarca = filterMarca === "ALL" || c.marca === filterMarca;
+    return matchesSearch && matchesMarca;
   });
+
+  const selectedSupplierLabel = useMemo(() => {
+    if (!selectedSupplierId || selectedSupplierId === NONE_SUPPLIER_ID) {
+      return selectedSupplierId === NONE_SUPPLIER_ID ? "Sem fornecedor" : null;
+    }
+    return supplierTiles.find((t) => t.id === selectedSupplierId)?.nome || null;
+  }, [selectedSupplierId, supplierTiles]);
 
   const resetForm = () => {
     setEditing(null);
     setTitulo("");
     setDescricao("");
     setMarca("");
+    setSupplierId(
+      selectedSupplierId && selectedSupplierId !== NONE_SUPPLIER_ID ? selectedSupplierId : ""
+    );
     setFile(null);
     setCapa(null);
     if (fileRef.current) fileRef.current.value = "";
@@ -96,6 +185,7 @@ export default function CatalogosClient({
     setTitulo(catalog.titulo);
     setDescricao(catalog.descricao || "");
     setMarca(catalog.marca || "");
+    setSupplierId(catalog.supplier_id || "");
     setFile(null);
     setCapa(null);
     setModalOpen(true);
@@ -115,6 +205,7 @@ export default function CatalogosClient({
           titulo: titulo.trim(),
           descricao: descricao.trim() || null,
           marca: marca.trim() || null,
+          supplier_id: supplierId.trim() || null,
         });
         if (!res.success || !res.catalog) {
           showError("Falha", res.error || "Não foi possível atualizar.");
@@ -171,6 +262,7 @@ export default function CatalogosClient({
         titulo: titulo.trim() || file.name,
         descricao: descricao.trim() || null,
         marca: marca.trim() || null,
+        supplierId: supplierId.trim() || null,
         arquivoUrl: blob.url,
         arquivoNome: file.name,
         mimeType: file.type || "application/octet-stream",
@@ -247,7 +339,11 @@ export default function CatalogosClient({
           </div>
           <ProdutosSectionTabs />
           <p className="text-sm text-slate-500">
-            Acesse, visualize e compartilhe catálogos de fornecedores, materiais e folders inspiracionais.
+            {showingSuppliers
+              ? "Escolha o fornecedor para ver os catálogos e fichas técnicas."
+              : selectedSupplierLabel
+                ? `Catálogos de ${selectedSupplierLabel}.`
+                : "Acesse, visualize e compartilhe catálogos de fornecedores, materiais e folders inspiracionais."}
           </p>
         </div>
 
@@ -255,7 +351,13 @@ export default function CatalogosClient({
           <Button
             type="button"
             variant={manageMode ? "default" : "outline"}
-            onClick={() => setManageMode((v) => !v)}
+            onClick={() => {
+              setManageMode((v) => {
+                const next = !v;
+                if (next) setSelectedSupplierId(null);
+                return next;
+              });
+            }}
             className={`font-bold gap-1.5 rounded-xl w-full sm:w-auto ${
               manageMode ? "btn-metallic" : ""
             }`}
@@ -269,20 +371,94 @@ export default function CatalogosClient({
         </div>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          className="pl-9 bg-white rounded-xl"
-          placeholder="Buscar por título, marca ou arquivo…"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      {showingSuppliers ? (
+        supplierTiles.length === 0 ? (
+          <Card className="p-12 text-center text-sm text-muted-foreground rounded-2xl border-dashed">
+            <BookOpen className="h-10 w-10 mx-auto mb-3 text-slate-300" />
+            Nenhum catálogo ainda. Adicione o primeiro PDF ou imagem.
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {supplierTiles.map((tile) => (
+              <button
+                key={tile.id}
+                type="button"
+                onClick={() => {
+                  setSelectedSupplierId(tile.id);
+                  setFilterMarca("ALL");
+                  setSearchQuery("");
+                }}
+                className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 transition-all"
+              >
+                <div className="aspect-[4/3] rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden mb-3">
+                  {tile.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={tile.logoUrl}
+                      alt={tile.nome}
+                      className="max-h-full max-w-full object-contain p-3"
+                    />
+                  ) : (
+                    <Building2 className="h-10 w-10 text-slate-300" />
+                  )}
+                </div>
+                <p className="text-sm font-bold text-slate-800 truncate">{tile.nome}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {tile.count} {tile.count === 1 ? "item" : "itens"}
+                </p>
+              </button>
+            ))}
+          </div>
+        )
+      ) : (
+        <>
+          <div className="space-y-3">
+            {!manageMode && selectedSupplierId != null ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="font-bold gap-1.5 rounded-xl"
+                onClick={() => {
+                  setSelectedSupplierId(null);
+                  setFilterMarca("ALL");
+                  setSearchQuery("");
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" /> Fornecedores
+              </Button>
+            ) : null}
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  className="pl-9 bg-white rounded-xl"
+                  placeholder="Buscar por título, categoria ou acabamento…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              {marcas.length > 0 ? (
+                <select
+                  value={filterMarca}
+                  onChange={(e) => setFilterMarca(e.target.value)}
+                  className="h-10 rounded-xl border border-input bg-white px-3 text-sm"
+                >
+                  <option value="ALL">Todas as categorias</option>
+                  {marcas.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+          </div>
 
       {filtered.length === 0 ? (
         <Card className="p-12 text-center text-sm text-muted-foreground rounded-2xl border-dashed">
           <BookOpen className="h-10 w-10 mx-auto mb-3 text-slate-300" />
-          Nenhum catálogo ainda. Adicione o primeiro PDF ou imagem.
+          Nenhum catálogo encontrado.
         </Card>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
@@ -294,20 +470,36 @@ export default function CatalogosClient({
                   if (manageMode) return;
                   setViewing(catalog);
                 }}
-                className={`w-full aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
-                  manageMode
-                    ? "cursor-default"
-                    : "cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-slate-300"
+                className={`w-full text-left ${
+                  manageMode ? "cursor-default" : "cursor-pointer"
                 }`}
                 aria-label={`Abrir catálogo ${catalog.titulo}`}
               >
-                <CatalogCoverThumb
-                  catalog={catalog}
-                  companyId={companyId}
-                  onCapaSaved={handleCapaSaved}
-                  className="group-hover:scale-[1.03] transition-transform duration-500"
-                />
-                <span className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-black/25 via-black/5 to-transparent pointer-events-none" />
+                <div
+                  className={`aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
+                    manageMode
+                      ? ""
+                      : "group-hover:-translate-y-1 group-hover:shadow-lg group-hover:border-slate-300"
+                  }`}
+                >
+                  <CatalogCoverThumb
+                    catalog={catalog}
+                    companyId={companyId}
+                    onCapaSaved={handleCapaSaved}
+                    className="group-hover:scale-[1.03] transition-transform duration-500"
+                  />
+                  <span className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-black/25 via-black/5 to-transparent pointer-events-none" />
+                </div>
+                <div className="mt-2 px-0.5">
+                  <p className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">
+                    {catalog.titulo}
+                  </p>
+                  {catalog.marca ? (
+                    <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
+                      {catalog.marca}
+                    </p>
+                  ) : null}
+                </div>
               </button>
 
               {manageMode ? (
@@ -333,6 +525,8 @@ export default function CatalogosClient({
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
 
       <Dialog
@@ -366,13 +560,31 @@ export default function CatalogosClient({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600">Marca / linha</label>
+            <label className="text-xs font-semibold text-slate-600">Categoria / linha</label>
             <Input
               value={marca}
               onChange={(e) => setMarca(e.target.value)}
-              placeholder="Ex.: Arauco, Duratex…"
+              placeholder="Ex.: Puxadores, Banho…"
             />
           </div>
+
+          {suppliers.length > 0 ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Fornecedor</label>
+              <select
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Sem fornecedor</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nomeFantasia || s.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600">Descrição</label>
@@ -381,7 +593,7 @@ export default function CatalogosClient({
               onChange={(e) => setDescricao(e.target.value)}
               rows={2}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="Observação opcional para a equipe"
+              placeholder="Acabamentos, observações…"
             />
           </div>
 
@@ -459,9 +671,12 @@ export default function CatalogosClient({
                 <h3 className="text-sm font-bold text-slate-800 tracking-tight truncate">
                   {viewing.titulo}
                 </h3>
-                {viewing.marca ? (
-                  <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
-                    {viewing.marca}
+                <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
+                  {[viewing.marca, viewing.supplierNome].filter(Boolean).join(" · ")}
+                </p>
+                {acabamentosFromDescricao(viewing.descricao) ? (
+                  <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">
+                    Acabamentos: {acabamentosFromDescricao(viewing.descricao)}
                   </p>
                 ) : null}
               </div>
