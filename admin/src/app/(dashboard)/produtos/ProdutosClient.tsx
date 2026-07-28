@@ -7,6 +7,10 @@ import {
   updateShowcaseProduct,
   type ShowcaseProductDTO,
 } from "@/app/actions/produtos";
+import {
+  acabamentosToSwatches,
+  parseShowcaseDescricao,
+} from "@/lib/zenAcabamentos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { usePrivacy } from "@/context/PrivacyContext";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -1202,20 +1206,30 @@ export default function ProdutosClient({
           setViewingProduct(null);
           setCopiedText(false);
         }}
-        className="max-w-4xl"
+        showClose={false}
+        className="max-w-6xl w-full"
+        bodyClassName="max-h-[min(92svh,960px)] overflow-y-auto"
       >
         {viewingProduct && (() => {
           const product = viewingProduct;
           const gallery = productGallery(product);
           const activeIndex = Math.min(activeImageIndex, gallery.length - 1);
           const currentImg = gallery[activeIndex] || null;
+          const parsed = parseShowcaseDescricao(product.descricao);
+          const swatches = acabamentosToSwatches(parsed.acabamentos);
 
           const copyCommercialText = () => {
             const priceText = product.preco_exibicao != null 
               ? formatCurrency(product.preco_exibicao) 
               : "Preço sob consulta";
+
+            const acabLine = swatches.length
+              ? `\n*Acabamentos:* ${swatches.map((s) => s.nome).join(", ")}`
+              : "";
+            const descBody = parsed.corpo || (!swatches.length ? product.descricao : null) || "Sem descrição comercial.";
+            const linhaLine = parsed.linha ? `\n*Linha:* ${parsed.linha}` : "";
             
-            const text = `*${product.nome}*\n\n${product.descricao || "Sem descrição comercial."}\n\n*Ambiente:* ${product.categoria || "Geral"}\n*Preço:* ${priceText}`;
+            const text = `*${product.nome}*\n\n${descBody}${linhaLine}${acabLine}\n\n*Ambiente:* ${product.categoria || "Geral"}\n*Preço:* ${priceText}`;
             navigator.clipboard.writeText(text);
             setCopiedText(true);
             setTimeout(() => setCopiedText(false), 2000);
@@ -1239,25 +1253,33 @@ export default function ProdutosClient({
           };
 
           return (
-            <div className="space-y-4 pr-6 text-slate-800">
-              <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <div>
+            <div className="space-y-5 pr-2 text-slate-800">
+              <div className="flex items-start justify-between gap-4 border-b border-border/40 pb-3">
+                <div className="min-w-0">
                   <h3 className="text-lg font-black tracking-tight text-slate-800">Ficha do Produto</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Visualização completa e informações comerciais para vendas.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Visualização completa e informações comerciais para vendas.
+                  </p>
                 </div>
                 <button
-                  onClick={() => setViewingProduct(null)}
-                  className="p-1.5 hover:bg-slate-100 rounded-md text-muted-foreground transition-colors cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    setViewingProduct(null);
+                    setCopiedText(false);
+                  }}
+                  className="shrink-0 p-1.5 hover:bg-slate-100 rounded-md text-muted-foreground transition-colors cursor-pointer"
+                  aria-label="Fechar"
                 >
                   <X className="h-4.5 w-4.5" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                {/* Imagens (Grid de 7 colunas) */}
-                <div className="md:col-span-7 space-y-3">
-                  <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-border relative flex items-center justify-center shadow-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                {/* Imagens */}
+                <div className="lg:col-span-7 space-y-3">
+                  <div className="aspect-[4/3] sm:aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-border relative flex items-center justify-center shadow-xs">
                     {currentImg ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={currentImg} alt={product.nome} className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="h-12 w-12 text-slate-300" />
@@ -1269,7 +1291,6 @@ export default function ProdutosClient({
                     )}
                   </div>
 
-                  {/* Carrossel de Miniaturas */}
                   {gallery.length > 1 && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {gallery.map((url, idx) => (
@@ -1283,6 +1304,7 @@ export default function ProdutosClient({
                               : "border-border hover:border-slate-400"
                           }`}
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))}
@@ -1290,16 +1312,28 @@ export default function ProdutosClient({
                   )}
                 </div>
 
-                {/* Dados (Grid de 5 colunas) */}
-                <div className="md:col-span-5 flex flex-col justify-between self-stretch gap-5">
+                {/* Dados */}
+                <div className="lg:col-span-5 flex flex-col justify-between self-stretch gap-5">
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      {product.categoria ? (
-                        <span className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                          {product.categoria}
-                        </span>
-                      ) : null}
-                      <h2 className="text-xl font-black text-slate-850 leading-tight tracking-tight mt-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {product.categoria ? (
+                          <span className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                            {product.categoria}
+                          </span>
+                        ) : null}
+                        {parsed.linha ? (
+                          <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-amber-800/80 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-100">
+                            Linha {parsed.linha}
+                          </span>
+                        ) : null}
+                        {product.supplierNome ? (
+                          <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                            {product.supplierNome}
+                          </span>
+                        ) : null}
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-850 leading-tight tracking-tight mt-1.5">
                         {product.nome}
                       </h2>
                     </div>
@@ -1315,16 +1349,59 @@ export default function ProdutosClient({
                       </p>
                     </div>
 
-                    {product.descricao ? (
+                    {swatches.length > 0 ? (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-450 tracking-wider">
+                          Acabamentos ({swatches.length})
+                        </h4>
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                          {swatches.map((swatch) => (
+                            <div
+                              key={swatch.nome}
+                              className="group flex flex-col items-center gap-1.5 text-center"
+                              title={swatch.nome}
+                            >
+                              <div className="w-full aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-xs">
+                                {swatch.imagem ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={swatch.imagem}
+                                    alt={swatch.nome}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-slate-400 px-1">
+                                    {swatch.nome.slice(0, 8)}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-[9px] font-semibold text-slate-600 leading-tight line-clamp-2 px-0.5">
+                                {swatch.nome}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {parsed.corpo ? (
+                      <div className="space-y-1">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-450 tracking-wider">Descrição Comercial</h4>
+                        <p className="text-sm text-slate-650 leading-relaxed whitespace-pre-line font-medium">
+                          {parsed.corpo}
+                        </p>
+                      </div>
+                    ) : !swatches.length && product.descricao ? (
                       <div className="space-y-1">
                         <h4 className="text-[10px] font-bold uppercase text-slate-450 tracking-wider">Descrição Comercial</h4>
                         <p className="text-sm text-slate-650 leading-relaxed whitespace-pre-line font-medium">
                           {product.descricao}
                         </p>
                       </div>
-                    ) : (
+                    ) : !swatches.length ? (
                       <p className="text-xs text-slate-400 italic">Sem descrição comercial cadastrada.</p>
-                    )}
+                    ) : null}
 
                     {product.inventory_item_id && (
                       <div className="flex items-center gap-2 text-xs font-bold text-cyan-850 bg-cyan-50/50 border border-cyan-100 rounded-lg p-2.5">
@@ -1334,7 +1411,6 @@ export default function ProdutosClient({
                     )}
                   </div>
 
-                  {/* Ações Técnicas/Comerciais */}
                   <div className="flex flex-col gap-2 pt-4 border-t border-border/40 mt-auto">
                     {currentImg && (
                       <Button
