@@ -55,8 +55,9 @@ export const BAIRROS_FARROUPILHA = [
   "Volta Grande",
 ] as const;
 
+/** UF só conta se vier após espaço ou separador — evita cortar "Gonçalves" (…ES). */
 const UF_SUFFIX =
-  /\s*[-–,\/]?\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\s*$/i;
+  /(?:\s+|[-–,\/]\s*)(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\s*$/i;
 
 export function foldAccents(value: string): string {
   return value
