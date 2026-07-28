@@ -793,6 +793,7 @@ model Supplier {
   updatedAt          DateTime        @updatedAt
   inventoryItems     InventoryItem[]
   expenses           Expense[]
+  showcaseProducts   ShowcaseProduct[]
 
   // Novos campos do Cadastro de Fornecedor
   nomeFantasia       String?
@@ -895,6 +896,8 @@ model ShowcaseProduct {
   company           Company        @relation(fields: [company_id], references: [id], onDelete: Cascade)
   inventory_item_id String?
   inventoryItem     InventoryItem? @relation(fields: [inventory_item_id], references: [id], onDelete: SetNull)
+  supplier_id       String?
+  supplier          Supplier?      @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
   nome              String
   descricao         String?        @db.Text
   categoria         String?
@@ -911,6 +914,7 @@ model ShowcaseProduct {
   @@index([company_id])
   @@index([company_id, ativo])
   @@index([inventory_item_id])
+  @@index([company_id, supplier_id])
 }
 
 /** Catálogos (PDF/imagens) para apresentar aos clientes no comercial. */

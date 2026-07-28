@@ -20,9 +20,33 @@ export type ShowcaseProductDTO = {
   ativo: boolean;
   inventory_item_id: string | null;
   inventoryItemNome: string | null;
+  supplier_id: string | null;
+  supplierNome: string | null;
+  supplierLogoUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
+
+export type ShowcaseSupplierOption = {
+  id: string;
+  nome: string;
+  nomeFantasia: string | null;
+  logoUrl: string | null;
+};
+
+type CrmUpload = { tipo?: string; url?: string; nome?: string };
+
+function extractLogoUrl(crmUploads: unknown): string | null {
+  if (!Array.isArray(crmUploads)) return null;
+  const logo = crmUploads.find(
+    (entry): entry is CrmUpload =>
+      !!entry &&
+      typeof entry === "object" &&
+      (entry as CrmUpload).tipo === "Logo" &&
+      typeof (entry as CrmUpload).url === "string"
+  );
+  return logo?.url ?? null;
+}
 
 function resolveImagens(row: {
   imagens?: string[] | null;
@@ -46,6 +70,8 @@ function mapProduct(row: {
   ativo: boolean;
   inventory_item_id: string | null;
   inventoryItem?: { nome: string } | null;
+  supplier_id?: string | null;
+  supplier?: { nome: string; nomeFantasia: string | null; crmUploads: unknown } | null;
   createdAt: Date;
   updatedAt: Date;
 }): ShowcaseProductDTO {
@@ -63,10 +89,18 @@ function mapProduct(row: {
     ativo: row.ativo,
     inventory_item_id: row.inventory_item_id,
     inventoryItemNome: row.inventoryItem?.nome ?? null,
+    supplier_id: row.supplier_id ?? null,
+    supplierNome: row.supplier?.nomeFantasia || row.supplier?.nome || null,
+    supplierLogoUrl: extractLogoUrl(row.supplier?.crmUploads),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
+
+const productInclude = {
+  inventoryItem: { select: { nome: true } },
+  supplier: { select: { nome: true, nomeFantasia: true, crmUploads: true } },
+} as const;
 
 export async function listShowcaseProducts(companyId: string, opts?: { ativoOnly?: boolean }) {
   const auth = await getModuleAccess("produtos");
@@ -89,7 +123,7 @@ export async function listShowcaseProducts(companyId: string, opts?: { ativoOnly
         company_id: companyId,
         ...(opts?.ativoOnly ? { ativo: true } : {}),
       },
-      include: { inventoryItem: { select: { nome: true } } },
+      include: productInclude,
       orderBy: [{ ordem: "asc" }, { nome: "asc" }],
     });
     return { success: true as const, products: products.map(mapProduct) };
@@ -97,6 +131,19 @@ export async function listShowcaseProducts(companyId: string, opts?: { ativoOnly
     console.error("Erro ao listar produtos do mostruário:", error);
     return { success: false as const, error: "Falha ao carregar produtos.", products: [] as ShowcaseProductDTO[] };
   }
+}
+
+async function resolveSupplierId(
+  companyId: string,
+  supplierId: string | null | undefined
+): Promise<{ id: string } | { error: string } | null> {
+  if (!supplierId) return null;
+  const supplier = await prisma.supplier.findFirst({
+    where: { id: supplierId, company_id: companyId },
+    select: { id: true },
+  });
+  if (!supplier) return { error: "Fornecedor não encontrado." };
+  return { id: supplier.id };
 }
 
 export async function createShowcaseProduct(
@@ -107,6 +154,7 @@ export async function createShowcaseProduct(
     categoria?: string;
     preco_exibicao?: number | null;
     inventory_item_id?: string | null;
+    supplier_id?: string | null;
     ordem?: number;
     ativo?: boolean;
   }
@@ -126,16 +174,29 @@ export async function createShowcaseProduct(
   let categoria = data.categoria?.trim() || null;
   let preco = data.preco_exibicao ?? null;
   let descricao = data.descricao?.trim() || null;
+  let supplierId: string | null = data.supplier_id || null;
 
   if (inventoryItemId) {
     const inv = await prisma.inventoryItem.findFirst({
       where: { id: inventoryItemId, company_id: companyId },
-      select: { id: true, nome: true, categoria: true, preco_custo: true },
+      select: { id: true, nome: true, categoria: true, preco_custo: true, supplier_id: true },
     });
     if (!inv) return { success: false as const, error: "Item de estoque não encontrado." };
     inventoryItemId = inv.id;
     if (!categoria) categoria = inv.categoria;
     if (preco == null) preco = Number(inv.preco_custo) * 2.2;
+    if (!supplierId && inv.supplier_id) supplierId = inv.supplier_id;
+  }
+
+  if (supplierId) {
+    const resolved = await resolveSupplierId(companyId, supplierId);
+    if (!resolved) {
+      supplierId = null;
+    } else if ("error" in resolved) {
+      return { success: false as const, error: resolved.error };
+    } else {
+      supplierId = resolved.id;
+    }
   }
 
   try {
@@ -147,11 +208,12 @@ export async function createShowcaseProduct(
         categoria,
         preco_exibicao: preco,
         inventory_item_id: inventoryItemId,
+        supplier_id: supplierId,
         ordem: data.ordem ?? 0,
         ativo: data.ativo ?? true,
         imagens: [],
       },
-      include: { inventoryItem: { select: { nome: true } } },
+      include: productInclude,
     });
     revalidatePath("/produtos");
     return { success: true as const, product: mapProduct(product) };
@@ -170,6 +232,7 @@ export async function updateShowcaseProduct(
     categoria?: string | null;
     preco_exibicao?: number | null;
     inventory_item_id?: string | null;
+    supplier_id?: string | null;
     ordem?: number;
     ativo?: boolean;
   }
@@ -200,6 +263,19 @@ export async function updateShowcaseProduct(
     inventoryItemId = inv.id;
   }
 
+  let supplierId: string | null | undefined =
+    data.supplier_id === undefined ? undefined : data.supplier_id || null;
+  if (supplierId) {
+    const resolved = await resolveSupplierId(companyId, supplierId);
+    if (!resolved) {
+      supplierId = null;
+    } else if ("error" in resolved) {
+      return { success: false as const, error: resolved.error };
+    } else {
+      supplierId = resolved.id;
+    }
+  }
+
   try {
     const product = await prisma.showcaseProduct.update({
       where: { id: productId },
@@ -213,10 +289,11 @@ export async function updateShowcaseProduct(
           : {}),
         ...(data.preco_exibicao !== undefined ? { preco_exibicao: data.preco_exibicao } : {}),
         ...(inventoryItemId !== undefined ? { inventory_item_id: inventoryItemId } : {}),
+        ...(supplierId !== undefined ? { supplier_id: supplierId } : {}),
         ...(data.ordem !== undefined ? { ordem: data.ordem } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
       },
-      include: { inventoryItem: { select: { nome: true } } },
+      include: productInclude,
     });
     revalidatePath("/produtos");
     return { success: true as const, product: mapProduct(product) };

@@ -25,6 +25,12 @@ export default async function ProdutosPage() {
         categoria: item.categoria,
         precoCusto: item.precoCusto,
       }))}
+      suppliers={(inventoryRes.suppliers || []).map((s) => ({
+        id: s.id,
+        nome: s.nome,
+        nomeFantasia: s.nomeFantasia ?? null,
+        logoUrl: s.logoUrl ?? null,
+      }))}
     />
   );
 }

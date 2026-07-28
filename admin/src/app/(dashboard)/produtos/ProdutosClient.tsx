@@ -42,6 +42,8 @@ import {
   Download,
   Copy,
   Check,
+  ArrowLeft,
+  Building2,
 } from "lucide-react";
 
 type InventoryOption = {
@@ -51,10 +53,20 @@ type InventoryOption = {
   precoCusto: number;
 };
 
+type SupplierOption = {
+  id: string;
+  nome: string;
+  nomeFantasia: string | null;
+  logoUrl: string | null;
+};
+
+const NONE_SUPPLIER_ID = "__none__";
+
 interface ProdutosClientProps {
   companyId: string;
   initialProducts: ShowcaseProductDTO[];
   inventoryOptions: InventoryOption[];
+  suppliers?: SupplierOption[];
 }
 
 const CATEGORY_VISUAL: Record<
@@ -212,6 +224,7 @@ export default function ProdutosClient({
   companyId,
   initialProducts,
   inventoryOptions,
+  suppliers = [],
 }: ProdutosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -222,6 +235,7 @@ export default function ProdutosClient({
   const [filterCategory, setFilterCategory] = useState("ALL");
   const [filterAtivo, setFilterAtivo] = useState<"ALL" | "ATIVO" | "INATIVO">("ALL");
   const [manageMode, setManageMode] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ShowcaseProductDTO | null>(null);
   const [saving, setSaving] = useState(false);
@@ -237,40 +251,111 @@ export default function ProdutosClient({
   const [categoria, setCategoria] = useState("");
   const [precoExibicao, setPrecoExibicao] = useState("");
   const [inventoryItemId, setInventoryItemId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
   const [ativo, setAtivo] = useState(true);
   const [imagens, setImagens] = useState<string[]>([]);
 
+  const supplierById = useMemo(() => {
+    const map = new Map<string, SupplierOption>();
+    suppliers.forEach((s) => map.set(s.id, s));
+    return map;
+  }, [suppliers]);
+
+  const supplierTiles = useMemo(() => {
+    const counts = new Map<string, number>();
+    let orphans = 0;
+    products.forEach((p) => {
+      if (p.supplier_id) {
+        counts.set(p.supplier_id, (counts.get(p.supplier_id) || 0) + 1);
+      } else {
+        orphans += 1;
+      }
+    });
+
+    const tiles: {
+      id: string;
+      nome: string;
+      logoUrl: string | null;
+      count: number;
+    }[] = [];
+
+    for (const [id, count] of counts) {
+      const s = supplierById.get(id);
+      tiles.push({
+        id,
+        nome:
+          s?.nomeFantasia ||
+          s?.nome ||
+          products.find((p) => p.supplier_id === id)?.supplierNome ||
+          "Fornecedor",
+        logoUrl:
+          s?.logoUrl ||
+          products.find((p) => p.supplier_id === id)?.supplierLogoUrl ||
+          null,
+        count,
+      });
+    }
+    tiles.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    if (orphans > 0) {
+      tiles.push({
+        id: NONE_SUPPLIER_ID,
+        nome: "Sem fornecedor",
+        logoUrl: null,
+        count: orphans,
+      });
+    }
+    return tiles;
+  }, [products, supplierById]);
+
+  const showingSuppliers = !manageMode && selectedSupplierId == null;
+
+  const scopeProducts = useMemo(() => {
+    if (manageMode || selectedSupplierId == null) return products;
+    if (selectedSupplierId === NONE_SUPPLIER_ID) {
+      return products.filter((p) => !p.supplier_id);
+    }
+    return products.filter((p) => p.supplier_id === selectedSupplierId);
+  }, [products, manageMode, selectedSupplierId]);
+
   const categories = useMemo(() => {
     const set = new Set<string>();
-    products.forEach((p) => {
+    scopeProducts.forEach((p) => {
       if (p.categoria?.trim()) set.add(p.categoria.trim());
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [products]);
+  }, [scopeProducts]);
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();
-    products.forEach((p) => {
+    scopeProducts.forEach((p) => {
       const key = p.categoria?.trim();
       if (!key) return;
       map.set(key, (map.get(key) || 0) + 1);
     });
     return map;
-  }, [products]);
+  }, [scopeProducts]);
 
-  const filtered = products.filter((p) => {
+  const filtered = scopeProducts.filter((p) => {
     const q = searchQuery.trim().toLowerCase();
     const matchesSearch =
       !q ||
       p.nome.toLowerCase().includes(q) ||
       (p.descricao || "").toLowerCase().includes(q) ||
-      (p.categoria || "").toLowerCase().includes(q);
+      (p.categoria || "").toLowerCase().includes(q) ||
+      (p.supplierNome || "").toLowerCase().includes(q);
     const matchesCategory = filterCategory === "ALL" || p.categoria === filterCategory;
     const matchesAtivo =
       filterAtivo === "ALL" ||
       (filterAtivo === "ATIVO" ? p.ativo : !p.ativo);
     return matchesSearch && matchesCategory && matchesAtivo;
   });
+
+  const selectedSupplierLabel = useMemo(() => {
+    if (!selectedSupplierId || selectedSupplierId === NONE_SUPPLIER_ID) {
+      return selectedSupplierId === NONE_SUPPLIER_ID ? "Sem fornecedor" : null;
+    }
+    return supplierTiles.find((t) => t.id === selectedSupplierId)?.nome || null;
+  }, [selectedSupplierId, supplierTiles]);
 
   const resetForm = () => {
     setEditing(null);
@@ -279,6 +364,9 @@ export default function ProdutosClient({
     setCategoria("");
     setPrecoExibicao("");
     setInventoryItemId("");
+    setSupplierId(
+      selectedSupplierId && selectedSupplierId !== NONE_SUPPLIER_ID ? selectedSupplierId : ""
+    );
     setAtivo(true);
     setImagens([]);
   };
@@ -297,6 +385,7 @@ export default function ProdutosClient({
       product.preco_exibicao != null ? String(product.preco_exibicao) : ""
     );
     setInventoryItemId(product.inventory_item_id || "");
+    setSupplierId(product.supplier_id || "");
     setAtivo(product.ativo);
     setImagens(product.imagens?.length ? product.imagens : product.imagem_url ? [product.imagem_url] : []);
     setModalOpen(true);
@@ -353,6 +442,7 @@ export default function ProdutosClient({
       categoria: categoria.trim() || undefined,
       preco_exibicao: precoExibicao.trim() ? Number(precoExibicao) : null,
       inventory_item_id: inventoryItemId || null,
+      supplier_id: supplierId || null,
       ativo,
     };
 
@@ -513,7 +603,11 @@ export default function ProdutosClient({
             <ProdutosSectionTabs />
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Mostruário visual para identificar o que entra no orçamento do cliente.
+            {showingSuppliers
+              ? "Escolha o fornecedor para ver os produtos da vitrine."
+              : selectedSupplierLabel
+                ? `Produtos de ${selectedSupplierLabel}.`
+                : "Mostruário visual para identificar o que entra no orçamento do cliente."}
           </p>
         </div>
 
@@ -521,7 +615,13 @@ export default function ProdutosClient({
           <Button
             type="button"
             variant={manageMode ? "default" : "outline"}
-            onClick={() => setManageMode((v) => !v)}
+            onClick={() => {
+              setManageMode((v) => {
+                const next = !v;
+                if (next) setSelectedSupplierId(null);
+                return next;
+              });
+            }}
             className="font-bold gap-1.5 w-full sm:w-auto"
             title={
               manageMode
@@ -543,108 +643,174 @@ export default function ProdutosClient({
       </div>
 
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              className="pl-9 bg-white"
-              placeholder="Buscar por nome, descrição ou categoria…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 shrink-0 items-center">
-            <select
-              value={filterAtivo}
-              onChange={(e) => setFilterAtivo(e.target.value as typeof filterAtivo)}
-              className="h-10 rounded-md border border-input bg-white px-3 text-sm flex-1 sm:flex-none"
-            >
-              <option value="ALL">Todos os status</option>
-              <option value="ATIVO">Ativos</option>
-              <option value="INATIVO">Inativos</option>
-            </select>
+        {!showingSuppliers ? (
+          <>
+            {!manageMode && selectedSupplierId != null ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="font-bold gap-1.5"
+                onClick={() => {
+                  setSelectedSupplierId(null);
+                  setFilterCategory("ALL");
+                  setSearchQuery("");
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" /> Fornecedores
+              </Button>
+            ) : null}
 
-            <div className="flex rounded-lg border border-input bg-slate-100 p-0.5 shrink-0 h-10 items-center">
-              <button
-                type="button"
-                onClick={() => setViewMode("grid")}
-                className={`p-1.5 rounded-md transition-all cursor-pointer ${
-                  viewMode === "grid"
-                    ? "bg-white text-slate-900 shadow-xs"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                title="Exibição em Grid"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={`p-1.5 rounded-md transition-all cursor-pointer ${
-                  viewMode === "list"
-                    ? "bg-white text-slate-900 shadow-xs"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                title="Exibição em Tabela"
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
-          <button
-            type="button"
-            data-active={filterCategory === "ALL"}
-            onClick={() => setFilterCategory("ALL")}
-            className="shrink-0 inline-flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer text-slate-700 data-[active=true]:bg-slate-950 data-[active=true]:text-white data-[active=true]:border-slate-950"
-          >
-            <LayoutGrid className="h-4 w-4 text-slate-400 group-data-[active=true]:text-white" />
-            Todas
-            <span 
-              data-active={filterCategory === "ALL"}
-              className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 data-[active=true]:bg-white/20 data-[active=true]:text-white transition-colors"
-            >
-              {products.length}
-            </span>
-          </button>
-          {categories.map((cat) => {
-            const visual = categoryVisual(cat);
-            const Icon = visual.icon;
-            const isActive = filterCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                data-active={isActive}
-                onClick={() => setFilterCategory(cat)}
-                className={`shrink-0 inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer ${visual.tone}`}
-              >
-                <Icon className="h-4 w-4" />
-                {cat}
-                <span 
-                  className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black transition-colors ${
-                    isActive 
-                      ? "bg-white/20 text-white" 
-                      : "bg-black/5 text-slate-600"
-                  }`}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  className="pl-9 bg-white"
+                  placeholder="Buscar por nome, descrição ou categoria…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 shrink-0 items-center">
+                <select
+                  value={filterAtivo}
+                  onChange={(e) => setFilterAtivo(e.target.value as typeof filterAtivo)}
+                  className="h-10 rounded-md border border-input bg-white px-3 text-sm flex-1 sm:flex-none"
                 >
-                  {categoryCounts.get(cat) || 0}
+                  <option value="ALL">Todos os status</option>
+                  <option value="ATIVO">Ativos</option>
+                  <option value="INATIVO">Inativos</option>
+                </select>
+
+                <div className="flex rounded-lg border border-input bg-slate-100 p-0.5 shrink-0 h-10 items-center">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                      viewMode === "grid"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                    title="Exibição em Grid"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                      viewMode === "list"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                    title="Exibição em Tabela"
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
+              <button
+                type="button"
+                data-active={filterCategory === "ALL"}
+                onClick={() => setFilterCategory("ALL")}
+                className="shrink-0 inline-flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer text-slate-700 data-[active=true]:bg-slate-950 data-[active=true]:text-white data-[active=true]:border-slate-950"
+              >
+                <LayoutGrid className="h-4 w-4 text-slate-400 group-data-[active=true]:text-white" />
+                Todas
+                <span
+                  data-active={filterCategory === "ALL"}
+                  className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 data-[active=true]:bg-white/20 data-[active=true]:text-white transition-colors"
+                >
+                  {scopeProducts.length}
                 </span>
               </button>
-            );
-          })}
-        </div>
+              {categories.map((cat) => {
+                const visual = categoryVisual(cat);
+                const Icon = visual.icon;
+                const isActive = filterCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    data-active={isActive}
+                    onClick={() => setFilterCategory(cat)}
+                    className={`shrink-0 inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer ${visual.tone}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {cat}
+                    <span
+                      className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black transition-colors ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-black/5 text-slate-600"
+                      }`}
+                    >
+                      {categoryCounts.get(cat) || 0}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
       </div>
 
-      {filtered.length === 0 ? (
+      {showingSuppliers ? (
+        supplierTiles.length === 0 ? (
+          <Card className="p-12 text-center text-sm text-muted-foreground">
+            <Package className="h-10 w-10 mx-auto mb-3 text-slate-300" />
+            Nenhum produto no mostruário. Cadastre o primeiro para usar nos orçamentos.
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
+            {supplierTiles.map((tile) => (
+              <Card
+                key={tile.id}
+                onClick={() => {
+                  setSelectedSupplierId(tile.id);
+                  setFilterCategory("ALL");
+                  setSearchQuery("");
+                }}
+                className="group cursor-pointer overflow-hidden border-border/60 hover:border-border hover:shadow-md transition-all"
+              >
+                <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center p-6 border-b border-border/40">
+                  {tile.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={tile.logoUrl}
+                      alt={tile.nome}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <Building2 className="h-10 w-10" />
+                      <span className="text-xs font-bold uppercase tracking-wide">
+                        {tile.nome.slice(0, 2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3.5">
+                  <h3 className="font-semibold text-foreground leading-snug line-clamp-2">
+                    {tile.nome}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 font-medium">
+                    {tile.count} {tile.count === 1 ? "produto" : "produtos"}
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
+      ) : filtered.length === 0 ? (
         <Card className="p-12 text-center text-sm text-muted-foreground">
           <Package className="h-10 w-10 mx-auto mb-3 text-slate-300" />
           Nenhum produto no mostruário. Cadastre o primeiro para usar nos orçamentos.
         </Card>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-2.5 md:gap-3">
           {filtered.map((product) => {
             return (
               <Card
@@ -660,33 +826,33 @@ export default function ProdutosClient({
                 } ${!manageMode ? "cursor-pointer" : ""}`}
               >
                 <ProductCardGallery product={product} manageMode={manageMode} />
-                <div className="p-3.5 flex-1 flex flex-col gap-1.5">
+                <div className="p-2.5 flex-1 flex flex-col gap-1">
                   {product.categoria ? (
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
                       {product.categoria}
                     </p>
                   ) : null}
-                  <h3 className="font-semibold text-foreground leading-snug line-clamp-2">
+                  <h3 className="font-semibold text-sm text-foreground leading-snug line-clamp-2">
                     {product.nome}
                   </h3>
                   {!privacyMode ? (
-                    <p className="text-sm font-black text-foreground mt-0.5">
+                    <p className="text-xs font-black text-foreground mt-0.5">
                       {formatCurrency(product.preco_exibicao)}
                     </p>
                   ) : null}
                   {product.inventory_item_id ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-100 rounded px-1.5 py-0.5 w-fit mt-1">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-100 rounded px-1.5 py-0.5 w-fit mt-1">
                       <Link2 className="h-3 w-3" />
                       Estoque
                     </span>
                   ) : null}
                   {manageMode ? (
-                    <div className="mt-auto pt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="mt-auto pt-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 px-2"
                         onClick={() => openEdit(product)}
                       >
                         <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
@@ -695,7 +861,7 @@ export default function ProdutosClient({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2"
                         onClick={() => handleDelete(product)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -964,6 +1130,22 @@ export default function ProdutosClient({
                 placeholder="0,00"
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Fornecedor</label>
+            <select
+              value={supplierId}
+              onChange={(e) => setSupplierId(e.target.value)}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Sem fornecedor</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nomeFantasia || s.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">

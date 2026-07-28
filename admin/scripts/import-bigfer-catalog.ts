@@ -126,6 +126,18 @@ async function main() {
   });
   let nextOrdem = (maxOrdem._max.ordem ?? 0) + 1;
 
+  const bigferSupplier = await prisma.supplier.findFirst({
+    where: {
+      company_id: company.id,
+      OR: [
+        { nome: { contains: "Bigfer", mode: "insensitive" } },
+        { nomeFantasia: { contains: "Bigfer", mode: "insensitive" } },
+      ],
+    },
+    select: { id: true },
+  });
+  const bigferSupplierId = bigferSupplier?.id ?? null;
+
   let created = 0;
   let updated = 0;
   const nameCount = new Map<string, number>();
@@ -161,6 +173,7 @@ async function main() {
           descricao,
           categoria,
           ativo: true,
+          ...(bigferSupplierId ? { supplier_id: bigferSupplierId } : {}),
           ...(keepBlobCover
             ? {}
             : {
@@ -188,6 +201,7 @@ async function main() {
         preco_exibicao: null,
         ordem: nextOrdem++,
         ativo: true,
+        ...(bigferSupplierId ? { supplier_id: bigferSupplierId } : {}),
       },
     });
     byFonte.set(normalizeFonte(item.fonte), createdRow as (typeof existing)[number]);
