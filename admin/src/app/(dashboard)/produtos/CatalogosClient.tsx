@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import {
   updateProductCatalog,
@@ -28,7 +28,19 @@ import {
   Settings2,
   ArrowLeft,
   Building2,
+  ExternalLink,
 } from "lucide-react";
+
+/** Zen (e outros hosts) servem PDF como attachment/octet-stream — o iframe fica em branco. */
+function isHostedPdf(url: string): boolean {
+  return url.includes("blob.vercel-storage.com");
+}
+
+function pdfViewerSrc(url: string): string {
+  if (isHostedPdf(url)) return `${url}#toolbar=1&navpanes=0`;
+  // Viewer público que busca o arquivo no servidor (contorna Content-Disposition: attachment)
+  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+}
 
 type SupplierOption = {
   id: string;
@@ -70,6 +82,7 @@ export default function CatalogosClient({
   const [uploading, setUploading] = useState(false);
   const [viewing, setViewing] = useState<ProductCatalogDTO | null>(null);
   const [viewFullscreen, setViewFullscreen] = useState(false);
+  const [rehostingPdf, setRehostingPdf] = useState(false);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -140,6 +153,52 @@ export default function CatalogosClient({
       prev.map((c) => (c.id === catalogId ? { ...c, capa_url: capaUrl } : c))
     );
   }, []);
+
+  // PDFs externos (Zen etc.) vêm com Content-Disposition: attachment — iframe fica vazio.
+  // Na 1ª abertura, rehospeda no Blob da Vercel com application/pdf.
+  useEffect(() => {
+    if (!viewing) return;
+    if (viewing.mime_type !== "application/pdf") return;
+    if (isHostedPdf(viewing.arquivo_url)) return;
+
+    let cancelled = false;
+    setRehostingPdf(true);
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/produtos/catalogos/rehost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: viewing.id }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !data.success || !data.arquivo_url) {
+          console.warn("Rehost PDF falhou:", data.error);
+          return;
+        }
+        const nextUrl = data.arquivo_url as string;
+        setCatalogs((prev) =>
+          prev.map((c) =>
+            c.id === viewing.id ? { ...c, arquivo_url: nextUrl, mime_type: "application/pdf" } : c
+          )
+        );
+        setViewing((prev) =>
+          prev && prev.id === viewing.id
+            ? { ...prev, arquivo_url: nextUrl, mime_type: "application/pdf" }
+            : prev
+        );
+      } catch (err) {
+        console.error("Rehost PDF:", err);
+      } finally {
+        if (!cancelled) setRehostingPdf(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewing?.id, viewing?.arquivo_url, viewing?.mime_type]);
 
   const filtered = scopeCatalogs.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -680,6 +739,18 @@ export default function CatalogosClient({
                   </p>
                 ) : null}
               </div>
+              {viewing.mime_type === "application/pdf" ? (
+                <a
+                  href={viewing.arquivo_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 h-8 px-2.5 inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors text-[11px] font-semibold"
+                  title="Abrir PDF em nova aba"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Abrir PDF
+                </a>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setViewFullscreen((v) => !v)}
@@ -696,11 +767,22 @@ export default function CatalogosClient({
             </div>
             <div className="flex-1 min-h-0 relative bg-slate-900">
               {viewing.mime_type === "application/pdf" ? (
-                <iframe
-                  src={`${viewing.arquivo_url}#toolbar=1&navpanes=0`}
-                  className="absolute inset-0 w-full h-full border-0"
-                  title={viewing.titulo}
-                />
+                <>
+                  {rehostingPdf && !isHostedPdf(viewing.arquivo_url) ? (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-900/90 text-slate-200">
+                      <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+                      <p className="text-sm font-medium">Preparando PDF para visualização…</p>
+                      <p className="text-xs text-slate-400 max-w-sm text-center px-4">
+                        O arquivo original força download; estamos copiando para o armazenamento interno.
+                      </p>
+                    </div>
+                  ) : null}
+                  <iframe
+                    src={pdfViewerSrc(viewing.arquivo_url)}
+                    className="absolute inset-0 w-full h-full border-0"
+                    title={viewing.titulo}
+                  />
+                </>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

@@ -1,9 +1,9 @@
 /**
- * Importa produtos Zen Design em ProductCatalog, vinculados ao fornecedor Zen.
- * Uso: npx tsx scripts/import-zen-catalog.ts
+ * Importa catálogos PDF oficiais Zen Design em ProductCatalog.
+ * (Fichas de produto vão para a vitrine — ver move-zen-catalogs-to-showcase.ts /
+ *  import direto no Showcase se necessário.)
  *
- * Lê: scripts/data/zen-catalog.json
- * Também importa PDFs oficiais de https://www.zendesign.com.br/catalogos
+ * Uso: npx tsx scripts/import-zen-catalog.ts
  */
 
 import { readFileSync } from "fs";
