@@ -1,0 +1,1763 @@
+{
+  "categorias_pai": [
+    "Corrediças",
+    "Dobradiças",
+    "Ferragens em geral",
+    "Gabaritos",
+    "Peças Técnicas",
+    "Ponteiras e Acabamentos",
+    "Puxadores",
+    "Rodízios",
+    "Sapatas",
+    "Sistemas de Fixação",
+    "Sistemas e Articuladores",
+    "Sistemas para Portas de Correr"
+  ],
+  "produtos": [
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Trilho Telescópico",
+      "titulo_menu": "45 mm",
+      "url": "https://www.bigfer.com.br/trilho-telescopico-45mm/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Trilho Telescópico",
+      "titulo_menu": "Light 35 mm",
+      "url": "https://www.bigfer.com.br/trilho-telescopico-light-35mm/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Trilho Telescópico",
+      "titulo_menu": "Mini Light 30 mm",
+      "url": "https://www.bigfer.com.br/trilho-telescopico-minilight-30mm/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Corrediça de Rolete",
+      "titulo_menu": "Corrediça",
+      "url": "https://www.bigfer.com.br/corredica-bigfer/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Corrediça de Rolete",
+      "titulo_menu": "Corrediça Light",
+      "url": "https://www.bigfer.com.br/corredica-light/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Corrediça de Rolete",
+      "titulo_menu": "Corrediça Reforçada",
+      "url": "https://www.bigfer.com.br/corredica-reforcada/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Distanciadores",
+      "titulo_menu": "Para Corrediça Quadro",
+      "url": "https://www.bigfer.com.br/distanciador-para-corredica-quadro/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Distanciadores",
+      "titulo_menu": "Distanciador 37 mm",
+      "url": "https://www.bigfer.com.br/distanciador-para-corredica-37mm/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Distanciadores",
+      "titulo_menu": "Distanciador Cilíndrico",
+      "url": "https://www.bigfer.com.br/distanciador-cilindrico-de-corredica/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Distanciadores",
+      "titulo_menu": "Distanciador com Pino",
+      "url": "https://www.bigfer.com.br/distanciador-corredica-com-pino/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Guias Plásticas",
+      "titulo_menu": "Gaveta com Cavilha",
+      "url": "https://www.bigfer.com.br/guia-gaveta-com-cavilha/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Guias Plásticas",
+      "titulo_menu": "Guia para Gaveta 253",
+      "url": "https://www.bigfer.com.br/guia-para-gaveta-253/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Guias Plásticas",
+      "titulo_menu": "Guia para Gaveta 300",
+      "url": "https://www.bigfer.com.br/guia-para-gaveta-300/"
+    },
+    {
+      "categoria_pai": "Corrediças",
+      "caminho": "Corrediças › Guias Plásticas",
+      "titulo_menu": "Guia para Gaveta \"L\"",
+      "url": "https://www.bigfer.com.br/guia-para-gaveta-l/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Calço Fixo",
+      "titulo_menu": "Calço Fixo - Baixa",
+      "url": "https://www.bigfer.com.br/dobradica35-comamortecimento-calcofixo-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Calço Fixo",
+      "titulo_menu": "Calço Fixo - Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco35-calcofixo-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Calço Slide On",
+      "titulo_menu": "Calço Slide On - Baixa",
+      "url": "https://www.bigfer.com.br/dobradica-baixa-35-amortecimento-slideon/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Calço Slide On",
+      "titulo_menu": "Calço Slide On - Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-amortecimento-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Integrado",
+      "titulo_menu": "35 Amortecimento - Baixa",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-mortecedor-baixa/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Integrado",
+      "titulo_menu": "35 Amortecimento - Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-com-amortecedor-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Integrado",
+      "titulo_menu": "35 Amortecimento - Super Alta",
+      "url": "https://www.bigfer.com.br/dobradica-35-amortecimento-superalta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Linha Leve",
+      "titulo_menu": "Linha Leve - Baixa",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-leve-amortecedor-baixa/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Linha Leve",
+      "titulo_menu": "Linha Leve - Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-leve-com-amortecedor-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Linha Leve",
+      "titulo_menu": "Linha Leve - Super Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-leve-com-amortecedor-superalta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Inox",
+      "titulo_menu": "Baixa",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35inox-baixa/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Inox",
+      "titulo_menu": "Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-inox-com-amortecimento-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35 - Amortecedor › Inox",
+      "titulo_menu": "Super Alta",
+      "url": "https://www.bigfer.com.br/dobradica35-inox-amortecimento-superalta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Angulares - Amortecedor",
+      "titulo_menu": "W90",
+      "url": "https://www.bigfer.com.br/dobradica-w90/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Angulares - Amortecedor",
+      "titulo_menu": "W45",
+      "url": "https://www.bigfer.com.br/dobradica-w45/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Angulares - Amortecedor",
+      "titulo_menu": "165º",
+      "url": "https://www.bigfer.com.br/dobradica-165o-bigfer-2/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 26",
+      "titulo_menu": "Baixa",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-26-baixa/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 26",
+      "titulo_menu": "Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-26-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 26",
+      "titulo_menu": "Super Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-26-superalta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 26",
+      "titulo_menu": "45º",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-26-45o/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 26",
+      "titulo_menu": "Calço",
+      "url": "https://www.bigfer.com.br/calco-dobradica-caneco26/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35",
+      "titulo_menu": "Baixa",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-baixa/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35",
+      "titulo_menu": "Alta",
+      "url": "https://www.bigfer.com.br/dobradica-caneco-35-alta/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Caneco 35",
+      "titulo_menu": "Calço",
+      "url": "https://www.bigfer.com.br/calco-para-dobradica-caneco-35/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Especiais",
+      "titulo_menu": "Conjunto para madeira",
+      "url": "https://www.bigfer.com.br/conjunto-dobradica-madeira/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Especiais",
+      "titulo_menu": "Pino 20.15",
+      "url": "https://www.bigfer.com.br/dobradica-pino-20-15/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Especiais",
+      "titulo_menu": "Cilíndrica",
+      "url": "https://www.bigfer.com.br/dobradica-cilindrica/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Especiais",
+      "titulo_menu": "Balcão Vertical",
+      "url": "https://www.bigfer.com.br/dobradica-balcao-vertical/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Parafuso",
+      "titulo_menu": "Parafuso",
+      "url": "https://www.bigfer.com.br/dobradica-vidro-parafusar/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Com Bucha",
+      "titulo_menu": "Com Bucha",
+      "url": "https://www.bigfer.com.br/dobradica-para-vidro/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Calço Metálico 12",
+      "titulo_menu": "Calço Metálico 12",
+      "url": "https://www.bigfer.com.br/dobradica-para-vidro-calco-metalico/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Conjunto para Vidro",
+      "titulo_menu": "Pino Lateral",
+      "url": "https://www.bigfer.com.br/conjunto-dobradica-vidro-pinolateral/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Conjunto para Vidro",
+      "titulo_menu": "Pino Central",
+      "url": "https://www.bigfer.com.br/conjunto-dobradica-vidro-pinocentral/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Conjunto para Vidro",
+      "titulo_menu": "Pino Central",
+      "url": "https://www.bigfer.com.br/conjunto-dobradica-para-vidro/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Conjunto para Vidro",
+      "titulo_menu": "Conjunto para Vidro",
+      "url": "https://www.bigfer.com.br/conjunto-dobradica-vidro/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Vidro › Meia Lua",
+      "titulo_menu": "Meia Lua",
+      "url": "https://www.bigfer.com.br/dobradica-para-vidro-meia-lua/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Distanciadores",
+      "titulo_menu": "Para Dobradiça 26mm",
+      "url": "https://www.bigfer.com.br/distanciador-caneco-dobradica-26mm/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Distanciadores",
+      "titulo_menu": "Para Calço",
+      "url": "https://www.bigfer.com.br/distanciador-para-caneco-dobradica-26mm/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Distanciadores",
+      "titulo_menu": "Separador 16mm",
+      "url": "https://www.bigfer.com.br/separador-16mm-bigfer/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Distanciadores",
+      "titulo_menu": "Calço 25º",
+      "url": "https://www.bigfer.com.br/calco-25o-bigfer/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Distanciadores",
+      "titulo_menu": "Calço 45º",
+      "url": "https://www.bigfer.com.br/calco-45o/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Gabaritos",
+      "titulo_menu": "Gabarito",
+      "url": "https://www.bigfer.com.br/gabarito-furacao-dobradicas/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Gabaritos",
+      "titulo_menu": "Gabarito para Caneco",
+      "url": "https://www.bigfer.com.br/gabarito-furacao-para-caneco/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Gabaritos",
+      "titulo_menu": "Gabarito para Calço",
+      "url": "https://www.bigfer.com.br/gabarito-de-furacao-para-calco/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Esquadrias",
+      "titulo_menu": "Canto Arredondado",
+      "url": "https://www.bigfer.com.br/dobradica-esquadrias-canto-arredondado/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Esquadrias",
+      "titulo_menu": "Tipo H",
+      "url": "https://www.bigfer.com.br/dobradica-para-esquadrias-tipoh/"
+    },
+    {
+      "categoria_pai": "Dobradiças",
+      "caminho": "Dobradiças › Para Esquadrias",
+      "titulo_menu": "Canto Reto",
+      "url": "https://www.bigfer.com.br/dobradica-esquadrias-canto-reto/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Pinos",
+      "titulo_menu": "Suporte Pinos",
+      "url": "https://www.bigfer.com.br/suportes-pinos/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Pinos",
+      "titulo_menu": "Suporte Prateleira com capa",
+      "url": "https://www.bigfer.com.br/suporte-prateleira-com-capa/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Pinos",
+      "titulo_menu": "Pino com Separador",
+      "url": "https://www.bigfer.com.br/pino-com-separador/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Pinos",
+      "titulo_menu": "Suporte para Prateleira",
+      "url": "https://www.bigfer.com.br/suporte-para-prateleira/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suportes",
+      "titulo_menu": "Cabide Tipo Pino",
+      "url": "https://www.bigfer.com.br/suporte-cabide-tipo-pino/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suportes",
+      "titulo_menu": "Fixo para Cabide",
+      "url": "https://www.bigfer.com.br/suporte-fixo-para-cabide/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suportes",
+      "titulo_menu": "Suporte",
+      "url": "https://www.bigfer.com.br/suporte-bigfer/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suportes",
+      "titulo_menu": "Suporte Divisória",
+      "url": "https://www.bigfer.com.br/suporte-divisoria/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras",
+      "titulo_menu": "18 x 18",
+      "url": "https://www.bigfer.com.br/cantoneira-18x18/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras",
+      "titulo_menu": "20 x 20",
+      "url": "https://www.bigfer.com.br/cantoneira-20x20/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras",
+      "titulo_menu": "Cantoneira 20x29x29",
+      "url": "https://www.bigfer.com.br/cantoneira-20x29x29/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras",
+      "titulo_menu": "Fixação com Furo",
+      "url": "https://www.bigfer.com.br/cantoneira-fixacao-com-furo/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras Embalagens",
+      "titulo_menu": "Proteção para MDF",
+      "url": "https://www.bigfer.com.br/cantoneira-protecao-para-mdf/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras Embalagens",
+      "titulo_menu": "Para MDF",
+      "url": "https://www.bigfer.com.br/cantoneira-para-mdf/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Cantoneiras Embalagens",
+      "titulo_menu": "Proteção Regulável",
+      "url": "https://www.bigfer.com.br/cantoneira-de-protecao-regulavel/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Chapas",
+      "titulo_menu": "Fixador Fundo Roupeiro",
+      "url": "https://www.bigfer.com.br/fixador-fundo-de-roupeiro/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Chapas",
+      "titulo_menu": "Batente para Porta",
+      "url": "https://www.bigfer.com.br/suporte-batente-de-porta/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Chapas",
+      "titulo_menu": "Distanciador",
+      "url": "https://www.bigfer.com.br/distanciador-bigfer/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Chapas",
+      "titulo_menu": "Chapa 4 Furos",
+      "url": "https://www.bigfer.com.br/chapa-4-furos/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suporte",
+      "titulo_menu": "Presilha para Prateleira",
+      "url": "https://www.bigfer.com.br/suporte-presilha-para-prateleira/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suporte",
+      "titulo_menu": "Suporte",
+      "url": "https://www.bigfer.com.br/suporte/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suporte",
+      "titulo_menu": "Suporte Aéreo \"Z\"",
+      "url": "https://www.bigfer.com.br/suporte-aereo-z/"
+    },
+    {
+      "categoria_pai": "Ferragens em geral",
+      "caminho": "Ferragens em geral › Suporte",
+      "titulo_menu": "Fixador com Rosca",
+      "url": "https://www.bigfer.com.br/fixador-com-rosca/"
+    },
+    {
+      "categoria_pai": "Gabaritos",
+      "caminho": "Gabaritos › Gabaritos para Ferragens em Geral",
+      "titulo_menu": "Furação Sistema Bigfix",
+      "url": "https://www.bigfer.com.br/gabarito-furacao-sistema-bigfix/"
+    },
+    {
+      "categoria_pai": "Gabaritos",
+      "caminho": "Gabaritos › Gabaritos para Ferragens em Geral",
+      "titulo_menu": "Furação De Dispositivos De Montagem",
+      "url": "https://www.bigfer.com.br/gabarito-furacao-dispositivos-montagem/"
+    },
+    {
+      "categoria_pai": "Peças Técnicas",
+      "caminho": "Peças Técnicas",
+      "titulo_menu": "Peças Técnicas",
+      "url": "https://www.bigfer.com.br/pecas-tecnicas-bigfer/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Ponteiras",
+      "titulo_menu": "Fechada",
+      "url": "https://www.bigfer.com.br/ponteira-fechada/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Ponteiras",
+      "titulo_menu": "Tipo Caneco",
+      "url": "https://www.bigfer.com.br/ponteira-tipo-caneco/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Ponteiras",
+      "titulo_menu": "Para Tubo 7/8\"",
+      "url": "https://www.bigfer.com.br/ponteira-tubo-7-8/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Ponteiras",
+      "titulo_menu": "Para Tubo 5/8\"",
+      "url": "https://www.bigfer.com.br/ponteira-para-tubo-5-8/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Passa Fio",
+      "titulo_menu": "Passa Fio Colarinho",
+      "url": "https://www.bigfer.com.br/passa-fio-colarinho/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Passa Fio",
+      "titulo_menu": "Vazada com aba",
+      "url": "https://www.bigfer.com.br/ponteira-vazada-comaba-tubo2-12/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Passa Fio",
+      "titulo_menu": "Bucha",
+      "url": "https://www.bigfer.com.br/bucha-bigfer-3/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Passa Fio",
+      "titulo_menu": "Tampa para Passa Fio",
+      "url": "https://www.bigfer.com.br/tampa-para-passa-fio/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tapa-Furos e Tampas",
+      "titulo_menu": "Tapa-Furo com Ranhura",
+      "url": "https://www.bigfer.com.br/tapa-furo-com-ranhura/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tapa-Furos e Tampas",
+      "titulo_menu": "Tapa-Furo Liso",
+      "url": "https://www.bigfer.com.br/tapa-furo-liso/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tapa-Furos e Tampas",
+      "titulo_menu": "Tapa-Furo Para Metal",
+      "url": "https://www.bigfer.com.br/tapa-furo-para-metal/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tapa-Furos e Tampas",
+      "titulo_menu": "Tampa Bigfix Cruzada",
+      "url": "https://www.bigfer.com.br/tampa-tambor-bigfix-cruzada/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tachões",
+      "titulo_menu": "Tachão Redondo",
+      "url": "https://www.bigfer.com.br/tachao-redondo/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tachões",
+      "titulo_menu": "Tachão Redondo",
+      "url": "https://www.bigfer.com.br/tachao-redondo-2/"
+    },
+    {
+      "categoria_pai": "Ponteiras e Acabamentos",
+      "caminho": "Ponteiras e Acabamentos › Tachões",
+      "titulo_menu": "Tachão Quadrado 16x16",
+      "url": "https://www.bigfer.com.br/tachao-quadrado-16x16/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Embutido",
+      "titulo_menu": "Sisa",
+      "url": "https://www.bigfer.com.br/puxador-embutido-sisa/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Embutido",
+      "titulo_menu": "Quadrado",
+      "url": "https://www.bigfer.com.br/puxador-embutido-quadrado/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Embutido",
+      "titulo_menu": "Coleira",
+      "url": "https://www.bigfer.com.br/puxador-embutido-coleira/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Ponto",
+      "titulo_menu": "Vitória",
+      "url": "https://www.bigfer.com.br/puxador-vitoria/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Ponto",
+      "titulo_menu": "Cônico",
+      "url": "https://www.bigfer.com.br/puxador-conico/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Ponto",
+      "titulo_menu": "Bola",
+      "url": "https://www.bigfer.com.br/puxador-bola/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Ponto",
+      "titulo_menu": "Santa Cruz",
+      "url": "https://www.bigfer.com.br/puxador-santa-cruz/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Perfil",
+      "titulo_menu": "Puxador Perfil",
+      "url": "https://www.bigfer.com.br/puxador-perfil/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Colonial",
+      "titulo_menu": "Pêndulo",
+      "url": "https://www.bigfer.com.br/puxador-pendulo/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Colonial",
+      "titulo_menu": "Alça com Espelho",
+      "url": "https://www.bigfer.com.br/puxador-alca-com-espelho/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Colonial",
+      "titulo_menu": "Alça Santa Fé",
+      "url": "https://www.bigfer.com.br/puxador-alca-santa-fe/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Colonial",
+      "titulo_menu": "Santa Fé",
+      "url": "https://www.bigfer.com.br/puxador-santa-fe/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Alça",
+      "titulo_menu": "ADC 96",
+      "url": "https://www.bigfer.com.br/puxador-adc-96/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Alça",
+      "titulo_menu": "ADM",
+      "url": "https://www.bigfer.com.br/puxador-adm/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Alça",
+      "titulo_menu": "Porta de Vidro Tipo \"U\"",
+      "url": "https://www.bigfer.com.br/puxador-porta-vidro-tipou/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Alça",
+      "titulo_menu": "Tubo Quadrado",
+      "url": "https://www.bigfer.com.br/puxador-tubo-quadrado/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Infantis",
+      "titulo_menu": "Simples",
+      "url": "https://www.bigfer.com.br/puxador-gatinho-simples/"
+    },
+    {
+      "categoria_pai": "Puxadores",
+      "caminho": "Puxadores › Infantis",
+      "titulo_menu": "Duplo",
+      "url": "https://www.bigfer.com.br/puxador-gatinho-duplo/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rodizios-rb30-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30",
+      "titulo_menu": "Giratório Suporte \"U\"",
+      "url": "https://www.bigfer.com.br/rb30-giratorio-suporte-u/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30",
+      "titulo_menu": "Giratório com Bucha",
+      "url": "https://www.bigfer.com.br/rb30-giratorio-com-bucha/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30",
+      "titulo_menu": "Espigão para Furo Ø1/2″",
+      "url": "https://www.bigfer.com.br/rb30-giratorio-suporte-espigaoo1-2/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 35",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb35-giratorio-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 40",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb40-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 40",
+      "titulo_menu": "Com Bucha",
+      "url": "https://www.bigfer.com.br/rb40-giratorio-com-bucha/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 40",
+      "titulo_menu": "Espigão para Furo Ø1/2″",
+      "url": "https://www.bigfer.com.br/rb40-giratorio-suporteespigao-furo1-2/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 50",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb50-giratorio-suporte-plano-2/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 50",
+      "titulo_menu": "Leve Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb50-leve-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 50",
+      "titulo_menu": "Leve Suporte \"U\" 18mm",
+      "url": "https://www.bigfer.com.br/rb50-leve-suporte-u/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 50",
+      "titulo_menu": "Leve Suporte \"U\"",
+      "url": "https://www.bigfer.com.br/rb50-leve-suporte-u-3furoslaterais/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 52",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb52-giratorio-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 52",
+      "titulo_menu": "Com Bucha",
+      "url": "https://www.bigfer.com.br/rb52-giratorio-com-bucha/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 52",
+      "titulo_menu": "Giratório",
+      "url": "https://www.bigfer.com.br/rb52-giratorio/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 60",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb60-giratorio-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 60",
+      "titulo_menu": "Suporte \"U\" 18mm",
+      "url": "https://www.bigfer.com.br/rb60-suporte-u-18mm/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 60",
+      "titulo_menu": "Rosca M8",
+      "url": "https://www.bigfer.com.br/rb-60-rosca-m8/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 80",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb80-giratorio-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 50 Gavetão",
+      "titulo_menu": "Fixo",
+      "url": "https://www.bigfer.com.br/rb50-gavetao-fixo/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30 Fixo",
+      "titulo_menu": "Gavetinha",
+      "url": "https://www.bigfer.com.br/rb30-fixo-gavetinha/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30 Fixo",
+      "titulo_menu": "Suporte Plano",
+      "url": "https://www.bigfer.com.br/rb30-fixo-suporte-plano/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › RB 30 Fixo",
+      "titulo_menu": "Com Parafuso",
+      "url": "https://www.bigfer.com.br/rb30-com-parafuso/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › Gavetinha",
+      "titulo_menu": "Mini Gavetinha",
+      "url": "https://www.bigfer.com.br/rodizio-mini-gavetinha/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › Gavetinha",
+      "titulo_menu": "Gavetinha",
+      "url": "https://www.bigfer.com.br/rodizio-gavetinha/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › Silicone",
+      "titulo_menu": "Com Trava",
+      "url": "https://www.bigfer.com.br/rodizio-silicone-com-trava/"
+    },
+    {
+      "categoria_pai": "Rodízios",
+      "caminho": "Rodízios › Silicone",
+      "titulo_menu": "Sem Trava",
+      "url": "https://www.bigfer.com.br/rodizio-silicone-sem-trava/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Regulável",
+      "titulo_menu": "Regulável Tipo 1",
+      "url": "https://www.bigfer.com.br/sapata-regulavel-tipo1/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Regulável",
+      "titulo_menu": "Regulável Tipo 2",
+      "url": "https://www.bigfer.com.br/sapata-regulavel-tipo-2/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Regulável",
+      "titulo_menu": "Regulável Tipo 3",
+      "url": "https://www.bigfer.com.br/sapata-regulavel-tipo-3/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Regulável",
+      "titulo_menu": "Regulável Tipo 4",
+      "url": "https://www.bigfer.com.br/sapata-regulavel-tipo-4/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Fixa",
+      "titulo_menu": "Fixa Italiana",
+      "url": "https://www.bigfer.com.br/sapata-fixa-italiana/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Pés",
+      "titulo_menu": "Triangular Retrô 120mm",
+      "url": "https://www.bigfer.com.br/pe-triangular-retro-120mm/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Pés",
+      "titulo_menu": "Pé Regulável",
+      "url": "https://www.bigfer.com.br/pe-regulavel/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Pés",
+      "titulo_menu": "Quadrado",
+      "url": "https://www.bigfer.com.br/pe-quadrado/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Para Cozinha",
+      "titulo_menu": "Para Cozinha com Bucha",
+      "url": "https://www.bigfer.com.br/sapata-cozinha-com-bucha/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Para Cozinha",
+      "titulo_menu": "Regulável",
+      "url": "https://www.bigfer.com.br/sapata-de-cozinha-regulavel/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Diversas",
+      "titulo_menu": "40.5 x 70mm",
+      "url": "https://www.bigfer.com.br/sapata-40-5x70mm/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Diversas",
+      "titulo_menu": "Plástica",
+      "url": "https://www.bigfer.com.br/sapata-plastica/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Diversas",
+      "titulo_menu": "Cônica",
+      "url": "https://www.bigfer.com.br/sapata-conica/"
+    },
+    {
+      "categoria_pai": "Sapatas",
+      "caminho": "Sapatas › Diversas",
+      "titulo_menu": "De Canto",
+      "url": "https://www.bigfer.com.br/sapata-de-canto/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Cavilhas › Cavilha de Madeira",
+      "titulo_menu": "Cavilha de Madeira",
+      "url": "https://www.bigfer.com.br/cavilhas-madeira/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Cavilhas › Cavilha de Plástico",
+      "titulo_menu": "Cavilha Plástica",
+      "url": "https://www.bigfer.com.br/cavilha-plastica-bigfer/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Cavilhas › Cavilha de Plástico",
+      "titulo_menu": "Cavilha Escalonada 6x8",
+      "url": "https://www.bigfer.com.br/cavilha-plastica-escalonada-6x8/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Tambor BigFix",
+      "titulo_menu": "BigFix 15mm",
+      "url": "https://www.bigfer.com.br/tambor-bigfix-15mm/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Tambor BigFix",
+      "titulo_menu": "BigFix 12mm",
+      "url": "https://www.bigfer.com.br/tambor-bigfix-12mm-2/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Tambor BigFix",
+      "titulo_menu": "BigRaf 26",
+      "url": "https://www.bigfer.com.br/tambor-bigraf26-capa-plastica/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Fenda Combinada",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-fenda-combinada/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Anela Fenda Cruzada",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-anelado-fendacruzada/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Rosca Métrica",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-rosca-metrica/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Suporte Rosca Métrica",
+      "url": "https://www.bigfer.com.br/parafuso-suporte-rosca-metrica/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Suporte Rosca Soberba",
+      "url": "https://www.bigfer.com.br/parafuso-suporte-soberba/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Fenda Cruzada",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-fenda-cruzada/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Rosca Soberba",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-rosca-soberba/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Fenda Cruzada Rosca Soberba",
+      "url": "https://www.bigfer.com.br/parafusobigfix-fendacruzada-roscasoberba/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Fenda Cruzada Rosca Métrica",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-fenda-cruzada-rosca-metrica/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso BigFix",
+      "titulo_menu": "Parafuso Bigfix",
+      "url": "https://www.bigfer.com.br/parafuso-bigfix-bigfer/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Haste Dupla Articulável",
+      "url": "https://www.bigfer.com.br/haste-dupla-articulavel/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Articulável com Rosca",
+      "url": "https://www.bigfer.com.br/haste-articulavel-com-rosca/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Dupla L",
+      "url": "https://www.bigfer.com.br/haste-dupla-l/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Bigfix Regulável",
+      "url": "https://www.bigfer.com.br/haste-bigfix-regulavel/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Com Anel",
+      "url": "https://www.bigfer.com.br/haste-com-anel/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Sem Anel",
+      "url": "https://www.bigfer.com.br/haste-sem-anel/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Bigfix",
+      "url": "https://www.bigfer.com.br/haste-bigfix/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Hastes",
+      "titulo_menu": "Dupla 61\" MDF 15",
+      "url": "https://www.bigfer.com.br/haste-dupla-61-mdf-15/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso União",
+      "titulo_menu": "Cabeça Chata",
+      "url": "https://www.bigfer.com.br/parafuso-uniao-cabeca-chata/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso União",
+      "titulo_menu": "Fenda Simples",
+      "url": "https://www.bigfer.com.br/parafuso-uniao-fenda-simples/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso União",
+      "titulo_menu": "Conjunto M4",
+      "url": "https://www.bigfer.com.br/conjunto-parafuso-uniaom4/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafuso União",
+      "titulo_menu": "União 3/16\" Plástico",
+      "url": "https://www.bigfer.com.br/parafuso-uniao-3-16-plastico/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Diversos",
+      "titulo_menu": "Parafuso 1/4",
+      "url": "https://www.bigfer.com.br/parafuso-1-4/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Diversos",
+      "titulo_menu": "Parafuso Telheiro",
+      "url": "https://www.bigfer.com.br/parafuso-telheiro/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Diversos",
+      "titulo_menu": "Haste Roscada",
+      "url": "https://www.bigfer.com.br/haste-roscada/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Arruelas",
+      "titulo_menu": "Arruela",
+      "url": "https://www.bigfer.com.br/arruela-bigfer-2/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Arruelas",
+      "titulo_menu": "Lisa",
+      "url": "https://www.bigfer.com.br/arruela-lisa-bigfer/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Arruelas",
+      "titulo_menu": "Haste Calhetão 1/4\"",
+      "url": "https://www.bigfer.com.br/arruela-haste-calhetao-1-4/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Arruelas",
+      "titulo_menu": "Parafuso Telheiro 5/16″",
+      "url": "https://www.bigfer.com.br/arruela-parafuso-telheiro-5-16-galvanizado/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Porcas",
+      "titulo_menu": "Parafuso União",
+      "url": "https://www.bigfer.com.br/porca-parafuso-uniao-fendasimples/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Porcas",
+      "titulo_menu": "Cega Sextavada",
+      "url": "https://www.bigfer.com.br/porca-cega-sextavada/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Porcas",
+      "titulo_menu": "Allen",
+      "url": "https://www.bigfer.com.br/porca-allen/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Porcas",
+      "titulo_menu": "Garra",
+      "url": "https://www.bigfer.com.br/porca-garra/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Buchas",
+      "titulo_menu": "Bucha Fixadora Ø8",
+      "url": "https://www.bigfer.com.br/bucha-fixadora-o8/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Buchas",
+      "titulo_menu": "Fixação Ø8 com cabeça",
+      "url": "https://www.bigfer.com.br/bucha-fixacao-o8-cabeca/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Buchas",
+      "titulo_menu": "Soberba com Sextavado",
+      "url": "https://www.bigfer.com.br/buchasoberba-sextavado-interno-roscapassante/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Buchas",
+      "titulo_menu": "Americana",
+      "url": "https://www.bigfer.com.br/bucha-americana/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Chaves",
+      "titulo_menu": "Zeta",
+      "url": "https://www.bigfer.com.br/chave-zeta/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Chaves",
+      "titulo_menu": "Sextavada Reta",
+      "url": "https://www.bigfer.com.br/chave-sextavada-reta/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Chaves",
+      "titulo_menu": "Tubo Redondo",
+      "url": "https://www.bigfer.com.br/tubo-redondo/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Ventosas",
+      "titulo_menu": "Alta com Rosca",
+      "url": "https://www.bigfer.com.br/ventosa-alta-com-rosca/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafusos Chipboard e Sustentação",
+      "titulo_menu": "Chipboard",
+      "url": "https://www.bigfer.com.br/parafusos-chipboard/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafusos Chipboard e Sustentação",
+      "titulo_menu": "Fenda Philips",
+      "url": "https://www.bigfer.com.br/parafusos-fenda-philips/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafusos Chipboard e Sustentação",
+      "titulo_menu": "Escareado",
+      "url": "https://www.bigfer.com.br/parafusos-moveis-escareado/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafusos Chipboard e Sustentação",
+      "titulo_menu": "Sextavado Interno",
+      "url": "https://www.bigfer.com.br/parafusos-moveis-sextavado-interno/"
+    },
+    {
+      "categoria_pai": "Sistemas de Fixação",
+      "caminho": "Sistemas de Fixação › Parafusos Chipboard e Sustentação",
+      "titulo_menu": "Cabeça Lentilha",
+      "url": "https://www.bigfer.com.br/parafuso-cabeca-lentilha-fendacombinada/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Para Sapateiras",
+      "titulo_menu": "Sapateira Dupla",
+      "url": "https://www.bigfer.com.br/kit-guia-sapateira-dupla/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Para Sapateiras",
+      "titulo_menu": "Sapateira Dupla",
+      "url": "https://www.bigfer.com.br/kit-guia-para-barra-de-sapateira-dupla/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Para Sapateiras",
+      "titulo_menu": "Sapateira Simples",
+      "url": "https://www.bigfer.com.br/kit-guia-para-barra-de-sapateira-simples/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Para Sapateiras",
+      "titulo_menu": "Sapateira Tripla",
+      "url": "https://www.bigfer.com.br/kit-guia-para-barras-de-sapateira-tripla/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Deslizantes",
+      "titulo_menu": "Para Mesa",
+      "url": "https://www.bigfer.com.br/guia-deslizante-para-mesa/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Deslizantes",
+      "titulo_menu": "Para Mesa",
+      "url": "https://www.bigfer.com.br/guia-deslizante-para-mesa-2/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Deslizantes",
+      "titulo_menu": "Articulador para Puff",
+      "url": "https://www.bigfer.com.br/articulador-mesa-centro-puff/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Guias Deslizantes",
+      "titulo_menu": "Rolly Kit",
+      "url": "https://www.bigfer.com.br/rolly-kit-bigfer/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Discos Giratórios",
+      "titulo_menu": "Ø280 Roletado Flange",
+      "url": "https://www.bigfer.com.br/kit-disco-280-roletado-flange/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Discos Giratórios",
+      "titulo_menu": "280 Roletado",
+      "url": "https://www.bigfer.com.br/disco-280-roletado/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Discos Giratórios",
+      "titulo_menu": "Suporte Giratório",
+      "url": "https://www.bigfer.com.br/suporte-giratorio/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Sistemas Para Berços",
+      "titulo_menu": "Grade com Regulagem",
+      "url": "https://www.bigfer.com.br/sistema-grade-berco-regulagem/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Sistemas Para Berços",
+      "titulo_menu": "Ponteira Para Lastro",
+      "url": "https://www.bigfer.com.br/ponteira-para-lastro/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Tirantes",
+      "titulo_menu": "Tirante",
+      "url": "https://www.bigfer.com.br/tirante-bigfer-2/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Tirantes",
+      "titulo_menu": "Tirante Sobreposto",
+      "url": "https://www.bigfer.com.br/tirante-sobreposto-bigfer/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Pistão a Gás | Articulador",
+      "titulo_menu": "Força Normal",
+      "url": "https://www.bigfer.com.br/pistao-gas-forca-normal/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Pistão a Gás | Articulador",
+      "titulo_menu": "Força inversa",
+      "url": "https://www.bigfer.com.br/pistao-a-gas-forca-inversa/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Pistão a Gás | Articulador",
+      "titulo_menu": "Amortecimento Duplo",
+      "url": "https://www.bigfer.com.br/pistao-gas-amortecimento-duplo/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Articulador Lift Junior",
+      "url": "https://www.bigfer.com.br/articulador-lift-junior/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Com Trava",
+      "url": "https://www.bigfer.com.br/articulador-com-trava/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Com Trava",
+      "url": "https://www.bigfer.com.br/articulador-com-trava-2/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Articulador",
+      "url": "https://www.bigfer.com.br/articulador/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Limitador 255mm",
+      "url": "https://www.bigfer.com.br/limitador-255mm/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Para Mesa",
+      "url": "https://www.bigfer.com.br/articulador-para-mesa/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Articuladores",
+      "titulo_menu": "Nivelador de Mesa",
+      "url": "https://www.bigfer.com.br/nivelador-de-mesa/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Porta Taças",
+      "titulo_menu": "Porta Taças",
+      "url": "https://www.bigfer.com.br/porta-tacas-reto/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Toalheiros",
+      "titulo_menu": "Simples",
+      "url": "https://www.bigfer.com.br/toalheiro-simples-bigfer/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Toalheiros",
+      "titulo_menu": "Duplo",
+      "url": "https://www.bigfer.com.br/toalheiro-duplo/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Toalheiros",
+      "titulo_menu": "Triplo",
+      "url": "https://www.bigfer.com.br/toalheiro-triplo/"
+    },
+    {
+      "categoria_pai": "Sistemas e Articuladores",
+      "caminho": "Sistemas e Articuladores › Toalheiros",
+      "titulo_menu": "Com Esferas",
+      "url": "https://www.bigfer.com.br/toalheiro-com-esferas/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 01",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-01/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 05",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-05/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 10",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-10/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 11",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-11/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 12",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-12/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 13",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-13/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema DUO",
+      "titulo_menu": "DUO 14",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-duo-14/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 01",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-01/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 02",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-02/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 03",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-03/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 04",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-04/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 05",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-05/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 06",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-06/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 07",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-07/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 08",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-08/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Apoiada › Sistema TRIO",
+      "titulo_menu": "TRIO 09",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-trio-09/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Porta Suspensa",
+      "titulo_menu": "Super 40",
+      "url": "https://www.bigfer.com.br/sistema-para-porta-de-correr-super-40/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Amortecimento",
+      "titulo_menu": "Sistema De Amortecimento",
+      "url": "https://www.bigfer.com.br/sistema-de-amortecimento-2/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Guias e Carrinhos",
+      "titulo_menu": "Carro Inferior",
+      "url": "https://www.bigfer.com.br/carro-inferior/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Guias e Carrinhos",
+      "titulo_menu": "Carro Inferior Light Deslocado",
+      "url": "https://www.bigfer.com.br/carro-inferior-light-deslocado/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Guias e Carrinhos",
+      "titulo_menu": "Carro Inferior Anti Descarrilhamento",
+      "url": "https://www.bigfer.com.br/carro-inferior-anti-descarrilhamento/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Guias e Carrinhos",
+      "titulo_menu": "Carro Inferior com Regulagem",
+      "url": "https://www.bigfer.com.br/carro-inferior-com-regulagem/"
+    },
+    {
+      "categoria_pai": "Sistemas para Portas de Correr",
+      "caminho": "Sistemas para Portas de Correr › Guias e Carrinhos",
+      "titulo_menu": "Carro Superior",
+      "url": "https://www.bigfer.com.br/carro-superior/"
+    }
+  ],
+  "arvore_resumo": [
+    {
+      "titulo": "Corrediças",
+      "sub": [
+        "Trilho Telescópico",
+        "Corrediça de Rolete",
+        "Distanciadores",
+        "Guias Plásticas"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Dobradiças",
+      "sub": [
+        "Caneco 35 - Amortecedor",
+        "Angulares - Amortecedor",
+        "Caneco 26",
+        "Caneco 35",
+        "Especiais",
+        "Para Vidro",
+        "Distanciadores",
+        "Gabaritos",
+        "Para Esquadrias"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Ferragens em geral",
+      "sub": [
+        "Pinos",
+        "Suportes",
+        "Cantoneiras",
+        "Cantoneiras Embalagens",
+        "Chapas",
+        "Suporte",
+        "Ver todos"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Gabaritos",
+      "sub": [
+        "Gabaritos para Dobradiças",
+        "Gabaritos para Ferragens em Geral"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Peças Técnicas",
+      "sub": [],
+      "produtos_diretos": 1
+    },
+    {
+      "titulo": "Ponteiras e Acabamentos",
+      "sub": [
+        "Ponteiras",
+        "Passa Fio",
+        "Tapa-Furos e Tampas",
+        "Tachões"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Puxadores",
+      "sub": [
+        "Embutido",
+        "Ponto",
+        "Perfil",
+        "Colonial",
+        "Concha",
+        "Alça",
+        "Infantis"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Rodízios",
+      "sub": [
+        "RB 30",
+        "RB 35",
+        "RB 40",
+        "RB 50",
+        "RB 52",
+        "RB 60",
+        "RB 80",
+        "RB 50 Gavetão",
+        "RB 30 Fixo",
+        "Gavetinha",
+        "Silicone"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Sapatas",
+      "sub": [
+        "Regulável",
+        "Fixa",
+        "Pés",
+        "Para Cozinha",
+        "Para Rack",
+        "Deslizadora",
+        "Diversas"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Sistemas de Fixação",
+      "sub": [
+        "Cavilhas",
+        "Tambor BigFix",
+        "Parafuso BigFix",
+        "Hastes",
+        "Parafuso União",
+        "Diversos",
+        "Arruelas",
+        "Porcas",
+        "Buchas",
+        "Chaves",
+        "Ventosas",
+        "Parafusos Chipboard e Sustentação"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Sistemas e Articuladores",
+      "sub": [
+        "Guias Para Sapateiras",
+        "Guias Deslizantes",
+        "Discos Giratórios",
+        "Sistemas Para Berços",
+        "Tirantes",
+        "Pistão a Gás | Articulador",
+        "Articuladores",
+        "Porta Taças",
+        "Toalheiros"
+      ],
+      "produtos_diretos": 0
+    },
+    {
+      "titulo": "Sistemas para Portas de Correr",
+      "sub": [
+        "Porta Apoiada",
+        "Porta Suspensa",
+        "Amortecimento",
+        "Guias e Carrinhos"
+      ],
+      "produtos_diretos": 0
+    }
+  ]
+}
