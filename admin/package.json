@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google-analytics/data": "^6.1.0",
+    "@napi-rs/canvas": "^1.0.3",
     "@neondatabase/serverless": "^0.10.0",
     "@prisma/adapter-neon": "^6.2.1",
     "@prisma/client": "^6.2.1",
@@ -22,6 +23,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "next": "16.2.10",
+    "pdfjs-dist": "^4.10.38",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",

@@ -719,7 +719,7 @@ export default function CatalogosClient({
         className={
           viewFullscreen
             ? "bg-white"
-            : "max-w-6xl w-full h-[min(92svh,920px)] max-h-[92svh] bg-white"
+            : "max-w-[min(96vw,1400px)] w-full h-[min(96svh,1100px)] max-h-[96svh] bg-white"
         }
         bodyClassName="!p-0 !overflow-hidden flex flex-col min-h-0 h-full"
       >

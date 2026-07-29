@@ -13,7 +13,7 @@ interface CatalogCoverThumbProps {
   className?: string;
 }
 
-/** Mostra capa; se PDF sem capa, renderiza a 1ª página e persiste. */
+/** Mostra capa; se PDF sem capa (já no Blob), renderiza a 1ª página e persiste. */
 export default function CatalogCoverThumb({
   catalog,
   companyId,
@@ -22,15 +22,28 @@ export default function CatalogCoverThumb({
 }: CatalogCoverThumbProps) {
   const isPdf = catalog.mime_type === "application/pdf";
   const staticThumb = catalog.capa_url || (!isPdf ? catalog.arquivo_url : null);
+  const canRenderClient =
+    isPdf &&
+    !staticThumb &&
+    Boolean(catalog.arquivo_url?.includes("blob.vercel-storage.com"));
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
   const savingRef = useRef(false);
+  const lastUrlRef = useRef(catalog.arquivo_url);
 
   useEffect(() => {
-    if (staticThumb || !isPdf || failed) return;
+    if (lastUrlRef.current !== catalog.arquivo_url) {
+      lastUrlRef.current = catalog.arquivo_url;
+      setFailed(false);
+      setPreviewUrl(null);
+    }
+  }, [catalog.arquivo_url]);
+
+  useEffect(() => {
+    if (staticThumb || !canRenderClient || failed) return;
 
     let cancelled = false;
     setLoading(true);
@@ -77,7 +90,7 @@ export default function CatalogCoverThumb({
     };
   }, [
     staticThumb,
-    isPdf,
+    canRenderClient,
     failed,
     catalog.arquivo_url,
     catalog.id,
