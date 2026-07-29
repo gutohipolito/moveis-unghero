@@ -75,6 +75,9 @@ import {
 import ReceiptIssueDialog, {
   type ReceiptIssuePrefill,
 } from "@/components/finance/ReceiptIssueDialog";
+import ConfTecnicaWhatsAppDialog, {
+  type ConfTecnicaWhatsAppTarget,
+} from "@/components/ConfTecnicaWhatsAppDialog";
 
 /** Etapas em que o lembrete de recibo aparece após aprovação. */
 const RECEIPT_REMINDER_STATUSES = new Set([
@@ -299,7 +302,7 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
   ORCAMENTO: "Orçamentos: Levantamento de necessidades do cliente e formulação de propostas comerciais.",
   NEGOCIACAO: "Negociação: Apresentação da proposta, rodadas de negociação e termos do contrato comercial.",
   APROVADO: "Aprovados: orçamento aprovado. Atribua até 2 responsáveis pela conferência técnica no cliente antes de avançar.",
-  CONFERENCIA_TECNICA: "Conf. Técnica: visita/revisão no cliente. Ao concluir, avance para Produção — aí o projeto entra na fila da fábrica.",
+  CONFERENCIA_TECNICA: "Conf. Técnica: visita/revisão no cliente. Ao entrar, o sistema oferece mensagem no WhatsApp pedindo datas. Ao concluir, avance para Produção — aí o projeto entra na fila da fábrica.",
   PRODUCAO: "Produção: projeto liberado para o chão de fábrica. O card fica atenuado e a fila de produção assume.",
   INSTALACAO: "Instalação: Logística de transporte e montagem dos móveis no endereço do cliente.",
   FINALIZADO: "Finalizados: Conferência final pós-instalação, termo de encerramento assinado e entrega final realizada.",
@@ -402,6 +405,8 @@ export default function KanbanBoard({
   const [pendingCount, setPendingCount] = useState(0);
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
+  const [confTecnicaWhatsApp, setConfTecnicaWhatsApp] =
+    useState<ConfTecnicaWhatsAppTarget | null>(null);
   // Cards começam minimizados; só entram neste set quando o operador expande.
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [cardInnerTab, setCardInnerTab] = useState<Record<string, "geral" | "aberturas">>({});
@@ -557,6 +562,14 @@ export default function KanbanBoard({
     setIsEditLeadOpen(true);
   };
 
+  const promptConfTecnicaWhatsApp = (project: Project) => {
+    setConfTecnicaWhatsApp({
+      projectId: project.id,
+      clientName: project.client.nome,
+      clientPhone: project.client.telefone || "",
+    });
+  };
+
   const handleEditLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly || !editingProjectId) return;
@@ -567,6 +580,11 @@ export default function KanbanBoard({
       status_geral: editingStatusGeral,
       observacoes: editingObservacoes
     };
+
+    const previous = projects.find((p) => p.id === editingProjectId);
+    const enteringConfTecnica =
+      data.status_geral === "CONFERENCIA_TECNICA" &&
+      previous?.status_geral !== "CONFERENCIA_TECNICA";
 
     const result = await updateProjectCommercialAction(editingProjectId, data);
 
@@ -589,6 +607,16 @@ export default function KanbanBoard({
       setIsEditLeadOpen(false);
       resetLeadForm();
       showSuccess("Alterações salvas", "Os dados comerciais do projeto foram salvos.");
+      if (enteringConfTecnica && previous) {
+        promptConfTecnicaWhatsApp({
+          ...previous,
+          client: {
+            ...previous.client,
+            nome: leadForm.nome || previous.client.nome,
+            telefone: leadForm.telefone || previous.client.telefone,
+          },
+        });
+      }
     } else {
       showError("Erro ao salvar", "Não foi possível salvar as alterações comerciais.");
     }
@@ -652,6 +680,10 @@ export default function KanbanBoard({
     e.preventDefault();
     if (isReadOnly) return;
     const id = e.dataTransfer.getData("text/plain");
+    const movedProject = projects.find((p) => p.id === id);
+    const enteringConfTecnica =
+      targetStatus === "CONFERENCIA_TECNICA" &&
+      movedProject?.status_geral !== "CONFERENCIA_TECNICA";
     
     // - Atualiza o estado local imediatamente (Optimistic Update)
     const originalProjects = [...projects];
@@ -669,6 +701,8 @@ export default function KanbanBoard({
       // Reverte se der erro
       setProjects(originalProjects);
       showError("Falha ao mover", "Não foi possível mover o projeto. Tente novamente.");
+    } else if (enteringConfTecnica && movedProject) {
+      promptConfTecnicaWhatsApp(movedProject);
     }
   };
 
@@ -682,6 +716,7 @@ export default function KanbanBoard({
     if (isReadOnly) return;
     const next = getNextFunnelStatus(project.status_geral);
     if (!next) return;
+    const enteringConfTecnica = next === "CONFERENCIA_TECNICA";
 
     const originalProjects = [...projects];
     setProjects(projects.map((p) => (p.id === project.id ? { ...p, status_geral: next, stage_entered_at: new Date().toISOString() } : p)));
@@ -693,6 +728,9 @@ export default function KanbanBoard({
     } else {
       const nextTitle = FUNNEL_COLUMNS.find((c) => c.id === next)?.title || "próxima etapa";
       showSuccess("Projeto avançado", `${project.client.nome} → ${nextTitle}.`);
+      if (enteringConfTecnica) {
+        promptConfTecnicaWhatsApp(project);
+      }
     }
   };
 
@@ -2040,6 +2078,11 @@ export default function KanbanBoard({
       </Dialog>
 
       <ActionDialogHost dialog={dialog} />
+
+      <ConfTecnicaWhatsAppDialog
+        target={confTecnicaWhatsApp}
+        onClose={() => setConfTecnicaWhatsApp(null)}
+      />
 
       {receiptProject ? (
         <ReceiptIssueDialog

@@ -47,6 +47,7 @@ export default async function CRMPage() {
               items={[
                 "Arraste os cards entre as colunas para avançar cada negócio de etapa.",
                 "Em Aprovados, atribua até 2 responsáveis pela conferência técnica.",
+                "Ao mover para Conf. Técnica, o sistema oferece mensagem no WhatsApp pedindo datas da visita.",
                 "Só ao entrar em Produção o projeto aparece na fila do chão de fábrica.",
                 "No mobile, use o botão de avançar dentro do card.",
                 "Totais e telefone começam ocultos; use os olhos do topo para revelar (voltam a ocultar em 30s).",

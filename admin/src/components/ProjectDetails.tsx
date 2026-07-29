@@ -29,6 +29,9 @@ import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialo
 import ReceiptIssueDialog, {
   type ReceiptIssuePrefill,
 } from "@/components/finance/ReceiptIssueDialog";
+import ConfTecnicaWhatsAppDialog, {
+  type ConfTecnicaWhatsAppTarget,
+} from "@/components/ConfTecnicaWhatsAppDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
@@ -266,6 +269,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
+  const [confTecnicaWhatsApp, setConfTecnicaWhatsApp] =
+    useState<ConfTecnicaWhatsAppTarget | null>(null);
   const searchParams = useSearchParams();
 
   const defaultTab = (() => {
@@ -534,12 +539,21 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   // Handler de alteração do status geral do projeto
   const handleStatusChange = async (newStatus: string) => {
     const originalStatus = project.status_geral;
+    const enteringConfTecnica =
+      newStatus === "CONFERENCIA_TECNICA" &&
+      originalStatus !== "CONFERENCIA_TECNICA";
     setProject({ ...project, status_geral: newStatus });
     
     const result = await updateProjectGeneralStatus(project.id, newStatus);
     if (!result.success) {
       setProject({ ...project, status_geral: originalStatus });
       showError("Erro ao alterar status", "Não foi possível alterar o status do projeto.");
+    } else if (enteringConfTecnica) {
+      setConfTecnicaWhatsApp({
+        projectId: project.id,
+        clientName: project.client.nome,
+        clientPhone: project.client.telefone || "",
+      });
     }
   };
 
@@ -1039,7 +1053,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       </p>
                       {canEditConfTecnica && (
                         <p className="text-[10px] text-emerald-800/80 font-medium">
-                          Use “Editar Controle” para atribuir até 2 colaboradores. Depois avance o card para Conf. Técnica e, ao concluir, para Produção (aí entra na fábrica).
+                          Use “Editar Controle” para atribuir até 2 colaboradores. Depois avance o card para Conf. Técnica (o sistema oferece WhatsApp pedindo datas) e, ao concluir, para Produção (aí entra na fábrica).
                         </p>
                       )}
                     </div>
@@ -2352,6 +2366,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         }}
       />
       <ActionDialogHost dialog={dialog} />
+      <ConfTecnicaWhatsAppDialog
+        target={confTecnicaWhatsApp}
+        onClose={() => setConfTecnicaWhatsApp(null)}
+      />
     </div>
   );
 }

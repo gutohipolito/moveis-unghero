@@ -87,7 +87,7 @@ const STAGE_TIPS: Record<string, string> = {
   LEAD: "Qualifique o interesse, entenda os ambientes e sugira uma visita ou medição.",
   ORCAMENTO: "Apresente a proposta com clareza e marque uma conversa para tirar dúvidas.",
   NEGOCIACAO: "Foque em prazo, condições e próximo passo concreto para fechar.",
-  CONFERENCIA_TECNICA: "Valide acessos, medidas e restrições da obra antes da produção.",
+  CONFERENCIA_TECNICA: "Valide acessos, medidas e restrições da obra. Envie o WhatsApp pedindo datas para a visita.",
   APROVADO: "Confirme memorial e alinhamentos finais com o cliente.",
   PRODUCAO: "Mantenha o cliente informado sobre o andamento da fabricação.",
 };
