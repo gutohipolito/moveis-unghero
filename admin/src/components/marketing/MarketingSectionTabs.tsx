@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Star, NotebookPen, BarChart3 } from "lucide-react";
+import { Star, NotebookPen, BarChart3, MessageCircle } from "lucide-react";
 
 const TABS = [
   { href: "/marketing", label: "Avaliação Google", icon: Star, iconClass: "text-amber-500" },
@@ -11,6 +11,12 @@ const TABS = [
     label: "Formulários",
     icon: NotebookPen,
     iconClass: "text-sky-500",
+  },
+  {
+    href: "/marketing/mensagens",
+    label: "Mensagens prontas",
+    icon: MessageCircle,
+    iconClass: "text-emerald-600",
   },
   {
     href: "/marketing/analytics",

@@ -10,7 +10,7 @@ export default async function MarketingFormulariosPage() {
     <div className="space-y-6">
       <PageHeader
         title="Marketing"
-        description="Avaliações, formulários de captação e tráfego do site."
+        description="Avaliações, mensagens prontas, formulários e tráfego do site."
         help={
           <TooltipBody
             title="Captação de leads"

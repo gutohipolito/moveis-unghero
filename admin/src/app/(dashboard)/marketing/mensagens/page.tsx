@@ -4,11 +4,11 @@ import { getClients } from "@/app/actions/cliente";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
-import MarketingReviewClients from "./MarketingReviewClients";
+import MarketingMessagesPanel from "@/components/marketing/MarketingMessagesPanel";
 import { auth } from "@/lib/auth";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
 
-export default async function MarketingPage() {
+export default async function MarketingMensagensPage() {
   await guardModule("marketing");
   const session = await auth.api
     .getSession({
@@ -34,19 +34,17 @@ export default async function MarketingPage() {
         description="Avaliações, mensagens prontas, formulários e tráfego do site."
         help={
           <TooltipBody
-            title="Peça avaliações"
+            title="Mensagens prontas"
             items={[
-              "Selecione o cliente e gere um link curto ou QR Code para o Google.",
-              "Envie a mensagem pronta pelo WhatsApp após a entrega.",
-              "Mais avaliações melhoram a reputação e o alcance nas buscas.",
+              "Abra um modelo, copie ou envie direto no WhatsApp.",
+              "Opcional: selecione o cliente para personalizar o cumprimento.",
+              "Ao mover um card para Conf. Técnica no CRM, o mesmo texto de agendamento é oferecido automaticamente.",
             ]}
           />
         }
       />
-
       <MarketingSectionTabs />
-
-      <MarketingReviewClients initialClients={clients} companyId={companyId} />
+      <MarketingMessagesPanel clients={clients} />
     </div>
   );
 }

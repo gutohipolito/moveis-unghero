@@ -1,10 +1,12 @@
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 
-export function buildConfTecnicaWhatsAppMessage(options: { clientName: string }) {
-  const firstName = getFirstName(options.clientName);
+export function buildConfTecnicaWhatsAppMessage(options?: { clientName?: string }) {
+  const greeting = options?.clientName?.trim()
+    ? `Olá ${getFirstName(options.clientName)}, tudo bem?`
+    : "Olá, tudo bem?";
 
   return [
-    `Olá ${firstName}, tudo bem?`,
+    greeting,
     "",
     "Seu projeto na Móveis Unghero avançou para a *conferência técnica* — etapa em que nossa equipe visita o local para validar medidas, acessos e detalhes antes da produção.",
     "",
