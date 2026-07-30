@@ -48,7 +48,7 @@ function pdfViewerSrc(url: string): string {
 
 const CATALOG_MAX_SIZE_LABEL = formatCatalogSize(PRODUCT_CATALOG_MAX_BYTES);
 
-function describeCatalogUploadError(error: unknown): string {
+function describeCatalogUploadError(error: unknown, status?: number): string {
   const rawMessage =
     error instanceof Error
       ? error.message.trim()
@@ -65,7 +65,7 @@ function describeCatalogUploadError(error: unknown): string {
     normalized.includes("size limit") ||
     normalized.includes("413")
   ) {
-    return `O arquivo excede o limite permitido de ${CATALOG_MAX_SIZE_LABEL}.`;
+    return "O arquivo é muito grande.";
   }
   if (
     normalized.includes("content type") ||
@@ -90,8 +90,20 @@ function describeCatalogUploadError(error: unknown): string {
   ) {
     return "A conexão foi interrompida durante o envio. Verifique sua internet e tente novamente.";
   }
-  if (rawMessage) return `O serviço informou: ${rawMessage}`;
-  return "O serviço não informou um motivo. Tente novamente ou contate o suporte.";
+  if (
+    normalized.includes("administrador") ||
+    normalized.includes("banco") ||
+    normalized.includes("database") ||
+    normalized.includes("prisma") ||
+    normalized.includes("postgres") ||
+    normalized.includes("neon")
+  ) {
+    return "Não foi possível concluir o cadastro. Entre em contato com o Administrador do Sistema.";
+  }
+  if (status === 400) {
+    return "Não foi possível concluir o cadastro. Confira os dados e tente novamente.";
+  }
+  return "Não foi possível concluir o cadastro. Entre em contato com o Administrador do Sistema.";
 }
 
 type SupplierOption = {
@@ -308,7 +320,7 @@ export default function CatalogosClient({
       if (fileRef.current) fileRef.current.value = "";
       showError(
         "Arquivo muito grande",
-        `"${selected.name}" possui ${formatCatalogSize(selected.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+        "O arquivo selecionado é muito grande."
       );
       return;
     }
@@ -321,7 +333,7 @@ export default function CatalogosClient({
       if (capaRef.current) capaRef.current.value = "";
       showError(
         "Capa muito grande",
-        `"${selected.name}" possui ${formatCatalogSize(selected.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+        "A imagem de capa selecionada é muito grande."
       );
       return;
     }
@@ -365,14 +377,14 @@ export default function CatalogosClient({
     if (file.size > PRODUCT_CATALOG_MAX_BYTES) {
       showError(
         "Arquivo muito grande",
-        `"${file.name}" possui ${formatCatalogSize(file.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+        "O arquivo selecionado é muito grande."
       );
       return;
     }
     if (capa && capa.size > PRODUCT_CATALOG_MAX_BYTES) {
       showError(
         "Capa muito grande",
-        `"${capa.name}" possui ${formatCatalogSize(capa.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+        "A imagem de capa selecionada é muito grande."
       );
       return;
     }
@@ -430,9 +442,8 @@ export default function CatalogosClient({
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success || !data?.catalog) {
         showError(
-          "Cadastro falhou",
-          data?.error ||
-            `O servidor recusou o cadastro sem informar o motivo (código HTTP ${res.status}).`
+          "Não foi possível adicionar",
+          describeCatalogUploadError(data?.error, res.status)
         );
         return;
       }
@@ -448,8 +459,8 @@ export default function CatalogosClient({
     } catch (err) {
       console.error(err);
       showError(
-        "Upload falhou",
-        `Não foi possível concluir o envio.\n\nMotivo: ${describeCatalogUploadError(err)}`
+        "Não foi possível enviar",
+        describeCatalogUploadError(err)
       );
     } finally {
       setUploading(false);

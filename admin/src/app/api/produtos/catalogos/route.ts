@@ -158,7 +158,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Erro ao criar catálogo no banco:", error);
     return NextResponse.json(
-      { success: false, error: "Não foi possível salvar o catálogo no banco." },
+      {
+        success: false,
+        error:
+          "Não foi possível salvar o catálogo. Entre em contato com o Administrador do Sistema.",
+      },
       { status: 500 }
     );
   }

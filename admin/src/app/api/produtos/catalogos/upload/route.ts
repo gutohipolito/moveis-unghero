@@ -35,8 +35,12 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
+    console.error("Erro ao autorizar upload de catálogo:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Erro no upload" },
+      {
+        error:
+          "Não foi possível iniciar o envio. Entre em contato com o Administrador do Sistema.",
+      },
       { status: 400 }
     );
   }
