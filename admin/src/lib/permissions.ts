@@ -38,7 +38,16 @@ export const ADMIN_ONLY_MODULES = new Set([
 ]);
 
 /** Módulos liberados para qualquer colaborador, independente de configuração. */
-export const ALWAYS_ALLOWED_MODULES = new Set(["melhorias", "notas-da-versao"]);
+export const ALWAYS_ALLOWED_MODULES = new Set(["melhorias"]);
+
+/** Notas da versão: liberadas por padrão para cargos comerciais/admin, não para ops. */
+export const NOTES_MODULE = "notas-da-versao";
+
+const NOTES_DEFAULT_ROLES = new Set<Role>([
+  "COMERCIAL",
+  "FINANCEIRO",
+  "VIEWER",
+]);
 
 export const CONFIGURABLE_MODULE_KEYS = CONFIGURABLE_MODULES.map((m) => m.key);
 
@@ -46,6 +55,7 @@ export const ALL_MODULE_KEYS = [
   ...CONFIGURABLE_MODULE_KEYS,
   ...Array.from(ADMIN_ONLY_MODULES),
   ...Array.from(ALWAYS_ALLOWED_MODULES),
+  NOTES_MODULE,
 ];
 
 /** Cargos que podem ter permissões editadas na matriz (ADMIN é sempre total). */
@@ -72,6 +82,14 @@ export function isReadOnlyRole(role: Role | string | null | undefined): boolean 
 }
 
 /**
+ * Projetista e Fábrica (Marceneiro): visão operacional limitada
+ * (clientes sem valores/financeiro; CRM a partir de Aprovados).
+ */
+export function isOpsLimitedRole(role: Role | string | null | undefined): boolean {
+  return role === "PROJETISTA" || role === "PRODUCAO";
+}
+
+/**
  * Módulos que o VIEWER nunca acessa (mesmo se marcados na matriz).
  * Cadastros, financeiro e logística ficam fora do escopo de visualização.
  */
@@ -90,6 +108,28 @@ export const VIEWER_DEFAULT_MODULES = CONFIGURABLE_MODULE_KEYS.filter(
   (k) => !VIEWER_BLOCKED_MODULES.has(k)
 );
 
+/** Base operacional compartilhada entre Projetista e Fábrica. */
+const OPS_BASE_MODULES = [
+  "factory",
+  "chamados",
+  "produtos",
+  "estoque",
+  "parceiros",
+  "logistica",
+  "clientes",
+  "crm",
+] as const;
+
+/**
+ * Defaults por cargo quando a matriz ainda não tem entrada para o role.
+ * COMERCIAL/FINANCEIRO sem entrada continuam com todos os módulos configuráveis.
+ */
+export const ROLE_DEFAULT_MODULES: Partial<Record<Role, string[]>> = {
+  PROJETISTA: [...OPS_BASE_MODULES, "marketing"],
+  PRODUCAO: [...OPS_BASE_MODULES],
+  VIEWER: [...VIEWER_DEFAULT_MODULES],
+};
+
 /** Mapa persistido: cargo -> lista de chaves de módulos configuráveis permitidos. */
 export type CompanyPermissions = Partial<Record<Role, string[]>>;
 
@@ -98,11 +138,19 @@ export function moduleKeyForHref(href: string): string {
   return href.replace(/^\/+/, "").split("/")[0] || "";
 }
 
+/** Defaults configuráveis para um cargo (matriz / restaurar padrões). */
+export function getDefaultConfigurableModules(role: Role): string[] {
+  if (ROLE_DEFAULT_MODULES[role]) {
+    return [...ROLE_DEFAULT_MODULES[role]!];
+  }
+  return [...CONFIGURABLE_MODULE_KEYS];
+}
+
 /**
  * Resolve o conjunto de módulos que um cargo pode acessar.
  * - ADMIN: tudo (configuráveis + restritos).
- * - Outros cargos: o que estiver salvo; se nada foi configurado ainda, libera todos
- *   os módulos configuráveis (mantém o comportamento atual até o admin restringir).
+ * - Outros: o que estiver salvo; se nada foi configurado, usa ROLE_DEFAULT_MODULES
+ *   (ou todos os configuráveis para cargos sem default explícito).
  */
 export function resolveAllowedModules(
   permissions: CompanyPermissions | null | undefined,
@@ -114,10 +162,7 @@ export function resolveAllowedModules(
   const configured = permissions?.[role];
   let modules: string[];
   if (!configured) {
-    modules =
-      role === "VIEWER"
-        ? [...VIEWER_DEFAULT_MODULES]
-        : [...CONFIGURABLE_MODULE_KEYS];
+    modules = getDefaultConfigurableModules(role);
   } else {
     modules = configured.filter((k) => CONFIGURABLE_MODULE_KEYS.includes(k));
   }
@@ -126,7 +171,22 @@ export function resolveAllowedModules(
     modules = modules.filter((k) => !VIEWER_BLOCKED_MODULES.has(k));
   }
 
-  return [...modules, ...always];
+  const extras: string[] = [];
+  if (NOTES_DEFAULT_ROLES.has(role)) {
+    extras.push(NOTES_MODULE);
+  }
+
+  return [...modules, ...always, ...extras];
+}
+
+/** Apenas chaves configuráveis (para a UI da matriz de permissões). */
+export function resolveConfigurableModules(
+  permissions: CompanyPermissions | null | undefined,
+  role: Role
+): string[] {
+  return resolveAllowedModules(permissions, role).filter((k) =>
+    CONFIGURABLE_MODULE_KEYS.includes(k)
+  );
 }
 
 /** Verifica se um cargo pode acessar um módulo específico. */

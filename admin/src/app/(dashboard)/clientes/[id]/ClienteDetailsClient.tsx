@@ -46,6 +46,7 @@ import {
   stripConsentFromObservacoes,
 } from "@/lib/clientConsent";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
+import { usePermissions } from "@/context/PermissionsContext";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -162,6 +163,14 @@ export default function ClienteDetailsClient({
   const docInfo = resolveClientDocument(client);
   const { sensitiveHidden } = usePrivacy();
   const sensitive = useSensitiveDisplay();
+  const { isOpsLimited } = usePermissions();
+
+  useEffect(() => {
+    if (!isOpsLimited) return;
+    if (activeTab === "finance" || activeTab === "timeline") {
+      setActiveTab("overview");
+    }
+  }, [isOpsLimited, activeTab]);
 
   // Link formatado para WhatsApp com saudação (sem vazar telefone quando oculto)
   const greeting = `Olá ${getFirstName(client.nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
@@ -229,7 +238,7 @@ export default function ClienteDetailsClient({
               </span>
             </div>
 
-            {docInfo.documento && (
+            {!isOpsLimited && docInfo.documento && (
               <span className="text-xs font-semibold text-slate-500 block mt-0.5 select-none">
                 {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
               </span>
@@ -342,14 +351,14 @@ export default function ClienteDetailsClient({
           <div className="relative sm:hidden">
             <select
               value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value as "overview" | "projects" | "finance" | "timeline" | "documents")}
+              onChange={(e) => setActiveTab(e.target.value as "overview" | "projects" | "finance" | "timeline" | "documents" | "notas")}
               className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             >
               <option value="overview">Visão Geral</option>
               <option value="projects">Projetos ({projects.length})</option>
               <option value="documents">Fotos &amp; Docs ({attachments.length})</option>
-              <option value="finance">Financeiro</option>
-              <option value="timeline">Linha do Tempo</option>
+              {!isOpsLimited && <option value="finance">Financeiro</option>}
+              {!isOpsLimited && <option value="timeline">Linha do Tempo</option>}
               <option value="notas">Notas</option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -381,20 +390,24 @@ export default function ClienteDetailsClient({
                 <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
                 <span className="text-[10px] opacity-70 tabular-nums">({attachments.length})</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("finance")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("timeline")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
-              </button>
+              {!isOpsLimited && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("finance")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
+                </button>
+              )}
+              {!isOpsLimited && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("timeline")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setActiveTab("notas")}
@@ -413,7 +426,7 @@ export default function ClienteDetailsClient({
           {activeTab === "overview" && (
             <Card className="p-5 glass-card space-y-4">
               <h3 className="text-base font-bold text-foreground">Resumo do cliente</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className={`grid grid-cols-2 ${isOpsLimited ? "sm:grid-cols-2" : "sm:grid-cols-4"} gap-3`}>
                 <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Projetos</p>
                   <p className="text-xl font-black text-foreground mt-1">{projects.length}</p>
@@ -422,14 +435,18 @@ export default function ClienteDetailsClient({
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Anexos</p>
                   <p className="text-xl font-black text-foreground mt-1">{attachments.length}</p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Parcelas</p>
-                  <p className="text-xl font-black text-foreground mt-1">{payments.length}</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Eventos</p>
-                  <p className="text-xl font-black text-foreground mt-1">{activities.length}</p>
-                </div>
+                {!isOpsLimited && (
+                  <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Parcelas</p>
+                    <p className="text-xl font-black text-foreground mt-1">{payments.length}</p>
+                  </div>
+                )}
+                {!isOpsLimited && (
+                  <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Eventos</p>
+                    <p className="text-xl font-black text-foreground mt-1">{activities.length}</p>
+                  </div>
+                )}
               </div>
               {(projects.length ?? 0) > 0 ? (
                 <div className="pt-2">
@@ -458,10 +475,11 @@ export default function ClienteDetailsClient({
               companyId={companyId}
               projects={projects}
               onProjectsChange={setProjects}
+              hideValues={isOpsLimited}
             />
           )}
 
-          {activeTab === "finance" && (
+          {activeTab === "finance" && !isOpsLimited && (
             <ClienteFinanceTab
               clientId={client.id}
               clientName={client.nome}
@@ -483,7 +501,7 @@ export default function ClienteDetailsClient({
           )}
 
           {/* ABA 3: LINHA DO TEMPO & NOTAS */}
-          {activeTab === "timeline" && (
+          {activeTab === "timeline" && !isOpsLimited && (
             <div className="space-y-6">
               {/* Registrar anotação rápida */}
               <Card className="p-5 glass-card space-y-3">

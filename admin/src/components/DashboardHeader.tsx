@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { logout } from "@/app/actions/login";
 import HeaderQuickActions from "@/components/HeaderQuickActions";
 import NotificationChannelSettings from "@/components/NotificationChannelSettings";
@@ -16,6 +17,7 @@ import {
   LogOut,
   Mail,
   User as UserIcon,
+  UserCog,
 } from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
@@ -233,6 +235,14 @@ export default function DashboardHeader({
               </div>
 
               <div className="p-2">
+              <Link
+                href="/perfil"
+                onClick={() => setMenuOpen(false)}
+                className="dashboard-user-menu-item w-full rounded-lg"
+              >
+                <UserCog className="h-4 w-4" />
+                Meu perfil
+              </Link>
               {canInstall && (
                 <button
                   type="button"

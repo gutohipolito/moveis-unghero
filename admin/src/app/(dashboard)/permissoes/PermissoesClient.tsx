@@ -8,6 +8,7 @@ import {
   EDITABLE_ROLES,
   ROLE_LABELS,
   VIEWER_BLOCKED_MODULES,
+  getDefaultConfigurableModules,
 } from "@/lib/permissions";
 import { updateRolePermissionsAction } from "@/app/actions/permissions";
 
@@ -73,6 +74,15 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
     setError(null);
   }
 
+  function restoreDefaults(role: Role) {
+    setSelected((prev) => ({
+      ...prev,
+      [role]: new Set(getDefaultConfigurableModules(role)),
+    }));
+    setSavedRole(null);
+    setError(null);
+  }
+
   async function handleSave(role: Role) {
     setSavingRole(role);
     setSavedRole(null);
@@ -118,6 +128,13 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => restoreDefaults(role)}
+                    className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Padrão
+                  </button>
                   <button
                     type="button"
                     onClick={() => setAll(role, true)}

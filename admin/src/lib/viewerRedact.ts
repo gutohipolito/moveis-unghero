@@ -1,4 +1,4 @@
-import { isReadOnlyRole } from "@/lib/permissions";
+import { isOpsLimitedRole, isReadOnlyRole } from "@/lib/permissions";
 import { maskSensitiveInText } from "@/lib/maskSensitive";
 import type { Role } from "@prisma/client";
 
@@ -52,6 +52,17 @@ const PII_KEYS = new Set([
   "bairro",
   "uf",
   "clientPhone",
+  "faixa_investimento",
+  "ip",
+  "user_agent",
+]);
+
+/** Documento e dados sensíveis (ops mantém telefone/e-mail). */
+const OPS_DOC_KEYS = new Set([
+  "cpf",
+  "cnpj",
+  "documento",
+  "cliente_documento",
   "faixa_investimento",
   "ip",
   "user_agent",
@@ -116,4 +127,42 @@ export function redactSensitivePayload<T>(data: T): T {
 export function maybeRedactForViewer<T>(data: T, cargo: Role | string | null | undefined): T {
   if (!isReadOnlyRole(cargo)) return data;
   return redactSensitivePayload(data);
+}
+
+/**
+ * Redação para Projetista/Fábrica: remove valores e documentos sensíveis,
+ * mas mantém telefone e e-mail para operação.
+ */
+export function redactOpsLimitedPayload<T>(data: T): T {
+  const walk = (node: unknown): unknown => {
+    if (Array.isArray(node)) {
+      return node.map(walk);
+    }
+    if (!isPlainObject(node)) {
+      return node;
+    }
+
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(node)) {
+      if (MONEY_KEYS.has(key)) {
+        out[key] = redactMoney(value);
+        continue;
+      }
+      if (OPS_DOC_KEYS.has(key)) {
+        out[key] = redactPii(value);
+        continue;
+      }
+      out[key] = walk(value);
+    }
+    return out;
+  };
+
+  return walk(data) as T;
+}
+
+/** Redação unificada: VIEWER (completo) ou ops-limited (valores + docs). */
+export function maybeRedactForRole<T>(data: T, cargo: Role | string | null | undefined): T {
+  if (isReadOnlyRole(cargo)) return redactSensitivePayload(data);
+  if (isOpsLimitedRole(cargo)) return redactOpsLimitedPayload(data);
+  return data;
 }

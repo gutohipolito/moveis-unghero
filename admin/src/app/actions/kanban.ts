@@ -12,6 +12,8 @@ import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeAddressFields } from "@/lib/address";
+import { assertOpsCrmStatusMove } from "@/lib/crmOpsAccess";
+import { isOpsLimitedRole } from "@/lib/permissions";
 
 export type ProjectStatus =
   | "LEAD"
@@ -60,6 +62,11 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
     });
 
     const oldStatus = currentProject.status_geral;
+
+    const opsMoveError = assertOpsCrmStatusMove(auth.cargo, oldStatus, newStatus);
+    if (opsMoveError) {
+      return { success: false, error: opsMoveError };
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.project.update({
@@ -156,6 +163,9 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false, error: "Este cargo não pode marcar perdas comerciais." };
+  }
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -201,6 +211,9 @@ export async function restoreProjectFromLoss(projectId: string, newStatus: Proje
   const auth = await getModuleAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false, error: "Este cargo não pode restaurar perdas comerciais." };
   }
   try {
     await requireProjectInCompany(projectId, auth.companyId);
@@ -267,6 +280,9 @@ export async function createLead(formData: {
   const auth = await getWriteAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false, error: "Este cargo não cria leads comerciais." };
   }
   try {
     assertCompanyAccess(auth, formData.company_id);
@@ -543,7 +559,13 @@ export async function updateProjectCommercialAction(
     const oldValor = Number(currentProject.valor_previsto);
     const oldObs = currentProject.observacoes || "";
 
-    const newValor = data.valor_previsto;
+    const opsMoveError = assertOpsCrmStatusMove(auth.cargo, oldStatus, data.status_geral);
+    if (opsMoveError) {
+      return { success: false, error: opsMoveError };
+    }
+
+    const opsLimited = isOpsLimitedRole(auth.cargo);
+    const newValor = opsLimited ? oldValor : data.valor_previsto;
     const newStatus = data.status_geral;
     const newObs = data.observacoes || "";
 
@@ -568,7 +590,7 @@ export async function updateProjectCommercialAction(
         });
       }
 
-      if (oldValor !== newValor) {
+      if (!opsLimited && oldValor !== newValor) {
         const formatBrl = (val: number) => 
           new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
         await tx.timeline.create({

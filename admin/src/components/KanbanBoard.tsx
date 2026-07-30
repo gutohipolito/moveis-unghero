@@ -8,7 +8,9 @@ import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
+import KanbanOpsPanel from "@/components/KanbanOpsPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
+import { OPS_FUNNEL_COLUMNS } from "@/lib/crmOpsAccess";
 import { hasRealClientEmail } from "@/lib/clientMatch";
 import {
   COMMERCIAL_LOSS_STATUSES,
@@ -205,11 +207,14 @@ const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
 ];
 
 /** Avanço rápido: próxima etapa segue a ordem visual das colunas do funil. */
-const FUNNEL_ORDER = FUNNEL_COLUMNS.map((c) => c.id);
-function getNextFunnelStatus(current: string): ProjectStatus | null {
-  const idx = FUNNEL_ORDER.indexOf(current as ProjectStatus);
-  if (idx < 0 || idx >= FUNNEL_ORDER.length - 1) return null;
-  return FUNNEL_ORDER[idx + 1];
+function getNextFunnelStatus(
+  current: string,
+  columns: { id: ProjectStatus }[] = FUNNEL_COLUMNS
+): ProjectStatus | null {
+  const order = columns.map((c) => c.id);
+  const idx = order.indexOf(current as ProjectStatus);
+  if (idx < 0 || idx >= order.length - 1) return null;
+  return order[idx + 1];
 }
 
 /** Tema visual por etapa — cabeçalho colorido; cards filhos só com borda e sombra. */
@@ -373,7 +378,8 @@ export default function KanbanBoard({
   colaboradores = [],
   initialFollowUpSla = null,
 }: KanbanBoardProps) {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, isOpsLimited } = usePermissions();
+  const funnelColumns = isOpsLimited ? OPS_FUNNEL_COLUMNS : FUNNEL_COLUMNS;
   const sensitive = useSensitiveDisplay();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isMobile, setIsMobile] = useState(false);
@@ -402,6 +408,11 @@ export default function KanbanBoard({
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
   const [didDrag, setDidDrag] = useState(false);
   const [boardView, setBoardView] = useState<"funil" | "perdas" | "pendencias">("funil");
+  useEffect(() => {
+    if (isOpsLimited && boardView !== "funil") {
+      setBoardView("funil");
+    }
+  }, [isOpsLimited, boardView]);
   const [pendingCount, setPendingCount] = useState(0);
   const [lossModalProject, setLossModalProject] = useState<Project | null>(null);
   const [lossMotivo, setLossMotivo] = useState("");
@@ -593,7 +604,7 @@ export default function KanbanBoard({
         if (p.id === editingProjectId) {
           return {
             ...p,
-            valor_previsto: data.valor_previsto,
+            valor_previsto: isOpsLimited ? p.valor_previsto : data.valor_previsto,
             status_geral: data.status_geral,
             observacoes: data.observacoes,
             stage_entered_at:
@@ -606,7 +617,12 @@ export default function KanbanBoard({
       }));
       setIsEditLeadOpen(false);
       resetLeadForm();
-      showSuccess("Alterações salvas", "Os dados comerciais do projeto foram salvos.");
+      showSuccess(
+        "Alterações salvas",
+        isOpsLimited
+          ? "Os dados operacionais do projeto foram salvos."
+          : "Os dados comerciais do projeto foram salvos."
+      );
       if (enteringConfTecnica && previous) {
         promptConfTecnicaWhatsApp({
           ...previous,
@@ -618,7 +634,7 @@ export default function KanbanBoard({
         });
       }
     } else {
-      showError("Erro ao salvar", "Não foi possível salvar as alterações comerciais.");
+      showError("Erro ao salvar", result.error || "Não foi possível salvar as alterações.");
     }
     setLoading(false);
   };
@@ -714,7 +730,7 @@ export default function KanbanBoard({
   // Avança o projeto para a próxima etapa do funil (usado no mobile, onde não há drag & drop)
   const handleAdvanceStage = async (project: Project) => {
     if (isReadOnly) return;
-    const next = getNextFunnelStatus(project.status_geral);
+    const next = getNextFunnelStatus(project.status_geral, funnelColumns);
     if (!next) return;
     const enteringConfTecnica = next === "CONFERENCIA_TECNICA";
 
@@ -724,9 +740,9 @@ export default function KanbanBoard({
     const result = await updateProjectStatus(project.id, next);
     if (!result.success) {
       setProjects(originalProjects);
-      showError("Falha ao avançar", "Não foi possível mover o projeto para a próxima etapa.");
+      showError("Falha ao avançar", result.error || "Não foi possível mover o projeto para a próxima etapa.");
     } else {
-      const nextTitle = FUNNEL_COLUMNS.find((c) => c.id === next)?.title || "próxima etapa";
+      const nextTitle = funnelColumns.find((c) => c.id === next)?.title || "próxima etapa";
       showSuccess("Projeto avançado", `${project.client.nome} → ${nextTitle}.`);
       if (enteringConfTecnica) {
         promptConfTecnicaWhatsApp(project);
@@ -920,7 +936,9 @@ export default function KanbanBoard({
     const isDraggingThis = activeDragId === project.id;
     const followLevel = getFollowUpLevel(project, followUpSla);
     const followMessage = getFollowUpMessage(project, followUpSla);
-    const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
+    const canMarkLoss =
+      !isOpsLimited &&
+      COMMERCIAL_LOSS_STATUSES.includes(project.status_geral as ProjectStatus);
     const showFollowUp = needsFollowUp(project.status_geral);
     const isCollapsed = !expandedCards.has(project.id);
     const stageStatus = colId ?? project.status_geral;
@@ -940,6 +958,7 @@ export default function KanbanBoard({
       ["LEAD", "ORCAMENTO", "NEGOCIACAO"].includes(project.status_geral);
     const hasQuoteShareTab = Boolean(project.quoteShare?.sharedAt);
     const needsReceiptReminder =
+      !isOpsLimited &&
       !project.hasPaymentReceipt &&
       RECEIPT_REMINDER_STATUSES.has(project.status_geral);
     const innerTab = cardInnerTab[project.id] ?? "geral";
@@ -1450,7 +1469,7 @@ export default function KanbanBoard({
                     </a>
 
                     {/* Avançar etapa — só no mobile, onde não há drag & drop */}
-                    {!isReadOnly && isMobile && boardView === "funil" && getNextFunnelStatus(project.status_geral) && (
+                    {!isReadOnly && isMobile && boardView === "funil" && getNextFunnelStatus(project.status_geral, funnelColumns) && (
                       <button
                         type="button"
                         onPointerDown={(e) => e.stopPropagation()}
@@ -1464,7 +1483,7 @@ export default function KanbanBoard({
                           minHeight: "1.625rem",
                           padding: "0.25rem",
                         }}
-                        title={`Avançar para ${FUNNEL_COLUMNS.find((c) => c.id === getNextFunnelStatus(project.status_geral))?.title || "próxima etapa"}`}
+                        title={`Avançar para ${funnelColumns.find((c) => c.id === getNextFunnelStatus(project.status_geral, funnelColumns))?.title || "próxima etapa"}`}
                       >
                         <ArrowRight style={{ width: "0.875rem", height: "0.875rem" }} />
                       </button>
@@ -1483,20 +1502,26 @@ export default function KanbanBoard({
     <div className="flex-1 min-h-0 flex flex-col space-y-[var(--space-3)] overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
         <div className="flex items-center gap-2 flex-wrap">
-          <SegmentControl
-            value={boardView}
-            onChange={setBoardView}
-            aria-label="Visualização do funil"
-            options={[
-              { value: "funil", label: "Funil ativo" },
-              {
-                value: "pendencias",
-                label: "Pendências comerciais",
-                badge: pendingCount,
-              },
-              { value: "perdas", label: "Perdas", badge: lostProjects.length },
-            ]}
-          />
+          {!isOpsLimited ? (
+            <SegmentControl
+              value={boardView}
+              onChange={setBoardView}
+              aria-label="Visualização do funil"
+              options={[
+                { value: "funil", label: "Funil ativo" },
+                {
+                  value: "pendencias",
+                  label: "Pendências comerciais",
+                  badge: pendingCount,
+                },
+                { value: "perdas", label: "Perdas", badge: lostProjects.length },
+              ]}
+            />
+          ) : (
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Funil a partir de Aprovados
+            </p>
+          )}
           <button
             type="button"
             onClick={toggleAllCardsCollapse}
@@ -1514,7 +1539,9 @@ export default function KanbanBoard({
               <ChevronsDownUp className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
             )}
           </button>
-          {!isReadOnly && <CrmFollowUpSlaSettings sla={followUpSla} onSave={handleSaveFollowUpSla} />}
+          {!isReadOnly && !isOpsLimited && (
+            <CrmFollowUpSlaSettings sla={followUpSla} onSave={handleSaveFollowUpSla} />
+          )}
         </div>
 
         {boardView === "funil" &&
@@ -1576,7 +1603,7 @@ export default function KanbanBoard({
       ) : (
       <div className="flex-1 min-h-0 overflow-x-auto pb-4 custom-scrollbar select-none">
         <div className="flex gap-4 items-stretch h-full min-w-max pb-2 print:flex-col print:h-auto print:min-w-0 print:gap-6">
-        {FUNNEL_COLUMNS.map((col) => {
+        {funnelColumns.map((col) => {
           const colProjects = projects.filter((p) => p.status_geral === col.id);
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
           const isOver = dragOverColumn === col.id;
@@ -1607,7 +1634,7 @@ export default function KanbanBoard({
                     {colProjects.length}
                   </span>
                 </div>
-                {colSum > 0 && (
+                {!isOpsLimited && colSum > 0 && (
                   <PrivacyMoney value={colSum} className="text-xs font-bold text-foreground shrink-0 ml-2" />
                 )}
               </div>
@@ -1696,10 +1723,12 @@ export default function KanbanBoard({
         {(() => {
           const currentProject = projects.find((p) => p.id === editingProjectId);
           if (!currentProject) return null;
-          const hasBriefing = !!currentProject.briefing;
-          const canMarkLoss = COMMERCIAL_LOSS_STATUSES.includes(
-            currentProject.status_geral as ProjectStatus
-          );
+          const hasBriefing = !isOpsLimited && !!currentProject.briefing;
+          const canMarkLoss =
+            !isOpsLimited &&
+            COMMERCIAL_LOSS_STATUSES.includes(
+              currentProject.status_geral as ProjectStatus
+            );
 
           return (
             <div className="flex flex-col flex-1 min-h-0 h-full">
@@ -2038,6 +2067,23 @@ export default function KanbanBoard({
                   </div>
                 </div>
                 </div>
+              ) : isOpsLimited ? (
+                <KanbanOpsPanel
+                  project={currentProject}
+                  leadForm={leadForm}
+                  editingStatusGeral={editingStatusGeral}
+                  setEditingStatusGeral={setEditingStatusGeral}
+                  editingObservacoes={editingObservacoes}
+                  setEditingObservacoes={setEditingObservacoes}
+                  onSubmit={handleEditLeadSubmit}
+                  onClose={() => setIsEditLeadOpen(false)}
+                  loading={loading}
+                  isReadOnly={isReadOnly}
+                  displayPhone={sensitive.phone(leadForm.telefone)}
+                  displayEmail={sensitive.email(leadForm.email)}
+                  whatsappHref={sensitive.whatsappHref(currentProject.client.telefone)}
+                  reserveCloseSpace={!hasBriefing}
+                />
               ) : (
                 <KanbanNegotiationPanel
                   project={currentProject}

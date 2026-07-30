@@ -51,6 +51,8 @@ interface ClienteProjectsTabProps {
   onProjectsChange: (projects: ClientProjectSummary[]) => void;
   initialProjectId?: string | null;
   initialCreateQuote?: boolean;
+  /** Projetista/Fábrica: oculta valores e criação comercial de projeto. */
+  hideValues?: boolean;
 }
 
 function ProjectStatusBadge({ status, blocked }: { status: string; blocked?: boolean }) {
@@ -96,6 +98,7 @@ export default function ClienteProjectsTab({
   onProjectsChange,
   initialProjectId = null,
   initialCreateQuote = false,
+  hideValues = false,
 }: ClienteProjectsTabProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);
   const [openCreateQuote, setOpenCreateQuote] = useState(initialCreateQuote);
@@ -160,37 +163,43 @@ export default function ClienteProjectsTab({
               <Layers className="h-4.5 w-4.5 text-primary" /> Projetos do cliente
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Clique em um projeto para ver briefing, orçamentos, arquivos e produção.
+              {hideValues
+                ? "Clique em um projeto para ver status, arquivos e produção."
+                : "Clique em um projeto para ver briefing, orçamentos, arquivos e produção."}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full">
               {projects.length} projeto{projects.length === 1 ? "" : "s"}
             </span>
-            <Button
-              type="button"
-              className="text-xs font-bold gap-1.5 btn-metallic"
-              onClick={() => {
-                setCreateError(null);
-                setValorPrevisto("");
-                setIsCreateModalOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" /> Novo projeto
-            </Button>
+            {!hideValues && (
+              <Button
+                type="button"
+                className="text-xs font-bold gap-1.5 btn-metallic"
+                onClick={() => {
+                  setCreateError(null);
+                  setValorPrevisto("");
+                  setIsCreateModalOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" /> Novo projeto
+              </Button>
+            )}
           </div>
         </div>
 
         {projects.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl space-y-4">
             <p>Nenhum projeto vinculado a este cliente ainda.</p>
-            <Button
-              type="button"
-              className="text-xs font-bold gap-1.5 btn-metallic"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" /> Criar primeiro projeto
-            </Button>
+            {!hideValues && (
+              <Button
+                type="button"
+                className="text-xs font-bold gap-1.5 btn-metallic"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" /> Criar primeiro projeto
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -228,33 +237,35 @@ export default function ClienteProjectsTab({
                     <ProjectStatusBadge status={project.status_geral} blocked={isBlocked} />
                   </div>
 
-                  {/* Valor em destaque */}
-                  <div className={`mt-3 rounded-xl px-3 py-2 border ${isBlocked ? "bg-rose-50/60 border-rose-100" : "bg-slate-50 border-border/50"}`}>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" /> Valor previsto
-                    </span>
-                    {isBlocked ? (
-                      <p className="text-sm font-bold text-rose-600 mt-0.5">Sem orçamento</p>
-                    ) : (
-                      <p className="text-lg font-black text-foreground mt-0.5 privacy-value">
-                        {project.valor_previsto.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </p>
-                    )}
-                    {latestQuote ? (
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        Orçamento v{latestQuote.versao}:{" "}
-                        <span className="privacy-value font-semibold text-foreground">
-                          {latestQuote.valor_final.toLocaleString("pt-BR", {
+                  {/* Valor em destaque (oculto para cargos operacionais) */}
+                  {!hideValues && (
+                    <div className={`mt-3 rounded-xl px-3 py-2 border ${isBlocked ? "bg-rose-50/60 border-rose-100" : "bg-slate-50 border-border/50"}`}>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" /> Valor previsto
+                      </span>
+                      {isBlocked ? (
+                        <p className="text-sm font-bold text-rose-600 mt-0.5">Sem orçamento</p>
+                      ) : (
+                        <p className="text-lg font-black text-foreground mt-0.5 privacy-value">
+                          {project.valor_previsto.toLocaleString("pt-BR", {
                             style: "currency",
                             currency: "BRL",
                           })}
-                        </span>
-                      </p>
-                    ) : null}
-                  </div>
+                        </p>
+                      )}
+                      {latestQuote ? (
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Orçamento v{latestQuote.versao}:{" "}
+                          <span className="privacy-value font-semibold text-foreground">
+                            {latestQuote.valor_final.toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            })}
+                          </span>
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
 
                   {/* Chips de metadados */}
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -309,7 +320,7 @@ export default function ClienteProjectsTab({
       ) : null}
 
       <Dialog
-        isOpen={isCreateModalOpen}
+        isOpen={!hideValues && isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         className="max-w-md w-full"
       >

@@ -5,7 +5,7 @@ import { guardModule, getCompanyPermissions } from "@/lib/moduleAccess";
 import { getSessionCompanyId } from "@/lib/session";
 import {
   EDITABLE_ROLES,
-  resolveAllowedModules,
+  resolveConfigurableModules,
 } from "@/lib/permissions";
 import type { Role } from "@prisma/client";
 import PermissoesClient from "./PermissoesClient";
@@ -18,7 +18,7 @@ export default async function PermissoesPage() {
 
   const initial: Record<string, string[]> = {};
   for (const role of EDITABLE_ROLES) {
-    initial[role] = resolveAllowedModules(permissions, role as Role);
+    initial[role] = resolveConfigurableModules(permissions, role as Role);
   }
 
   return (

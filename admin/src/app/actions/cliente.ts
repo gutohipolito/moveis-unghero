@@ -24,7 +24,8 @@ import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatc
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
-import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { isOpsLimitedRole } from "@/lib/permissions";
+import { maybeRedactForRole, maybeRedactForViewer } from "@/lib/viewerRedact";
 
 type Origin = 
   | "SITE"
@@ -292,7 +293,7 @@ export async function getClients(companyId: string) {
 
     return {
       success: true,
-      clients: maybeRedactForViewer(
+      clients: maybeRedactForRole(
         clients.map((c) => formatClientRecord(c)),
         auth.cargo
       ),
@@ -818,6 +819,9 @@ export async function getClientPaymentsAction(clientId: string): Promise<{
   }
 
   try {
+    if (isOpsLimitedRole(auth.cargo)) {
+      return { success: false, payments: [], error: "Acesso financeiro restrito." };
+    }
     const { payments } = await loadClientActivitiesAndPayments(clientId);
     return {
       success: true,
@@ -929,8 +933,10 @@ export async function getClientDetailsAction(clientId: string) {
     }
 
     const formattedClient = formatClientRecord(client);
-    const { activities, payments, earliestProjectAt } =
-      await loadClientActivitiesAndPayments(clientId);
+    const opsLimited = isOpsLimitedRole(auth.cargo);
+    const { activities, payments, earliestProjectAt } = opsLimited
+      ? { activities: [] as Activity[], payments: [] as Payment[], earliestProjectAt: null as Date | null }
+      : await loadClientActivitiesAndPayments(clientId);
     const attachments = await loadClientAttachments(clientId);
 
     const cadastroEm = client.createdAt ?? earliestProjectAt;
@@ -944,18 +950,19 @@ export async function getClientDetailsAction(clientId: string) {
     };
     const origemLabel = originLabels[client.origem] ?? client.origem;
 
-    const activitiesWithRegistration = cadastroEm
-      ? [
-          ...activities,
-          buildRegistrationActivity(clientId, cadastroEm, origemLabel),
-        ]
-      : activities;
+    const activitiesWithRegistration =
+      opsLimited || !cadastroEm
+        ? activities
+        : [
+            ...activities,
+            buildRegistrationActivity(clientId, cadastroEm, origemLabel),
+          ];
 
     return {
       success: true,
-      client: maybeRedactForViewer(formattedClient, auth.cargo),
+      client: maybeRedactForRole(formattedClient, auth.cargo),
       activities: activitiesWithRegistration,
-      payments: maybeRedactForViewer(payments, auth.cargo),
+      payments: maybeRedactForRole(payments, auth.cargo),
       attachments,
     };
   } catch (e) {
@@ -972,6 +979,9 @@ export async function addActivityAction(
   const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false, error: "Linha do tempo não disponível para este cargo." };
   }
   try {
     await requireClientInCompany(clientId, auth.companyId);

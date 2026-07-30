@@ -8,7 +8,7 @@ import {
   CONFIGURABLE_MODULE_KEYS,
   EDITABLE_ROLES,
   VIEWER_BLOCKED_MODULES,
-  resolveAllowedModules,
+  resolveConfigurableModules,
   type CompanyPermissions,
 } from "@/lib/permissions";
 
@@ -34,7 +34,7 @@ export async function getCompanyPermissionsAction(): Promise<PermissionsResult> 
 
   const resolved: Record<string, string[]> = {};
   for (const role of EDITABLE_ROLES) {
-    resolved[role] = resolveAllowedModules(stored, role);
+    resolved[role] = resolveConfigurableModules(stored, role);
   }
   return { success: true, permissions: resolved };
 }
@@ -82,7 +82,7 @@ export async function updateRolePermissionsAction(
 
   const resolved: Record<string, string[]> = {};
   for (const r of EDITABLE_ROLES) {
-    resolved[r] = resolveAllowedModules(next, r);
+    resolved[r] = resolveConfigurableModules(next, r);
   }
   return { success: true, permissions: resolved };
 }

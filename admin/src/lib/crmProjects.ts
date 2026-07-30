@@ -3,7 +3,9 @@ import type { Prisma } from "@prisma/client";
 import { getAuthContext } from "@/lib/auth-guard";
 import { resolveStageEntryAt } from "@/lib/crmStageDate";
 import { toQuoteViewStats, type QuoteViewStats } from "@/lib/quoteViewTracking";
-import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { isOpsLimitedRole } from "@/lib/permissions";
+import { OPS_CRM_STATUSES } from "@/lib/crmOpsAccess";
+import { maybeRedactForRole } from "@/lib/viewerRedact";
 
 export const CRM_PROJECT_SELECT = {
   id: true,
@@ -93,11 +95,15 @@ export const CRM_PROJECT_SELECT = {
 } satisfies Prisma.ProjectSelect;
 
 export async function fetchCrmProjects(companyId: string) {
+  const auth = await getAuthContext();
+  const opsLimited = isOpsLimitedRole(auth?.cargo);
+
   const projectsResult = await prisma.project
     .findMany({
       where: {
         client: { company_id: companyId },
         OR: [{ quotes: { some: {} } }, { briefing: { isNot: null } }],
+        ...(opsLimited ? { status_geral: { in: [...OPS_CRM_STATUSES] } } : {}),
       },
       select: CRM_PROJECT_SELECT,
     })
@@ -170,6 +176,5 @@ export async function fetchCrmProjects(companyId: string) {
     };
   });
 
-  const auth = await getAuthContext();
-  return maybeRedactForViewer(mapped, auth?.cargo);
+  return maybeRedactForRole(mapped, auth?.cargo);
 }

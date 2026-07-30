@@ -40,7 +40,7 @@ export default async function CRMPage() {
       <div className="shrink-0 print:hidden">
         <PageHeader
           title="Funil Comercial"
-          description="Gerencie as etapas de negociação e fabricação dos móveis sob medida."
+          description="Gerencie as etapas de negociação e fabricação dos móveis sob medida. Projetista e Fábrica veem a partir de Aprovados."
           help={
             <TooltipBody
               title="Funil de vendas"
@@ -49,6 +49,7 @@ export default async function CRMPage() {
                 "Em Aprovados, atribua até 2 responsáveis pela conferência técnica.",
                 "Ao mover para Conf. Técnica, o sistema oferece mensagem no WhatsApp pedindo datas da visita.",
                 "Só ao entrar em Produção o projeto aparece na fila do chão de fábrica.",
+                "Projetista e Fábrica: colunas a partir de Aprovados, sem valores comerciais.",
                 "No mobile, use o botão de avançar dentro do card.",
                 "Totais e telefone começam ocultos; use os olhos do topo para revelar (voltam a ocultar em 30s).",
                 "Na engrenagem, configure os prazos de aviso, alerta e perdas do follow-up.",
