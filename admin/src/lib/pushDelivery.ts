@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { fetchCompanyNotifications } from "@/lib/fetchCompanyNotifications";
 import { buildPushPayload, sendWebPush } from "@/lib/webPush";
+import { getCompanyPermissions } from "@/lib/moduleAccess";
+import {
+  filterNotificationsForAccess,
+  readServerClearedNotificationIds,
+} from "@/lib/notificationAccess";
 
 function getPushOrigin(): string {
   return (
@@ -22,7 +27,13 @@ export async function deliverPendingPushNotifications(): Promise<{
 
   const subscriptions = await prisma.pushSubscription.findMany({
     include: {
-      user: { select: { company_id: true } },
+      user: {
+        select: {
+          company_id: true,
+          cargo: true,
+          preferences: true,
+        },
+      },
       deliveries: { select: { notification_id: true } },
     },
   });
@@ -31,15 +42,39 @@ export async function deliverPendingPushNotifications(): Promise<{
     return { sent, failed, removed };
   }
 
-  const notificationsByCompany = new Map<string, Awaited<ReturnType<typeof fetchCompanyNotifications>>>();
+  const notificationsByCompanyRole = new Map<
+    string,
+    Awaited<ReturnType<typeof fetchCompanyNotifications>>
+  >();
+  const permissionsByCompany = new Map<
+    string,
+    Awaited<ReturnType<typeof getCompanyPermissions>>
+  >();
 
   for (const sub of subscriptions) {
     const companyId = sub.user.company_id;
-    if (!notificationsByCompany.has(companyId)) {
-      notificationsByCompany.set(companyId, await fetchCompanyNotifications(companyId));
+    const role = sub.user.cargo;
+    const cacheKey = `${companyId}:${role}`;
+
+    if (!notificationsByCompanyRole.has(cacheKey)) {
+      notificationsByCompanyRole.set(
+        cacheKey,
+        await fetchCompanyNotifications(companyId, role)
+      );
+    }
+    if (!permissionsByCompany.has(companyId)) {
+      permissionsByCompany.set(
+        companyId,
+        await getCompanyPermissions(companyId)
+      );
     }
 
-    const notifications = notificationsByCompany.get(companyId) ?? [];
+    const notifications = filterNotificationsForAccess(
+      notificationsByCompanyRole.get(cacheKey) ?? [],
+      permissionsByCompany.get(companyId),
+      role,
+      readServerClearedNotificationIds(sub.user.preferences)
+    );
     const delivered = new Set(sub.deliveries.map((d) => d.notification_id));
     const pending = notifications.filter((n) => !delivered.has(n.id));
 
