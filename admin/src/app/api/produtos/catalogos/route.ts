@@ -3,6 +3,7 @@ import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import {
+  formatCatalogSize,
   PRODUCT_CATALOG_MAX_BYTES,
   PRODUCT_CATALOG_MIME_TYPES,
 } from "@/lib/productCatalogs";
@@ -95,7 +96,10 @@ export async function POST(request: NextRequest) {
 
   if (sizeBytes && sizeBytes > PRODUCT_CATALOG_MAX_BYTES) {
     return NextResponse.json(
-      { success: false, error: "O arquivo excede o limite de 20 MB." },
+      {
+        success: false,
+        error: `O arquivo excede o limite de ${formatCatalogSize(PRODUCT_CATALOG_MAX_BYTES)}.`,
+      },
       { status: 400 }
     );
   }

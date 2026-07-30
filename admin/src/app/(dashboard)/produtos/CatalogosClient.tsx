@@ -7,6 +7,10 @@ import {
   type ProductCatalogDTO,
 } from "@/app/actions/productCatalogs";
 import { generateCapaFromPdfFile } from "@/lib/pdfCover";
+import {
+  formatCatalogSize,
+  PRODUCT_CATALOG_MAX_BYTES,
+} from "@/lib/productCatalogs";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
@@ -40,6 +44,54 @@ function pdfViewerSrc(url: string): string {
   if (isHostedPdf(url)) return `${url}#toolbar=1&navpanes=0`;
   // Viewer público que busca o arquivo no servidor (contorna Content-Disposition: attachment)
   return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+}
+
+const CATALOG_MAX_SIZE_LABEL = formatCatalogSize(PRODUCT_CATALOG_MAX_BYTES);
+
+function describeCatalogUploadError(error: unknown): string {
+  const rawMessage =
+    error instanceof Error
+      ? error.message.trim()
+      : typeof error === "string"
+        ? error.trim()
+        : "";
+  const normalized = rawMessage.toLowerCase();
+
+  if (
+    normalized.includes("too large") ||
+    normalized.includes("larger than") ||
+    normalized.includes("exceed") ||
+    normalized.includes("maximum size") ||
+    normalized.includes("size limit") ||
+    normalized.includes("413")
+  ) {
+    return `O arquivo excede o limite permitido de ${CATALOG_MAX_SIZE_LABEL}.`;
+  }
+  if (
+    normalized.includes("content type") ||
+    normalized.includes("mime") ||
+    normalized.includes("unsupported") ||
+    normalized.includes("not allowed")
+  ) {
+    return "O formato do arquivo não é aceito. Use PDF, JPG, PNG ou WEBP.";
+  }
+  if (
+    normalized.includes("unauth") ||
+    normalized.includes("forbidden") ||
+    normalized.includes("401") ||
+    normalized.includes("403")
+  ) {
+    return "Sua sessão expirou ou não possui permissão para enviar catálogos. Entre novamente e tente de novo.";
+  }
+  if (
+    normalized.includes("network") ||
+    normalized.includes("failed to fetch") ||
+    normalized.includes("offline")
+  ) {
+    return "A conexão foi interrompida durante o envio. Verifique sua internet e tente novamente.";
+  }
+  if (rawMessage) return `O serviço informou: ${rawMessage}`;
+  return "O serviço não informou um motivo. Tente novamente ou contate o suporte.";
 }
 
 type SupplierOption = {
@@ -250,6 +302,32 @@ export default function CatalogosClient({
     setModalOpen(true);
   };
 
+  const selectCatalogFile = (selected: File | null) => {
+    if (selected && selected.size > PRODUCT_CATALOG_MAX_BYTES) {
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+      showError(
+        "Arquivo muito grande",
+        `"${selected.name}" possui ${formatCatalogSize(selected.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+      );
+      return;
+    }
+    setFile(selected);
+  };
+
+  const selectCoverFile = (selected: File | null) => {
+    if (selected && selected.size > PRODUCT_CATALOG_MAX_BYTES) {
+      setCapa(null);
+      if (capaRef.current) capaRef.current.value = "";
+      showError(
+        "Capa muito grande",
+        `"${selected.name}" possui ${formatCatalogSize(selected.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+      );
+      return;
+    }
+    setCapa(selected);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -282,6 +360,20 @@ export default function CatalogosClient({
 
     if (!file) {
       showError("Arquivo obrigatório", "Selecione o PDF ou a imagem do catálogo.");
+      return;
+    }
+    if (file.size > PRODUCT_CATALOG_MAX_BYTES) {
+      showError(
+        "Arquivo muito grande",
+        `"${file.name}" possui ${formatCatalogSize(file.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+      );
+      return;
+    }
+    if (capa && capa.size > PRODUCT_CATALOG_MAX_BYTES) {
+      showError(
+        "Capa muito grande",
+        `"${capa.name}" possui ${formatCatalogSize(capa.size)}. O tamanho máximo permitido é ${CATALOG_MAX_SIZE_LABEL}.`
+      );
       return;
     }
 
@@ -335,9 +427,13 @@ export default function CatalogosClient({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.catalog) {
-        showError("Cadastro falhou", data.error || "Não foi possível registrar o catálogo.");
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success || !data?.catalog) {
+        showError(
+          "Cadastro falhou",
+          data?.error ||
+            `O servidor recusou o cadastro sem informar o motivo (código HTTP ${res.status}).`
+        );
         return;
       }
 
@@ -351,7 +447,10 @@ export default function CatalogosClient({
       resetForm();
     } catch (err) {
       console.error(err);
-      showError("Upload falhou", "Erro ao realizar upload ou criar catálogo.");
+      showError(
+        "Upload falhou",
+        `Não foi possível concluir o envio.\n\nMotivo: ${describeCatalogUploadError(err)}`
+      );
     } finally {
       setUploading(false);
     }
@@ -667,9 +766,12 @@ export default function CatalogosClient({
                   type="file"
                   accept="application/pdf,image/jpeg,image/png,image/webp"
                   required
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={(e) => selectCatalogFile(e.target.files?.[0] || null)}
                   className="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Tamanho máximo: {CATALOG_MAX_SIZE_LABEL}. Formatos aceitos: PDF, JPG, PNG e WEBP.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600">Capa (opcional)</label>
@@ -677,7 +779,7 @@ export default function CatalogosClient({
                   ref={capaRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => setCapa(e.target.files?.[0] || null)}
+                  onChange={(e) => selectCoverFile(e.target.files?.[0] || null)}
                   className="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold"
                 />
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1">

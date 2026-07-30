@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth-guard";
+import { PRODUCT_CATALOG_MAX_BYTES } from "@/lib/productCatalogs";
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -23,14 +24,12 @@ export async function POST(request: Request): Promise<NextResponse> {
             "image/png",
             "image/webp",
           ],
+          maximumSizeInBytes: PRODUCT_CATALOG_MAX_BYTES,
           tokenPayload: JSON.stringify({
             userId: auth.userId,
             companyId: auth.companyId,
           }),
         };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }: { blob: any; tokenPayload?: string | null }) => {
-        // Opcional: callback pós-upload no servidor
       },
     });
 
