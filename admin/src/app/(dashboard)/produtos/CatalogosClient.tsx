@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import {
   updateProductCatalog,
@@ -11,6 +11,7 @@ import {
   formatCatalogSize,
   PRODUCT_CATALOG_MAX_BYTES,
 } from "@/lib/productCatalogs";
+import { resolveCatalogPublicUrl } from "@/lib/catalogShare";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
@@ -25,26 +26,12 @@ import {
   Trash2,
   Image as ImageIcon,
   Loader2,
-  Maximize2,
-  Minimize2,
   Pencil,
   Search,
   Settings2,
   ArrowLeft,
   Building2,
-  ExternalLink,
 } from "lucide-react";
-
-/** Zen (e outros hosts) servem PDF como attachment/octet-stream — o iframe fica em branco. */
-function isHostedPdf(url: string): boolean {
-  return url.includes("blob.vercel-storage.com");
-}
-
-function pdfViewerSrc(url: string): string {
-  if (isHostedPdf(url)) return `${url}#toolbar=1&navpanes=0`;
-  // Viewer público que busca o arquivo no servidor (contorna Content-Disposition: attachment)
-  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
-}
 
 const CATALOG_MAX_SIZE_LABEL = formatCatalogSize(PRODUCT_CATALOG_MAX_BYTES);
 
@@ -121,12 +108,6 @@ interface CatalogosClientProps {
   suppliers?: SupplierOption[];
 }
 
-function acabamentosFromDescricao(descricao: string | null): string | null {
-  if (!descricao) return null;
-  const m = descricao.match(/^Acabamentos:\s*(.+)$/m);
-  return m?.[1]?.trim() || null;
-}
-
 export default function CatalogosClient({
   companyId,
   initialCatalogs,
@@ -144,9 +125,6 @@ export default function CatalogosClient({
   const [editing, setEditing] = useState<ProductCatalogDTO | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [viewing, setViewing] = useState<ProductCatalogDTO | null>(null);
-  const [viewFullscreen, setViewFullscreen] = useState(false);
-  const [rehostingPdf, setRehostingPdf] = useState(false);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -218,51 +196,20 @@ export default function CatalogosClient({
     );
   }, []);
 
-  // PDFs externos (Zen etc.) vêm com Content-Disposition: attachment — iframe fica vazio.
-  // Na 1ª abertura, rehospeda no Blob da Vercel com application/pdf.
-  useEffect(() => {
-    if (!viewing) return;
-    if (viewing.mime_type !== "application/pdf") return;
-    if (isHostedPdf(viewing.arquivo_url)) return;
-
-    let cancelled = false;
-    setRehostingPdf(true);
-
-    void (async () => {
-      try {
-        const res = await fetch("/api/produtos/catalogos/rehost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: viewing.id }),
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok || !data.success || !data.arquivo_url) {
-          console.warn("Rehost PDF falhou:", data.error);
-          return;
-        }
-        const nextUrl = data.arquivo_url as string;
-        setCatalogs((prev) =>
-          prev.map((c) =>
-            c.id === viewing.id ? { ...c, arquivo_url: nextUrl, mime_type: "application/pdf" } : c
-          )
-        );
-        setViewing((prev) =>
-          prev && prev.id === viewing.id
-            ? { ...prev, arquivo_url: nextUrl, mime_type: "application/pdf" }
-            : prev
-        );
-      } catch (err) {
-        console.error("Rehost PDF:", err);
-      } finally {
-        if (!cancelled) setRehostingPdf(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [viewing?.id, viewing?.arquivo_url, viewing?.mime_type]);
+  const openCatalog = (catalog: ProductCatalogDTO) => {
+    const url =
+      catalog.public_url ||
+      resolveCatalogPublicUrl(catalog.share_code) ||
+      catalog.arquivo_url;
+    if (!url) {
+      showError(
+        "Link indisponível",
+        "Este catálogo ainda não possui um link público. Entre em contato com o Administrador do Sistema."
+      );
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   const filtered = scopeCatalogs.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -500,7 +447,7 @@ export default function CatalogosClient({
                 title="Catálogos para clientes"
                 items={[
                   "Guarde PDFs e imagens de catálogos de marcas e linhas.",
-                  "A grade mostra só a capa — clique para abrir o arquivo.",
+                  "A grade mostra só a capa — o clique abre o arquivo em uma nova aba.",
                   "Em PDF, a primeira página vira capa automaticamente se você não enviar uma.",
                 ]}
               />
@@ -637,7 +584,7 @@ export default function CatalogosClient({
                 type="button"
                 onClick={() => {
                   if (manageMode) return;
-                  setViewing(catalog);
+                  openCatalog(catalog);
                 }}
                 className={`w-full text-left ${
                   manageMode ? "cursor-default" : "cursor-pointer"
@@ -820,93 +767,6 @@ export default function CatalogosClient({
             </Button>
           </div>
         </form>
-      </Dialog>
-
-      <Dialog
-        isOpen={viewing !== null}
-        onClose={() => {
-          setViewing(null);
-          setViewFullscreen(false);
-        }}
-        fullscreen={viewFullscreen}
-        className={
-          viewFullscreen
-            ? "bg-white"
-            : "max-w-[min(96vw,1400px)] w-full h-[min(96svh,1100px)] max-h-[96svh] bg-white"
-        }
-        bodyClassName="!p-0 !overflow-hidden flex flex-col min-h-0 h-full"
-      >
-        {viewing ? (
-          <>
-            <div className="shrink-0 flex items-center gap-3 px-5 py-3.5 pr-14 border-b border-slate-100 bg-white">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight truncate">
-                  {viewing.titulo}
-                </h3>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-semibold uppercase tracking-wider truncate">
-                  {[viewing.marca, viewing.supplierNome].filter(Boolean).join(" · ")}
-                </p>
-                {acabamentosFromDescricao(viewing.descricao) ? (
-                  <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">
-                    Acabamentos: {acabamentosFromDescricao(viewing.descricao)}
-                  </p>
-                ) : null}
-              </div>
-              {viewing.mime_type === "application/pdf" ? (
-                <a
-                  href={viewing.arquivo_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 h-8 px-2.5 inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors text-[11px] font-semibold"
-                  title="Abrir PDF em nova aba"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  Abrir PDF
-                </a>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setViewFullscreen((v) => !v)}
-                className="shrink-0 h-8 w-8 inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
-                title={viewFullscreen ? "Sair da tela cheia" : "Tela cheia"}
-                aria-label={viewFullscreen ? "Sair da tela cheia" : "Tela cheia"}
-              >
-                {viewFullscreen ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 relative bg-slate-900">
-              {viewing.mime_type === "application/pdf" ? (
-                <>
-                  {rehostingPdf && !isHostedPdf(viewing.arquivo_url) ? (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-900/90 text-slate-200">
-                      <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-                      <p className="text-sm font-medium">Preparando PDF para visualização…</p>
-                      <p className="text-xs text-slate-400 max-w-sm text-center px-4">
-                        O arquivo original força download; estamos copiando para o armazenamento interno.
-                      </p>
-                    </div>
-                  ) : null}
-                  <iframe
-                    src={pdfViewerSrc(viewing.arquivo_url)}
-                    className="absolute inset-0 w-full h-full border-0"
-                    title={viewing.titulo}
-                  />
-                </>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={viewing.arquivo_url}
-                  alt={viewing.titulo}
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
-              )}
-            </div>
-          </>
-        ) : null}
       </Dialog>
     </div>
   );

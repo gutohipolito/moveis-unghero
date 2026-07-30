@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: SECURITY_HEADERS,
       },
-      ...["/cadastro", "/briefing", "/cadastro-parceiro", "/cadastro-fornecedor"].map(
+      ...["/cadastro", "/briefing", "/cadastro-parceiro", "/cadastro-fornecedor", "/catalogos/:path*"].map(
         (source) => ({
           source,
           headers: [{ key: "Content-Security-Policy", value: frameAncestors }],

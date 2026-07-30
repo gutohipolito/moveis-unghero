@@ -78,7 +78,8 @@ function isPublicSharePath(pathname: string) {
   return (
     pathname.startsWith("/o/") ||
     pathname.startsWith("/c/") ||
-    pathname.startsWith("/r/")
+    pathname.startsWith("/r/") ||
+    pathname.startsWith("/catalogos/")
   );
 }
 
@@ -235,5 +236,6 @@ export const config = {
     "/o/:path*",
     "/c/:path*",
     "/r/:path*",
+    "/catalogos/:path*",
   ],
 };

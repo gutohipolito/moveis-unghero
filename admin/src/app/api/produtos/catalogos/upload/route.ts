@@ -25,6 +25,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             "image/webp",
           ],
           maximumSizeInBytes: PRODUCT_CATALOG_MAX_BYTES,
+          addRandomSuffix: true,
           tokenPayload: JSON.stringify({
             userId: auth.userId,
             companyId: auth.companyId,

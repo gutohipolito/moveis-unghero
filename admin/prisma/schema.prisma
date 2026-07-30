@@ -935,6 +935,9 @@ model ProductCatalog {
   capa_url       String?
   ordem          Int       @default(0)
   ativo          Boolean   @default(true)
+  /** Código curto para link público em moveisunghero.com.br/catalogos/{code} */
+  share_code     String?   @unique
+  shared_at      DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   uploaded_by_id String?

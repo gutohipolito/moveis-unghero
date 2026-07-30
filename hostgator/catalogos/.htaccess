@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /catalogos/
+
+# moveisunghero.com.br/catalogos/abc123 → proxy local com iframe
+RewriteRule ^([a-zA-Z0-9]{6,12})/?$ index.php?code=$1 [L,QSA]
+
+DirectoryIndex index.php

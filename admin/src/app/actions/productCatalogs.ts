@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { resolveCatalogPublicUrl } from "@/lib/catalogShare";
 
 export interface ProductCatalogDTO {
   id: string;
@@ -22,6 +23,8 @@ export interface ProductCatalogDTO {
   supplier_id: string | null;
   supplierNome: string | null;
   supplierLogoUrl: string | null;
+  share_code: string | null;
+  public_url: string | null;
 }
 
 function extractLogoUrl(crmUploads: unknown): string | null {
@@ -56,6 +59,7 @@ function mapCatalog(row: {
     nomeFantasia: string | null;
     crmUploads: unknown;
   } | null;
+  share_code?: string | null;
 }): ProductCatalogDTO {
   return {
     id: row.id,
@@ -74,6 +78,8 @@ function mapCatalog(row: {
     supplier_id: row.supplier_id ?? null,
     supplierNome: row.supplier?.nomeFantasia || row.supplier?.nome || null,
     supplierLogoUrl: extractLogoUrl(row.supplier?.crmUploads) ?? null,
+    share_code: row.share_code ?? null,
+    public_url: resolveCatalogPublicUrl(row.share_code),
   };
 }
 

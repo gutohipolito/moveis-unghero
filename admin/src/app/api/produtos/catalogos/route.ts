@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
+import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import {
@@ -7,6 +7,10 @@ import {
   PRODUCT_CATALOG_MAX_BYTES,
   PRODUCT_CATALOG_MIME_TYPES,
 } from "@/lib/productCatalogs";
+import {
+  generateUniqueCatalogShareCode,
+  resolveCatalogPublicUrl,
+} from "@/lib/catalogShare";
 
 function mapCatalog(record: {
   id: string;
@@ -28,6 +32,7 @@ function mapCatalog(record: {
     nomeFantasia: string | null;
     crmUploads: unknown;
   } | null;
+  share_code?: string | null;
 }) {
   const logo =
     Array.isArray(record.supplier?.crmUploads)
@@ -58,6 +63,8 @@ function mapCatalog(record: {
     supplier_id: record.supplier_id ?? null,
     supplierNome: record.supplier?.nomeFantasia || record.supplier?.nome || null,
     supplierLogoUrl: logo,
+    share_code: record.share_code ?? null,
+    public_url: resolveCatalogPublicUrl(record.share_code),
   };
 }
 
@@ -134,6 +141,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const shareCode = await generateUniqueCatalogShareCode();
     const created = await prisma.productCatalog.create({
       data: {
         company_id: auth.companyId,
@@ -146,6 +154,8 @@ export async function POST(request: NextRequest) {
         mime_type: finalMimeType,
         size_bytes: sizeBytes || null,
         capa_url: capaUrl || null,
+        share_code: shareCode,
+        shared_at: new Date(),
         uploaded_by_id: auth.userId,
       },
       include: {
