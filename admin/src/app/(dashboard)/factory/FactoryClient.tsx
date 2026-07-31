@@ -161,7 +161,7 @@ function TeamSelect({
 }
 
 const KANBAN_BOARD_HEIGHT =
-  "h-[calc(100dvh-32rem)] max-h-[calc(100dvh-32rem)] md:h-[calc(100dvh-23rem)] md:max-h-[calc(100dvh-23rem)]";
+  "h-[calc(100dvh-32rem)] max-h-[calc(100dvh-32rem)] md:h-[calc(100dvh-var(--factory-board-offset))] md:max-h-[calc(100dvh-var(--factory-board-offset))]";
 
 export default function FactoryClient({
   initialEnvironments,

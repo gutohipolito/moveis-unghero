@@ -30,7 +30,7 @@ export default async function BIPage() {
   }
 
   return (
-    <div className="md:h-[calc(100vh-125px)] md:flex md:flex-col md:overflow-hidden space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
+    <div className="md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:flex md:flex-col md:overflow-hidden space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
       <div className="shrink-0 print:hidden">
         <PageHeader
           title="Relatórios"

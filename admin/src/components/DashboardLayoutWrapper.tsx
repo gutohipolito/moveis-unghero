@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -8,6 +8,7 @@ import SuggestionFab from "@/components/melhorias/SuggestionFab";
 import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
+import { useTabletLayout } from "@/hooks/useTabletLayout";
 
 interface DashboardLayoutWrapperProps {
   children: React.ReactNode;
@@ -28,29 +29,14 @@ export default function DashboardLayoutWrapper({
   companyId,
   header,
 }: DashboardLayoutWrapperProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const { isTablet, isCollapsed, toggleCollapsed } = useTabletLayout();
   const { allCollapsed, collapseAll, expandAll } = useSidebarSections();
 
-  // Carrega a preferência de colapso do localStorage no client-side
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved === "true") {
-      setIsCollapsed(true);
-    }
-  }, []);
-
-  const handleToggle = () => {
-    setIsCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("sidebar-collapsed", String(next));
-      return next;
-    });
-  };
-
   return (
-    <div className="flex min-h-screen bg-background">
+    <div
+      className={`flex min-h-screen bg-background${isTablet ? " dashboard-shell-tablet" : ""}`}
+      data-layout={isTablet ? "tablet" : "desktop"}
+    >
       {/* Sidebar Desktop */}
       <aside
         className={`app-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 z-30 transition-all duration-300 ${
@@ -78,7 +64,7 @@ export default function DashboardLayoutWrapper({
                   />
                 </Link>
                 <button
-                  onClick={handleToggle}
+                  onClick={toggleCollapsed}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
                   title="Expandir menu lateral"
                   aria-label="Expandir menu lateral"
@@ -109,7 +95,7 @@ export default function DashboardLayoutWrapper({
                     )}
                   </button>
                   <button
-                    onClick={handleToggle}
+                    onClick={toggleCollapsed}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
                     title="Recolher menu lateral"
                   >
@@ -133,9 +119,9 @@ export default function DashboardLayoutWrapper({
       >
         {header}
 
-        <main className="flex-1 px-[var(--space-4)] py-[var(--space-4)] sm:px-[var(--space-5)] md:px-[var(--space-6)] md:py-[var(--space-6)] overflow-x-hidden min-w-0 dashboard-main-mobile md:pb-[var(--space-6)]">
+        <main className="flex-1 overflow-x-hidden min-w-0 dashboard-main dashboard-main-mobile">
           <ReadOnlyBanner />
-          <div className="w-full space-y-[var(--space-5)]">{children}</div>
+          <div className="w-full dashboard-main-stack">{children}</div>
         </main>
       </div>
 

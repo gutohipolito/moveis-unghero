@@ -66,11 +66,36 @@
   /* ─── Layout ─── */
   --mobile-nav-height: 3.25rem;
   --mobile-header-height: 3.25rem;
+  --dashboard-topbar-height: 3.5rem;
+  --dashboard-main-pad-x: 1rem;
+  --dashboard-main-pad-y: 1rem;
+  --dashboard-stack-gap: 1.25rem;
+  /* Topbar + paddings do main + margem do PageHeader (CRM/BI/Fábrica) */
+  --dashboard-chrome-offset: 7.8125rem; /* 125px */
+  --factory-board-offset: 23rem;
 }
 
 @media (min-width: 768px) {
   :root {
     --text-display: 1.75rem;
     --text-headline: 1.25rem;
+    --dashboard-main-pad-x: 1.5rem;
+    --dashboard-main-pad-y: 1.5rem;
+  }
+}
+
+/* Tablets ~10.1″ (retrato e paisagem) com ponteiro de toque */
+@media (min-width: 768px) and (max-width: 1366px) and (any-pointer: coarse) {
+  :root {
+    --text-display: 1.5rem;
+    --text-headline: 1.125rem;
+    --text-body: 0.875rem;
+    --dashboard-topbar-height: 3rem;
+    --dashboard-main-pad-x: 1rem;
+    --dashboard-main-pad-y: 1rem;
+    --dashboard-stack-gap: 1rem;
+    --dashboard-chrome-offset: 6.25rem; /* 100px */
+    --factory-board-offset: 20rem;
+    --card-pad-md: 1rem; /* 16px em vez de 20px */
   }
 }
