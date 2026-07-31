@@ -84,18 +84,19 @@
   }
 }
 
-/* Tablets ~10.1″ (retrato e paisagem) com ponteiro de toque */
+/* Tablets ~10.1″ (retrato e paisagem) com ponteiro de toque —
+   compacto o bastante para caber mais conteúdo, com respiro maior que o mobile. */
 @media (min-width: 768px) and (max-width: 1366px) and (any-pointer: coarse) {
   :root {
     --text-display: 1.5rem;
     --text-headline: 1.125rem;
-    --text-body: 0.875rem;
-    --dashboard-topbar-height: 3rem;
-    --dashboard-main-pad-x: 1rem;
-    --dashboard-main-pad-y: 1rem;
-    --dashboard-stack-gap: 1rem;
-    --dashboard-chrome-offset: 6.25rem; /* 100px */
-    --factory-board-offset: 20rem;
-    --card-pad-md: 1rem; /* 16px em vez de 20px */
+    --text-body: 0.9375rem;
+    --dashboard-topbar-height: 3.25rem;
+    --dashboard-main-pad-x: 1.25rem;
+    --dashboard-main-pad-y: 1.25rem;
+    --dashboard-stack-gap: 1.25rem;
+    --dashboard-chrome-offset: 6.75rem;
+    --factory-board-offset: 21rem;
+    --card-pad-md: 1.125rem;
   }
 }

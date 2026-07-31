@@ -163,7 +163,9 @@ export default function ClienteDetailsClient({
   const docInfo = resolveClientDocument(client);
   const { sensitiveHidden } = usePrivacy();
   const sensitive = useSensitiveDisplay();
-  const { isOpsLimited } = usePermissions();
+  const { isOpsLimited, role } = usePermissions();
+  /** Marceneiro: no painel do cliente só o nome (sem contato, origem, consentimentos). */
+  const isFactoryRole = role === "PRODUCAO";
 
   useEffect(() => {
     if (!isOpsLimited) return;
@@ -174,9 +176,10 @@ export default function ClienteDetailsClient({
 
   // Link formatado para WhatsApp com saudação (sem vazar telefone quando oculto)
   const greeting = `Olá ${getFirstName(client.nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
-  const whatsappUrl = sensitive.hide
-    ? null
-    : buildWhatsAppUrl(client.telefone, greeting);
+  const whatsappUrl =
+    isFactoryRole || sensitive.hide
+      ? null
+      : buildWhatsAppUrl(client.telefone, greeting);
 
   // Adicionar Anotação na Timeline
   const handleAddNote = async (e: React.FormEvent) => {
@@ -228,14 +231,16 @@ export default function ClienteDetailsClient({
       </div>
 
       {/* ─── PERFIL DO CLIENTE — HEADER (com contato integrado) ─── */}
-      <Card className="p-6 glass-card space-y-5">
+      <Card className={`p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-5"}`}>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
-              <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
-                {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
-              </span>
+              {!isFactoryRole && (
+                <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
+                  {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+                </span>
+              )}
             </div>
 
             {!isOpsLimited && docInfo.documento && (
@@ -244,101 +249,109 @@ export default function ClienteDetailsClient({
               </span>
             )}
 
-            <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-muted-foreground font-medium">
-              <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Origem: {ORIGIN_LABELS[client.origem] || client.origem}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
-              {STATUS_LABELS[client.status] || client.status}
-            </span>
-
-            {whatsappUrl ? (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
-              >
-                <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
-              </a>
-            ) : (
-              <span
-                className="font-bold text-xs bg-slate-200 text-slate-500 rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 cursor-not-allowed"
-                title="Revele os dados sensíveis (olho) para abrir o WhatsApp"
-              >
-                <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
-              </span>
+            {!isFactoryRole && (
+              <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-muted-foreground font-medium">
+                <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Origem: {ORIGIN_LABELS[client.origem] || client.origem}</span>
+              </div>
             )}
           </div>
-        </div>
 
-        {/* Informações de contato integradas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-              <Phone className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
-              {sensitiveHidden ? (
-                <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
-              ) : whatsappUrl ? (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
-              ) : (
-                <span className="text-sm font-semibold text-foreground">{formatPhoneDisplay(client.telefone) || "—"}</span>
-              )}
-            </div>
-          </div>
+          {!isFactoryRole && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
+                {STATUS_LABELS[client.status] || client.status}
+              </span>
 
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-              <Mail className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
-              {sensitiveHidden ? (
-                <span className="text-sm font-semibold text-foreground select-none break-all">
-                  {hasRealClientEmail(client.email)
-                    ? maskEmail(client.email)
-                    : formatClientEmailDisplay(client.email)}
-                </span>
-              ) : hasRealClientEmail(client.email) ? (
+              {whatsappUrl ? (
                 <a
-                  href={`mailto:${client.email}`}
-                  className="text-sm font-semibold text-primary hover:underline break-all"
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
                 >
-                  {formatClientEmailDisplay(client.email)}
+                  <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
                 </a>
               ) : (
-                <span className="text-sm font-semibold text-muted-foreground break-all">
-                  {formatClientEmailDisplay(client.email)}
+                <span
+                  className="font-bold text-xs bg-slate-200 text-slate-500 rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  title="Revele os dados sensíveis (olho) para abrir o WhatsApp"
+                >
+                  <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-              <MapPin className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
-              <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
-            </div>
-          </div>
+          )}
         </div>
 
-        <ClientConsentCard
-          className="mt-4"
-          consent={resolveClientConsent({
-            lgpd_aceite: client.lgpd_aceite,
-            lgpd_aceite_em: client.lgpd_aceite_em,
-            marketing_aceite: client.marketing_aceite,
-            observacoes: client.observacoes,
-          })}
-        />
+        {!isFactoryRole && (
+          <>
+            {/* Informações de contato integradas */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
+                  {sensitiveHidden ? (
+                    <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
+                  ) : whatsappUrl ? (
+                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
+                  ) : (
+                    <span className="text-sm font-semibold text-foreground">{formatPhoneDisplay(client.telefone) || "—"}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
+                  {sensitiveHidden ? (
+                    <span className="text-sm font-semibold text-foreground select-none break-all">
+                      {hasRealClientEmail(client.email)
+                        ? maskEmail(client.email)
+                        : formatClientEmailDisplay(client.email)}
+                    </span>
+                  ) : hasRealClientEmail(client.email) ? (
+                    <a
+                      href={`mailto:${client.email}`}
+                      className="text-sm font-semibold text-primary hover:underline break-all"
+                    >
+                      {formatClientEmailDisplay(client.email)}
+                    </a>
+                  ) : (
+                    <span className="text-sm font-semibold text-muted-foreground break-all">
+                      {formatClientEmailDisplay(client.email)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
+                  <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
+                </div>
+              </div>
+            </div>
+
+            <ClientConsentCard
+              className="mt-4"
+              consent={resolveClientConsent({
+                lgpd_aceite: client.lgpd_aceite,
+                lgpd_aceite_em: client.lgpd_aceite_em,
+                marketing_aceite: client.marketing_aceite,
+                observacoes: client.observacoes,
+              })}
+            />
+          </>
+        )}
       </Card>
 
       {/* ─── CONTEÚDO ─── */}

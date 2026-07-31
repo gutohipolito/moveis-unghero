@@ -720,8 +720,8 @@ body {
    Não afeta login, print, briefing público nem Kanban touch. */
 @media (min-width: 768px) and (max-width: 1366px) and (any-pointer: coarse) {
   .dashboard-topbar {
-    padding: 0 1rem;
-    gap: 0.75rem;
+    padding: 0 1.25rem;
+    gap: 0.875rem;
   }
 
   .dashboard-main .page-header {
@@ -730,21 +730,21 @@ body {
   }
 
   .dashboard-main .page-header-main {
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
 
   .dashboard-main .page-subtitle {
     font-size: var(--text-caption);
-    margin-top: 0.125rem;
+    margin-top: 0.25rem;
   }
 
-  /* Cards compartilhados: 16px em vez de 20px no md */
+  /* Cards: um pouco mais de respiro que o compacto extremo */
   .dashboard-main .surface-compact.p-5,
   .dashboard-main .glass-card.p-5,
   .dashboard-main .card-clean.p-5,
   .dashboard-main .p-5.surface-compact,
   .dashboard-main .p-5.glass-card {
-    padding: var(--space-4);
+    padding: 1.125rem;
   }
 
   .dashboard-main .surface-compact.p-6,
@@ -754,21 +754,20 @@ body {
     padding: var(--space-5);
   }
 
-  /* Gaps de grids/seções um pouco mais apertados */
   .dashboard-main .gap-4 {
-    gap: 0.75rem;
+    gap: 0.875rem;
   }
 
   .dashboard-main .gap-6 {
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   .dashboard-main .space-y-6 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 1rem;
+    margin-top: 1.25rem;
   }
 
   .dashboard-main .space-y-5 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 0.875rem;
+    margin-top: 1rem;
   }
 
   .dashboard-main .kpi-value {
@@ -1744,11 +1743,11 @@ tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
 /* Densidade de tabelas no painel (tablet) — não afeta print/público */
 @media (min-width: 768px) and (max-width: 1366px) and (any-pointer: coarse) {
   .dashboard-main thead th {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5625rem 0.875rem;
     font-size: 0.6875rem;
   }
   .dashboard-main tbody td {
-    padding: 0.625rem 0.75rem;
+    padding: 0.6875rem 0.875rem;
     font-size: 0.8125rem;
   }
 }
