@@ -40,6 +40,7 @@ const emptyForm = (): EmailMailboxInput & { id?: string } => ({
   smtpHost: DEFAULT_SMTP_HOST,
   smtpPort: DEFAULT_SMTP_PORT,
   password: "",
+  signatureText: "",
   ativo: true,
   roles: [...DEFAULT_ROLES_BY_AREA.COMERCIAL],
 });
@@ -72,6 +73,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
       smtpHost: box.smtpHost,
       smtpPort: box.smtpPort,
       password: "",
+      signatureText: box.signatureText || "",
       ativo: box.ativo,
       roles: box.roles.length ? box.roles : [...DEFAULT_ROLES_BY_AREA[box.area]],
     });
@@ -102,6 +104,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
         smtpHost: form.smtpHost,
         smtpPort: form.smtpPort,
         password: form.password,
+        signatureText: form.signatureText,
         ativo: form.ativo,
         roles: form.roles,
       },
@@ -349,6 +352,18 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                 }
                 className="h-9"
               />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs text-muted-foreground">Assinatura (opcional)</label>
+              <textarea
+                value={form.signatureText || ""}
+                onChange={(e) => setForm({ ...form, signatureText: e.target.value })}
+                className="mt-1 w-full min-h-[88px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder={"Atendimento Móveis Unghero\n(54) 9 9997-1050\nmoveisunghero.com.br"}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Incluída automaticamente no final dos e-mails enviados por esta caixa.
+              </p>
             </div>
           </div>
 

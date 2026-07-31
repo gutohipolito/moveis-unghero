@@ -1214,6 +1214,8 @@ model EmailMailbox {
   smtp_host     String           @default("mail.moveisunghero.com.br")
   smtp_port     Int              @default(465)
   password_enc  String
+  /** Assinatura em texto puro anexada ao final dos e-mails enviados pela caixa. */
+  signature_text String?
   ativo         Boolean          @default(true)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt

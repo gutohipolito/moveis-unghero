@@ -28,6 +28,7 @@ export type EmailMailboxDTO = {
   imapPort: number;
   smtpHost: string;
   smtpPort: number;
+  signatureText: string | null;
   ativo: boolean;
   roles: Role[];
   hasPassword: boolean;
@@ -44,6 +45,7 @@ export type EmailMailboxInput = {
   smtpHost?: string;
   smtpPort?: number;
   password?: string;
+  signatureText?: string | null;
   ativo?: boolean;
   roles?: Role[];
 };
@@ -97,6 +99,7 @@ export async function listEmailMailboxesForUser() {
         imapPort: row.imap_port,
         smtpHost: row.smtp_host,
         smtpPort: row.smtp_port,
+        signatureText: row.signature_text,
         ativo: row.ativo,
         roles: row.roleAccess.map((r) => r.role),
         hasPassword: Boolean(row.password_enc),
@@ -135,6 +138,7 @@ export async function listAllEmailMailboxesAdmin() {
       imapPort: row.imap_port,
       smtpHost: row.smtp_host,
       smtpPort: row.smtp_port,
+      signatureText: row.signature_text,
       ativo: row.ativo,
       roles: row.roleAccess.map((r) => r.role),
       hasPassword: Boolean(row.password_enc),
@@ -167,6 +171,11 @@ export async function upsertEmailMailbox(input: EmailMailboxInput, mailboxId?: s
     (r) => r !== "ADMIN"
   ) as Role[];
 
+  const signatureText =
+    input.signatureText === undefined
+      ? undefined
+      : (input.signatureText || "").trim() || null;
+
   try {
     if (mailboxId) {
       const existing = await prisma.emailMailbox.findFirst({
@@ -193,6 +202,7 @@ export async function upsertEmailMailbox(input: EmailMailboxInput, mailboxId?: s
             smtp_host: (input.smtpHost || DEFAULT_SMTP_HOST).trim(),
             smtp_port: Number(input.smtpPort) || DEFAULT_SMTP_PORT,
             password_enc: passwordEnc,
+            ...(signatureText !== undefined ? { signature_text: signatureText } : {}),
             ativo: input.ativo !== false,
           },
         });
@@ -218,6 +228,7 @@ export async function upsertEmailMailbox(input: EmailMailboxInput, mailboxId?: s
           smtp_host: (input.smtpHost || DEFAULT_SMTP_HOST).trim(),
           smtp_port: Number(input.smtpPort) || DEFAULT_SMTP_PORT,
           password_enc: encryptVaultSecret(input.password.trim()),
+          signature_text: signatureText ?? null,
           ativo: input.ativo !== false,
           roleAccess: {
             create: roles.map((role) => ({ role })),

@@ -40,7 +40,12 @@ type MessageDetail = {
   messageId: string | null;
   inReplyTo: string | null;
   references: string[];
-  attachments: Array<{ filename: string; contentType: string; size: number }>;
+  attachments: Array<{
+    filename: string;
+    contentType: string;
+    size: number;
+    index: number;
+  }>;
 };
 
 interface EmailsClientProps {
@@ -382,31 +387,36 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   {detail.html ? (
-                    <div
-                      className="prose prose-sm max-w-none text-slate-800"
-                      dangerouslySetInnerHTML={{ __html: detail.html }}
+                    <iframe
+                      title={detail.subject}
+                      sandbox="allow-popups allow-popups-to-escape-sandbox"
+                      srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank" rel="noopener noreferrer"><style>body{margin:0;font-family:system-ui,sans-serif;font-size:14px;line-height:1.55;color:#1e293b;word-wrap:break-word;}img{max-width:100%;height:auto;}a{color:#0369a1;}table{max-width:100%;}</style></head><body>${detail.html.replace(/<\/(script|iframe|object|embed)/gi, "&lt;/$1")}</body></html>`}
+                      className="w-full min-h-[280px] border-0 bg-white rounded-md"
+                      style={{ height: "min(60vh, 520px)" }}
                     />
                   ) : (
                     <pre className="whitespace-pre-wrap text-sm text-slate-800 font-sans">
                       {detail.text || "(sem conteúdo)"}
                     </pre>
                   )}
-                  {detail.attachments.length > 0 && (
+                  {detail.attachments.length > 0 && mailboxId && (
                     <div className="mt-4 pt-3 border-t border-border/40">
                       <p className="text-[11px] font-bold uppercase text-muted-foreground mb-2">
                         Anexos
                       </p>
-                      <ul className="space-y-1">
-                        {detail.attachments.map((a, i) => (
-                          <li
-                            key={`${a.filename}-${i}`}
-                            className="text-xs text-slate-600 flex items-center gap-1.5"
-                          >
-                            <Paperclip className="h-3 w-3" />
-                            {a.filename}{" "}
-                            <span className="text-muted-foreground">
-                              ({Math.round(a.size / 1024)} KB)
-                            </span>
+                      <ul className="space-y-1.5">
+                        {detail.attachments.map((a) => (
+                          <li key={`${a.index}-${a.filename}`}>
+                            <a
+                              href={`/api/emails/attachment?mailboxId=${encodeURIComponent(mailboxId)}&uid=${detail.uid}&index=${a.index}`}
+                              className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900 hover:underline"
+                            >
+                              <Paperclip className="h-3.5 w-3.5" />
+                              {a.filename}
+                              <span className="text-muted-foreground font-normal">
+                                ({Math.max(1, Math.round(a.size / 1024))} KB)
+                              </span>
+                            </a>
                           </li>
                         ))}
                       </ul>
@@ -430,6 +440,9 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
           </h3>
           <p className="text-xs text-muted-foreground -mt-2">
             De: {selectedMailbox?.address}
+            {selectedMailbox?.signatureText
+              ? " · A assinatura da caixa será adicionada ao enviar."
+              : ""}
           </p>
           <div className="space-y-3">
             <div>

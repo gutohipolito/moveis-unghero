@@ -1,6 +1,10 @@
 import { ImapFlow } from "imapflow";
-import { simpleParser } from "mailparser";
-import { formatMailConnectionError } from "@/lib/emailErrors";
+import { simpleParser, type ParsedMail, type Attachment } from "mailparser";
+import {
+  looksLikeBrokenEncoding,
+  plainTextToSafeHtml,
+  repairEmailText,
+} from "@/lib/emailText";
 
 export type ImapConnectionConfig = {
   host: string;
@@ -36,7 +40,14 @@ export type EmailMessageDetail = {
     filename: string;
     contentType: string;
     size: number;
+    index: number;
   }>;
+};
+
+export type EmailAttachmentPayload = {
+  filename: string;
+  contentType: string;
+  content: Buffer;
 };
 
 function createClient(config: ImapConnectionConfig) {
@@ -53,11 +64,45 @@ function createClient(config: ImapConnectionConfig) {
       minVersion: "TLSv1.2",
     },
   });
-  // Evita crash por 'error' event sem listener (imapflow emite além do throw).
   client.on("error", () => {
     /* handled via connect() rejection */
   });
   return client;
+}
+
+function normalizeParsedBody(parsed: ParsedMail): { text: string; html: string | null } {
+  let text = repairEmailText(parsed.text || "");
+  let html: string | null =
+    typeof parsed.html === "string" && parsed.html.trim()
+      ? repairEmailText(parsed.html)
+      : null;
+
+  // textAsHtml do mailparser (quando não há HTML real)
+  if (!html && typeof parsed.textAsHtml === "string" && parsed.textAsHtml.trim()) {
+    const asHtml = repairEmailText(parsed.textAsHtml);
+    if (!looksLikeBrokenEncoding(asHtml)) {
+      html = asHtml;
+    }
+  }
+
+  if (html && looksLikeBrokenEncoding(html) && text && !looksLikeBrokenEncoding(text)) {
+    html = plainTextToSafeHtml(text);
+  }
+
+  if (!html && text) {
+    html = plainTextToSafeHtml(text);
+  }
+
+  return { text, html };
+}
+
+function mapAttachments(parsed: ParsedMail) {
+  return (parsed.attachments || []).map((a: Attachment, index: number) => ({
+    filename: a.filename || `anexo-${index + 1}`,
+    contentType: a.contentType || "application/octet-stream",
+    size: a.size || (Buffer.isBuffer(a.content) ? a.content.length : 0),
+    index,
+  }));
 }
 
 export async function testImapConnection(config: ImapConnectionConfig) {
@@ -67,6 +112,7 @@ export async function testImapConnection(config: ImapConnectionConfig) {
     await client.mailboxOpen("INBOX");
     return { success: true as const };
   } catch (error) {
+    const { formatMailConnectionError } = await import("@/lib/emailErrors");
     console.error("testImapConnection:", error);
     return {
       success: false as const,
@@ -129,8 +175,8 @@ export async function listInboxMessages(
         items.push({
           uid: msg.uid,
           seq: msg.seq,
-          subject: msg.envelope?.subject?.trim() || "(sem assunto)",
-          from,
+          subject: repairEmailText(msg.envelope?.subject?.trim() || "(sem assunto)"),
+          from: repairEmailText(from),
           fromAddress,
           date: msg.envelope?.date ? new Date(msg.envelope.date).toISOString() : null,
           seen: Boolean(msg.flags?.has("\\Seen")),
@@ -139,6 +185,35 @@ export async function listInboxMessages(
       }
 
       return items.reverse();
+    } finally {
+      lock.release();
+    }
+  } finally {
+    try {
+      await client.logout();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+async function loadParsedMessage(
+  config: ImapConnectionConfig,
+  uid: number
+): Promise<{ uid: number; parsed: ParsedMail } | null> {
+  const client = createClient(config);
+  await client.connect();
+  try {
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      const msg = await client.fetchOne(
+        String(uid),
+        { uid: true, source: true },
+        { uid: true }
+      );
+      if (!msg || !msg.source) return null;
+      const parsed = await simpleParser(msg.source);
+      return { uid: msg.uid, parsed };
     } finally {
       lock.release();
     }
@@ -168,21 +243,26 @@ export async function fetchInboxMessage(
       if (!msg || !msg.source) return null;
 
       const parsed = await simpleParser(msg.source);
+      const { text, html } = normalizeParsedBody(parsed);
+
       const fromEntry = msg.envelope?.from?.[0];
       const fromName = fromEntry?.name?.trim();
       const fromAddress = fromEntry?.address || parsed.from?.value?.[0]?.address || "";
-      const from = fromName
-        ? `${fromName} <${fromAddress}>`
-        : parsed.from?.text || fromAddress || "(sem remetente)";
+      const from = repairEmailText(
+        fromName
+          ? `${fromName} <${fromAddress}>`
+          : parsed.from?.text || fromAddress || "(sem remetente)"
+      );
 
       const parsedTo = parsed.to;
       const parsedToText = Array.isArray(parsedTo)
         ? parsedTo.map((a) => a.text).join(", ")
         : parsedTo?.text || "";
-      const to =
+      const to = repairEmailText(
         msg.envelope?.to?.map((t) => t.address).filter(Boolean).join(", ") ||
-        parsedToText ||
-        "";
+          parsedToText ||
+          ""
+      );
 
       const refs = parsed.references
         ? Array.isArray(parsed.references)
@@ -192,7 +272,9 @@ export async function fetchInboxMessage(
 
       return {
         uid: msg.uid,
-        subject: msg.envelope?.subject?.trim() || parsed.subject || "(sem assunto)",
+        subject: repairEmailText(
+          msg.envelope?.subject?.trim() || parsed.subject || "(sem assunto)"
+        ),
         from,
         fromAddress,
         to,
@@ -201,16 +283,12 @@ export async function fetchInboxMessage(
           : parsed.date
             ? parsed.date.toISOString()
             : null,
-        text: parsed.text || "",
-        html: typeof parsed.html === "string" ? parsed.html : null,
+        text,
+        html,
         messageId: parsed.messageId || msg.envelope?.messageId || null,
         inReplyTo: parsed.inReplyTo || null,
         references: refs.map(String),
-        attachments: (parsed.attachments || []).map((a) => ({
-          filename: a.filename || "anexo",
-          contentType: a.contentType || "application/octet-stream",
-          size: a.size || 0,
-        })),
+        attachments: mapAttachments(parsed),
       };
     } finally {
       lock.release();
@@ -222,4 +300,23 @@ export async function fetchInboxMessage(
       /* ignore */
     }
   }
+}
+
+export async function fetchInboxAttachment(
+  config: ImapConnectionConfig,
+  uid: number,
+  attachmentIndex: number
+): Promise<EmailAttachmentPayload | null> {
+  const loaded = await loadParsedMessage(config, uid);
+  if (!loaded) return null;
+  const att = loaded.parsed.attachments?.[attachmentIndex];
+  if (!att || !att.content) return null;
+  const content = Buffer.isBuffer(att.content)
+    ? att.content
+    : Buffer.from(att.content);
+  return {
+    filename: att.filename || `anexo-${attachmentIndex + 1}`,
+    contentType: att.contentType || "application/octet-stream",
+    content,
+  };
 }

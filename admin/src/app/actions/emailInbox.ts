@@ -12,6 +12,7 @@ import {
   type EmailListItem,
 } from "@/lib/emailImap";
 import { sendSmtpEmail } from "@/lib/emailSmtp";
+import { appendMailboxSignature } from "@/lib/emailText";
 import {
   loadAccessibleMailboxSecrets,
 } from "@/app/actions/emailMailboxes";
@@ -100,7 +101,7 @@ export async function sendMailboxEmail(input: ComposeEmailInput) {
 
   const to = input.to.trim();
   const subject = input.subject.trim();
-  const text = input.text.trim();
+  let text = input.text.trim();
   if (!to || !to.includes("@")) {
     return { success: false as const, error: "Informe o destinatário." };
   }
@@ -110,6 +111,8 @@ export async function sendMailboxEmail(input: ComposeEmailInput) {
   if (!text) {
     return { success: false as const, error: "Informe a mensagem." };
   }
+
+  text = appendMailboxSignature(text, loaded.mailbox.signature_text);
 
   const attachments = (input.attachments || []).map((a) => {
     const content = Buffer.from(a.contentBase64, "base64");
@@ -293,7 +296,10 @@ export async function sendQuoteByEmail(input: {
   lines.push("", "Qualquer dúvida, estamos à disposição!", "Equipe Móveis Unghero");
 
   const subject = `Orçamento Móveis Unghero — ${quote.project.client.nome}`;
-  const text = lines.join("\n");
+  const text = appendMailboxSignature(
+    lines.join("\n"),
+    loaded.mailbox.signature_text
+  );
 
   try {
     await sendSmtpEmail(
@@ -444,6 +450,7 @@ async function sendReceiptWithMailbox(
       display_name: string;
       smtp_host: string;
       smtp_port: number;
+      signature_text?: string | null;
     };
     password: string;
   },
@@ -473,12 +480,15 @@ async function sendReceiptWithMailbox(
   const url = buildReceiptShortUrl(shareCode!);
   const valorLabel = formatCurrencyBRL(Number(receipt.valor));
   const numeroLabel = receipt.numero ? `nº ${receipt.numero}` : null;
-  const text = buildReceiptWhatsAppMessage({
-    clientName: receipt.cliente_nome || receipt.client?.nome || "cliente",
-    valorLabel,
-    receiptUrl: url,
-    numeroLabel,
-  });
+  const text = appendMailboxSignature(
+    buildReceiptWhatsAppMessage({
+      clientName: receipt.cliente_nome || receipt.client?.nome || "cliente",
+      valorLabel,
+      receiptUrl: url,
+      numeroLabel,
+    }),
+    loaded.mailbox.signature_text
+  );
   const subject = `Recibo Móveis Unghero${numeroLabel ? ` ${numeroLabel}` : ""} — ${valorLabel}`;
 
   try {
