@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
+import PwaImmersiveMode from "@/components/PwaImmersiveMode";
 
 const APP_NAME = "Móveis Unghero";
 const APP_DESCRIPTION = "CRM, fábrica e gestão interna da Móveis Unghero";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Unghero",
   },
   formatDetection: {
@@ -51,6 +52,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-gradient-premium text-foreground selection:bg-primary/25"
       >
         <PwaRegister />
+        <PwaImmersiveMode />
         {children}
       </body>
     </html>

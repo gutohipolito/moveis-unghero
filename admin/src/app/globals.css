@@ -2145,7 +2145,9 @@ body.viewer-privacy-lock .privacy-value {
   background: hsl(var(--muted) / 0.6);
 }
 
-@media (display-mode: standalone) {
+@media (display-mode: standalone),
+  (display-mode: fullscreen),
+  (display-mode: minimal-ui) {
   .dashboard-topbar,
   .mobile-topbar {
     padding-top: env(safe-area-inset-top, 0);

@@ -9,7 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/crm",
     scope: "/",
     display: "standalone",
-    display_override: ["standalone", "minimal-ui"],
+    display_override: ["fullscreen", "standalone", "minimal-ui"],
     orientation: "any",
     lang: "pt-BR",
     dir: "ltr",
