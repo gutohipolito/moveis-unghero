@@ -5,7 +5,15 @@ import { del } from "@vercel/blob";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { canManageProducts } from "@/lib/permissions";
 import { capitalizeText } from "@/lib/utils";
+
+function denyProductMutation(cargo: string | null | undefined): string | null {
+  if (!canManageProducts(cargo)) {
+    return "Este cargo só pode visualizar produtos e catálogos.";
+  }
+  return null;
+}
 
 export type ShowcaseProductDTO = {
   id: string;
@@ -161,6 +169,8 @@ export async function createShowcaseProduct(
 ) {
   const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
+  const denied = denyProductMutation(auth.cargo);
+  if (denied) return { success: false as const, error: denied };
   try {
     assertCompanyAccess(auth, companyId);
   } catch {
@@ -239,6 +249,8 @@ export async function updateShowcaseProduct(
 ) {
   const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
+  const denied = denyProductMutation(auth.cargo);
+  if (denied) return { success: false as const, error: denied };
   try {
     assertCompanyAccess(auth, companyId);
   } catch {
@@ -306,6 +318,8 @@ export async function updateShowcaseProduct(
 export async function deleteShowcaseProduct(companyId: string, productId: string) {
   const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false as const, error: "Não autenticado" };
+  const denied = denyProductMutation(auth.cargo);
+  if (denied) return { success: false as const, error: denied };
   try {
     assertCompanyAccess(auth, companyId);
   } catch {

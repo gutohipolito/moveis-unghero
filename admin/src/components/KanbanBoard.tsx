@@ -6,6 +6,7 @@ import { updateProjectDetails } from "@/app/actions/project";
 import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
+import { canMoveCrmCards } from "@/lib/permissions";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import KanbanOpsPanel from "@/components/KanbanOpsPanel";
@@ -380,6 +381,7 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
   const { isReadOnly, isOpsLimited, role } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
+  const canMoveCards = canMoveCrmCards(role);
   const hideClientContact = isOpsLimited;
   const funnelColumns = isOpsLimited ? OPS_FUNNEL_COLUMNS : FUNNEL_COLUMNS;
   const sensitive = useSensitiveDisplay();
@@ -731,7 +733,7 @@ export default function KanbanBoard({
 
   // Avança o projeto para a próxima etapa do funil (usado no mobile, onde não há drag & drop)
   const handleAdvanceStage = async (project: Project) => {
-    if (isReadOnly) return;
+    if (!canMoveCards) return;
     const next = getNextFunnelStatus(project.status_geral, funnelColumns);
     if (!next) return;
     const enteringConfTecnica = next === "CONFERENCIA_TECNICA";
@@ -1035,7 +1037,7 @@ export default function KanbanBoard({
     ) : null;
 
     const canDragCard =
-      !isReadOnly && !isFactoryRole && boardView === "funil" && !isMobile;
+      canMoveCards && boardView === "funil" && !isMobile;
 
     return (
       <div
@@ -1488,7 +1490,7 @@ export default function KanbanBoard({
                       )}
 
                     {/* Avançar etapa — só no mobile, onde não há drag & drop */}
-                    {!isReadOnly &&
+                    {canMoveCards &&
                       isMobile &&
                       boardView === "funil" &&
                       getNextFunnelStatus(project.status_geral, funnelColumns) && (
@@ -1540,11 +1542,7 @@ export default function KanbanBoard({
                 { value: "perdas", label: "Perdas", badge: lostProjects.length },
               ]}
             />
-          ) : (
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-              {isFactoryRole ? "Acompanhamento operacional" : "Funil a partir de Aprovados"}
-            </p>
-          )}
+          ) : null}
           <button
             type="button"
             onClick={toggleAllCardsCollapse}
@@ -1637,11 +1635,11 @@ export default function KanbanBoard({
             <div 
               key={col.id}
               onDragOver={(e) => {
-                if (isFactoryRole) return;
+                if (!canMoveCards) return;
                 handleDragOver(e, col.id);
               }}
               onDrop={(e) => {
-                if (isFactoryRole) return;
+                if (!canMoveCards) return;
                 handleDrop(e, col.id);
               }}
               className={`kanban-column flex flex-col h-full rounded-2xl bg-slate-100/75 border border-slate-200/60 shadow-2xs transition-all duration-300 relative ${

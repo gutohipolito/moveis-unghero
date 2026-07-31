@@ -20,6 +20,10 @@ import { getEstoqueLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { usePermissions } from "@/context/PermissionsContext";
+import {
+  canDeleteEstoque,
+  canSeeEstoquePatrimonio,
+} from "@/lib/permissions";
 import { Dialog } from "@/components/ui/dialog";
 import { compressImageFile } from "@/lib/imageCompression";
 import { formatPhoneInput } from "@/lib/phone";
@@ -93,6 +97,8 @@ export default function EstoqueClient({
   const { role, isReadOnly } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
   const canManageEstoque = !isReadOnly && !isFactoryRole;
+  const canDelete = canDeleteEstoque(role);
+  const showPatrimonio = canSeeEstoquePatrimonio(role);
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
 
@@ -500,8 +506,8 @@ export default function EstoqueClient({
       </div>
 
       {/* ─── CARDS DE MÉTRICAS ─── */}
-      {!isFactoryRole && (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${showPatrimonio ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        {showPatrimonio && (
         <Card className="p-5 glass-card flex items-center gap-4 relative overflow-hidden">
           <div className="p-3 bg-primary/10 text-primary rounded-xl">
             <DollarSign className="h-6 w-6" />
@@ -513,6 +519,7 @@ export default function EstoqueClient({
             </strong>
           </div>
         </Card>
+        )}
 
         <Card className="p-5 glass-card flex items-center gap-4 relative overflow-hidden">
           <div className={`p-3 rounded-xl ${criticalItemsCount > 0 ? "bg-rose-500/10 text-rose-600" : "bg-emerald-500/10 text-emerald-600"}`}>
@@ -538,7 +545,6 @@ export default function EstoqueClient({
           </div>
         </Card>
       </div>
-      )}
 
       {/* ─── SELETOR DE ABAS & FILTROS ─── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -571,34 +577,38 @@ export default function EstoqueClient({
           </div>
 
           {activeTab === "estoque" && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground flex items-center gap-1"><Filter className="h-3 w-3" /> Categoria:</span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <label className="flex flex-col gap-1 min-w-0 flex-1 sm:flex-initial">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                  <Filter className="h-3 w-3" /> Categoria
+                </span>
                 <select
                   value={filterCategory}
                   onChange={e => setFilterCategory(e.target.value)}
-                  className="bg-slate-50 border border-border rounded-lg text-xs p-2.5 focus:ring-1 focus:ring-primary outline-none"
+                  className="w-full min-w-0 bg-slate-50 border border-border rounded-lg text-xs p-2.5 focus:ring-1 focus:ring-primary outline-none"
                 >
                   <option value="ALL">Todas</option>
                   {Object.entries(categories).map(([key, value]) => (
                     <option key={key} value={key}>{value}</option>
                   ))}
                 </select>
-              </div>
+              </label>
 
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground flex items-center gap-1"><Filter className="h-3 w-3" /> Status:</span>
+              <label className="flex flex-col gap-1 min-w-0 flex-1 sm:flex-initial">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                  <Filter className="h-3 w-3" /> Status
+                </span>
                 <select
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
-                  className="bg-slate-50 border border-border rounded-lg text-xs p-2.5 focus:ring-1 focus:ring-primary outline-none"
+                  className="w-full min-w-0 bg-slate-50 border border-border rounded-lg text-xs p-2.5 focus:ring-1 focus:ring-primary outline-none"
                 >
                   <option value="ALL">Todos</option>
                   <option value="CRITICO">Estoque Baixo</option>
                   <option value="OK">Estoque OK</option>
                   <option value="ESGOTADO">Esgotados</option>
                 </select>
-              </div>
+              </label>
             </div>
           )}
         </div>
@@ -617,8 +627,12 @@ export default function EstoqueClient({
                   <th className="p-4 text-center">Estoque Mínimo</th>
                   {!isFactoryRole && (
                     <>
-                      <th className="p-4 text-right">Preço de Custo</th>
-                      <th className="p-4 text-right">Valor Total</th>
+                      {showPatrimonio && (
+                        <>
+                          <th className="p-4 text-right">Preço de Custo</th>
+                          <th className="p-4 text-right">Valor Total</th>
+                        </>
+                      )}
                     </>
                   )}
                   <th className="p-4 text-center">Fornecedor Associado</th>
@@ -658,7 +672,7 @@ export default function EstoqueClient({
                           {!isOutOfStock && isCritical && <span className="text-[9px] font-bold text-amber-600 block mt-1">Reposição Crítica!</span>}
                         </td>
                         <td className="p-4 text-center text-xs font-semibold text-muted-foreground">{item.minima} un</td>
-                        {!isFactoryRole && (
+                        {showPatrimonio && (
                           <>
                             <td className="p-4 text-right text-xs font-medium text-slate-600 privacy-value">
                               {item.precoCusto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -683,6 +697,7 @@ export default function EstoqueClient({
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
+                              {canDelete && (
                               <button
                                 onClick={() => handleDeleteItem(item.id, item.nome)}
                                 className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
@@ -690,6 +705,7 @@ export default function EstoqueClient({
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
+                              )}
                             </div>
                           </td>
                         )}
@@ -824,6 +840,7 @@ export default function EstoqueClient({
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
+                              {canDelete && (
                               <button
                                 onClick={() => handleDeleteSupplier(sup.id, sup.nome)}
                                 className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
@@ -831,6 +848,7 @@ export default function EstoqueClient({
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
+                              )}
                             </div>
                           </td>
                         )}

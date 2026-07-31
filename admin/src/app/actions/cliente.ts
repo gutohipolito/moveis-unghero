@@ -197,6 +197,7 @@ function restrictClientListForProjetista<T extends Record<string, unknown>>(
       ...client,
       email: "",
       telefone: "",
+      origem: "SITE",
       projects,
     } as T;
   });
@@ -405,7 +406,7 @@ export async function createClientAction(formData: {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
-  if (auth.cargo === "PRODUCAO") {
+  if (auth.cargo === "PRODUCAO" || auth.cargo === "PROJETISTA") {
     return { success: false, error: "Cadastro de clientes não disponível para este cargo." };
   }
   try {
@@ -517,7 +518,7 @@ export async function updateClientAction(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
-  if (auth.cargo === "PRODUCAO") {
+  if (auth.cargo === "PRODUCAO" || auth.cargo === "PROJETISTA") {
     return { success: false, error: "Edição de clientes não disponível para este cargo." };
   }
   try {
@@ -593,7 +594,7 @@ export async function deleteClientAction(clientId: string) {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
-  if (auth.cargo === "PRODUCAO") {
+  if (auth.cargo === "PRODUCAO" || auth.cargo === "PROJETISTA") {
     return { success: false, error: "Exclusão de clientes não disponível para este cargo." };
   }
   try {

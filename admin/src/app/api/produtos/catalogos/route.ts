@@ -11,6 +11,7 @@ import {
   generateUniqueCatalogShareCode,
   resolveCatalogPublicUrl,
 } from "@/lib/catalogShare";
+import { canManageProducts } from "@/lib/permissions";
 
 function mapCatalog(record: {
   id: string;
@@ -72,6 +73,12 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+  if (!canManageProducts(auth.cargo)) {
+    return NextResponse.json(
+      { success: false, error: "Este cargo só pode visualizar produtos e catálogos." },
+      { status: 403 }
+    );
   }
 
   try {
@@ -182,6 +189,12 @@ export async function DELETE(request: NextRequest) {
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+  if (!canManageProducts(auth.cargo)) {
+    return NextResponse.json(
+      { success: false, error: "Este cargo só pode visualizar produtos e catálogos." },
+      { status: 403 }
+    );
   }
 
   const id = request.nextUrl.searchParams.get("id");

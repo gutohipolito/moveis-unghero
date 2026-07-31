@@ -69,7 +69,8 @@ export default function KanbanOpsPanel({
   const stageTitle =
     OPS_FUNNEL_COLUMNS.find((o) => o.id === editingStatusGeral)?.title ||
     editingStatusGeral;
-  const stageLocked = isReadOnly || isFactoryRole;
+  const stageLocked = isReadOnly || isFactoryRole || hideClientContact;
+  // Projetista: salva observações, mas não muda etapa.
   const canSave = !isReadOnly && !isFactoryRole;
   const showClientContact = !isFactoryRole && !hideClientContact;
 

@@ -4,7 +4,15 @@ import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { canManageProducts } from "@/lib/permissions";
 import { resolveCatalogPublicUrl } from "@/lib/catalogShare";
+
+function denyCatalogMutation(cargo: string | null | undefined): string | null {
+  if (!canManageProducts(cargo)) {
+    return "Este cargo só pode visualizar produtos e catálogos.";
+  }
+  return null;
+}
 
 export interface ProductCatalogDTO {
   id: string;
@@ -130,6 +138,8 @@ export async function updateProductCatalog(
 ): Promise<{ success: boolean; catalog?: ProductCatalogDTO; error?: string }> {
   const auth = await getWriteAccess("produtos");
   if (!auth) return { success: false, error: "Não autenticado" };
+  const denied = denyCatalogMutation(auth.cargo);
+  if (denied) return { success: false, error: denied };
   try {
     assertCompanyAccess(auth, companyId);
   } catch {

@@ -89,6 +89,49 @@ export function isOpsLimitedRole(role: Role | string | null | undefined): boolea
   return role === "PROJETISTA" || role === "PRODUCAO";
 }
 
+export function isProjetistaRole(role: Role | string | null | undefined): boolean {
+  return role === "PROJETISTA";
+}
+
+export function isFactoryRole(role: Role | string | null | undefined): boolean {
+  return role === "PRODUCAO";
+}
+
+/** Cadastro/edição/exclusão de clientes — bloqueado para ops e VIEWER. */
+export function canManageClients(role: Role | string | null | undefined): boolean {
+  return !isOpsLimitedRole(role) && !isReadOnlyRole(role);
+}
+
+/** Arrastar/mover cards do funil — bloqueado para ops e VIEWER. */
+export function canMoveCrmCards(role: Role | string | null | undefined): boolean {
+  return !isOpsLimitedRole(role) && !isReadOnlyRole(role);
+}
+
+/** CRUD de projetistas/arquitetos (parceiros). */
+export function canManageParceiros(role: Role | string | null | undefined): boolean {
+  return !isOpsLimitedRole(role) && !isReadOnlyRole(role);
+}
+
+/** Ver patrimônio/custo de estoque. */
+export function canSeeEstoquePatrimonio(role: Role | string | null | undefined): boolean {
+  return !isOpsLimitedRole(role);
+}
+
+/** Excluir insumos/fornecedores. */
+export function canDeleteEstoque(role: Role | string | null | undefined): boolean {
+  return !isOpsLimitedRole(role) && !isReadOnlyRole(role);
+}
+
+/** Editar produtos e catálogos. */
+export function canManageProducts(role: Role | string | null | undefined): boolean {
+  return !isOpsLimitedRole(role) && !isReadOnlyRole(role);
+}
+
+/** Tráfego GA4 no marketing. */
+export function canViewMarketingAnalytics(role: Role | string | null | undefined): boolean {
+  return !isProjetistaRole(role) && !isFactoryRole(role);
+}
+
 /** Tela inicial após login / ícone do PWA, por cargo. */
 export function homePathForRole(role: Role | string | null | undefined): string {
   if (role === "PRODUCAO" || role === "PROJETISTA") return "/factory";
@@ -135,7 +178,7 @@ export const PRODUCAO_BLOCKED_MODULES = new Set(["parceiros"]);
  * COMERCIAL/FINANCEIRO sem entrada continuam com todos os módulos configuráveis.
  */
 export const ROLE_DEFAULT_MODULES: Partial<Record<Role, string[]>> = {
-  PROJETISTA: [...OPS_BASE_MODULES, "parceiros", "marketing"],
+  PROJETISTA: [...OPS_BASE_MODULES, "parceiros"],
   PRODUCAO: [...OPS_BASE_MODULES],
   VIEWER: [...VIEWER_DEFAULT_MODULES],
 };

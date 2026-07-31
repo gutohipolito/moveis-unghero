@@ -5,9 +5,17 @@ import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { canManageParceiros } from "@/lib/permissions";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
 import { maybeRedactForRole } from "@/lib/viewerRedact";
+
+function denyParceiroMutation(cargo: string | null | undefined): string | null {
+  if (!canManageParceiros(cargo)) {
+    return "Este cargo só pode visualizar projetistas e arquitetos.";
+  }
+  return null;
+}
 
 export interface ParceiroDTO {
   id: string;
@@ -138,6 +146,8 @@ export async function createParceiro(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyParceiroMutation(auth.cargo);
+  if (denied) return { success: false, error: denied };
   try {
     assertCompanyAccess(auth, companyId);
   } catch (error) {
@@ -200,6 +210,8 @@ export async function updateParceiro(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyParceiroMutation(auth.cargo);
+  if (denied) return { success: false, error: denied };
 
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
@@ -263,6 +275,8 @@ export async function deleteParceiro(id: string) {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyParceiroMutation(auth.cargo);
+  if (denied) return { success: false, error: denied };
 
   if (isDatabaseOffline()) {
     return { success: false, error: "Cadastro indisponível no modo demonstração offline." };

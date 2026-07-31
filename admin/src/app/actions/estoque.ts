@@ -6,10 +6,18 @@ import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import type { AuthContext } from "@/lib/auth-guard";
+import { canDeleteEstoque, isFactoryRole as isFactoryCargo } from "@/lib/permissions";
 
 function denyFactoryWrite(auth: AuthContext): string | null {
-  if (auth.cargo === "PRODUCAO") {
+  if (isFactoryCargo(auth.cargo)) {
     return "O cargo Marceneiro não pode alterar estoque ou fornecedores.";
+  }
+  return null;
+}
+
+function denyEstoqueDelete(auth: AuthContext): string | null {
+  if (!canDeleteEstoque(auth.cargo)) {
+    return "Este cargo não pode excluir itens de estoque ou fornecedores.";
   }
   return null;
 }
@@ -301,6 +309,10 @@ export async function deleteSupplierAction(id: string, companyId: string) {
   if (factoryDeny) {
     return { success: false, error: factoryDeny };
   }
+  const deleteDeny = denyEstoqueDelete(auth);
+  if (deleteDeny) {
+    return { success: false, error: deleteDeny };
+  }
   try {
     assertCompanyAccess(auth, companyId);
   } catch (error) {
@@ -462,6 +474,10 @@ export async function deleteInventoryItemAction(id: string, companyId: string) {
   const factoryDeny = denyFactoryWrite(auth);
   if (factoryDeny) {
     return { success: false, error: factoryDeny };
+  }
+  const deleteDeny = denyEstoqueDelete(auth);
+  if (deleteDeny) {
+    return { success: false, error: deleteDeny };
   }
   try {
     assertCompanyAccess(auth, companyId);

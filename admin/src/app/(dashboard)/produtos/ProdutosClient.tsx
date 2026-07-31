@@ -14,6 +14,7 @@ import {
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
+import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import { Card } from "@/components/ui/card";
@@ -235,7 +236,7 @@ export default function ProdutosClient({
   const { showSuccess, showError, confirmAction } = dialog;
   const { privacyMode } = usePrivacy();
   const { role, isReadOnly } = usePermissions();
-  const canManageProducts = !isReadOnly && role !== "PRODUCAO";
+  const canManageProducts = canManageProductsRole(role);
 
   const [products, setProducts] = useState(initialProducts);
   const [searchQuery, setSearchQuery] = useState("");

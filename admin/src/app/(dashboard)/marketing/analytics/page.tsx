@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
+import { getAuthContext } from "@/lib/auth-guard";
 import { guardModule } from "@/lib/moduleAccess";
+import { canViewMarketingAnalytics } from "@/lib/permissions";
 import { getMarketingDashboard } from "@/app/actions/marketing";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -7,6 +10,10 @@ import MarketingClient from "../MarketingClient";
 
 export default async function MarketingAnalyticsPage() {
   await guardModule("marketing");
+  const auth = await getAuthContext();
+  if (!canViewMarketingAnalytics(auth?.cargo)) {
+    redirect("/marketing");
+  }
   const data = await getMarketingDashboard("live");
 
   return (

@@ -14,6 +14,7 @@ import {
 import { resolveCatalogPublicUrl } from "@/lib/catalogShare";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { usePermissions } from "@/context/PermissionsContext";
+import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -117,7 +118,7 @@ export default function CatalogosClient({
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const { role, isReadOnly } = usePermissions();
-  const canManageCatalogs = !isReadOnly && role !== "PRODUCAO";
+  const canManageCatalogs = canManageProductsRole(role);
 
   const [catalogs, setCatalogs] = useState(initialCatalogs);
   const [searchQuery, setSearchQuery] = useState("");
@@ -200,10 +201,11 @@ export default function CatalogosClient({
   }, []);
 
   const openCatalog = (catalog: ProductCatalogDTO) => {
+    // Preferir o arquivo completo (PDF) — o link curto também aponta para o visualizador.
     const url =
+      catalog.arquivo_url ||
       catalog.public_url ||
-      resolveCatalogPublicUrl(catalog.share_code) ||
-      catalog.arquivo_url;
+      resolveCatalogPublicUrl(catalog.share_code);
     if (!url) {
       showError(
         "Link indisponível",

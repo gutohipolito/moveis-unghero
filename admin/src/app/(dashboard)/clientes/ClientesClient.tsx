@@ -45,6 +45,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { updateUserPreference } from "@/app/actions/preferences";
 import ClientWizard, { type ClientWizardData } from "./ClientWizard";
 import { usePermissions } from "@/context/PermissionsContext";
+import { canManageClients } from "@/lib/permissions";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
@@ -135,6 +136,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const { role, isOpsLimited } = usePermissions();
   /** Marceneiro: lista só nome, bairro, cidade e projetos. */
   const isFactoryRole = role === "PRODUCAO";
+  /** Projetista e Marceneiro: sem cadastro/edição/exclusão nem origem. */
+  const canManage = canManageClients(role);
   /** Projetista e Marceneiro: sem telefone/e-mail na lista. */
   const hideClientContact = isOpsLimited;
   const dialog = useActionDialog();
@@ -148,7 +151,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount = [
     search.trim() !== "",
-    !isFactoryRole && filterOrigin !== "ALL",
+    canManage && filterOrigin !== "ALL",
     filterCidade !== "ALL",
     filterBairro !== "ALL",
   ].filter(Boolean).length;
@@ -232,7 +235,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           (doc.cpf || "").includes(search) ||
           (doc.cnpj || "").includes(search);
     const matchesOrigin =
-      isFactoryRole || filterOrigin === "ALL" || c.origem === filterOrigin;
+      !canManage || filterOrigin === "ALL" || c.origem === filterOrigin;
     const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
     const matchesBairro = filterBairro === "ALL" || location.bairro === filterBairro;
     const matchesTipo =
@@ -521,14 +524,14 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
               </InfoTooltip>
             </div>
             <p className="page-subtitle">
-              {isFactoryRole
+              {!canManage
                 ? "Consulte clientes por nome, localização e projetos vinculados."
                 : "Gerencie sua base de clientes — Pessoas Físicas e Jurídicas."}
             </p>
           </div>
 
           <div className="page-header-actions w-full sm:w-auto">
-            {!isFactoryRole && (
+            {canManage && (
               <Button
                 onClick={openCreateModal}
                 className="font-bold btn-metallic gap-2 w-full sm:w-auto justify-center h-11 px-5 rounded-xl shadow-sm"
@@ -578,7 +581,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         </div>
 
         <div className="flex flex-col gap-3 w-full md:flex-row md:flex-wrap md:items-center md:gap-3 md:w-auto md:ml-auto">
-          {!isFactoryRole && (
+          {canManage && (
             <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
               <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                 <Filter className="h-3 w-3" /> Origem:
@@ -723,7 +726,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         {location.cidade}
                         {location.bairro ? ` · ${location.bairro}` : ""}
                       </span>
-                      {!isFactoryRole && (
+                      {canManage && (
                         <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
                           {labelOrigin(client.origem)}
                         </span>
@@ -743,7 +746,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                       </div>
                     )}
 
-                    {!isFactoryRole && (
+                    {canManage && (
                       <div className="flex items-center gap-2 pt-1">
                         <button
                           onClick={() => openProjectModal(client)}
@@ -780,7 +783,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                 <th className="p-4 whitespace-nowrap font-bold">Cliente</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Cidade</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Bairro</th>
-                {!isFactoryRole && (
+                {canManage && (
                   <th className="p-4 text-center whitespace-nowrap font-bold">Origem</th>
                 )}
                 {!isFactoryRole && (
@@ -789,7 +792,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                 <th className="p-4 whitespace-nowrap font-bold">
                   {isFactoryRole ? "Projetos" : "Projetos / Orçamentos Vinculados"}
                 </th>
-                {!isFactoryRole && (
+                {canManage && (
                   <th className="p-4 text-right whitespace-nowrap font-bold">Ações</th>
                 )}
               </tr>
@@ -854,7 +857,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         {location.bairro || "—"}
                       </td>
 
-                      {!isFactoryRole && (
+                      {canManage && (
                         <td className="p-4 text-center">
                           <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${orgBadge.bg} ${orgBadge.text} whitespace-nowrap`}>
                             {labelOrigin(client.origem)}
@@ -888,7 +891,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         )}
                       </td>
 
-                      {!isFactoryRole && (
+                      {canManage && (
                         <td className="p-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <button

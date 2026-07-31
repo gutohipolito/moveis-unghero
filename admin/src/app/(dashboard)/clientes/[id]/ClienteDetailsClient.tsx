@@ -47,6 +47,7 @@ import {
 } from "@/lib/clientConsent";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { usePermissions } from "@/context/PermissionsContext";
+import { canManageClients } from "@/lib/permissions";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -166,6 +167,7 @@ export default function ClienteDetailsClient({
   const { isOpsLimited, role } = usePermissions();
   /** Marceneiro: no painel do cliente só o nome (sem contato, origem, consentimentos). */
   const isFactoryRole = role === "PRODUCAO";
+  const canManage = canManageClients(role);
   /** Projetista e Marceneiro: sem telefone/e-mail do cliente. */
   const hideClientContact = isOpsLimited;
 
@@ -251,7 +253,7 @@ export default function ClienteDetailsClient({
               </span>
             )}
 
-            {!isFactoryRole && (
+            {canManage && (
               <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-muted-foreground font-medium">
                 <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Origem: {ORIGIN_LABELS[client.origem] || client.origem}</span>
               </div>

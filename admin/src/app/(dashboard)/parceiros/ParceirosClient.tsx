@@ -24,6 +24,7 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
+import { canManageParceiros } from "@/lib/permissions";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import CityField from "@/components/forms/CityField";
 import { Card } from "@/components/ui/card";
@@ -156,6 +157,7 @@ interface PartnerCardProps {
   p: ParceiroDTO;
   privacyMode: boolean;
   hideValues?: boolean;
+  canManage?: boolean;
   uploadingId: string | null;
   handleUploadImage: (id: string, file: File, type: "avatar" | "galeria") => void;
   handleDeleteImage: (id: string, imageUrl: string, isAvatar: boolean) => void;
@@ -169,6 +171,7 @@ const PartnerCard = ({
   p,
   privacyMode,
   hideValues = false,
+  canManage = true,
   uploadingId,
   handleUploadImage,
   handleDeleteImage,
@@ -218,17 +221,20 @@ const PartnerCard = ({
             )}
             <label
               htmlFor={`avatar-upload-${p.id}`}
-              className="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer text-[9px] font-bold gap-1"
+              className={`absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center opacity-0 ${canManage ? "group-hover/avatar:opacity-100 cursor-pointer" : "pointer-events-none"} transition-opacity text-[9px] font-bold gap-1`}
             >
-              {uploadingId === `${p.id}-avatar` ? (
-                <Loader2 className="h-4.5 w-4.5 animate-spin" />
-              ) : (
-                <>
-                  <Camera className="h-4 w-4" />
-                  <span>Alterar</span>
-                </>
-              )}
+              {canManage ? (
+                uploadingId === `${p.id}-avatar` ? (
+                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                ) : (
+                  <>
+                    <Camera className="h-4 w-4" />
+                    <span>Alterar</span>
+                  </>
+                )
+              ) : null}
             </label>
+            {canManage && (
             <input
               id={`avatar-upload-${p.id}`}
               type="file"
@@ -240,7 +246,8 @@ const PartnerCard = ({
               }}
               disabled={uploadingId !== null}
             />
-            {p.fotoUrl && (
+            )}
+            {canManage && p.fotoUrl && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -278,6 +285,7 @@ const PartnerCard = ({
           </div>
 
           {/* Editar / Excluir no topo (ícones) */}
+          {canManage && (
           <div className="flex items-center gap-1 shrink-0 -mt-0.5" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -296,6 +304,7 @@ const PartnerCard = ({
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
+          )}
         </div>
 
         {/* Dados Comerciais / Escritório */}
@@ -413,7 +422,8 @@ const PartnerCard = ({
 export default function ParceirosClient({ initialParceiros, companyId }: ParceirosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
-  const { isReadOnly, isOpsLimited } = usePermissions();
+  const { isReadOnly, isOpsLimited, role } = usePermissions();
+  const canManagePartners = canManageParceiros(role);
   const { privacyLocked, privacyMode } = usePrivacy();
   const sensitive = useSensitiveDisplay();
 
@@ -771,6 +781,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             </p>
           </div>
 
+          {canManagePartners && (
           <Button 
             onClick={openCreate} 
             className="font-extrabold bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl h-10 px-4 border-none shadow-sm cursor-pointer flex items-center gap-2 shrink-0 self-start md:self-auto"
@@ -778,6 +789,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             <UserPlus className="h-4 w-4" />
             Cadastrar Parceiro
           </Button>
+          )}
         </div>
 
         {/* Barra de Filtros e Busca */}
@@ -819,6 +831,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 p={p}
                 privacyMode={effectivePrivacyMode}
                 hideValues={hidePartnerValues}
+                canManage={canManagePartners}
                 uploadingId={uploadingId}
                 handleUploadImage={handleUploadImage}
                 handleDeleteImage={handleDeleteImage}
@@ -1228,6 +1241,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   {imagesList.map((img, idx) => (
                     <div key={img} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group/img bg-slate-50 shadow-inner">
                       <img src={img} alt={`Projeto ${idx + 1}`} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500" />
+                      {canManagePartners && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1244,10 +1258,11 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       >
                         <X className="h-3 w-3" />
                       </button>
+                      )}
                     </div>
                   ))}
 
-                  {imagesList.length < 10 && (
+                  {canManagePartners && imagesList.length < 10 && (
                     <label
                       htmlFor={`gallery-upload-modal-${p.id}`}
                       className="aspect-square rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 hover:border-slate-350 transition-all group/add shadow-sm"

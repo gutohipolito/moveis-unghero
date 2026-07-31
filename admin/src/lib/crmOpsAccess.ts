@@ -33,9 +33,7 @@ export function canOpsAccessCrmStatus(status: string): boolean {
 }
 
 /**
- * Ops só pode mover entre estágios pós-aprovação (inclui PERDIDO? não).
- * Não pode voltar para Lead/Orçamento/Negociação.
- * Marceneiro (PRODUCAO): só visualização — não altera etapa do funil.
+ * Ops não move cards do funil (Projetista e Marceneiro só visualizam etapas).
  */
 export function assertOpsCrmStatusMove(
   role: string | null | undefined,
@@ -44,19 +42,6 @@ export function assertOpsCrmStatusMove(
 ): string | null {
   if (!isOpsLimitedRole(role)) return null;
 
-  if (role === "PRODUCAO") {
-    if (fromStatus === toStatus) return null;
-    return "O cargo Marceneiro não pode alterar a etapa do funil.";
-  }
-
-  if (!canOpsAccessCrmStatus(fromStatus)) {
-    return "Este projeto está em etapa comercial e não pode ser alterado por este cargo.";
-  }
-  if (PRE_APROVADO_STATUSES.has(toStatus) || toStatus === "PERDIDO") {
-    return "Este cargo só pode mover projetos a partir de Aprovados (sem etapas comerciais).";
-  }
-  if (!canOpsAccessCrmStatus(toStatus)) {
-    return "Etapa não permitida para este cargo.";
-  }
-  return null;
+  if (fromStatus === toStatus) return null;
+  return "Este cargo não pode alterar a etapa do funil.";
 }
