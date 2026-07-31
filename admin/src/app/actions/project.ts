@@ -13,6 +13,16 @@ import {
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { isOpsLimitedRole } from "@/lib/permissions";
+
+function denyOpsProjectMutation(cargo: string | null | undefined) {
+  return isOpsLimitedRole(cargo)
+    ? {
+        success: false as const,
+        error: "Este projeto está disponível somente para visualização.",
+      }
+    : null;
+}
 
 export type EnvironmentType = 
   | "COZINHA"
@@ -44,6 +54,8 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -72,6 +84,8 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
     await requireEnvironmentInCompany(envId, auth.companyId);
@@ -125,6 +139,8 @@ export async function addEnvironment(projectId: string, nomeInput: string, tipo:
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -164,6 +180,8 @@ export async function addTimelineEvent(projectId: string, acao: string, interno:
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -204,6 +222,8 @@ export async function toggleFileApproval(projectId: string, fileId: string, appr
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -243,6 +263,8 @@ export async function uploadProjectFile(projectId: string, data: { tipo: FileTyp
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -301,6 +323,8 @@ export async function updateProjectDetails(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -372,7 +396,11 @@ export async function getProjectDetailsAction(projectId: string) {
   }
 
   try {
-    const { projectInclude, formatProjectDetails } = await import("@/lib/formatProjectDetails");
+    const {
+      projectInclude,
+      formatProjectDetails,
+      restrictProjectDetailsForRole,
+    } = await import("@/lib/formatProjectDetails");
     const { getColaboradores } = await import("@/app/actions/colaboradores");
     const { ensureProjectSla, getProjectSla } = await import("@/app/actions/productionSla");
 
@@ -403,10 +431,15 @@ export async function getProjectDetailsAction(projectId: string) {
       sla = await getProjectSla(projectId);
     }
 
+    const safeProject = restrictProjectDetailsForRole(
+      maybeRedactForViewer(formattedProject, auth.cargo),
+      auth.cargo
+    );
+
     return {
       success: true,
-      project: maybeRedactForViewer(formattedProject, auth.cargo),
-      colaboradores,
+      project: safeProject,
+      colaboradores: isOpsLimitedRole(auth.cargo) ? [] : colaboradores,
       sla,
     };
   } catch (error) {

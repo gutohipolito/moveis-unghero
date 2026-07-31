@@ -8,6 +8,16 @@ import { getAuthContext, requireProjectInCompany } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import type { PaymentMethod } from "@/lib/paymentMethods";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
+import { isOpsLimitedRole } from "@/lib/permissions";
+
+function denyOpsProjectMutation(cargo: string | null | undefined) {
+  return isOpsLimitedRole(cargo)
+    ? {
+        success: false as const,
+        error: "Este projeto está disponível somente para visualização.",
+      }
+    : null;
+}
 
 export interface CreateInstallmentInput {
   valor: number;
@@ -52,6 +62,8 @@ export async function createInstallment(projectId: string, data: CreateInstallme
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -115,6 +127,8 @@ export async function createInstallmentPlan(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -183,6 +197,8 @@ export async function payInstallment(projectId: string, installmentId: string) {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -239,6 +255,8 @@ export async function createTask(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {
@@ -297,6 +315,8 @@ export async function toggleTaskStatus(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const denied = denyOpsProjectMutation(auth.cargo);
+  if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);
   } catch (error) {

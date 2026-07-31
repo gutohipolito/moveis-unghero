@@ -169,10 +169,10 @@ interface Project {
   client: {
     id: string;
     nome: string;
-    cidade: string;
-    origem: string;
-    telefone: string;
-    email: string;
+    cidade?: string;
+    origem?: string;
+    telefone?: string;
+    email?: string;
     observacoes?: string | null;
     lgpd_aceite?: boolean;
     lgpd_aceite_em?: string | Date | null;
@@ -258,10 +258,11 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 ];
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false }: ProjectDetailsProps) {
-  const { isAdmin } = usePermissions();
+  const { isAdmin, isOpsLimited, role } = usePermissions();
+  const isFactoryRole = role === "PRODUCAO";
   const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
-  const isFormLead = project.client.origem === "FORMULARIO";
+  const isFormLead = !isOpsLimited && project.client.origem === "FORMULARIO";
   const hasNoQuote = !project.quotes || project.quotes.length === 0;
   const isBlocked = isFormLead && hasNoQuote;
   const [sla, setSla] = useState<ProjectSlaView | null>(initialSla);
@@ -275,6 +276,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
   const defaultTab = (() => {
     const fromUrl = searchParams?.get("tab");
+    if (isOpsLimited) {
+      return ["environments", "tasks", "files"].includes(fromUrl ?? "")
+        ? fromUrl!
+        : "environments";
+    }
     if (
       fromUrl &&
       ["environments", "quotes", "briefing", "finances", "tasks", "files", "timeline"].includes(fromUrl)
@@ -294,17 +300,23 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => {
-    if (initialOpenCreateQuote || searchParams?.get("createQuote") === "true") {
+    if (
+      !isOpsLimited &&
+      (initialOpenCreateQuote || searchParams?.get("createQuote") === "true")
+    ) {
       setIsCreatingQuote(true);
     }
     const fromUrl = searchParams?.get("tab");
+    if (isOpsLimited) {
+      return;
+    }
     if (
       fromUrl &&
       ["environments", "quotes", "briefing", "finances", "tasks", "files", "timeline"].includes(fromUrl)
     ) {
       setActiveTab(fromUrl);
     }
-  }, [searchParams, initialOpenCreateQuote]);
+  }, [searchParams, initialOpenCreateQuote, isOpsLimited]);
 
   // Estados para Controle Operacional do Projeto (Responsável, Entrega, Parceiro e Observações)
   const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
@@ -324,6 +336,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     project.status_geral === "APROVADO" || project.status_geral === "CONFERENCIA_TECNICA";
 
   useEffect(() => {
+    if (isOpsLimited) return;
     async function loadPartners() {
       const res = await getParceiros(companyId);
       if (res.success && res.parceiros) {
@@ -331,7 +344,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       }
     }
     loadPartners();
-  }, [companyId]);
+  }, [companyId, isOpsLimited]);
 
   const handleSaveProjectDetails = async () => {
     setLoading(true);
@@ -883,7 +896,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       ) : null}
 
       {/* Banner de Projeto Bloqueado por Falta de Orçamento */}
-      {isBlocked && (
+      {!isOpsLimited && isBlocked && (
         <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-start gap-3">
             <div className="p-2.5 bg-rose-100 text-rose-600 rounded-xl">
@@ -922,34 +935,38 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-              <div className="flex items-start min-w-0">
-                <MapPin className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                <span className="min-w-0">
-                  Cidade: <span className="text-foreground font-medium break-words">{project.client.cidade}</span>
-                </span>
+            {!isFactoryRole && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                <div className="flex items-start min-w-0">
+                  <MapPin className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                  <span className="min-w-0">
+                    Cidade: <span className="text-foreground font-medium break-words">{project.client.cidade || "—"}</span>
+                  </span>
+                </div>
+                <div className="flex items-start min-w-0">
+                  <Phone className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                  <span className="min-w-0">
+                    WhatsApp: <span className="text-foreground font-medium break-all">{sensitive.phone(project.client.telefone || "")}</span>
+                  </span>
+                </div>
+                <div className="flex items-start min-w-0">
+                  <Mail className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                  <span className="min-w-0">
+                    E-mail: <span className="text-foreground font-medium break-all">{sensitive.email(project.client.email || "")}</span>
+                  </span>
+                </div>
+                {!isOpsLimited && (
+                  <div className="flex items-start min-w-0">
+                    <Building className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
+                    <span className="min-w-0">
+                      Origem Lead: <span className="text-foreground font-medium uppercase break-words">{project.client.origem}</span>
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-start min-w-0">
-                <Phone className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                <span className="min-w-0">
-                  WhatsApp: <span className="text-foreground font-medium break-all">{sensitive.phone(project.client.telefone)}</span>
-                </span>
-              </div>
-              <div className="flex items-start min-w-0">
-                <Mail className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                <span className="min-w-0">
-                  E-mail: <span className="text-foreground font-medium break-all">{sensitive.email(project.client.email)}</span>
-                </span>
-              </div>
-              <div className="flex items-start min-w-0">
-                <Building className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                <span className="min-w-0">
-                  Origem Lead: <span className="text-foreground font-medium uppercase break-words">{project.client.origem}</span>
-                </span>
-              </div>
-            </div>
+            )}
 
-            {(() => {
+            {!isFactoryRole && (() => {
               const consent = resolveClientConsent({
                 lgpd_aceite: project.client.lgpd_aceite,
                 lgpd_aceite_em: project.client.lgpd_aceite_em,
@@ -959,7 +976,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               const notes = stripConsentFromObservacoes(project.client.observacoes);
               return (
                 <>
-                  <ClientConsentCard consent={consent} />
+                  {!isOpsLimited && <ClientConsentCard consent={consent} />}
                   {notes ? (
                     <div className="p-3.5 rounded-lg bg-slate-50 border border-border text-xs text-muted-foreground">
                       <span className="font-semibold block text-foreground mb-1">Notas do Cliente:</span>
@@ -976,7 +993,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Controle Operacional & Prazos
                 </span>
-                {!isEditingMeta ? (
+                {!isOpsLimited && !isEditingMeta ? (
                   <Button 
                     onClick={() => setIsEditingMeta(true)}
                     variant="ghost" 
@@ -985,7 +1002,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   >
                     Editar Controle
                   </Button>
-                ) : (
+                ) : !isOpsLimited ? (
                   <div className="flex items-center gap-2">
                     <Button 
                       onClick={() => setIsEditingMeta(false)}
@@ -1003,7 +1020,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       Salvar
                     </Button>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {!isEditingMeta ? (
@@ -1051,7 +1068,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           .filter(Boolean)
                           .join(" · ") || "Nenhum responsável atribuído"}
                       </p>
-                      {canEditConfTecnica && (
+                      {canEditConfTecnica && !isOpsLimited && (
                         <p className="text-[10px] text-emerald-800/80 font-medium">
                           Use “Editar Controle” para atribuir até 2 colaboradores. Depois avance o card para Conf. Técnica (o sistema oferece WhatsApp pedindo datas) e, ao concluir, para Produção (aí entra na fábrica).
                         </p>
@@ -1166,16 +1183,18 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
           {/* Painel Comercial Rápido */}
           <div className="p-5 rounded-xl border border-border bg-slate-50 flex flex-col justify-between h-full gap-4 shadow-sm">
-            <div>
-              <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
-              <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
-                {isBlocked ? (
-                  <span className="text-rose-600 font-bold text-sm block leading-normal">🔒 Bloqueado (Sem Orçamento)</span>
-                ) : (
-                  <PrivacyMoney value={project.valor_previsto} className="text-2xl font-bold tracking-tight text-gradient-gold" />
-                )}
-              </span>
-            </div>
+            {!isOpsLimited && (
+              <div>
+                <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
+                <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
+                  {isBlocked ? (
+                    <span className="text-rose-600 font-bold text-sm block leading-normal">🔒 Bloqueado (Sem Orçamento)</span>
+                  ) : (
+                    <PrivacyMoney value={project.valor_previsto} className="text-2xl font-bold tracking-tight text-gradient-gold" />
+                  )}
+                </span>
+              </div>
+            )}
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider flex items-center gap-1.5">
@@ -1186,21 +1205,27 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   </span>
                 )}
               </label>
-              <Select 
-                value={project.status_geral} 
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="w-full text-xs"
-                disabled={isBlocked}
-              >
-                <option value="LEAD">Lead</option>
-                <option value="ORCAMENTO">Orçamento</option>
-                <option value="NEGOCIACAO">Negociação</option>
-                <option value="CONFERENCIA_TECNICA">Conferência Técnica</option>
-                <option value="APROVADO">Aprovado pelo Cliente</option>
-                <option value="PRODUCAO">Em Produção (Fábrica)</option>
-                <option value="INSTALACAO">Em Instalação</option>
-                <option value="FINALIZADO">Finalizado</option>
-              </Select>
+              {isOpsLimited ? (
+                <div className="rounded-lg border border-border bg-white px-3 py-2.5 text-sm font-semibold text-foreground">
+                  {project.status_geral.replaceAll("_", " ")}
+                </div>
+              ) : (
+                <Select
+                  value={project.status_geral}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className="w-full text-xs"
+                  disabled={isBlocked}
+                >
+                  <option value="LEAD">Lead</option>
+                  <option value="ORCAMENTO">Orçamento</option>
+                  <option value="NEGOCIACAO">Negociação</option>
+                  <option value="CONFERENCIA_TECNICA">Conferência Técnica</option>
+                  <option value="APROVADO">Aprovado pelo Cliente</option>
+                  <option value="PRODUCAO">Em Produção (Fábrica)</option>
+                  <option value="INSTALACAO">Em Instalação</option>
+                  <option value="FINALIZADO">Finalizado</option>
+                </Select>
+              )}
             </div>
           </div>
         </div>
@@ -1208,17 +1233,19 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
       <SlaRadar
         sla={sla}
-        onVerify={() => setSlaModalOpen(true)}
+        onVerify={isOpsLimited ? undefined : () => setSlaModalOpen(true)}
       />
 
-      <SlaVerificationModal
-        projectId={project.id}
-        stageKey={sla?.currentStage ?? "MEDICAO"}
-        clientName={project.client.nome}
-        isOpen={slaModalOpen && !!sla}
-        onClose={() => setSlaModalOpen(false)}
-        onSuccess={() => window.location.reload()}
-      />
+      {!isOpsLimited && (
+        <SlaVerificationModal
+          projectId={project.id}
+          stageKey={sla?.currentStage ?? "MEDICAO"}
+          clientName={project.client.nome}
+          isOpen={slaModalOpen && !!sla}
+          onClose={() => setSlaModalOpen(false)}
+          onSuccess={() => window.location.reload()}
+        />
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 max-w-full">
         {/* Mobile: dropdown — evita estourar a largura do viewport */}
@@ -1228,11 +1255,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             onChange={(e) => setActiveTab(e.target.value)}
             className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
           >
-            <option value="quotes">Orçamentos ({project.quotes?.length || 0})</option>
-            <option value="briefing">Formulário</option>
-            <option value="timeline">Histórico ({filteredTimeline.length})</option>
+            {!isOpsLimited && (
+              <>
+                <option value="quotes">Orçamentos ({project.quotes?.length || 0})</option>
+                <option value="briefing">Formulário</option>
+                <option value="timeline">Histórico ({filteredTimeline.length})</option>
+              </>
+            )}
             <option value="tasks">Tarefas ({project.tasks?.length || 0})</option>
-            <option value="finances">Financeiro ({project.installments?.length || 0})</option>
+            {!isOpsLimited && (
+              <option value="finances">Financeiro ({project.installments?.length || 0})</option>
+            )}
             <option value="environments">Ambientes ({project.environments.length})</option>
             <option value="files">Arquivos ({project.files.length})</option>
           </select>
@@ -1241,26 +1274,32 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
         <div className="project-tabs-scroll hidden sm:block">
           <TabsList className="project-tabs-list !flex h-auto w-max min-w-full max-w-none flex-nowrap items-center justify-start gap-0.5 overflow-visible">
-            <TabsTrigger value="quotes" className="text-xs md:text-sm">
-              <DollarSign className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              Orçamentos ({project.quotes?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="briefing" className="text-xs md:text-sm">
-              <FileText className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              Formulário
-            </TabsTrigger>
-            <TabsTrigger value="timeline" className="text-xs md:text-sm">
-              <Clock className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              Histórico ({filteredTimeline.length})
-            </TabsTrigger>
+            {!isOpsLimited && (
+              <>
+                <TabsTrigger value="quotes" className="text-xs md:text-sm">
+                  <DollarSign className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                  Orçamentos ({project.quotes?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="briefing" className="text-xs md:text-sm">
+                  <FileText className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                  Formulário
+                </TabsTrigger>
+                <TabsTrigger value="timeline" className="text-xs md:text-sm">
+                  <Clock className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                  Histórico ({filteredTimeline.length})
+                </TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="tasks" className="text-xs md:text-sm">
               <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
               Tarefas ({project.tasks?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="finances" className="text-xs md:text-sm">
-              <Receipt className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              Financeiro ({project.installments?.length || 0})
-            </TabsTrigger>
+            {!isOpsLimited && (
+              <TabsTrigger value="finances" className="text-xs md:text-sm">
+                <Receipt className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                Financeiro ({project.installments?.length || 0})
+              </TabsTrigger>
+            )}
             <TabsTrigger value="environments" className="text-xs md:text-sm">
               <Layers className="h-3.5 w-3.5 mr-1.5 shrink-0" />
               Ambientes ({project.environments.length})
@@ -1281,9 +1320,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 Monitore e atualize as etapas de fabricação de cada cômodo de forma individual.
               </p>
             </div>
-            <Button onClick={() => setIsAddEnvOpen(true)} size="sm" className="btn-metallic w-full sm:w-auto shrink-0">
-              <Plus className="h-4 w-4 mr-1.5" /> Novo Cômodo
-            </Button>
+            {!isOpsLimited && (
+              <Button onClick={() => setIsAddEnvOpen(true)} size="sm" className="btn-metallic w-full sm:w-auto shrink-0">
+                <Plus className="h-4 w-4 mr-1.5" /> Novo Cômodo
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1313,22 +1354,24 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       </span>
                     </div>
 
-                    <div className="border-t border-border pt-3 flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase">
-                        Alterar Status de Fabricação:
-                      </label>
-                      <Select 
-                        value={env.status} 
-                        onChange={(e) => handleEnvStatusChange(env.id, e.target.value as EnvironmentStatus)}
-                        className="w-full text-xs"
-                      >
-                        {ENVIRONMENT_STATUSES.map(status => (
-                          <option key={status.value} value={status.value}>
-                            {status.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
+                    {!isOpsLimited && (
+                      <div className="border-t border-border pt-3 flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Alterar Status de Fabricação:
+                        </label>
+                        <Select
+                          value={env.status}
+                          onChange={(e) => handleEnvStatusChange(env.id, e.target.value as EnvironmentStatus)}
+                          className="w-full text-xs"
+                        >
+                          {ENVIRONMENT_STATUSES.map(status => (
+                            <option key={status.value} value={status.value}>
+                              {status.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -1345,15 +1388,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 Faça upload de projetos em DWG, SketchUp, PDFs de medição e renders em alta definição.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => handleSimulatePromobImport()} size="sm" variant="outline" className="border-border text-primary hover:bg-secondary/20 font-semibold cursor-pointer">
-                <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 animate-pulse" />
-                {isImportingPromob ? "Importando..." : "Importar Promob (IA)"}
-              </Button>
-              <Button onClick={() => setIsUploadOpen(true)} size="sm" className="btn-metallic">
-                <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
-              </Button>
-            </div>
+            {!isOpsLimited && (
+              <div className="flex items-center gap-2">
+                <Button onClick={() => handleSimulatePromobImport()} size="sm" variant="outline" className="border-border text-primary hover:bg-secondary/20 font-semibold cursor-pointer">
+                  <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 animate-pulse" />
+                  {isImportingPromob ? "Importando..." : "Importar Promob (IA)"}
+                </Button>
+                <Button onClick={() => setIsUploadOpen(true)} size="sm" className="btn-metallic">
+                  <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
@@ -1382,14 +1427,15 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
                     <div className="flex items-center gap-4">
                       {/* Toggle de Liberação para Produção */}
-                      <button
-                        onClick={() => handleToggleFileApproval(file.id, file.aprovado_producao)}
-                        className={`flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      {!isOpsLimited && (
+                        <button
+                          onClick={() => handleToggleFileApproval(file.id, file.aprovado_producao)}
+                          className={`flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                           file.aprovado_producao 
                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
                             : "bg-secondary text-muted-foreground border-border/60 hover:text-foreground hover:bg-accent/40"
-                        }`}
-                      >
+                          }`}
+                        >
                         {file.aprovado_producao ? (
                           <>
                             <ShieldCheck className="h-4 w-4 mr-1.5 text-emerald-400" /> Aprovado Fábrica
@@ -1399,9 +1445,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <AlertCircle className="h-4 w-4 mr-1.5" /> Liberar p/ Fábrica
                           </>
                         )}
-                      </button>
+                        </button>
+                      )}
 
-                      {file.tipo === "RENDER" && (
+                      {!isOpsLimited && file.tipo === "RENDER" && (
                         <button
                           onClick={() => handleSimulateRenderPro(file.id)}
                           className="flex items-center text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
@@ -2021,9 +2068,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 Organize e agende medições técnicas, vistorias e etapas de montagem para este projeto.
               </p>
             </div>
-            <Button onClick={() => setIsAddTaskOpen(true)} size="sm" className="btn-metallic">
-              <Plus className="h-4 w-4 mr-1.5" /> Agendar
-            </Button>
+            {!isOpsLimited && (
+              <Button onClick={() => setIsAddTaskOpen(true)} size="sm" className="btn-metallic">
+                <Plus className="h-4 w-4 mr-1.5" /> Agendar
+              </Button>
+            )}
           </div>
 
           <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
@@ -2055,7 +2104,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           type="checkbox"
                           checked={isCompleted}
                           onChange={(e) => handleToggleTask(t.id, e.target.checked)}
-                          className="h-4.5 w-4.5 rounded border-border bg-slate-100 text-primary focus:ring-primary/40 focus:ring-1 cursor-pointer mt-0.5"
+                          disabled={isOpsLimited}
+                          className="h-4.5 w-4.5 rounded border-border bg-slate-100 text-primary focus:ring-primary/40 focus:ring-1 disabled:cursor-default cursor-pointer mt-0.5"
                         />
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2.5 flex-wrap">

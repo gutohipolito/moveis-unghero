@@ -9,6 +9,7 @@ import { parseQuoteSubitens } from "@/lib/quoteItems";
 import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePdfShare";
 import { formatDateBR } from "@/lib/brazilDate";
 import { summarizeQuoteItems } from "@/lib/quoteApproval";
+import { isOpsLimitedRole } from "@/lib/permissions";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -62,7 +63,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
     redirect("/login");
   }
 
-  if (session.user.cargo === "VIEWER") {
+  if (session.user.cargo === "VIEWER" || isOpsLimitedRole(session.user.cargo)) {
     redirect("/quotes");
   }
 

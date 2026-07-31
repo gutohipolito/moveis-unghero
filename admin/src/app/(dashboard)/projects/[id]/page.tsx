@@ -3,8 +3,13 @@ import { ensureProjectSla, getProjectSla } from "@/app/actions/productionSla";
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { getAuthContext } from "@/lib/auth-guard";
-import { formatProjectDetails, projectInclude } from "@/lib/formatProjectDetails";
+import {
+  formatProjectDetails,
+  projectInclude,
+  restrictProjectDetailsForRole,
+} from "@/lib/formatProjectDetails";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { guardModule } from "@/lib/moduleAccess";
 import { notFound } from "next/navigation";
 import ProjectDetails from "@/components/ProjectDetails";
 
@@ -13,8 +18,10 @@ interface RouteParams {
 }
 
 export default async function ProjectPage({ params }: RouteParams) {
+  await guardModule("crm");
   const { id } = await params;
   const userCompanyId = await getSessionCompanyId();
+  const auth = await getAuthContext();
 
   let project = null;
   try {
@@ -44,8 +51,10 @@ export default async function ProjectPage({ params }: RouteParams) {
       : [];
 
   const formattedProject = formatProjectDetails(project);
-  const auth = await getAuthContext();
-  const safeProject = maybeRedactForViewer(formattedProject, auth?.cargo);
+  const safeProject = restrictProjectDetailsForRole(
+    maybeRedactForViewer(formattedProject, auth?.cargo),
+    auth?.cargo
+  );
 
   const hasProductionApproval = safeProject.files.some((f) => f.aprovado_producao);
   let initialSla = null;

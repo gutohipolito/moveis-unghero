@@ -957,10 +957,23 @@ export async function getClientDetailsAction(clientId: string) {
             ...activities,
             buildRegistrationActivity(clientId, cadastroEm, origemLabel),
           ];
+    const roleSafeClient = maybeRedactForRole(formattedClient, auth.cargo);
+    const safeClient = opsLimited
+      ? {
+          ...roleSafeClient,
+          projects: roleSafeClient.projects.map((project) => ({
+            ...project,
+            valor_previsto: 0,
+            quotes: [],
+            quotes_count: 0,
+            briefing: null,
+          })),
+        }
+      : roleSafeClient;
 
     return {
       success: true,
-      client: maybeRedactForRole(formattedClient, auth.cargo),
+      client: safeClient,
       activities: activitiesWithRegistration,
       payments: maybeRedactForRole(payments, auth.cargo),
       attachments,

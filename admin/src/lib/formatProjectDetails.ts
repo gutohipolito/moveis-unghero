@@ -1,4 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, Role } from "@prisma/client";
+import { isOpsLimitedRole } from "@/lib/permissions";
+import { stripConsentFromObservacoes } from "@/lib/clientConsent";
 
 export type ProjectDetailsPayload = {
   id: string;
@@ -7,10 +9,10 @@ export type ProjectDetailsPayload = {
   client: {
     id: string;
     nome: string;
-    cidade: string;
-    origem: string;
-    telefone: string;
-    email: string;
+    cidade?: string;
+    origem?: string;
+    telefone?: string;
+    email?: string;
     observacoes?: string | null;
     lgpd_aceite?: boolean;
     lgpd_aceite_em?: string | Date | null;
@@ -267,6 +269,50 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       : null,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Payload mínimo do projeto para Projetista/Fábrica.
+ * A proteção acontece antes da serialização RSC/Server Action: abas ocultas
+ * também não deixam orçamento, briefing, histórico ou financeiro no navegador.
+ */
+export function restrictProjectDetailsForRole(
+  project: ProjectDetailsPayload,
+  role: Role | string | null | undefined
+): ProjectDetailsPayload {
+  if (!isOpsLimitedRole(role)) return project;
+
+  const common: ProjectDetailsPayload = {
+    ...project,
+    valor_previsto: 0,
+    quotes: [],
+    briefing: null,
+    timeline: [],
+    installments: [],
+  };
+
+  if (role === "PRODUCAO") {
+    return {
+      ...common,
+      client: {
+        id: project.client.id,
+        nome: project.client.nome,
+      },
+    };
+  }
+
+  return {
+    ...common,
+    client: {
+      id: project.client.id,
+      nome: project.client.nome,
+      cidade: project.client.cidade,
+      telefone: project.client.telefone,
+      email: project.client.email,
+      // Remove também o bloco legado de consentimentos das observações.
+      observacoes: stripConsentFromObservacoes(project.client.observacoes),
+    },
   };
 }
 

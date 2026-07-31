@@ -8,6 +8,7 @@ import SensitiveToggle from "@/components/SensitiveToggle";
 import SidebarToggle from "@/components/SidebarToggle";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
+import { usePermissions } from "@/context/PermissionsContext";
 
 interface MobileTopBarProps {
   user: {
@@ -30,6 +31,7 @@ export default function MobileTopBar({
   initialReminders,
 }: MobileTopBarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isOpsLimited } = usePermissions();
 
   return (
     <header className="mobile-topbar md:hidden">
@@ -41,10 +43,12 @@ export default function MobileTopBar({
         />
       </Link>
       <div className="mobile-topbar-actions">
-        <div className="flex items-center gap-1 pr-1.5 border-r border-border/80">
-          <PrivacyToggle />
-          <SensitiveToggle />
-        </div>
+        {!isOpsLimited && (
+          <div className="flex items-center gap-1 pr-1.5 border-r border-border/80">
+            <PrivacyToggle />
+            <SensitiveToggle />
+          </div>
+        )}
         <HeaderQuickActions
           companyId={companyId}
           initialNotifications={initialNotifications}

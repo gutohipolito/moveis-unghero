@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
+import { usePermissions } from "@/context/PermissionsContext";
 
 const TIMEZONE = "America/Sao_Paulo";
 const FARROUPILHA = { lat: -28.2758, lon: -51.7750 };
@@ -67,6 +68,7 @@ export default function DashboardHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { canInstall, installing, install } = usePwaInstall();
+  const { isOpsLimited } = usePermissions();
 
   useEffect(() => {
     setNow(new Date());
@@ -147,10 +149,12 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 pr-2 border-r border-border/80">
-          <PrivacyToggle />
-          <SensitiveToggle />
-        </div>
+        {!isOpsLimited && (
+          <div className="flex items-center gap-1 pr-2 border-r border-border/80">
+            <PrivacyToggle />
+            <SensitiveToggle />
+          </div>
+        )}
 
         <HeaderQuickActions
           companyId={companyId}

@@ -17,6 +17,7 @@ import {
   Clock, 
   Link as LinkIcon 
 } from "lucide-react";
+import { isOpsLimitedRole } from "@/lib/permissions";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -29,6 +30,9 @@ export default async function PrintBriefingPage({ params }: PrintPageProps) {
   const session = await getSessionSafe(await headers()).catch(() => null);
   if (!session?.user) {
     redirect("/login");
+  }
+  if (isOpsLimitedRole(session.user.cargo)) {
+    redirect("/crm");
   }
 
   const briefing = await prisma.leadBriefing.findFirst({

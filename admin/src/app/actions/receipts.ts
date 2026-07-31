@@ -17,6 +17,7 @@ import {
   parseReferenteTitulos,
   suggestReferenteFromInstallment,
 } from "@/lib/receiptShare";
+import { isOpsLimitedRole } from "@/lib/permissions";
 import QRCode from "qrcode";
 
 export type PaymentReceiptDTO = {
@@ -145,6 +146,9 @@ export async function createPaymentReceipt(
   const auth =
     (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
   if (!auth) return { success: false, error: "Sem permissão para emitir recibo." };
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false, error: "Financeiro não disponível para este cargo." };
+  }
 
   const valor = Number(input.valor);
   if (!Number.isFinite(valor) || valor <= 0) {
@@ -309,6 +313,9 @@ export async function suggestPaymentReceiptReferente(input: {
   const auth =
     (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
   if (!auth) return { success: false, error: "Sem permissão." };
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false, error: "Financeiro não disponível para este cargo." };
+  }
 
   const project = await prisma.project.findFirst({
     where: {

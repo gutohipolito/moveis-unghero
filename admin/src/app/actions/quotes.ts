@@ -11,7 +11,10 @@ import {
   requireClientInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
-import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import {
+  getModuleAccess as getBaseModuleAccess,
+  getWriteAccess as getBaseWriteAccess,
+} from "@/lib/moduleAccess";
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import { parseISODateOnlyBrazil } from "@/lib/brazilDate";
@@ -27,6 +30,17 @@ import {
 import { buildQuoteCodigoBase } from "@/lib/quoteCodigo";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { randomUUID } from "crypto";
+import { isOpsLimitedRole } from "@/lib/permissions";
+
+async function getModuleAccess(moduleKey: "quotes") {
+  const auth = await getBaseModuleAccess(moduleKey);
+  return auth && !isOpsLimitedRole(auth.cargo) ? auth : null;
+}
+
+async function getWriteAccess(moduleKey: "quotes") {
+  const auth = await getBaseWriteAccess(moduleKey);
+  return auth && !isOpsLimitedRole(auth.cargo) ? auth : null;
+}
 
 export type ItemType = 
   | "MOVEIS_MDF"

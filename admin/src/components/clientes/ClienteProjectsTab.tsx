@@ -23,6 +23,7 @@ import { Dialog } from "@/components/ui/dialog";
 import ProjectDetails from "@/components/ProjectDetails";
 import type { ProjectDetailsPayload } from "@/lib/formatProjectDetails";
 import type { ProjectSlaView } from "@/lib/productionSla";
+import { usePermissions } from "@/context/PermissionsContext";
 
 export interface ClientProjectSummary {
   id: string;
@@ -101,7 +102,9 @@ export default function ClienteProjectsTab({
   hideValues = false,
 }: ClienteProjectsTabProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);
-  const [openCreateQuote, setOpenCreateQuote] = useState(initialCreateQuote);
+  const [openCreateQuote, setOpenCreateQuote] = useState(
+    hideValues ? false : initialCreateQuote
+  );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [valorPrevisto, setValorPrevisto] = useState("");
   const [creating, setCreating] = useState(false);
@@ -206,7 +209,7 @@ export default function ClienteProjectsTab({
             {projects.map((project) => {
               const isFormLead = clientOrigem === "FORMULARIO";
               const hasNoQuote = !project.quotes || project.quotes.length === 0;
-              const isBlocked = isFormLead && hasNoQuote;
+              const isBlocked = !hideValues && isFormLead && hasNoQuote;
               const latestQuote = project.quotes?.[0];
               const isApproved = project.status_geral === "APROVADO";
 
@@ -215,7 +218,7 @@ export default function ClienteProjectsTab({
                   key={project.id}
                   type="button"
                   onClick={() => {
-                    setOpenCreateQuote(isBlocked);
+                    setOpenCreateQuote(!hideValues && isBlocked);
                     setSelectedProjectId(project.id);
                   }}
                   className={`group relative flex flex-col text-left p-4 rounded-2xl border bg-white transition-all hover:shadow-md hover:-translate-y-0.5 ${
@@ -281,7 +284,7 @@ export default function ClienteProjectsTab({
                         {project.environments_count} ambiente{project.environments_count === 1 ? "" : "s"}
                       </span>
                     ) : null}
-                    {project.briefing ? (
+                    {!hideValues && project.briefing ? (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
                         <Sparkles className="h-3 w-3" />
                         {project.briefing.estilo}
@@ -391,6 +394,7 @@ function ClienteProjectDrawer({
   openCreateQuote?: boolean;
   onClose: () => void;
 }) {
+  const { isOpsLimited } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectDetailsPayload | null>(null);
@@ -443,14 +447,16 @@ function ClienteProjectDrawer({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <a
-            href={`/projects/${projectId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-bold hidden sm:inline-flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-transparent hover:bg-muted/60 min-h-9 px-3"
-          >
-            Abrir em nova aba
-          </a>
+          {!isOpsLimited && (
+            <a
+              href={`/projects/${projectId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold hidden sm:inline-flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-transparent hover:bg-muted/60 min-h-9 px-3"
+            >
+              Abrir em nova aba
+            </a>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -487,7 +493,7 @@ function ClienteProjectDrawer({
             backHref={`/clientes/${clientId}`}
             backLabel="Voltar ao cliente"
             onClose={onClose}
-            initialOpenCreateQuote={openCreateQuote}
+            initialOpenCreateQuote={isOpsLimited ? false : openCreateQuote}
           />
         ) : null}
       </div>

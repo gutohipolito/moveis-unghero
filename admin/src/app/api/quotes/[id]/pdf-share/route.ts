@@ -6,6 +6,7 @@ import {
   buildQuotePdfShortUrl,
   generateUniqueQuotePdfShareCode,
 } from "@/lib/quotePdfShare";
+import { isOpsLimitedRole } from "@/lib/permissions";
 
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
 
@@ -16,6 +17,9 @@ export async function POST(
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+  if (isOpsLimitedRole(auth.cargo)) {
+    return NextResponse.json({ success: false, error: "Acesso negado" }, { status: 403 });
   }
   try {
     assertCanWrite(auth);
