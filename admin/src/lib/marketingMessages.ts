@@ -1,4 +1,5 @@
 import { buildConfTecnicaWhatsAppMessage } from "@/lib/confTecnicaWhatsApp";
+import { buildMedicaoACaminhoWhatsAppMessage } from "@/lib/medicaoWhatsApp";
 import { buildGoogleReviewWhatsAppMessage } from "@/lib/google-review";
 
 export type MarketingMessageCategory =
@@ -18,6 +19,15 @@ export type MarketingMessage = {
 
 /** Biblioteca de mensagens WhatsApp prontas para o time comercial/marketing. */
 export const MARKETING_MESSAGES: MarketingMessage[] = [
+  {
+    id: "medicao-a-caminho",
+    title: "A caminho da medição técnica",
+    description:
+      "Avisar o cliente de que a equipe já saiu e está a caminho da medição no local.",
+    category: "Funil comercial",
+    tip: "Envie poucos minutos antes de chegar. Confirme endereço e se alguém acompanhará a medição.",
+    build: (options) => buildMedicaoACaminhoWhatsAppMessage(options),
+  },
   {
     id: "conf-tecnica-agendar",
     title: "Agendar conferência técnica",

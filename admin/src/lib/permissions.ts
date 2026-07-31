@@ -132,6 +132,14 @@ export function canViewMarketingAnalytics(role: Role | string | null | undefined
   return !isProjetistaRole(role) && !isFactoryRole(role);
 }
 
+/**
+ * Projetista usa Marketing só para mensagens prontas (WhatsApp operacional).
+ * Demais abas (avaliação, formulários, GA) ficam para o comercial.
+ */
+export function canViewFullMarketing(role: Role | string | null | undefined): boolean {
+  return !isProjetistaRole(role) && !isFactoryRole(role);
+}
+
 /** Tela inicial após login / ícone do PWA, por cargo. */
 export function homePathForRole(role: Role | string | null | undefined): string {
   if (role === "PRODUCAO" || role === "PROJETISTA") return "/factory";
@@ -178,7 +186,7 @@ export const PRODUCAO_BLOCKED_MODULES = new Set(["parceiros"]);
  * COMERCIAL/FINANCEIRO sem entrada continuam com todos os módulos configuráveis.
  */
 export const ROLE_DEFAULT_MODULES: Partial<Record<Role, string[]>> = {
-  PROJETISTA: [...OPS_BASE_MODULES, "parceiros"],
+  PROJETISTA: [...OPS_BASE_MODULES, "parceiros", "marketing"],
   PRODUCAO: [...OPS_BASE_MODULES],
   VIEWER: [...VIEWER_DEFAULT_MODULES],
 };
@@ -226,6 +234,11 @@ export function resolveAllowedModules(
 
   if (role === "PRODUCAO") {
     modules = modules.filter((k) => !PRODUCAO_BLOCKED_MODULES.has(k));
+  }
+
+  // Projetista sempre pode abrir mensagens prontas (WhatsApp operacional).
+  if (role === "PROJETISTA" && !modules.includes("marketing")) {
+    modules = [...modules, "marketing"];
   }
 
   const extras: string[] = [];

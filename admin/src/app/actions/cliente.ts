@@ -380,6 +380,59 @@ export async function getClients(companyId: string) {
   }
 }
 
+/**
+ * Contatos enxutos para envio de WhatsApp (Marketing → Mensagens prontas).
+ * Mantém telefone também para Projetista — a lista de clientes continua sem contato.
+ */
+export async function getClientsForWhatsAppMessaging(companyId: string) {
+  const auth =
+    (await getModuleAccess("marketing")) || (await getModuleAccess("clientes"));
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado", clients: [] as Array<{ id: string; nome: string; telefone: string }> };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Acesso negado",
+      clients: [] as Array<{ id: string; nome: string; telefone: string }>,
+    };
+  }
+
+  if (isDatabaseOffline()) {
+    return {
+      success: false as const,
+      error: "Erro de conexão ao banco de dados",
+      clients: [] as Array<{ id: string; nome: string; telefone: string }>,
+    };
+  }
+
+  try {
+    const clients = await prisma.client.findMany({
+      where: { company_id: companyId },
+      select: { id: true, nome: true, telefone: true },
+      orderBy: { nome: "asc" },
+    });
+
+    return {
+      success: true as const,
+      clients: clients.map((c) => ({
+        id: c.id,
+        nome: c.nome,
+        telefone: c.telefone || "",
+      })),
+    };
+  } catch (error) {
+    console.warn("Falha ao listar contatos para WhatsApp.", error);
+    return {
+      success: false as const,
+      error: "Erro de conexão ao banco de dados",
+      clients: [] as Array<{ id: string; nome: string; telefone: string }>,
+    };
+  }
+}
+
 // 2. Cadastrar Cliente
 export async function createClientAction(formData: {
   nome: string;

@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { guardModule } from "@/lib/moduleAccess";
-import { getClients } from "@/app/actions/cliente";
+import { getClientsForWhatsAppMessaging } from "@/app/actions/cliente";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
@@ -17,7 +17,7 @@ export default async function MarketingMensagensPage() {
     .catch(() => null);
 
   const companyId = session?.user?.company_id || "mock-company-id";
-  const clientsResponse = await getClients(companyId);
+  const clientsResponse = await getClientsForWhatsAppMessaging(companyId);
 
   const clients: GoogleReviewClientOption[] = clientsResponse.success
     ? clientsResponse.clients.map((client) => ({
@@ -31,14 +31,14 @@ export default async function MarketingMensagensPage() {
     <div className="space-y-6">
       <PageHeader
         title="Marketing"
-        description="Avaliações, mensagens prontas, formulários e tráfego do site."
+        description="Mensagens prontas para WhatsApp — medição, conferência técnica e pós-entrega."
         help={
           <TooltipBody
             title="Mensagens prontas"
             items={[
               "Abra um modelo, copie ou envie direto no WhatsApp.",
-              "Opcional: selecione o cliente para personalizar o cumprimento.",
-              "Ao mover um card para Conf. Técnica no CRM, o mesmo texto de agendamento é oferecido automaticamente.",
+              "Selecione o cliente para personalizar o cumprimento e preencher o telefone.",
+              "Projetista: use “A caminho da medição técnica” ao sair para o local.",
             ]}
           />
         }

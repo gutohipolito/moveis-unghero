@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Copy,
   MessageCircle,
+  Navigation,
   Search,
   Star,
   User,
@@ -53,6 +54,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 }
 
 function messageIcon(message: MarketingMessage) {
+  if (message.id === "medicao-a-caminho") return Navigation;
   if (message.id === "conf-tecnica-agendar") return CalendarCheck;
   if (message.id === "google-avaliacao") return Star;
   return MessageCircle;

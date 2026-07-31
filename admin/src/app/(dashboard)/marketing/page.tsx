@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { guardModule } from "@/lib/moduleAccess";
 import { getClients } from "@/app/actions/cliente";
@@ -6,6 +7,7 @@ import { TooltipBody } from "@/components/ui/InfoTooltip";
 import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import MarketingReviewClients from "./MarketingReviewClients";
 import { auth } from "@/lib/auth";
+import { canViewFullMarketing } from "@/lib/permissions";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
 
 export default async function MarketingPage() {
@@ -15,6 +17,11 @@ export default async function MarketingPage() {
       headers: await headers(),
     })
     .catch(() => null);
+
+  const cargo = (session?.user as { cargo?: string } | undefined)?.cargo;
+  if (!canViewFullMarketing(cargo)) {
+    redirect("/marketing/mensagens");
+  }
 
   const companyId = session?.user?.company_id || "mock-company-id";
   const clientsResponse = await getClients(companyId);
