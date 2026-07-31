@@ -23,6 +23,7 @@ import {
   DEFAULT_SMTP_PORT,
   EMAIL_AREA_LABELS,
   EMAIL_MAILBOX_AREAS,
+  SUGGESTED_SIGNATURE_BY_AREA,
 } from "@/lib/emailAreas";
 import type { EmailMailboxArea, Role } from "@prisma/client";
 import { EDITABLE_ROLES, ROLE_LABELS } from "@/lib/permissions";
@@ -354,12 +355,26 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="text-xs text-muted-foreground">Assinatura (opcional)</label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs text-muted-foreground">Assinatura (opcional)</label>
+                <button
+                  type="button"
+                  className="text-[11px] font-medium text-sky-700 hover:underline"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      signatureText: SUGGESTED_SIGNATURE_BY_AREA[form.area],
+                    })
+                  }
+                >
+                  Usar modelo Unghero
+                </button>
+              </div>
               <textarea
                 value={form.signatureText || ""}
                 onChange={(e) => setForm({ ...form, signatureText: e.target.value })}
-                className="mt-1 w-full min-h-[88px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder={"Atendimento Móveis Unghero\n(54) 9 9997-1050\nmoveisunghero.com.br"}
+                className="mt-1 w-full min-h-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-pre-wrap"
+                placeholder={SUGGESTED_SIGNATURE_BY_AREA[form.area]}
               />
               <p className="text-[11px] text-muted-foreground mt-1">
                 Incluída automaticamente no final dos e-mails enviados por esta caixa.

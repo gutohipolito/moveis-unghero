@@ -26,3 +26,36 @@ export const DEFAULT_SMTP_PORT = 465;
 
 export const EMAIL_MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 export const EMAIL_INBOX_PAGE_SIZE = 40;
+
+/** Modelos de assinatura em texto puro por área (editáveis na config da caixa). */
+export const SUGGESTED_SIGNATURE_BY_AREA: Record<EmailMailboxArea, string> = {
+  ATENDIMENTO: `Atendimento — Móveis Unghero
+
+WhatsApp: (54) 9 9997-1050
+www.moveisunghero.com.br
+Instagram: @moveisunghero
+
+Rua Cenira Cambruzzi, 155 — Planalto
+Farroupilha — RS
+
+Móveis planejados sob medida, feitos na nossa fábrica.`,
+  COMERCIAL: `Comercial — Móveis Unghero
+
+WhatsApp: (54) 9 9997-1050
+www.moveisunghero.com.br
+Instagram: @moveisunghero
+
+Rua Cenira Cambruzzi, 155 — Planalto
+Farroupilha — RS
+
+Projetos sob medida, do briefing à montagem.`,
+  FINANCEIRO: `Financeiro — Móveis Unghero
+
+WhatsApp: (54) 9 9997-1050
+www.moveisunghero.com.br
+
+Rua Cenira Cambruzzi, 155 — Planalto
+Farroupilha — RS
+
+CNPJ 13.415.510/0001-71`,
+};
