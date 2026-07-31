@@ -19,6 +19,7 @@ import {
 import { getEstoqueLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { usePermissions } from "@/context/PermissionsContext";
 import { Dialog } from "@/components/ui/dialog";
 import { compressImageFile } from "@/lib/imageCompression";
 import { formatPhoneInput } from "@/lib/phone";
@@ -89,6 +90,9 @@ export default function EstoqueClient({
 }: EstoqueClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
+  const { role, isReadOnly } = usePermissions();
+  const isFactoryRole = role === "PRODUCAO";
+  const canManageEstoque = !isReadOnly && !isFactoryRole;
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
 
@@ -447,44 +451,56 @@ export default function EstoqueClient({
             <h1 className="text-2xl font-black text-foreground tracking-tight">
               Estoque & Fornecedores
             </h1>
-            <InfoTooltip label="Sobre Estoque">
-              <TooltipBody
-                title="Insumos e fornecedores"
-                items={[
-                  "Controle a quantidade de cada insumo e o patrimônio em estoque.",
-                  "Itens abaixo do mínimo aparecem como estoque baixo ou esgotado.",
-                  "Cadastre fornecedores para agilizar compras e reposição.",
-                  "A baixa de estoque pode ser feita ao gerar orçamentos.",
-                ]}
-              />
-            </InfoTooltip>
+            {!isFactoryRole && (
+              <InfoTooltip label="Sobre Estoque">
+                <TooltipBody
+                  title="Insumos e fornecedores"
+                  items={[
+                    "Controle a quantidade de cada insumo e o patrimônio em estoque.",
+                    "Itens abaixo do mínimo aparecem como estoque baixo ou esgotado.",
+                    "Cadastre fornecedores para agilizar compras e reposição.",
+                    "A baixa de estoque pode ser feita ao gerar orçamentos.",
+                  ]}
+                />
+              </InfoTooltip>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground">Controle de insumos e matérias-primas da Móveis Unghero.</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {activeTab === "estoque" ? (
-            <Button 
-              onClick={() => { resetItemForm(); setIsItemModalOpen(true); }} 
-              className="font-bold btn-metallic gap-1.5"
-            >
-              <Plus className="h-4.5 w-4.5" /> Novo Insumo / Item
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                resetSupplierForm();
-                setIsSupplierModalOpen(true);
-              }}
-              className="font-bold btn-metallic gap-1.5"
-            >
-              <Plus className="h-4.5 w-4.5" /> Novo Fornecedor
-            </Button>
+          {!isFactoryRole && (
+            <p className="text-sm text-muted-foreground">
+              Controle de insumos e matérias-primas da Móveis Unghero.
+            </p>
           )}
         </div>
+
+        {canManageEstoque && (
+          <div className="flex items-center gap-3">
+            {activeTab === "estoque" ? (
+              <Button
+                onClick={() => {
+                  resetItemForm();
+                  setIsItemModalOpen(true);
+                }}
+                className="font-bold btn-metallic gap-1.5"
+              >
+                <Plus className="h-4.5 w-4.5" /> Novo Insumo / Item
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  resetSupplierForm();
+                  setIsSupplierModalOpen(true);
+                }}
+                className="font-bold btn-metallic gap-1.5"
+              >
+                <Plus className="h-4.5 w-4.5" /> Novo Fornecedor
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ─── CARDS DE MÉTRICAS ─── */}
+      {!isFactoryRole && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-5 glass-card flex items-center gap-4 relative overflow-hidden">
           <div className="p-3 bg-primary/10 text-primary rounded-xl">
@@ -522,6 +538,7 @@ export default function EstoqueClient({
           </div>
         </Card>
       </div>
+      )}
 
       {/* ─── SELETOR DE ABAS & FILTROS ─── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -598,16 +615,23 @@ export default function EstoqueClient({
                   <th className="p-4 text-center">Categoria</th>
                   <th className="p-4 text-center">Estoque Atual</th>
                   <th className="p-4 text-center">Estoque Mínimo</th>
-                  <th className="p-4 text-right">Preço de Custo</th>
-                  <th className="p-4 text-right">Valor Total</th>
+                  {!isFactoryRole && (
+                    <>
+                      <th className="p-4 text-right">Preço de Custo</th>
+                      <th className="p-4 text-right">Valor Total</th>
+                    </>
+                  )}
                   <th className="p-4 text-center">Fornecedor Associado</th>
-                  <th className="p-4 text-right">Ações</th>
+                  {canManageEstoque && <th className="p-4 text-right">Ações</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20">
                 {filteredInventory.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
+                    <td
+                      colSpan={isFactoryRole ? 5 : canManageEstoque ? 8 : 7}
+                      className="p-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum item encontrado no estoque com os filtros atuais.
                     </td>
                   </tr>
@@ -634,35 +658,41 @@ export default function EstoqueClient({
                           {!isOutOfStock && isCritical && <span className="text-[9px] font-bold text-amber-600 block mt-1">Reposição Crítica!</span>}
                         </td>
                         <td className="p-4 text-center text-xs font-semibold text-muted-foreground">{item.minima} un</td>
-                        <td className="p-4 text-right text-xs font-medium text-slate-600 privacy-value">
-                          {item.precoCusto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                        </td>
-                        <td className="p-4 text-right text-sm font-bold text-foreground privacy-value">
-                          {(item.quantidade * item.precoCusto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                        </td>
+                        {!isFactoryRole && (
+                          <>
+                            <td className="p-4 text-right text-xs font-medium text-slate-600 privacy-value">
+                              {item.precoCusto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </td>
+                            <td className="p-4 text-right text-sm font-bold text-foreground privacy-value">
+                              {(item.quantidade * item.precoCusto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </td>
+                          </>
+                        )}
                         <td className="p-4 text-center">
                           <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
                             {item.supplierName || "Sem Vínculo"}
                           </span>
                         </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleEditItem(item)}
-                              className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
-                              title="Editar insumo"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem(item.id, item.nome)}
-                              className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
-                              title="Remover insumo"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+                        {canManageEstoque && (
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleEditItem(item)}
+                                className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
+                                title="Editar insumo"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteItem(item.id, item.nome)}
+                                className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
+                                title="Remover insumo"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })
@@ -683,13 +713,16 @@ export default function EstoqueClient({
                   <th className="p-4 text-center">Status CRM</th>
                   <th className="p-4 text-center">Avaliação</th>
                   <th className="p-4 text-center">Contato</th>
-                  <th className="p-4 text-right">Ações</th>
+                  {canManageEstoque && <th className="p-4 text-right">Ações</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20">
                 {filteredSuppliers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                    <td
+                      colSpan={canManageEstoque ? 7 : 6}
+                      className="p-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum fornecedor parceiro cadastrado.
                     </td>
                   </tr>
@@ -773,32 +806,34 @@ export default function EstoqueClient({
                             ) : null}
                           </div>
                         </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Link href={`/estoque/fornecedores/${sup.id}`}>
+                        {canManageEstoque && (
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Link href={`/estoque/fornecedores/${sup.id}`}>
+                                <button
+                                  className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 transition-all cursor-pointer"
+                                  title="Ficha de CRM / Avaliação"
+                                >
+                                  <ClipboardList className="h-4 w-4" />
+                                </button>
+                              </Link>
                               <button
-                                className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 transition-all cursor-pointer"
-                                title="Ficha de CRM / Avaliação"
+                                onClick={() => handleEditSupplier(sup)}
+                                className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
+                                title="Editar fornecedor"
                               >
-                                <ClipboardList className="h-4 w-4" />
+                                <Edit className="h-4 w-4" />
                               </button>
-                            </Link>
-                            <button
-                              onClick={() => handleEditSupplier(sup)}
-                              className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer"
-                              title="Editar fornecedor"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteSupplier(sup.id, sup.nome)}
-                              className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
-                              title="Remover fornecedor"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+                              <button
+                                onClick={() => handleDeleteSupplier(sup.id, sup.nome)}
+                                className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all cursor-pointer"
+                                title="Remover fornecedor"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })

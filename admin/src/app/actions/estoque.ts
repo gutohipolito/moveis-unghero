@@ -5,6 +5,14 @@ import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
+import type { AuthContext } from "@/lib/auth-guard";
+
+function denyFactoryWrite(auth: AuthContext): string | null {
+  if (auth.cargo === "PRODUCAO") {
+    return "O cargo Marceneiro não pode alterar estoque ou fornecedores.";
+  }
+  return null;
+}
 
 export interface Supplier {
   id: string;
@@ -153,10 +161,16 @@ export async function getInventoryAndSuppliers(companyId: string) {
       }),
     ]);
 
+    const mappedInventory = inventory.map(mapInventoryItem);
+    const safeInventory =
+      auth.cargo === "PRODUCAO"
+        ? mappedInventory.map((item) => ({ ...item, precoCusto: 0 }))
+        : mappedInventory;
+
     return {
       success: true as const,
       suppliers: suppliers.map(mapSupplier),
-      inventory: inventory.map(mapInventoryItem),
+      inventory: safeInventory,
     };
   } catch (error) {
     console.error("Erro ao carregar estoque:", error);
@@ -170,6 +184,10 @@ export async function createSupplierAction(
   const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
   }
   try {
     assertCompanyAccess(auth, data.company_id);
@@ -217,6 +235,10 @@ export async function updateSupplierAction(
   const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
   }
   try {
     assertCompanyAccess(auth, companyId);
@@ -275,6 +297,10 @@ export async function deleteSupplierAction(id: string, companyId: string) {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
+  }
   try {
     assertCompanyAccess(auth, companyId);
   } catch (error) {
@@ -311,6 +337,10 @@ export async function createInventoryItemAction(
   const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
   }
   try {
     assertCompanyAccess(auth, data.company_id);
@@ -364,6 +394,10 @@ export async function updateInventoryItemAction(
   const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
   }
   try {
     assertCompanyAccess(auth, companyId);
@@ -425,6 +459,10 @@ export async function deleteInventoryItemAction(id: string, companyId: string) {
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
+  }
   try {
     assertCompanyAccess(auth, companyId);
   } catch (error) {
@@ -462,6 +500,10 @@ export async function deductInventoryAction(
   const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
   }
   try {
     assertCompanyAccess(auth, companyId);
@@ -548,6 +590,10 @@ export async function importInventoryBulkAction(
   const auth = await getWriteAccess("estoque");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  const factoryDeny = denyFactoryWrite(auth);
+  if (factoryDeny) {
+    return { success: false, error: factoryDeny };
   }
   try {
     assertCompanyAccess(auth, companyId);
