@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Download, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ActionDialog from "@/components/ActionDialog";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import { getPhoneLastFourDigits } from "@/lib/phone";
 import { buildQuoteWhatsAppMessage, openQuoteWhatsApp, slugifyFileName } from "@/lib/quoteWhatsApp";
@@ -21,6 +22,12 @@ interface QuotePrintToolbarProps {
   initialPdfShareUrl?: string | null;
 }
 
+type FeedbackDialog = {
+  variant: "success" | "error";
+  title: string;
+  message: string;
+} | null;
+
 export default function QuotePrintToolbar({
   quoteId,
   clientName,
@@ -33,6 +40,7 @@ export default function QuotePrintToolbar({
   const [busy, setBusy] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackDialog>(null);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
   const emailReady = Boolean(clientEmail?.includes("@"));
   const anyBusy = busy || emailBusy || pdfBusy;
@@ -63,22 +71,27 @@ export default function QuotePrintToolbar({
   async function handleDownloadPdf() {
     const pin = getPhoneLastFourDigits(clientPhone);
     if (!pin) {
-      window.alert(
-        "Cadastre o telefone do cliente (com pelo menos 4 dígitos) para gerar o PDF com senha."
-      );
+      setFeedback({
+        variant: "error",
+        title: "Telefone necessário",
+        message:
+          "Cadastre o telefone do cliente (com pelo menos 4 dígitos) para gerar o PDF com senha.",
+      });
       return;
     }
     setPdfBusy(true);
     try {
       const blob = await generatePrintPagePdfBlob({ userPassword: pin });
       downloadPdfBlob(blob, `orcamento-${slugifyFileName(clientName)}.pdf`);
-      window.alert(
-        `PDF baixado com senha.\n\nSenha: ${pin}\n(os 4 últimos dígitos do celular do cliente)`
-      );
+      setFeedback({
+        variant: "success",
+        title: "PDF baixado",
+        message: `Arquivo protegido com senha ${pin} (4 últimos dígitos do celular do cliente).\n\nSe for enviar o arquivo, informe essa mesma senha — é a mesma do link público.`,
+      });
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Não foi possível gerar o PDF.";
-      window.alert(msg);
+      setFeedback({ variant: "error", title: "Falha ao gerar PDF", message: msg });
     } finally {
       setPdfBusy(false);
     }
@@ -90,7 +103,11 @@ export default function QuotePrintToolbar({
 
   async function handleWhatsApp() {
     if (!phoneReady) {
-      window.alert("Cadastre o telefone/WhatsApp do cliente para enviar a proposta.");
+      setFeedback({
+        variant: "error",
+        title: "Telefone necessário",
+        message: "Cadastre o telefone/WhatsApp do cliente para enviar a proposta.",
+      });
       return;
     }
 
@@ -110,7 +127,7 @@ export default function QuotePrintToolbar({
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Não foi possível preparar o envio.";
-      window.alert(msg);
+      setFeedback({ variant: "error", title: "Falha no WhatsApp", message: msg });
     } finally {
       setBusy(false);
     }
@@ -119,7 +136,11 @@ export default function QuotePrintToolbar({
   async function handleEmail() {
     const to = clientEmail?.trim();
     if (!to?.includes("@")) {
-      window.alert("Cadastre o e-mail do cliente para enviar a proposta.");
+      setFeedback({
+        variant: "error",
+        title: "E-mail necessário",
+        message: "Cadastre o e-mail do cliente para enviar a proposta.",
+      });
       return;
     }
     setEmailBusy(true);
@@ -128,10 +149,14 @@ export default function QuotePrintToolbar({
       if (!res.success) {
         throw new Error(res.error || "Falha ao enviar e-mail.");
       }
-      window.alert(`Orçamento enviado para ${res.to}.`);
+      setFeedback({
+        variant: "success",
+        title: "E-mail enviado",
+        message: `Orçamento enviado para ${res.to}.`,
+      });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Não foi possível enviar o e-mail.";
-      window.alert(msg);
+      setFeedback({ variant: "error", title: "Falha no e-mail", message: msg });
     } finally {
       setEmailBusy(false);
     }
@@ -204,6 +229,14 @@ export default function QuotePrintToolbar({
       <p className="max-w-[380px] text-right text-[10px] text-neutral-400 leading-snug">
         Baixar PDF: arquivo com senha (4 últimos dígitos do celular). Imprimir: A4 · margens Nenhuma.
       </p>
+
+      <ActionDialog
+        open={feedback !== null}
+        variant={feedback?.variant ?? "success"}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        onClose={() => setFeedback(null)}
+      />
     </div>
   );
 }

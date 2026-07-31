@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Download, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ActionDialog from "@/components/ActionDialog";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import {
   buildReceiptWhatsAppMessage,
@@ -29,6 +30,12 @@ interface ReceiptPrintToolbarProps {
   numeroLabel?: string | null;
 }
 
+type FeedbackDialog = {
+  variant: "success" | "error";
+  title: string;
+  message: string;
+} | null;
+
 export default function ReceiptPrintToolbar({
   receiptId,
   valor,
@@ -43,6 +50,7 @@ export default function ReceiptPrintToolbar({
   const [busy, setBusy] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackDialog>(null);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
   const emailReady = Boolean(clientEmail?.includes("@"));
   const anyBusy = busy || emailBusy || pdfBusy;
@@ -73,9 +81,12 @@ export default function ReceiptPrintToolbar({
   async function handleDownloadPdf() {
     const pin = getPhoneLastFourDigits(clientPhone);
     if (!pin) {
-      window.alert(
-        "Cadastre o telefone do cliente (com pelo menos 4 dígitos) para gerar o PDF com senha."
-      );
+      setFeedback({
+        variant: "error",
+        title: "Telefone necessário",
+        message:
+          "Cadastre o telefone do cliente (com pelo menos 4 dígitos) para gerar o PDF com senha.",
+      });
       return;
     }
     setPdfBusy(true);
@@ -85,13 +96,15 @@ export default function ReceiptPrintToolbar({
         ? slugifyFileName(numeroLabel)
         : slugifyFileName(clientName);
       downloadPdfBlob(blob, `recibo-${suffix}.pdf`);
-      window.alert(
-        `PDF baixado com senha.\n\nSenha: ${pin}\n(os 4 últimos dígitos do celular do cliente)`
-      );
+      setFeedback({
+        variant: "success",
+        title: "PDF baixado",
+        message: `Arquivo protegido com senha ${pin} (4 últimos dígitos do celular do cliente).\n\nSe for enviar o arquivo, informe essa mesma senha — é a mesma do link público.`,
+      });
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Não foi possível gerar o PDF.";
-      window.alert(msg);
+      setFeedback({ variant: "error", title: "Falha ao gerar PDF", message: msg });
     } finally {
       setPdfBusy(false);
     }
@@ -230,6 +243,14 @@ export default function ReceiptPrintToolbar({
       <p className="text-right text-[10px] text-neutral-500 leading-snug">
         Baixar PDF: arquivo com senha (4 últimos dígitos do celular). Imprimir: A4 · margens Nenhuma.
       </p>
+
+      <ActionDialog
+        open={feedback !== null}
+        variant={feedback?.variant ?? "success"}
+        title={feedback?.title ?? ""}
+        message={feedback?.message ?? ""}
+        onClose={() => setFeedback(null)}
+      />
     </div>
   );
 }

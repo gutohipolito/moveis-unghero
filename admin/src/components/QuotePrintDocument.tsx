@@ -130,9 +130,9 @@ export function quotePrintStylesCss() {
         width: 210mm !important;
         min-width: 210mm !important;
         max-width: 210mm !important;
+        min-height: 297mm !important;
         height: auto !important;
         max-height: none !important;
-        min-height: 0 !important;
         page-break-after: auto !important;
         break-after: auto !important;
         page-break-inside: auto !important;
@@ -147,6 +147,8 @@ export function quotePrintStylesCss() {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         transform: none !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
       .print-page-break {
         page-break-before: always !important;
@@ -174,12 +176,15 @@ export function quotePrintStylesCss() {
         color: #ffffff !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        flex-shrink: 0 !important;
       }
       .print-quote-footer {
         background-color: #171717 !important;
         color: #d4d4d4 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        flex-shrink: 0 !important;
+        margin-top: auto !important;
       }
       .print-quote-header img {
         filter: brightness(0) invert(1) !important;
@@ -191,9 +196,19 @@ export function quotePrintStylesCss() {
         display: none !important;
       }
       .print-page > main {
-        flex: 0 0 auto !important;
-        justify-content: flex-start !important;
-        gap: 1.25rem !important;
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 0 !important;
+      }
+      .print-quote-items {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .print-quote-bottom {
+        flex-shrink: 0 !important;
+        margin-top: auto !important;
       }
       .print-footer-link {
         text-decoration: underline;
@@ -229,9 +244,21 @@ export function quotePrintStylesCss() {
         background-color: #ffffff;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         overflow: visible;
+        display: flex;
+        flex-direction: column;
       }
       .print-page-break {
         margin-top: 28px;
+      }
+      .print-quote-items {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .print-quote-bottom {
+        flex-shrink: 0;
+        margin-top: auto;
       }
     }
     .print-quote-header {
@@ -475,7 +502,7 @@ function CommercialFooterBlock({
   assetBase?: string;
 }) {
   return (
-    <div className="space-y-3.5">
+    <div className="print-quote-bottom space-y-3.5">
       <CommercialNotesSection compact={compact} />
       <PaymentConditionsSection assetBase={assetBase} />
     </div>
@@ -511,6 +538,8 @@ export default function QuotePrintDocument({
   const density = resolveQuotePrintDensity(quote.items);
   const isCompact = density === "compact" || density === "paged";
   const isPaged = density === "paged";
+  /** Poucos itens: bloco de itens centralizado no espaço livre do A4. */
+  const centerItems = density === "normal";
   const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
   const isComparative = quote.template_tipo === "COMPARATIVO";
@@ -529,87 +558,91 @@ export default function QuotePrintDocument({
         <div className="print-page flex flex-col">
           <PrintTopHeader assetBase={assetBase} quoteCodigo={quoteCodigo} />
 
-          <main className="flex-1 px-[20mm] py-6 flex flex-col justify-start gap-5">
-            <div className={sectionGap}>
-              <section className="grid grid-cols-[1fr_auto] gap-5 pb-5 border-b border-neutral-100">
-                <div className="space-y-2 min-w-0">
-                  <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
-                    Cliente
-                  </span>
-                  <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
-                  <div className="text-xs text-neutral-600 space-y-0.5">
+          <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">
+            <section className="grid grid-cols-[1fr_auto] gap-5 pb-4 border-b border-neutral-100 shrink-0">
+              <div className="space-y-2 min-w-0">
+                <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
+                  Cliente
+                </span>
+                <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
+                <div className="text-xs text-neutral-600 space-y-0.5">
+                  <p>
+                    <span className="font-semibold text-neutral-700">Cidade:</span> {client.cidade}
+                  </p>
+                  {client.bairro ? (
                     <p>
-                      <span className="font-semibold text-neutral-700">Cidade:</span> {client.cidade}
+                      <span className="font-semibold text-neutral-700">Bairro:</span>{" "}
+                      {client.bairro}
                     </p>
-                    {client.bairro ? (
-                      <p>
-                        <span className="font-semibold text-neutral-700">Bairro:</span>{" "}
-                        {client.bairro}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-stretch gap-3 shrink-0 self-start">
-                  <div className="flex gap-3">
-                    <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
-                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
-                        Emissão
-                      </span>
-                      <p className="text-[11px] font-bold text-emerald-800 leading-none">
-                        {emissaoLabel}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
-                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
-                        Validade
-                      </span>
-                      <p className="text-[11px] font-bold text-rose-800 leading-none">
-                        {validadeLabel}
-                      </p>
-                    </div>
-                  </div>
-
-                  {quote.partner ? (
-                    <div className="print-partner-card w-full p-3 rounded-xl border border-amber-500/50 bg-white text-[10px] text-neutral-600 space-y-1 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)] leading-tight flex items-center gap-3">
-                      <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden border border-amber-500/45 bg-neutral-50 flex items-center justify-center">
-                        {quote.partner.fotoUrl ? (
-                          <img
-                            src={quote.partner.fotoUrl}
-                            alt={quote.partner.nome}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-xs font-black text-neutral-500">
-                            {quote.partner.nome.substring(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-0.5 text-left">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <p className="font-bold text-neutral-900 text-xs leading-snug truncate">
-                            {quote.partner.nome}
-                          </p>
-                          <BadgeCheck
-                            className="h-3.5 w-3.5 shrink-0 text-amber-600 fill-amber-400/25"
-                            aria-label="Parceiro verificado"
-                          />
-                        </div>
-                        <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block">
-                          {partnerRoleLabel}
-                        </span>
-                        {quote.partner.escritorio ? (
-                          <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
-                        ) : null}
-                        {partnerRegistro ? (
-                          <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
-                        ) : null}
-                      </div>
-                    </div>
                   ) : null}
                 </div>
-              </section>
+              </div>
 
+              <div className="flex flex-col items-stretch gap-3 shrink-0 self-start">
+                <div className="flex gap-3">
+                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
+                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
+                      Emissão
+                    </span>
+                    <p className="text-[11px] font-bold text-emerald-800 leading-none">
+                      {emissaoLabel}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
+                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
+                      Validade
+                    </span>
+                    <p className="text-[11px] font-bold text-rose-800 leading-none">
+                      {validadeLabel}
+                    </p>
+                  </div>
+                </div>
+
+                {quote.partner ? (
+                  <div className="print-partner-card w-full p-3 rounded-xl border border-amber-500/50 bg-white text-[10px] text-neutral-600 space-y-1 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)] leading-tight flex items-center gap-3">
+                    <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden border border-amber-500/45 bg-neutral-50 flex items-center justify-center">
+                      {quote.partner.fotoUrl ? (
+                        <img
+                          src={quote.partner.fotoUrl}
+                          alt={quote.partner.nome}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs font-black text-neutral-500">
+                          {quote.partner.nome.substring(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-0.5 text-left">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <p className="font-bold text-neutral-900 text-xs leading-snug truncate">
+                          {quote.partner.nome}
+                        </p>
+                        <BadgeCheck
+                          className="h-3.5 w-3.5 shrink-0 text-amber-600 fill-amber-400/25"
+                          aria-label="Parceiro verificado"
+                        />
+                      </div>
+                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block">
+                        {partnerRoleLabel}
+                      </span>
+                      {quote.partner.escritorio ? (
+                        <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
+                      ) : null}
+                      {partnerRegistro ? (
+                        <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <div
+              className={`print-quote-items ${sectionGap} ${
+                centerItems ? "justify-center" : "justify-start"
+              }`}
+            >
               <p className="text-[11px] text-neutral-500 leading-relaxed">
                 {isComparative
                   ? "Opções de proposta para o seu projeto. Cada alternativa traz seu próprio valor."
@@ -773,11 +806,13 @@ export default function QuotePrintDocument({
         {isPaged ? (
           <div className="print-page print-page-break flex flex-col">
             <PrintTopHeader assetBase={assetBase} title="Condições comerciais" />
-            <main className="flex-1 px-[20mm] py-6 flex flex-col justify-start gap-5">
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
+            <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">
+              <p className="text-[11px] text-neutral-500 leading-relaxed shrink-0">
                 Informações de prazo, garantia, montagem e formas de pagamento desta proposta.
               </p>
-              <CommercialFooterBlock compact={false} assetBase={assetBase} />
+              <div className="print-quote-items flex-1 flex flex-col justify-end">
+                <CommercialFooterBlock compact={false} assetBase={assetBase} />
+              </div>
             </main>
             <PrintBottomFooter />
           </div>

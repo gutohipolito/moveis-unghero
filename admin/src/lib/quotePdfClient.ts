@@ -98,7 +98,14 @@ export async function generateQuotePdfBlob(options?: GeneratePrintPdfOptions) {
     await waitForQuoteAssets(element);
 
     const width = Math.ceil(element.scrollWidth);
-    const height = Math.ceil(element.scrollHeight);
+    // offsetHeight inclui min-height do A4 (297mm); scrollHeight sozinho pode colapsar
+    const height = Math.ceil(
+      Math.max(
+        element.scrollHeight,
+        element.offsetHeight,
+        element.getBoundingClientRect().height
+      )
+    );
 
     canvas = await html2canvas(element, {
       scale: 2,
