@@ -287,6 +287,12 @@ export async function testEmailMailboxConnection(mailboxId: string) {
     return { success: false as const, error: "Não foi possível ler a senha da caixa." };
   }
 
+  const { assertMailHostReachable } = await import("@/lib/emailErrors");
+  const dnsBlock = await assertMailHostReachable(mailbox.imap_host);
+  if (dnsBlock) {
+    return { success: false as const, error: dnsBlock };
+  }
+
   const imap = await testImapConnection({
     host: mailbox.imap_host,
     port: mailbox.imap_port,
@@ -298,6 +304,14 @@ export async function testEmailMailboxConnection(mailboxId: string) {
       success: false as const,
       error: imap.error || "IMAP: falha ao conectar. Confira senha e HostGator.",
     };
+  }
+
+  const smtpDnsBlock =
+    mailbox.smtp_host !== mailbox.imap_host
+      ? await assertMailHostReachable(mailbox.smtp_host)
+      : null;
+  if (smtpDnsBlock) {
+    return { success: false as const, error: smtpDnsBlock };
   }
 
   const smtp = await testSmtpConnection({
