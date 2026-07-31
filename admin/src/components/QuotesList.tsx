@@ -59,6 +59,7 @@ interface QuoteItem {
   valor_total: number;
   status?: string | null;
   aprovado_em?: string | Date | null;
+  subitens?: string[] | null;
 }
 
 interface Client {
@@ -711,9 +712,9 @@ export default function QuotesList({
                               size="sm"
                               className="border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 h-8 shrink-0 px-2"
                               onClick={() => setRevisionQuote(q)}
-                              title="Revisar valores pendentes"
+                              title="Editar itens pendentes"
                             >
-                              Revisar
+                              Editar
                             </Button>
                           )}
 
@@ -1096,7 +1097,7 @@ export default function QuotesList({
             : null
         }
         onRevised={() => {
-          showSuccess("Valores revisados", "Itens pendentes atualizados com sucesso.");
+          showSuccess("Itens editados", "Itens pendentes atualizados e registrados no histórico.");
           syncQuotes();
         }}
       />

@@ -142,6 +142,7 @@ interface Quote {
     valor_total: number;
     status?: string | null;
     aprovado_em?: string | null;
+    subitens?: string[];
   }>;
 }
 
@@ -1819,7 +1820,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               onClick={() => setRevisionQuote(q)}
                               className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 transition-all cursor-pointer"
                             >
-                              Revisar pendentes
+                              Editar pendentes
                             </button>
                           )}
 
@@ -2455,7 +2456,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             : null
         }
         onRevised={async () => {
-          showSuccess("Valores revisados", "Itens pendentes atualizados com sucesso.");
+          showSuccess("Itens editados", "Itens pendentes atualizados e registrados no histórico.");
           await refreshProjectFromServer();
         }}
       />

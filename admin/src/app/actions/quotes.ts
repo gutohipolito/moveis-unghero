@@ -575,6 +575,20 @@ export async function rejectQuoteItems(
   }
 }
 
+function normalizeQuoteSubitens(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean);
+}
+
+function sameSubitens(a: unknown, b: unknown): boolean {
+  const left = normalizeQuoteSubitens(a);
+  const right = normalizeQuoteSubitens(b);
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => item === right[index]);
+}
+
 export async function revisePendingQuoteItems(input: {
   projectId: string;
   quoteId: string;
@@ -586,6 +600,8 @@ export async function revisePendingQuoteItems(input: {
     valor_unitario: number;
     valor_total: number;
     quantidade?: number;
+    descricao?: string;
+    subitens?: string[];
   }>;
 }) {
   const auth = await getWriteAccess("quotes");
@@ -602,7 +618,7 @@ export async function revisePendingQuoteItems(input: {
   }
 
   if (!input.items?.length && !input.validade) {
-    return { success: false, error: "Informe itens para revisar ou uma nova validade." };
+    return { success: false, error: "Informe itens para editar ou uma nova validade." };
   }
 
   try {
@@ -619,6 +635,8 @@ export async function revisePendingQuoteItems(input: {
             valor_total: true,
             quantidade: true,
             descricao: true,
+            subitens: true,
+            environment: { select: { id: true } },
           },
         },
       },
@@ -637,23 +655,47 @@ export async function revisePendingQuoteItems(input: {
       if (!pendingById.has(upd.id)) {
         return {
           success: false,
-          error: "Somente itens pendentes podem ter valores revisados.",
+          error: "Somente itens pendentes podem ser editados antes da aprovação.",
         };
       }
       if (upd.valor_unitario < 0 || upd.valor_total < 0) {
         return { success: false, error: "Valores não podem ser negativos." };
       }
+      if (typeof upd.quantidade === "number" && (!Number.isFinite(upd.quantidade) || upd.quantidade < 1)) {
+        return { success: false, error: "Quantidade deve ser pelo menos 1." };
+      }
+      if (typeof upd.descricao === "string" && !upd.descricao.trim()) {
+        return { success: false, error: "Descrição do item não pode ficar vazia." };
+      }
     }
+
+    const changedLabels: string[] = [];
 
     await prisma.$transaction(async (tx) => {
       for (const upd of updates) {
         const current = pendingById.get(upd.id)!;
         const newUnit = Math.round(upd.valor_unitario * 100) / 100;
         const newTotal = Math.round(upd.valor_total * 100) / 100;
-        if (
-          Number(current.valor_unitario) === newUnit &&
-          Number(current.valor_total) === newTotal
-        ) {
+        const newQty =
+          typeof upd.quantidade === "number" && upd.quantidade > 0
+            ? Math.round(upd.quantidade)
+            : current.quantidade;
+        const newDescricao =
+          typeof upd.descricao === "string" ? upd.descricao.trim() : current.descricao;
+        const hasSubitensUpdate = Array.isArray(upd.subitens);
+        const newSubitens = hasSubitensUpdate
+          ? normalizeQuoteSubitens(upd.subitens)
+          : normalizeQuoteSubitens(current.subitens);
+
+        const priceChanged =
+          Number(current.valor_unitario) !== newUnit ||
+          Number(current.valor_total) !== newTotal;
+        const qtyChanged = current.quantidade !== newQty;
+        const descChanged = current.descricao !== newDescricao;
+        const detailsChanged =
+          hasSubitensUpdate && !sameSubitens(current.subitens, newSubitens);
+
+        if (!priceChanged && !qtyChanged && !descChanged && !detailsChanged) {
           continue;
         }
 
@@ -665,6 +707,14 @@ export async function revisePendingQuoteItems(input: {
             valor_total_anterior: current.valor_total,
             valor_unitario_novo: newUnit,
             valor_total_novo: newTotal,
+            descricao_anterior: descChanged ? current.descricao : null,
+            descricao_nova: descChanged ? newDescricao : null,
+            quantidade_anterior: qtyChanged ? current.quantidade : null,
+            quantidade_nova: qtyChanged ? newQty : null,
+            subitens_anterior: detailsChanged
+              ? normalizeQuoteSubitens(current.subitens)
+              : undefined,
+            subitens_novo: detailsChanged ? newSubitens : undefined,
             motivo: input.motivo?.trim() || null,
             alterado_por_id: actorId,
           },
@@ -675,11 +725,23 @@ export async function revisePendingQuoteItems(input: {
           data: {
             valor_unitario: newUnit,
             valor_total: newTotal,
-            ...(typeof upd.quantidade === "number" && upd.quantidade > 0
-              ? { quantidade: upd.quantidade }
-              : {}),
+            quantidade: newQty,
+            descricao: newDescricao,
+            ...(hasSubitensUpdate ? { subitens: newSubitens } : {}),
           },
         });
+
+        if (descChanged && current.environment?.id) {
+          await tx.environment.update({
+            where: { id: current.environment.id },
+            data: {
+              nome: newDescricao,
+              tipo: inferEnvironmentTypeFromName(newDescricao),
+            },
+          });
+        }
+
+        changedLabels.push(newDescricao || current.descricao);
       }
 
       const refreshed = await tx.quoteItem.findMany({
@@ -703,16 +765,14 @@ export async function revisePendingQuoteItems(input: {
       });
     });
 
-    const changedNames = updates
-      .map((u) => pendingById.get(u.id)?.descricao)
-      .filter(Boolean);
-
     await prisma.timeline.create({
       data: {
         project_id: input.projectId,
-        acao: `Proposta comercial v${input.version}: valores pendentes revisados${
-          changedNames.length ? ` (${changedNames.join(", ")})` : ""
-        }${input.validade ? `; validade renovada para ${input.validade}` : ""}.`,
+        acao: changedLabels.length
+          ? `Proposta comercial v${input.version}: itens pendentes editados (mesma versão) — ${changedLabels.join(", ")}${
+              input.validade ? `; validade renovada para ${input.validade}` : ""
+            }.`
+          : `Proposta comercial v${input.version}: validade renovada para ${input.validade}.`,
         interno_sotamente: true,
         user_id: actorId,
       },
@@ -726,7 +786,7 @@ export async function revisePendingQuoteItems(input: {
     console.error("Erro na Server Action revisePendingQuoteItems:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao revisar itens pendentes",
+      error: error instanceof Error ? error.message : "Erro ao editar itens pendentes",
     };
   }
 }
@@ -979,6 +1039,9 @@ export async function getQuotes() {
         valor_total: Number(item.valor_total),
         status: item.status,
         aprovado_em: item.aprovado_em instanceof Date ? item.aprovado_em.toISOString() : item.aprovado_em,
+        subitens: Array.isArray(item.subitens)
+          ? item.subitens.filter((entry): entry is string => typeof entry === "string")
+          : [],
       }))
     }));
 

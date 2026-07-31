@@ -67,6 +67,7 @@ export type ProjectDetailsPayload = {
       valor_total: number;
       status: string;
       aprovado_em: string | null;
+      subitens?: string[];
     }>;
   }>;
   tasks: Array<{
@@ -128,6 +129,7 @@ const projectInclude = {
           valor_total: true,
           status: true,
           aprovado_em: true,
+          subitens: true,
         },
       },
     },
@@ -225,6 +227,9 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
         valor_total: Number(item.valor_total),
         status: item.status,
         aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
+        subitens: Array.isArray(item.subitens)
+          ? item.subitens.filter((entry): entry is string => typeof entry === "string")
+          : [],
       })),
     })),
     tasks: project.tasks.map((t) => ({

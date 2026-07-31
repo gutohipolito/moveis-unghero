@@ -480,6 +480,12 @@ model QuoteItemPriceHistory {
   valor_total_anterior    Decimal @db.Decimal(12, 2)
   valor_unitario_novo     Decimal @db.Decimal(12, 2)
   valor_total_novo        Decimal @db.Decimal(12, 2)
+  descricao_anterior      String?
+  descricao_nova          String?
+  quantidade_anterior     Int?
+  quantidade_nova         Int?
+  subitens_anterior       Json?
+  subitens_novo           Json?
   motivo            String?
   alterado_por_id   String?
   alterado_por      User?     @relation("QuoteItemPriceHistoryAuthor", fields: [alterado_por_id], references: [id], onDelete: SetNull)
