@@ -23,8 +23,8 @@ import {
   DEFAULT_SMTP_PORT,
   EMAIL_AREA_LABELS,
   EMAIL_MAILBOX_AREAS,
-  SUGGESTED_SIGNATURE_BY_AREA,
 } from "@/lib/emailAreas";
+import { getSuggestedSignatureHtml } from "@/lib/emailSignature";
 import type { EmailMailboxArea, Role } from "@prisma/client";
 import { EDITABLE_ROLES, ROLE_LABELS } from "@/lib/permissions";
 
@@ -354,29 +354,51 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                 className="h-9"
               />
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <label className="text-xs text-muted-foreground">Assinatura (opcional)</label>
+                <label className="text-xs text-muted-foreground">Assinatura</label>
                 <button
                   type="button"
                   className="text-[11px] font-medium text-sky-700 hover:underline"
                   onClick={() =>
                     setForm({
                       ...form,
-                      signatureText: SUGGESTED_SIGNATURE_BY_AREA[form.area],
+                      signatureText: getSuggestedSignatureHtml(form.area),
                     })
                   }
                 >
                   Usar modelo Unghero
                 </button>
               </div>
-              <textarea
-                value={form.signatureText || ""}
-                onChange={(e) => setForm({ ...form, signatureText: e.target.value })}
-                className="mt-1 w-full min-h-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-pre-wrap"
-                placeholder={SUGGESTED_SIGNATURE_BY_AREA[form.area]}
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">
+              {form.signatureText ? (
+                <div className="rounded-md border border-border/60 bg-[#FAFAF9] px-3 py-2 overflow-hidden">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                    Pré-visualização
+                  </p>
+                  <iframe
+                    title="Pré-visualização da assinatura"
+                    sandbox=""
+                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:4px 0;background:#FAFAF9;">${form.signatureText}</body></html>`}
+                    className="w-full border-0 bg-transparent"
+                    style={{ height: 168 }}
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground rounded-md border border-dashed border-border/60 px-3 py-4">
+                  Nenhuma assinatura. Clique em <span className="font-medium text-foreground">Usar modelo Unghero</span> para aplicar o layout com logo e ícones.
+                </p>
+              )}
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  Editar HTML avançado
+                </summary>
+                <textarea
+                  value={form.signatureText || ""}
+                  onChange={(e) => setForm({ ...form, signatureText: e.target.value })}
+                  className="mt-2 w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-[11px] font-mono"
+                />
+              </details>
+              <p className="text-[11px] text-muted-foreground">
                 Incluída automaticamente no final dos e-mails enviados por esta caixa.
               </p>
             </div>

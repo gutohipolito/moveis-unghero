@@ -67,14 +67,3 @@ export function looksLikeBrokenEncoding(value: string | null | undefined): boole
   return brokenScore(value || "") >= 2;
 }
 
-/** Anexa assinatura da caixa no final do corpo em texto puro. */
-export function appendMailboxSignature(
-  text: string,
-  signature: string | null | undefined
-): string {
-  const body = (text || "").trimEnd();
-  const sig = (signature || "").trim();
-  if (!sig) return body;
-  if (body.endsWith(sig) || body.includes(`\n-- \n${sig}`)) return body;
-  return `${body}\n\n-- \n${sig}`;
-}
