@@ -1,8 +1,8 @@
-const CACHE_VERSION = "mu-admin-v6";
+const CACHE_VERSION = "mu-admin-v7";
 
 self.addEventListener("push", (event) => {
   let payload = {
-    title: "Móveis Unghero",
+    title: "Sistema - Móveis Unghero",
     body: "Você tem um novo alerta no painel.",
     icon: "/pwa-icon/192",
     badge: "/pwa-icon/192",

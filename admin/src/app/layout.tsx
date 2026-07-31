@@ -3,11 +3,11 @@ import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
 import PwaImmersiveMode from "@/components/PwaImmersiveMode";
 
-const APP_NAME = "Móveis Unghero";
+const APP_NAME = "Sistema - Móveis Unghero";
 const APP_DESCRIPTION = "CRM, fábrica e gestão interna da Móveis Unghero";
 
 export const metadata: Metadata = {
-  title: "Móveis Unghero | Painel Operacional",
+  title: "Sistema - Móveis Unghero",
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
   // Painel interno: não deve ser indexado por buscadores (Google, etc.).
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Unghero",
+    title: "Sistema - Móveis Unghero",
   },
   formatDetection: {
     telephone: false,

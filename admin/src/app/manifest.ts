@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Móveis Unghero — Painel",
-    short_name: "Unghero",
+    name: "Sistema - Móveis Unghero",
+    short_name: "Sistema MU",
     description: "CRM, fábrica e gestão operacional da Móveis Unghero",
     start_url: "/crm",
     scope: "/",
