@@ -804,6 +804,47 @@ body {
   .dashboard-main .kanban-lead-dialog form {
     gap: 0.875rem;
   }
+
+  /* Chão de fábrica: mais altura útil, cards densos no 10.1″ */
+  .dashboard-main .factory-floor {
+    gap: 0.5rem;
+  }
+
+  .dashboard-main .factory-floor .page-header {
+    margin-bottom: 0;
+  }
+
+  .dashboard-main .factory-floor .page-title {
+    font-size: 1.125rem;
+    line-height: 1.2;
+  }
+
+  .dashboard-main .factory-board {
+    min-height: 0;
+  }
+
+  .dashboard-main .factory-board-scroll {
+    /* Usa o flex do pai; evita chrome excessivo no tablet */
+    padding-bottom: 0.25rem;
+  }
+
+  .dashboard-main .factory-column {
+    width: min(38vw, 15.75rem);
+  }
+
+  .dashboard-main .factory-card .glass-card,
+  .dashboard-main .factory-card.glass-card {
+    box-shadow: none;
+  }
+
+  .dashboard-main .factory-card-title {
+    font-size: 0.75rem !important;
+    line-height: 1.25;
+  }
+
+  .dashboard-main .factory-column-body {
+    padding: 0.5rem;
+  }
 }
 
 .notification-trigger {

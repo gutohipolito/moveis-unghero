@@ -7,7 +7,6 @@ import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/a
 import { getFactoryLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { Card } from "@/components/ui/card";
-import { KpiCard } from "@/components/ui/kpi-card";
 import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
 import FactoryEnvironmentDetailModal from "@/components/FactoryEnvironmentDetailModal";
@@ -16,6 +15,9 @@ import {
   getClientColor,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
+import { usePermissions } from "@/context/PermissionsContext";
+import { useTabletLayout } from "@/hooks/useTabletLayout";
+import { cn } from "@/lib/utils";
 import {
   Layers,
   ArrowRight,
@@ -30,7 +32,6 @@ import {
   ChevronUp,
   ChevronsDownUp,
   ChevronsUpDown,
-  ImageIcon,
   FileStack,
   ClipboardCheck,
 } from "lucide-react";
@@ -160,9 +161,6 @@ function TeamSelect({
   );
 }
 
-const KANBAN_BOARD_HEIGHT =
-  "h-[calc(100dvh-32rem)] max-h-[calc(100dvh-32rem)] md:h-[calc(100dvh-var(--factory-board-offset))] md:max-h-[calc(100dvh-var(--factory-board-offset))]";
-
 export default function FactoryClient({
   initialEnvironments,
   colaboradores,
@@ -170,6 +168,11 @@ export default function FactoryClient({
   companyId,
   slaCheckProjectId,
 }: FactoryClientProps) {
+  const { role } = usePermissions();
+  const { isTablet } = useTabletLayout();
+  const isFactoryRole = role === "PRODUCAO";
+  const compactBoard = isTablet || isFactoryRole;
+
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [slaByProject, setSlaByProject] = useState(initialSlaByProject);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -436,11 +439,6 @@ export default function FactoryClient({
     await updateEnvironmentStatus(item.projectId, item.id, nextStatus as any);
   };
 
-  const totalPecas = environments.length;
-  const emCorteCount = environments.filter((e) => e.status === "EM_CORTE").length;
-  const emMontagemCount = environments.filter((e) => e.status === "MONTAGEM_FABRICA").length;
-  const prontoEntregaCount = environments.filter((e) => e.status === "PRONTO_ENTREGA").length;
-
   const renderRoomCard = (
     item: EnvironmentItem,
     col: (typeof COLUMNS)[number],
@@ -457,17 +455,30 @@ export default function FactoryClient({
         onDragStart={(e) => handleDragStart(e, item.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(item)}
-        className={`glass-card glass-card-hover overflow-hidden active:scale-[0.98] transition-all duration-200 cursor-pointer relative group ${
-          draggedId === item.id ? "opacity-40 scale-[0.98]" : ""
-        } ${clientColor.border} ${clientColor.soft} border-2`}
+        className={cn(
+          "factory-card glass-card glass-card-hover overflow-hidden active:scale-[0.98] transition-all duration-200 cursor-pointer relative group",
+          draggedId === item.id && "opacity-40 scale-[0.98]",
+          clientColor.border,
+          clientColor.soft,
+          compactBoard ? "border" : "border-2"
+        )}
       >
-        <div className={`h-1.5 ${clientColor.swatch}`} />
+        <div className={cn(compactBoard ? "h-1" : "h-1.5", clientColor.swatch)} />
 
-        <div className="p-3 space-y-2.5 bg-card/85">
+        <div
+          className={cn(
+            "factory-card-body bg-card/85",
+            compactBoard ? "p-2 space-y-1.5" : "p-3 space-y-2.5"
+          )}
+        >
           <div className="flex items-center justify-between gap-1.5">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <span
-                className={`h-2.5 w-2.5 shrink-0 rounded-full ${clientColor.swatch}`}
+                className={cn(
+                  "shrink-0 rounded-full",
+                  compactBoard ? "h-2 w-2" : "h-2.5 w-2.5",
+                  clientColor.swatch
+                )}
                 title="Cor do cliente"
               />
               {item.projectId ? (
@@ -475,17 +486,23 @@ export default function FactoryClient({
                   href={`/projects/${item.projectId}`}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
-                  className="text-[10px] bg-slate-100 hover:bg-slate-200 text-neutral-900 px-2 py-0.5 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200 transition-colors"
+                  className={cn(
+                    "bg-slate-100 hover:bg-slate-200 text-neutral-900 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200 transition-colors",
+                    compactBoard ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"
+                  )}
                   title={item.clientName}
                 >
-                  <User className="h-3 w-3 shrink-0 text-slate-500" />
+                  <User className={cn("shrink-0 text-slate-500", compactBoard ? "h-2.5 w-2.5" : "h-3 w-3")} />
                   <span className="truncate">{item.clientName}</span>
                 </Link>
               ) : (
                 <span
-                  className="text-[10px] bg-slate-100 text-neutral-900 px-2 py-0.5 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200"
+                  className={cn(
+                    "bg-slate-100 text-neutral-900 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200",
+                    compactBoard ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"
+                  )}
                 >
-                  <User className="h-3 w-3 shrink-0 text-slate-500" />
+                  <User className={cn("shrink-0 text-slate-500", compactBoard ? "h-2.5 w-2.5" : "h-3 w-3")} />
                   <span className="truncate">{item.clientName}</span>
                 </span>
               )}
@@ -497,7 +514,11 @@ export default function FactoryClient({
                     e.stopPropagation();
                     if (options?.stackKey) toggleStackExpand(options.stackKey);
                   }}
-                  className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${clientColor.swatch} text-white shrink-0`}
+                  className={cn(
+                    "font-extrabold rounded-full text-white shrink-0",
+                    compactBoard ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-1.5 py-0.5",
+                    clientColor.swatch
+                  )}
                   title="Expandir pilha do projeto"
                 >
                   +{stackedExtra}
@@ -514,10 +535,16 @@ export default function FactoryClient({
                     e.stopPropagation();
                     toggleStackExpand(options.stackKey!);
                   }}
-                  className={`p-1.5 rounded-md ${clientColor.soft} ${clientColor.text} hover:ring-1 ${clientColor.ring} transition-all cursor-pointer`}
+                  className={cn(
+                    "rounded-md transition-all cursor-pointer",
+                    compactBoard ? "p-1 min-h-9 min-w-9 inline-flex items-center justify-center" : "p-1.5",
+                    clientColor.soft,
+                    clientColor.text,
+                    `hover:ring-1 ${clientColor.ring}`
+                  )}
                   title="Expandir ou recolher pilha"
                 >
-                  <Layers className="h-3.5 w-3.5" />
+                  <Layers className={compactBoard ? "h-3.5 w-3.5" : "h-3.5 w-3.5"} />
                 </button>
               )}
               <button
@@ -527,7 +554,13 @@ export default function FactoryClient({
                   e.stopPropagation();
                   toggleCardCollapse(item.id);
                 }}
-                className={`p-1.5 rounded-md ${clientColor.soft} ${clientColor.text} hover:ring-1 ${clientColor.ring} transition-all cursor-pointer`}
+                className={cn(
+                  "rounded-md transition-all cursor-pointer",
+                  compactBoard ? "p-1 min-h-9 min-w-9 inline-flex items-center justify-center" : "p-1.5",
+                  clientColor.soft,
+                  clientColor.text,
+                  `hover:ring-1 ${clientColor.ring}`
+                )}
                 title={isCollapsed ? "Expandir card" : "Recolher card"}
               >
                 {isCollapsed ? (
@@ -545,7 +578,13 @@ export default function FactoryClient({
                     e.stopPropagation();
                     handleMoveRight(item);
                   }}
-                  className={`p-1.5 rounded-md ${clientColor.soft} ${clientColor.text} hover:ring-1 ${clientColor.ring} transition-all cursor-pointer`}
+                  className={cn(
+                    "rounded-md transition-all cursor-pointer",
+                    compactBoard ? "p-1 min-h-9 min-w-9 inline-flex items-center justify-center" : "p-1.5",
+                    clientColor.soft,
+                    clientColor.text,
+                    `hover:ring-1 ${clientColor.ring}`
+                  )}
                   title="Avançar etapa de produção"
                 >
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -555,21 +594,34 @@ export default function FactoryClient({
           </div>
 
           <div className="min-w-0 flex-1">
-            <h4 className="font-bold text-[15px] text-foreground leading-[1.2] group-hover:text-primary transition-colors">
+            <h4
+              className={cn(
+                "factory-card-title font-bold text-foreground leading-snug group-hover:text-primary transition-colors",
+                compactBoard ? "text-[12.5px]" : "text-[15px] leading-[1.2]"
+              )}
+            >
               {item.nome}
             </h4>
-            <p className="text-[10px] text-muted-foreground/80 mt-1">
-              Abrir ficha técnica
-            </p>
+            {!compactBoard && (
+              <p className="text-[10px] text-muted-foreground/80 mt-1">
+                Abrir ficha técnica
+              </p>
+            )}
           </div>
 
-          {(item.materialsSummary || item.hardwareSummary) && (
-            <p className="text-[10px] text-muted-foreground line-clamp-2">
+          {(item.materialsSummary || item.hardwareSummary) &&
+            !(compactBoard && isCollapsed) && (
+            <p
+              className={cn(
+                "text-muted-foreground",
+                compactBoard ? "text-[9px] line-clamp-1" : "text-[10px] line-clamp-2"
+              )}
+            >
               {item.materialsSummary || item.hardwareSummary}
             </p>
           )}
 
-          {item.projectId && (
+          {item.projectId && !(compactBoard && isCollapsed) && (
             <SlaRadar
               sla={slaByProject[item.projectId] ?? null}
               compact
@@ -578,22 +630,29 @@ export default function FactoryClient({
           )}
 
           <div className="flex items-end justify-between gap-2 pt-0.5">
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-1 min-w-0">
               <span
-                className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                className={cn(
+                  "inline-flex items-center gap-1 font-semibold rounded-md",
+                  compactBoard ? "text-[9px] px-1 py-0.5" : "text-[10px] px-1.5 py-0.5",
                   item.techSheetComplete
                     ? "bg-emerald-500/10 text-emerald-700"
                     : item.techSheetFilled > 0
                       ? "bg-amber-500/10 text-amber-700"
                       : "bg-secondary text-muted-foreground"
-                }`}
+                )}
               >
-                <ClipboardCheck className="h-3 w-3" />
+                <ClipboardCheck className={compactBoard ? "h-2.5 w-2.5" : "h-3 w-3"} />
                 Ficha {item.techSheetFilled}/{item.techSheetTotal}
               </span>
               {item.attachmentCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                  <FileStack className="h-3 w-3" />
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 font-semibold rounded-md bg-secondary text-muted-foreground",
+                    compactBoard ? "text-[9px] px-1 py-0.5" : "text-[10px] px-1.5 py-0.5"
+                  )}
+                >
+                  <FileStack className={compactBoard ? "h-2.5 w-2.5" : "h-3 w-3"} />
                   {item.attachmentCount}
                 </span>
               )}
@@ -603,7 +662,11 @@ export default function FactoryClient({
               <div className="flex items-center -space-x-1 shrink-0">
                 {item.responsavelNome && (
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card ${clientColor.swatch} text-[9px] font-bold text-white`}
+                    className={cn(
+                      "flex items-center justify-center rounded-full ring-2 ring-card font-bold text-white",
+                      compactBoard ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[9px]",
+                      clientColor.swatch
+                    )}
                     title={`Responsável: ${item.responsavelNome}`}
                   >
                     {getInitials(item.responsavelNome)}
@@ -611,7 +674,10 @@ export default function FactoryClient({
                 )}
                 {item.ajudanteNome && (
                   <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-card bg-secondary text-[9px] font-bold text-muted-foreground"
+                    className={cn(
+                      "flex items-center justify-center rounded-full ring-2 ring-card bg-secondary font-bold text-muted-foreground",
+                      compactBoard ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[9px]"
+                    )}
                     title={`Ajudante: ${item.ajudanteNome}`}
                   >
                     {getInitials(item.ajudanteNome)}
@@ -627,7 +693,13 @@ export default function FactoryClient({
             }`}
           >
             <div className="overflow-hidden">
-              <div className={`space-y-2.5 pt-2.5 border-t ${clientColor.border}`}>
+              <div
+                className={cn(
+                  "border-t",
+                  clientColor.border,
+                  compactBoard ? "space-y-1.5 pt-1.5" : "space-y-2.5 pt-2.5"
+                )}
+              >
                 <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                   <Users className="h-3 w-3" />
                   Equipe
@@ -658,15 +730,27 @@ export default function FactoryClient({
   };
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col space-y-[var(--space-3)] overflow-hidden">
-      <p className="text-[11px] text-muted-foreground shrink-0 leading-normal">
-        Cômodos do mesmo projeto formam uma <strong className="font-semibold text-foreground">pilha</strong> por etapa.
-        A cor identifica o cliente. Arraste cômodos individualmente; clique para abrir a{" "}
-        <strong className="font-semibold text-foreground">ficha técnica</strong> e detalhes.
-      </p>
+    <div
+      className={cn(
+        "factory-board flex-1 min-h-0 flex flex-col overflow-hidden",
+        compactBoard ? "space-y-2" : "space-y-[var(--space-3)]"
+      )}
+    >
+      {!isFactoryRole && (
+        <p className="factory-intro text-[11px] text-muted-foreground shrink-0 leading-normal">
+          Cômodos do mesmo projeto formam uma <strong className="font-semibold text-foreground">pilha</strong> por etapa.
+          A cor identifica o cliente. Arraste cômodos individualmente; clique para abrir a{" "}
+          <strong className="font-semibold text-foreground">ficha técnica</strong> e detalhes.
+        </p>
+      )}
 
-      <div className="flex-1 min-h-0 overflow-x-auto pb-4 custom-scrollbar">
-        <div className="flex gap-4 items-stretch h-full min-w-max print:flex-col print:h-auto print:min-w-0 print:gap-6">
+      <div className="factory-board-scroll flex-1 min-h-0 overflow-x-auto pb-2 custom-scrollbar">
+        <div
+          className={cn(
+            "flex items-stretch h-full min-w-max print:flex-col print:h-auto print:min-w-0",
+            compactBoard ? "gap-2.5" : "gap-4 print:gap-6"
+          )}
+        >
         {COLUMNS.map((col) => {
           const stacks = stacksByColumn[col.id] ?? [];
           const colItems = stacks.flatMap((stack) => stack.items);
@@ -680,13 +764,20 @@ export default function FactoryClient({
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, col.id)}
-              className="w-72 xl:w-80 shrink-0 flex flex-col h-full bg-slate-50 border border-border rounded-xl overflow-hidden shadow-xs print:h-auto print:w-full"
+              className={cn(
+                "factory-column shrink-0 flex flex-col h-full bg-slate-50 border border-border rounded-xl overflow-hidden shadow-xs print:h-auto print:w-full",
+                compactBoard ? "w-[15.5rem] xl:w-[16.5rem]" : "w-72 xl:w-80"
+              )}
             >
               <div
-                className={`p-3.5 flex items-center justify-between border-b border-border/50 font-bold text-xs uppercase tracking-wider shrink-0 ${col.bg}`}
+                className={cn(
+                  "factory-column-header flex items-center justify-between border-b border-border/50 font-bold uppercase tracking-wider shrink-0",
+                  compactBoard ? "p-2 text-[10px]" : "p-3.5 text-xs",
+                  col.bg
+                )}
               >
                 <span className="flex items-center gap-1.5 min-w-0">
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className={cn("shrink-0", compactBoard ? "h-3.5 w-3.5" : "h-4 w-4")} />
                   <span className="truncate">{col.name}</span>
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -694,7 +785,7 @@ export default function FactoryClient({
                     <button
                       type="button"
                       onClick={() => toggleColumnCollapse(col.id, colItemIds)}
-                      className="p-1 rounded-md bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      className="p-1 min-h-9 min-w-9 inline-flex items-center justify-center rounded-md bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       title={allColCollapsed ? "Expandir todos os cards" : "Recolher todos os cards"}
                     >
                       {allColCollapsed ? (
@@ -710,9 +801,19 @@ export default function FactoryClient({
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 p-3 space-y-3 overflow-y-auto scrollbar-thin">
+              <div
+                className={cn(
+                  "factory-column-body flex-1 min-h-0 overflow-y-auto scrollbar-thin",
+                  compactBoard ? "p-2 space-y-2" : "p-3 space-y-3"
+                )}
+              >
                 {stacks.length === 0 ? (
-                  <div className="h-full min-h-[8rem] flex items-center justify-center text-center p-6 text-muted-foreground text-[10px]">
+                  <div
+                    className={cn(
+                      "h-full flex items-center justify-center text-center text-muted-foreground text-[10px]",
+                      compactBoard ? "min-h-[5rem] p-3" : "min-h-[8rem] p-6"
+                    )}
+                  >
                     Arrastar cômodo para esta fila...
                   </div>
                 ) : (
