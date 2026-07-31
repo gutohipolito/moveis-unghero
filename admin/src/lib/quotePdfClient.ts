@@ -61,19 +61,24 @@ function showCaptureOverlay() {
     "font:600 14px/1.4 system-ui,sans-serif",
     "letter-spacing:0.02em",
   ].join(";");
-  overlay.textContent = "Gerando PDF do link…";
+  overlay.textContent = "Gerando PDF…";
   document.body.appendChild(overlay);
   return overlay;
 }
+
+export type GeneratePrintPdfOptions = {
+  /** Senha de abertura do PDF (ex.: 4 últimos dígitos do celular). */
+  userPassword?: string | null;
+};
 
 /**
  * Gera PDF no layout compacto de impressão (sem alterar a tela visível do usuário).
  * Estilos de captura vão só no clone do html2canvas; a tela fica coberta por overlay.
  */
-export async function generateQuotePdfBlob() {
+export async function generateQuotePdfBlob(options?: GeneratePrintPdfOptions) {
   const element = document.querySelector<HTMLElement>(".print-page");
   if (!element) {
-    throw new Error("Não foi possível localizar o conteúdo do orçamento.");
+    throw new Error("Não foi possível localizar o conteúdo do documento.");
   }
 
   const { jsPDF } = await import("jspdf");
@@ -130,11 +135,25 @@ export async function generateQuotePdfBlob() {
     overlay.remove();
   }
 
+  const userPassword = options?.userPassword?.trim() || undefined;
+  const ownerPassword = userPassword
+    ? `unghero-owner-${userPassword}-${Math.random().toString(36).slice(2, 10)}`
+    : undefined;
+
   const pdf = new jsPDF({
     unit: "mm",
     format: "a4",
     orientation: "portrait",
     compress: true,
+    ...(userPassword
+      ? {
+          encryption: {
+            userPassword,
+            ownerPassword,
+            userPermissions: ["print", "copy"] as const,
+          },
+        }
+      : {}),
   });
 
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -217,4 +236,6 @@ export function downloadPdfBlob(blob: Blob, fileName: string) {
 }
 
 /** Alias genérico — captura qualquer `.print-page` (orçamento, recibo, contrato). */
-export const generatePrintPagePdfBlob = generateQuotePdfBlob;
+export async function generatePrintPagePdfBlob(options?: GeneratePrintPdfOptions) {
+  return generateQuotePdfBlob(options);
+}

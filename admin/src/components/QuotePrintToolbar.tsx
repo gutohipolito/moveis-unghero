@@ -61,10 +61,20 @@ export default function QuotePrintToolbar({
   }, [pdfShareUrl, quoteId]);
 
   async function handleDownloadPdf() {
+    const pin = getPhoneLastFourDigits(clientPhone);
+    if (!pin) {
+      window.alert(
+        "Cadastre o telefone do cliente (com pelo menos 4 dígitos) para gerar o PDF com senha."
+      );
+      return;
+    }
     setPdfBusy(true);
     try {
-      const blob = await generatePrintPagePdfBlob();
+      const blob = await generatePrintPagePdfBlob({ userPassword: pin });
       downloadPdfBlob(blob, `orcamento-${slugifyFileName(clientName)}.pdf`);
+      window.alert(
+        `PDF baixado com senha.\n\nSenha: ${pin}\n(os 4 últimos dígitos do celular do cliente)`
+      );
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Não foi possível gerar o PDF.";
@@ -164,7 +174,11 @@ export default function QuotePrintToolbar({
           type="button"
           onClick={() => void handleDownloadPdf()}
           disabled={anyBusy}
-          title="Baixar arquivo PDF"
+          title={
+            getPhoneLastFourDigits(clientPhone)
+              ? "Baixar PDF protegido com a senha dos 4 últimos dígitos do celular"
+              : "Cadastre o telefone do cliente para baixar o PDF com senha"
+          }
           className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
           {pdfBusy ? (
@@ -188,7 +202,7 @@ export default function QuotePrintToolbar({
         </Button>
       </div>
       <p className="max-w-[380px] text-right text-[10px] text-neutral-400 leading-snug">
-        Baixar PDF gera o arquivo no computador. Imprimir: A4 · margens Nenhuma · escala 100%.
+        Baixar PDF: arquivo com senha (4 últimos dígitos do celular). Imprimir: A4 · margens Nenhuma.
       </p>
     </div>
   );
