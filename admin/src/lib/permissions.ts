@@ -89,6 +89,12 @@ export function isOpsLimitedRole(role: Role | string | null | undefined): boolea
   return role === "PROJETISTA" || role === "PRODUCAO";
 }
 
+/** Tela inicial após login / ícone do PWA, por cargo. */
+export function homePathForRole(role: Role | string | null | undefined): string {
+  if (role === "PRODUCAO" || role === "PROJETISTA") return "/factory";
+  return "/crm";
+}
+
 /**
  * Módulos que o VIEWER nunca acessa (mesmo se marcados na matriz).
  * Cadastros, financeiro e logística ficam fora do escopo de visualização.

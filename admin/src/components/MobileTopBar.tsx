@@ -10,6 +10,7 @@ import SidebarToggle from "@/components/SidebarToggle";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 import { usePermissions } from "@/context/PermissionsContext";
+import { homePathForRole } from "@/lib/permissions";
 
 interface MobileTopBarProps {
   user: {
@@ -33,10 +34,11 @@ export default function MobileTopBar({
 }: MobileTopBarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isOpsLimited } = usePermissions();
+  const homeHref = homePathForRole(user.cargo);
 
   return (
     <header className="mobile-topbar md:hidden">
-      <Link href="/crm" className="mobile-topbar-brand" aria-label="Móveis Unghero">
+      <Link href={homeHref} className="mobile-topbar-brand" aria-label="Móveis Unghero">
         <img
           src="/logo.png"
           alt=""

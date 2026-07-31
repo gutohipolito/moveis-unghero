@@ -9,6 +9,7 @@ import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { useTabletLayout } from "@/hooks/useTabletLayout";
+import { homePathForRole } from "@/lib/permissions";
 
 interface DashboardLayoutWrapperProps {
   children: React.ReactNode;
@@ -31,6 +32,7 @@ export default function DashboardLayoutWrapper({
 }: DashboardLayoutWrapperProps) {
   const { isTablet, isCollapsed, toggleCollapsed } = useTabletLayout();
   const { allCollapsed, collapseAll, expandAll } = useSidebarSections();
+  const homeHref = homePathForRole(user.cargo);
 
   return (
     <div
@@ -53,7 +55,7 @@ export default function DashboardLayoutWrapper({
             {isCollapsed ? (
               <div className="flex flex-col items-center gap-1.5">
                 <Link
-                  href="/crm"
+                  href={homeHref}
                   aria-label="Móveis Unghero"
                   className="h-9 w-9 rounded-lg overflow-hidden shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
@@ -74,7 +76,7 @@ export default function DashboardLayoutWrapper({
               </div>
             ) : (
               <>
-                <Link href="/crm" aria-label="Móveis Unghero" className="flex items-center">
+                <Link href={homeHref} aria-label="Móveis Unghero" className="flex items-center">
                   <img
                     src="/logo.png"
                     alt="Móveis Unghero"

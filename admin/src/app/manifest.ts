@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Sistema - Móveis Unghero",
     short_name: "Sistema MU",
     description: "CRM, fábrica e gestão operacional da Móveis Unghero",
-    start_url: "/crm",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     display_override: ["fullscreen", "standalone", "minimal-ui"],

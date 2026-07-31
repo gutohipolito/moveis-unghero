@@ -27,7 +27,7 @@ export default function LoginPage() {
       const data = await res.json().catch(() => null);
 
       if (res.ok && data) {
-        window.location.href = "/crm";
+        window.location.href = "/";
       } else if (res.status === 429) {
         showError(
           "Muitas tentativas",

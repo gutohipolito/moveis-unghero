@@ -1,4 +1,4 @@
-const CACHE_VERSION = "mu-admin-v7";
+const CACHE_VERSION = "mu-admin-v8";
 
 self.addEventListener("push", (event) => {
   let payload = {
@@ -8,7 +8,7 @@ self.addEventListener("push", (event) => {
     badge: "/pwa-icon/192",
     tag: "mu-push",
     requireInteraction: false,
-    data: { href: "/crm", notificationId: "mu-push" },
+    data: { href: "/", notificationId: "mu-push" },
   };
 
   try {
@@ -36,7 +36,7 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_VERSION).then((cache) =>
-      cache.addAll(["/crm", "/pwa-icon/192", "/pwa-icon/512"]).catch(() => undefined)
+      cache.addAll(["/", "/pwa-icon/192", "/pwa-icon/512"]).catch(() => undefined)
     )
   );
 });
@@ -52,7 +52,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const href = event.notification.data?.href || "/crm";
+  const href = event.notification.data?.href || "/";
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

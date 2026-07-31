@@ -167,16 +167,18 @@ export async function proxy(request: NextRequest) {
   if (isPublicPath(pathname)) {
     const sessionToken = getSessionToken(request);
     if (sessionToken && pathname === "/login") {
-      return NextResponse.redirect(new URL("/crm", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
   }
 
   if (pathname === "/") {
     const sessionToken = getSessionToken(request);
-    return NextResponse.redirect(
-      new URL(sessionToken ? "/crm" : "/login", request.url)
-    );
+    if (!sessionToken) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    // Deixa a page.tsx escolher /factory ou /crm conforme o cargo.
+    return NextResponse.next();
   }
 
   if (pathname.startsWith("/cliente/dashboard")) {

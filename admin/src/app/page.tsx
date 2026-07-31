@@ -1,7 +1,9 @@
-import { getCachedSession } from "@/lib/session";
+import { getAuthContext } from "@/lib/auth-guard";
+import { homePathForRole } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
-  const session = await getCachedSession();
-  redirect(session?.user ? "/crm" : "/login");
+  const auth = await getAuthContext();
+  if (!auth) redirect("/login");
+  redirect(homePathForRole(auth.cargo));
 }
