@@ -11,6 +11,8 @@ export type ConfTecnicaWhatsAppTarget = {
   projectId: string;
   clientName: string;
   clientPhone: string;
+  /** Nomes dos responsáveis (pré-preenche “Quem vai”). */
+  responsaveis?: string[];
 };
 
 type Props = {
@@ -21,27 +23,40 @@ type Props = {
 export default function ConfTecnicaWhatsAppDialog({ target, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const [phone, setPhone] = useState("");
+  const [horario, setHorario] = useState("");
+  const [quemVai, setQuemVai] = useState("");
 
   useEffect(() => {
     if (!target) {
       setCopied(false);
       setPhone("");
+      setHorario("");
+      setQuemVai("");
       return;
     }
     setCopied(false);
     setPhone(target.clientPhone || "");
+    setHorario("");
+    setQuemVai(
+      (target.responsaveis || []).filter(Boolean).join(" e ") || ""
+    );
   }, [target]);
 
   const message = useMemo(
     () =>
       target
-        ? buildConfTecnicaWhatsAppMessage({ clientName: target.clientName })
+        ? buildConfTecnicaWhatsAppMessage({
+            clientName: target.clientName,
+            horario,
+            quemVai,
+          })
         : "",
-    [target]
+    [target, horario, quemVai]
   );
 
   const phoneReady = Boolean(formatPhoneForWhatsApp(phone));
   const whatsappUrl = phoneReady ? buildWhatsAppUrl(phone, message) : "";
+  const detailsReady = Boolean(horario.trim() && quemVai.trim());
 
   async function handleCopy() {
     if (!message) return;
@@ -64,24 +79,61 @@ export default function ConfTecnicaWhatsAppDialog({ target, onClose }: Props) {
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-bold tracking-tight text-foreground">
-            Agendar conferência técnica?
+            Lembrete — visita de conferência técnica
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             {target
-              ? `${target.clientName} entrou em Conf. Técnica. Quer enviar no WhatsApp pedindo datas para a visita?`
+              ? `Preencha horário e quem vai na visita de ${target.clientName}. O WhatsApp usa o rótulo em negrito e o valor na linha de baixo.`
               : ""}
           </p>
+        </div>
+
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-3.5 space-y-3">
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-foreground">
+              Horário marcado
+            </label>
+            <input
+              type="text"
+              value={horario}
+              onChange={(e) => setHorario(e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+              placeholder="Ex.: Sexta, 15/08 às 14h"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Na mensagem: <span className="font-semibold">*Horário marcado:*</span>{" "}
+              e o texto na linha seguinte.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-foreground">
+              Quem vai
+            </label>
+            <input
+              type="text"
+              value={quemVai}
+              onChange={(e) => setQuemVai(e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+              placeholder="Ex.: Ana (projetista) e Carlos"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Na mensagem: <span className="font-semibold">*Quem vai:*</span> e o
+              texto na linha seguinte.
+            </p>
+          </div>
         </div>
 
         <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <MessageCircle className="h-4 w-4 text-primary" />
-            Mensagem pré-pronta
+            Prévia da mensagem
           </div>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            Texto pronto para só encaminhar. Dica: confirme se alguém que conhece o
-            projeto estará no local e se há restrição de acesso ou estacionamento.
-          </p>
+          {!detailsReady ? (
+            <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded-lg px-3 py-2">
+              Preencha horário e quem vai para montar o lembrete completo.
+            </p>
+          ) : null}
           <pre className="text-[11px] whitespace-pre-wrap rounded-lg border border-border bg-background p-3 max-h-52 overflow-y-auto text-foreground leading-relaxed">
             {message}
           </pre>
@@ -90,6 +142,7 @@ export default function ConfTecnicaWhatsAppDialog({ target, onClose }: Props) {
             variant="outline"
             size="sm"
             onClick={handleCopy}
+            disabled={!detailsReady}
             className="text-xs font-bold gap-1.5"
           >
             {copied ? (
@@ -121,7 +174,7 @@ export default function ConfTecnicaWhatsAppDialog({ target, onClose }: Props) {
             className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
             placeholder="(54) 99999-9999"
           />
-          {whatsappUrl ? (
+          {whatsappUrl && detailsReady ? (
             <a
               href={whatsappUrl}
               target="_blank"
@@ -133,7 +186,9 @@ export default function ConfTecnicaWhatsAppDialog({ target, onClose }: Props) {
             </a>
           ) : (
             <Button type="button" disabled size="sm" className="text-xs font-bold">
-              Informe o telefone
+              {!detailsReady
+                ? "Preencha horário e quem vai"
+                : "Informe o telefone"}
             </Button>
           )}
         </div>

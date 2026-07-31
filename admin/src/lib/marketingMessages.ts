@@ -30,11 +30,11 @@ export const MARKETING_MESSAGES: MarketingMessage[] = [
   },
   {
     id: "conf-tecnica-agendar",
-    title: "Agendar conferência técnica",
+    title: "Lembrete — conferência técnica",
     description:
-      "Após o card entrar em Conf. Técnica: pede datas e horários para a visita de validação no local.",
+      "Confirma horário marcado e quem vai na visita técnica (rótulos em negrito, um dado por linha).",
     category: "Funil comercial",
-    tip: "Confirme se alguém que conhece o projeto estará presente e se há restrição de acesso ou estacionamento.",
+    tip: "No CRM, ao entrar em Conf. Técnica, o formulário pede horário e responsáveis antes de abrir o WhatsApp.",
     build: (options) => buildConfTecnicaWhatsAppMessage(options),
   },
   {

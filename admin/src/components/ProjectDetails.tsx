@@ -574,6 +574,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         projectId: project.id,
         clientName: project.client.nome,
         clientPhone: project.client.telefone || "",
+        responsaveis: [
+          project.conf_tecnica_resp1Nome,
+          project.conf_tecnica_resp2Nome,
+        ].filter((name): name is string => Boolean(name)),
       });
     }
   };
