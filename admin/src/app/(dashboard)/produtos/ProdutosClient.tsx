@@ -13,6 +13,7 @@ import {
 } from "@/lib/zenAcabamentos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { usePrivacy } from "@/context/PrivacyContext";
+import { usePermissions } from "@/context/PermissionsContext";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import { Card } from "@/components/ui/card";
@@ -233,6 +234,8 @@ export default function ProdutosClient({
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const { privacyMode } = usePrivacy();
+  const { role, isReadOnly } = usePermissions();
+  const canManageProducts = !isReadOnly && role !== "PRODUCAO";
 
   const [products, setProducts] = useState(initialProducts);
   const [searchQuery, setSearchQuery] = useState("");
@@ -615,6 +618,7 @@ export default function ProdutosClient({
           </p>
         </div>
 
+        {canManageProducts ? (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
           <Button
             type="button"
@@ -644,6 +648,7 @@ export default function ProdutosClient({
             <Plus className="h-4.5 w-4.5" /> Novo produto
           </Button>
         </div>
+        ) : null}
       </div>
 
       <div className="space-y-3">

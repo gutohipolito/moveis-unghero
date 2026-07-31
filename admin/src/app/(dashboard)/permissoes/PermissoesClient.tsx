@@ -7,6 +7,7 @@ import {
   CONFIGURABLE_MODULES,
   EDITABLE_ROLES,
   ROLE_LABELS,
+  PRODUCAO_BLOCKED_MODULES,
   VIEWER_BLOCKED_MODULES,
   getDefaultConfigurableModules,
 } from "@/lib/permissions";
@@ -52,6 +53,7 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
 
   function toggle(role: Role, key: string) {
     if (role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(key)) return;
+    if (role === "PRODUCAO" && PRODUCAO_BLOCKED_MODULES.has(key)) return;
     setSelected((prev) => {
       const next = new Set(prev[role]);
       if (next.has(key)) next.delete(key);
@@ -64,7 +66,9 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
 
   function setAll(role: Role, on: boolean) {
     const keys = CONFIGURABLE_MODULES.map((m) => m.key).filter(
-      (k) => !(role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(k))
+      (k) =>
+        !(role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(k)) &&
+        !(role === "PRODUCAO" && PRODUCAO_BLOCKED_MODULES.has(k))
     );
     setSelected((prev) => ({
       ...prev,
@@ -163,7 +167,8 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
                         {mods.map((mod) => {
                           const on = selected[role].has(mod.key);
                           const blocked =
-                            role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(mod.key);
+                            (role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(mod.key)) ||
+                            (role === "PRODUCAO" && PRODUCAO_BLOCKED_MODULES.has(mod.key));
                           return (
                             <button
                               key={mod.key}
@@ -172,7 +177,9 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
                               disabled={blocked}
                               title={
                                 blocked
-                                  ? "Bloqueado para contas somente leitura"
+                                  ? role === "PRODUCAO"
+                                    ? "Bloqueado para o cargo Fábrica"
+                                    : "Bloqueado para contas somente leitura"
                                   : undefined
                               }
                               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border text-left transition-all ${

@@ -114,18 +114,22 @@ const OPS_BASE_MODULES = [
   "chamados",
   "produtos",
   "estoque",
-  "parceiros",
   "logistica",
   "clientes",
   "crm",
 ] as const;
 
 /**
+ * Módulos que a Fábrica (Marceneiro) nunca acessa, mesmo se marcados na matriz.
+ */
+export const PRODUCAO_BLOCKED_MODULES = new Set(["parceiros"]);
+
+/**
  * Defaults por cargo quando a matriz ainda não tem entrada para o role.
  * COMERCIAL/FINANCEIRO sem entrada continuam com todos os módulos configuráveis.
  */
 export const ROLE_DEFAULT_MODULES: Partial<Record<Role, string[]>> = {
-  PROJETISTA: [...OPS_BASE_MODULES, "marketing"],
+  PROJETISTA: [...OPS_BASE_MODULES, "parceiros", "marketing"],
   PRODUCAO: [...OPS_BASE_MODULES],
   VIEWER: [...VIEWER_DEFAULT_MODULES],
 };
@@ -169,6 +173,10 @@ export function resolveAllowedModules(
 
   if (role === "VIEWER") {
     modules = modules.filter((k) => !VIEWER_BLOCKED_MODULES.has(k));
+  }
+
+  if (role === "PRODUCAO") {
+    modules = modules.filter((k) => !PRODUCAO_BLOCKED_MODULES.has(k));
   }
 
   const extras: string[] = [];

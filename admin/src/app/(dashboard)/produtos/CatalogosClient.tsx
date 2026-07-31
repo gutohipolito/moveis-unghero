@@ -13,6 +13,7 @@ import {
 } from "@/lib/productCatalogs";
 import { resolveCatalogPublicUrl } from "@/lib/catalogShare";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { usePermissions } from "@/context/PermissionsContext";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -115,6 +116,8 @@ export default function CatalogosClient({
 }: CatalogosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
+  const { role, isReadOnly } = usePermissions();
+  const canManageCatalogs = !isReadOnly && role !== "PRODUCAO";
 
   const [catalogs, setCatalogs] = useState(initialCatalogs);
   const [searchQuery, setSearchQuery] = useState("");
@@ -463,6 +466,7 @@ export default function CatalogosClient({
           </p>
         </div>
 
+        {canManageCatalogs ? (
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button
             type="button"
@@ -485,6 +489,7 @@ export default function CatalogosClient({
             <Plus className="h-4.5 w-4.5" /> Novo catálogo
           </Button>
         </div>
+        ) : null}
       </div>
 
       {showingSuppliers ? (

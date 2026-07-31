@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import {
   CONFIGURABLE_MODULE_KEYS,
   EDITABLE_ROLES,
+  PRODUCAO_BLOCKED_MODULES,
   VIEWER_BLOCKED_MODULES,
   resolveConfigurableModules,
   type CompanyPermissions,
@@ -61,6 +62,7 @@ export async function updateRolePermissionsAction(
       moduleKeys.filter((k) => {
         if (!CONFIGURABLE_MODULE_KEYS.includes(k)) return false;
         if (role === "VIEWER" && VIEWER_BLOCKED_MODULES.has(k)) return false;
+        if (role === "PRODUCAO" && PRODUCAO_BLOCKED_MODULES.has(k)) return false;
         return true;
       })
     )
