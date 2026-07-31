@@ -63,11 +63,13 @@ export type ProjectDetailsPayload = {
       id: string;
       descricao: string;
       quantidade: number;
+      tipo_custo?: string;
       valor_unitario: number;
       valor_total: number;
       status: string;
       aprovado_em: string | null;
       subitens?: string[];
+      showcase_product_id?: string | null;
     }>;
   }>;
   tasks: Array<{
@@ -125,11 +127,13 @@ const projectInclude = {
           id: true,
           descricao: true,
           quantidade: true,
+          tipo_custo: true,
           valor_unitario: true,
           valor_total: true,
           status: true,
           aprovado_em: true,
           subitens: true,
+          showcase_product_id: true,
         },
       },
     },
@@ -223,6 +227,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
         id: item.id,
         descricao: item.descricao,
         quantidade: item.quantidade,
+        tipo_custo: item.tipo_custo,
         valor_unitario: Number(item.valor_unitario),
         valor_total: Number(item.valor_total),
         status: item.status,
@@ -230,6 +235,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
         subitens: Array.isArray(item.subitens)
           ? item.subitens.filter((entry): entry is string => typeof entry === "string")
           : [],
+        showcase_product_id: item.showcase_product_id ?? null,
       })),
     })),
     tasks: project.tasks.map((t) => ({

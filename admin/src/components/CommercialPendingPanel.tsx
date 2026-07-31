@@ -9,7 +9,6 @@ import {
   type CommercialPendingQuote,
 } from "@/app/actions/quotes";
 import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
-import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -34,7 +33,6 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
   const [quotes, setQuotes] = useState<CommercialPendingQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvalQuote, setApprovalQuote] = useState<CommercialPendingQuote | null>(null);
-  const [revisionQuote, setRevisionQuote] = useState<CommercialPendingQuote | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -158,15 +156,16 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                   Registrar aprovação
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-amber-300 text-amber-800 h-8"
-                  onClick={() => setRevisionQuote(q)}
-                >
-                  <PencilLine className="h-3.5 w-3.5 mr-1.5" />
-                  Revisar
-                </Button>
+                <Link href={`/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-300 text-amber-800 h-8"
+                  >
+                    <PencilLine className="h-3.5 w-3.5 mr-1.5" />
+                    Editar proposta
+                  </Button>
+                </Link>
                 <Link href={`/quotes/${q.id}/print`} target="_blank">
                   <Button size="sm" variant="outline" className="h-8">
                     <Printer className="h-3.5 w-3.5" />
@@ -200,6 +199,13 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
               }
             : null
         }
+        onRequestEdit={
+          approvalQuote
+            ? () => {
+                window.location.href = `/projects/${approvalQuote.project_id}?tab=quotes&editQuote=${approvalQuote.id}`;
+              }
+            : undefined
+        }
         onApproved={({ remainingPending, valorAprovado }) => {
           onNotify?.(
             "success",
@@ -208,26 +214,6 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
               ? `R$ ${valorAprovado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} aprovados. Ainda restam ${remainingPending} item(ns).`
               : "Todos os itens pendentes foram aprovados."
           );
-          void load();
-        }}
-      />
-      <QuotePendingRevisionDialog
-        open={!!revisionQuote}
-        onClose={() => setRevisionQuote(null)}
-        quote={
-          revisionQuote
-            ? {
-                id: revisionQuote.id,
-                project_id: revisionQuote.project_id,
-                versao: revisionQuote.versao,
-                validade: revisionQuote.validade,
-                clientName: revisionQuote.project.client.nome,
-                items: revisionQuote.items,
-              }
-            : null
-        }
-        onRevised={() => {
-          onNotify?.("success", "Valores revisados", "Itens pendentes atualizados.");
           void load();
         }}
       />

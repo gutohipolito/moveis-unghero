@@ -223,6 +223,439 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
   }
 }
 
+const ITEM_TYPES: ItemType[] = [
+  "MOVEIS_MDF",
+  "FERRAGENS_ESPECIAIS",
+  "MAO_DE_OBRA",
+  "OUTROS",
+];
+
+function asItemType(value: string | undefined | null): ItemType {
+  if (value && ITEM_TYPES.includes(value as ItemType)) return value as ItemType;
+  return "MOVEIS_MDF";
+}
+
+function normalizeQuoteSubitens(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean);
+}
+
+function sameSubitens(a: unknown, b: unknown): boolean {
+  const left = normalizeQuoteSubitens(a);
+  const right = normalizeQuoteSubitens(b);
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => item === right[index]);
+}
+
+export type UpdateQuoteInput = {
+  subtotal: number;
+  desconto: number;
+  valor_final: number;
+  validade: string;
+  observacoes?: string;
+  template_tipo?: string;
+  partnerId?: string | null;
+  items: Array<{
+    id?: string;
+    descricao: string;
+    quantidade: number;
+    tipo_custo: ItemType;
+    valor_unitario: number;
+    valor_total: number;
+    showcase_product_id?: string | null;
+    subitens?: string[];
+  }>;
+};
+
+/** Atualiza a mesma versão do orçamento (itens pendentes), sem criar nova proposta. */
+export async function updateExistingQuote(
+  projectId: string,
+  quoteId: string,
+  data: UpdateQuoteInput
+) {
+  const auth = await getWriteAccess("quotes");
+  if (!auth) {
+    return { success: false, error: "Não autenticado" };
+  }
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  if (!data.items?.length) {
+    return { success: false, error: "Inclua ao menos um item na proposta." };
+  }
+
+  let partnerId: string | null = null;
+  if (data.partnerId) {
+    const partner = await prisma.professionalPartner.findFirst({
+      where: { id: data.partnerId, company_id: auth.companyId },
+      select: { id: true },
+    });
+    partnerId = partner?.id ?? null;
+  }
+
+  const showcaseIds = Array.from(
+    new Set(
+      data.items
+        .map((item) => item.showcase_product_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  const validShowcaseIds = new Set<string>();
+  if (showcaseIds.length > 0) {
+    const products = await prisma.showcaseProduct.findMany({
+      where: { id: { in: showcaseIds }, company_id: auth.companyId },
+      select: { id: true },
+    });
+    products.forEach((p) => validShowcaseIds.add(p.id));
+  }
+
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, project_id: projectId },
+      select: {
+        id: true,
+        versao: true,
+        template_tipo: true,
+        desconto: true,
+        items: {
+          select: {
+            id: true,
+            status: true,
+            descricao: true,
+            quantidade: true,
+            tipo_custo: true,
+            valor_unitario: true,
+            valor_total: true,
+            subitens: true,
+            showcase_product_id: true,
+            environment: { select: { id: true } },
+          },
+        },
+      },
+    });
+    if (!quote) {
+      return { success: false, error: "Orçamento não encontrado" };
+    }
+
+    const frozen = quote.items.filter((i) => i.status !== "PENDENTE");
+    const pending = quote.items.filter((i) => i.status === "PENDENTE");
+    const pendingById = new Map(pending.map((i) => [i.id, i]));
+    const frozenIds = new Set(frozen.map((i) => i.id));
+
+    for (const item of data.items) {
+      if (item.id && frozenIds.has(item.id)) continue;
+      if (!item.descricao?.trim()) {
+        return { success: false, error: "Todo item precisa de descrição (cômodo)." };
+      }
+      if (item.quantidade < 1 || item.valor_unitario < 0 || item.valor_total < 0) {
+        return { success: false, error: "Valores ou quantidades inválidos." };
+      }
+    }
+
+    const toProcess = data.items.filter((item) => {
+      if (!item.id) return true;
+      if (pendingById.has(item.id)) return true;
+      if (frozenIds.has(item.id)) return false;
+      return true;
+    });
+
+    if (toProcess.length === 0 && frozen.length === 0) {
+      return { success: false, error: "Inclua ao menos um item na proposta." };
+    }
+
+    const actorId = await ensureActorUserId();
+    const templateTipo = normalizeQuoteTemplateId(
+      data.template_tipo ?? quote.template_tipo
+    );
+
+    if (frozen.length > 0 && templateTipo !== quote.template_tipo) {
+      return {
+        success: false,
+        error: "Não é possível mudar o modelo da proposta após itens aprovados/recusados.",
+      };
+    }
+
+    const changedLabels: string[] = [];
+    let createdCount = 0;
+    let removedCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      const keepPendingIds = new Set(
+        toProcess
+          .map((i) => i.id)
+          .filter((id): id is string => typeof id === "string" && pendingById.has(id))
+      );
+
+      for (const current of pending) {
+        if (keepPendingIds.has(current.id)) continue;
+        if (current.environment?.id) {
+          await tx.environment.update({
+            where: { id: current.environment.id },
+            data: { quote_item_id: null },
+          });
+        }
+        await tx.quoteItem.delete({ where: { id: current.id } });
+        removedCount += 1;
+      }
+
+      for (const upd of toProcess) {
+        const newUnit = Math.round(upd.valor_unitario * 100) / 100;
+        const newTotal = Math.round(upd.valor_total * 100) / 100;
+        const newQty = Math.round(upd.quantidade);
+        const newDescricao = upd.descricao.trim();
+        const newSubitens = normalizeQuoteSubitens(upd.subitens);
+        const newTipo = asItemType(upd.tipo_custo);
+        const showcaseId =
+          upd.showcase_product_id && validShowcaseIds.has(upd.showcase_product_id)
+            ? upd.showcase_product_id
+            : null;
+
+        if (upd.id && pendingById.has(upd.id)) {
+          const current = pendingById.get(upd.id)!;
+          const priceChanged =
+            Number(current.valor_unitario) !== newUnit ||
+            Number(current.valor_total) !== newTotal;
+          const qtyChanged = current.quantidade !== newQty;
+          const descChanged = current.descricao !== newDescricao;
+          const detailsChanged = !sameSubitens(current.subitens, newSubitens);
+          const tipoChanged = current.tipo_custo !== newTipo;
+          const showcaseChanged =
+            (current.showcase_product_id || null) !== showcaseId;
+
+          if (
+            priceChanged ||
+            qtyChanged ||
+            descChanged ||
+            detailsChanged ||
+            tipoChanged ||
+            showcaseChanged
+          ) {
+            await tx.quoteItemPriceHistory.create({
+              data: {
+                id: randomUUID(),
+                quote_item_id: current.id,
+                valor_unitario_anterior: current.valor_unitario,
+                valor_total_anterior: current.valor_total,
+                valor_unitario_novo: newUnit,
+                valor_total_novo: newTotal,
+                descricao_anterior: descChanged ? current.descricao : null,
+                descricao_nova: descChanged ? newDescricao : null,
+                quantidade_anterior: qtyChanged ? current.quantidade : null,
+                quantidade_nova: qtyChanged ? newQty : null,
+                subitens_anterior: detailsChanged
+                  ? normalizeQuoteSubitens(current.subitens)
+                  : undefined,
+                subitens_novo: detailsChanged ? newSubitens : undefined,
+                motivo: "Edição completa da proposta (mesma versão)",
+                alterado_por_id: actorId,
+              },
+            });
+
+            await tx.quoteItem.update({
+              where: { id: current.id },
+              data: {
+                descricao: newDescricao,
+                quantidade: newQty,
+                tipo_custo: newTipo,
+                valor_unitario: newUnit,
+                valor_total: newTotal,
+                subitens: newSubitens,
+                showcase_product_id: showcaseId,
+              },
+            });
+
+            if (descChanged && current.environment?.id) {
+              await tx.environment.update({
+                where: { id: current.environment.id },
+                data: {
+                  nome: newDescricao,
+                  tipo: inferEnvironmentTypeFromName(newDescricao),
+                },
+              });
+            }
+
+            changedLabels.push(newDescricao);
+          }
+          continue;
+        }
+
+        await tx.quoteItem.create({
+          data: {
+            id: randomUUID(),
+            quote_id: quoteId,
+            descricao: newDescricao,
+            quantidade: newQty,
+            tipo_custo: newTipo,
+            valor_unitario: newUnit,
+            valor_total: newTotal,
+            subitens: newSubitens.length > 0 ? newSubitens : undefined,
+            showcase_product_id: showcaseId,
+            status: "PENDENTE",
+          },
+        });
+        createdCount += 1;
+        changedLabels.push(newDescricao);
+      }
+
+      const refreshed = await tx.quoteItem.findMany({
+        where: { quote_id: quoteId },
+        select: { valor_total: true },
+      });
+      const subtotal = refreshed.reduce((sum, i) => sum + Number(i.valor_total), 0);
+      const desconto = Math.min(Math.max(0, data.desconto), subtotal);
+      const valorFinal = computeApprovalValue(subtotal, desconto);
+
+      await tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          template_tipo: templateTipo,
+          subtotal,
+          desconto,
+          valor_final: valorFinal,
+          validade: parseISODateOnlyBrazil(data.validade),
+          observacoes: data.observacoes || "",
+          partner_id: partnerId,
+        },
+      });
+    });
+
+    const parts = [
+      changedLabels.length
+        ? `itens alterados: ${Array.from(new Set(changedLabels)).join(", ")}`
+        : null,
+      createdCount > 0 ? `${createdCount} item(ns) novo(s)` : null,
+      removedCount > 0 ? `${removedCount} item(ns) removido(s)` : null,
+    ].filter(Boolean);
+
+    await prisma.timeline.create({
+      data: {
+        project_id: projectId,
+        acao: `Proposta comercial v${quote.versao} editada (mesma versão)${
+          parts.length ? ` — ${parts.join("; ")}` : ""
+        }.`,
+        interno_sotamente: true,
+        user_id: actorId,
+      },
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/quotes");
+    revalidatePath("/crm");
+
+    return {
+      success: true,
+      data: {
+        quote: {
+          id: quoteId,
+          project_id: projectId,
+          versao: quote.versao,
+        },
+        version: quote.versao,
+      },
+    };
+  } catch (error) {
+    console.error("Erro na Server Action updateExistingQuote:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao editar orçamento",
+    };
+  }
+}
+
+export async function getQuoteForEdit(quoteId: string) {
+  const auth = await getWriteAccess("quotes");
+  if (!auth) {
+    return { success: false, error: "Não autenticado" as const };
+  }
+
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: {
+        id: quoteId,
+        project: { client: { company_id: auth.companyId } },
+      },
+      select: {
+        id: true,
+        project_id: true,
+        versao: true,
+        template_tipo: true,
+        desconto: true,
+        subtotal: true,
+        valor_final: true,
+        validade: true,
+        observacoes: true,
+        partner_id: true,
+        items: {
+          orderBy: { id: "asc" },
+          select: {
+            id: true,
+            descricao: true,
+            quantidade: true,
+            tipo_custo: true,
+            valor_unitario: true,
+            valor_total: true,
+            status: true,
+            subitens: true,
+            showcase_product_id: true,
+          },
+        },
+      },
+    });
+    if (!quote) {
+      return { success: false, error: "Orçamento não encontrado" as const };
+    }
+
+    const hasPending = quote.items.some((i) => i.status === "PENDENTE");
+    if (!hasPending) {
+      return {
+        success: false,
+        error: "Esta proposta não tem itens pendentes para editar." as const,
+      };
+    }
+
+    return {
+      success: true as const,
+      data: {
+        id: quote.id,
+        project_id: quote.project_id,
+        versao: quote.versao,
+        template_tipo: quote.template_tipo,
+        desconto: Number(quote.desconto),
+        subtotal: Number(quote.subtotal),
+        valor_final: Number(quote.valor_final),
+        validade: quote.validade.toISOString(),
+        observacoes: quote.observacoes || "",
+        partner_id: quote.partner_id,
+        items: quote.items.map((item) => ({
+          id: item.id,
+          descricao: item.descricao,
+          quantidade: item.quantidade,
+          tipo_custo: item.tipo_custo,
+          valor_unitario: Number(item.valor_unitario),
+          valor_total: Number(item.valor_total),
+          status: item.status,
+          subitens: normalizeQuoteSubitens(item.subitens),
+          showcase_product_id: item.showcase_product_id,
+        })),
+      },
+    };
+  } catch (error) {
+    console.error("Erro na Server Action getQuoteForEdit:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao carregar orçamento",
+    };
+  }
+}
+
 // Registra aprovação (total ou parcial) de itens do orçamento
 export async function approveQuote(
   projectId: string,
@@ -573,20 +1006,6 @@ export async function rejectQuoteItems(
       error: error instanceof Error ? error.message : "Erro ao recusar itens",
     };
   }
-}
-
-function normalizeQuoteSubitens(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-    .filter(Boolean);
-}
-
-function sameSubitens(a: unknown, b: unknown): boolean {
-  const left = normalizeQuoteSubitens(a);
-  const right = normalizeQuoteSubitens(b);
-  if (left.length !== right.length) return false;
-  return left.every((item, index) => item === right[index]);
 }
 
 export async function revisePendingQuoteItems(input: {

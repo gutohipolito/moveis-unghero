@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { createQuote, getProjectBriefingAction, type ItemType } from "@/app/actions/quotes";
+import { createQuote, updateExistingQuote, getProjectBriefingAction, type ItemType } from "@/app/actions/quotes";
 import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
 import { listShowcaseProducts, type ShowcaseProductDTO } from "@/app/actions/produtos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -53,7 +53,30 @@ interface QuoteBuilderProps {
   onSuccess: (newQuote: any) => void;
   onCancel: () => void;
   embedded?: boolean;
+  /** Quando informado, edita a mesma versão em vez de criar outra. */
+  editingQuote?: QuoteBuilderEditingQuote | null;
 }
+
+export type QuoteBuilderEditingQuote = {
+  id: string;
+  versao: number;
+  template_tipo?: string | null;
+  desconto: number;
+  validade: string;
+  observacoes?: string | null;
+  partner_id?: string | null;
+  items: Array<{
+    id: string;
+    descricao: string;
+    quantidade: number;
+    tipo_custo?: string | null;
+    valor_unitario: number;
+    valor_total: number;
+    status?: string | null;
+    subitens?: string[] | null;
+    showcase_product_id?: string | null;
+  }>;
+};
 
 interface QuoteItemInput {
   id: string;
@@ -67,11 +90,21 @@ interface QuoteItemInput {
   precoCusto?: number;
   markup?: number;
   subitens?: string[];
+  locked?: boolean;
+  status?: string | null;
 }
 
-export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel, embedded = false }: QuoteBuilderProps) {
+export default function QuoteBuilder({
+  projectId,
+  companyId,
+  onSuccess,
+  onCancel,
+  embedded = false,
+  editingQuote = null,
+}: QuoteBuilderProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError } = dialog;
+  const isEditing = Boolean(editingQuote?.id);
   const [templateTipo, setTemplateTipo] = useState<QuoteTemplateId>("BASICO");
   const [observacoes, setObservacoes] = useState("");
   const [validade, setValidade] = useState(() => {
@@ -95,6 +128,38 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
   const [activeBuilderTab, setActiveBuilderTab] = useState<"items" | "briefing">("items");
   const hasBriefing = Boolean(briefingData);
   const isComparative = isComparativeTemplate(templateTipo);
+  const hasLockedItems = items.some((item) => item.locked);
+
+  useEffect(() => {
+    if (!editingQuote) return;
+    const tpl = (editingQuote.template_tipo || "BASICO") as QuoteTemplateId;
+    setTemplateTipo(
+      QUOTE_TEMPLATE_IDS.includes(tpl) ? tpl : "BASICO"
+    );
+    setObservacoes(editingQuote.observacoes || "");
+    setValidade(toISODateBR(editingQuote.validade));
+    setDesconto(Number(editingQuote.desconto) || 0);
+    setPartnerId(editingQuote.partner_id || "");
+    setBaixarEstoque(false);
+    setItems(
+      editingQuote.items.map((item) => {
+        const status = item.status || "PENDENTE";
+        const locked = status === "APROVADO" || status === "RECUSADO";
+        return {
+          id: item.id,
+          descricao: item.descricao,
+          quantidade: item.quantidade,
+          tipo_custo: (item.tipo_custo as ItemType) || "MOVEIS_MDF",
+          valor_unitario: Number(item.valor_unitario),
+          valor_total: Number(item.valor_total),
+          showcaseProductId: item.showcase_product_id || undefined,
+          subitens: Array.isArray(item.subitens) ? item.subitens : [],
+          locked,
+          status,
+        };
+      })
+    );
+  }, [editingQuote]);
 
   useEffect(() => {
     async function loadBriefing() {
@@ -265,14 +330,14 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
 
   // Remover uma linha de item
   const handleRemoveItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+    setItems(items.filter((item) => item.id !== id || Boolean(item.locked)));
   };
 
   // Atualizar campo do item na tabela
   const handleUpdateItem = (id: string, field: keyof QuoteItemInput, value: any) => {
     const updated = items.map(item => {
-      if (item.id === id) {
-        let updatedItem = { ...item, [field]: value };
+      if (item.id !== id || item.locked) return item;
+      let updatedItem = { ...item, [field]: value };
         
         // Se mudou o material selecionado do estoque
         if (field === "inventoryItemId") {
@@ -330,14 +395,16 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         }
         
         return updatedItem;
-      }
-      return item;
     });
     setItems(updated);
   };
 
   const handleUpdateSubitens = (id: string, subitens: string[]) => {
-    setItems(items.map((item) => (item.id === id ? { ...item, subitens } : item)));
+    setItems(
+      items.map((item) =>
+        item.id === id && !item.locked ? { ...item, subitens } : item
+      )
+    );
   };
 
   // Cálculos comerciais
@@ -413,6 +480,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       template_tipo: templateTipo,
       partnerId: partnerId || null,
       items: currentItems.map((item) => ({
+        id: item.id,
         descricao: item.descricao,
         quantidade: item.quantidade,
         tipo_custo: item.tipo_custo,
@@ -423,11 +491,13 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       })),
     };
 
-    const result = await createQuote(projectId, inputData);
+    const result = isEditing && editingQuote
+      ? await updateExistingQuote(projectId, editingQuote.id, inputData)
+      : await createQuote(projectId, inputData);
 
     if (result.success && result.data) {
       // Dar baixa no estoque se o checkbox estiver ativo e houver itens de estoque
-      if (baixarEstoque) {
+      if (baixarEstoque && !isEditing) {
         const itemsToDeduct = currentItems
           .filter(item => item.inventoryItemId)
           .map(item => ({
@@ -447,7 +517,12 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
           showSuccess("Orçamento salvo", `Versão ${result.data.version} gravada com sucesso.`);
         }
       } else {
-        showSuccess("Orçamento salvo", `Versão ${result.data.version} gravada com sucesso.`);
+        showSuccess(
+          isEditing ? "Proposta atualizada" : "Orçamento salvo",
+          isEditing
+            ? `Versão ${result.data.version} atualizada (sem criar outra proposta).`
+            : `Versão ${result.data.version} gravada com sucesso.`
+        );
       }
       onSuccess(result.data);
     } else {
@@ -462,10 +537,14 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-border/40 pb-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-gradient-gold">
-              Construtor de proposta comercial
+              {isEditing
+                ? `Editar proposta v${editingQuote?.versao}`
+                : "Construtor de proposta comercial"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Monte a tabela comercial e exporte o PDF com itens e valores.
+              {isEditing
+                ? "Altere cômodos e itens pendentes nesta mesma versão — não cria outra proposta. Cada edição fica no histórico."
+                : "Monte a tabela comercial e exporte o PDF com itens e valores."}
             </p>
           </div>
         </div>
@@ -512,6 +591,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             </label>
             <Select
               value={templateTipo}
+              disabled={hasLockedItems}
               onChange={(e) => {
                 const next = e.target.value as QuoteTemplateId;
                 setTemplateTipo(next);
@@ -666,14 +746,32 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                   items.map((item) => {
                     const isStockItem = !!item.inventoryItemId;
                     const isShowcaseItem = !!item.showcaseProductId;
+                    const isLocked = Boolean(item.locked);
                     const showcase = isShowcaseItem
                       ? showcaseProducts.find((p) => p.id === item.showcaseProductId)
                       : null;
 
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/60 transition-colors border-b border-slate-100">
+                      <tr
+                        key={item.id}
+                        className={`transition-colors border-b border-slate-100 ${
+                          isLocked ? "bg-slate-50/80 opacity-80" : "hover:bg-slate-50/60"
+                        }`}
+                      >
                         <td className="p-3">
-                          {isStockItem ? (
+                          {isLocked ? (
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-slate-800">{item.descricao}</p>
+                              {(item.subitens || []).length > 0 && (
+                                <p className="text-[11px] text-slate-500">
+                                  {(item.subitens || []).join(" • ")}
+                                </p>
+                              )}
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                                {item.status === "RECUSADO" ? "Recusado — congelado" : "Aprovado — congelado"}
+                              </p>
+                            </div>
+                          ) : isStockItem ? (
                             <div className="space-y-1">
                               <select
                                 value={item.inventoryItemId}
@@ -746,7 +844,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                         </td>
                         <td className="p-3 min-w-[11rem]">
                           <Select
-                            disabled={isStockItem}
+                            disabled={isStockItem || isLocked}
                             value={item.tipo_custo}
                             onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
                             className="h-9 py-1 px-2 text-xs bg-white border border-slate-200 focus:ring-1 focus:ring-[hsl(28_85%_45%)] rounded-lg transition-all cursor-pointer font-semibold text-slate-700 disabled:opacity-60 w-full min-w-[10.5rem]"
@@ -762,7 +860,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                             type="number"
                             min="1"
                             required
-                            className="bg-white border border-slate-200 text-center focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] h-9 text-xs font-bold p-2 rounded-lg transition-all"
+                            disabled={isLocked}
+                            className="bg-white border border-slate-200 text-center focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] h-9 text-xs font-bold p-2 rounded-lg transition-all disabled:opacity-60"
                             value={item.quantidade}
                             onChange={(e) => handleUpdateItem(item.id, "quantidade", Number(e.target.value))}
                           />
@@ -777,7 +876,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                                 min="1"
                                 max="10"
                                 required
-                                className="w-16 bg-white border border-slate-200 text-center h-9 text-xs font-black rounded-lg focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] transition-all"
+                                disabled={isLocked}
+                                className="w-16 bg-white border border-slate-200 text-center h-9 text-xs font-black rounded-lg focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] transition-all disabled:opacity-60"
                                 value={item.markup || 2.2}
                                 onChange={(e) => handleUpdateItem(item.id, "markup", Number(e.target.value))}
                                 title="Markup Multiplicador"
@@ -791,7 +891,8 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                                 type="number"
                                 min="0"
                                 required
-                                className="bg-white border border-slate-200 pl-8 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] h-9 text-xs font-bold rounded-lg transition-all"
+                                disabled={isLocked}
+                                className="bg-white border border-slate-200 pl-8 focus-visible:ring-1 focus-visible:ring-[hsl(28_85%_45%)] h-9 text-xs font-bold rounded-lg transition-all disabled:opacity-60"
                                 value={item.valor_unitario}
                                 onChange={(e) => handleUpdateItem(item.id, "valor_unitario", Number(e.target.value))}
                               />
@@ -802,13 +903,17 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.valor_total)}
                         </td>
                         <td className="p-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="p-1 rounded-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {!isLocked ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(item.id)}
+                              className="p-1 rounded-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-semibold">—</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -828,6 +933,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               items.map((item, idx) => {
                 const isStockItem = !!item.inventoryItemId;
                 const isShowcaseItem = !!item.showcaseProductId;
+                const isLocked = Boolean(item.locked);
                 const showcase = isShowcaseItem
                   ? showcaseProducts.find((p) => p.id === item.showcaseProductId)
                   : null;
@@ -836,15 +942,18 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         Item #{idx + 1}
+                        {isLocked ? " · congelado" : ""}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="p-1.5 rounded-full text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
-                        title="Remover Item"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {!isLocked ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="p-1.5 rounded-full text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
+                          title="Remover Item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : null}
                     </div>
 
                     <div className="space-y-3.5">
@@ -1088,7 +1197,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
             Cancelar
           </Button>
           <Button type="submit" disabled={loading} className="font-semibold px-6 w-full sm:w-auto">
-            {loading ? "Gravando..." : "Salvar proposta"}
+            {loading ? "Gravando..." : isEditing ? "Salvar edição" : "Salvar proposta"}
           </Button>
         </div>
 
@@ -1260,7 +1369,9 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
       >
         <div className="space-y-4 pr-6">
           <div>
-            <h3 className="text-lg font-bold text-foreground">Confirmar emissão</h3>
+            <h3 className="text-lg font-bold text-foreground">
+              {isEditing ? "Confirmar edição" : "Confirmar emissão"}
+            </h3>
             <p className="text-xs text-muted-foreground mt-1">
               Revise o resumo antes de gravar a proposta.
             </p>
@@ -1354,7 +1465,7 @@ export default function QuoteBuilder({ projectId, companyId, onSuccess, onCancel
               disabled={loading}
               onClick={() => void handleConfirmSave()}
             >
-              {loading ? "Gravando..." : "Confirmar e emitir"}
+              {loading ? "Gravando..." : isEditing ? "Confirmar e salvar" : "Confirmar e emitir"}
             </Button>
           </div>
         </div>

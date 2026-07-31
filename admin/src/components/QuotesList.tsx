@@ -19,6 +19,7 @@ import {
   ArrowDownZA,
   Bookmark,
   CheckCircle2,
+  PencilLine,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,6 @@ import { getClients } from "@/app/actions/cliente";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
 import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
-import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -115,7 +115,6 @@ export default function QuotesList({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approvalQuote, setApprovalQuote] = useState<Quote | null>(null);
-  const [revisionQuote, setRevisionQuote] = useState<Quote | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
 
@@ -706,16 +705,21 @@ export default function QuotesList({
                               {isPartial ? "Aprovar itens" : "Aprovar"}
                             </Button>
                           )}
-                          {!isReadOnly && hasPending && (isPartial || expired) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 h-8 shrink-0 px-2"
-                              onClick={() => setRevisionQuote(q)}
-                              title="Editar itens pendentes"
+                          {!isReadOnly && hasPending && (
+                            <Link
+                              href={`/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`}
+                              className="shrink-0"
                             >
-                              Editar
-                            </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 h-8 px-2"
+                                title="Editar proposta completa (mesma versão)"
+                              >
+                                <PencilLine className="h-3.5 w-3.5 mr-1" />
+                                Editar
+                              </Button>
+                            </Link>
                           )}
 
                           {isReadOnly ? (
@@ -1068,6 +1072,13 @@ export default function QuotesList({
               }
             : null
         }
+        onRequestEdit={
+          approvalQuote
+            ? () => {
+                window.location.href = `/projects/${approvalQuote.project_id}?tab=quotes&editQuote=${approvalQuote.id}`;
+              }
+            : undefined
+        }
         onApproved={({ remainingPending, valorAprovado }) => {
           showSuccess(
             remainingPending > 0 ? "Aprovação parcial registrada" : "Proposta aprovada",
@@ -1075,29 +1086,6 @@ export default function QuotesList({
               ? `R$ ${valorAprovado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} aprovados. Ainda restam ${remainingPending} item(ns).`
               : `Versão ${approvalQuote?.versao ?? ""} aprovada com sucesso.`
           );
-          syncQuotes();
-        }}
-      />
-      <QuotePendingRevisionDialog
-        open={!!revisionQuote}
-        onClose={() => setRevisionQuote(null)}
-        quote={
-          revisionQuote
-            ? {
-                id: revisionQuote.id,
-                project_id: revisionQuote.project_id,
-                versao: revisionQuote.versao,
-                validade:
-                  typeof revisionQuote.validade === "string"
-                    ? revisionQuote.validade
-                    : new Date(revisionQuote.validade).toISOString(),
-                clientName: revisionQuote.project.client.nome,
-                items: revisionQuote.items || [],
-              }
-            : null
-        }
-        onRevised={() => {
-          showSuccess("Itens editados", "Itens pendentes atualizados e registrados no histórico.");
           syncQuotes();
         }}
       />

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, PencilLine } from "lucide-react";
 import { approveQuote, rejectQuoteItems } from "@/app/actions/quotes";
 import {
   computeApprovalValue,
@@ -39,6 +39,8 @@ interface QuoteApprovalDialogProps {
     valorAprovado: number;
     remainingPending: number;
   }) => void;
+  /** Abre o construtor completo da proposta (mesma versão). */
+  onRequestEdit?: () => void;
 }
 
 function formatCurrency(val: number) {
@@ -53,6 +55,7 @@ export default function QuoteApprovalDialog({
   onClose,
   quote,
   onApproved,
+  onRequestEdit,
 }: QuoteApprovalDialogProps) {
   const comparative = isComparativeTemplate(quote?.template_tipo);
   const pendingItems = useMemo(
@@ -308,6 +311,18 @@ export default function QuoteApprovalDialog({
         )}
 
         <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+          {onRequestEdit && pendingItems.length > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="border-amber-300 text-amber-800 hover:bg-amber-50 mr-auto"
+              onClick={onRequestEdit}
+              disabled={saving}
+            >
+              <PencilLine className="h-4 w-4 mr-1.5" />
+              Editar proposta
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>

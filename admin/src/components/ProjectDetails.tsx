@@ -15,12 +15,11 @@ import {
   type EnvironmentStatus,
   type FileType
 } from "@/app/actions/project";
-import { deleteQuote } from "@/app/actions/quotes";
+import { deleteQuote, getQuoteForEdit } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
-import QuotePendingRevisionDialog from "@/components/quotes/QuotePendingRevisionDialog";
 import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
@@ -33,7 +32,7 @@ import ConfTecnicaWhatsAppDialog, {
   type ConfTecnicaWhatsAppTarget,
 } from "@/components/ConfTecnicaWhatsAppDialog";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
-import QuoteBuilder from "@/components/QuoteBuilder";
+import QuoteBuilder, { type QuoteBuilderEditingQuote } from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
 import ClientConsentCard from "@/components/clientes/ClientConsentCard";
@@ -138,11 +137,13 @@ interface Quote {
     id: string;
     descricao: string;
     quantidade: number;
+    tipo_custo?: string;
     valor_unitario: number;
     valor_total: number;
     status?: string | null;
     aprovado_em?: string | null;
     subitens?: string[];
+    showcase_product_id?: string | null;
   }>;
 }
 
@@ -305,6 +306,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   })();
 
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [isCreatingQuote, setIsCreatingQuote] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<QuoteBuilderEditingQuote | null>(null);
+  const [loadingEditQuote, setLoadingEditQuote] = useState(false);
 
   useEffect(() => {
     if (
@@ -324,6 +328,29 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       setActiveTab(fromUrl);
     }
   }, [searchParams, initialOpenCreateQuote, isOpsLimited]);
+
+  useEffect(() => {
+    const editQuoteId = searchParams?.get("editQuote");
+    if (!editQuoteId || isOpsLimited) return;
+    let cancelled = false;
+    (async () => {
+      setActiveTab("quotes");
+      setLoadingEditQuote(true);
+      const res = await getQuoteForEdit(editQuoteId);
+      if (cancelled) return;
+      setLoadingEditQuote(false);
+      if (!res.success || !res.data) {
+        showError("Não foi possível editar", res.error || "Orçamento não encontrado.");
+        return;
+      }
+      setEditingQuote(res.data);
+      setIsCreatingQuote(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once from URL
+  }, [searchParams, isOpsLimited]);
 
   // Estados para Controle Operacional do Projeto (Responsável, Entrega, Parceiro e Observações)
   const [responsavelId, setResponsavelId] = useState(project.responsavel_id || "none");
@@ -400,10 +427,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     setLoading(false);
   };
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isCreatingQuote, setIsCreatingQuote] = useState(false);
   const [approvingQuoteId, setApprovingQuoteId] = useState<string | null>(null);
   const [approvalQuote, setApprovalQuote] = useState<Quote | null>(null);
-  const [revisionQuote, setRevisionQuote] = useState<Quote | null>(null);
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
@@ -761,6 +786,26 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     setApprovalQuote(quote);
   };
 
+  const openEditQuote = async (quoteId: string) => {
+    if (loadingEditQuote) return;
+    setLoadingEditQuote(true);
+    const res = await getQuoteForEdit(quoteId);
+    setLoadingEditQuote(false);
+    if (!res.success || !res.data) {
+      showError("Não foi possível editar", res.error || "Orçamento não encontrado.");
+      return;
+    }
+    setApprovalQuote(null);
+    setEditingQuote(res.data);
+    setIsCreatingQuote(true);
+    setActiveTab("quotes");
+  };
+
+  const closeQuoteBuilder = () => {
+    setIsCreatingQuote(false);
+    setEditingQuote(null);
+  };
+
   const refreshProjectFromServer = async () => {
     const refreshed = await getProjectDetailsAction(project.id);
     if (refreshed.success && refreshed.project) {
@@ -925,7 +970,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             </div>
           </div>
           <Button
-            onClick={() => setIsCreatingQuote(true)}
+            onClick={() => {
+              setEditingQuote(null);
+              setIsCreatingQuote(true);
+            }}
             className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 px-5 rounded-xl cursor-pointer shadow-sm active:scale-95 transition-all"
           >
             Gerar Primeiro Orçamento
@@ -1629,37 +1677,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             <QuoteBuilder
               projectId={project.id}
               companyId={companyId}
-              onCancel={() => setIsCreatingQuote(false)}
-              onSuccess={(newQuoteData) => {
-                const newQuote: Quote = {
-                  id: newQuoteData.quote.id,
-                  versao: newQuoteData.version,
-                  codigo: newQuoteData.quote.codigo ?? null,
-                  template_tipo: newQuoteData.quote.template_tipo ?? null,
-                  subtotal: newQuoteData.quote.subtotal,
-                  desconto: newQuoteData.quote.desconto,
-                  valor_final: newQuoteData.quote.valor_final,
-                  validade: newQuoteData.quote.validade.toISOString ? newQuoteData.quote.validade.toISOString() : new Date(newQuoteData.quote.validade).toISOString(),
-                  observacoes: newQuoteData.quote.observacoes,
-                  aprovado_em: null,
-                  items: [],
-                };
-                
-                setProject({
-                  ...project,
-                  quotes: [newQuote, ...project.quotes],
-                  timeline: [
-                    {
-                      id: `local-time-${Date.now()}`,
-                      acao: `Orçamento comercial v${newQuote.versao} gerado no valor de ${formatCurrency(newQuote.valor_final)}`,
-                      data: new Date().toISOString(),
-                      interno_sotamente: false,
-                      user: { name: "Sistema" }
-                    },
-                    ...project.timeline
-                  ]
-                });
-                setIsCreatingQuote(false);
+              editingQuote={editingQuote}
+              onCancel={closeQuoteBuilder}
+              onSuccess={async () => {
+                await refreshProjectFromServer();
+                closeQuoteBuilder();
               }}
             />
           ) : (
@@ -1671,7 +1693,14 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     Gere orçamentos e envie propostas em PDF com itens e valores.
                   </p>
                 </div>
-                <Button onClick={() => setIsCreatingQuote(true)} size="sm" className="btn-metallic">
+                <Button
+                  onClick={() => {
+                    setEditingQuote(null);
+                    setIsCreatingQuote(true);
+                  }}
+                  size="sm"
+                  className="btn-metallic"
+                >
                   <Plus className="h-4 w-4 mr-1.5" /> Nova Proposta
                 </Button>
               </div>
@@ -1817,10 +1846,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           {hasPending && (
                             <button
                               type="button"
-                              onClick={() => setRevisionQuote(q)}
-                              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 transition-all cursor-pointer"
+                              onClick={() => void openEditQuote(q.id)}
+                              disabled={loadingEditQuote}
+                              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
                             >
-                              Editar pendentes
+                              Editar proposta
                             </button>
                           )}
 
@@ -2430,6 +2460,13 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               }
             : null
         }
+        onRequestEdit={
+          approvalQuote
+            ? () => {
+                void openEditQuote(approvalQuote.id);
+              }
+            : undefined
+        }
         onApproved={async ({ remainingPending, valorAprovado }) => {
           showSuccess(
             remainingPending > 0 ? "Aprovação parcial registrada" : "Proposta aprovada",
@@ -2437,26 +2474,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               ? `R$ ${valorAprovado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} aprovados. Ainda restam itens pendentes.`
               : `Versão ${approvalQuote?.versao ?? ""} aprovada com sucesso.`
           );
-          await refreshProjectFromServer();
-        }}
-      />
-      <QuotePendingRevisionDialog
-        open={!!revisionQuote}
-        onClose={() => setRevisionQuote(null)}
-        quote={
-          revisionQuote
-            ? {
-                id: revisionQuote.id,
-                project_id: project.id,
-                versao: revisionQuote.versao,
-                validade: revisionQuote.validade,
-                clientName: project.client.nome,
-                items: revisionQuote.items || [],
-              }
-            : null
-        }
-        onRevised={async () => {
-          showSuccess("Itens editados", "Itens pendentes atualizados e registrados no histórico.");
           await refreshProjectFromServer();
         }}
       />
