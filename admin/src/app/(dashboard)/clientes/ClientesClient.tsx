@@ -44,6 +44,7 @@ import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 import { Pagination } from "@/components/ui/pagination";
 import { updateUserPreference } from "@/app/actions/preferences";
 import ClientWizard, { type ClientWizardData } from "./ClientWizard";
+import { usePermissions } from "@/context/PermissionsContext";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
@@ -56,15 +57,22 @@ interface ProjectSummary {
 
 function LinkedProjectChip({
   project,
+  href,
+  hideQuotesHint,
 }: {
   project: ProjectSummary;
+  href?: string;
+  hideQuotesHint?: boolean;
 }) {
+  const title = hideQuotesHint
+    ? labelProjectStatus(project.status_geral)
+    : `${labelProjectStatus(project.status_geral)}${
+        (project.quotes_count ?? 0) > 0 ? ` · ${project.quotes_count} orçamento(s)` : ""
+      }`;
   return (
     <Link
-      href={`/projects/${project.id}`}
-      title={`${labelProjectStatus(project.status_geral)}${
-        (project.quotes_count ?? 0) > 0 ? ` · ${project.quotes_count} orçamento(s)` : ""
-      }`}
+      href={href ?? `/projects/${project.id}`}
+      title={title}
       className={`inline-flex items-center font-mono text-[10px] font-bold tracking-wide px-2 py-1 rounded-md border ${projectStatusChipClass(project.status_geral)}`}
     >
       #{shortProjectCode(project.id)}
@@ -124,6 +132,9 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
 export default function ClientesClient({ initialClients, companyId, initialPageSize = 20 }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const { sensitiveHidden } = usePrivacy();
+  const { role } = usePermissions();
+  /** Marceneiro: lista só nome, bairro, cidade e projetos. */
+  const isFactoryRole = role === "PRODUCAO";
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
@@ -135,7 +146,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount = [
     search.trim() !== "",
-    filterOrigin !== "ALL",
+    !isFactoryRole && filterOrigin !== "ALL",
     filterCidade !== "ALL",
     filterBairro !== "ALL",
   ].filter(Boolean).length;
@@ -205,19 +216,23 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     const doc = resolveClientDocument(c);
     const location = resolveClientLocation(c);
     const searchLower = search.toLowerCase();
-    const matchesSearch =
-      c.nome.toLowerCase().includes(searchLower) ||
-      c.email.toLowerCase().includes(searchLower) ||
-      c.telefone.includes(search) ||
-      location.cidade.toLowerCase().includes(searchLower) ||
-      location.bairro.toLowerCase().includes(searchLower) ||
-      (doc.cpf || "").includes(search) ||
-      (doc.cnpj || "").includes(search);
-    const matchesOrigin = filterOrigin === "ALL" || c.origem === filterOrigin;
+    const matchesSearch = isFactoryRole
+      ? c.nome.toLowerCase().includes(searchLower)
+      : c.nome.toLowerCase().includes(searchLower) ||
+        c.email.toLowerCase().includes(searchLower) ||
+        c.telefone.includes(search) ||
+        location.cidade.toLowerCase().includes(searchLower) ||
+        location.bairro.toLowerCase().includes(searchLower) ||
+        (doc.cpf || "").includes(search) ||
+        (doc.cnpj || "").includes(search);
+    const matchesOrigin =
+      isFactoryRole || filterOrigin === "ALL" || c.origem === filterOrigin;
     const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
     const matchesBairro = filterBairro === "ALL" || location.bairro === filterBairro;
     const matchesTipo =
-      activeTipoTab === "todos" || doc.tipo_pessoa === activeTipoTab;
+      isFactoryRole ||
+      activeTipoTab === "todos" ||
+      doc.tipo_pessoa === activeTipoTab;
     return matchesSearch && matchesOrigin && matchesCidade && matchesBairro && matchesTipo;
   });
 
@@ -500,17 +515,21 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
               </InfoTooltip>
             </div>
             <p className="page-subtitle">
-              Gerencie sua base de clientes — Pessoas Físicas e Jurídicas.
+              {isFactoryRole
+                ? "Consulte clientes por nome, localização e projetos vinculados."
+                : "Gerencie sua base de clientes — Pessoas Físicas e Jurídicas."}
             </p>
           </div>
 
           <div className="page-header-actions w-full sm:w-auto">
-            <Button
-              onClick={openCreateModal}
-              className="font-bold btn-metallic gap-2 w-full sm:w-auto justify-center h-11 px-5 rounded-xl shadow-sm"
-            >
-              <Plus className="h-5 w-5" /> Novo cliente
-            </Button>
+            {!isFactoryRole && (
+              <Button
+                onClick={openCreateModal}
+                className="font-bold btn-metallic gap-2 w-full sm:w-auto justify-center h-11 px-5 rounded-xl shadow-sm"
+              >
+                <Plus className="h-5 w-5" /> Novo cliente
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -539,7 +558,11 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         <div className="relative w-full md:flex-1 md:min-w-[12rem] md:max-w-md shrink-0">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, e-mail ou telefone..."
+            placeholder={
+              isFactoryRole
+                ? "Buscar por nome..."
+                : "Buscar por nome, e-mail ou telefone..."
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 bg-muted/40 border-border text-sm"
@@ -547,23 +570,25 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         </div>
 
         <div className="flex flex-col gap-3 w-full md:flex-row md:flex-wrap md:items-center md:gap-3 md:w-auto md:ml-auto">
-          <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
-            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Origem:
-            </span>
-            <select
-              value={filterOrigin}
-              onChange={(e) => setFilterOrigin(e.target.value)}
-              className="w-full md:w-auto md:min-w-[8rem] bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="ALL">Todas</option>
-              {ORIGINS.map((o) => (
-                <option key={o} value={o}>
-                  {labelOrigin(o)}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isFactoryRole && (
+            <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <Filter className="h-3 w-3" /> Origem:
+              </span>
+              <select
+                value={filterOrigin}
+                onChange={(e) => setFilterOrigin(e.target.value)}
+                className="w-full md:w-auto md:min-w-[8rem] bg-muted/40 border border-border rounded-md text-sm p-2 focus:ring-1 focus:ring-primary outline-none"
+              >
+                <option value="ALL">Todas</option>
+                {ORIGINS.map((o) => (
+                  <option key={o} value={o}>
+                    {labelOrigin(o)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
             <span className="text-xs font-semibold text-muted-foreground">Cidade:</span>
@@ -600,6 +625,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         </div>
       </Card>
 
+      {!isFactoryRole && (
       <Tabs value={activeTipoTab} onValueChange={(v) => setActiveTipoTab(v as "todos" | "PF" | "PJ")}>
         <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
           <TabsTrigger value="todos" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
@@ -618,6 +644,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           </TabsTrigger>
         </TabsList>
       </Tabs>
+      )}
 
       {/* Lista de clientes — cards no mobile, tabela no desktop */}
       {filteredClients.length === 0 ? (
@@ -640,7 +667,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                 <article
                   key={client.id}
                   className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm ${
-                    docInfo.tipo_pessoa === "PJ" ? "border-indigo-400/40 shadow-xs" : "border-border"
+                    !isFactoryRole && docInfo.tipo_pessoa === "PJ" ? "border-indigo-400/40 shadow-xs" : "border-border"
                   }`}
                 >
                     <div className="flex items-start justify-between gap-3">
@@ -652,29 +679,35 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                           >
                             {client.nome}
                           </Link>
-                          <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                            {docInfo.tipo_pessoa}
-                          </span>
+                          {!isFactoryRole && (
+                            <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {docInfo.tipo_pessoa}
+                            </span>
+                          )}
                         </div>
-                        {docInfo.documento && (
+                        {!isFactoryRole && docInfo.documento && (
                           <p className="detail-text mt-0.5">
                             {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                           </p>
                         )}
                       </div>
-                      <span className={`badge-meta px-2 py-0.5 rounded-full shrink-0 ${statBadge.bg} ${statBadge.text}`}>
-                        {labelStatus(client.status)}
-                      </span>
+                      {!isFactoryRole && (
+                        <span className={`badge-meta px-2 py-0.5 rounded-full shrink-0 ${statBadge.bg} ${statBadge.text}`}>
+                          {labelStatus(client.status)}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="h-3.5 w-3.5" /> {renderPhone(client)}
-                      </span>
-                      <span className="inline-flex items-center gap-1 min-w-0 truncate">
-                        <Mail className="h-3.5 w-3.5 shrink-0" /> {renderEmail(client)}
-                      </span>
-                    </div>
+                    {!isFactoryRole && (
+                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5" /> {renderPhone(client)}
+                        </span>
+                        <span className="inline-flex items-center gap-1 min-w-0 truncate">
+                          <Mail className="h-3.5 w-3.5 shrink-0" /> {renderEmail(client)}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
@@ -682,41 +715,50 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         {location.cidade}
                         {location.bairro ? ` · ${location.bairro}` : ""}
                       </span>
-                      <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
-                        {labelOrigin(client.origem)}
-                      </span>
+                      {!isFactoryRole && (
+                        <span className={`badge-meta px-2 py-0.5 rounded-full ${orgBadge.bg} ${orgBadge.text}`}>
+                          {labelOrigin(client.origem)}
+                        </span>
+                      )}
                     </div>
 
                     {projectList.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {projectList.map((p) => (
-                          <LinkedProjectChip key={p.id} project={p} />
+                          <LinkedProjectChip
+                            key={p.id}
+                            project={p}
+                            href={isFactoryRole ? `/clientes/${client.id}?tab=projects` : undefined}
+                            hideQuotesHint={isFactoryRole}
+                          />
                         ))}
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => openProjectModal(client)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10 text-emerald-700 text-sm font-medium cursor-pointer"
-                      >
-                        <PlusCircle className="h-4 w-4" /> Projeto
-                      </button>
-                      <button
-                        onClick={() => openEditModal(client)}
-                        className="p-2 rounded-md bg-primary/10 text-primary cursor-pointer"
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClient(client.id, client.nome)}
-                        className="p-2 rounded-md bg-destructive/10 text-destructive cursor-pointer"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {!isFactoryRole && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => openProjectModal(client)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10 text-emerald-700 text-sm font-medium cursor-pointer"
+                        >
+                          <PlusCircle className="h-4 w-4" /> Projeto
+                        </button>
+                        <button
+                          onClick={() => openEditModal(client)}
+                          className="p-2 rounded-md bg-primary/10 text-primary cursor-pointer"
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClient(client.id, client.nome)}
+                          className="p-2 rounded-md bg-destructive/10 text-destructive cursor-pointer"
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </article>
                 );
               })}
@@ -730,10 +772,18 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                 <th className="p-4 whitespace-nowrap font-bold">Cliente</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Cidade</th>
                 <th className="p-4 text-center whitespace-nowrap font-bold">Bairro</th>
-                <th className="p-4 text-center whitespace-nowrap font-bold">Origem</th>
-                <th className="p-4 text-center whitespace-nowrap font-bold">Status</th>
-                <th className="p-4 whitespace-nowrap font-bold">Projetos / Orçamentos Vinculados</th>
-                <th className="p-4 text-right whitespace-nowrap font-bold">Ações</th>
+                {!isFactoryRole && (
+                  <th className="p-4 text-center whitespace-nowrap font-bold">Origem</th>
+                )}
+                {!isFactoryRole && (
+                  <th className="p-4 text-center whitespace-nowrap font-bold">Status</th>
+                )}
+                <th className="p-4 whitespace-nowrap font-bold">
+                  {isFactoryRole ? "Projetos" : "Projetos / Orçamentos Vinculados"}
+                </th>
+                {!isFactoryRole && (
+                  <th className="p-4 text-right whitespace-nowrap font-bold">Ações</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
@@ -746,7 +796,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   return (
                     <tr key={client.id} className="bg-transparent">
                       {/* Cliente */}
-                      <td className={`p-4 ${resolveClientDocument(client).tipo_pessoa === "PJ" ? "border-l-4 border-l-indigo-500/80 bg-indigo-50/10" : ""}`}>
+                      <td className={`p-4 ${!isFactoryRole && resolveClientDocument(client).tipo_pessoa === "PJ" ? "border-l-4 border-l-indigo-500/80 bg-indigo-50/10" : ""}`}>
                         {(() => {
                           const docInfo = resolveClientDocument(client);
                           return (
@@ -758,23 +808,27 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                                 >
                                   {client.nome}
                                 </Link>
-                                <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
-                                  {docInfo.tipo_pessoa}
-                                </span>
+                                {!isFactoryRole && (
+                                  <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
+                                    {docInfo.tipo_pessoa}
+                                  </span>
+                                )}
                               </div>
-                              {docInfo.documento && (
+                              {!isFactoryRole && docInfo.documento && (
                                 <span className="text-[11px] font-bold text-slate-600 mt-0.5">
                                   {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                                 </span>
                               )}
-                              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">
-                                <span className="flex items-center gap-1 whitespace-nowrap">
-                                  <Phone className="h-3 w-3 text-slate-500" /> {renderPhone(client)}
-                                </span>
-                                <span className="flex items-center gap-1 whitespace-nowrap">
-                                  <Mail className="h-3 w-3 text-slate-500" /> {renderEmail(client)}
-                                </span>
-                              </div>
+                              {!isFactoryRole && (
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">
+                                  <span className="flex items-center gap-1 whitespace-nowrap">
+                                    <Phone className="h-3 w-3 text-slate-500" /> {renderPhone(client)}
+                                  </span>
+                                  <span className="flex items-center gap-1 whitespace-nowrap">
+                                    <Mail className="h-3 w-3 text-slate-500" /> {renderEmail(client)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
@@ -792,59 +846,67 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                         {location.bairro || "—"}
                       </td>
 
-                      {/* Origem */}
-                      <td className="p-4 text-center">
-                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${orgBadge.bg} ${orgBadge.text} whitespace-nowrap`}>
-                          {labelOrigin(client.origem)}
-                        </span>
-                      </td>
+                      {!isFactoryRole && (
+                        <td className="p-4 text-center">
+                          <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${orgBadge.bg} ${orgBadge.text} whitespace-nowrap`}>
+                            {labelOrigin(client.origem)}
+                          </span>
+                        </td>
+                      )}
 
-                      {/* Status */}
-                      <td className="p-4 text-center">
-                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${statBadge.bg} ${statBadge.text} whitespace-nowrap`}>
-                          {labelStatus(client.status)}
-                        </span>
-                      </td>
+                      {!isFactoryRole && (
+                        <td className="p-4 text-center">
+                          <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${statBadge.bg} ${statBadge.text} whitespace-nowrap`}>
+                            {labelStatus(client.status)}
+                          </span>
+                        </td>
+                      )}
 
-                      {/* Projetos / Orçamentos Vinculados */}
+                      {/* Projetos */}
                       <td className="p-4">
                         {projectList.length === 0 ? (
                           <span className="text-xs text-muted-foreground italic font-semibold">Nenhum projeto iniciado</span>
                         ) : (
                           <div className="flex flex-wrap gap-1.5 max-w-[320px]">
                             {projectList.map((p) => (
-                              <LinkedProjectChip key={p.id} project={p} />
+                              <LinkedProjectChip
+                                key={p.id}
+                                project={p}
+                                href={isFactoryRole ? `/clientes/${client.id}?tab=projects` : undefined}
+                                hideQuotesHint={isFactoryRole}
+                              />
                             ))}
                           </div>
                         )}
                       </td>
 
-                      {/* Ações */}
-                      <td className="p-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => openProjectModal(client)}
-                            className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors cursor-pointer"
-                            title="Iniciar Novo Projeto no CRM"
-                          >
-                            <PlusCircle className="h-4.5 w-4.5" />
-                          </button>
-                          <button
-                            onClick={() => openEditModal(client)}
-                            className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
-                            title="Editar informações do lead"
-                          >
-                            <Edit className="h-4.5 w-4.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClient(client.id, client.nome)}
-                            className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors cursor-pointer"
-                            title="Excluir lead"
-                          >
-                            <Trash2 className="h-4.5 w-4.5" />
-                          </button>
-                        </div>
-                      </td>
+                      {!isFactoryRole && (
+                        <td className="p-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => openProjectModal(client)}
+                              className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors cursor-pointer"
+                              title="Iniciar Novo Projeto no CRM"
+                            >
+                              <PlusCircle className="h-4.5 w-4.5" />
+                            </button>
+                            <button
+                              onClick={() => openEditModal(client)}
+                              className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
+                              title="Editar informações do lead"
+                            >
+                              <Edit className="h-4.5 w-4.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClient(client.id, client.nome)}
+                              className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors cursor-pointer"
+                              title="Excluir lead"
+                            >
+                              <Trash2 className="h-4.5 w-4.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

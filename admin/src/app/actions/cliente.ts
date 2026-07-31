@@ -140,6 +140,46 @@ function formatClientRecord(c: {
   };
 }
 
+/** Lista de clientes para Marceneiro: só nome, bairro, cidade e projetos (sem contato/docs). */
+function restrictClientListForMarceneiro<T extends Record<string, unknown>>(
+  clients: T[],
+  cargo: string | null | undefined
+): T[] {
+  if (cargo !== "PRODUCAO") return clients;
+  return clients.map((client) => {
+    const projects = Array.isArray(client.projects)
+      ? (client.projects as Array<Record<string, unknown>>).map((p) => ({
+          id: p.id,
+          status_geral: p.status_geral,
+          valor_previsto: 0,
+          quotes_count: 0,
+        }))
+      : [];
+    return {
+      ...client,
+      email: "",
+      telefone: "",
+      origem: "SITE",
+      status: "",
+      tipo_pessoa: "PF",
+      cpf: "",
+      cnpj: "",
+      observacoes: "",
+      cep: "",
+      endereco: "",
+      numero: "",
+      uf: "",
+      tipo_imovel: "",
+      obs_imovel: "",
+      obs_entrega: "",
+      lgpd_aceite: false,
+      lgpd_aceite_em: null,
+      marketing_aceite: false,
+      projects,
+    } as T;
+  });
+}
+
 let legacyDocumentsMigrated = false;
 
 async function migrateLegacyClientDocumentsIfNeeded() {
@@ -293,8 +333,11 @@ export async function getClients(companyId: string) {
 
     return {
       success: true,
-      clients: maybeRedactForRole(
-        clients.map((c) => formatClientRecord(c)),
+      clients: restrictClientListForMarceneiro(
+        maybeRedactForRole(
+          clients.map((c) => formatClientRecord(c)),
+          auth.cargo
+        ),
         auth.cargo
       ),
     };
@@ -330,6 +373,9 @@ export async function createClientAction(formData: {
   const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  if (auth.cargo === "PRODUCAO") {
+    return { success: false, error: "Cadastro de clientes não disponível para este cargo." };
   }
   try {
     assertCompanyAccess(auth, formData.company_id);
@@ -440,6 +486,9 @@ export async function updateClientAction(
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
+  if (auth.cargo === "PRODUCAO") {
+    return { success: false, error: "Edição de clientes não disponível para este cargo." };
+  }
   try {
     await requireClientInCompany(clientId, auth.companyId);
   } catch (error) {
@@ -512,6 +561,9 @@ export async function deleteClientAction(clientId: string) {
   const auth = await getWriteAccess("clientes");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
+  }
+  if (auth.cargo === "PRODUCAO") {
+    return { success: false, error: "Exclusão de clientes não disponível para este cargo." };
   }
   try {
     await requireClientInCompany(clientId, auth.companyId);
