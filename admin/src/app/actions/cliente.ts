@@ -180,6 +180,37 @@ function restrictClientListForMarceneiro<T extends Record<string, unknown>>(
   });
 }
 
+/** Projetista: vê a ficha, mas sem telefone/e-mail do cliente nem valores. */
+function restrictClientListForProjetista<T extends Record<string, unknown>>(
+  clients: T[],
+  cargo: string | null | undefined
+): T[] {
+  if (cargo !== "PROJETISTA") return clients;
+  return clients.map((client) => {
+    const projects = Array.isArray(client.projects)
+      ? (client.projects as Array<Record<string, unknown>>).map((p) => ({
+          ...p,
+          valor_previsto: 0,
+        }))
+      : [];
+    return {
+      ...client,
+      email: "",
+      telefone: "",
+      projects,
+    } as T;
+  });
+}
+
+function restrictClientListForOpsRole<T extends Record<string, unknown>>(
+  clients: T[],
+  cargo: string | null | undefined
+): T[] {
+  if (cargo === "PRODUCAO") return restrictClientListForMarceneiro(clients, cargo);
+  if (cargo === "PROJETISTA") return restrictClientListForProjetista(clients, cargo);
+  return clients;
+}
+
 let legacyDocumentsMigrated = false;
 
 async function migrateLegacyClientDocumentsIfNeeded() {
@@ -333,7 +364,7 @@ export async function getClients(companyId: string) {
 
     return {
       success: true,
-      clients: restrictClientListForMarceneiro(
+      clients: restrictClientListForOpsRole(
         maybeRedactForRole(
           clients.map((c) => formatClientRecord(c)),
           auth.cargo
@@ -1010,10 +1041,14 @@ export async function getClientDetailsAction(clientId: string) {
             buildRegistrationActivity(clientId, cadastroEm, origemLabel),
           ];
     const roleSafeClient = maybeRedactForRole(formattedClient, auth.cargo);
+    const [opsRestrictedClient] = restrictClientListForOpsRole(
+      [roleSafeClient],
+      auth.cargo
+    );
     const safeClient = opsLimited
       ? {
-          ...roleSafeClient,
-          projects: roleSafeClient.projects.map((project) => ({
+          ...opsRestrictedClient,
+          projects: opsRestrictedClient.projects.map((project) => ({
             ...project,
             valor_previsto: 0,
             quotes: [],

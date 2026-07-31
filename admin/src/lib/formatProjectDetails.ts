@@ -308,9 +308,7 @@ export function restrictProjectDetailsForRole(
       id: project.client.id,
       nome: project.client.nome,
       cidade: project.client.cidade,
-      telefone: project.client.telefone,
-      email: project.client.email,
-      // Remove também o bloco legado de consentimentos das observações.
+      // Projetista: sem telefone/e-mail do cliente (mesmo padrão operacional).
       observacoes: stripConsentFromObservacoes(project.client.observacoes),
     },
   };

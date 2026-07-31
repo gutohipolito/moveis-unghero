@@ -380,6 +380,7 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
   const { isReadOnly, isOpsLimited, role } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
+  const hideClientContact = isOpsLimited;
   const funnelColumns = isOpsLimited ? OPS_FUNNEL_COLUMNS : FUNNEL_COLUMNS;
   const sensitive = useSensitiveDisplay();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -1088,7 +1089,7 @@ export default function KanbanBoard({
                       "Data não registrada"}
                   </span>
                 </p>
-              ) : !isFactoryRole ? (
+              ) : !hideClientContact ? (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
                   <Phone className="h-3 w-3 opacity-80 text-primary shrink-0" />
                   <span className="tabular-nums whitespace-nowrap truncate">
@@ -1460,6 +1461,7 @@ export default function KanbanBoard({
                   {actionButtons}
 
                   <div className="flex items-center gap-2">
+                      {!hideClientContact && (
                       <a
                         href={sensitive.whatsappHref(project.client.telefone) || undefined}
                         target="_blank"
@@ -1483,6 +1485,7 @@ export default function KanbanBoard({
                           <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
                         </svg>
                       </a>
+                      )}
 
                     {/* Avançar etapa — só no mobile, onde não há drag & drop */}
                     {!isReadOnly &&
@@ -2110,10 +2113,11 @@ export default function KanbanBoard({
                   loading={loading}
                   isReadOnly={isReadOnly}
                   isFactoryRole={isFactoryRole}
+                  hideClientContact={hideClientContact}
                   displayPhone={sensitive.phone(leadForm.telefone)}
                   displayEmail={sensitive.email(leadForm.email)}
                   whatsappHref={
-                    isFactoryRole
+                    hideClientContact
                       ? null
                       : sensitive.whatsappHref(currentProject.client.telefone)
                   }

@@ -7,7 +7,7 @@ import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
-import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { maybeRedactForRole } from "@/lib/viewerRedact";
 
 export interface ParceiroDTO {
   id: string;
@@ -109,7 +109,7 @@ export async function getParceiros(companyId: string) {
 
     return {
       success: true as const,
-      parceiros: maybeRedactForViewer(mapped, auth.cargo),
+      parceiros: maybeRedactForRole(mapped, auth.cargo),
     };
   } catch (error) {
     console.error("Erro ao buscar parceiros:", error);

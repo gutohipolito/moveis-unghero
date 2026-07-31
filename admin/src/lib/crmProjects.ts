@@ -176,5 +176,15 @@ export async function fetchCrmProjects(companyId: string) {
     };
   });
 
-  return maybeRedactForRole(mapped, auth?.cargo);
+  const redacted = maybeRedactForRole(mapped, auth?.cargo);
+  // Projetista/Marceneiro: não expor telefone/e-mail do cliente no payload do CRM.
+  if (!isOpsLimitedRole(auth?.cargo)) return redacted;
+  return redacted.map((project) => ({
+    ...project,
+    client: {
+      ...project.client,
+      telefone: "",
+      email: "",
+    },
+  }));
 }

@@ -38,8 +38,10 @@ interface KanbanOpsPanelProps {
   onClose: () => void;
   loading: boolean;
   isReadOnly: boolean;
-  /** Marceneiro: sem telefone/e-mail/WhatsApp e etapa só leitura. */
+  /** Marceneiro: etapa/observações só leitura. */
   isFactoryRole?: boolean;
+  /** Projetista/Marceneiro: sem telefone/e-mail/WhatsApp do cliente. */
+  hideClientContact?: boolean;
   displayPhone: string;
   displayEmail: string;
   whatsappHref: string | null;
@@ -58,6 +60,7 @@ export default function KanbanOpsPanel({
   loading,
   isReadOnly,
   isFactoryRole = false,
+  hideClientContact = false,
   displayPhone,
   displayEmail,
   whatsappHref,
@@ -68,6 +71,7 @@ export default function KanbanOpsPanel({
     editingStatusGeral;
   const stageLocked = isReadOnly || isFactoryRole;
   const canSave = !isReadOnly && !isFactoryRole;
+  const showClientContact = !isFactoryRole && !hideClientContact;
 
   return (
     <form
@@ -92,7 +96,7 @@ export default function KanbanOpsPanel({
         </p>
       </div>
 
-      {!isFactoryRole && (
+      {showClientContact && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-1 min-w-0">
             <span className="text-[10px] font-bold uppercase text-slate-400">Telefone</span>
@@ -159,7 +163,7 @@ export default function KanbanOpsPanel({
       </label>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
-        {!isFactoryRole && whatsappHref ? (
+        {showClientContact && whatsappHref ? (
           <a
             href={whatsappHref}
             target="_blank"
@@ -187,7 +191,7 @@ export default function KanbanOpsPanel({
           }
           className={cn(
             "inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors",
-            isFactoryRole || !whatsappHref || !project.client.id
+            isFactoryRole || !showClientContact || !whatsappHref || !project.client.id
               ? "sm:col-span-2"
               : ""
           )}

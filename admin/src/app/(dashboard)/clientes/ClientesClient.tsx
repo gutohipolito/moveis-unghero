@@ -132,9 +132,11 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
 export default function ClientesClient({ initialClients, companyId, initialPageSize = 20 }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const { sensitiveHidden } = usePrivacy();
-  const { role } = usePermissions();
+  const { role, isOpsLimited } = usePermissions();
   /** Marceneiro: lista só nome, bairro, cidade e projetos. */
   const isFactoryRole = role === "PRODUCAO";
+  /** Projetista e Marceneiro: sem telefone/e-mail na lista. */
+  const hideClientContact = isOpsLimited;
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
@@ -218,13 +220,17 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     const searchLower = search.toLowerCase();
     const matchesSearch = isFactoryRole
       ? c.nome.toLowerCase().includes(searchLower)
-      : c.nome.toLowerCase().includes(searchLower) ||
-        c.email.toLowerCase().includes(searchLower) ||
-        c.telefone.includes(search) ||
-        location.cidade.toLowerCase().includes(searchLower) ||
-        location.bairro.toLowerCase().includes(searchLower) ||
-        (doc.cpf || "").includes(search) ||
-        (doc.cnpj || "").includes(search);
+      : hideClientContact
+        ? c.nome.toLowerCase().includes(searchLower) ||
+          location.cidade.toLowerCase().includes(searchLower) ||
+          location.bairro.toLowerCase().includes(searchLower)
+        : c.nome.toLowerCase().includes(searchLower) ||
+          c.email.toLowerCase().includes(searchLower) ||
+          c.telefone.includes(search) ||
+          location.cidade.toLowerCase().includes(searchLower) ||
+          location.bairro.toLowerCase().includes(searchLower) ||
+          (doc.cpf || "").includes(search) ||
+          (doc.cnpj || "").includes(search);
     const matchesOrigin =
       isFactoryRole || filterOrigin === "ALL" || c.origem === filterOrigin;
     const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
@@ -559,8 +565,10 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={
-              isFactoryRole
-                ? "Buscar por nome..."
+              hideClientContact
+                ? isFactoryRole
+                  ? "Buscar por nome..."
+                  : "Buscar por nome, cidade ou bairro..."
                 : "Buscar por nome, e-mail ou telefone..."
             }
             value={search}
@@ -698,7 +706,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                       )}
                     </div>
 
-                    {!isFactoryRole && (
+                    {!hideClientContact && (
                       <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Phone className="h-3.5 w-3.5" /> {renderPhone(client)}
@@ -819,7 +827,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                                   {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
                                 </span>
                               )}
-                              {!isFactoryRole && (
+                              {!hideClientContact && (
                                 <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-semibold">
                                   <span className="flex items-center gap-1 whitespace-nowrap">
                                     <Phone className="h-3 w-3 text-slate-500" /> {renderPhone(client)}

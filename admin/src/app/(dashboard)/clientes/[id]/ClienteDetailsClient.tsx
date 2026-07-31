@@ -166,6 +166,8 @@ export default function ClienteDetailsClient({
   const { isOpsLimited, role } = usePermissions();
   /** Marceneiro: no painel do cliente só o nome (sem contato, origem, consentimentos). */
   const isFactoryRole = role === "PRODUCAO";
+  /** Projetista e Marceneiro: sem telefone/e-mail do cliente. */
+  const hideClientContact = isOpsLimited;
 
   useEffect(() => {
     if (!isOpsLimited) return;
@@ -177,7 +179,7 @@ export default function ClienteDetailsClient({
   // Link formatado para WhatsApp com saudação (sem vazar telefone quando oculto)
   const greeting = `Olá ${getFirstName(client.nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
   const whatsappUrl =
-    isFactoryRole || sensitive.hide
+    hideClientContact || sensitive.hide
       ? null
       : buildWhatsAppUrl(client.telefone, greeting);
 
@@ -256,7 +258,7 @@ export default function ClienteDetailsClient({
             )}
           </div>
 
-          {!isFactoryRole && (
+          {!hideClientContact && (
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
               <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
                 {STATUS_LABELS[client.status] || client.status}
@@ -281,11 +283,17 @@ export default function ClienteDetailsClient({
               )}
             </div>
           )}
+          {hideClientContact && !isFactoryRole && (
+            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
+              {STATUS_LABELS[client.status] || client.status}
+            </span>
+          )}
         </div>
 
         {!isFactoryRole && (
           <>
-            {/* Informações de contato integradas */}
+            {/* Informações de contato — ocultas para Projetista/Marceneiro */}
+            {!hideClientContact && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
@@ -340,7 +348,22 @@ export default function ClienteDetailsClient({
                 </div>
               </div>
             </div>
+            )}
+            {hideClientContact && (
+            <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 border-t border-border/40 pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
+                  <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
+                </div>
+              </div>
+            </div>
+            )}
 
+            {!isOpsLimited && (
             <ClientConsentCard
               className="mt-4"
               consent={resolveClientConsent({
@@ -350,6 +373,7 @@ export default function ClienteDetailsClient({
                 observacoes: client.observacoes,
               })}
             />
+            )}
           </>
         )}
       </Card>

@@ -17,7 +17,11 @@ const MOBILE_NAV = [
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const { can } = usePermissions();
+  const { can, isOpsLimited } = usePermissions();
+
+  // Projetista / Marceneiro usam a sidebar (ou tablet); sem barra inferior.
+  if (isOpsLimited) return null;
+
   const items = MOBILE_NAV.filter((item) => can(moduleKeyForHref(item.href)));
 
   if (items.length === 0) return null;

@@ -155,6 +155,7 @@ function getPartnerPalette(id: string) {
 interface PartnerCardProps {
   p: ParceiroDTO;
   privacyMode: boolean;
+  hideValues?: boolean;
   uploadingId: string | null;
   handleUploadImage: (id: string, file: File, type: "avatar" | "galeria") => void;
   handleDeleteImage: (id: string, imageUrl: string, isAvatar: boolean) => void;
@@ -167,6 +168,7 @@ interface PartnerCardProps {
 const PartnerCard = ({
   p,
   privacyMode,
+  hideValues = false,
   uploadingId,
   handleUploadImage,
   handleDeleteImage,
@@ -201,7 +203,7 @@ const PartnerCard = ({
           {/* Avatar com upload rápido */}
           <div 
             onClick={(e) => e.stopPropagation()}
-            className={`relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl overflow-hidden transition-all duration-300 ${privacyMode ? "blur-md select-none" : ""}`}
+            className={`relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl overflow-hidden transition-all duration-300 ${privacyMode && !hideValues ? "blur-md select-none" : ""}`}
           >
             {p.fotoUrl ? (
               <img
@@ -254,7 +256,7 @@ const PartnerCard = ({
           </div>
 
           <div className="min-w-0 flex-1 pt-0.5">
-            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight transition-colors truncate ${palette.hoverText} ${privacyMode ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
+            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight transition-colors truncate ${palette.hoverText} ${privacyMode && !hideValues ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${palette.badge}`}>
                 <Icon className="h-2.5 w-2.5" />
@@ -317,12 +319,16 @@ const PartnerCard = ({
               {projectCount}
             </span>
           </div>
-          <p className="text-lg font-black tracking-tight text-slate-800 tabular-nums leading-none">
-            <PrivacyMoney value={totalLinkedValue} />
-          </p>
-          <p className="text-[9px] font-semibold text-slate-400">
-            Valor total dos projetos no CRM
-          </p>
+          {!hideValues && (
+            <>
+              <p className="text-lg font-black tracking-tight text-slate-800 tabular-nums leading-none">
+                <PrivacyMoney value={totalLinkedValue} />
+              </p>
+              <p className="text-[9px] font-semibold text-slate-400">
+                Valor total dos projetos no CRM
+              </p>
+            </>
+          )}
         </div>
 
         {/* Contatos Rápidos em Grid */}
@@ -407,7 +413,7 @@ const PartnerCard = ({
 export default function ParceirosClient({ initialParceiros, companyId }: ParceirosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, isOpsLimited } = usePermissions();
   const { privacyLocked, privacyMode } = usePrivacy();
   const sensitive = useSensitiveDisplay();
 
@@ -423,7 +429,11 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   
-  const effectivePrivacyMode = privacyLocked || isReadOnly || privacyMode;
+  // Ops: sem blur de nomes/fotos e sem valores financeiros.
+  const effectivePrivacyMode = isOpsLimited
+    ? false
+    : privacyLocked || isReadOnly || privacyMode;
+  const hidePartnerValues = isOpsLimited;
   const [viewingPartner, setViewingPartner] = useState<ParceiroDTO | null>(null);
 
   React.useEffect(() => {
@@ -808,6 +818,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 key={p.id}
                 p={p}
                 privacyMode={effectivePrivacyMode}
+                hideValues={hidePartnerValues}
                 uploadingId={uploadingId}
                 handleUploadImage={handleUploadImage}
                 handleDeleteImage={handleDeleteImage}
@@ -1116,7 +1127,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
                 <div className="space-y-3">
                   <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                    Projetos & Receita
+                    {hidePartnerValues ? "Projetos" : "Projetos & Receita"}
                   </h4>
                   <div className="rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
@@ -1125,10 +1136,12 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                         {projectCount}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wide block">Total em Projetos</span>
-                      <PrivacyMoney value={totalLinkedValue} as="span" className="text-xl font-black text-slate-800 leading-none" />
-                    </div>
+                    {!hidePartnerValues && (
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wide block">Total em Projetos</span>
+                        <PrivacyMoney value={totalLinkedValue} as="span" className="text-xl font-black text-slate-800 leading-none" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1175,9 +1188,16 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                             <p className="font-bold text-slate-700 group-hover/project:text-primary transition-colors truncate">
                               {proj.client.nome}
                             </p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">
-                              {proj.valor_previsto ? Number(proj.valor_previsto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00"}
-                            </p>
+                            {!hidePartnerValues ? (
+                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                {proj.valor_previsto
+                                  ? Number(proj.valor_previsto).toLocaleString("pt-BR", {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    })
+                                  : "R$ 0,00"}
+                              </p>
+                            ) : null}
                           </div>
                           <span className={`inline-flex items-center text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusBg}`}>
                             {proj.status_geral}

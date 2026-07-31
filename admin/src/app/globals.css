@@ -670,6 +670,10 @@ body {
   padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0) + var(--space-4));
 }
 
+.dashboard-main-mobile.dashboard-main-no-mobile-nav {
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+}
+
 .dashboard-main {
   padding-top: var(--dashboard-main-pad-y);
   padding-left: var(--dashboard-main-pad-x);
@@ -2158,8 +2162,13 @@ body.viewer-privacy-lock .privacy-value {
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0) + var(--space-4));
   }
 
+  .dashboard-main-mobile.dashboard-main-no-mobile-nav {
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+  }
+
   @media (min-width: 768px) {
-    .dashboard-main-mobile {
+    .dashboard-main-mobile,
+    .dashboard-main-mobile.dashboard-main-no-mobile-nav {
       padding-bottom: calc(var(--dashboard-main-pad-y) + env(safe-area-inset-bottom, 0));
     }
   }

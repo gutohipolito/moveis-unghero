@@ -10,6 +10,8 @@ import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucid
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { homePathForRole } from "@/lib/permissions";
+import { usePermissions } from "@/context/PermissionsContext";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutWrapperProps {
   children: React.ReactNode;
@@ -32,6 +34,7 @@ export default function DashboardLayoutWrapper({
 }: DashboardLayoutWrapperProps) {
   const { isTablet, isCollapsed, toggleCollapsed } = useTabletLayout();
   const { allCollapsed, collapseAll, expandAll } = useSidebarSections();
+  const { isOpsLimited } = usePermissions();
   const homeHref = homePathForRole(user.cargo);
 
   return (
@@ -121,7 +124,12 @@ export default function DashboardLayoutWrapper({
       >
         {header}
 
-        <main className="flex-1 overflow-x-hidden min-w-0 dashboard-main dashboard-main-mobile">
+        <main
+          className={cn(
+            "flex-1 overflow-x-hidden min-w-0 dashboard-main dashboard-main-mobile",
+            isOpsLimited && "dashboard-main-no-mobile-nav"
+          )}
+        >
           <ReadOnlyBanner />
           <div className="w-full dashboard-main-stack">{children}</div>
         </main>
