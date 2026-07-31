@@ -6,6 +6,7 @@ import { getAuthContext, requireEnvironmentInCompany } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { prisma } from "@/lib/prisma";
 import {
+  canManageEnvironmentAttachments,
   countTechSheetFields,
   type EnvironmentAttachmentDTO,
   type EnvironmentTechSheet,
@@ -179,6 +180,9 @@ export async function listEnvironmentAttachments(environmentId: string) {
 export async function deleteEnvironmentAttachment(environmentId: string, attachmentId: string) {
   const auth = await getWriteAccess("factory");
   if (!auth) return { success: false as const, error: "Não autenticado" };
+  if (!canManageEnvironmentAttachments(auth.cargo)) {
+    return { success: false as const, error: "Marceneiro pode apenas visualizar os arquivos." };
+  }
 
   try {
     await requireEnvironmentInCompany(environmentId, auth.companyId);
@@ -232,6 +236,9 @@ export async function setEnvironmentCoverAttachment(
 ) {
   const auth = await getWriteAccess("factory");
   if (!auth) return { success: false as const, error: "Não autenticado" };
+  if (!canManageEnvironmentAttachments(auth.cargo)) {
+    return { success: false as const, error: "Marceneiro pode apenas visualizar os arquivos." };
+  }
 
   try {
     await requireEnvironmentInCompany(environmentId, auth.companyId);

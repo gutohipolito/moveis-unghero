@@ -7,6 +7,7 @@ import {
   ENVIRONMENT_ATTACHMENT_MAX_BYTES,
   ENVIRONMENT_ATTACHMENT_MIME_TYPES,
   ENVIRONMENT_ATTACHMENT_CATEGORIES,
+  canManageEnvironmentAttachments,
 } from "@/lib/factoryEnvironment";
 
 const VALID_CATEGORIES = new Set(
@@ -49,6 +50,13 @@ export async function POST(
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+  }
+
+  if (!canManageEnvironmentAttachments(auth.cargo)) {
+    return NextResponse.json(
+      { success: false, error: "Marceneiro pode apenas visualizar os arquivos." },
+      { status: 403 }
+    );
   }
 
   const { id: environmentId } = await context.params;

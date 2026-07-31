@@ -24,6 +24,7 @@ import {
   ENVIRONMENT_ATTACHMENT_ACCEPT,
   ENVIRONMENT_ATTACHMENT_CATEGORIES,
   attachmentCategoryLabel,
+  canManageEnvironmentAttachments,
   countTechSheetFields,
   formatAttachmentSize,
   getClientColor,
@@ -33,6 +34,7 @@ import {
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
+import { usePermissions } from "@/context/PermissionsContext";
 import {
   ExternalLink,
   Layers,
@@ -114,6 +116,8 @@ export default function FactoryEnvironmentDetailModal({
   onSlaUpdated,
   onOpenSlaVerify,
 }: FactoryEnvironmentDetailModalProps) {
+  const { role } = usePermissions();
+  const canManageAttachments = canManageEnvironmentAttachments(role);
   const [tab, setTab] = useState<ModalTab>("ficha");
   const [slaStageDraft, setSlaStageDraft] = useState<ProductionSlaStageKey | "">("");
   const [savingSla, setSavingSla] = useState(false);
@@ -718,6 +722,7 @@ export default function FactoryEnvironmentDetailModal({
 
         {tab === "arquivos" && (
           <section className="space-y-4">
+            {canManageAttachments ? (
             <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
@@ -829,6 +834,11 @@ export default function FactoryEnvironmentDetailModal({
                 </div>
               )}
             </div>
+            ) : (
+              <p className="text-xs text-muted-foreground rounded-xl border border-border bg-secondary/20 px-3 py-2.5">
+                Somente visualização — o Marceneiro não pode adicionar ou excluir arquivos.
+              </p>
+            )}
 
             <div className="space-y-2">
               <p className="text-[10px] font-bold uppercase text-muted-foreground">
@@ -966,7 +976,7 @@ export default function FactoryEnvironmentDetailModal({
                           <Download className="h-3 w-3" />
                           Baixar
                         </a>
-                        {image && (
+                        {canManageAttachments && image && (
                           <button
                             type="button"
                             onClick={() => void handleSetCover(file.id)}
@@ -976,6 +986,7 @@ export default function FactoryEnvironmentDetailModal({
                             {isCover ? "Capa" : "Definir capa"}
                           </button>
                         )}
+                        {canManageAttachments && (
                         <button
                           type="button"
                           onClick={() => void handleDeleteAttachment(file.id)}
@@ -984,6 +995,7 @@ export default function FactoryEnvironmentDetailModal({
                           <Trash2 className="h-3 w-3" />
                           Excluir
                         </button>
+                        )}
                       </div>
                     </li>
                   );

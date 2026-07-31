@@ -331,6 +331,7 @@ enum EnvironmentAttachmentCategory {
   RENDER
   REFERENCIA
   MEDICAO
+  CONFERENCIA
   FOTO
 }
 

@@ -69,8 +69,16 @@ export const ENVIRONMENT_ATTACHMENT_CATEGORIES: {
   { value: "RENDER", label: "Render" },
   { value: "REFERENCIA", label: "Referência" },
   { value: "MEDICAO", label: "Medição" },
+  { value: "CONFERENCIA", label: "Conferência técnica" },
   { value: "FOTO", label: "Foto" },
 ];
+
+/** Marceneiro (PRODUCAO) só visualiza; Projetista e demais cargos com escrita podem gerenciar. */
+export function canManageEnvironmentAttachments(
+  role: string | null | undefined
+): boolean {
+  return role !== "PRODUCAO" && role !== "VIEWER";
+}
 
 export const TECH_SHEET_TOTAL_FIELDS = 5;
 

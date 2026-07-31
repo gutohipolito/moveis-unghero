@@ -37,10 +37,14 @@ import QuoteBuilder from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
 import ClientConsentCard from "@/components/clientes/ClientConsentCard";
+import EnvironmentGalleryModal, {
+  type EnvironmentGalleryTarget,
+} from "@/components/EnvironmentGalleryModal";
 import {
   resolveClientConsent,
   stripConsentFromObservacoes,
 } from "@/lib/clientConsent";
+import { canManageEnvironmentAttachments } from "@/lib/factoryEnvironment";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -84,6 +88,7 @@ import {
   Calendar,
   ChevronDown,
   Receipt,
+  Images,
 } from "lucide-react";
 
 interface Environment {
@@ -260,6 +265,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false }: ProjectDetailsProps) {
   const { isAdmin, isOpsLimited, role } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
+  const canManageEnvGallery = canManageEnvironmentAttachments(role);
   const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
   const isFormLead = !isOpsLimited && project.client.origem === "FORMULARIO";
@@ -413,6 +419,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
   // Estados dos formulários
   const [newEnvForm, setNewEnvForm] = useState({ nome: "", tipo: "COZINHA" as EnvironmentType });
+  const [galleryEnvironment, setGalleryEnvironment] =
+    useState<EnvironmentGalleryTarget | null>(null);
   const [timelineInput, setTimelineInput] = useState("");
   const [isTimelinePrivate, setIsTimelinePrivate] = useState(true);
   const [timelineFilter, setTimelineFilter] = useState<"ALL" | "PUBLIC" | "PRIVATE">("ALL");
@@ -1317,7 +1325,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             <div className="min-w-0">
               <h3 className="text-lg font-bold">Módulos de Ambientes / Cômodos</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Monitore e atualize as etapas de fabricação de cada cômodo de forma individual.
+                Toque em um cômodo para ver imagens do projeto, conferência, medição e renders.
+                {canManageEnvGallery
+                  ? " Você também pode adicionar arquivos."
+                  : " Visualização disponível para a fábrica."}
               </p>
             </div>
             {!isOpsLimited && (
@@ -1336,9 +1347,28 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               project.environments.map((env) => {
                 const currentStatusInfo = ENVIRONMENT_STATUSES.find(s => s.value === env.status);
                 return (
-                  <div 
-                    key={env.id} 
-                    className="p-5 rounded-xl border border-border bg-white flex flex-col justify-between gap-4 shadow-sm"
+                  <div
+                    key={env.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      setGalleryEnvironment({
+                        id: env.id,
+                        nome: env.nome,
+                        tipo: env.tipo,
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setGalleryEnvironment({
+                          id: env.id,
+                          nome: env.nome,
+                          tipo: env.tipo,
+                        });
+                      }
+                    }}
+                    className="p-5 rounded-xl border border-border bg-white flex flex-col justify-between gap-4 shadow-sm text-left cursor-pointer hover:border-primary/40 hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                   >
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="min-w-0">
@@ -1354,24 +1384,34 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       </span>
                     </div>
 
-                    {!isOpsLimited && (
-                      <div className="border-t border-border pt-3 flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">
-                          Alterar Status de Fabricação:
-                        </label>
-                        <Select
-                          value={env.status}
-                          onChange={(e) => handleEnvStatusChange(env.id, e.target.value as EnvironmentStatus)}
-                          className="w-full text-xs"
+                    <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Images className="h-3.5 w-3.5 shrink-0" />
+                        Ver imagens
+                      </span>
+                      {!isOpsLimited ? (
+                        <div
+                          className="min-w-0 flex-1 max-w-[58%]"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
                         >
-                          {ENVIRONMENT_STATUSES.map(status => (
-                            <option key={status.value} value={status.value}>
-                              {status.label}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
-                    )}
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
+                            Status
+                          </label>
+                          <Select
+                            value={env.status}
+                            onChange={(e) => handleEnvStatusChange(env.id, e.target.value as EnvironmentStatus)}
+                            className="w-full text-xs"
+                          >
+                            {ENVIRONMENT_STATUSES.map(status => (
+                              <option key={status.value} value={status.value}>
+                                {status.label}
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 );
               })
@@ -2416,6 +2456,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         }}
       />
       <ActionDialogHost dialog={dialog} />
+      <EnvironmentGalleryModal
+        environment={galleryEnvironment}
+        canManage={canManageEnvGallery}
+        onClose={() => setGalleryEnvironment(null)}
+      />
       <ConfTecnicaWhatsAppDialog
         target={confTecnicaWhatsApp}
         onClose={() => setConfTecnicaWhatsApp(null)}
