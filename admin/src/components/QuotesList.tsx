@@ -329,7 +329,8 @@ export default function QuotesList({
     );
     const matchesStatus =
       filterStatus === "ALL" ||
-      (filterStatus === "APPROVED" && summary.hasApproved && !summary.hasPending) ||
+      (filterStatus === "APPROVED" &&
+        (summary.isFullyApproved || (Boolean(q.aprovado_em) && !summary.hasPending))) ||
       (filterStatus === "PARTIAL" && summary.isPartiallyApproved) ||
       (filterStatus === "ACTIVE" && !expired && summary.hasPending) ||
       (filterStatus === "EXPIRED" && expired && summary.hasPending);
@@ -367,7 +368,7 @@ export default function QuotesList({
             status: i.status,
           }))
         );
-        if (summary.hasApproved && !summary.hasPending) return 4;
+        if (summary.isFullyApproved || (Boolean(q.aprovado_em) && !summary.hasPending)) return 4;
         if (summary.isPartiallyApproved) return 3;
         if (isExpired(q.validade)) return 1;
         return 2;
@@ -575,17 +576,17 @@ export default function QuotesList({
       {/* Lista de Orçamentos */}
       <div className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-0 table-fixed text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">COD</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cidade</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Bairro</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Validade</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status Validade</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Valor Final</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[7%]">COD</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[18%]">Cliente</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[10%] hidden lg:table-cell">Cidade</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[10%] hidden xl:table-cell">Bairro</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[9%]">Validade</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[11%]">Status</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[10%]">Valor</th>
+                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right w-[25%]">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -606,12 +607,14 @@ export default function QuotesList({
                       status: i.status,
                     }))
                   );
-                  const isFullyApproved = summary.hasApproved && !summary.hasPending;
-                  const isPartial = summary.isPartiallyApproved;
                   const hasPending = summary.hasPending;
+                  const isPartial = summary.isPartiallyApproved;
+                  // Aprovado comercialmente: sem pendências (mesmo com itens recusados) ou marcador legado.
+                  const isFullyApproved =
+                    summary.isFullyApproved || (Boolean(q.aprovado_em) && !hasPending);
                   const statusLabel = quoteCommercialLabel(summary);
-                  // Alerta de validade apenas para orçamentos ainda com pendência
-                  const rowExpired = expired && hasPending;
+                  // Validade só importa enquanto ainda há o que aprovar.
+                  const rowExpired = expired && hasPending && !isFullyApproved;
                   const nearDanger = hasPending && !expired && daysLeft <= 3;
                   const nearWarning = hasPending && !expired && daysLeft > 3 && daysLeft <= 7;
 
@@ -626,83 +629,99 @@ export default function QuotesList({
                       className={rowExpired ? "bg-rose-500/10" : undefined}
                       style={{ WebkitTapHighlightColor: "transparent" }}
                     >
-                      <td className="py-4 px-4 text-sm font-medium text-slate-700">
-                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-xs">
+                      <td className="py-3 px-2.5 sm:px-3 text-sm font-medium text-slate-700">
+                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[11px] truncate inline-block max-w-full">
                           {formatQuoteCodigo(q)}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-sm text-slate-800 font-semibold">
-                        {q.project.client.nome}
+                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-800 font-semibold min-w-0">
+                        <span className="block truncate" title={q.project.client.nome}>
+                          {q.project.client.nome}
+                        </span>
+                        <span className="block truncate text-[11px] font-normal text-slate-500 lg:hidden">
+                          {q.project.client.cidade}
+                          {q.project.client.bairro ? ` · ${q.project.client.bairro}` : ""}
+                        </span>
                       </td>
-                      <td className="py-4 px-4 text-sm text-slate-600">
-                        {q.project.client.cidade}
+                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-600 hidden lg:table-cell min-w-0">
+                        <span className="block truncate" title={q.project.client.cidade}>
+                          {q.project.client.cidade}
+                        </span>
                       </td>
-                      <td className="py-4 px-4 text-sm text-slate-600">
-                        {q.project.client.bairro || "Não informado"}
+                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-600 hidden xl:table-cell min-w-0">
+                        <span className="block truncate" title={q.project.client.bairro || "Não informado"}>
+                          {q.project.client.bairro || "Não informado"}
+                        </span>
                       </td>
-                      <td className={`py-4 px-4 text-sm ${!hasPending ? "text-slate-400" : dateClass}`}>
-                        {!hasPending ? (
+                      <td className={`py-3 px-2.5 sm:px-3 text-sm whitespace-nowrap ${!hasPending || isFullyApproved ? "text-slate-400" : dateClass}`}>
+                        {!hasPending || isFullyApproved ? (
                           <span className="text-slate-400">—</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1">
                             {formatDate(q.validade)}
                             {nearWarning && (
-                              <span className="text-[11px] font-semibold text-amber-600">
+                              <span className="text-[10px] font-semibold text-amber-600">
                                 ({daysLeft}d)
                               </span>
                             )}
                             {nearDanger && (
-                              <span className="text-[11px] font-semibold text-rose-600">
+                              <span className="text-[10px] font-semibold text-rose-600">
                                 ({daysLeft <= 0 ? "hoje" : `${daysLeft}d`})
                               </span>
                             )}
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-4 text-sm">
+                      <td className="py-3 px-2.5 sm:px-3 text-sm min-w-0">
                         {isFullyApproved ? (
-                          <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                          <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-700 px-2 py-0.5 rounded-full text-[11px] font-bold">
                             ✓ Aprovado
                           </span>
                         ) : isPartial ? (
-                          <span className="inline-flex flex-col items-start gap-0.5">
-                            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded-full text-xs font-bold">
+                          <span className="inline-flex flex-col items-start gap-0.5 min-w-0">
+                            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded-full text-[11px] font-bold">
                               {statusLabel}
                             </span>
                             <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1 flex-wrap">
-                              <PrivacyMoney value={summary.approvedTotal} /> aprov. ·{" "}
-                              <PrivacyMoney value={summary.pendingTotal} /> pend.
+                              <PrivacyMoney value={summary.approvedTotal} /> aprov.
+                              {rowExpired ? (
+                                <span className="text-rose-600 font-semibold">· pend. vencido</span>
+                              ) : (
+                                <>
+                                  {" "}
+                                  · <PrivacyMoney value={summary.pendingTotal} /> pend.
+                                </>
+                              )}
                             </span>
                           </span>
                         ) : expired ? (
-                          <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full text-xs font-medium">
-                            <AlertTriangle className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full text-[11px] font-medium">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
                             Vencido
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full text-xs font-medium">
-                            <Clock className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full text-[11px] font-medium">
+                            <Clock className="h-3 w-3 shrink-0" />
                             Ativo
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-4 text-sm text-slate-800 font-bold">
+                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-800 font-bold whitespace-nowrap">
                         <PrivacyMoney value={q.valor_final} className="inline-block" />
                       </td>
-                      <td className="py-4 px-4 text-sm text-right">
-                        {/* Largura fixa mantém o bloco de ações alinhado entre linhas aprovadas e ativas */}
-                        <div className="flex items-center gap-2 w-[22rem] max-w-full ml-auto">
+                      <td className="py-3 px-2.5 sm:px-3 text-sm text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
                           {!isReadOnly && hasPending && (
                             <Button
                               variant="outline"
                               size="sm"
-                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 flex items-center gap-1.5 h-8 shrink-0 disabled:opacity-50 active:scale-100"
+                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 inline-flex items-center gap-1 h-8 px-2 shrink-0 disabled:opacity-50 active:scale-100"
                               onClick={() => handleApproveQuote(q)}
                               disabled={approvingId === q.id}
                               title="Registrar aprovação"
                             >
                               <CheckCircle2 className={`h-3.5 w-3.5 ${approvingId === q.id ? "animate-pulse" : ""}`} />
-                              {isPartial ? "Aprovar itens" : "Aprovar"}
+                              <span className="hidden 2xl:inline">{isPartial ? "Aprovar itens" : "Aprovar"}</span>
                             </Button>
                           )}
                           {!isReadOnly && hasPending && (
@@ -716,8 +735,8 @@ export default function QuotesList({
                                 className="border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 h-8 px-2"
                                 title="Editar proposta completa (mesma versão)"
                               >
-                                <PencilLine className="h-3.5 w-3.5 mr-1" />
-                                Editar
+                                <PencilLine className="h-3.5 w-3.5" />
+                                <span className="hidden 2xl:inline ml-1">Editar</span>
                               </Button>
                             </Link>
                           )}
@@ -727,47 +746,42 @@ export default function QuotesList({
                               variant="outline"
                               size="sm"
                               disabled
-                              className="border-slate-200 text-slate-400 h-8 shrink-0 flex items-center gap-1.5 cursor-not-allowed"
+                              className="border-slate-200 text-slate-400 h-8 shrink-0 inline-flex items-center gap-1.5 cursor-not-allowed px-2"
                               title="Conta somente leitura: visualização de PDF bloqueada"
                             >
                               <Printer className="h-3.5 w-3.5" />
-                              PDF
                             </Button>
                           ) : (
                           <Link
                             href={`/quotes/${q.id}/print`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={!hasPending ? "min-w-0 flex-1" : "shrink-0"}
+                            className="shrink-0"
                           >
                             <Button
                               variant="outline"
                               size="sm"
-                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 active:scale-100 ${
-                                !hasPending ? "w-full justify-center" : ""
-                              }`}
+                              className="border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1 h-8 px-2 active:scale-100"
                               title="Visualizar PDF / Imprimir"
                             >
                               <Printer className="h-3.5 w-3.5" />
-                              PDF
+                              <span className="hidden 2xl:inline">PDF</span>
                             </Button>
                           </Link>
                           )}
 
                           <Link
                             href={`/projects/${q.project_id}`}
-                            className={!hasPending ? "min-w-0 flex-1" : "shrink-0"}
+                            className="shrink-0"
                           >
                             <Button
                               variant="outline"
                               size="sm"
-                              className={`border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 h-8 active:scale-100 ${
-                                !hasPending ? "w-full justify-center" : ""
-                              }`}
+                              className="border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1 h-8 px-2 active:scale-100"
                               title="Ver Detalhes do Projeto"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              Projeto
+                              <span className="hidden 2xl:inline">Projeto</span>
                             </Button>
                           </Link>
 

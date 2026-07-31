@@ -30,6 +30,9 @@ export function summarizeQuoteItems(items: QuoteItemTotalsInput[]) {
   const sum = (list: QuoteItemTotalsInput[]) =>
     list.reduce((acc, item) => acc + Number(item.valor_total || 0), 0);
 
+  const hasPending = pending.length > 0;
+  const hasApproved = approved.length > 0;
+
   return {
     approvedCount: approved.length,
     pendingCount: pending.length,
@@ -37,11 +40,11 @@ export function summarizeQuoteItems(items: QuoteItemTotalsInput[]) {
     approvedTotal: sum(approved),
     pendingTotal: sum(pending),
     rejectedTotal: sum(rejected),
-    hasPending: pending.length > 0,
-    hasApproved: approved.length > 0,
-    isFullyApproved:
-      items.length > 0 && approved.length === items.length && pending.length === 0,
-    isPartiallyApproved: approved.length > 0 && pending.length > 0,
+    hasPending,
+    hasApproved,
+    /** Sem itens pendentes e com ao menos um aprovado (recusas restantes não reabrem validade). */
+    isFullyApproved: !hasPending && hasApproved,
+    isPartiallyApproved: hasApproved && hasPending,
   };
 }
 

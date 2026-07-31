@@ -1720,7 +1720,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           status: i.status,
                         }))
                       );
-                      const isFullyApproved = summary.hasApproved && !summary.hasPending;
+                      const isFullyApproved = summary.isFullyApproved;
                       const isPartial = summary.isPartiallyApproved;
                       const hasPending = summary.hasPending;
                       const statusLabel = quoteCommercialLabel(summary);
