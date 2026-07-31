@@ -62,6 +62,17 @@ if (stripos($html, '<base ') === false) {
     ) ?? $html;
 }
 
+$printHelper = '<script>'
+    . 'document.addEventListener("click",function(e){'
+    . 'var t=e.target&&e.target.closest?e.target.closest("[data-unghero-print]"):null;'
+    . 'if(!t)return;e.preventDefault();window.print();'
+    . '});</script>';
+if (stripos($html, '</body>') !== false) {
+    $html = preg_replace('/<\/body>/i', $printHelper . '</body>', $html, 1) ?? ($html . $printHelper);
+} else {
+    $html .= $printHelper;
+}
+
 header('Content-Type: text/html; charset=utf-8');
 header('X-Robots-Tag: noindex, nofollow');
 echo $html;

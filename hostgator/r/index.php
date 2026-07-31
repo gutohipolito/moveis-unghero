@@ -306,6 +306,18 @@ if (stripos($body, '<base ') === false) {
     }
 }
 
+// Helper mínimo: Imprimir / Salvar PDF após remoção do JS do Next.
+$printHelper = '<script>'
+    . 'document.addEventListener("click",function(e){'
+    . 'var t=e.target&&e.target.closest?e.target.closest("[data-unghero-print]"):null;'
+    . 'if(!t)return;e.preventDefault();window.print();'
+    . '});</script>';
+if (stripos($body, '</body>') !== false) {
+    $body = preg_replace('/<\/body>/i', $printHelper . '</body>', $body, 1) ?? ($body . $printHelper);
+} else {
+    $body .= $printHelper;
+}
+
 http_response_code(200);
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: private, no-cache, must-revalidate');

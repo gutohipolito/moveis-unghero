@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import {
@@ -11,6 +11,11 @@ import {
 } from "@/lib/receiptShare";
 import { formatCurrencyBRL } from "@/lib/currencyExtenso";
 import { sendReceiptByEmail } from "@/app/actions/emailInbox";
+import {
+  downloadPdfBlob,
+  generatePrintPagePdfBlob,
+} from "@/lib/quotePdfClient";
+import { slugifyFileName } from "@/lib/quoteWhatsApp";
 
 interface ReceiptPrintToolbarProps {
   receiptId: string;
@@ -36,8 +41,10 @@ export default function ReceiptPrintToolbar({
   const [shareUrl, setShareUrl] = useState(initialShareUrl ?? null);
   const [busy, setBusy] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
   const emailReady = Boolean(clientEmail?.includes("@"));
+  const anyBusy = busy || emailBusy || pdfBusy;
 
   const ensureShareLink = useCallback(async () => {
     if (shareUrl) return shareUrl;
@@ -61,6 +68,23 @@ export default function ReceiptPrintToolbar({
     setShareUrl(data.url);
     return data.url;
   }, [shareUrl, receiptId]);
+
+  async function handleDownloadPdf() {
+    setPdfBusy(true);
+    try {
+      const blob = await generatePrintPagePdfBlob();
+      const suffix = numeroLabel
+        ? slugifyFileName(numeroLabel)
+        : slugifyFileName(clientName);
+      downloadPdfBlob(blob, `recibo-${suffix}.pdf`);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Não foi possível gerar o PDF.";
+      window.alert(msg);
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   async function handleWhatsApp() {
     if (!phoneReady) {
@@ -129,7 +153,7 @@ export default function ReceiptPrintToolbar({
           <Button
             type="button"
             onClick={handleWhatsApp}
-            disabled={busy || emailBusy || !phoneReady}
+            disabled={anyBusy || !phoneReady}
             title={
               phoneReady
                 ? "Enviar recibo pelo WhatsApp"
@@ -147,7 +171,7 @@ export default function ReceiptPrintToolbar({
           <Button
             type="button"
             onClick={() => void handleEmail()}
-            disabled={busy || emailBusy || !emailReady}
+            disabled={anyBusy || !emailReady}
             title={
               emailReady
                 ? "Enviar recibo por e-mail (caixa Financeiro)"
@@ -164,16 +188,32 @@ export default function ReceiptPrintToolbar({
           </Button>
           <Button
             type="button"
-            onClick={() => window.print()}
-            disabled={busy || emailBusy}
-            className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+            onClick={() => void handleDownloadPdf()}
+            disabled={anyBusy}
+            title="Baixar arquivo PDF"
+            className="gap-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold"
           >
-            <Printer className="h-4 w-4" /> Imprimir / Salvar PDF
+            {pdfBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {pdfBusy ? "Gerando..." : "Baixar PDF"}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => window.print()}
+            disabled={anyBusy}
+            title="Abrir diálogo de impressão"
+            variant="outline"
+            className="gap-1.5 border-neutral-400 text-neutral-700 hover:bg-neutral-100 font-bold"
+          >
+            <Printer className="h-4 w-4" /> Imprimir
           </Button>
         </div>
       </div>
       <p className="text-right text-[10px] text-neutral-500 leading-snug">
-        Impressão: A4 · margens Nenhuma · escala 100% · desmarque Cabeçalhos e rodapés
+        Baixar PDF gera o arquivo. Imprimir: A4 · margens Nenhuma · escala 100%.
       </p>
     </div>
   );

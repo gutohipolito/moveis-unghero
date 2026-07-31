@@ -1,12 +1,16 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Loader2, Mail, MessageCircle, Printer } from "lucide-react";
+import { Download, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import { getPhoneLastFourDigits } from "@/lib/phone";
-import { buildQuoteWhatsAppMessage, openQuoteWhatsApp } from "@/lib/quoteWhatsApp";
+import { buildQuoteWhatsAppMessage, openQuoteWhatsApp, slugifyFileName } from "@/lib/quoteWhatsApp";
 import { sendQuoteByEmail } from "@/app/actions/emailInbox";
+import {
+  downloadPdfBlob,
+  generatePrintPagePdfBlob,
+} from "@/lib/quotePdfClient";
 
 interface QuotePrintToolbarProps {
   quoteId: string;
@@ -28,8 +32,10 @@ export default function QuotePrintToolbar({
   const [pdfShareUrl, setPdfShareUrl] = useState(initialPdfShareUrl ?? null);
   const [busy, setBusy] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
   const emailReady = Boolean(clientEmail?.includes("@"));
+  const anyBusy = busy || emailBusy || pdfBusy;
 
   const ensureShareLink = useCallback(async () => {
     if (pdfShareUrl) return pdfShareUrl;
@@ -53,6 +59,20 @@ export default function QuotePrintToolbar({
     setPdfShareUrl(data.url);
     return data.url;
   }, [pdfShareUrl, quoteId]);
+
+  async function handleDownloadPdf() {
+    setPdfBusy(true);
+    try {
+      const blob = await generatePrintPagePdfBlob();
+      downloadPdfBlob(blob, `orcamento-${slugifyFileName(clientName)}.pdf`);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Não foi possível gerar o PDF.";
+      window.alert(msg);
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   function handlePrint() {
     window.print();
@@ -113,7 +133,7 @@ export default function QuotePrintToolbar({
         <Button
           type="button"
           onClick={handleWhatsApp}
-          disabled={busy || emailBusy || !phoneReady}
+          disabled={anyBusy || !phoneReady}
           title={
             phoneReady
               ? "Enviar proposta pelo WhatsApp com link do orçamento"
@@ -128,7 +148,7 @@ export default function QuotePrintToolbar({
         <Button
           type="button"
           onClick={() => void handleEmail()}
-          disabled={busy || emailBusy || !emailReady}
+          disabled={anyBusy || !emailReady}
           title={
             emailReady
               ? "Enviar proposta por e-mail (caixa Comercial)"
@@ -142,16 +162,33 @@ export default function QuotePrintToolbar({
 
         <Button
           type="button"
-          onClick={handlePrint}
-          disabled={busy || emailBusy}
+          onClick={() => void handleDownloadPdf()}
+          disabled={anyBusy}
+          title="Baixar arquivo PDF"
           className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
+          {pdfBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {pdfBusy ? "Gerando PDF..." : "Baixar PDF"}
+        </Button>
+
+        <Button
+          type="button"
+          onClick={handlePrint}
+          disabled={anyBusy}
+          title="Abrir diálogo de impressão"
+          variant="outline"
+          className="flex items-center gap-2 border-neutral-500 text-neutral-200 hover:bg-neutral-800 disabled:opacity-60 text-sm font-semibold px-3 py-2 rounded-lg transition-colors cursor-pointer"
+        >
           <Printer className="h-4 w-4" />
-          Imprimir / Salvar PDF
+          Imprimir
         </Button>
       </div>
-      <p className="max-w-[340px] text-right text-[10px] text-neutral-400 leading-snug">
-        Impressão: A4 · margens Nenhuma · escala 100% · desmarque Cabeçalhos e rodapés
+      <p className="max-w-[380px] text-right text-[10px] text-neutral-400 leading-snug">
+        Baixar PDF gera o arquivo no computador. Imprimir: A4 · margens Nenhuma · escala 100%.
       </p>
     </div>
   );
