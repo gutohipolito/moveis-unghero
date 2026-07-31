@@ -71,6 +71,14 @@ export type GeneratePrintPdfOptions = {
   userPassword?: string | null;
 };
 
+/** Altura A4 em px CSS (~96dpi). Usada para manter o layout flex na captura. */
+const A4_HEIGHT_MM = 297;
+const A4_WIDTH_MM = 210;
+
+function mmToCssPx(mm: number) {
+  return (mm * 96) / 25.4;
+}
+
 /**
  * Gera PDF no layout compacto de impressão (sem alterar a tela visível do usuário).
  * Estilos de captura vão só no clone do html2canvas; a tela fica coberta por overlay.
@@ -86,25 +94,20 @@ export async function generateQuotePdfBlob(options?: GeneratePrintPdfOptions) {
   const overlay = showCaptureOverlay();
 
   shell.classList.add("pdf-capture-mode");
-  const previousMinHeight = element.style.minHeight;
-  const previousHeight = element.style.height;
-  const previousOverflow = element.style.overflow;
-  element.style.minHeight = "0px";
-  element.style.height = "auto";
-  element.style.overflow = "visible";
 
   let canvas: HTMLCanvasElement;
   try {
     await waitForQuoteAssets(element);
 
-    const width = Math.ceil(element.scrollWidth);
-    // offsetHeight inclui min-height do A4 (297mm); scrollHeight sozinho pode colapsar
-    const height = Math.ceil(
-      Math.max(
-        element.scrollHeight,
-        element.offsetHeight,
-        element.getBoundingClientRect().height
-      )
+    const a4WidthPx = Math.ceil(mmToCssPx(A4_WIDTH_MM));
+    const a4HeightPx = Math.ceil(mmToCssPx(A4_HEIGHT_MM));
+    const width = Math.max(Math.ceil(element.scrollWidth), a4WidthPx);
+    // Preserva folha A4 (min-height) para o flex “colar” footer/cards no bottom
+    const height = Math.max(
+      Math.ceil(element.scrollHeight),
+      Math.ceil(element.offsetHeight),
+      Math.ceil(element.getBoundingClientRect().height),
+      a4HeightPx
     );
 
     canvas = await html2canvas(element, {
@@ -118,27 +121,57 @@ export async function generateQuotePdfBlob(options?: GeneratePrintPdfOptions) {
       windowWidth: Math.max(width, 820),
       windowHeight: height,
       onclone: (clonedDoc) => {
-        // Estilos só no clone — o overlay já cobre a página real
         clonedDoc.documentElement.classList.add("pdf-capture-mode");
         const clonedOverlay = clonedDoc.getElementById("quote-pdf-capture-overlay");
         clonedOverlay?.remove();
+
         const clonedPage = clonedDoc.querySelector<HTMLElement>(".print-page");
         if (clonedPage) {
-          clonedPage.style.minHeight = "0px";
-          clonedPage.style.height = "auto";
+          // Mantém altura A4 + flex — NÃO colapsar (isso voltava o layout antigo)
+          clonedPage.style.minHeight = `${A4_HEIGHT_MM}mm`;
+          clonedPage.style.height = height > a4HeightPx + 2 ? "auto" : `${A4_HEIGHT_MM}mm`;
+          clonedPage.style.width = `${A4_WIDTH_MM}mm`;
+          clonedPage.style.maxWidth = `${A4_WIDTH_MM}mm`;
+          clonedPage.style.display = "flex";
+          clonedPage.style.flexDirection = "column";
           clonedPage.style.overflow = "visible";
           clonedPage.style.border = "none";
           clonedPage.style.borderRadius = "0";
           clonedPage.style.boxShadow = "none";
-          clonedPage.style.margin = "0 auto";
+          clonedPage.style.margin = "0";
+          clonedPage.style.background = "#ffffff";
+
+          const main = clonedPage.querySelector<HTMLElement>(":scope > main");
+          if (main) {
+            main.style.flex = "1 1 auto";
+            main.style.display = "flex";
+            main.style.flexDirection = "column";
+            main.style.minHeight = "0";
+          }
+
+          const items = clonedPage.querySelectorAll<HTMLElement>(".print-quote-items");
+          items.forEach((el) => {
+            el.style.flex = "1 1 auto";
+            el.style.display = "flex";
+            el.style.flexDirection = "column";
+          });
+
+          const bottoms = clonedPage.querySelectorAll<HTMLElement>(".print-quote-bottom");
+          bottoms.forEach((el) => {
+            el.style.flexShrink = "0";
+            el.style.marginTop = "auto";
+          });
+
+          const footer = clonedPage.querySelector<HTMLElement>(".print-quote-footer");
+          if (footer) {
+            footer.style.flexShrink = "0";
+            footer.style.marginTop = "auto";
+          }
         }
       },
     });
   } finally {
     shell.classList.remove("pdf-capture-mode");
-    element.style.minHeight = previousMinHeight;
-    element.style.height = previousHeight;
-    element.style.overflow = previousOverflow;
     overlay.remove();
   }
 
@@ -170,8 +203,8 @@ export async function generateQuotePdfBlob(options?: GeneratePrintPdfOptions) {
   const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
   if (imgHeight <= pageHeight + PAGE_OVERFLOW_EPSILON_MM) {
-    const drawHeight = Math.min(imgHeight, pageHeight);
-    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, drawHeight);
+    // Conteúdo cabe em 1 folha: desenha preenchendo o A4 (evita “encolher” o layout)
+    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, pageHeight);
     return pdf.output("blob");
   }
 
