@@ -40,6 +40,7 @@ type LoadedPrintQuote = {
     client: {
       nome: string;
       telefone: string;
+      email: string | null;
       cidade: string;
       bairro: string | null;
     };
@@ -180,6 +181,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             quoteId={quote.id}
             clientName={client.nome}
             clientPhone={client.telefone}
+            clientEmail={client.email}
             validade={formattedValidade}
             initialPdfShareUrl={quote.pdfPublicUrl}
           />

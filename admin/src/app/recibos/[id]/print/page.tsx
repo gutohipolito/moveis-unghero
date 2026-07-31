@@ -29,7 +29,7 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
   const receipt = await prisma.paymentReceipt.findFirst({
     where: { id, company_id: companyId },
     include: {
-      client: { select: { telefone: true, nome: true, id: true } },
+      client: { select: { telefone: true, email: true, nome: true, id: true } },
     },
   });
 
@@ -50,6 +50,7 @@ export default async function ReceiptPrintPage({ params }: PrintPageProps) {
           valor={Number(receipt.valor)}
           clientName={receipt.cliente_nome}
           clientPhone={receipt.client?.telefone || ""}
+          clientEmail={receipt.client?.email || null}
           backHref={`/clientes/${receipt.client.id}`}
           initialShareUrl={shareUrl}
           numeroLabel={printData.numeroLabel}

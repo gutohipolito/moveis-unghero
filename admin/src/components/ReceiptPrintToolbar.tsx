@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, MessageCircle, Printer } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import {
@@ -10,12 +10,14 @@ import {
   openReceiptWhatsApp,
 } from "@/lib/receiptShare";
 import { formatCurrencyBRL } from "@/lib/currencyExtenso";
+import { sendReceiptByEmail } from "@/app/actions/emailInbox";
 
 interface ReceiptPrintToolbarProps {
   receiptId: string;
   valor: number;
   clientName: string;
   clientPhone: string;
+  clientEmail?: string | null;
   backHref?: string;
   initialShareUrl?: string | null;
   numeroLabel?: string | null;
@@ -26,13 +28,16 @@ export default function ReceiptPrintToolbar({
   valor,
   clientName,
   clientPhone,
+  clientEmail,
   backHref = "/clientes",
   initialShareUrl,
   numeroLabel,
 }: ReceiptPrintToolbarProps) {
   const [shareUrl, setShareUrl] = useState(initialShareUrl ?? null);
   const [busy, setBusy] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
+  const emailReady = Boolean(clientEmail?.includes("@"));
 
   const ensureShareLink = useCallback(async () => {
     if (shareUrl) return shareUrl;
@@ -87,6 +92,30 @@ export default function ReceiptPrintToolbar({
     }
   }
 
+  async function handleEmail() {
+    if (!clientEmail?.includes("@")) {
+      window.alert("Cadastre o e-mail do cliente para enviar o recibo.");
+      return;
+    }
+    setEmailBusy(true);
+    try {
+      const res = await sendReceiptByEmail({
+        receiptId,
+        to: clientEmail.trim(),
+      });
+      if (!res.success) {
+        throw new Error(res.error || "Falha ao enviar e-mail.");
+      }
+      window.alert(`Recibo enviado para ${"to" in res ? res.to : clientEmail}.`);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Não foi possível enviar o e-mail.";
+      window.alert(msg);
+    } finally {
+      setEmailBusy(false);
+    }
+  }
+
   return (
     <div className="print:hidden flex flex-col gap-1.5 max-w-[210mm] mx-auto px-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -96,11 +125,11 @@ export default function ReceiptPrintToolbar({
         >
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             onClick={handleWhatsApp}
-            disabled={busy || !phoneReady}
+            disabled={busy || emailBusy || !phoneReady}
             title={
               phoneReady
                 ? "Enviar recibo pelo WhatsApp"
@@ -117,8 +146,26 @@ export default function ReceiptPrintToolbar({
           </Button>
           <Button
             type="button"
+            onClick={() => void handleEmail()}
+            disabled={busy || emailBusy || !emailReady}
+            title={
+              emailReady
+                ? "Enviar recibo por e-mail (caixa Financeiro)"
+                : "Cliente sem e-mail cadastrado"
+            }
+            className="gap-1.5 bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white font-bold"
+          >
+            {emailBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
+            {emailBusy ? "Enviando..." : "E-mail"}
+          </Button>
+          <Button
+            type="button"
             onClick={() => window.print()}
-            disabled={busy}
+            disabled={busy || emailBusy}
             className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold"
           >
             <Printer className="h-4 w-4" /> Imprimir / Salvar PDF

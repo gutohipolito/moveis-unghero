@@ -32,6 +32,7 @@ model Company {
   contracts         Contract[]
   paymentReceipts   PaymentReceipt[]
   accessCredentials AccessCredential[]
+  emailMailboxes    EmailMailbox[]
 }
 
 /** Cofre de acessos da empresa (sites, e-mails, hospedagem, etc.). */
@@ -97,6 +98,7 @@ model User {
   quoteItemsApproved  QuoteItem[] @relation("QuoteItemApprover")
   quoteApprovals      QuoteApproval[] @relation("QuoteApprovalApprover")
   quoteItemPriceHistory QuoteItemPriceHistory[] @relation("QuoteItemPriceHistoryAuthor")
+  emailOutboundLogs     EmailOutboundLog[] @relation("EmailOutboundSender")
 }
 
 enum Role {
@@ -1192,3 +1194,75 @@ model PaymentReceipt {
   @@index([project_id])
   @@index([installment_id])
 }
+
+enum EmailMailboxArea {
+  COMERCIAL
+  FINANCEIRO
+  ATENDIMENTO
+}
+
+/** Caixa de e-mail compartilhada por área (IMAP/SMTP HostGator). */
+model EmailMailbox {
+  id            String           @id @default(uuid())
+  company_id    String
+  company       Company          @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  area          EmailMailboxArea
+  address       String
+  display_name  String
+  imap_host     String           @default("mail.moveisunghero.com.br")
+  imap_port     Int              @default(993)
+  smtp_host     String           @default("mail.moveisunghero.com.br")
+  smtp_port     Int              @default(465)
+  password_enc  String
+  ativo         Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  roleAccess    EmailMailboxAccess[]
+  outboundLogs  EmailOutboundLog[]
+
+  @@unique([company_id, address])
+  @@index([company_id, area])
+  @@index([company_id, ativo])
+}
+
+/** Quais cargos podem usar a caixa (além de ADMIN). */
+model EmailMailboxAccess {
+  id          String       @id @default(uuid())
+  mailbox_id  String
+  mailbox     EmailMailbox @relation(fields: [mailbox_id], references: [id], onDelete: Cascade)
+  role        Role
+
+  @@unique([mailbox_id, role])
+  @@index([mailbox_id])
+}
+
+enum EmailOutboundStatus {
+  SENT
+  FAILED
+}
+
+/** Envios disparados pelo sistema (orçamento, recibo, etc.). */
+model EmailOutboundLog {
+  id           String              @id @default(uuid())
+  company_id   String
+  mailbox_id   String
+  mailbox      EmailMailbox        @relation(fields: [mailbox_id], references: [id], onDelete: Cascade)
+  project_id   String?
+  quote_id     String?
+  receipt_id   String?
+  to_address   String
+  subject      String
+  status       EmailOutboundStatus @default(SENT)
+  error        String?
+  sent_by_id   String?
+  sent_by      User?               @relation("EmailOutboundSender", fields: [sent_by_id], references: [id], onDelete: SetNull)
+  createdAt    DateTime            @default(now())
+
+  @@index([company_id])
+  @@index([mailbox_id])
+  @@index([project_id])
+  @@index([quote_id])
+  @@index([receipt_id])
+  @@index([createdAt])
+}
+

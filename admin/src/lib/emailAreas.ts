@@ -1,0 +1,28 @@
+import type { EmailMailboxArea, Role } from "@prisma/client";
+
+export const EMAIL_MAILBOX_AREAS: EmailMailboxArea[] = [
+  "COMERCIAL",
+  "FINANCEIRO",
+  "ATENDIMENTO",
+];
+
+export const EMAIL_AREA_LABELS: Record<EmailMailboxArea, string> = {
+  COMERCIAL: "Comercial",
+  FINANCEIRO: "Financeiro",
+  ATENDIMENTO: "Atendimento",
+};
+
+/** Cargos padrão liberados ao criar uma caixa da área (ADMIN sempre acessa). */
+export const DEFAULT_ROLES_BY_AREA: Record<EmailMailboxArea, Role[]> = {
+  COMERCIAL: ["COMERCIAL", "PROJETISTA"],
+  FINANCEIRO: ["FINANCEIRO"],
+  ATENDIMENTO: ["COMERCIAL", "PROJETISTA", "FINANCEIRO"],
+};
+
+export const DEFAULT_IMAP_HOST = "mail.moveisunghero.com.br";
+export const DEFAULT_IMAP_PORT = 993;
+export const DEFAULT_SMTP_HOST = "mail.moveisunghero.com.br";
+export const DEFAULT_SMTP_PORT = 465;
+
+export const EMAIL_MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+export const EMAIL_INBOX_PAGE_SIZE = 40;

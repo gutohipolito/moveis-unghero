@@ -26,6 +26,7 @@ export const CONFIGURABLE_MODULES: ModuleDef[] = [
   { key: "estoque", label: "Estoque e Fornecedores", section: "Logística" },
   { key: "logistica", label: "Logística e Entrega", section: "Logística" },
   { key: "financeiro", label: "Financeiro", section: "Administração" },
+  { key: "emails", label: "E-mails", section: "Administração" },
   { key: "cadastros", label: "Cadastros do Sistema", section: "Administração" },
 ];
 

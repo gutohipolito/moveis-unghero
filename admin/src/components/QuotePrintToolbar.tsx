@@ -1,16 +1,18 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Loader2, MessageCircle, Printer } from "lucide-react";
+import { Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import { getPhoneLastFourDigits } from "@/lib/phone";
 import { buildQuoteWhatsAppMessage, openQuoteWhatsApp } from "@/lib/quoteWhatsApp";
+import { sendQuoteByEmail } from "@/app/actions/emailInbox";
 
 interface QuotePrintToolbarProps {
   quoteId: string;
   clientName: string;
   clientPhone: string;
+  clientEmail?: string | null;
   validade: string;
   initialPdfShareUrl?: string | null;
 }
@@ -19,12 +21,15 @@ export default function QuotePrintToolbar({
   quoteId,
   clientName,
   clientPhone,
+  clientEmail,
   validade,
   initialPdfShareUrl,
 }: QuotePrintToolbarProps) {
   const [pdfShareUrl, setPdfShareUrl] = useState(initialPdfShareUrl ?? null);
   const [busy, setBusy] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
+  const emailReady = Boolean(clientEmail?.includes("@"));
 
   const ensureShareLink = useCallback(async () => {
     if (pdfShareUrl) return pdfShareUrl;
@@ -81,13 +86,34 @@ export default function QuotePrintToolbar({
     }
   }
 
+  async function handleEmail() {
+    const to = clientEmail?.trim();
+    if (!to?.includes("@")) {
+      window.alert("Cadastre o e-mail do cliente para enviar a proposta.");
+      return;
+    }
+    setEmailBusy(true);
+    try {
+      const res = await sendQuoteByEmail({ quoteId, to });
+      if (!res.success) {
+        throw new Error(res.error || "Falha ao enviar e-mail.");
+      }
+      window.alert(`Orçamento enviado para ${res.to}.`);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Não foi possível enviar o e-mail.";
+      window.alert(msg);
+    } finally {
+      setEmailBusy(false);
+    }
+  }
+
   return (
     <div className="flex flex-col items-end gap-1.5">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
           type="button"
           onClick={handleWhatsApp}
-          disabled={busy || !phoneReady}
+          disabled={busy || emailBusy || !phoneReady}
           title={
             phoneReady
               ? "Enviar proposta pelo WhatsApp com link do orçamento"
@@ -101,8 +127,23 @@ export default function QuotePrintToolbar({
 
         <Button
           type="button"
+          onClick={() => void handleEmail()}
+          disabled={busy || emailBusy || !emailReady}
+          title={
+            emailReady
+              ? "Enviar proposta por e-mail (caixa Comercial)"
+              : "Cliente sem e-mail cadastrado"
+          }
+          className="flex items-center gap-2 bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
+        >
+          {emailBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+          {emailBusy ? "Enviando..." : "Enviar por e-mail"}
+        </Button>
+
+        <Button
+          type="button"
           onClick={handlePrint}
-          disabled={busy}
+          disabled={busy || emailBusy}
           className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
           <Printer className="h-4 w-4" />
