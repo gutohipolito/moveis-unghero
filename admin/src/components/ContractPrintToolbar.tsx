@@ -2,13 +2,18 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, MessageCircle, Printer } from "lucide-react";
+import { ArrowLeft, Download, Loader2, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import {
   buildContractWhatsAppMessage,
   openContractWhatsApp,
 } from "@/lib/contractWhatsApp";
+import {
+  downloadPdfBlob,
+  generatePrintPagePdfBlob,
+} from "@/lib/quotePdfClient";
+import { slugifyFileName } from "@/lib/quoteWhatsApp";
 
 interface ContractPrintToolbarProps {
   contractId: string;
@@ -25,7 +30,9 @@ export default function ContractPrintToolbar({
 }: ContractPrintToolbarProps) {
   const [shareUrl, setShareUrl] = useState(initialShareUrl ?? null);
   const [busy, setBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
+  const anyBusy = busy || pdfBusy;
 
   const ensureShareLink = useCallback(async () => {
     if (shareUrl) return shareUrl;
@@ -49,6 +56,20 @@ export default function ContractPrintToolbar({
     setShareUrl(data.url);
     return data.url;
   }, [shareUrl, contractId]);
+
+  async function handleDownloadPdf() {
+    setPdfBusy(true);
+    try {
+      const blob = await generatePrintPagePdfBlob();
+      downloadPdfBlob(blob, `contrato-${slugifyFileName(clientName)}.pdf`);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Não foi possível gerar o PDF.";
+      window.alert(msg);
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   async function handleWhatsApp() {
     if (!phoneReady) {
@@ -90,7 +111,7 @@ export default function ContractPrintToolbar({
         <Button
           type="button"
           onClick={handleWhatsApp}
-          disabled={busy || !phoneReady}
+          disabled={anyBusy || !phoneReady}
           title={
             phoneReady
               ? "Enviar contrato pelo WhatsApp para assinatura"
@@ -107,11 +128,27 @@ export default function ContractPrintToolbar({
         </Button>
         <Button
           type="button"
-          onClick={() => window.print()}
-          disabled={busy}
-          className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+          onClick={() => void handleDownloadPdf()}
+          disabled={anyBusy}
+          title="Baixar arquivo PDF"
+          className="gap-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold"
         >
-          <Printer className="h-4 w-4" /> Imprimir / Salvar PDF
+          {pdfBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {pdfBusy ? "Gerando..." : "Baixar PDF"}
+        </Button>
+        <Button
+          type="button"
+          onClick={() => window.print()}
+          disabled={anyBusy}
+          title="Abrir diálogo de impressão"
+          variant="outline"
+          className="gap-1.5 border-neutral-400 text-neutral-700 hover:bg-neutral-100 font-bold"
+        >
+          <Printer className="h-4 w-4" /> Imprimir
         </Button>
       </div>
     </div>
