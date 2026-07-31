@@ -7,6 +7,7 @@ import HeaderQuickActions from "@/components/HeaderQuickActions";
 import NotificationChannelSettings from "@/components/NotificationChannelSettings";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import SensitiveToggle from "@/components/SensitiveToggle";
+import FullscreenToggle from "@/components/FullscreenToggle";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import {
   BellRing,
@@ -149,6 +150,8 @@ export default function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <FullscreenToggle />
+
         {!isOpsLimited && (
           <div className="flex items-center gap-1 pr-2 border-r border-border/80">
             <PrivacyToggle />
