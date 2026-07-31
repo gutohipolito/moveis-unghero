@@ -1,5 +1,6 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
+import { formatMailConnectionError } from "@/lib/emailErrors";
 
 export type ImapConnectionConfig = {
   host: string;
@@ -39,15 +40,24 @@ export type EmailMessageDetail = {
 };
 
 function createClient(config: ImapConnectionConfig) {
-  return new ImapFlow({
+  const client = new ImapFlow({
     host: config.host,
     port: config.port,
     secure: true,
     auth: { user: config.user, pass: config.pass },
     logger: false,
-    connectionTimeout: 20_000,
+    connectionTimeout: 25_000,
     greetingTimeout: 20_000,
+    tls: {
+      servername: config.host,
+      minVersion: "TLSv1.2",
+    },
   });
+  // Evita crash por 'error' event sem listener (imapflow emite além do throw).
+  client.on("error", () => {
+    /* handled via connect() rejection */
+  });
+  return client;
 }
 
 export async function testImapConnection(config: ImapConnectionConfig) {
@@ -57,12 +67,10 @@ export async function testImapConnection(config: ImapConnectionConfig) {
     await client.mailboxOpen("INBOX");
     return { success: true as const };
   } catch (error) {
+    console.error("testImapConnection:", error);
     return {
       success: false as const,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Falha ao conectar no IMAP (verifique host, usuário e senha).",
+      error: formatMailConnectionError(error, "IMAP"),
     };
   } finally {
     try {
@@ -197,7 +205,7 @@ export async function fetchInboxMessage(
         html: typeof parsed.html === "string" ? parsed.html : null,
         messageId: parsed.messageId || msg.envelope?.messageId || null,
         inReplyTo: parsed.inReplyTo || null,
-        references: refs.filter(Boolean),
+        references: refs.map(String),
         attachments: (parsed.attachments || []).map((a) => ({
           filename: a.filename || "anexo",
           contentType: a.contentType || "application/octet-stream",

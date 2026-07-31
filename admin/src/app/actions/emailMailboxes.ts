@@ -294,7 +294,10 @@ export async function testEmailMailboxConnection(mailboxId: string) {
     pass: password,
   });
   if (!imap.success) {
-    return { success: false as const, error: `IMAP: ${imap.error}` };
+    return {
+      success: false as const,
+      error: imap.error || "IMAP: falha ao conectar. Confira senha e HostGator.",
+    };
   }
 
   const smtp = await testSmtpConnection({
@@ -304,7 +307,10 @@ export async function testEmailMailboxConnection(mailboxId: string) {
     pass: password,
   });
   if (!smtp.success) {
-    return { success: false as const, error: `SMTP: ${smtp.error}` };
+    return {
+      success: false as const,
+      error: smtp.error || "SMTP: falha ao conectar. Confira senha e HostGator.",
+    };
   }
 
   return { success: true as const };

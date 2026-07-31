@@ -51,7 +51,9 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
   const [saving, setSaving] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [info, setInfo] = useState<{ tone: "ok" | "error"; text: string } | null>(
+    null
+  );
 
   const openCreate = () => {
     setForm(emptyForm());
@@ -120,16 +122,34 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
     if (res.success) {
       setMailboxes((prev) => prev.filter((m) => m.id !== id));
     } else {
-      setInfo(res.error || "Não foi possível excluir.");
+      setInfo({ tone: "error", text: res.error || "Não foi possível excluir." });
     }
   };
 
   const handleTest = async (id: string) => {
     setTestingId(id);
     setInfo(null);
-    const res = await testEmailMailboxConnection(id);
-    setTestingId(null);
-    setInfo(res.success ? "Conexão IMAP e SMTP OK." : res.error || "Falha no teste.");
+    try {
+      const res = await testEmailMailboxConnection(id);
+      setInfo(
+        res.success
+          ? { tone: "ok", text: "Conexão IMAP e SMTP OK com o HostGator." }
+          : {
+              tone: "error",
+              text: res.error || "Falha no teste de conexão.",
+            }
+      );
+    } catch (error) {
+      setInfo({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Falha inesperada no teste (timeout ou rede).",
+      });
+    } finally {
+      setTestingId(null);
+    }
   };
 
   return (
@@ -152,7 +172,16 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
       />
 
       {info && (
-        <p className="text-sm rounded-lg border border-border/60 bg-white px-3 py-2">{info}</p>
+        <div
+          className={`text-sm rounded-lg border px-3 py-2.5 leading-relaxed ${
+            info.tone === "ok"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-rose-200 bg-rose-50 text-rose-900"
+          }`}
+          role="status"
+        >
+          {info.text}
+        </div>
       )}
 
       <div className="rounded-xl border border-border/50 bg-white overflow-hidden">

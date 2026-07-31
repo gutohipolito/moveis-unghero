@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { EMAIL_MAX_ATTACHMENT_BYTES } from "@/lib/emailAreas";
+import { formatMailConnectionError } from "@/lib/emailErrors";
 
 export type SmtpConnectionConfig = {
   host: string;
@@ -33,19 +34,21 @@ export async function testSmtpConnection(config: SmtpConnectionConfig) {
     port: config.port,
     secure: config.port === 465,
     auth: { user: config.user, pass: config.pass },
-    connectionTimeout: 20_000,
+    connectionTimeout: 25_000,
     greetingTimeout: 20_000,
+    tls: {
+      servername: config.host,
+      minVersion: "TLSv1.2",
+    },
   });
   try {
     await transporter.verify();
     return { success: true as const };
   } catch (error) {
+    console.error("testSmtpConnection:", error);
     return {
       success: false as const,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Falha ao conectar no SMTP (verifique host, usuário e senha).",
+      error: formatMailConnectionError(error, "SMTP"),
     };
   } finally {
     transporter.close();

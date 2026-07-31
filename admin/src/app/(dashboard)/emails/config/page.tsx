@@ -4,6 +4,8 @@ import { getAuthContext } from "@/lib/auth-guard";
 import { listAllEmailMailboxesAdmin } from "@/app/actions/emailMailboxes";
 import EmailMailboxesConfigClient from "./EmailMailboxesConfigClient";
 
+export const maxDuration = 60;
+
 export default async function EmailsConfigPage() {
   await guardModule("emails");
   const auth = await getAuthContext();
