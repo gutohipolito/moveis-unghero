@@ -6,7 +6,6 @@ import {
   ExternalLink,
   MapPin,
   MessageCircle,
-  Phone,
   Layers,
 } from "lucide-react";
 import type { ProjectStatus } from "@/app/actions/kanban";
@@ -39,6 +38,8 @@ interface KanbanOpsPanelProps {
   onClose: () => void;
   loading: boolean;
   isReadOnly: boolean;
+  /** Marceneiro: sem telefone/e-mail/WhatsApp e etapa só leitura. */
+  isFactoryRole?: boolean;
   displayPhone: string;
   displayEmail: string;
   whatsappHref: string | null;
@@ -56,6 +57,7 @@ export default function KanbanOpsPanel({
   onClose,
   loading,
   isReadOnly,
+  isFactoryRole = false,
   displayPhone,
   displayEmail,
   whatsappHref,
@@ -64,49 +66,73 @@ export default function KanbanOpsPanel({
   const stageTitle =
     OPS_FUNNEL_COLUMNS.find((o) => o.id === editingStatusGeral)?.title ||
     editingStatusGeral;
+  const stageLocked = isReadOnly || isFactoryRole;
+  const canSave = !isReadOnly && !isFactoryRole;
 
   return (
     <form
       onSubmit={onSubmit}
       className={cn(
-        "space-y-4",
-        reserveCloseSpace && "pt-8 sm:pt-0"
+        "flex flex-col gap-4 p-4 sm:p-5 min-h-0",
+        reserveCloseSpace && "pt-10 sm:pt-5"
       )}
     >
-      <div className="space-y-1">
+      <div className="space-y-1.5 shrink-0">
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Acompanhamento operacional · {stageTitle}
+          Acompanhamento operacional
         </p>
-        <h3 className="text-lg font-black text-foreground leading-tight">
+        <h3 className="text-lg sm:text-xl font-black text-foreground leading-tight break-words">
           {leadForm.nome || project.client.nome}
         </h3>
         <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
-          {leadForm.cidade || project.client.cidade || "Cidade não informada"}
+          <span className="truncate">
+            {leadForm.cidade || project.client.cidade || "Cidade não informada"}
+          </span>
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-1">
-          <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1">
-            <Phone className="h-3 w-3" /> Telefone
-          </span>
-          <p className="text-sm font-semibold text-foreground">{displayPhone || "—"}</p>
+      {!isFactoryRole && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase text-slate-400">Telefone</span>
+            <p className="text-sm font-semibold text-foreground break-all">{displayPhone || "—"}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase text-slate-400">E-mail</span>
+            <p className="text-sm font-semibold text-foreground break-all">
+              {displayEmail || "—"}
+            </p>
+          </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-1">
-          <span className="text-[10px] font-bold uppercase text-slate-400">E-mail</span>
-          <p className="text-sm font-semibold text-foreground break-all">
-            {displayEmail || "—"}
-          </p>
-        </div>
+      )}
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-1 shrink-0">
+        <span className="text-[10px] font-bold uppercase text-slate-400">Etapa do funil</span>
+        {stageLocked ? (
+          <p className="text-sm font-bold text-foreground">{stageTitle}</p>
+        ) : (
+          <select
+            value={editingStatusGeral}
+            disabled={loading}
+            onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
+            className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/30"
+          >
+            {OPS_FUNNEL_COLUMNS.map((col) => (
+              <option key={col.id} value={col.id}>
+                {col.title}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {(project.conf_tecnica_resp1Nome || project.conf_tecnica_resp2Nome) && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 space-y-1">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 space-y-1 shrink-0">
           <span className="text-[10px] font-bold uppercase text-emerald-800">
             Conf. técnica — responsáveis
           </span>
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-semibold text-foreground break-words">
             {[project.conf_tecnica_resp1Nome, project.conf_tecnica_resp2Nome]
               .filter(Boolean)
               .join(" · ")}
@@ -114,78 +140,77 @@ export default function KanbanOpsPanel({
         </div>
       )}
 
-      <label className="block space-y-1.5">
-        <span className="text-[11px] font-bold text-slate-600">Etapa do funil</span>
-        <select
-          value={editingStatusGeral}
-          disabled={isReadOnly || loading}
-          onChange={(e) => setEditingStatusGeral(e.target.value as ProjectStatus)}
-          className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60"
-        >
-          {OPS_FUNNEL_COLUMNS.map((col) => (
-            <option key={col.id} value={col.id}>
-              {col.title}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="block space-y-1.5">
+      <label className="block space-y-1.5 min-w-0">
         <span className="text-[11px] font-bold text-slate-600">Observações operacionais</span>
-        <textarea
-          value={editingObservacoes}
-          disabled={isReadOnly || loading}
-          onChange={(e) => setEditingObservacoes(e.target.value)}
-          rows={4}
-          placeholder="Medidas, acessos, datas de visita, pendências da obra…"
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60 resize-y min-h-[96px]"
-        />
+        {isFactoryRole || isReadOnly ? (
+          <div className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 min-h-[5rem] whitespace-pre-wrap">
+            {editingObservacoes.trim() || "Nenhuma observação registrada."}
+          </div>
+        ) : (
+          <textarea
+            value={editingObservacoes}
+            disabled={loading}
+            onChange={(e) => setEditingObservacoes(e.target.value)}
+            rows={4}
+            placeholder="Medidas, acessos, datas de visita, pendências da obra…"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/30 resize-y min-h-[96px]"
+          />
+        )}
       </label>
 
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        {whatsappHref ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
+        {!isFactoryRole && whatsappHref ? (
           <a
             href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            <MessageCircle className="h-3.5 w-3.5 shrink-0" />
             WhatsApp
           </a>
         ) : null}
-        {project.client.id ? (
+        {project.client.id && !isFactoryRole ? (
           <Link
             href={`/clientes/${project.client.id}`}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
             Ficha do cliente
           </Link>
         ) : null}
         <Link
-          href={`/projects/${project.id}`}
-          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors"
+          href={
+            project.client.id
+              ? `/clientes/${project.client.id}?tab=projects`
+              : `/projects/${project.id}`
+          }
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors",
+            isFactoryRole || !whatsappHref || !project.client.id
+              ? "sm:col-span-2"
+              : ""
+          )}
         >
-          <Layers className="h-3.5 w-3.5" />
-          Projeto / fábrica
+          <Layers className="h-3.5 w-3.5 shrink-0" />
+          {isFactoryRole ? "Ver projetos do cliente" : "Ver projeto"}
         </Link>
       </div>
 
-      <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
         <Button
           type="button"
           variant="outline"
           onClick={onClose}
-          className="text-xs font-bold"
+          className="text-xs font-bold w-full sm:w-auto min-h-11"
           disabled={loading}
         >
           Fechar
         </Button>
-        {!isReadOnly && (
+        {canSave && (
           <Button
             type="submit"
-            className="text-xs font-bold btn-metallic"
+            className="text-xs font-bold btn-metallic w-full sm:w-auto min-h-10"
             disabled={loading}
           >
             {loading ? "Salvando…" : "Salvar"}

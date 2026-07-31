@@ -773,6 +773,37 @@ body {
   .dashboard-main .kpi-value {
     font-size: 1.125rem;
   }
+
+  /* Funil comercial: colunas um pouco mais largas e cards legíveis no 10.1″ */
+  .dashboard-main .kanban-scroll {
+    gap: 0.875rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .dashboard-main .kanban-column {
+    width: min(42vw, 18.5rem);
+  }
+
+  .dashboard-main .kanban-column > .p-3\.5 {
+    padding: 0.75rem 0.875rem 0.5rem;
+  }
+
+  .dashboard-main .kanban-card {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .dashboard-main .kanban-card h4 {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .dashboard-main .kanban-lead-dialog {
+    max-width: min(28rem, calc(100vw - 2rem));
+  }
+
+  .dashboard-main .kanban-lead-dialog form {
+    gap: 0.875rem;
+  }
 }
 
 .notification-trigger {

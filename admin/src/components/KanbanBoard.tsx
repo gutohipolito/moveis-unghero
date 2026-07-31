@@ -378,7 +378,8 @@ export default function KanbanBoard({
   colaboradores = [],
   initialFollowUpSla = null,
 }: KanbanBoardProps) {
-  const { isReadOnly, isOpsLimited } = usePermissions();
+  const { isReadOnly, isOpsLimited, role } = usePermissions();
+  const isFactoryRole = role === "PRODUCAO";
   const funnelColumns = isOpsLimited ? OPS_FUNNEL_COLUMNS : FUNNEL_COLUMNS;
   const sensitive = useSensitiveDisplay();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -583,7 +584,7 @@ export default function KanbanBoard({
 
   const handleEditLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isReadOnly || !editingProjectId) return;
+    if (isReadOnly || isFactoryRole || !editingProjectId) return;
     setLoading(true);
 
     const data = {
@@ -954,16 +955,17 @@ export default function KanbanBoard({
       })
     );
     const showQuoteShareBadge =
+      !isOpsLimited &&
       Boolean(quoteShareLabel) &&
       ["LEAD", "ORCAMENTO", "NEGOCIACAO"].includes(project.status_geral);
-    const hasQuoteShareTab = Boolean(project.quoteShare?.sharedAt);
+    const hasQuoteShareTab = !isOpsLimited && Boolean(project.quoteShare?.sharedAt);
     const needsReceiptReminder =
       !isOpsLimited &&
       !project.hasPaymentReceipt &&
       RECEIPT_REMINDER_STATUSES.has(project.status_geral);
     const innerTab = cardInnerTab[project.id] ?? "geral";
 
-    const actionButtons = !isReadOnly ? (
+    const actionButtons = !isReadOnly && !isFactoryRole ? (
       <div className="kanban-card-actions">
         {showFollowUp && boardView === "funil" && (
           <button
@@ -1031,24 +1033,25 @@ export default function KanbanBoard({
       </div>
     ) : null;
 
+    const canDragCard =
+      !isReadOnly && !isFactoryRole && boardView === "funil" && !isMobile;
+
     return (
       <div
         key={project.id}
-        draggable={!isReadOnly && boardView === "funil" && !isMobile}
+        draggable={canDragCard}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(project)}
         className={`group kanban-card kanban-card-stage overflow-hidden border ${
-          project.client.tipo_pessoa === "PJ" ? "border-indigo-500/50 shadow-xs ring-1 ring-indigo-50" : theme.cardBorder
+          !isFactoryRole && project.client.tipo_pessoa === "PJ" ? "border-indigo-500/50 shadow-xs ring-1 ring-indigo-50" : theme.cardBorder
         } ${theme.cardShadow} ${theme.cardHover} ${
-          isReadOnly
-            ? "cursor-pointer"
-            : boardView === "funil"
-              ? "cursor-grab active:cursor-grabbing"
-              : "cursor-pointer"
+          canDragCard
+            ? "cursor-grab active:cursor-grabbing"
+            : "cursor-pointer"
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
-        } ${followLevel === "ok" ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${
+        } ${followLevel === "ok" || isOpsLimited ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${
           project.status_geral === "PRODUCAO" ? "opacity-45 grayscale-[30%] bg-slate-50/70 border-slate-300" : ""
         }`}
       >
@@ -1056,11 +1059,13 @@ export default function KanbanBoard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border border-border bg-secondary/60 text-muted-foreground"
-                >
-                  {labelOrigin(project.client.origem)}
-                </span>
+                {!isOpsLimited && (
+                  <span
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase border border-border bg-secondary/60 text-muted-foreground"
+                  >
+                    {labelOrigin(project.client.origem)}
+                  </span>
+                )}
                 <span className="text-[10px] text-muted-foreground flex items-center font-medium">
                   <MapPin className="h-2.5 w-2.5 mr-0.5 shrink-0" />
                   {project.client.cidade}
@@ -1083,14 +1088,14 @@ export default function KanbanBoard({
                       "Data não registrada"}
                   </span>
                 </p>
-              ) : (
+              ) : !isFactoryRole ? (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
                   <Phone className="h-3 w-3 opacity-80 text-primary shrink-0" />
                   <span className="tabular-nums whitespace-nowrap truncate">
                     {sensitive.phone(project.client.telefone)}
                   </span>
                 </p>
-              )}
+              ) : null}
             </div>
 
             <div className="flex items-start gap-1.5 shrink-0">
@@ -1142,7 +1147,7 @@ export default function KanbanBoard({
             </div>
           </div>
 
-          {followMessage ? (
+          {followMessage && !isOpsLimited ? (
             <HoverTooltip
               content={
                 <div className="space-y-1">
@@ -1306,6 +1311,14 @@ export default function KanbanBoard({
                       <span className="text-[9px] font-semibold uppercase tracking-wide block text-emerald-800">
                         Conf. Técnica — responsáveis
                       </span>
+                      {isFactoryRole ? (
+                        <p className="text-[10px] font-semibold text-slate-700 bg-white border border-emerald-200 rounded-lg px-2 py-1.5">
+                          {[project.conf_tecnica_resp1Nome, project.conf_tecnica_resp2Nome]
+                            .filter(Boolean)
+                            .join(" · ") || "Nenhum responsável atribuído"}
+                        </p>
+                      ) : (
+                        <>
                       <select
                         value={project.conf_tecnica_resp1_id || "none"}
                         disabled={isReadOnly || loading || colaboradores.length === 0}
@@ -1410,6 +1423,8 @@ export default function KanbanBoard({
                           </option>
                         ))}
                       </select>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1440,36 +1455,40 @@ export default function KanbanBoard({
                 )}
 
                 {/* Div Flex simples para alinhar botões sem margens negativas que quebrem as bordas */}
+                {!isFactoryRole && (
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40 select-none">
                   {actionButtons}
 
                   <div className="flex items-center gap-2">
-                    <a
-                      href={sensitive.whatsappHref(project.client.telefone) || undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer rounded"
-                      style={{
-                        minWidth: "1.625rem",
-                        minHeight: "1.625rem",
-                        padding: "0.25rem",
-                      }}
-                      title="Iniciar conversa no WhatsApp"
-                    >
-                      <svg 
-                        className="fill-current" 
-                        style={{ width: "0.875rem", height: "0.875rem" }} 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
+                      <a
+                        href={sensitive.whatsappHref(project.client.telefone) || undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                        className="kanban-card-action bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer rounded"
+                        style={{
+                          minWidth: "1.625rem",
+                          minHeight: "1.625rem",
+                          padding: "0.25rem",
+                        }}
+                        title="Iniciar conversa no WhatsApp"
                       >
-                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
-                      </svg>
-                    </a>
+                        <svg
+                          className="fill-current"
+                          style={{ width: "0.875rem", height: "0.875rem" }}
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.59 1.978 14.12 .952 11.5 .952c-5.442 0-9.866 4.372-9.87 9.799-.001 1.702.451 3.361 1.307 4.8l-.988 3.606 3.698-.951zM17.5 14.77c-.3-.15-1.785-.88-2.067-.98-.28-.1-.49-.15-.69.15-.2.3-.78 1-.96 1.2-.18.2-.36.22-.66.07-.3-.15-1.27-.47-2.42-1.49-.89-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.5.15-.15.2-.25.3-.4.1-.15.05-.3-.02-.46-.07-.15-.69-1.67-.95-2.29-.25-.62-.51-.53-.69-.53-.18 0-.38-.02-.58-.02-.2 0-.53.07-.8.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.08 2.93 1.23 3.13.15.2 2.13 3.25 5.16 4.56.72.3 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.79-.73 2.04-1.43.25-.7.25-1.3.17-1.43-.08-.13-.28-.21-.58-.36z"/>
+                        </svg>
+                      </a>
 
                     {/* Avançar etapa — só no mobile, onde não há drag & drop */}
-                    {!isReadOnly && isMobile && boardView === "funil" && getNextFunnelStatus(project.status_geral, funnelColumns) && (
+                    {!isReadOnly &&
+                      isMobile &&
+                      boardView === "funil" &&
+                      getNextFunnelStatus(project.status_geral, funnelColumns) && (
                       <button
                         type="button"
                         onPointerDown={(e) => e.stopPropagation()}
@@ -1490,6 +1509,7 @@ export default function KanbanBoard({
                     )}
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -1519,7 +1539,7 @@ export default function KanbanBoard({
             />
           ) : (
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-              Funil a partir de Aprovados
+              {isFactoryRole ? "Acompanhamento operacional" : "Funil a partir de Aprovados"}
             </p>
           )}
           <button
@@ -1545,6 +1565,7 @@ export default function KanbanBoard({
         </div>
 
         {boardView === "funil" &&
+          !isOpsLimited &&
           (followUpLosses.length > 0 ||
             followUpAlerts.length > 0 ||
             followUpWarnings.length > 0) && (
@@ -1612,8 +1633,14 @@ export default function KanbanBoard({
           return (
             <div 
               key={col.id}
-              onDragOver={(e) => handleDragOver(e, col.id)}
-              onDrop={(e) => handleDrop(e, col.id)}
+              onDragOver={(e) => {
+                if (isFactoryRole) return;
+                handleDragOver(e, col.id);
+              }}
+              onDrop={(e) => {
+                if (isFactoryRole) return;
+                handleDrop(e, col.id);
+              }}
               className={`kanban-column flex flex-col h-full rounded-2xl bg-slate-100/75 border border-slate-200/60 shadow-2xs transition-all duration-300 relative ${
                 isOver ? `ring-2 ${theme.dropRing} shadow-md scale-[1.01]` : ""
               }`}
@@ -1621,14 +1648,15 @@ export default function KanbanBoard({
               {/* Cabeçalho da Coluna */}
               <div className={`p-3.5 pb-2 ${theme.header} rounded-t-2xl flex items-center justify-between`}>
                 <div className="flex items-center space-x-2 min-w-0">
-                  <div className="relative group/tooltip flex items-center shrink-0">
-                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
-                    <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-100 text-[11px] rounded-lg shadow-xl border border-slate-800 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto transition-all duration-200 z-50 leading-relaxed font-normal normal-case translate-y-1 group-hover/tooltip:translate-y-0">
-                      {COLUMN_DESCRIPTIONS[col.id]}
-                      {/* Seta indicadora do balão */}
-                      <div className="absolute top-full left-4 -mt-1 border-[5px] border-transparent border-t-slate-950"></div>
+                  {!isFactoryRole && (
+                    <div className="relative group/tooltip flex items-center shrink-0">
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary transition-colors cursor-help" />
+                      <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-100 text-[11px] rounded-lg shadow-xl border border-slate-800 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto transition-all duration-200 z-50 leading-relaxed font-normal normal-case translate-y-1 group-hover/tooltip:translate-y-0">
+                        {COLUMN_DESCRIPTIONS[col.id]}
+                        <div className="absolute top-full left-4 -mt-1 border-[5px] border-transparent border-t-slate-950"></div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <span className="font-bold text-xs uppercase tracking-wide truncate">{col.title}</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                     {colProjects.length}
@@ -1712,11 +1740,13 @@ export default function KanbanBoard({
       <Dialog
         isOpen={isEditLeadOpen}
         onClose={() => setIsEditLeadOpen(false)}
-        className="max-w-2xl w-full overflow-hidden shadow-2xl"
+        className={`${
+          isOpsLimited ? "max-w-lg" : "max-w-2xl"
+        } w-full overflow-hidden shadow-2xl kanban-lead-dialog`}
         bodyClassName={
           isMobile
             ? "modal-panel-body-fill"
-            : "p-0 overflow-y-auto max-h-[min(90svh,920px)]"
+            : "p-0 overflow-y-auto max-h-[min(88svh,920px)]"
         }
         fullscreen={isMobile}
       >
@@ -2079,9 +2109,14 @@ export default function KanbanBoard({
                   onClose={() => setIsEditLeadOpen(false)}
                   loading={loading}
                   isReadOnly={isReadOnly}
+                  isFactoryRole={isFactoryRole}
                   displayPhone={sensitive.phone(leadForm.telefone)}
                   displayEmail={sensitive.email(leadForm.email)}
-                  whatsappHref={sensitive.whatsappHref(currentProject.client.telefone)}
+                  whatsappHref={
+                    isFactoryRole
+                      ? null
+                      : sensitive.whatsappHref(currentProject.client.telefone)
+                  }
                   reserveCloseSpace={!hasBriefing}
                 />
               ) : (
