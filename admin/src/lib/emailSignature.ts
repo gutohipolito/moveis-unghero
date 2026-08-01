@@ -13,10 +13,8 @@ export const EMAIL_SIG_TOKENS = {
   foreground: "#29231f",
   muted: "#746963",
   primary: "#dc9b04",
-  primaryForeground: "#1f1814",
   border: "#dcd7d0",
   background: "#f8f6f2",
-  card: "#fdfdfc",
   fontDisplay: "'Outfit', 'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
   fontBody: "'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
 } as const;
@@ -74,15 +72,15 @@ function contactRow(
   const t = EMAIL_SIG_TOKENS;
   return `
 <tr>
-  <td style="padding:0 0 6px 0;">
+  <td style="padding:0 0 5px 0;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
       <tr>
-        <td valign="top" width="18" style="padding:2px 10px 0 0;width:18px;">
+        <td valign="top" width="20" style="padding:3px 10px 0 0;width:20px;">
           <a href="${href}" style="text-decoration:none;border:0;">
-            <img src="${iconSrc}" width="16" height="16" alt="${iconAlt}" style="display:block;border:0;outline:none;width:16px;height:16px;">
+            <img src="${iconSrc}" width="14" height="14" alt="${iconAlt}" style="display:block;border:0;outline:none;width:14px;height:14px;">
           </a>
         </td>
-        <td valign="top" style="font-family:${t.fontBody};font-size:13px;line-height:1.45;font-weight:500;color:${t.foreground};">
+        <td valign="top" style="font-family:${t.fontBody};font-size:12.5px;line-height:1.45;font-weight:500;color:${t.foreground};">
           <a href="${href}" style="color:${t.foreground};text-decoration:none;">${labelHtml}</a>
         </td>
       </tr>
@@ -92,8 +90,8 @@ function contactRow(
 }
 
 /**
- * Assinatura alinhada ao design system do admin:
- * logo do sidebar aberto + Outfit / Plus Jakarta + cores do tema.
+ * Assinatura: logo preto do sidebar + tipografia do sistema + ícones line mono.
+ * Layout em bloco largo (mais retangular), sem coluna colorida.
  */
 export function buildUngheroSignatureHtml(options: BuildSignatureOptions): string {
   const title = escapeHtml((options.title || "Atendimento").trim() || "Atendimento");
@@ -112,38 +110,39 @@ export function buildUngheroSignatureHtml(options: BuildSignatureOptions): strin
     .join("");
 
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;max-width:480px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;width:100%;max-width:560px;">
   <tr>
-    <td style="padding:24px 0 0 0;border-top:1px solid ${t.border};">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+    <td style="padding:22px 0 0 0;border-top:1px solid ${t.border};">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">
         <tr>
-          <td valign="top" style="padding:4px 20px 0 0;">
+          <td style="padding:0 0 14px 0;">
             <a href="${b.siteHref}" style="text-decoration:none;border:0;">
-              <img src="${logoSrc}" width="133" height="28" alt="${company}" style="display:block;border:0;outline:none;height:28px;width:auto;max-width:133px;">
+              <img src="${logoSrc}" width="148" height="31" alt="${company}" style="display:block;border:0;outline:none;height:31px;width:auto;max-width:148px;">
             </a>
           </td>
-          <td valign="top" width="1" style="width:1px;background-color:${t.border};font-size:0;line-height:0;">&nbsp;</td>
-          <td valign="top" style="padding:0 0 0 20px;">
+        </tr>
+        <tr>
+          <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
+            ${title}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 12px 0;font-family:${t.fontBody};font-size:11px;line-height:1.35;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${t.muted};">
+            ${company}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 14px 0;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
               <tr>
-                <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:17px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
-                  ${title}
-                </td>
+                <td style="width:36px;height:2px;background-color:${t.foreground};font-size:0;line-height:0;">&nbsp;</td>
               </tr>
-              <tr>
-                <td style="padding:0 0 10px 0;font-family:${t.fontBody};font-size:12px;line-height:1.35;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:${t.muted};">
-                  ${company}
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:0 0 12px 0;">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-                    <tr>
-                      <td style="width:28px;height:3px;background-color:${t.primary};font-size:0;line-height:0;border-radius:2px;">&nbsp;</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
               ${contactRow(asset("whatsapp.png"), "WhatsApp", b.whatsappHref, escapeHtml(b.whatsappDisplay))}
               ${contactRow(asset("instagram.png"), "Instagram", b.instagramHref, escapeHtml(b.instagramHandle))}
               ${contactRow(asset("website.png"), "Site", b.siteHref, escapeHtml(b.siteDisplay))}
@@ -190,10 +189,17 @@ function plainBodyToHtml(text: string): string {
   return `<div style="font-family:${t.fontBody};font-size:15px;line-height:1.6;color:${t.foreground};">${escaped}</div>`;
 }
 
+function wrapBodyHtml(html: string): string {
+  const t = EMAIL_SIG_TOKENS;
+  const inner = (html || "").trim();
+  if (!inner) return plainBodyToHtml("");
+  return `<div style="font-family:${t.fontBody};font-size:15px;line-height:1.6;color:${t.foreground};">${inner}</div>`;
+}
+
 function stripTagsRough(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|tr|h\d|td)>/gi, "\n")
+    .replace(/<\/(p|div|tr|h\d|td|li)>/gi, "\n")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -205,34 +211,52 @@ function stripTagsRough(html: string): string {
     .trim();
 }
 
-/** Converte corpo texto + assinatura (HTML ou texto) em multipart para o SMTP. */
+export type ComposeBodyInput = {
+  text: string;
+  /** Se informado, usado como corpo HTML (ex.: editor rich). */
+  html?: string | null;
+};
+
+/** Converte corpo + assinatura em multipart para o SMTP. */
 export function composeBodyWithSignature(
-  bodyText: string,
+  bodyTextOrInput: string | ComposeBodyInput,
   signature: string | null | undefined
 ): { text: string; html: string } {
-  const body = (bodyText || "").trimEnd();
+  const input: ComposeBodyInput =
+    typeof bodyTextOrInput === "string"
+      ? { text: bodyTextOrInput }
+      : bodyTextOrInput;
+
+  const textBody = (input.text || "").trimEnd();
+  const htmlBody = (input.html || "").trim();
   const sig = (signature || "").trim();
   const t = EMAIL_SIG_TOKENS;
 
+  const bodyHtml = htmlBody ? wrapBodyHtml(htmlBody) : plainBodyToHtml(textBody);
+
   if (!sig) {
-    return { text: body, html: plainBodyToHtml(body) };
+    return {
+      text: textBody || stripTagsRough(htmlBody),
+      html: bodyHtml,
+    };
   }
 
   if (isHtmlEmailSignature(sig)) {
     const textFallback = stripTagsRough(sig);
     const marker = textFallback.split("\n")[0] || "";
+    const plain = textBody || stripTagsRough(htmlBody);
     const already =
       Boolean(marker) &&
-      (body.includes(marker) || body.includes(`-- \n${marker}`));
-    const text = already ? body : `${body}\n\n-- \n${textFallback}`;
-    const html = `${plainBodyToHtml(body)}${sig}`;
-    return { text, html };
+      (plain.includes(marker) || plain.includes(`-- \n${marker}`));
+    const text = already ? plain : `${plain}\n\n-- \n${textFallback}`;
+    return { text, html: `${bodyHtml}${sig}` };
   }
 
-  const already = body.endsWith(sig) || body.includes(`\n-- \n${sig}`);
-  const text = already ? body : `${body}\n\n-- \n${sig}`;
+  const plain = textBody || stripTagsRough(htmlBody);
+  const already = plain.endsWith(sig) || plain.includes(`\n-- \n${sig}`);
+  const text = already ? plain : `${plain}\n\n-- \n${sig}`;
   const html = already
-    ? plainBodyToHtml(body)
-    : `${plainBodyToHtml(body)}<div style="margin-top:18px;font-family:${t.fontBody};font-size:13px;line-height:1.45;color:${t.muted};white-space:pre-wrap;">${escapeHtml(`-- \n${sig}`)}</div>`;
+    ? bodyHtml
+    : `${bodyHtml}<div style="margin-top:18px;font-family:${t.fontBody};font-size:13px;line-height:1.45;color:${t.muted};white-space:pre-wrap;">${escapeHtml(`-- \n${sig}`)}</div>`;
   return { text, html };
 }

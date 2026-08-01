@@ -84,6 +84,8 @@ export type ComposeEmailInput = {
   to: string;
   subject: string;
   text: string;
+  /** Corpo HTML do editor (opcional). */
+  html?: string;
   inReplyTo?: string;
   references?: string[];
   attachments?: Array<{
@@ -101,18 +103,22 @@ export async function sendMailboxEmail(input: ComposeEmailInput) {
 
   const to = input.to.trim();
   const subject = input.subject.trim();
-  let text = input.text.trim();
+  const text = (input.text || "").trim();
+  const html = (input.html || "").trim();
   if (!to || !to.includes("@")) {
     return { success: false as const, error: "Informe o destinatário." };
   }
   if (!subject) {
     return { success: false as const, error: "Informe o assunto." };
   }
-  if (!text) {
+  if (!text && !html) {
     return { success: false as const, error: "Informe a mensagem." };
   }
 
-  const body = composeBodyWithSignature(text, loaded.mailbox.signature_text);
+  const body = composeBodyWithSignature(
+    { text: text || html.replace(/<[^>]+>/g, " "), html: html || null },
+    loaded.mailbox.signature_text
+  );
 
   const attachments = (input.attachments || []).map((a) => {
     const content = Buffer.from(a.contentBase64, "base64");

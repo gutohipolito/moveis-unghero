@@ -259,7 +259,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
         )}
       </div>
 
-      <Dialog isOpen={open} onClose={() => !saving && setOpen(false)} className="max-w-lg">
+      <Dialog isOpen={open} onClose={() => !saving && setOpen(false)} className="max-w-3xl w-[min(880px,calc(100vw-2rem))]">
         <div className="p-5 space-y-4">
           <h3 className="text-lg font-bold">
             {form.id ? "Editar caixa" : "Nova caixa"}
@@ -380,7 +380,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                     sandbox=""
                     srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></head><body style="margin:0;padding:8px 4px;background:hsl(38,28%,96%);">${form.signatureText}</body></html>`}
                     className="w-full border-0 bg-transparent"
-                    style={{ height: 200 }}
+                    style={{ height: 240 }}
                   />
                 </div>
               ) : (

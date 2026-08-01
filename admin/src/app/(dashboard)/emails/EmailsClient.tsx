@@ -18,6 +18,10 @@ import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
+import EmailRichEditor, {
+  htmlToPlainText,
+  plainTextToEditorHtml,
+} from "@/components/EmailRichEditor";
 import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
 import {
   getMailboxMessage,
@@ -81,7 +85,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   const [composeMode, setComposeMode] = useState<"new" | "reply">("new");
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [bodyHtml, setBodyHtml] = useState("");
   const [inReplyTo, setInReplyTo] = useState<string | undefined>();
   const [references, setReferences] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<
@@ -131,7 +135,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     setComposeMode("new");
     setTo("");
     setSubject("");
-    setBody("");
+    setBodyHtml("");
     setInReplyTo(undefined);
     setReferences([]);
     setAttachments([]);
@@ -148,9 +152,8 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         ? detail.subject
         : `Re: ${detail.subject}`
     );
-    setBody(
-      `\n\n---\nEm ${formatMsgDate(detail.date)}, ${detail.from} escreveu:\n${detail.text.slice(0, 2000)}`
-    );
+    const quote = `\n\n---\nEm ${formatMsgDate(detail.date)}, ${detail.from} escreveu:\n${detail.text.slice(0, 2000)}`;
+    setBodyHtml(plainTextToEditorHtml(quote));
     setInReplyTo(detail.messageId || undefined);
     setReferences(
       [...(detail.references || []), detail.messageId].filter(Boolean) as string[]
@@ -187,11 +190,13 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     if (!mailboxId) return;
     setSending(true);
     setComposeError(null);
+    const text = htmlToPlainText(bodyHtml);
     const res = await sendMailboxEmail({
       mailboxId,
       to,
       subject,
-      text: body,
+      text,
+      html: bodyHtml,
       inReplyTo,
       references,
       attachments,
@@ -432,78 +437,90 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
       <Dialog
         isOpen={composeOpen}
         onClose={() => !sending && setComposeOpen(false)}
-        className="max-w-lg"
+        className="max-w-3xl w-[min(920px,calc(100vw-2rem))]"
+        bodyClassName="max-h-[min(88vh,820px)]"
       >
-        <div className="p-5 space-y-4">
-          <h3 className="text-lg font-bold">
-            {composeMode === "reply" ? "Responder" : "Novo e-mail"}
-          </h3>
-          <p className="text-xs text-muted-foreground -mt-2">
-            De: {selectedMailbox?.address}
-            {selectedMailbox?.signatureText
-              ? " · A assinatura da caixa será adicionada ao enviar."
-              : ""}
-          </p>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-muted-foreground">Para</label>
-              <Input value={to} onChange={(e) => setTo(e.target.value)} className="h-9" />
+        <div className="flex flex-col min-h-[min(72vh,640px)]">
+          <div className="px-5 pt-5 pb-3 border-b border-border/50 shrink-0">
+            <h3 className="text-lg font-bold font-display tracking-tight">
+              {composeMode === "reply" ? "Responder" : "Nova mensagem"}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              De: {selectedMailbox?.address}
+              {selectedMailbox?.signatureText
+                ? " · A assinatura da caixa será adicionada ao enviar."
+                : ""}
+            </p>
+          </div>
+
+          <div className="px-5 pt-3 space-y-0 shrink-0">
+            <div className="flex items-center gap-3 border-b border-border/40 py-2">
+              <label className="text-xs text-muted-foreground w-14 shrink-0">Para</label>
+              <Input
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="h-8 border-0 shadow-none focus-visible:ring-0 px-0"
+                placeholder="destinatario@email.com"
+              />
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Assunto</label>
+            <div className="flex items-center gap-3 border-b border-border/40 py-2">
+              <label className="text-xs text-muted-foreground w-14 shrink-0">Assunto</label>
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-9"
+                className="h-8 border-0 shadow-none focus-visible:ring-0 px-0"
+                placeholder="Assunto"
               />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Mensagem</label>
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                className="mt-1 w-full min-h-[160px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">
-                Anexos (máx. {Math.round(EMAIL_MAX_ATTACHMENT_BYTES / (1024 * 1024))} MB cada)
-              </label>
-              <Input
-                type="file"
-                multiple
-                className="h-9 mt-1"
-                onChange={(e) => void onPickFiles(e.target.files)}
-              />
-              {attachments.length > 0 && (
-                <ul className="mt-1 text-[11px] text-muted-foreground space-y-0.5">
-                  {attachments.map((a) => (
-                    <li key={a.filename}>• {a.filename}</li>
-                  ))}
-                </ul>
-              )}
             </div>
           </div>
+
+          <div className="flex-1 px-5 py-3 min-h-0 flex flex-col">
+            <EmailRichEditor
+              key={`${composeMode}-${composeOpen}-${selectedUid ?? "new"}`}
+              valueHtml={bodyHtml}
+              onChangeHtml={setBodyHtml}
+              onPickFiles={(files) => void onPickFiles(files)}
+              disabled={sending}
+              className="flex-1"
+              minHeightClassName="min-h-[240px]"
+            />
+            {attachments.length > 0 && (
+              <ul className="mt-2 text-[11px] text-muted-foreground space-y-0.5">
+                {attachments.map((a) => (
+                  <li key={a.filename} className="flex items-center gap-1">
+                    <Paperclip className="h-3 w-3" /> {a.filename}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {composeError && (
-            <p className="text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
+            <p className="mx-5 mb-2 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
               {composeError}
             </p>
           )}
-          <div className="flex justify-end gap-2">
+
+          <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between gap-3 shrink-0 bg-slate-50/60">
+            <div className="flex items-center gap-2">
+              <Button onClick={() => void handleSend()} disabled={sending} className="gap-1.5 h-9 px-5">
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                Enviar
+              </Button>
+              <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                Anexos até {Math.round(EMAIL_MAX_ATTACHMENT_BYTES / (1024 * 1024))} MB
+              </span>
+            </div>
             <Button
               variant="outline"
               onClick={() => setComposeOpen(false)}
               disabled={sending}
             >
-              Cancelar
-            </Button>
-            <Button onClick={() => void handleSend()} disabled={sending} className="gap-1.5">
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Enviar
+              Descartar
             </Button>
           </div>
         </div>
