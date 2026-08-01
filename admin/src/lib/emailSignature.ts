@@ -40,7 +40,7 @@ export const EMAIL_SIGNATURE_BRAND = {
 
 /** Aviso padrão de confidencialidade + LGPD (Lei nº 13.709/2018). */
 export const EMAIL_SIGNATURE_LGPD_NOTICE =
-  "Este e-mail e quaisquer anexos são confidenciais e destinam-se exclusivamente ao(s) destinatário(s) indicado(s). Se você o recebeu por engano, por favor apague-o e nos informe. O tratamento de dados pessoais pela Móveis Unghero observa a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).";
+  "A Móveis Unghero valoriza a privacidade e trata dados pessoais com rigor, em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018). Este e-mail e quaisquer anexos são confidenciais e destinam-se exclusivamente ao(s) destinatário(s) indicado(s). Se você o recebeu por engano, por favor apague-o e nos informe.";
 
 export const SIGNATURE_TITLE_BY_AREA: Record<EmailMailboxArea, string> = {
   ATENDIMENTO: "Atendimento",
