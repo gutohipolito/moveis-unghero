@@ -380,7 +380,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                     sandbox=""
                     srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></head><body style="margin:0;padding:8px 4px;background:hsl(38,28%,96%);">${form.signatureText}</body></html>`}
                     className="w-full border-0 bg-transparent"
-                    style={{ height: 240 }}
+                    style={{ height: 280 }}
                   />
                 </div>
               ) : (

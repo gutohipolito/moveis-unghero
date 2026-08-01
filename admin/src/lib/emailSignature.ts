@@ -12,6 +12,8 @@ export const EMAIL_SIGNATURE_ASSET_BASE =
 export const EMAIL_SIG_TOKENS = {
   foreground: "#29231f",
   muted: "#746963",
+  /** Cinza mais claro para o aviso LGPD. */
+  disclaimer: "#9A918A",
   primary: "#dc9b04",
   border: "#dcd7d0",
   background: "#f8f6f2",
@@ -35,6 +37,10 @@ export const EMAIL_SIGNATURE_BRAND = {
   mapsHref:
     "https://www.google.com/maps/place/M%C3%B3veis+Unghero/@-29.2211024,-51.3423502,17z",
 } as const;
+
+/** Aviso padrão de confidencialidade + LGPD (Lei nº 13.709/2018). */
+export const EMAIL_SIGNATURE_LGPD_NOTICE =
+  "Este e-mail e quaisquer anexos são confidenciais e destinam-se exclusivamente ao(s) destinatário(s) indicado(s). Se você o recebeu por engano, por favor apague-o e nos informe. O tratamento de dados pessoais pela Móveis Unghero observa a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).";
 
 export const SIGNATURE_TITLE_BY_AREA: Record<EmailMailboxArea, string> = {
   ATENDIMENTO: "Atendimento",
@@ -91,8 +97,8 @@ function contactRow(
 }
 
 /**
- * Assinatura: logo preto do sidebar + tipografia do sistema + ícones line mono.
- * Layout em bloco largo (mais retangular), sem coluna colorida.
+ * Assinatura: logo à esquerda | divisória | dados à direita,
+ * com aviso LGPD em largura total no rodapé.
  */
 export function buildUngheroSignatureHtml(options: BuildSignatureOptions): string {
   const title = escapeHtml((options.title || "Atendimento").trim() || "Atendimento");
@@ -100,6 +106,7 @@ export function buildUngheroSignatureHtml(options: BuildSignatureOptions): strin
   const logoSrc = asset("logo.png");
   const b = EMAIL_SIGNATURE_BRAND;
   const t = EMAIL_SIG_TOKENS;
+  const lgpd = escapeHtml(EMAIL_SIGNATURE_LGPD_NOTICE);
 
   const addressLabel = b.addressLines
     .map((line, i) => {
@@ -111,44 +118,45 @@ export function buildUngheroSignatureHtml(options: BuildSignatureOptions): strin
     .join("");
 
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;width:100%;max-width:560px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;width:100%;max-width:640px;">
   <tr>
     <td style="padding:22px 0 0 0;border-top:1px solid ${t.border};">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">
         <tr>
-          <td style="padding:0 0 14px 0;">
+          <td valign="middle" width="160" style="padding:0 18px 0 0;width:160px;">
             <a href="${b.siteHref}" style="text-decoration:none;border:0;">
               <img src="${logoSrc}" width="148" height="31" alt="${company}" style="display:block;border:0;outline:none;height:31px;width:auto;max-width:148px;">
             </a>
           </td>
-        </tr>
-        <tr>
-          <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
-            ${title}
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:0 0 12px 0;font-family:${t.fontBody};font-size:11px;line-height:1.35;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${t.muted};">
-            ${company}
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:0 0 14px 0;">
+          <td valign="top" width="1" style="width:1px;border-left:1px solid ${t.border};font-size:0;line-height:0;padding:0;">&nbsp;</td>
+          <td valign="top" style="padding:0 0 0 18px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
               <tr>
-                <td style="width:36px;height:2px;background-color:${t.foreground};font-size:0;line-height:0;">&nbsp;</td>
+                <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
+                  ${title}
+                </td>
               </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:0 0 12px 0;font-family:${t.fontBody};font-size:11px;line-height:1.35;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${t.muted};">
+                  ${company}
+                </td>
+              </tr>
               ${contactRow(asset("whatsapp.png"), "WhatsApp", b.whatsappHref, escapeHtml(b.whatsappDisplay))}
               ${contactRow(asset("instagram.png"), "Instagram", b.instagramHref, escapeHtml(b.instagramHandle))}
               ${contactRow(asset("website.png"), "Site", b.siteHref, escapeHtml(b.siteDisplay))}
               ${contactRow(asset("map.png"), "Endereço", b.mapsHref, addressLabel)}
             </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:16px 0 0 0;width:100%;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">
+        <tr>
+          <td style="padding:12px 0 0 0;border-top:1px solid ${t.border};font-family:${t.fontBody};font-size:10px;line-height:1.5;font-weight:400;color:${t.disclaimer};width:100%;">
+            ${lgpd}
           </td>
         </tr>
       </table>
@@ -169,6 +177,8 @@ export function buildUngheroSignatureText(options: BuildSignatureOptions): strin
     b.siteDisplay,
     "",
     ...b.addressLines,
+    "",
+    EMAIL_SIGNATURE_LGPD_NOTICE,
   ].join("\n");
 }
 
