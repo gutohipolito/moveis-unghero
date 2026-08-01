@@ -359,7 +359,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                 <label className="text-xs text-muted-foreground">Assinatura</label>
                 <button
                   type="button"
-                  className="text-[11px] font-medium text-sky-700 hover:underline"
+                  className="text-[11px] font-semibold text-primary hover:underline"
                   onClick={() =>
                     setForm({
                       ...form,
@@ -371,16 +371,16 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                 </button>
               </div>
               {form.signatureText ? (
-                <div className="rounded-md border border-border/60 bg-[#FAFAF9] px-3 py-2 overflow-hidden">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                <div className="rounded-md border border-border/60 bg-[hsl(38_28%_96%)] px-3 py-3 overflow-hidden">
+                  <p className="text-label text-muted-foreground mb-2">
                     Pré-visualização
                   </p>
                   <iframe
                     title="Pré-visualização da assinatura"
                     sandbox=""
-                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:4px 0;background:#FAFAF9;">${form.signatureText}</body></html>`}
+                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></head><body style="margin:0;padding:8px 4px;background:hsl(38,28%,96%);">${form.signatureText}</body></html>`}
                     className="w-full border-0 bg-transparent"
-                    style={{ height: 168 }}
+                    style={{ height: 200 }}
                   />
                 </div>
               ) : (

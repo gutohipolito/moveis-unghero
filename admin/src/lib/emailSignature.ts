@@ -1,9 +1,25 @@
 import type { EmailMailboxArea } from "@prisma/client";
 
-/** Base pública dos assets da assinatura (precisa ser HTTPS absoluto nos clientes de e-mail). */
+/** Base pública dos assets (HTTPS absoluto — exigido pelos clientes de e-mail). */
 export const EMAIL_SIGNATURE_ASSET_BASE =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
   "https://admin.moveisunghero.com.br";
+
+/**
+ * Tokens espelhados do admin (globals.css / design-tokens).
+ * Hex porque e-mail não resolve hsl(var(--…)).
+ */
+export const EMAIL_SIG_TOKENS = {
+  foreground: "#29231f",
+  muted: "#746963",
+  primary: "#dc9b04",
+  primaryForeground: "#1f1814",
+  border: "#dcd7d0",
+  background: "#f8f6f2",
+  card: "#fdfdfc",
+  fontDisplay: "'Outfit', 'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
+  fontBody: "'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
+} as const;
 
 export const EMAIL_SIGNATURE_BRAND = {
   company: "Móveis Unghero",
@@ -13,7 +29,6 @@ export const EMAIL_SIGNATURE_BRAND = {
   instagramHref: "https://www.instagram.com/moveisunghero/",
   siteDisplay: "moveisunghero.com.br",
   siteHref: "https://moveisunghero.com.br",
-  /** Formato alinhado ao Google / schema do site. */
   addressLines: [
     "Rua Cenira Cambruzzi, 155",
     "Planalto, Farroupilha - RS",
@@ -50,19 +65,25 @@ export type BuildSignatureOptions = {
   title: string;
 };
 
-function contactRow(iconSrc: string, iconAlt: string, href: string, labelHtml: string) {
+function contactRow(
+  iconSrc: string,
+  iconAlt: string,
+  href: string,
+  labelHtml: string
+) {
+  const t = EMAIL_SIG_TOKENS;
   return `
 <tr>
-  <td style="padding:0 0 8px 0;">
+  <td style="padding:0 0 6px 0;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
       <tr>
-        <td valign="top" style="padding:1px 8px 0 0;width:16px;">
+        <td valign="top" width="18" style="padding:2px 10px 0 0;width:18px;">
           <a href="${href}" style="text-decoration:none;border:0;">
-            <img src="${iconSrc}" width="16" height="16" alt="${iconAlt}" style="display:block;border:0;outline:none;">
+            <img src="${iconSrc}" width="16" height="16" alt="${iconAlt}" style="display:block;border:0;outline:none;width:16px;height:16px;">
           </a>
         </td>
-        <td valign="top" style="font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.45;color:#44403C;">
-          <a href="${href}" style="color:#44403C;text-decoration:none;">${labelHtml}</a>
+        <td valign="top" style="font-family:${t.fontBody};font-size:13px;line-height:1.45;font-weight:500;color:${t.foreground};">
+          <a href="${href}" style="color:${t.foreground};text-decoration:none;">${labelHtml}</a>
         </td>
       </tr>
     </table>
@@ -70,42 +91,57 @@ function contactRow(iconSrc: string, iconAlt: string, href: string, labelHtml: s
 </tr>`.trim();
 }
 
-/** Assinatura HTML table-based (Outlook-safe) com logo e ícones oficiais. */
+/**
+ * Assinatura alinhada ao design system do admin:
+ * logo do sidebar aberto + Outfit / Plus Jakarta + cores do tema.
+ */
 export function buildUngheroSignatureHtml(options: BuildSignatureOptions): string {
   const title = escapeHtml((options.title || "Atendimento").trim() || "Atendimento");
   const company = escapeHtml(EMAIL_SIGNATURE_BRAND.company);
-  /** Símbolo do dashboard (icon-mu) — deixa o nome/subtítulo como hierarquia tipográfica. */
-  const logoSrc = asset("mark.png");
+  const logoSrc = asset("logo.png");
   const b = EMAIL_SIGNATURE_BRAND;
+  const t = EMAIL_SIG_TOKENS;
 
   const addressLabel = b.addressLines
     .map((line, i) => {
       const safe = escapeHtml(line);
-      return i === 0 ? safe : `<br>${safe}`;
+      return i === 0
+        ? safe
+        : `<br><span style="color:${t.muted};font-weight:400;">${safe}</span>`;
     })
     .join("");
 
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;max-width:480px;">
   <tr>
-    <td style="padding:20px 0 0 0;">
+    <td style="padding:24px 0 0 0;border-top:1px solid ${t.border};">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         <tr>
-          <td valign="top" style="padding:2px 18px 0 0;border-right:1px solid #E7E5E4;">
+          <td valign="top" style="padding:4px 20px 0 0;">
             <a href="${b.siteHref}" style="text-decoration:none;border:0;">
-              <img src="${logoSrc}" width="52" height="52" alt="${company}" style="display:block;border:0;outline:none;border-radius:10px;width:52px;height:52px;">
+              <img src="${logoSrc}" width="133" height="28" alt="${company}" style="display:block;border:0;outline:none;height:28px;width:auto;max-width:133px;">
             </a>
           </td>
-          <td valign="top" style="padding:0 0 0 18px;">
+          <td valign="top" width="1" style="width:1px;background-color:${t.border};font-size:0;line-height:0;">&nbsp;</td>
+          <td valign="top" style="padding:0 0 0 20px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
               <tr>
-                <td style="padding:0 0 2px 0;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:1.15;font-weight:700;color:#1C1917;">
+                <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:17px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
                   ${title}
                 </td>
               </tr>
               <tr>
-                <td style="padding:0 0 14px 0;font-family:Georgia,'Times New Roman',serif;font-size:12px;line-height:1.3;color:#A8A29E;letter-spacing:0.06em;text-transform:uppercase;">
+                <td style="padding:0 0 10px 0;font-family:${t.fontBody};font-size:12px;line-height:1.35;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:${t.muted};">
                   ${company}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 0 12px 0;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="width:28px;height:3px;background-color:${t.primary};font-size:0;line-height:0;border-radius:2px;">&nbsp;</td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
               ${contactRow(asset("whatsapp.png"), "WhatsApp", b.whatsappHref, escapeHtml(b.whatsappDisplay))}
@@ -149,8 +185,9 @@ export function getSuggestedSignatureText(area: EmailMailboxArea): string {
 }
 
 function plainBodyToHtml(text: string): string {
+  const t = EMAIL_SIG_TOKENS;
   const escaped = escapeHtml(text || "").replace(/\n/g, "<br>\n");
-  return `<div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.55;color:#1C1917;">${escaped}</div>`;
+  return `<div style="font-family:${t.fontBody};font-size:15px;line-height:1.6;color:${t.foreground};">${escaped}</div>`;
 }
 
 function stripTagsRough(html: string): string {
@@ -175,6 +212,7 @@ export function composeBodyWithSignature(
 ): { text: string; html: string } {
   const body = (bodyText || "").trimEnd();
   const sig = (signature || "").trim();
+  const t = EMAIL_SIG_TOKENS;
 
   if (!sig) {
     return { text: body, html: plainBodyToHtml(body) };
@@ -195,6 +233,6 @@ export function composeBodyWithSignature(
   const text = already ? body : `${body}\n\n-- \n${sig}`;
   const html = already
     ? plainBodyToHtml(body)
-    : `${plainBodyToHtml(body)}<div style="margin-top:18px;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.45;color:#44403C;white-space:pre-wrap;">${escapeHtml(`-- \n${sig}`)}</div>`;
+    : `${plainBodyToHtml(body)}<div style="margin-top:18px;font-family:${t.fontBody};font-size:13px;line-height:1.45;color:${t.muted};white-space:pre-wrap;">${escapeHtml(`-- \n${sig}`)}</div>`;
   return { text, html };
 }
