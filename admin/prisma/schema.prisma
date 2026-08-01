@@ -1199,6 +1199,7 @@ enum EmailMailboxArea {
   COMERCIAL
   FINANCEIRO
   ATENDIMENTO
+  FABRICA
 }
 
 /** Caixa de e-mail compartilhada por área (IMAP/SMTP HostGator). */

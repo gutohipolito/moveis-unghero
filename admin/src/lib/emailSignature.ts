@@ -40,6 +40,7 @@ export const SIGNATURE_TITLE_BY_AREA: Record<EmailMailboxArea, string> = {
   ATENDIMENTO: "Atendimento",
   COMERCIAL: "Comercial",
   FINANCEIRO: "Financeiro",
+  FABRICA: "Fábrica",
 };
 
 function asset(file: string) {
