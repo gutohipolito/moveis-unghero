@@ -25,6 +25,7 @@ import { normalizeCidade, normalizeBairro } from "@/lib/address";
 import { fetchViaCep } from "@/lib/viaCep";
 import CityField from "@/components/forms/CityField";
 import BairroField from "@/components/forms/BairroField";
+import { CLIENT_LGPD_CHECKBOX_LABEL } from "@/lib/consentCopy";
 
 const TIPO_IMOVEL_OPTIONS = [
   { value: "CASA", label: "Casa Residencial" },
@@ -62,7 +63,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
   const [tipoImovel, setTipoImovel] = useState("CASA");
   const [observacoes, setObservacoes] = useState("");
   const [aceitaTermos, setAceitaTermos] = useState(false);
-  const [aceitaMarketing, setAceitaMarketing] = useState(false);
   const submitUnlocked = useSubmitUnlock(step === TOTAL_STEPS);
 
   useEffect(() => {
@@ -95,7 +95,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           if (d.tipoImovel) setTipoImovel(d.tipoImovel);
           if (d.observacoes) setObservacoes(d.observacoes);
           if (d.aceitaTermos !== undefined) setAceitaTermos(d.aceitaTermos);
-          if (d.aceitaMarketing !== undefined) setAceitaMarketing(d.aceitaMarketing);
         } catch (e) {
           console.error("Erro ao recuperar rascunho de cliente:", e);
         }
@@ -125,7 +124,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
           tipoImovel,
           observacoes,
           aceitaTermos,
-          aceitaMarketing,
         })
       );
     }
@@ -146,7 +144,6 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
     tipoImovel,
     observacoes,
     aceitaTermos,
-    aceitaMarketing,
   ]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,7 +239,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       observacoes: observacoes.trim(),
       company_id: companyId,
       lgpd_aceite: aceitaTermos,
-      marketing_aceite: aceitaMarketing,
+      marketing_aceite: false,
     });
     setLoading(false);
 
@@ -616,7 +613,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                 />
               </div>
 
-              {/* Questões de LGPD */}
+              {/* Aceite LGPD — uso operacional (sem marketing) */}
               <div className="space-y-3 pt-3 border-t border-slate-800/40">
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
@@ -627,21 +624,13 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
                     required
                   />
                   <span className="text-[11px] font-semibold text-slate-350 leading-relaxed">
-                    Estou de acordo com o tratamento de meus dados pessoais para fins de atendimento comercial e orçamento, em conformidade com a LGPD. *
+                    {CLIENT_LGPD_CHECKBOX_LABEL}
                   </span>
                 </label>
-
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={aceitaMarketing}
-                    onChange={(e) => setAceitaMarketing(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-850 bg-slate-950 text-primary focus:ring-primary focus:ring-offset-slate-900 cursor-pointer"
-                  />
-                  <span className="text-[11px] font-semibold text-slate-400 leading-relaxed">
-                    Aceito receber contatos e novidades da Móveis Unghero via WhatsApp ou e-mail. (Opcional)
-                  </span>
-                </label>
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed pl-7">
+                  Usamos WhatsApp/telefone para dúvidas do projeto e agendamentos, e e-mail para
+                  enviar documentos (orçamento, recibos). Não enviamos promoções por este canal.
+                </p>
               </div>
             </div>
 

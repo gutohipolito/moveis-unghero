@@ -21,6 +21,9 @@ export interface PartnerSignupData {
   origem?: string;
   observacoes?: string;
   company_id?: string;
+  /** Opt-in de comunicações comerciais (parceiros). */
+  marketing_aceite?: boolean;
+  lgpd_aceite?: boolean;
 }
 
 function cleanPhone(phone: string) {
@@ -56,6 +59,13 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
 
     if (!telefone && !email) {
       return { success: false, error: "Informe telefone ou e-mail para contato." };
+    }
+
+    if (!data.lgpd_aceite) {
+      return {
+        success: false,
+        error: "É necessário aceitar o tratamento de dados (LGPD) para concluir o cadastro.",
+      };
     }
 
     const companyId = resolvePublicCompanyId();
@@ -99,6 +109,7 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
         portfolioUrl: data.portfolio_url?.trim() || null,
         origem: data.origem?.trim() || null,
         observacoes: data.observacoes?.trim() || null,
+        marketing_aceite: Boolean(data.marketing_aceite),
         ativo: true,
       },
     });

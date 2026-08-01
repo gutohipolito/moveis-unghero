@@ -5,7 +5,7 @@ type FormLgpdNoticeProps = {
 };
 
 const DEFAULT_PURPOSE =
-  "prestar o atendimento comercial, elaborar orçamentos e manter contato sobre a solicitação";
+  "atendimento, elaboração de orçamento, agendamentos, envio de documentos e acompanhamento do projeto";
 
 export default function FormLgpdNotice({
   className = "",

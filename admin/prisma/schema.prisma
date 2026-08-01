@@ -228,6 +228,8 @@ model ProfessionalPartner {
   fotoUrl                String?
   imagens                String?
   portfolioUrl           String?
+  /** Opt-in de comunicações comerciais / novidades para parceiros. */
+  marketing_aceite       Boolean     @default(false)
   projects               Project[]   @relation("PartnerProjects")
   quotes                 Quote[]     @relation("PartnerQuotes")
   createdAt              DateTime    @default(now())
@@ -1200,6 +1202,7 @@ enum EmailMailboxArea {
   FINANCEIRO
   ATENDIMENTO
   FABRICA
+  DOCUMENTOS
 }
 
 /** Caixa de e-mail compartilhada por área (IMAP/SMTP HostGator). */

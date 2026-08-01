@@ -5,6 +5,7 @@ export const EMAIL_MAILBOX_AREAS: EmailMailboxArea[] = [
   "FINANCEIRO",
   "ATENDIMENTO",
   "FABRICA",
+  "DOCUMENTOS",
 ];
 
 export const EMAIL_AREA_LABELS: Record<EmailMailboxArea, string> = {
@@ -12,6 +13,7 @@ export const EMAIL_AREA_LABELS: Record<EmailMailboxArea, string> = {
   FINANCEIRO: "Financeiro",
   ATENDIMENTO: "Atendimento",
   FABRICA: "Fábrica",
+  DOCUMENTOS: "Documentos",
 };
 
 /** Cargos padrão liberados ao criar uma caixa da área (ADMIN sempre acessa). */
@@ -20,6 +22,8 @@ export const DEFAULT_ROLES_BY_AREA: Record<EmailMailboxArea, Role[]> = {
   FINANCEIRO: ["FINANCEIRO"],
   ATENDIMENTO: ["COMERCIAL", "PROJETISTA", "FINANCEIRO"],
   FABRICA: ["PRODUCAO"],
+  /** Caixa de envio automático — Comercial/Financeiro disparam orçamento/recibo. */
+  DOCUMENTOS: ["COMERCIAL", "FINANCEIRO"],
 };
 
 export const DEFAULT_IMAP_HOST = "mail.moveisunghero.com.br";

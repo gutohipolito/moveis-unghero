@@ -24,6 +24,10 @@ import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 import { CIDADES_SERRA_GAUCHA } from "@/lib/address";
+import {
+  PARTNER_LGPD_CHECKBOX_LABEL,
+  PARTNER_MARKETING_CHECKBOX_LABEL,
+} from "@/lib/consentCopy";
 
 const TOTAL_STEPS = 5;
 
@@ -41,6 +45,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   const [observacoes, setObservacoes] = useState("");
   const [registroProfissional, setRegistroProfissional] = useState("");
   const [origem, setOrigem] = useState("");
+  const [aceitaLgpd, setAceitaLgpd] = useState(false);
+  const [aceitaMarketing, setAceitaMarketing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -284,6 +290,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       return;
     }
 
+    if (!aceitaLgpd) {
+      setError("Você precisa aceitar o tratamento de dados de acordo com a LGPD.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     setLoading(true);
 
     const res = await submitPublicPartnerSignupAction({
@@ -298,6 +310,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       origem: origem.trim(),
       observacoes: observacoes.trim() || undefined,
       company_id: companyId,
+      lgpd_aceite: aceitaLgpd,
+      marketing_aceite: aceitaMarketing,
     });
 
     setLoading(false);
@@ -696,6 +710,32 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   })}
                 </div>
               </div>
+
+              <div className="space-y-3 pt-3 border-t border-slate-200">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={aceitaLgpd}
+                    onChange={(e) => setAceitaLgpd(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 cursor-pointer"
+                    required
+                  />
+                  <span className="text-[11px] font-semibold text-slate-700 leading-relaxed">
+                    {PARTNER_LGPD_CHECKBOX_LABEL}
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={aceitaMarketing}
+                    onChange={(e) => setAceitaMarketing(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 cursor-pointer"
+                  />
+                  <span className="text-[11px] font-semibold text-slate-600 leading-relaxed">
+                    {PARTNER_MARKETING_CHECKBOX_LABEL}
+                  </span>
+                </label>
+              </div>
             </div>
 
             <div className="flex justify-between pt-2">
@@ -711,8 +751,14 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <button
                 key="btn-submit-partner"
                 type="submit"
-                disabled={loading || !submitUnlocked}
-                title={!submitUnlocked ? "Aguarde um instante para enviar" : undefined}
+                disabled={loading || !submitUnlocked || !aceitaLgpd}
+                title={
+                  !aceitaLgpd
+                    ? "Aceite o tratamento de dados (LGPD) para enviar"
+                    : !submitUnlocked
+                      ? "Aguarde um instante para enviar"
+                      : undefined
+                }
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none"
               >
                 {loading ? (

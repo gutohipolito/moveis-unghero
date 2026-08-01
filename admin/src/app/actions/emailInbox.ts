@@ -13,6 +13,7 @@ import {
 } from "@/lib/emailImap";
 import { sendSmtpEmail } from "@/lib/emailSmtp";
 import { composeBodyWithSignature } from "@/lib/emailSignature";
+import { DOCUMENT_EMAIL_FOOTER_TEXT } from "@/lib/consentCopy";
 import {
   loadAccessibleMailboxSecrets,
 } from "@/app/actions/emailMailboxes";
@@ -211,6 +212,30 @@ async function resolveOutboundMailbox(
   return { auth, mailbox, password };
 }
 
+/** Preferência: caixa Documentos (noreply); senão fallback da área operacional. */
+async function resolveDocumentOutboundMailbox(
+  fallbackArea: EmailMailboxArea,
+  moduleKey: "quotes" | "financeiro"
+) {
+  const docs = await resolveOutboundMailbox("DOCUMENTOS", moduleKey);
+  if (docs) return docs;
+  return resolveOutboundMailbox(fallbackArea, moduleKey);
+}
+
+async function resolveAtendimentoReplyTo(companyId: string): Promise<string | undefined> {
+  const box = await prisma.emailMailbox.findFirst({
+    where: { company_id: companyId, area: "ATENDIMENTO", ativo: true },
+    orderBy: { updatedAt: "desc" },
+    select: { address: true },
+  });
+  return box?.address || undefined;
+}
+
+function withDocumentEmailFooter(text: string) {
+  if (text.includes("e-mail automático de documentos")) return text;
+  return `${text.trimEnd()}\n\n${DOCUMENT_EMAIL_FOOTER_TEXT}`;
+}
+
 export async function sendQuoteByEmail(input: {
   quoteId: string;
   to?: string;
@@ -250,11 +275,12 @@ export async function sendQuoteByEmail(input: {
     };
   }
 
-  const loaded = await resolveOutboundMailbox("COMERCIAL", "quotes");
+  const loaded = await resolveDocumentOutboundMailbox("COMERCIAL", "quotes");
   if (!loaded) {
     return {
       success: false as const,
-      error: "Configure uma caixa Comercial ativa em E-mails → Configurar caixas.",
+      error:
+        "Configure uma caixa Documentos (noreply) ou Comercial ativa em E-mails → Configurar caixas.",
     };
   }
 
@@ -303,8 +329,9 @@ export async function sendQuoteByEmail(input: {
   lines.push("", "Qualquer dúvida, estamos à disposição!", "Equipe Móveis Unghero");
 
   const subject = `Orçamento Móveis Unghero — ${quote.project.client.nome}`;
+  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
   const body = composeBodyWithSignature(
-    lines.join("\n"),
+    withDocumentEmailFooter(lines.join("\n")),
     loaded.mailbox.signature_text
   );
 
@@ -323,6 +350,7 @@ export async function sendQuoteByEmail(input: {
         subject,
         text: body.text,
         html: body.html,
+        replyTo,
       }
     );
 
@@ -412,22 +440,33 @@ export async function sendReceiptByEmail(input: {
   }
 
   const loaded =
-    (await resolveOutboundMailbox("FINANCEIRO", "financeiro")) ||
+    (await resolveDocumentOutboundMailbox("FINANCEIRO", "financeiro")) ||
+    (await resolveOutboundMailbox("DOCUMENTOS", "emails")) ||
     (await resolveOutboundMailbox("FINANCEIRO", "emails"));
   if (!loaded) {
-    // Fallback: any FINANCEIRO mailbox in company for ADMIN/crm writers
-    const mailbox = await prisma.emailMailbox.findFirst({
-      where: {
-        company_id: authFin.companyId,
-        area: "FINANCEIRO",
-        ativo: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    // Fallback: Documentos (preferência) ou Financeiro na empresa
+    const mailbox =
+      (await prisma.emailMailbox.findFirst({
+        where: {
+          company_id: authFin.companyId,
+          area: "DOCUMENTOS",
+          ativo: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      })) ||
+      (await prisma.emailMailbox.findFirst({
+        where: {
+          company_id: authFin.companyId,
+          area: "FINANCEIRO",
+          ativo: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      }));
     if (!mailbox) {
       return {
         success: false as const,
-        error: "Configure uma caixa Financeiro ativa em E-mails → Configurar caixas.",
+        error:
+          "Configure uma caixa Documentos (noreply) ou Financeiro ativa em E-mails → Configurar caixas.",
       };
     }
     let password: string;
@@ -488,13 +527,16 @@ async function sendReceiptWithMailbox(
   const url = buildReceiptShortUrl(shareCode!);
   const valorLabel = formatCurrencyBRL(Number(receipt.valor));
   const numeroLabel = receipt.numero ? `nº ${receipt.numero}` : null;
+  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
   const body = composeBodyWithSignature(
-    buildReceiptWhatsAppMessage({
-      clientName: receipt.cliente_nome || receipt.client?.nome || "cliente",
-      valorLabel,
-      receiptUrl: url,
-      numeroLabel,
-    }),
+    withDocumentEmailFooter(
+      buildReceiptWhatsAppMessage({
+        clientName: receipt.cliente_nome || receipt.client?.nome || "cliente",
+        valorLabel,
+        receiptUrl: url,
+        numeroLabel,
+      })
+    ),
     loaded.mailbox.signature_text
   );
   const subject = `Recibo Móveis Unghero${numeroLabel ? ` ${numeroLabel}` : ""} — ${valorLabel}`;
@@ -514,6 +556,7 @@ async function sendReceiptWithMailbox(
         subject,
         text: body.text,
         html: body.html,
+        replyTo,
       }
     );
 
