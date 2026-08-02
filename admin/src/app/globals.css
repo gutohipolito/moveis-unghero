@@ -266,21 +266,56 @@ body {
   -webkit-text-fill-color: currentColor;
 }
 
+/* CTA principal — ouro em gradiente, texto escuro (melhor contraste que branco) */
 .btn-metallic,
 .btn-brand {
-  background: hsl(var(--primary));
-  border: 1px solid hsl(42 80% 38%);
-  color: hsl(var(--primary-foreground));
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 58%) 0%,
+    hsl(42 96% 46%) 45%,
+    hsl(36 88% 40%) 100%
+  );
+  border: 1px solid hsl(36 70% 32% / 0.45);
+  color: hsl(24 28% 12%);
   font-weight: 600;
   border-radius: var(--radius-sm);
-  transition: background 0.15s ease;
-  box-shadow: 0 1px 2px hsl(24 14% 14% / 0.08);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.38),
+    0 1px 2px hsl(24 14% 14% / 0.08),
+    0 4px 14px hsl(42 70% 28% / 0.2);
+  transition:
+    background var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    filter var(--motion-fast) var(--ease-out);
 }
 
 .btn-metallic:hover,
 .btn-brand:hover {
-  background: hsl(42 96% 40%);
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 62%) 0%,
+    hsl(42 96% 48%) 45%,
+    hsl(36 88% 42%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.45),
+    0 2px 4px hsl(24 14% 14% / 0.1),
+    0 6px 18px hsl(42 70% 28% / 0.26);
   transform: none;
+  filter: brightness(1.02);
+}
+
+.btn-metallic:active,
+.btn-brand:active {
+  background: linear-gradient(
+    145deg,
+    hsl(42 92% 50%) 0%,
+    hsl(36 86% 38%) 100%
+  );
+  box-shadow:
+    inset 0 1px 3px hsl(24 20% 12% / 0.18),
+    0 1px 2px hsl(24 14% 14% / 0.06);
+  filter: none;
 }
 
 .app-sidebar {
