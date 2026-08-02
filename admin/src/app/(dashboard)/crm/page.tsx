@@ -6,16 +6,11 @@ import { fetchCrmProjects } from "@/lib/crmProjects";
 import { getSessionCompanyId } from "@/lib/session";
 import { CRM_FOLLOW_UP_SLA_PREF_KEY, resolveFollowUpSla } from "@/lib/crmFollowUpPrefs";
 import type { FollowUpSlaConfig } from "@/lib/followUp";
-import { getAuthContext } from "@/lib/auth-guard";
 import KanbanBoard from "@/components/KanbanBoard";
-import PageHeader from "@/components/PageHeader";
-import { TooltipBody } from "@/components/ui/InfoTooltip";
 
 export default async function CRMPage() {
   await guardModule("crm");
   const userCompanyId = await getSessionCompanyId();
-  const auth = await getAuthContext();
-  const isFactoryRole = auth?.cargo === "PRODUCAO";
 
   const [formattedProjects, clientResponse, preferences, colaboradoresRes] = await Promise.all([
     fetchCrmProjects(userCompanyId),
@@ -40,34 +35,6 @@ export default async function CRMPage() {
 
   return (
     <div className="md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:flex md:flex-col md:overflow-hidden space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
-      <div className="shrink-0 print:hidden">
-        <PageHeader
-          title="Funil Comercial"
-          description={
-            isFactoryRole
-              ? undefined
-              : "Gerencie as etapas de negociação e fabricação dos móveis sob medida. Projetista e Fábrica veem a partir de Aprovados."
-          }
-          help={
-            isFactoryRole ? undefined : (
-              <TooltipBody
-                title="Funil de vendas"
-                items={[
-                  "Arraste os cards entre as colunas para avançar cada negócio de etapa.",
-                  "Em Aprovados, atribua até 2 responsáveis pela conferência técnica.",
-                  "Ao mover para Conf. Técnica, o sistema oferece mensagem no WhatsApp pedindo datas da visita.",
-                  "Só ao entrar em Produção o projeto aparece na fila do chão de fábrica.",
-                  "Projetista e Fábrica: colunas a partir de Aprovados, sem valores comerciais.",
-                  "No mobile, use o botão de avançar dentro do card.",
-                  "Totais e telefone começam ocultos; use os olhos do topo para revelar (voltam a ocultar em 30s).",
-                  "Na engrenagem, configure os prazos de aviso, alerta e perdas do follow-up.",
-                ]}
-              />
-            )
-          }
-        />
-      </div>
-
       <KanbanBoard
         initialProjects={formattedProjects}
         companyId={userCompanyId}

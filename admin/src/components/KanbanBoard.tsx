@@ -47,6 +47,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SegmentControl } from "@/components/ui/segment-control";
 import { Input } from "@/components/ui/input";
+import PageHeader from "@/components/PageHeader";
+import { TooltipBody } from "@/components/ui/InfoTooltip";
 import {
   getCommercialPendingQuotes,
 } from "@/app/actions/quotes";
@@ -1529,66 +1531,107 @@ export default function KanbanBoard({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col space-y-[var(--space-3)] overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--space-3)]">
-        <div className="flex items-center gap-2 flex-wrap">
-          {!isOpsLimited ? (
-            <SegmentControl
-              value={boardView}
-              onChange={setBoardView}
-              aria-label="Visualização do funil"
-              options={[
-                { value: "funil", label: "Funil ativo" },
-                {
-                  value: "pendencias",
-                  label: "Pendências comerciais",
-                  badge: pendingCount,
-                },
-                { value: "perdas", label: "Perdas", badge: lostProjects.length },
-              ]}
-            />
-          ) : null}
-          <button
-            type="button"
-            onClick={toggleAllCardsCollapse}
-            disabled={visibleBoardProjects.length === 0}
-            className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group disabled:opacity-40 disabled:pointer-events-none"
-            title={
-              allCardsCollapsed
-                ? "Expandir todos os cards"
-                : "Minimizar todos os cards"
-            }
-          >
-            {allCardsCollapsed ? (
-              <ChevronsUpDown className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
-            ) : (
-              <ChevronsDownUp className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
-            )}
-          </button>
-          {!isReadOnly && !isOpsLimited && (
-            <CrmFollowUpSlaSettings sla={followUpSla} onSave={handleSaveFollowUpSla} />
-          )}
-        </div>
+      <div className="shrink-0 print:hidden">
+        <PageHeader
+          title="Funil Comercial"
+          description={
+            isFactoryRole
+              ? undefined
+              : "Gerencie as etapas de negociação e fabricação dos móveis sob medida. Projetista e Fábrica veem a partir de Aprovados."
+          }
+          help={
+            isFactoryRole ? undefined : (
+              <TooltipBody
+                title="Funil de vendas"
+                items={[
+                  "Arraste os cards entre as colunas para avançar cada negócio de etapa.",
+                  "Em Aprovados, atribua até 2 responsáveis pela conferência técnica no cliente antes de avançar.",
+                  "Ao mover para Conf. Técnica, o sistema oferece mensagem no WhatsApp pedindo datas da visita.",
+                  "Só ao entrar em Produção o projeto aparece na fila do chão de fábrica.",
+                  "Projetista e Fábrica: colunas a partir de Aprovados, sem valores comerciais.",
+                  "No mobile, use o botão de avançar dentro do card.",
+                  "Totais e telefone começam ocultos; use os olhos do topo para revelar (voltam a ocultar em 30s).",
+                  "Na engrenagem, configure os prazos de aviso, alerta e perdas do follow-up.",
+                ]}
+              />
+            )
+          }
+        >
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={toggleAllCardsCollapse}
+              disabled={visibleBoardProjects.length === 0}
+              className="inline-flex items-center justify-center p-2 rounded-xl bg-white hover:bg-slate-50 text-muted-foreground hover:text-foreground border border-border shadow-xs transition-all duration-200 cursor-pointer group disabled:opacity-40 disabled:pointer-events-none"
+              title={
+                allCardsCollapsed
+                  ? "Expandir todos os cards"
+                  : "Minimizar todos os cards"
+              }
+              aria-label={
+                allCardsCollapsed
+                  ? "Expandir todos os cards"
+                  : "Minimizar todos os cards"
+              }
+            >
+              {allCardsCollapsed ? (
+                <ChevronsUpDown className="h-4.5 w-4.5 text-primary group-hover:scale-105 transition-transform" />
+              ) : (
+                <ChevronsDownUp className="h-4.5 w-4.5 group-hover:scale-105 transition-transform" />
+              )}
+            </button>
+            {!isReadOnly && !isOpsLimited ? (
+              <CrmFollowUpSlaSettings
+                sla={followUpSla}
+                onSave={handleSaveFollowUpSla}
+              />
+            ) : null}
+          </div>
+        </PageHeader>
+      </div>
+
+      <div className="flex flex-col gap-[var(--space-3)] shrink-0">
+        {!isOpsLimited ? (
+          <SegmentControl
+            value={boardView}
+            onChange={setBoardView}
+            aria-label="Visualização do funil"
+            options={[
+              { value: "funil", label: "Funil ativo" },
+              {
+                value: "pendencias",
+                label: "Pendências comerciais",
+                badge: pendingCount,
+              },
+              { value: "perdas", label: "Perdas", badge: lostProjects.length },
+            ]}
+          />
+        ) : null}
 
         {boardView === "funil" &&
           !isOpsLimited &&
           (followUpLosses.length > 0 ||
             followUpAlerts.length > 0 ||
             followUpWarnings.length > 0) && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div
+            className="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 -mx-0.5 px-0.5 scrollbar-none text-xs"
+            role="status"
+            aria-label="Avisos de follow-up"
+          >
             {followUpLosses.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/10 text-rose-900 border border-rose-600/25 font-semibold">
+              <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/10 text-rose-900 border border-rose-600/25 font-semibold whitespace-nowrap">
                 <UserX className="h-3.5 w-3.5" />
                 {followUpLosses.length} elegível(is) a perdas ({followUpSla.lossDays}+ dias)
               </span>
             )}
             {followUpAlerts.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-800 border border-red-500/20 font-semibold">
+              <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-800 border border-red-500/20 font-semibold whitespace-nowrap">
                 <BellRing className="h-3.5 w-3.5" />
                 {followUpAlerts.length} sem resposta há {followUpSla.alertDays}+ dias
               </span>
             )}
             {followUpWarnings.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/20 font-semibold">
+              <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/20 font-semibold whitespace-nowrap">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 {followUpWarnings.length} próximo(s) do limite ({followUpSla.warningDays}+ dias)
               </span>

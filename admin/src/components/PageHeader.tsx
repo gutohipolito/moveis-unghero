@@ -23,7 +23,7 @@ export default function PageHeader({
     <div className="page-header">
       <div className="page-header-main">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex w-full flex-wrap items-center gap-2.5">
             <h1 className="page-title">{title}</h1>
             {help && <InfoTooltip label={`Sobre ${title}`}>{help}</InfoTooltip>}
             {badge}
