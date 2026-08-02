@@ -445,27 +445,29 @@ export default function CatalogosClient({
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Biblioteca de Catálogos</h1>
-            <InfoTooltip label="Sobre Catálogos">
-              <TooltipBody
-                title="Catálogos para clientes"
-                items={[
-                  "Guarde PDFs e imagens de catálogos de marcas e linhas.",
-                  "A grade mostra só a capa — o clique abre o arquivo em uma nova aba.",
-                  "Em PDF, a primeira página vira capa automaticamente se você não enviar uma.",
-                ]}
-              />
-            </InfoTooltip>
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Biblioteca de Catálogos</h1>
+              <InfoTooltip label="Sobre Catálogos">
+                <TooltipBody
+                  title="Catálogos para clientes"
+                  items={[
+                    "Guarde PDFs e imagens de catálogos de marcas e linhas.",
+                    "A grade mostra só a capa — o clique abre o arquivo em uma nova aba.",
+                    "Em PDF, a primeira página vira capa automaticamente se você não enviar uma.",
+                  ]}
+                />
+              </InfoTooltip>
+            </div>
+            <p className="text-sm text-slate-500 mt-1">
+              {showingSuppliers
+                ? "Escolha o fornecedor para ver os catálogos e fichas técnicas."
+                : selectedSupplierLabel
+                  ? `Catálogos de ${selectedSupplierLabel}.`
+                  : "Acesse, visualize e compartilhe catálogos de fornecedores, materiais e folders inspiracionais."}
+            </p>
           </div>
           <ProdutosSectionTabs />
-          <p className="text-sm text-slate-500">
-            {showingSuppliers
-              ? "Escolha o fornecedor para ver os catálogos e fichas técnicas."
-              : selectedSupplierLabel
-                ? `Catálogos de ${selectedSupplierLabel}.`
-                : "Acesse, visualize e compartilhe catálogos de fornecedores, materiais e folders inspiracionais."}
-          </p>
         </div>
 
         {canManageCatalogs ? (

@@ -592,31 +592,31 @@ export default function ProdutosClient({
       <ActionDialogHost dialog={dialog} />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black text-foreground tracking-tight">Produtos</h1>
-            <InfoTooltip label="Sobre Produtos">
-              <TooltipBody
-                title="Mostruário comercial"
-                items={[
-                  "Cadastre produtos com fotos para mostrar ao cliente no orçamento.",
-                  "O vínculo com o estoque é opcional e não altera a quantidade.",
-                  "No PDF do orçamento, a foto de capa aparece na linha do item.",
-                  "Use “Habilitar edição” para mostrar os botões de editar e excluir.",
-                ]}
-              />
-            </InfoTooltip>
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-black text-foreground tracking-tight">Produtos</h1>
+              <InfoTooltip label="Sobre Produtos">
+                <TooltipBody
+                  title="Mostruário comercial"
+                  items={[
+                    "Cadastre produtos com fotos para mostrar ao cliente no orçamento.",
+                    "O vínculo com o estoque é opcional e não altera a quantidade.",
+                    "No PDF do orçamento, a foto de capa aparece na linha do item.",
+                    "Use “Habilitar edição” para mostrar os botões de editar e excluir.",
+                  ]}
+                />
+              </InfoTooltip>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {showingSuppliers
+                ? "Escolha o fornecedor para ver os produtos da vitrine."
+                : selectedSupplierLabel
+                  ? `Produtos de ${selectedSupplierLabel}.`
+                  : "Mostruário visual para identificar o que entra no orçamento do cliente."}
+            </p>
           </div>
-          <div className="mt-3">
-            <ProdutosSectionTabs />
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {showingSuppliers
-              ? "Escolha o fornecedor para ver os produtos da vitrine."
-              : selectedSupplierLabel
-                ? `Produtos de ${selectedSupplierLabel}.`
-                : "Mostruário visual para identificar o que entra no orçamento do cliente."}
-          </p>
+          <ProdutosSectionTabs />
         </div>
 
         {canManageProducts ? (
