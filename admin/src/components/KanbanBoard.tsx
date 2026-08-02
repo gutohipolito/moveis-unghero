@@ -77,6 +77,7 @@ import {
   UserX,
   Receipt,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import ReceiptIssueDialog, {
   type ReceiptIssuePrefill,
 } from "@/components/finance/ReceiptIssueDialog";
@@ -371,6 +372,164 @@ function PersonAvatar({
     >
       {getInitials(name)}
     </span>
+  );
+}
+
+type BoardView = "funil" | "perdas" | "pendencias";
+
+/** Mobile: Funil ativo sempre visível + dropdown com Pendências/Perdas. */
+function BoardViewMobileSwitch({
+  value,
+  onChange,
+  pendingCount,
+  lostCount,
+}: {
+  value: BoardView;
+  onChange: (v: BoardView) => void;
+  pendingCount: number;
+  lostCount: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const menuWidth = 240;
+      const pad = 8;
+      const left = Math.max(
+        pad,
+        Math.min(rect.left, window.innerWidth - menuWidth - pad)
+      );
+      setPos({ top: rect.bottom + 6, left });
+    };
+    place();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (
+        menuRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("touchstart", onPointer);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("touchstart", onPointer);
+    };
+  }, [open]);
+
+  const secondaryOptions: {
+    value: Exclude<BoardView, "funil">;
+    label: string;
+    badge: number;
+  }[] = [
+    {
+      value: "pendencias",
+      label: "Pendências comerciais",
+      badge: pendingCount,
+    },
+    { value: "perdas", label: "Perdas", badge: lostCount },
+  ];
+
+  const currentSecondary = secondaryOptions.find((o) => o.value === value);
+  const moreBadge = pendingCount + lostCount;
+  const triggerLabel = currentSecondary?.label ?? "Mais";
+
+  const menu = open ? (
+    <div
+      ref={menuRef}
+      role="menu"
+      aria-label="Outras visualizações"
+      className="fixed z-[9999] w-[240px] rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl"
+      style={{ top: pos.top, left: pos.left }}
+    >
+      {secondaryOptions.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="menuitem"
+            className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+              active
+                ? "bg-slate-100 text-slate-900"
+                : "text-slate-700 hover:bg-slate-50"
+            }`}
+            onClick={() => {
+              onChange(opt.value);
+              setOpen(false);
+            }}
+          >
+            <span>{opt.label}</span>
+            {opt.badge > 0 ? (
+              <span className="segment-control-badge">{opt.badge}</span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+
+  return (
+    <div className="segment-control w-full max-w-full" role="tablist" aria-label="Visualização do funil">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={value === "funil"}
+        onClick={() => onChange("funil")}
+        className={`segment-control-item flex-1 ${
+          value === "funil" ? "segment-control-item-active" : ""
+        }`}
+      >
+        Funil ativo
+      </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        role="tab"
+        aria-selected={value !== "funil"}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`segment-control-item gap-1.5 max-w-[55%] ${
+          value !== "funil" ? "segment-control-item-active" : ""
+        }`}
+      >
+        <span className="truncate">{triggerLabel}</span>
+        {value === "funil" && moreBadge > 0 ? (
+          <span className="segment-control-badge">{moreBadge}</span>
+        ) : currentSecondary && currentSecondary.badge > 0 ? (
+          <span className="segment-control-badge">{currentSecondary.badge}</span>
+        ) : null}
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 opacity-70 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {mounted && menu ? createPortal(menu, document.body) : null}
+    </div>
   );
 }
 
@@ -1592,20 +1751,32 @@ export default function KanbanBoard({
 
       <div className="flex flex-col gap-[var(--space-3)] shrink-0">
         {!isOpsLimited ? (
-          <SegmentControl
-            value={boardView}
-            onChange={setBoardView}
-            aria-label="Visualização do funil"
-            options={[
-              { value: "funil", label: "Funil ativo" },
-              {
-                value: "pendencias",
-                label: "Pendências comerciais",
-                badge: pendingCount,
-              },
-              { value: "perdas", label: "Perdas", badge: lostProjects.length },
-            ]}
-          />
+          <>
+            <div className="md:hidden">
+              <BoardViewMobileSwitch
+                value={boardView}
+                onChange={setBoardView}
+                pendingCount={pendingCount}
+                lostCount={lostProjects.length}
+              />
+            </div>
+            <div className="hidden md:block">
+              <SegmentControl
+                value={boardView}
+                onChange={setBoardView}
+                aria-label="Visualização do funil"
+                options={[
+                  { value: "funil", label: "Funil ativo" },
+                  {
+                    value: "pendencias",
+                    label: "Pendências comerciais",
+                    badge: pendingCount,
+                  },
+                  { value: "perdas", label: "Perdas", badge: lostProjects.length },
+                ]}
+              />
+            </div>
+          </>
         ) : null}
 
         {boardView === "funil" &&
