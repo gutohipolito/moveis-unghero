@@ -30,6 +30,8 @@ import {
   loadFollowUpSlaLocal,
   resolveFollowUpSla,
   saveFollowUpSlaLocal,
+  loadFollowUpBannersDismissedFingerprint,
+  saveFollowUpBannersDismissedFingerprint,
 } from "@/lib/crmFollowUpPrefs";
 import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
@@ -61,6 +63,7 @@ import {
   BellRing,
   RotateCcw,
   XCircle,
+  X,
   MessageCircle,
   ChevronDown,
   ChevronUp,
@@ -590,6 +593,7 @@ export default function KanbanBoard({
   const [followUpSla, setFollowUpSla] = useState<FollowUpSlaConfig>(() =>
     resolveFollowUpSla(initialFollowUpSla)
   );
+  const [bannersDismissedFp, setBannersDismissedFp] = useState<string | null>(null);
   const autoLossRunningRef = useRef(false);
   
 
@@ -629,6 +633,10 @@ export default function KanbanBoard({
       setFollowUpSla(local);
     }
   }, [initialFollowUpSla]);
+
+  useEffect(() => {
+    setBannersDismissedFp(loadFollowUpBannersDismissedFingerprint());
+  }, []);
 
   const handleSaveFollowUpSla = (next: FollowUpSlaConfig) => {
     setFollowUpSla(next);
@@ -1037,6 +1045,12 @@ export default function KanbanBoard({
   const followUpWarnings = funnelProjects.filter(
     (p) => getFollowUpLevel(p, followUpSla) === "warning"
   );
+  const followUpBannerCount =
+    followUpLosses.length + followUpAlerts.length + followUpWarnings.length;
+  const followUpBannerFingerprint = `${followUpLosses.length}-${followUpAlerts.length}-${followUpWarnings.length}`;
+  const followUpBannersHidden =
+    followUpBannerCount > 0 &&
+    bannersDismissedFp === followUpBannerFingerprint;
 
   // Auto-move para Perdas quando o operador ativou essa opção no SLA.
   useEffect(() => {
@@ -1749,7 +1763,7 @@ export default function KanbanBoard({
         </PageHeader>
       </div>
 
-      <div className="flex flex-col gap-[var(--space-3)] shrink-0">
+      <div className="flex flex-col gap-3.5 sm:gap-4 shrink-0 mb-2 sm:mb-3">
         {!isOpsLimited ? (
           <>
             <div className="md:hidden">
@@ -1781,34 +1795,60 @@ export default function KanbanBoard({
 
         {boardView === "funil" &&
           !isOpsLimited &&
-          (followUpLosses.length > 0 ||
-            followUpAlerts.length > 0 ||
-            followUpWarnings.length > 0) && (
-          <div
-            className="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 -mx-0.5 px-0.5 scrollbar-none text-xs"
-            role="status"
-            aria-label="Avisos de follow-up"
-          >
-            {followUpLosses.length > 0 && (
-              <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/10 text-rose-900 border border-rose-600/25 font-semibold whitespace-nowrap">
-                <UserX className="h-3.5 w-3.5" />
-                {followUpLosses.length} elegível(is) a perdas ({followUpSla.lossDays}+ dias)
-              </span>
-            )}
-            {followUpAlerts.length > 0 && (
-              <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-800 border border-red-500/20 font-semibold whitespace-nowrap">
-                <BellRing className="h-3.5 w-3.5" />
-                {followUpAlerts.length} sem resposta há {followUpSla.alertDays}+ dias
-              </span>
-            )}
-            {followUpWarnings.length > 0 && (
-              <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/20 font-semibold whitespace-nowrap">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                {followUpWarnings.length} próximo(s) do limite ({followUpSla.warningDays}+ dias)
-              </span>
-            )}
-          </div>
-        )}
+          followUpBannerCount > 0 &&
+          (followUpBannersHidden ? (
+            <button
+              type="button"
+              onClick={() => {
+                setBannersDismissedFp(null);
+                saveFollowUpBannersDismissedFingerprint(null);
+              }}
+              className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border/60 bg-white/80 hover:bg-slate-50 transition-colors"
+            >
+              <BellRing className="h-3.5 w-3.5" />
+              Mostrar {followUpBannerCount} aviso
+              {followUpBannerCount === 1 ? "" : "s"} de follow-up
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className="flex flex-1 items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 -mx-0.5 px-0.5 scrollbar-none text-xs min-w-0"
+                role="status"
+                aria-label="Avisos de follow-up"
+              >
+                {followUpLosses.length > 0 && (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/10 text-rose-900 border border-rose-600/25 font-semibold whitespace-nowrap">
+                    <UserX className="h-3.5 w-3.5" />
+                    {followUpLosses.length} elegível(is) a perdas ({followUpSla.lossDays}+ dias)
+                  </span>
+                )}
+                {followUpAlerts.length > 0 && (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-800 border border-red-500/20 font-semibold whitespace-nowrap">
+                    <BellRing className="h-3.5 w-3.5" />
+                    {followUpAlerts.length} sem resposta há {followUpSla.alertDays}+ dias
+                  </span>
+                )}
+                {followUpWarnings.length > 0 && (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/20 font-semibold whitespace-nowrap">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {followUpWarnings.length} próximo(s) do limite ({followUpSla.warningDays}+ dias)
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBannersDismissedFp(followUpBannerFingerprint);
+                  saveFollowUpBannersDismissedFingerprint(followUpBannerFingerprint);
+                }}
+                className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 bg-white text-muted-foreground hover:text-foreground hover:bg-slate-50 transition-colors"
+                title="Ocultar avisos"
+                aria-label="Ocultar avisos de follow-up"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
       </div>
 
       {boardView === "pendencias" ? (
