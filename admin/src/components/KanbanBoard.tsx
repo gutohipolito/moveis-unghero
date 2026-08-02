@@ -30,8 +30,6 @@ import {
   loadFollowUpSlaLocal,
   resolveFollowUpSla,
   saveFollowUpSlaLocal,
-  loadFollowUpBannersDismissedFingerprint,
-  saveFollowUpBannersDismissedFingerprint,
 } from "@/lib/crmFollowUpPrefs";
 import { updateUserPreference } from "@/app/actions/preferences";
 import CrmFollowUpSlaSettings from "@/components/CrmFollowUpSlaSettings";
@@ -593,7 +591,7 @@ export default function KanbanBoard({
   const [followUpSla, setFollowUpSla] = useState<FollowUpSlaConfig>(() =>
     resolveFollowUpSla(initialFollowUpSla)
   );
-  const [bannersDismissedFp, setBannersDismissedFp] = useState<string | null>(null);
+  const [bannersExpanded, setBannersExpanded] = useState(false);
   const autoLossRunningRef = useRef(false);
   
 
@@ -625,6 +623,10 @@ export default function KanbanBoard({
   }, [projects, boardView]);
 
   useEffect(() => {
+    if (boardView !== "funil") setBannersExpanded(false);
+  }, [boardView]);
+
+  useEffect(() => {
     const local = loadFollowUpSlaLocal();
     // Preferência salva no servidor tem prioridade; local cobre 1ª visita sem prop.
     if (initialFollowUpSla) {
@@ -633,10 +635,6 @@ export default function KanbanBoard({
       setFollowUpSla(local);
     }
   }, [initialFollowUpSla]);
-
-  useEffect(() => {
-    setBannersDismissedFp(loadFollowUpBannersDismissedFingerprint());
-  }, []);
 
   const handleSaveFollowUpSla = (next: FollowUpSlaConfig) => {
     setFollowUpSla(next);
@@ -1047,10 +1045,6 @@ export default function KanbanBoard({
   );
   const followUpBannerCount =
     followUpLosses.length + followUpAlerts.length + followUpWarnings.length;
-  const followUpBannerFingerprint = `${followUpLosses.length}-${followUpAlerts.length}-${followUpWarnings.length}`;
-  const followUpBannersHidden =
-    followUpBannerCount > 0 &&
-    bannersDismissedFp === followUpBannerFingerprint;
 
   // Auto-move para Perdas quando o operador ativou essa opção no SLA.
   useEffect(() => {
@@ -1796,13 +1790,10 @@ export default function KanbanBoard({
         {boardView === "funil" &&
           !isOpsLimited &&
           followUpBannerCount > 0 &&
-          (followUpBannersHidden ? (
+          (!bannersExpanded ? (
             <button
               type="button"
-              onClick={() => {
-                setBannersDismissedFp(null);
-                saveFollowUpBannersDismissedFingerprint(null);
-              }}
+              onClick={() => setBannersExpanded(true)}
               className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border/60 bg-white/80 hover:bg-slate-50 transition-colors"
             >
               <BellRing className="h-3.5 w-3.5" />
@@ -1837,10 +1828,7 @@ export default function KanbanBoard({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setBannersDismissedFp(followUpBannerFingerprint);
-                  saveFollowUpBannersDismissedFingerprint(followUpBannerFingerprint);
-                }}
+                onClick={() => setBannersExpanded(false)}
                 className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 bg-white text-muted-foreground hover:text-foreground hover:bg-slate-50 transition-colors"
                 title="Ocultar avisos"
                 aria-label="Ocultar avisos de follow-up"
