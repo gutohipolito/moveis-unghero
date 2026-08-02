@@ -445,7 +445,7 @@ export default function ColaboradoresClient({
             openEdit(c);
           }
         }}
-        className={`bg-white border border-slate-100/90 hover:border-slate-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative ${
+        className={`bg-white border border-slate-100/90 hover:border-slate-200 rounded-[var(--radius-md)] shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group/card relative ${
           canManageUsers ? "cursor-pointer" : ""
         }`}
       >
@@ -722,7 +722,7 @@ export default function ColaboradoresClient({
               </Button>
               <Button
                 onClick={openCreate}
-                className="font-semibold text-xs px-4 h-10 rounded-lg flex items-center gap-1.5 btn-metallic cursor-pointer"
+                className="font-semibold text-xs px-4 h-10 flex items-center gap-1.5 btn-metallic cursor-pointer"
               >
                 <UserPlus className="h-4 w-4" />
                 Adicionar Colaborador
@@ -744,7 +744,7 @@ export default function ColaboradoresClient({
           {filtered.map(renderGridCard)}
         </div>
       ) : (
-        <Card className="bg-white border border-slate-100/90 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
+        <Card className="bg-white border border-slate-100/90 shadow-sm overflow-hidden divide-y divide-slate-100">
           {filtered.map(renderListRow)}
         </Card>
       )}

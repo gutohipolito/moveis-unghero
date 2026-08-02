@@ -245,7 +245,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
       />
 
       {mailboxes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-white/70 p-10 text-center">
+        <div className="rounded-[var(--radius-md)] border border-dashed border-border bg-white/70 p-10 text-center">
           <Mail className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
           <h3 className="font-bold text-foreground">Nenhuma caixa disponível</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">

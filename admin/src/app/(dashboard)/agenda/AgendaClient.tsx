@@ -497,7 +497,7 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
                     {selectedEvent.readOnly && selectedEvent.href && (
                       <a
                         href={selectedEvent.href}
-                        className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg btn-metallic"
+                        className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 btn-metallic"
                       >
                         <ExternalLink className="h-3.5 w-3.5" /> Abrir
                       </a>

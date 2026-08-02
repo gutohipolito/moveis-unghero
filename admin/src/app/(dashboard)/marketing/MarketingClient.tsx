@@ -134,7 +134,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
   return (
     <div className={`space-y-6 pb-8 ${isPending ? "opacity-70" : ""}`}>
       {/* Banner Informativo Premium - moveisunghero.com.br */}
-      <div className="p-6 bg-gradient-to-r from-primary/10 via-amber-500/5 to-transparent border border-primary/20 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs relative overflow-hidden">
+      <div className="p-6 bg-gradient-to-r from-primary/10 via-amber-500/5 to-transparent border border-primary/20 rounded-[var(--radius-md)] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs relative overflow-hidden">
         <div className="space-y-1.5 z-10">
           <div className="flex items-center gap-2">
             <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -182,7 +182,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
       {/* KPI GRID PERSONALIZADO E ULTRA MODERNO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Sessões / Usuários em tempo real */}
-        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-[var(--radius-md)] shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
           <div className="p-3 rounded-xl bg-primary/10 text-primary shrink-0">
             <MousePointerClick className="h-5 w-5" />
           </div>
@@ -200,7 +200,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
         </div>
 
         {/* Card 2: Visitantes Ativos */}
-        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-[var(--radius-md)] shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
           <div className="p-3 rounded-xl bg-sky-100 text-sky-600 shrink-0">
             <Users className="h-5 w-5" />
           </div>
@@ -218,7 +218,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
         </div>
 
         {/* Card 3: Engajamento */}
-        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-[var(--radius-md)] shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
           <div className="p-3 rounded-xl bg-emerald-100 text-emerald-600 shrink-0">
             <Activity className="h-5 w-5" />
           </div>
@@ -236,7 +236,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
         </div>
 
         {/* Card 4: Tempo da Sessão */}
-        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-2xl shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-150 p-5 rounded-[var(--radius-md)] shadow-xs hover:shadow-sm hover:scale-[1.01] transition-all flex items-start gap-4">
           <div className="p-3 rounded-xl bg-amber-100 text-amber-600 shrink-0">
             <Clock className="h-5 w-5" />
           </div>
@@ -255,7 +255,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
       </div>
 
       {/* GRÁFICO DIÁRIO E REALTIME */}
-      <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 rounded-2xl shadow-xs space-y-6">
+      <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 shadow-xs space-y-6">
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
@@ -321,7 +321,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
       {/* ORIGENS DE TRÁFEGO E PÁGINAS MAIS VISITADAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Origem / Canal */}
-        <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 rounded-2xl shadow-xs space-y-6">
+        <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 shadow-xs space-y-6">
           <div>
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-primary" />
@@ -361,7 +361,7 @@ GA4_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n
         </Card>
 
         {/* Páginas Mais Visitadas */}
-        <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 rounded-2xl shadow-xs space-y-6">
+        <Card className="p-6 bg-white/70 backdrop-blur-md border border-slate-150 shadow-xs space-y-6">
           <div className="flex items-start gap-2">
             <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
             <div>

@@ -534,7 +534,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
             {canManage && (
               <Button
                 onClick={openCreateModal}
-                className="font-bold btn-metallic gap-2 w-full sm:w-auto justify-center h-11 px-5 rounded-xl shadow-sm"
+                className="font-bold btn-metallic gap-2 w-full sm:w-auto justify-center h-11 px-5 shadow-sm"
               >
                 <Plus className="h-5 w-5" /> Novo cliente
               </Button>
@@ -677,7 +677,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
               return (
                 <article
                   key={client.id}
-                  className={`rounded-xl border bg-card p-4 space-y-3 shadow-sm ${
+                  className={`rounded-[var(--radius-md)] border bg-card p-4 space-y-3 shadow-sm ${
                     !isFactoryRole && docInfo.tipo_pessoa === "PJ" ? "border-indigo-400/40 shadow-xs" : "border-border"
                   }`}
                 >

@@ -482,14 +482,14 @@ export default function CatalogosClient({
                 return next;
               });
             }}
-            className={`font-bold gap-1.5 rounded-xl w-full sm:w-auto ${
+            className={`font-bold gap-1.5 w-full sm:w-auto ${
               manageMode ? "btn-metallic" : ""
             }`}
           >
             <Settings2 className="h-4 w-4" />
             {manageMode ? "Edição ativa" : "Habilitar edição"}
           </Button>
-          <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full sm:w-auto rounded-xl">
+          <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full sm:w-auto">
             <Plus className="h-4.5 w-4.5" /> Novo catálogo
           </Button>
         </div>
@@ -498,7 +498,7 @@ export default function CatalogosClient({
 
       {showingSuppliers ? (
         supplierTiles.length === 0 ? (
-          <Card className="p-12 text-center text-sm text-muted-foreground rounded-2xl border-dashed">
+          <Card className="p-12 text-center text-sm text-muted-foreground border-dashed">
             <BookOpen className="h-10 w-10 mx-auto mb-3 text-slate-300" />
             Nenhum catálogo ainda. Adicione o primeiro PDF ou imagem.
           </Card>
@@ -513,9 +513,9 @@ export default function CatalogosClient({
                   setFilterMarca("ALL");
                   setSearchQuery("");
                 }}
-                className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 transition-all"
+                className="group rounded-[var(--radius-md)] border border-slate-200 bg-white p-5 text-left shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 transition-all"
               >
-                <div className="aspect-[4/3] rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden mb-3">
+                <div className="aspect-[4/3] rounded-[var(--radius-sm)] bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden mb-3">
                   {tile.logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -542,7 +542,7 @@ export default function CatalogosClient({
               <Button
                 type="button"
                 variant="outline"
-                className="font-bold gap-1.5 rounded-xl"
+                className="font-bold gap-1.5"
                 onClick={() => {
                   setSelectedSupplierId(null);
                   setFilterMarca("ALL");
@@ -557,7 +557,7 @@ export default function CatalogosClient({
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  className="pl-9 bg-white rounded-xl"
+                  className="pl-9 bg-white"
                   placeholder="Buscar por título, categoria ou acabamento…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -567,7 +567,7 @@ export default function CatalogosClient({
                 <select
                   value={filterMarca}
                   onChange={(e) => setFilterMarca(e.target.value)}
-                  className="h-10 rounded-xl border border-input bg-white px-3 text-sm"
+                  className="h-10 rounded-[var(--radius-sm)] border border-input bg-white px-3 text-sm"
                 >
                   <option value="ALL">Todas as categorias</option>
                   {marcas.map((m) => (
@@ -581,7 +581,7 @@ export default function CatalogosClient({
           </div>
 
       {filtered.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-muted-foreground rounded-2xl border-dashed">
+        <Card className="p-12 text-center text-sm text-muted-foreground border-dashed">
           <BookOpen className="h-10 w-10 mx-auto mb-3 text-slate-300" />
           Nenhum catálogo encontrado.
         </Card>
@@ -601,7 +601,7 @@ export default function CatalogosClient({
                 aria-label={`Abrir catálogo ${catalog.titulo}`}
               >
                 <div
-                  className={`aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
+                  className={`aspect-[3/4] rounded-[var(--radius-md)] overflow-hidden bg-slate-100 border border-slate-200/80 relative shadow-sm transition-all duration-300 ${
                     manageMode
                       ? ""
                       : "group-hover:-translate-y-1 group-hover:shadow-lg group-hover:border-slate-300"

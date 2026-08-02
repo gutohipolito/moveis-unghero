@@ -131,7 +131,7 @@ export default function SettingsPage() {
         </div>
         <SettingsSectionTabs />
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 text-center space-y-3">
+          <div className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-8 text-center space-y-3">
             <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
               <ShieldAlert className="h-6 w-6 text-amber-600" />
             </div>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6 max-w-4xl">
         {/* Painel 1: Dados da Empresa */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Building2 className="h-5 w-5 text-indigo-600" />
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">Dados da Marcenaria</h2>
@@ -226,7 +226,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Painel 2: Operação e Metas */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Sliders className="h-5 w-5 text-indigo-600" />
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">Operações e Parâmetros</h2>
@@ -263,7 +263,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Painel 3: Infraestrutura e Status do Banco */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Database className="h-5 w-5 text-indigo-600" />
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">Ambiente & Banco de Dados</h2>
@@ -305,7 +305,7 @@ export default function SettingsPage() {
 
         {/* Painel 4: Armazenamento (Admin) */}
         {(storageLoading || storage) && (
-          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-6 space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <HardDrive className="h-5 w-5 text-indigo-600" />
               <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">Armazenamento de Arquivos</h2>

@@ -115,7 +115,7 @@ export function AccessCredentialCard({
   return (
     <article
       className={cn(
-        "group/card relative overflow-hidden rounded-2xl border shadow-[var(--shadow-sm)] transition-all duration-[var(--motion-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]",
+        "group/card relative overflow-hidden rounded-[var(--radius-md)] border shadow-[var(--shadow-sm)] transition-all duration-[var(--motion-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]",
         "bg-gradient-to-br",
         style.card,
         style.glow

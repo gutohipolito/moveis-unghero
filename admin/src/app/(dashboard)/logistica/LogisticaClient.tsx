@@ -267,7 +267,7 @@ export default function LogisticaClient({
 
           {/* Form de Nova Expedição */}
           {isAddingExp && (
-            <Card className="p-5 border-cyan-200/50 bg-cyan-500/5 rounded-2xl max-w-xl animate-in slide-in-from-top-4 duration-300">
+            <Card className="p-5 border-cyan-200/50 bg-cyan-500/5 max-w-xl animate-in slide-in-from-top-4 duration-300">
               <h4 className="text-sm font-bold text-cyan-800 mb-3">Agendar Carregamento & Viagem</h4>
               <form onSubmit={handleCreateExpedicao} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -351,7 +351,7 @@ export default function LogisticaClient({
               if (!proj) return null;
 
               return (
-                <Card key={exp.id} className="p-6 border-border/40 shadow-md bg-white rounded-2xl space-y-4 hover:shadow-lg transition-all">
+                <Card key={exp.id} className="p-6 border-border/40 shadow-md bg-white space-y-4 hover:shadow-lg transition-all">
                   <div className="flex items-center justify-between border-b border-border/30 pb-2">
                     <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 font-bold px-2 py-0.5 rounded-md">
                       Carga: {exp.id}
@@ -417,7 +417,7 @@ export default function LogisticaClient({
               const checklistCompleted = Object.values(chk).every(val => val === true);
 
               return (
-                <Card key={proj.id} className="p-6 border-border/40 bg-white shadow-md rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6 hover:shadow-lg transition-all">
+                <Card key={proj.id} className="p-6 border-border/40 bg-white shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-6 hover:shadow-lg transition-all">
                   <div className="space-y-2 lg:max-w-md">
                     <div className="flex items-center gap-2">
                       <h4 className="font-extrabold text-neutral-900 text-base">{proj.client.nome}</h4>

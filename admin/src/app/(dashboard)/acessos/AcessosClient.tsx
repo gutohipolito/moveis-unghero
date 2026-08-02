@@ -397,7 +397,7 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-white/60 px-6 py-16 text-center">
+        <div className="rounded-[var(--radius-md)] border border-dashed border-border bg-white/60 px-6 py-16 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-800 border border-amber-500/20">
             <KeyRound className="h-6 w-6" />
           </div>

@@ -725,7 +725,7 @@ export default function ProdutosClient({
                 type="button"
                 data-active={filterCategory === "ALL"}
                 onClick={() => setFilterCategory("ALL")}
-                className="shrink-0 inline-flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer text-slate-700 data-[active=true]:bg-slate-950 data-[active=true]:text-white data-[active=true]:border-slate-950"
+                className="shrink-0 inline-flex items-center gap-2.5 rounded-[var(--radius-sm)] border border-slate-200 bg-white px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer text-slate-700 data-[active=true]:bg-slate-950 data-[active=true]:text-white data-[active=true]:border-slate-950"
               >
                 <LayoutGrid className="h-4 w-4 text-slate-400 group-data-[active=true]:text-white" />
                 Todas
@@ -746,7 +746,7 @@ export default function ProdutosClient({
                     type="button"
                     data-active={isActive}
                     onClick={() => setFilterCategory(cat)}
-                    className={`shrink-0 inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer ${visual.tone}`}
+                    className={`shrink-0 inline-flex items-center gap-2.5 rounded-[var(--radius-sm)] border px-4 py-2.5 text-xs font-extrabold transition-all hover:scale-[1.02] hover:shadow-xs cursor-pointer ${visual.tone}`}
                   >
                     <Icon className="h-4 w-4" />
                     {cat}
@@ -886,7 +886,7 @@ export default function ProdutosClient({
           })}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-xs">
+        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-border/80 bg-white shadow-xs">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-slate-50 text-slate-550 font-bold text-xs uppercase tracking-wider">
@@ -1283,7 +1283,7 @@ export default function ProdutosClient({
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
                 {/* Imagens */}
                 <div className="lg:col-span-7 space-y-3">
-                  <div className="aspect-[4/3] sm:aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-border relative flex items-center justify-center shadow-xs">
+                  <div className="aspect-[4/3] sm:aspect-square bg-slate-100 rounded-[var(--radius-md)] overflow-hidden border border-border relative flex items-center justify-center shadow-xs">
                     {currentImg ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={currentImg} alt={product.nome} className="w-full h-full object-cover" />
@@ -1344,7 +1344,7 @@ export default function ProdutosClient({
                       </h2>
                     </div>
 
-                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-[var(--radius-md)] space-y-1">
                       <p className="text-[10px] font-bold uppercase text-slate-450 tracking-wider">Preço de Apresentação</p>
                       <p className="text-lg font-black text-slate-850">
                         {!privacyMode ? (
@@ -1367,7 +1367,7 @@ export default function ProdutosClient({
                               className="group flex flex-col items-center gap-1.5 text-center"
                               title={swatch.nome}
                             >
-                              <div className="w-full aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shadow-xs">
+                              <div className="w-full aspect-square rounded-[var(--radius-sm)] overflow-hidden border border-slate-200 bg-slate-100 shadow-xs">
                                 {swatch.imagem ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
@@ -1423,7 +1423,7 @@ export default function ProdutosClient({
                         type="button"
                         onClick={downloadCurrentImage}
                         variant="outline"
-                        className="font-bold gap-1.5 h-10 rounded-xl border-border bg-white"
+                        className="font-bold gap-1.5 h-10 border-border bg-white"
                       >
                         <Download className="h-4 w-4 text-slate-500" />
                         Baixar foto atual
@@ -1432,7 +1432,7 @@ export default function ProdutosClient({
                     <Button
                       type="button"
                       onClick={copyCommercialText}
-                      className="font-bold gap-1.5 h-10 rounded-xl btn-metallic border-none text-white bg-slate-950 hover:bg-slate-900"
+                      className="font-bold gap-1.5 h-10 btn-metallic border-none text-white bg-slate-950 hover:bg-slate-900"
                     >
                       {copiedText ? (
                         <>

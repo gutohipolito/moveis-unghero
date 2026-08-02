@@ -58,7 +58,7 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
 
   if (quotes.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-white/60 p-10 text-center">
+      <div className="rounded-[var(--radius-md)] border border-dashed border-border bg-white/60 p-10 text-center">
         <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-3" />
         <h3 className="font-bold text-foreground">Nenhuma pendência comercial</h3>
         <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
@@ -89,7 +89,7 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
           return (
             <div
               key={q.id}
-              className={`rounded-2xl border bg-white p-4 shadow-xs space-y-3 ${
+              className={`rounded-[var(--radius-md)] border bg-white p-4 shadow-xs space-y-3 ${
                 expired ? "border-rose-300" : "border-amber-200"
               }`}
             >

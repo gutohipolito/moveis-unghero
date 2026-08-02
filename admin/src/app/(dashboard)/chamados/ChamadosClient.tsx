@@ -230,7 +230,7 @@ export default function ChamadosClient({
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold transition-all w-full sm:w-auto cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-[var(--radius-sm)] bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold transition-all w-full sm:w-auto cursor-pointer"
         >
           {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           {showForm ? "Fechar" : "Novo chamado"}
@@ -241,7 +241,7 @@ export default function ChamadosClient({
       {showForm && (
         <form
           onSubmit={handleCreate}
-          className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-5 space-y-4"
+          className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-5 space-y-4"
         >
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <PackageOpen className="h-5 w-5 text-indigo-600" />
@@ -261,7 +261,7 @@ export default function ChamadosClient({
                 onChange={(e) => setTitulo(e.target.value)}
                 required
                 maxLength={120}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all"
+                className="w-full h-10 px-3 rounded-[var(--radius-sm)] border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all"
               />
             </div>
             <div className="space-y-1.5">
@@ -271,7 +271,7 @@ export default function ChamadosClient({
               <select
                 value={prioridade}
                 onChange={(e) => setPrioridade(e.target.value as SupplyTicketPriority)}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all cursor-pointer"
+                className="w-full h-10 px-3 rounded-[var(--radius-sm)] border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all cursor-pointer"
               >
                 <option value="BAIXA">Baixa</option>
                 <option value="MEDIA">Média</option>
@@ -289,7 +289,7 @@ export default function ChamadosClient({
               onChange={(e) => setDescricao(e.target.value)}
               required
               rows={3}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-sm text-slate-700 focus:border-indigo-500 focus:outline-none transition-all resize-y"
+              className="w-full px-3 py-2.5 rounded-[var(--radius-sm)] border border-slate-200 bg-slate-50/50 focus:bg-white text-sm text-slate-700 focus:border-indigo-500 focus:outline-none transition-all resize-y"
             />
           </div>
 
@@ -300,7 +300,7 @@ export default function ChamadosClient({
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all cursor-pointer"
+              className="w-full h-10 px-3 rounded-[var(--radius-sm)] border border-slate-200 bg-slate-50/50 focus:bg-white text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none transition-all cursor-pointer"
             >
               <option value="">Nenhum projeto específico</option>
               {projects.map((p) => (
@@ -319,7 +319,7 @@ export default function ChamadosClient({
               {previews.map((src, i) => (
                 <div
                   key={i}
-                  className="relative h-20 w-20 rounded-xl overflow-hidden border border-slate-200"
+                  className="relative h-20 w-20 rounded-[var(--radius-sm)] overflow-hidden border border-slate-200"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="Prévia" className="h-full w-full object-cover" />
@@ -334,7 +334,7 @@ export default function ChamadosClient({
                 </div>
               ))}
               {files.length < 6 && (
-                <label className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-0.5 cursor-pointer text-slate-400 hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50/40 transition-colors">
+                <label className="h-20 w-20 rounded-[var(--radius-sm)] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-0.5 cursor-pointer text-slate-400 hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50/40 transition-colors">
                   <ImagePlus className="h-5 w-5" />
                   <span className="text-[9px] font-black uppercase tracking-wide">Adicionar</span>
                   <input
@@ -356,7 +356,7 @@ export default function ChamadosClient({
           </div>
 
           {formError && (
-            <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl">
+            <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-[var(--radius-sm)]">
               {formError}
             </p>
           )}
@@ -365,7 +365,7 @@ export default function ChamadosClient({
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold transition-all disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--radius-sm)] bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold transition-all disabled:opacity-60 cursor-pointer"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {submitting
@@ -379,14 +379,14 @@ export default function ChamadosClient({
       )}
 
       {actionError && (
-        <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3.5 py-2 rounded-xl">
+        <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3.5 py-2 rounded-[var(--radius-sm)]">
           {actionError}
         </p>
       )}
 
       {/* Resumo */}
       {isAdmin && openCount > 0 && (
-        <div className="flex items-center gap-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 px-3.5 py-2 rounded-xl">
+        <div className="flex items-center gap-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 px-3.5 py-2 rounded-[var(--radius-sm)]">
           <PackageOpen className="h-4 w-4" />
           {openCount} chamado{openCount === 1 ? "" : "s"} aguardando resolução.
         </div>
@@ -394,7 +394,7 @@ export default function ChamadosClient({
 
       {/* Lista */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center">
+        <div className="bg-white border border-dashed border-slate-200 rounded-[var(--radius-md)] p-10 text-center">
           <PackageOpen className="h-8 w-8 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-semibold text-slate-500">Nenhum chamado por aqui.</p>
         </div>
@@ -406,7 +406,7 @@ export default function ChamadosClient({
             return (
               <div
                 key={t.id}
-                className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-4 sm:p-5 space-y-3"
+                className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm p-4 sm:p-5 space-y-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

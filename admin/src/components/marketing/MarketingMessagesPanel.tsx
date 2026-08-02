@@ -90,7 +90,7 @@ function MarketingMessageSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group text-left w-full h-full rounded-2xl border border-border/60 bg-card p-5 flex flex-col gap-4 transition-all hover:border-emerald-500/40 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+      className="group text-left w-full h-full rounded-[var(--radius-md)] border border-border/60 bg-card p-5 flex flex-col gap-4 transition-all hover:border-emerald-500/40 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
     >
       <div className="flex items-start gap-3">
         <MessageIconBox message={message} size="lg" />

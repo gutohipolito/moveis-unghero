@@ -262,7 +262,7 @@ export default function PortalColaboradorClient({
             <Button
               onClick={handleBaterPonto}
               disabled={loading || nextPontoType === "done"}
-              className={`w-full py-6 text-sm font-extrabold text-white rounded-xl shadow-md border-none flex items-center justify-center gap-2 cursor-pointer transition-all ${buttonColor}`}
+              className={`w-full py-6 text-sm font-extrabold text-white rounded-[var(--radius-sm)] shadow-md border-none flex items-center justify-center gap-2 cursor-pointer transition-all ${buttonColor}`}
             >
               {loading ? (
                 <Hourglass className="h-5 w-5 animate-spin" />

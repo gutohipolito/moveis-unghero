@@ -123,7 +123,7 @@ export default function PermissoesClient({ initial }: PermissoesClientProps) {
           const dirty = isDirty(role);
           const count = selected[role].size;
           return (
-            <div key={role} className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+            <div key={role} className="bg-white border border-slate-200/80 rounded-[var(--radius-md)] shadow-sm overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div>
                   <h2 className="text-sm font-black text-slate-800">{ROLE_LABELS[role]}</h2>
