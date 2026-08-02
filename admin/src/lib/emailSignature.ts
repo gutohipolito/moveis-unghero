@@ -13,12 +13,10 @@ export const EMAIL_SIG_TOKENS = {
   foreground: "#29231f",
   muted: "#746963",
   /** Cinza mais claro para o aviso LGPD. */
-  disclaimer: "#9A918A",
+  disclaimer: "#A39B94",
   primary: "#dc9b04",
-  border: "#dcd7d0",
-  /** Cartão da assinatura — branco sólido (evita “transparência” nos clientes). */
+  border: "#e5e0d8",
   background: "#ffffff",
-  cardBorder: "#e8e4de",
   fontDisplay: "'Outfit', 'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
   fontBody: "'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
 } as const;
@@ -40,9 +38,9 @@ export const EMAIL_SIGNATURE_BRAND = {
     "https://www.google.com/maps/place/M%C3%B3veis+Unghero/@-29.2211024,-51.3423502,17z",
 } as const;
 
-/** Aviso padrão de confidencialidade + LGPD (Lei nº 13.709/2018). */
+/** Aviso curto de confidencialidade + LGPD (assinatura — evita bloco “jurídico” pesado). */
 export const EMAIL_SIGNATURE_LGPD_NOTICE =
-  "A Móveis Unghero valoriza a privacidade e trata dados pessoais com rigor, em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018). Este e-mail e quaisquer anexos são confidenciais e destinam-se exclusivamente ao(s) destinatário(s) indicado(s). Se você o recebeu por engano, por favor apague-o e nos informe.";
+  "Tratamos dados pessoais conforme a LGPD (Lei nº 13.709/2018). Este e-mail é confidencial. Se o recebeu por engano, apague-o e nos avise.";
 
 export const SIGNATURE_TITLE_BY_AREA: Record<EmailMailboxArea, string> = {
   ATENDIMENTO: "Atendimento",
@@ -73,35 +71,17 @@ export type BuildSignatureOptions = {
   title: string;
 };
 
-function contactRow(
-  iconSrc: string,
-  iconAlt: string,
-  href: string,
-  labelHtml: string
-) {
-  const t = EMAIL_SIG_TOKENS;
-  return `
-<tr>
-  <td style="padding:0 0 5px 0;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-      <tr>
-        <td valign="top" width="20" style="padding:3px 10px 0 0;width:20px;">
-          <a href="${href}" style="text-decoration:none;border:0;">
-            <img src="${iconSrc}" width="14" height="14" alt="${iconAlt}" style="display:block;border:0;outline:none;width:14px;height:14px;">
-          </a>
-        </td>
-        <td valign="top" style="font-family:${t.fontBody};font-size:12.5px;line-height:1.45;font-weight:500;color:${t.foreground};">
-          <a href="${href}" style="color:${t.foreground};text-decoration:none;">${labelHtml}</a>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>`.trim();
+function link(href: string, label: string, color: string) {
+  return `<a href="${href}" style="color:${color};text-decoration:none;">${label}</a>`;
+}
+
+function sep(color: string) {
+  return `<span style="color:${color};padding:0 7px;">·</span>`;
 }
 
 /**
- * Assinatura: logo à esquerda | divisória | dados à direita,
- * com aviso LGPD em largura total no rodapé.
+ * Assinatura moderna: wordmark + área discreta + contatos em uma linha,
+ * hairline dourada e LGPD curto — sem cartão nem lista de ícones.
  */
 export function buildUngheroSignatureHtml(options: BuildSignatureOptions): string {
   const title = escapeHtml((options.title || "Atendimento").trim() || "Atendimento");
@@ -110,51 +90,43 @@ export function buildUngheroSignatureHtml(options: BuildSignatureOptions): strin
   const b = EMAIL_SIGNATURE_BRAND;
   const t = EMAIL_SIG_TOKENS;
   const lgpd = escapeHtml(EMAIL_SIGNATURE_LGPD_NOTICE);
+  const addressOneLine = escapeHtml(b.addressLines.join(" · "));
 
-  const addressLabel = b.addressLines
-    .map((line, i) => {
-      const safe = escapeHtml(line);
-      return i === 0
-        ? safe
-        : `<br><span style="color:${t.muted};font-weight:400;">${safe}</span>`;
-    })
-    .join("");
+  const contacts = [
+    link(b.whatsappHref, escapeHtml(b.whatsappDisplay), t.foreground),
+    link(b.instagramHref, escapeHtml(b.instagramHandle), t.foreground),
+    link(b.siteHref, escapeHtml(b.siteDisplay), t.foreground),
+  ].join(sep(t.border));
 
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:18px 0 0 0;padding:0;width:100%;max-width:640px;background-color:${t.background};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:20px 0 0 0;padding:0;width:100%;max-width:560px;background-color:${t.background};">
   <tr>
-    <td style="padding:20px 18px 18px 18px;background-color:${t.background};border:1px solid ${t.cardBorder};border-radius:8px;">
+    <td style="padding:0 0 0 0;background-color:${t.background};border-top:2px solid ${t.primary};">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;background-color:${t.background};">
         <tr>
-          <td valign="middle" width="160" style="padding:0 18px 0 0;width:160px;background-color:${t.background};">
+          <td style="padding:18px 0 0 0;background-color:${t.background};">
             <a href="${b.siteHref}" style="text-decoration:none;border:0;">
-              <img src="${logoSrc}" width="148" height="31" alt="${company}" style="display:block;border:0;outline:none;height:31px;width:auto;max-width:148px;">
+              <img src="${logoSrc}" width="168" height="35" alt="${company}" style="display:block;border:0;outline:none;height:35px;width:auto;max-width:168px;">
             </a>
           </td>
-          <td valign="top" width="1" style="width:1px;border-left:1px solid ${t.border};font-size:0;line-height:0;padding:0;background-color:${t.background};">&nbsp;</td>
-          <td valign="top" style="padding:0 0 0 18px;background-color:${t.background};">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:${t.background};">
-              <tr>
-                <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
-                  ${title}
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:0 0 12px 0;font-family:${t.fontBody};font-size:11px;line-height:1.35;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${t.muted};">
-                  ${company}
-                </td>
-              </tr>
-              ${contactRow(asset("whatsapp.png"), "WhatsApp", b.whatsappHref, escapeHtml(b.whatsappDisplay))}
-              ${contactRow(asset("instagram.png"), "Instagram", b.instagramHref, escapeHtml(b.instagramHandle))}
-              ${contactRow(asset("website.png"), "Site", b.siteHref, escapeHtml(b.siteDisplay))}
-              ${contactRow(asset("map.png"), "Endereço", b.mapsHref, addressLabel)}
-            </table>
+        </tr>
+        <tr>
+          <td style="padding:14px 0 0 0;font-family:${t.fontBody};font-size:12px;line-height:1.3;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${t.muted};background-color:${t.background};">
+            ${title}
           </td>
         </tr>
-      </table>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;margin-top:16px;background-color:${t.background};">
         <tr>
-          <td style="padding:12px 0 0 0;border-top:1px solid ${t.border};font-family:${t.fontBody};font-size:10px;line-height:1.5;font-weight:400;color:${t.disclaimer};width:100%;background-color:${t.background};">
+          <td style="padding:10px 0 0 0;font-family:${t.fontBody};font-size:13px;line-height:1.55;font-weight:500;color:${t.foreground};background-color:${t.background};">
+            ${contacts}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0 0 0;font-family:${t.fontBody};font-size:12px;line-height:1.45;font-weight:400;color:${t.muted};background-color:${t.background};">
+            ${link(b.mapsHref, addressOneLine, t.muted)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 0 0 0;font-family:${t.fontBody};font-size:10px;line-height:1.45;font-weight:400;color:${t.disclaimer};background-color:${t.background};">
             ${lgpd}
           </td>
         </tr>
@@ -168,14 +140,13 @@ export function buildUngheroSignatureText(options: BuildSignatureOptions): strin
   const title = (options.title || "Atendimento").trim() || "Atendimento";
   const b = EMAIL_SIGNATURE_BRAND;
   return [
-    title,
     b.company,
+    title,
     "",
     `WhatsApp: ${b.whatsappDisplay}`,
     `Instagram: ${b.instagramHandle}`,
     b.siteDisplay,
-    "",
-    ...b.addressLines,
+    b.addressLines.join(" · "),
     "",
     EMAIL_SIGNATURE_LGPD_NOTICE,
   ].join("\n");
