@@ -33,6 +33,7 @@ model Company {
   paymentReceipts   PaymentReceipt[]
   accessCredentials AccessCredential[]
   emailMailboxes    EmailMailbox[]
+  emailDocumentTemplates EmailDocumentTemplate[]
 }
 
 /** Cofre de acessos da empresa (sites, e-mails, hospedagem, etc.). */
@@ -1245,6 +1246,26 @@ model EmailMailboxAccess {
 enum EmailOutboundStatus {
   SENT
   FAILED
+}
+
+enum EmailDocumentTemplateType {
+  QUOTE
+  RECEIPT
+}
+
+/** Templates de e-mail automático (orçamento / recibo) por empresa. */
+model EmailDocumentTemplate {
+  id         String                     @id @default(uuid())
+  company_id String
+  company    Company                    @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  type       EmailDocumentTemplateType
+  subject    String
+  body       String
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+
+  @@unique([company_id, type])
+  @@index([company_id])
 }
 
 /** Envios disparados pelo sistema (orçamento, recibo, etc.). */

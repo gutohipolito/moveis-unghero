@@ -4,10 +4,14 @@ import { useCallback, useState } from "react";
 import { Download, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ActionDialog from "@/components/ActionDialog";
+import EmailSendPreviewDialog from "@/components/emails/EmailSendPreviewDialog";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import { getPhoneLastFourDigits } from "@/lib/phone";
 import { buildQuoteWhatsAppMessage, openQuoteWhatsApp, slugifyFileName } from "@/lib/quoteWhatsApp";
-import { sendQuoteByEmail } from "@/app/actions/emailInbox";
+import {
+  previewQuoteByEmail,
+  sendQuoteByEmail,
+} from "@/app/actions/emailInbox";
 import {
   downloadPdfBlob,
   generatePrintPagePdfBlob,
@@ -28,6 +32,13 @@ type FeedbackDialog = {
   message: string;
 } | null;
 
+type PreviewState = {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string | null;
+} | null;
+
 export default function QuotePrintToolbar({
   quoteId,
   clientName,
@@ -41,9 +52,14 @@ export default function QuotePrintToolbar({
   const [emailBusy, setEmailBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackDialog>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<PreviewState>(null);
+  const [sending, setSending] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
   const emailReady = Boolean(clientEmail?.includes("@"));
-  const anyBusy = busy || emailBusy || pdfBusy;
+  const anyBusy = busy || emailBusy || pdfBusy || sending;
 
   const ensureShareLink = useCallback(async () => {
     if (pdfShareUrl) return pdfShareUrl;
@@ -133,22 +149,42 @@ export default function QuotePrintToolbar({
     }
   }
 
-  async function handleEmail() {
-    const to = clientEmail?.trim();
-    if (!to?.includes("@")) {
-      setFeedback({
-        variant: "error",
-        title: "E-mail necessário",
-        message: "Cadastre o e-mail do cliente para enviar a proposta.",
-      });
-      return;
-    }
+  async function openEmailPreview() {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreview(null);
     setEmailBusy(true);
+    try {
+      const res = await previewQuoteByEmail(quoteId);
+      if (!res.success) {
+        setPreviewError(res.error || "Não foi possível montar a prévia.");
+        return;
+      }
+      setPreview({
+        to: res.to || clientEmail?.trim().toLowerCase() || "",
+        subject: res.subject,
+        html: res.html,
+        from: res.from,
+      });
+    } catch (error) {
+      setPreviewError(
+        error instanceof Error ? error.message : "Não foi possível montar a prévia."
+      );
+    } finally {
+      setPreviewLoading(false);
+      setEmailBusy(false);
+    }
+  }
+
+  async function confirmEmailSend(to: string) {
+    setSending(true);
     try {
       const res = await sendQuoteByEmail({ quoteId, to });
       if (!res.success) {
         throw new Error(res.error || "Falha ao enviar e-mail.");
       }
+      setPreviewOpen(false);
       setFeedback({
         variant: "success",
         title: "E-mail enviado",
@@ -158,7 +194,7 @@ export default function QuotePrintToolbar({
       const msg = error instanceof Error ? error.message : "Não foi possível enviar o e-mail.";
       setFeedback({ variant: "error", title: "Falha no e-mail", message: msg });
     } finally {
-      setEmailBusy(false);
+      setSending(false);
     }
   }
 
@@ -182,17 +218,13 @@ export default function QuotePrintToolbar({
 
         <Button
           type="button"
-          onClick={() => void handleEmail()}
-          disabled={anyBusy || !emailReady}
-          title={
-            emailReady
-              ? "Enviar proposta por e-mail (caixa Comercial)"
-              : "Cliente sem e-mail cadastrado"
-          }
+          onClick={() => void openEmailPreview()}
+          disabled={anyBusy}
+          title="Pré-visualizar e enviar proposta por e-mail"
           className="flex items-center gap-2 bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
           {emailBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-          {emailBusy ? "Enviando..." : "Enviar por e-mail"}
+          {emailBusy ? "Preparando..." : "Enviar por e-mail"}
         </Button>
 
         <Button
@@ -227,8 +259,21 @@ export default function QuotePrintToolbar({
         </Button>
       </div>
       <p className="max-w-[380px] text-right text-[10px] text-neutral-400 leading-snug">
-        Baixar PDF: arquivo com senha (4 últimos dígitos do celular). Imprimir: A4 · margens Nenhuma.
+        {emailReady
+          ? "E-mail: prévia antes de enviar. Baixar PDF: senha = 4 últimos dígitos do celular."
+          : "Cliente sem e-mail — você pode informar o destinatário na prévia. PDF: senha = 4 últimos dígitos."}
       </p>
+
+      <EmailSendPreviewDialog
+        open={previewOpen}
+        onClose={() => !sending && setPreviewOpen(false)}
+        title="Enviar orçamento por e-mail"
+        loading={previewLoading}
+        error={previewError}
+        preview={preview}
+        sending={sending}
+        onConfirm={confirmEmailSend}
+      />
 
       <ActionDialog
         open={feedback !== null}

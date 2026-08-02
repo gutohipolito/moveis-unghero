@@ -13,7 +13,12 @@ import {
 } from "@/lib/emailImap";
 import { sendSmtpEmail } from "@/lib/emailSmtp";
 import { composeBodyWithSignature } from "@/lib/emailSignature";
-import { DOCUMENT_EMAIL_FOOTER_TEXT } from "@/lib/consentCopy";
+import {
+  buildQuoteEmailVars,
+  buildReceiptEmailVars,
+  composeDocumentEmail,
+  loadCompanyDocumentTemplate,
+} from "@/lib/emailDocumentTemplates";
 import {
   loadAccessibleMailboxSecrets,
 } from "@/app/actions/emailMailboxes";
@@ -231,24 +236,11 @@ async function resolveAtendimentoReplyTo(companyId: string): Promise<string | un
   return box?.address || undefined;
 }
 
-function withDocumentEmailFooter(text: string) {
-  if (text.includes("e-mail automático de documentos")) return text;
-  return `${text.trimEnd()}\n\n${DOCUMENT_EMAIL_FOOTER_TEXT}`;
-}
-
-export async function sendQuoteByEmail(input: {
-  quoteId: string;
-  to?: string;
-}) {
-  const authQuotes = await getWriteAccess("quotes");
-  if (!authQuotes || isReadOnlyRole(authQuotes.cargo)) {
-    return { success: false as const, error: "Sem permissão para enviar orçamento." };
-  }
-
+async function prepareQuoteEmailContent(quoteId: string, companyId: string) {
   const quote = await prisma.quote.findFirst({
     where: {
-      id: input.quoteId,
-      project: { client: { company_id: authQuotes.companyId } },
+      id: quoteId,
+      project: { client: { company_id: companyId } },
     },
     select: {
       id: true,
@@ -263,28 +255,8 @@ export async function sendQuoteByEmail(input: {
       },
     },
   });
-  if (!quote) {
-    return { success: false as const, error: "Orçamento não encontrado." };
-  }
+  if (!quote) return null;
 
-  const to = (input.to || quote.project.client.email || "").trim().toLowerCase();
-  if (!to || !to.includes("@")) {
-    return {
-      success: false as const,
-      error: "Cliente sem e-mail cadastrado. Informe o destinatário.",
-    };
-  }
-
-  const loaded = await resolveDocumentOutboundMailbox("COMERCIAL", "quotes");
-  if (!loaded) {
-    return {
-      success: false as const,
-      error:
-        "Configure uma caixa Documentos (noreply) ou Comercial ativa em E-mails → Configurar caixas.",
-    };
-  }
-
-  // Garante link público
   let shareCode = quote.pdf_share_code;
   if (!shareCode) {
     const { generateUniqueQuotePdfShareCode } = await import("@/lib/quotePdfShare");
@@ -306,34 +278,93 @@ export async function sendQuoteByEmail(input: {
   const { getPhoneLastFourDigits } = await import("@/lib/phone");
 
   const url = buildQuotePdfShortUrl(shareCode);
-  const firstName = getFirstName(quote.project.client.nome);
+  const clientName = quote.project.client.nome;
+  const firstName = getFirstName(clientName);
   const validade = formatDateBR(quote.validade);
   const hasPin = Boolean(getPhoneLastFourDigits(quote.project.client.telefone || ""));
+  const template = await loadCompanyDocumentTemplate(companyId, "QUOTE");
+  const vars = buildQuoteEmailVars({
+    clientName,
+    firstName,
+    link: url,
+    validade,
+    hasPin,
+  });
 
-  const lines = [
-    `Olá ${firstName}, tudo bem?`,
-    "",
-    "Segue o seu orçamento da Móveis Unghero:",
-    "",
-    `Validade da proposta: ${validade}`,
-    "",
-    "Acesse pelo link:",
-    url,
-  ];
-  if (hasPin) {
-    lines.push(
-      "",
-      "Senha para abrir: os 4 últimos dígitos do seu celular cadastrado conosco."
-    );
+  return { quote, template, vars, defaultTo: quote.project.client.email };
+}
+
+export async function previewQuoteByEmail(quoteId: string) {
+  const authQuotes = await getWriteAccess("quotes");
+  if (!authQuotes || isReadOnlyRole(authQuotes.cargo)) {
+    return { success: false as const, error: "Sem permissão para enviar orçamento." };
   }
-  lines.push("", "Qualquer dúvida, estamos à disposição!", "Equipe Móveis Unghero");
 
-  const subject = `Orçamento Móveis Unghero — ${quote.project.client.nome}`;
-  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
-  const body = composeBodyWithSignature(
-    withDocumentEmailFooter(lines.join("\n")),
-    loaded.mailbox.signature_text
+  const prepared = await prepareQuoteEmailContent(quoteId, authQuotes.companyId);
+  if (!prepared) {
+    return { success: false as const, error: "Orçamento não encontrado." };
+  }
+
+  const loaded = await resolveDocumentOutboundMailbox("COMERCIAL", "quotes");
+  const composed = composeDocumentEmail({
+    subjectTemplate: prepared.template.subject,
+    bodyTemplate: prepared.template.body,
+    vars: prepared.vars,
+    signature: loaded?.mailbox.signature_text,
+  });
+
+  return {
+    success: true as const,
+    to: (prepared.defaultTo || "").trim().toLowerCase(),
+    subject: composed.subject,
+    html: composed.html,
+    text: composed.text,
+    from: loaded?.mailbox.address || null,
+  };
+}
+
+export async function sendQuoteByEmail(input: {
+  quoteId: string;
+  to?: string;
+}) {
+  const authQuotes = await getWriteAccess("quotes");
+  if (!authQuotes || isReadOnlyRole(authQuotes.cargo)) {
+    return { success: false as const, error: "Sem permissão para enviar orçamento." };
+  }
+
+  const prepared = await prepareQuoteEmailContent(
+    input.quoteId,
+    authQuotes.companyId
   );
+  if (!prepared) {
+    return { success: false as const, error: "Orçamento não encontrado." };
+  }
+
+  const to = (input.to || prepared.defaultTo || "").trim().toLowerCase();
+  if (!to || !to.includes("@")) {
+    return {
+      success: false as const,
+      error: "Cliente sem e-mail cadastrado. Informe o destinatário.",
+    };
+  }
+
+  const loaded = await resolveDocumentOutboundMailbox("COMERCIAL", "quotes");
+  if (!loaded) {
+    return {
+      success: false as const,
+      error:
+        "Configure uma caixa Documentos (noreply) ou Comercial ativa em E-mails → Configurar caixas.",
+    };
+  }
+
+  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
+  const composed = composeDocumentEmail({
+    subjectTemplate: prepared.template.subject,
+    bodyTemplate: prepared.template.body,
+    vars: prepared.vars,
+    signature: loaded.mailbox.signature_text,
+  });
+  const { subject } = composed;
 
   try {
     await sendSmtpEmail(
@@ -348,8 +379,8 @@ export async function sendQuoteByEmail(input: {
         fromName: loaded.mailbox.display_name,
         to,
         subject,
-        text: body.text,
-        html: body.html,
+        text: composed.text,
+        html: composed.html,
         replyTo,
       }
     );
@@ -359,8 +390,8 @@ export async function sendQuoteByEmail(input: {
       data: {
         company_id: loaded.auth.companyId,
         mailbox_id: loaded.mailbox.id,
-        project_id: quote.project_id,
-        quote_id: quote.id,
+        project_id: prepared.quote.project_id,
+        quote_id: prepared.quote.id,
         to_address: to,
         subject,
         status: "SENT",
@@ -370,14 +401,14 @@ export async function sendQuoteByEmail(input: {
 
     await prisma.timeline.create({
       data: {
-        project_id: quote.project_id,
-        acao: `Orçamento v${quote.versao} enviado por e-mail para ${to}.`,
+        project_id: prepared.quote.project_id,
+        acao: `Orçamento v${prepared.quote.versao} enviado por e-mail para ${to}.`,
         interno_sotamente: false,
         user_id: actorId,
       },
     });
 
-    revalidatePath(`/projects/${quote.project_id}`);
+    revalidatePath(`/projects/${prepared.quote.project_id}`);
     revalidatePath("/quotes");
     return { success: true as const, to };
   } catch (error) {
@@ -388,8 +419,8 @@ export async function sendQuoteByEmail(input: {
         data: {
           company_id: loaded.auth.companyId,
           mailbox_id: loaded.mailbox.id,
-          project_id: quote.project_id,
-          quote_id: quote.id,
+          project_id: prepared.quote.project_id,
+          quote_id: prepared.quote.id,
           to_address: to,
           subject,
           status: "FAILED",
@@ -404,18 +435,39 @@ export async function sendQuoteByEmail(input: {
   }
 }
 
-export async function sendReceiptByEmail(input: {
-  receiptId: string;
-  to?: string;
-}) {
-  const authFin =
-    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
-  if (!authFin || isReadOnlyRole(authFin.cargo)) {
-    return { success: false as const, error: "Sem permissão para enviar recibo." };
-  }
+async function resolveReceiptOutboundMailbox(companyId: string) {
+  const loaded =
+    (await resolveDocumentOutboundMailbox("FINANCEIRO", "financeiro")) ||
+    (await resolveOutboundMailbox("DOCUMENTOS", "emails")) ||
+    (await resolveOutboundMailbox("FINANCEIRO", "emails"));
+  if (loaded) return loaded;
 
+  const mailbox =
+    (await prisma.emailMailbox.findFirst({
+      where: { company_id: companyId, area: "DOCUMENTOS", ativo: true },
+      orderBy: { updatedAt: "desc" },
+    })) ||
+    (await prisma.emailMailbox.findFirst({
+      where: { company_id: companyId, area: "FINANCEIRO", ativo: true },
+      orderBy: { updatedAt: "desc" },
+    }));
+  if (!mailbox) return null;
+
+  let password: string;
+  try {
+    password = decryptVaultSecret(mailbox.password_enc);
+  } catch {
+    return null;
+  }
+  return { auth: { companyId }, mailbox, password };
+}
+
+async function prepareReceiptEmailContent(
+  receiptId: string,
+  companyId: string
+) {
   const receipt = await prisma.paymentReceipt.findFirst({
-    where: { id: input.receiptId, company_id: authFin.companyId },
+    where: { id: receiptId, company_id: companyId },
     select: {
       id: true,
       project_id: true,
@@ -427,97 +479,15 @@ export async function sendReceiptByEmail(input: {
       client: { select: { email: true, telefone: true, nome: true } },
     },
   });
-  if (!receipt) {
-    return { success: false as const, error: "Recibo não encontrado." };
-  }
+  if (!receipt) return null;
 
-  const to = (input.to || receipt.client?.email || "").trim().toLowerCase();
-  if (!to || !to.includes("@")) {
-    return {
-      success: false as const,
-      error: "Cliente sem e-mail cadastrado. Informe o destinatário.",
-    };
-  }
-
-  const loaded =
-    (await resolveDocumentOutboundMailbox("FINANCEIRO", "financeiro")) ||
-    (await resolveOutboundMailbox("DOCUMENTOS", "emails")) ||
-    (await resolveOutboundMailbox("FINANCEIRO", "emails"));
-  if (!loaded) {
-    // Fallback: Documentos (preferência) ou Financeiro na empresa
-    const mailbox =
-      (await prisma.emailMailbox.findFirst({
-        where: {
-          company_id: authFin.companyId,
-          area: "DOCUMENTOS",
-          ativo: true,
-        },
-        orderBy: { updatedAt: "desc" },
-      })) ||
-      (await prisma.emailMailbox.findFirst({
-        where: {
-          company_id: authFin.companyId,
-          area: "FINANCEIRO",
-          ativo: true,
-        },
-        orderBy: { updatedAt: "desc" },
-      }));
-    if (!mailbox) {
-      return {
-        success: false as const,
-        error:
-          "Configure uma caixa Documentos (noreply) ou Financeiro ativa em E-mails → Configurar caixas.",
-      };
-    }
-    let password: string;
-    try {
-      password = decryptVaultSecret(mailbox.password_enc);
-    } catch {
-      return {
-        success: false as const,
-        error: "Não foi possível ler a senha da caixa.",
-      };
-    }
-    return sendReceiptWithMailbox(
-      { auth: authFin, mailbox, password },
-      receipt,
-      to
-    );
-  }
-
-  return sendReceiptWithMailbox(loaded, receipt, to);
-}
-
-async function sendReceiptWithMailbox(
-  loaded: {
-    auth: { companyId: string };
-    mailbox: {
-      id: string;
-      address: string;
-      display_name: string;
-      smtp_host: string;
-      smtp_port: number;
-      signature_text?: string | null;
-    };
-    password: string;
-  },
-  receipt: {
-    id: string;
-    project_id: string | null;
-    numero: number | null;
-    valor: { toString(): string } | number;
-    share_code: string | null;
-    cliente_nome: string;
-    client: { email: string | null; telefone: string | null; nome: string } | null;
-  },
-  to: string
-) {
   const {
     ensureReceiptShareCode,
     buildReceiptShortUrl,
-    buildReceiptWhatsAppMessage,
   } = await import("@/lib/receiptShare");
   const { formatCurrencyBRL } = await import("@/lib/currencyExtenso");
+  const { getFirstName } = await import("@/lib/google-review");
+  const { getPhoneLastFourDigits } = await import("@/lib/phone");
 
   let shareCode = receipt.share_code;
   if (!shareCode) {
@@ -525,21 +495,110 @@ async function sendReceiptWithMailbox(
   }
 
   const url = buildReceiptShortUrl(shareCode!);
+  const clientName =
+    receipt.cliente_nome || receipt.client?.nome || "cliente";
+  const firstName = getFirstName(clientName);
   const valorLabel = formatCurrencyBRL(Number(receipt.valor));
   const numeroLabel = receipt.numero ? `nº ${receipt.numero}` : null;
-  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
-  const body = composeBodyWithSignature(
-    withDocumentEmailFooter(
-      buildReceiptWhatsAppMessage({
-        clientName: receipt.cliente_nome || receipt.client?.nome || "cliente",
-        valorLabel,
-        receiptUrl: url,
-        numeroLabel,
-      })
-    ),
-    loaded.mailbox.signature_text
+  const hasPin = Boolean(
+    getPhoneLastFourDigits(receipt.client?.telefone || "")
   );
-  const subject = `Recibo Móveis Unghero${numeroLabel ? ` ${numeroLabel}` : ""} — ${valorLabel}`;
+  const template = await loadCompanyDocumentTemplate(companyId, "RECEIPT");
+  const vars = buildReceiptEmailVars({
+    clientName,
+    firstName,
+    link: url,
+    valorLabel,
+    numeroLabel,
+    hasPin,
+  });
+
+  return {
+    receipt,
+    template,
+    vars,
+    numeroLabel,
+    defaultTo: receipt.client?.email || null,
+  };
+}
+
+export async function previewReceiptByEmail(receiptId: string) {
+  const authFin =
+    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
+  if (!authFin || isReadOnlyRole(authFin.cargo)) {
+    return { success: false as const, error: "Sem permissão para enviar recibo." };
+  }
+
+  const prepared = await prepareReceiptEmailContent(
+    receiptId,
+    authFin.companyId
+  );
+  if (!prepared) {
+    return { success: false as const, error: "Recibo não encontrado." };
+  }
+
+  const loaded = await resolveReceiptOutboundMailbox(authFin.companyId);
+  const composed = composeDocumentEmail({
+    subjectTemplate: prepared.template.subject,
+    bodyTemplate: prepared.template.body,
+    vars: prepared.vars,
+    signature: loaded?.mailbox.signature_text,
+  });
+
+  return {
+    success: true as const,
+    to: (prepared.defaultTo || "").trim().toLowerCase(),
+    subject: composed.subject,
+    html: composed.html,
+    text: composed.text,
+    from: loaded?.mailbox.address || null,
+  };
+}
+
+export async function sendReceiptByEmail(input: {
+  receiptId: string;
+  to?: string;
+}) {
+  const authFin =
+    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
+  if (!authFin || isReadOnlyRole(authFin.cargo)) {
+    return { success: false as const, error: "Sem permissão para enviar recibo." };
+  }
+
+  const prepared = await prepareReceiptEmailContent(
+    input.receiptId,
+    authFin.companyId
+  );
+  if (!prepared) {
+    return { success: false as const, error: "Recibo não encontrado." };
+  }
+
+  const to = (input.to || prepared.defaultTo || "").trim().toLowerCase();
+  if (!to || !to.includes("@")) {
+    return {
+      success: false as const,
+      error: "Cliente sem e-mail cadastrado. Informe o destinatário.",
+    };
+  }
+
+  const loaded = await resolveReceiptOutboundMailbox(authFin.companyId);
+  if (!loaded) {
+    return {
+      success: false as const,
+      error:
+        "Configure uma caixa Documentos (noreply) ou Financeiro ativa em E-mails → Configurar caixas.",
+    };
+  }
+
+  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
+  const composed = composeDocumentEmail({
+    subjectTemplate: prepared.template.subject,
+    bodyTemplate: prepared.template.body,
+    vars: prepared.vars,
+    signature: loaded.mailbox.signature_text,
+  });
+  const { subject } = composed;
+  const { receipt, numeroLabel } = prepared;
 
   try {
     await sendSmtpEmail(
@@ -554,8 +613,8 @@ async function sendReceiptWithMailbox(
         fromName: loaded.mailbox.display_name,
         to,
         subject,
-        text: body.text,
-        html: body.html,
+        text: composed.text,
+        html: composed.html,
         replyTo,
       }
     );

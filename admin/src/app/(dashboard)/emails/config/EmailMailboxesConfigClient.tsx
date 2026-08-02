@@ -27,9 +27,12 @@ import {
 import { getSuggestedSignatureHtml } from "@/lib/emailSignature";
 import type { EmailMailboxArea, Role } from "@prisma/client";
 import { EDITABLE_ROLES, ROLE_LABELS } from "@/lib/permissions";
+import type { EmailDocumentTemplateDTO } from "@/app/actions/emailDocumentTemplates";
+import EmailDocumentTemplatesPanel from "./EmailDocumentTemplatesPanel";
 
 interface Props {
   initialMailboxes: EmailMailboxDTO[];
+  initialTemplates: EmailDocumentTemplateDTO[];
 }
 
 const emptyForm = (): EmailMailboxInput & { id?: string } => ({
@@ -46,8 +49,12 @@ const emptyForm = (): EmailMailboxInput & { id?: string } => ({
   roles: [...DEFAULT_ROLES_BY_AREA.COMERCIAL],
 });
 
-export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) {
+export default function EmailMailboxesConfigClient({
+  initialMailboxes,
+  initialTemplates,
+}: Props) {
   const [mailboxes, setMailboxes] = useState(initialMailboxes);
+  const [tab, setTab] = useState<"caixas" | "templates">("caixas");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
@@ -159,8 +166,8 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Configurar caixas de e-mail"
-        description="IMAP/SMTP HostGator por área (comercial, financeiro, atendimento)."
+        title="Configurar e-mails"
+        description="Caixas IMAP/SMTP HostGator e templates de orçamento/recibo."
         actions={
           <div className="flex gap-2">
             <Link href="/emails">
@@ -168,14 +175,45 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </Button>
             </Link>
-            <Button onClick={openCreate} className="btn-metallic gap-1.5">
-              <Plus className="h-4 w-4" /> Nova caixa
-            </Button>
+            {tab === "caixas" && (
+              <Button onClick={openCreate} className="btn-metallic gap-1.5">
+                <Plus className="h-4 w-4" /> Nova caixa
+              </Button>
+            )}
           </div>
         }
       />
 
-      {info && (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("caixas")}
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+            tab === "caixas"
+              ? "bg-slate-900 text-white border-slate-900"
+              : "bg-white text-slate-700 border-border/60 hover:bg-slate-50"
+          }`}
+        >
+          Caixas
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("templates")}
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+            tab === "templates"
+              ? "bg-slate-900 text-white border-slate-900"
+              : "bg-white text-slate-700 border-border/60 hover:bg-slate-50"
+          }`}
+        >
+          Templates
+        </button>
+      </div>
+
+      {tab === "templates" && (
+        <EmailDocumentTemplatesPanel initialTemplates={initialTemplates} />
+      )}
+
+      {tab === "caixas" && info && (
         <div
           className={`text-sm rounded-lg border px-3 py-2.5 leading-relaxed ${
             info.tone === "ok"
@@ -188,6 +226,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
         </div>
       )}
 
+      {tab === "caixas" && (
       <div className="rounded-xl border border-border/50 bg-white overflow-hidden">
         {mailboxes.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">
@@ -258,6 +297,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
           </ul>
         )}
       </div>
+      )}
 
       <Dialog isOpen={open} onClose={() => !saving && setOpen(false)} className="max-w-3xl w-[min(880px,calc(100vw-2rem))]">
         <div className="p-5 space-y-4">
@@ -378,7 +418,7 @@ export default function EmailMailboxesConfigClient({ initialMailboxes }: Props) 
                   <iframe
                     title="Pré-visualização da assinatura"
                     sandbox=""
-                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></head><body style="margin:0;padding:8px 4px;background:hsl(38,28%,96%);">${form.signatureText}</body></html>`}
+                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></head><body style="margin:0;padding:12px 8px;background:#ffffff;">${form.signatureText}</body></html>`}
                     className="w-full border-0 bg-transparent"
                     style={{ height: 280 }}
                   />

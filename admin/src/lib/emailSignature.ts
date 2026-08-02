@@ -16,7 +16,9 @@ export const EMAIL_SIG_TOKENS = {
   disclaimer: "#9A918A",
   primary: "#dc9b04",
   border: "#dcd7d0",
-  background: "#f8f6f2",
+  /** Cartão da assinatura — branco sólido (evita “transparência” nos clientes). */
+  background: "#ffffff",
+  cardBorder: "#e8e4de",
   fontDisplay: "'Outfit', 'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
   fontBody: "'Plus Jakarta Sans', Arial, Helvetica, sans-serif",
 } as const;
@@ -119,19 +121,19 @@ export function buildUngheroSignatureHtml(options: BuildSignatureOptions): strin
     .join("");
 
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0;padding:0;width:100%;max-width:640px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:18px 0 0 0;padding:0;width:100%;max-width:640px;background-color:${t.background};">
   <tr>
-    <td style="padding:22px 0 0 0;border-top:1px solid ${t.border};">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">
+    <td style="padding:20px 18px 18px 18px;background-color:${t.background};border:1px solid ${t.cardBorder};border-radius:8px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;background-color:${t.background};">
         <tr>
-          <td valign="middle" width="160" style="padding:0 18px 0 0;width:160px;">
+          <td valign="middle" width="160" style="padding:0 18px 0 0;width:160px;background-color:${t.background};">
             <a href="${b.siteHref}" style="text-decoration:none;border:0;">
               <img src="${logoSrc}" width="148" height="31" alt="${company}" style="display:block;border:0;outline:none;height:31px;width:auto;max-width:148px;">
             </a>
           </td>
-          <td valign="top" width="1" style="width:1px;border-left:1px solid ${t.border};font-size:0;line-height:0;padding:0;">&nbsp;</td>
-          <td valign="top" style="padding:0 0 0 18px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+          <td valign="top" width="1" style="width:1px;border-left:1px solid ${t.border};font-size:0;line-height:0;padding:0;background-color:${t.background};">&nbsp;</td>
+          <td valign="top" style="padding:0 0 0 18px;background-color:${t.background};">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:${t.background};">
               <tr>
                 <td style="padding:0 0 2px 0;font-family:${t.fontDisplay};font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${t.foreground};">
                   ${title}
@@ -150,13 +152,9 @@ export function buildUngheroSignatureHtml(options: BuildSignatureOptions): strin
           </td>
         </tr>
       </table>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding:16px 0 0 0;width:100%;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;margin-top:16px;background-color:${t.background};">
         <tr>
-          <td style="padding:12px 0 0 0;border-top:1px solid ${t.border};font-family:${t.fontBody};font-size:10px;line-height:1.5;font-weight:400;color:${t.disclaimer};width:100%;">
+          <td style="padding:12px 0 0 0;border-top:1px solid ${t.border};font-family:${t.fontBody};font-size:10px;line-height:1.5;font-weight:400;color:${t.disclaimer};width:100%;background-color:${t.background};">
             ${lgpd}
           </td>
         </tr>

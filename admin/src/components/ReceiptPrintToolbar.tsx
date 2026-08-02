@@ -5,13 +5,17 @@ import Link from "next/link";
 import { ArrowLeft, Download, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ActionDialog from "@/components/ActionDialog";
+import EmailSendPreviewDialog from "@/components/emails/EmailSendPreviewDialog";
 import { formatPhoneForWhatsApp } from "@/lib/google-review";
 import {
   buildReceiptWhatsAppMessage,
   openReceiptWhatsApp,
 } from "@/lib/receiptShare";
 import { formatCurrencyBRL } from "@/lib/currencyExtenso";
-import { sendReceiptByEmail } from "@/app/actions/emailInbox";
+import {
+  previewReceiptByEmail,
+  sendReceiptByEmail,
+} from "@/app/actions/emailInbox";
 import {
   downloadPdfBlob,
   generatePrintPagePdfBlob,
@@ -36,6 +40,13 @@ type FeedbackDialog = {
   message: string;
 } | null;
 
+type PreviewState = {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string | null;
+} | null;
+
 export default function ReceiptPrintToolbar({
   receiptId,
   valor,
@@ -51,9 +62,14 @@ export default function ReceiptPrintToolbar({
   const [emailBusy, setEmailBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackDialog>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<PreviewState>(null);
+  const [sending, setSending] = useState(false);
   const phoneReady = Boolean(formatPhoneForWhatsApp(clientPhone));
   const emailReady = Boolean(clientEmail?.includes("@"));
-  const anyBusy = busy || emailBusy || pdfBusy;
+  const anyBusy = busy || emailBusy || pdfBusy || sending;
 
   const ensureShareLink = useCallback(async () => {
     if (shareUrl) return shareUrl;
@@ -112,9 +128,11 @@ export default function ReceiptPrintToolbar({
 
   async function handleWhatsApp() {
     if (!phoneReady) {
-      window.alert(
-        "Cadastre o telefone/WhatsApp do cliente para enviar o recibo."
-      );
+      setFeedback({
+        variant: "error",
+        title: "Telefone necessário",
+        message: "Cadastre o telefone/WhatsApp do cliente para enviar o recibo.",
+      });
       return;
     }
 
@@ -134,33 +152,59 @@ export default function ReceiptPrintToolbar({
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Não foi possível preparar o envio.";
-      window.alert(msg);
+      setFeedback({ variant: "error", title: "Falha no WhatsApp", message: msg });
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleEmail() {
-    if (!clientEmail?.includes("@")) {
-      window.alert("Cadastre o e-mail do cliente para enviar o recibo.");
-      return;
-    }
+  async function openEmailPreview() {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreview(null);
     setEmailBusy(true);
     try {
-      const res = await sendReceiptByEmail({
-        receiptId,
-        to: clientEmail.trim(),
+      const res = await previewReceiptByEmail(receiptId);
+      if (!res.success) {
+        setPreviewError(res.error || "Não foi possível montar a prévia.");
+        return;
+      }
+      setPreview({
+        to: res.to || clientEmail?.trim().toLowerCase() || "",
+        subject: res.subject,
+        html: res.html,
+        from: res.from,
       });
+    } catch (error) {
+      setPreviewError(
+        error instanceof Error ? error.message : "Não foi possível montar a prévia."
+      );
+    } finally {
+      setPreviewLoading(false);
+      setEmailBusy(false);
+    }
+  }
+
+  async function confirmEmailSend(to: string) {
+    setSending(true);
+    try {
+      const res = await sendReceiptByEmail({ receiptId, to });
       if (!res.success) {
         throw new Error(res.error || "Falha ao enviar e-mail.");
       }
-      window.alert(`Recibo enviado para ${"to" in res ? res.to : clientEmail}.`);
+      setPreviewOpen(false);
+      setFeedback({
+        variant: "success",
+        title: "E-mail enviado",
+        message: `Recibo enviado para ${res.to}.`,
+      });
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Não foi possível enviar o e-mail.";
-      window.alert(msg);
+      setFeedback({ variant: "error", title: "Falha no e-mail", message: msg });
     } finally {
-      setEmailBusy(false);
+      setSending(false);
     }
   }
 
@@ -194,13 +238,9 @@ export default function ReceiptPrintToolbar({
           </Button>
           <Button
             type="button"
-            onClick={() => void handleEmail()}
-            disabled={anyBusy || !emailReady}
-            title={
-              emailReady
-                ? "Enviar recibo por e-mail (caixa Financeiro)"
-                : "Cliente sem e-mail cadastrado"
-            }
+            onClick={() => void openEmailPreview()}
+            disabled={anyBusy}
+            title="Pré-visualizar e enviar recibo por e-mail"
             className="gap-1.5 bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white font-bold"
           >
             {emailBusy ? (
@@ -208,7 +248,7 @@ export default function ReceiptPrintToolbar({
             ) : (
               <Mail className="h-4 w-4" />
             )}
-            {emailBusy ? "Enviando..." : "E-mail"}
+            {emailBusy ? "Preparando..." : "E-mail"}
           </Button>
           <Button
             type="button"
@@ -241,8 +281,21 @@ export default function ReceiptPrintToolbar({
         </div>
       </div>
       <p className="text-right text-[10px] text-neutral-500 leading-snug">
-        Baixar PDF: arquivo com senha (4 últimos dígitos do celular). Imprimir: A4 · margens Nenhuma.
+        {emailReady
+          ? "E-mail: prévia antes de enviar. Baixar PDF: senha = 4 últimos dígitos do celular."
+          : "Cliente sem e-mail — informe o destinatário na prévia. PDF: senha = 4 últimos dígitos."}
       </p>
+
+      <EmailSendPreviewDialog
+        open={previewOpen}
+        onClose={() => !sending && setPreviewOpen(false)}
+        title="Enviar recibo por e-mail"
+        loading={previewLoading}
+        error={previewError}
+        preview={preview}
+        sending={sending}
+        onConfirm={confirmEmailSend}
+      />
 
       <ActionDialog
         open={feedback !== null}
