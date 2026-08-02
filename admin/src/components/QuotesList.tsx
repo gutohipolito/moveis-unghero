@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import Link from "next/link";
 import { 
   Search, 
   Trash2, 
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import RowActionsMenu, { type RowActionItem } from "@/components/ui/RowActionsMenu";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
@@ -453,10 +453,10 @@ export default function QuotesList({
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5 -mx-0.5 px-0.5 scrollbar-none">
             <Button 
               variant={filterStatus === "ALL" ? "default" : "outline"} 
-              className={filterStatus === "ALL" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
+              className={`shrink-0 ${filterStatus === "ALL" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
               size="sm"
               onClick={() => setFilterStatus("ALL")}
             >
@@ -464,7 +464,7 @@ export default function QuotesList({
             </Button>
             <Button 
               variant={filterStatus === "ACTIVE" ? "default" : "outline"} 
-              className={filterStatus === "ACTIVE" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
+              className={`shrink-0 ${filterStatus === "ACTIVE" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
               size="sm"
               onClick={() => setFilterStatus("ACTIVE")}
             >
@@ -472,7 +472,7 @@ export default function QuotesList({
             </Button>
             <Button 
               variant={filterStatus === "EXPIRED" ? "default" : "outline"} 
-              className={filterStatus === "EXPIRED" ? "bg-rose-600 hover:bg-rose-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}
+              className={`shrink-0 ${filterStatus === "EXPIRED" ? "bg-rose-600 hover:bg-rose-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
               size="sm"
               onClick={() => setFilterStatus("EXPIRED")}
             >
@@ -480,7 +480,7 @@ export default function QuotesList({
             </Button>
             <Button 
               variant={filterStatus === "APPROVED" ? "default" : "outline"} 
-              className={filterStatus === "APPROVED" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "border-slate-200 text-indigo-600 hover:bg-indigo-50"}
+              className={`shrink-0 ${filterStatus === "APPROVED" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "border-slate-200 text-indigo-600 hover:bg-indigo-50"}`}
               size="sm"
               onClick={() => setFilterStatus("APPROVED")}
             >
@@ -488,7 +488,7 @@ export default function QuotesList({
             </Button>
             <Button
               variant={filterStatus === "PARTIAL" ? "default" : "outline"}
-              className={filterStatus === "PARTIAL" ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-slate-200 text-amber-700 hover:bg-amber-50"}
+              className={`shrink-0 ${filterStatus === "PARTIAL" ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-slate-200 text-amber-700 hover:bg-amber-50"}`}
               size="sm"
               onClick={() => setFilterStatus("PARTIAL")}
             >
@@ -538,8 +538,8 @@ export default function QuotesList({
         </div>
 
         {/* Ordenação */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Organizar por:</span>
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-100 overflow-x-auto overscroll-x-contain pb-0.5 scrollbar-none">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">Organizar por:</span>
           {([
             { key: "client", label: "Cliente" },
             { key: "bairro", label: "Bairro" },
@@ -558,7 +558,7 @@ export default function QuotesList({
                   setSortOrder("asc");
                 }
               }}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
+              className={`inline-flex shrink-0 items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
                 sortBy === opt.key
                   ? "bg-[hsl(28_85%_45%)]/10 border-[hsl(28_85%_45%)]/40 text-[hsl(28_85%_30%)]"
                   : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
@@ -575,18 +575,18 @@ export default function QuotesList({
 
       {/* Lista de Orçamentos */}
       <div className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-0 table-fixed text-left border-collapse">
+        <div className="overflow-x-auto overscroll-x-contain -mx-px">
+          <table className="w-full min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[7%]">COD</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[18%]">Cliente</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[10%] hidden lg:table-cell">Cidade</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[10%] hidden xl:table-cell">Bairro</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[9%]">Validade</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[11%]">Status</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-[10%]">Valor</th>
-                <th className="py-2.5 px-2.5 sm:px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right w-[25%]">Ações</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">COD</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[10rem]">Cliente</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Cidade</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Bairro</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Validade</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Valor</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right w-14">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -623,37 +623,100 @@ export default function QuotesList({
                   else if (nearDanger) dateClass = "text-rose-600 font-bold";
                   else if (nearWarning) dateClass = "text-amber-600 font-bold";
 
+                  const rowActions: RowActionItem[] = [];
+                  if (!isReadOnly && hasPending) {
+                    rowActions.push({
+                      key: "approve",
+                      label: isPartial ? "Aprovar itens" : "Aprovar",
+                      icon: (
+                        <CheckCircle2
+                          className={`h-4 w-4 ${approvingId === q.id ? "animate-pulse" : ""}`}
+                        />
+                      ),
+                      tone: "success",
+                      disabled: approvingId === q.id,
+                      onClick: () => handleApproveQuote(q),
+                    });
+                    rowActions.push({
+                      key: "edit",
+                      label: "Editar proposta",
+                      icon: <PencilLine className="h-4 w-4" />,
+                      tone: "warning",
+                      href: `/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`,
+                    });
+                  }
+                  if (isReadOnly) {
+                    rowActions.push({
+                      key: "pdf-ro",
+                      label: "PDF (somente leitura)",
+                      icon: <Printer className="h-4 w-4" />,
+                      disabled: true,
+                      tone: "muted",
+                    });
+                  } else {
+                    rowActions.push({
+                      key: "pdf",
+                      label: "PDF / Imprimir",
+                      icon: <Printer className="h-4 w-4" />,
+                      href: `/quotes/${q.id}/print`,
+                      target: "_blank",
+                    });
+                  }
+                  rowActions.push({
+                    key: "project",
+                    label: "Ver projeto",
+                    icon: <ExternalLink className="h-4 w-4" />,
+                    href: `/projects/${q.project_id}`,
+                  });
+                  if (!isReadOnly && (!summary.hasApproved || isAdmin)) {
+                    rowActions.push({
+                      key: "delete",
+                      label: summary.hasApproved
+                        ? "Excluir (admin)"
+                        : "Excluir orçamento",
+                      icon: <Trash2 className="h-4 w-4" />,
+                      tone: "danger",
+                      onClick: () =>
+                        handleDeleteQuote(
+                          q.project_id,
+                          q.id,
+                          q.versao,
+                          summary.hasApproved
+                        ),
+                    });
+                  }
+
                   return (
                     <tr
                       key={q.id}
                       className={rowExpired ? "bg-rose-500/10" : undefined}
                       style={{ WebkitTapHighlightColor: "transparent" }}
                     >
-                      <td className="py-3 px-2.5 sm:px-3 text-sm font-medium text-slate-700">
-                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[11px] truncate inline-block max-w-full">
+                      <td className="py-3 px-3 text-sm font-medium text-slate-700 whitespace-nowrap">
+                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[11px] inline-block">
                           {formatQuoteCodigo(q)}
                         </span>
                       </td>
-                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-800 font-semibold min-w-0">
+                      <td className="py-3 px-3 text-sm text-slate-800 font-semibold min-w-0 max-w-[14rem]">
                         <span className="block truncate" title={q.project.client.nome}>
                           {q.project.client.nome}
                         </span>
-                        <span className="block truncate text-[11px] font-normal text-slate-500 lg:hidden">
+                        <span className="block truncate text-[11px] font-normal text-slate-500 md:hidden">
                           {q.project.client.cidade}
                           {q.project.client.bairro ? ` · ${q.project.client.bairro}` : ""}
                         </span>
                       </td>
-                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-600 hidden lg:table-cell min-w-0">
+                      <td className="py-3 px-3 text-sm text-slate-600 hidden md:table-cell min-w-0 max-w-[9rem]">
                         <span className="block truncate" title={q.project.client.cidade}>
                           {q.project.client.cidade}
                         </span>
                       </td>
-                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-600 hidden xl:table-cell min-w-0">
+                      <td className="py-3 px-3 text-sm text-slate-600 hidden lg:table-cell min-w-0 max-w-[9rem]">
                         <span className="block truncate" title={q.project.client.bairro || "Não informado"}>
                           {q.project.client.bairro || "Não informado"}
                         </span>
                       </td>
-                      <td className={`py-3 px-2.5 sm:px-3 text-sm whitespace-nowrap ${!hasPending || isFullyApproved ? "text-slate-400" : dateClass}`}>
+                      <td className={`py-3 px-3 text-sm whitespace-nowrap ${!hasPending || isFullyApproved ? "text-slate-400" : dateClass}`}>
                         {!hasPending || isFullyApproved ? (
                           <span className="text-slate-400">—</span>
                         ) : (
@@ -672,7 +735,7 @@ export default function QuotesList({
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-2.5 sm:px-3 text-sm min-w-0">
+                      <td className="py-3 px-3 text-sm min-w-0 whitespace-nowrap">
                         {isFullyApproved ? (
                           <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-700 px-2 py-0.5 rounded-full text-[11px] font-bold">
                             ✓ Aprovado
@@ -682,7 +745,7 @@ export default function QuotesList({
                             <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded-full text-[11px] font-bold">
                               {statusLabel}
                             </span>
-                            <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1 flex-wrap">
+                            <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
                               <PrivacyMoney value={summary.approvedTotal} /> aprov.
                               {rowExpired ? (
                                 <span className="text-rose-600 font-semibold">· pend. vencido</span>
@@ -706,97 +769,11 @@ export default function QuotesList({
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-2.5 sm:px-3 text-sm text-slate-800 font-bold whitespace-nowrap">
+                      <td className="py-3 px-3 text-sm text-slate-800 font-bold whitespace-nowrap">
                         <PrivacyMoney value={q.valor_final} className="inline-block" />
                       </td>
-                      <td className="py-3 px-2.5 sm:px-3 text-sm text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-1.5">
-                          {!isReadOnly && hasPending && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-700 inline-flex items-center gap-1 h-8 px-2 shrink-0 disabled:opacity-50 active:scale-100"
-                              onClick={() => handleApproveQuote(q)}
-                              disabled={approvingId === q.id}
-                              title="Registrar aprovação"
-                            >
-                              <CheckCircle2 className={`h-3.5 w-3.5 ${approvingId === q.id ? "animate-pulse" : ""}`} />
-                              <span className="hidden 2xl:inline">{isPartial ? "Aprovar itens" : "Aprovar"}</span>
-                            </Button>
-                          )}
-                          {!isReadOnly && hasPending && (
-                            <Link
-                              href={`/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`}
-                              className="shrink-0"
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 h-8 px-2"
-                                title="Editar proposta completa (mesma versão)"
-                              >
-                                <PencilLine className="h-3.5 w-3.5" />
-                                <span className="hidden 2xl:inline ml-1">Editar</span>
-                              </Button>
-                            </Link>
-                          )}
-
-                          {isReadOnly ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled
-                              className="border-slate-200 text-slate-400 h-8 shrink-0 inline-flex items-center gap-1.5 cursor-not-allowed px-2"
-                              title="Conta somente leitura: visualização de PDF bloqueada"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
-                          ) : (
-                          <Link
-                            href={`/quotes/${q.id}/print`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0"
-                          >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1 h-8 px-2 active:scale-100"
-                              title="Visualizar PDF / Imprimir"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                              <span className="hidden 2xl:inline">PDF</span>
-                            </Button>
-                          </Link>
-                          )}
-
-                          <Link
-                            href={`/projects/${q.project_id}`}
-                            className="shrink-0"
-                          >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-slate-200 text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1 h-8 px-2 active:scale-100"
-                              title="Ver Detalhes do Projeto"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              <span className="hidden 2xl:inline">Projeto</span>
-                            </Button>
-                          </Link>
-
-                          {!isReadOnly && (!summary.hasApproved || isAdmin) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 h-8 px-2 shrink-0 active:scale-100"
-                              onClick={() => handleDeleteQuote(q.project_id, q.id, q.versao, summary.hasApproved)}
-                              title={summary.hasApproved ? "Excluir orçamento aprovado (admin)" : "Excluir Orçamento"}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                      <td className="py-3 px-3 text-sm text-right">
+                        <RowActionsMenu items={rowActions} label="Ações do orçamento" />
                       </td>
                     </tr>
                   );
