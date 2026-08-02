@@ -15,7 +15,7 @@ export default function SuggestionFab() {
         aria-label="Sugerir melhoria"
         title="Sugerir melhoria"
         className="fixed z-40 flex items-center justify-center
-          right-4 bottom-[calc(var(--mobile-nav-height)_+_env(safe-area-inset-bottom)_+_0.75rem)]
+          right-4 bottom-[calc(var(--mobile-nav-height)_+_env(safe-area-inset-bottom)_+_1.5rem)]
           md:right-6 md:bottom-12
           h-11 w-11
           rounded-full text-white
