@@ -11,6 +11,7 @@ import {
   Plus,
   Loader2,
   ChevronLeft,
+  ChevronDown,
   FolderKanban,
   UserRound,
   UserPlus,
@@ -19,9 +20,11 @@ import {
   Bookmark,
   CheckCircle2,
   PencilLine,
+  CalendarDays,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import RowActionsMenu, { type RowActionItem } from "@/components/ui/RowActionsMenu";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -49,6 +52,23 @@ import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "ALL", label: "Todos" },
+  { value: "ACTIVE", label: "Ativos" },
+  { value: "EXPIRED", label: "Vencidos" },
+  { value: "APPROVED", label: "Aprovados" },
+  { value: "PARTIAL", label: "Parciais" },
+] as const;
+
+const SORT_OPTIONS = [
+  { key: "client", label: "Cliente" },
+  { key: "bairro", label: "Bairro" },
+  { key: "criacao", label: "Criação" },
+  { key: "validade", label: "Validade" },
+  { key: "status", label: "Status" },
+  { key: "valor", label: "Valor" },
+] as const;
 
 interface QuoteItem {
   id: string;
@@ -138,6 +158,7 @@ export default function QuotesList({
   const [quickEmail, setQuickEmail] = useState("");
   const [quickTelefone, setQuickTelefone] = useState("");
   const [quickCidade, setQuickCidade] = useState("");
+  const [datesOpen, setDatesOpen] = useState(false);
 
   const syncQuotes = useCallback(async () => {
     const result = await getQuotesLiveSnapshot();
@@ -420,156 +441,279 @@ export default function QuotesList({
           />
         }
         actions={
-          <div className="flex items-center gap-2">
-            {!isReadOnly && (
-              <>
-                <Button
-                  onClick={() => setIsPresetsOpen(true)}
-                  variant="outline"
-                  className="gap-1.5"
-                  title="Gerenciar itens salvos para reutilizar nos orçamentos"
-                >
-                  <Bookmark className="h-4 w-4" />
-                  <span className="hidden sm:inline">Itens salvos</span>
-                </Button>
-                <Button onClick={handleOpenCreateModal} className="btn-metallic gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  Novo orçamento
-                </Button>
-              </>
-            )}
-          </div>
-        } />
+          !isReadOnly ? (
+            <div className="flex w-full items-center gap-2">
+              <Button
+                onClick={() => setIsPresetsOpen(true)}
+                variant="outline"
+                className="shrink-0 gap-1.5 px-3"
+                title="Gerenciar itens salvos para reutilizar nos orçamentos"
+              >
+                <Bookmark className="h-4 w-4" />
+                <span className="hidden sm:inline">Itens salvos</span>
+              </Button>
+              <Button
+                onClick={handleOpenCreateModal}
+                className="btn-metallic gap-1.5 flex-1 sm:flex-none justify-center"
+              >
+                <Plus className="h-4 w-4" />
+                Novo orçamento
+              </Button>
+            </div>
+          ) : undefined
+        }
+      />
 
       {/* Filtros e Busca */}
       <div className="flex flex-col gap-3 bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Buscar por cliente ou ID do orçamento..." 
-              className="pl-9 bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5 -mx-0.5 px-0.5 scrollbar-none">
-            <Button 
-              variant={filterStatus === "ALL" ? "default" : "outline"} 
-              className={`shrink-0 ${filterStatus === "ALL" ? "bg-slate-800 hover:bg-slate-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-              size="sm"
-              onClick={() => setFilterStatus("ALL")}
-            >
-              Todos
-            </Button>
-            <Button 
-              variant={filterStatus === "ACTIVE" ? "default" : "outline"} 
-              className={`shrink-0 ${filterStatus === "ACTIVE" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-              size="sm"
-              onClick={() => setFilterStatus("ACTIVE")}
-            >
-              Ativos
-            </Button>
-            <Button 
-              variant={filterStatus === "EXPIRED" ? "default" : "outline"} 
-              className={`shrink-0 ${filterStatus === "EXPIRED" ? "bg-rose-600 hover:bg-rose-700 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-              size="sm"
-              onClick={() => setFilterStatus("EXPIRED")}
-            >
-              Vencidos
-            </Button>
-            <Button 
-              variant={filterStatus === "APPROVED" ? "default" : "outline"} 
-              className={`shrink-0 ${filterStatus === "APPROVED" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "border-slate-200 text-indigo-600 hover:bg-indigo-50"}`}
-              size="sm"
-              onClick={() => setFilterStatus("APPROVED")}
-            >
-              Aprovados
-            </Button>
-            <Button
-              variant={filterStatus === "PARTIAL" ? "default" : "outline"}
-              className={`shrink-0 ${filterStatus === "PARTIAL" ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-slate-200 text-amber-700 hover:bg-amber-50"}`}
-              size="sm"
-              onClick={() => setFilterStatus("PARTIAL")}
-            >
-              Parciais
-            </Button>
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Buscar por cliente ou ID do orçamento..."
+            className="pl-9 bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-          <div className="space-y-1 flex-1 min-w-0">
-            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Data de criação (de)
-            </label>
-            <Input
-              type="date"
-              value={createdFrom}
-              onChange={(e) => setCreatedFrom(e.target.value)}
-              className="bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
-            />
+        {/* Mobile: status / ordenar / datas em controles compactos */}
+        <div className="md:hidden space-y-2.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1 min-w-0">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Status
+              </label>
+              <Select
+                value={filterStatus}
+                onChange={(e) =>
+                  setFilterStatus(
+                    e.target.value as "ALL" | "ACTIVE" | "EXPIRED" | "APPROVED" | "PARTIAL"
+                  )
+                }
+                className="h-10 bg-slate-50 border-slate-200"
+              >
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1 min-w-0">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Organizar
+              </label>
+              <div className="flex gap-1.5 min-w-0">
+                <div className="min-w-0 flex-1">
+                  <Select
+                    value={sortBy}
+                    onChange={(e) => {
+                      const next = e.target.value as typeof sortBy;
+                      setSortBy(next);
+                      setSortOrder("asc");
+                    }}
+                    className="h-10 bg-slate-50 border-slate-200"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.key} value={opt.key}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 w-10 shrink-0 px-0 border-slate-200"
+                  title={
+                    sortOrder === "asc" ? "Ordem crescente" : "Ordem decrescente"
+                  }
+                  onClick={() =>
+                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+                  }
+                >
+                  {sortOrder === "asc" ? (
+                    <ArrowUpAZ className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownZA className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="space-y-1 flex-1 min-w-0">
-            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Data de criação (até)
-            </label>
-            <Input
-              type="date"
-              value={createdTo}
-              min={createdFrom || undefined}
-              onChange={(e) => setCreatedTo(e.target.value)}
-              className="bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+
+          <button
+            type="button"
+            onClick={() => setDatesOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <span className="inline-flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-slate-500" />
+              Filtrar por data
+              {(createdFrom || createdTo) && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-[hsl(28_85%_35%)] bg-[hsl(28_85%_45%)]/10 border border-[hsl(28_85%_45%)]/30 px-1.5 py-0.5 rounded-full">
+                  ativo
+                </span>
+              )}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-slate-400 transition-transform ${
+                datesOpen ? "rotate-180" : ""
+              }`}
             />
-          </div>
-          {(createdFrom || createdTo) && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
-              onClick={() => {
-                setCreatedFrom("");
-                setCreatedTo("");
-              }}
-            >
-              Limpar datas
-            </Button>
+          </button>
+
+          {datesOpen && (
+            <div className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Data de criação (de)
+                </label>
+                <Input
+                  type="date"
+                  value={createdFrom}
+                  onChange={(e) => setCreatedFrom(e.target.value)}
+                  className="bg-white border-slate-200 focus:border-[hsl(28_85%_45%)]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Data de criação (até)
+                </label>
+                <Input
+                  type="date"
+                  value={createdTo}
+                  min={createdFrom || undefined}
+                  onChange={(e) => setCreatedTo(e.target.value)}
+                  className="bg-white border-slate-200 focus:border-[hsl(28_85%_45%)]"
+                />
+              </div>
+              {(createdFrom || createdTo) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-200 text-slate-600 hover:bg-white w-full"
+                  onClick={() => {
+                    setCreatedFrom("");
+                    setCreatedTo("");
+                  }}
+                >
+                  Limpar datas
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Ordenação */}
-        <div className="flex items-center gap-2 pt-1 border-t border-slate-100 overflow-x-auto overscroll-x-contain pb-0.5 scrollbar-none">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">Organizar por:</span>
-          {([
-            { key: "client", label: "Cliente" },
-            { key: "bairro", label: "Bairro" },
-            { key: "criacao", label: "Criação" },
-            { key: "validade", label: "Validade" },
-            { key: "status", label: "Status" },
-            { key: "valor", label: "Valor" },
-          ] as const).map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => {
-                if (sortBy === opt.key) {
-                  setSortOrder(prev => prev === "asc" ? "desc" : "asc");
-                } else {
-                  setSortBy(opt.key);
-                  setSortOrder("asc");
-                }
-              }}
-              className={`inline-flex shrink-0 items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
-                sortBy === opt.key
-                  ? "bg-[hsl(28_85%_45%)]/10 border-[hsl(28_85%_45%)]/40 text-[hsl(28_85%_30%)]"
-                  : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
-              }`}
-            >
-              {opt.label}
-              {sortBy === opt.key ? (
-                sortOrder === "asc" ? <ArrowUpAZ className="h-3 w-3" /> : <ArrowDownZA className="h-3 w-3" />
-              ) : null}
-            </button>
-          ))}
+        {/* Desktop: chips de status + datas + ordenação */}
+        <div className="hidden md:flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            {STATUS_FILTER_OPTIONS.map((opt) => {
+              const active = filterStatus === opt.value;
+              const activeClass =
+                opt.value === "ALL"
+                  ? "bg-slate-800 hover:bg-slate-700 text-white"
+                  : opt.value === "ACTIVE"
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : opt.value === "EXPIRED"
+                      ? "bg-rose-600 hover:bg-rose-700 text-white"
+                      : opt.value === "APPROVED"
+                        ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                        : "bg-amber-600 hover:bg-amber-700 text-white";
+              const idleClass =
+                opt.value === "APPROVED"
+                  ? "border-slate-200 text-indigo-600 hover:bg-indigo-50"
+                  : opt.value === "PARTIAL"
+                    ? "border-slate-200 text-amber-700 hover:bg-amber-50"
+                    : "border-slate-200 text-slate-600 hover:bg-slate-50";
+              return (
+                <Button
+                  key={opt.value}
+                  variant={active ? "default" : "outline"}
+                  className={active ? activeClass : idleClass}
+                  size="sm"
+                  onClick={() => setFilterStatus(opt.value)}
+                >
+                  {opt.label}
+                </Button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="space-y-1 flex-1 min-w-0">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Data de criação (de)
+              </label>
+              <Input
+                type="date"
+                value={createdFrom}
+                onChange={(e) => setCreatedFrom(e.target.value)}
+                className="bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+              />
+            </div>
+            <div className="space-y-1 flex-1 min-w-0">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Data de criação (até)
+              </label>
+              <Input
+                type="date"
+                value={createdTo}
+                min={createdFrom || undefined}
+                onChange={(e) => setCreatedTo(e.target.value)}
+                className="bg-slate-50 border-slate-200 focus:bg-white focus:border-[hsl(28_85%_45%)]"
+              />
+            </div>
+            {(createdFrom || createdTo) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+                onClick={() => {
+                  setCreatedFrom("");
+                  setCreatedTo("");
+                }}
+              >
+                Limpar datas
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 pt-1 border-t border-slate-100 overflow-x-auto overscroll-x-contain pb-0.5 scrollbar-none">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">
+              Organizar por:
+            </span>
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => {
+                  if (sortBy === opt.key) {
+                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+                  } else {
+                    setSortBy(opt.key);
+                    setSortOrder("asc");
+                  }
+                }}
+                className={`inline-flex shrink-0 items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
+                  sortBy === opt.key
+                    ? "bg-[hsl(28_85%_45%)]/10 border-[hsl(28_85%_45%)]/40 text-[hsl(28_85%_30%)]"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {opt.label}
+                {sortBy === opt.key ? (
+                  sortOrder === "asc" ? (
+                    <ArrowUpAZ className="h-3 w-3" />
+                  ) : (
+                    <ArrowDownZA className="h-3 w-3" />
+                  )
+                ) : null}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
