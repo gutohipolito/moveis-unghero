@@ -28,9 +28,14 @@ interface HoverTooltipProps {
   delayMs?: number;
 }
 
+function canUseHoverTooltips(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 /**
  * Tooltip de hover do sistema (não usa title nativo do navegador).
- * Posiciona em fixed e evita cortar no overflow dos cards.
+ * Em touch/mobile não abre no tap — evita tooltip “preso” após selecionar.
  */
 export default function HoverTooltip({
   content,
@@ -46,6 +51,7 @@ export default function HoverTooltip({
   const wrapRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
+  const hoverOkRef = useRef(false);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
@@ -53,6 +59,12 @@ export default function HoverTooltip({
       timerRef.current = null;
     }
   }, []);
+
+  const close = useCallback(() => {
+    clearTimer();
+    setOpen(false);
+    setCoords(null);
+  }, [clearTimer]);
 
   const reposition = useCallback(() => {
     const anchor = wrapRef.current;
@@ -85,6 +97,17 @@ export default function HoverTooltip({
     setCoords({ top, left, width, placement });
   }, [side]);
 
+  useEffect(() => {
+    hoverOkRef.current = canUseHoverTooltips();
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const sync = () => {
+      hoverOkRef.current = mq.matches;
+      if (!mq.matches) close();
+    };
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, [close]);
+
   useLayoutEffect(() => {
     if (open) reposition();
   }, [open, reposition, content]);
@@ -112,16 +135,22 @@ export default function HoverTooltip({
       ref={wrapRef}
       className={`inline-flex max-w-full min-w-0 ${className}`}
       onMouseEnter={() => {
+        if (!hoverOkRef.current) return;
         clearTimer();
         timerRef.current = window.setTimeout(() => setOpen(true), delayMs);
       }}
       onMouseLeave={() => {
-        clearTimer();
-        setOpen(false);
-        setCoords(null);
+        close();
       }}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
+      onPointerDown={() => {
+        // Tap/click: fecha imediatamente (evita sticky hover no iOS/Android)
+        close();
+      }}
+      onFocus={() => {
+        if (!hoverOkRef.current) return;
+        setOpen(true);
+      }}
+      onBlur={() => close()}
       aria-describedby={open ? tooltipId : undefined}
     >
       {children}
