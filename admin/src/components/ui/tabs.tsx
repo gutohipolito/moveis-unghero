@@ -89,7 +89,7 @@ export function TabsList({ children, className, activeTab, setActiveTab }: TabsL
     <div
       role="tablist"
       className={cn(
-        "inline-flex h-9 max-w-full min-w-0 items-center justify-start gap-0.5 overflow-x-auto overscroll-x-contain rounded-[var(--radius-md)] bg-secondary p-1 text-muted-foreground border border-border/40",
+        "inline-flex h-9 max-w-full min-w-0 items-center justify-start gap-0.5 overflow-x-auto overscroll-x-contain rounded-[var(--radius-md)] bg-[hsl(32_12%_88%)] p-1 text-muted-foreground border border-[hsl(32_12%_78%)]",
         className
       )}
     >
@@ -126,8 +126,8 @@ export function TabsTrigger({ value, children, className, active, onClick }: Tab
       className={cn(
         "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
         active
-          ? "bg-card text-foreground shadow-xs font-semibold border border-border/50"
-          : "hover:text-foreground opacity-75 hover:opacity-100",
+          ? "bg-card text-foreground shadow-xs font-semibold border border-border/60"
+          : "text-foreground/70 hover:text-foreground hover:bg-white/50",
         className
       )}
     >

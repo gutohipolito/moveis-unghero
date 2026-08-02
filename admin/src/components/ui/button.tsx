@@ -10,15 +10,15 @@ const buttonVariants = cva(
         default:
           "btn-metallic",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-[var(--shadow-xs)] hover:bg-destructive/90",
+          "btn-destructive-relief",
         outline:
-          "border border-border bg-transparent hover:bg-muted/60",
+          "btn-outline-relief",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "btn-secondary-relief",
         ghost: "hover:bg-muted/60",
         link: "text-primary underline-offset-4 hover:underline",
         success:
-          "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] hover:opacity-90",
+          "btn-success-relief",
       },
       size: {
         default: "min-h-[var(--touch-min)] px-4 py-2 md:min-h-9 md:h-9",
