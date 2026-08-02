@@ -155,6 +155,40 @@ body {
   width: 100%;
 }
 
+/* Mobile: botão de ação sozinho na linha do header → full width */
+@media (max-width: 767.98px) {
+  .page-header-actions > *:only-child {
+    width: 100%;
+  }
+
+  .page-header-actions > *:only-child:is(button, a, [role="button"]) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-header-actions > *:only-child:is(a) {
+    display: inline-flex;
+  }
+
+  /* Wrapper flex comum (ex.: <div class="flex gap-2"><Button/></div>) */
+  .page-header-actions > *:only-child.flex:has(> :only-child),
+  .page-header-actions > *:only-child:has(> :only-child:is(button, a)) {
+    display: flex;
+    width: 100%;
+  }
+
+  .page-header-actions > *:only-child > *:only-child:is(button, a, [role="button"]),
+  .page-header-actions > *:only-child.flex > *:only-child {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-header-actions > *:only-child > *:only-child:is(a) {
+    display: inline-flex;
+  }
+}
+
 .kpi-label {
   display: block;
   font-size: var(--text-label);
