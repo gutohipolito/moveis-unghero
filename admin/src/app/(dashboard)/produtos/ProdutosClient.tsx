@@ -50,6 +50,7 @@ import {
   Check,
   ArrowLeft,
   Building2,
+  ExternalLink,
 } from "lucide-react";
 
 type InventoryOption = {
@@ -1223,6 +1224,8 @@ export default function ProdutosClient({
           const currentImg = gallery[activeIndex] || null;
           const parsed = parseShowcaseDescricao(product.descricao);
           const swatches = acabamentosToSwatches(parsed.acabamentos);
+          const fonteUrl =
+            parsed.fonte && /^https?:\/\//i.test(parsed.fonte) ? parsed.fonte : null;
 
           const copyCommercialText = () => {
             const priceText = product.preco_exibicao != null 
@@ -1414,6 +1417,23 @@ export default function ProdutosClient({
                         <Link2 className="h-4 w-4 text-cyan-600 shrink-0" />
                         <span>Produto com vínculo no estoque ativo</span>
                       </div>
+                    )}
+
+                    {fonteUrl && (
+                      <a
+                        href={fonteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs font-bold text-amber-900 bg-amber-50/70 border border-amber-200/80 rounded-[var(--radius-sm)] p-2.5 hover:bg-amber-50 transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4 text-amber-700 shrink-0" />
+                        <span className="min-w-0">
+                          Ver produto original
+                          <span className="block text-[10px] font-medium text-amber-800/70 truncate mt-0.5">
+                            {fonteUrl.replace(/^https?:\/\//i, "").replace(/\/$/, "")}
+                          </span>
+                        </span>
+                      </a>
                     )}
                   </div>
 
