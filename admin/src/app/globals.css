@@ -189,6 +189,18 @@ body {
   }
 }
 
+/* CTA sozinho abaixo do título (fora do PageHeader) — use no mobile */
+.action-cta-mobile-full {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .action-cta-mobile-full {
+    width: auto;
+  }
+}
+
 .kpi-label {
   display: block;
   font-size: var(--text-label);

@@ -86,8 +86,8 @@ export default function MelhoriasClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3 text-xs font-semibold">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
             <Circle className="h-3.5 w-3.5" />
             {openCount} aberta{openCount === 1 ? "" : "s"}
@@ -97,7 +97,10 @@ export default function MelhoriasClient({
             {doneCount} concluída{doneCount === 1 ? "" : "s"}
           </span>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="gap-1.5">
+        <Button
+          onClick={() => setModalOpen(true)}
+          className="w-full sm:w-auto justify-center gap-1.5"
+        >
           <Plus className="h-4 w-4" />
           Nova melhoria
         </Button>
