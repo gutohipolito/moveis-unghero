@@ -799,7 +799,7 @@ export default function BiClient({
         {activeTab === "geral" && (
           <div className="space-y-5 animate-in fade-in-50 duration-200">
             {/* Cards de KPIs de Visão Geral */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
               <KpiCard
                 label="Pipeline de vendas"
                 value={<span className="privacy-value">{formatCurrency(totalPipeline)}</span>}
@@ -924,7 +924,7 @@ export default function BiClient({
         {activeTab === "funil_orcamentos" && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
             {/* KPIs Rápidos no Topo */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
               <KpiCard
                 label="Conversão Geral"
                 value={`${funnelStages.convGeral.toFixed(1)}%`}
@@ -1213,7 +1213,7 @@ export default function BiClient({
         {activeTab === "producao" && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
             {/* 1. KPIs da Produção Translocados do Chão de Fábrica */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)]">
               <KpiCard label="Total na fábrica" value={`${factoryKpis.total} cômodos`} icon={ClipboardList} accent="neutral" />
               <KpiCard label="Em corte" value={`${factoryKpis.emCorte} cômodos`} icon={Layers} accent="info" />
               <KpiCard label="Em montagem" value={`${factoryKpis.emMontagem} peças`} icon={Wrench} accent="warning" />
@@ -1413,7 +1413,7 @@ export default function BiClient({
           <div className="space-y-4 animate-in fade-in-50 duration-200 flex flex-col h-full">
             
             {/* 1. KPIs Rápidos de Parcerias */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)] shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--space-3)] shrink-0">
               <KpiCard
                 label="Parceiros Vinculados"
                 value={String(designerRanking.length)}
