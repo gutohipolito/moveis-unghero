@@ -195,7 +195,7 @@ export default function SpotlightTour({
       >
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground">
               Passo {stepIndex + 1} de {steps.length}
             </p>
             <h4 className="text-sm font-bold text-foreground mt-0.5">{step.title}</h4>
