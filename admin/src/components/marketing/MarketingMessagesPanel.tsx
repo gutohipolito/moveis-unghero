@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck,
   Check,
   ChevronRight,
   Copy,
+  Loader2,
+  Mail,
   MessageCircle,
   Navigation,
   Search,
+  Send,
   Star,
   User,
   X,
@@ -25,6 +28,13 @@ import {
   formatPhoneForWhatsApp,
   type GoogleReviewClientOption,
 } from "@/lib/google-review";
+import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
+import { sendMailboxEmail } from "@/app/actions/emailInbox";
+import {
+  buildGoogleReviewEmailHtml,
+  buildGoogleReviewEmailSubject,
+  buildGoogleReviewEmailText,
+} from "@/lib/marketingEmail";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -119,16 +129,29 @@ function MarketingMessageSummaryCard({
 function MarketingMessageDetail({
   message,
   clients,
+  mailboxes,
   onClose,
 }: {
   message: MarketingMessage;
   clients: GoogleReviewClientOption[];
+  mailboxes: EmailMailboxDTO[];
   onClose: () => void;
 }) {
   const [clientQuery, setClientQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [phoneOverride, setPhoneOverride] = useState("");
   const [listOpen, setListOpen] = useState(false);
+  const [mailboxId, setMailboxId] = useState(mailboxes[0]?.id || "");
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+
+  const isGoogleReview = message.id === "google-avaliacao";
 
   const selectedClient = useMemo(
     () => clients.find((c) => c.id === selectedClientId) ?? null,
@@ -142,6 +165,7 @@ function MarketingMessageDetail({
     return clients.filter(
       (c) =>
         c.nome.toLowerCase().includes(q) ||
+        (c.email || "").toLowerCase().includes(q) ||
         (digits.length > 0 && c.telefone.replace(/\D/g, "").includes(digits))
     );
   }, [clients, clientQuery]);
@@ -158,9 +182,26 @@ function MarketingMessageDetail({
   const phoneReady = Boolean(formatPhoneForWhatsApp(phone));
   const whatsappUrl = phoneReady ? buildWhatsAppUrl(phone, messageText) : "";
 
+  useEffect(() => {
+    if (isGoogleReview) {
+      setEmailSubject(buildGoogleReviewEmailSubject(selectedClient?.nome));
+      setEmailBody(
+        buildGoogleReviewEmailText({ clientName: selectedClient?.nome })
+      );
+    } else {
+      setEmailSubject(`${message.title} — Móveis Unghero`);
+      setEmailBody(messageText);
+    }
+  }, [isGoogleReview, message.title, messageText, selectedClient?.nome]);
+
+  useEffect(() => {
+    if (selectedClient?.email) setEmailTo(selectedClient.email);
+  }, [selectedClient]);
+
   function selectClient(client: GoogleReviewClientOption) {
     setSelectedClientId(client.id);
     setPhoneOverride(client.telefone || "");
+    if (client.email) setEmailTo(client.email);
     setClientQuery("");
     setListOpen(false);
   }
@@ -168,6 +209,38 @@ function MarketingMessageDetail({
   function clearClient() {
     setSelectedClientId("");
     setPhoneOverride("");
+  }
+
+  const canSendEmail =
+    Boolean(mailboxId) &&
+    Boolean(emailTo.trim().includes("@")) &&
+    Boolean(emailSubject.trim()) &&
+    Boolean(emailBody.trim()) &&
+    !sendingEmail;
+
+  async function handleSendEmail() {
+    if (!canSendEmail || !mailboxId) return;
+    setSendingEmail(true);
+    setEmailFeedback(null);
+    const html = isGoogleReview
+      ? buildGoogleReviewEmailHtml({ clientName: selectedClient?.nome })
+      : undefined;
+    const res = await sendMailboxEmail({
+      mailboxId,
+      to: emailTo.trim(),
+      subject: emailSubject.trim(),
+      text: emailBody.trim(),
+      html,
+    });
+    setSendingEmail(false);
+    if (!res.success) {
+      setEmailFeedback({
+        type: "err",
+        text: res.error || "Falha ao enviar e-mail.",
+      });
+      return;
+    }
+    setEmailFeedback({ type: "ok", text: "E-mail enviado." });
   }
 
   return (
@@ -206,7 +279,9 @@ function MarketingMessageDetail({
                 {selectedClient.nome}
               </p>
               <p className="text-[11px] text-muted-foreground truncate">
-                {selectedClient.telefone || "Sem telefone"}
+                {[selectedClient.telefone || "Sem telefone", selectedClient.email || "Sem e-mail"]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
             <button
@@ -231,7 +306,7 @@ function MarketingMessageDetail({
                 }}
                 onFocus={() => setListOpen(true)}
                 onClick={() => setListOpen(true)}
-                placeholder="Clique para ver clientes ou busque por nome/telefone…"
+                placeholder="Clique para ver clientes ou busque por nome/telefone/e-mail…"
                 className="w-full h-10 pl-9 pr-3 rounded-md border border-border bg-background text-sm"
               />
             </div>
@@ -255,6 +330,7 @@ function MarketingMessageDetail({
                           </p>
                           <p className="text-[11px] text-muted-foreground truncate">
                             {client.telefone || "Sem telefone"}
+                            {client.email ? ` · ${client.email}` : ""}
                           </p>
                         </button>
                       </li>
@@ -328,6 +404,100 @@ function MarketingMessageDetail({
         </div>
       </div>
 
+      <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 space-y-3">
+        <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <Mail className="h-4 w-4 text-sky-600" />
+          Enviar por e-mail
+          {isGoogleReview ? (
+            <span className="text-[10px] font-bold uppercase tracking-wide rounded-full bg-amber-500/15 text-amber-800 px-2 py-0.5">
+              Layout especial
+            </span>
+          ) : null}
+        </p>
+        {isGoogleReview ? (
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            Assunto chamativo e e-mail HTML com botão “Avaliar no Google”. O texto abaixo é a
+            versão simples; o HTML completo vai no envio.
+          </p>
+        ) : null}
+
+        {mailboxes.length === 0 ? (
+          <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Nenhuma caixa de e-mail disponível. Peça à Diretoria para liberar o módulo E-mails.
+          </p>
+        ) : (
+          <>
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Enviar de
+            </label>
+            <select
+              value={mailboxId}
+              onChange={(e) => setMailboxId(e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            >
+              {mailboxes.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.areaLabel} — {m.address}
+                </option>
+              ))}
+            </select>
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Para
+            </label>
+            <input
+              type="email"
+              value={emailTo}
+              onChange={(e) => setEmailTo(e.target.value)}
+              placeholder="cliente@email.com"
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            />
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Assunto
+            </label>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            />
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Mensagem (texto)
+            </label>
+            <textarea
+              value={emailBody}
+              onChange={(e) => setEmailBody(e.target.value)}
+              rows={isGoogleReview ? 8 : 6}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="text-xs font-bold"
+                disabled={!canSendEmail || mailboxes.length === 0}
+                onClick={() => void handleSendEmail()}
+              >
+                {sendingEmail ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Enviar e-mail
+              </Button>
+              {emailFeedback ? (
+                <span
+                  className={`text-[11px] font-semibold ${
+                    emailFeedback.type === "ok" ? "text-emerald-700" : "text-rose-600"
+                  }`}
+                >
+                  {emailFeedback.text}
+                </span>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose} className="text-xs font-bold">
           Fechar
@@ -339,9 +509,10 @@ function MarketingMessageDetail({
 
 type Props = {
   clients: GoogleReviewClientOption[];
+  mailboxes: EmailMailboxDTO[];
 };
 
-export default function MarketingMessagesPanel({ clients }: Props) {
+export default function MarketingMessagesPanel({ clients, mailboxes }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const active = MARKETING_MESSAGES.find((m) => m.id === activeId) ?? null;
 
@@ -350,8 +521,8 @@ export default function MarketingMessagesPanel({ clients }: Props) {
       <Card className="p-5 border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 via-transparent to-transparent">
         <p className="text-sm font-semibold text-foreground">Biblioteca de mensagens</p>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Textos prontos para copiar ou enviar no WhatsApp. Use no funil, pós-entrega ou
-          captação — personalize com o nome do cliente quando quiser.
+          Textos prontos para copiar, enviar no WhatsApp ou por e-mail. Use no funil, pós-entrega
+          ou captação — personalize com o nome do cliente quando quiser.
         </p>
       </Card>
 
@@ -368,12 +539,13 @@ export default function MarketingMessagesPanel({ clients }: Props) {
       <Dialog
         isOpen={!!active}
         onClose={() => setActiveId(null)}
-        className="max-w-lg"
+        className="max-w-xl"
       >
         {active ? (
           <MarketingMessageDetail
             message={active}
             clients={clients}
+            mailboxes={mailboxes}
             onClose={() => setActiveId(null)}
           />
         ) : null}

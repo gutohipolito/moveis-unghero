@@ -387,8 +387,9 @@ export async function getClients(companyId: string) {
 export async function getClientsForWhatsAppMessaging(companyId: string) {
   const auth =
     (await getModuleAccess("marketing")) || (await getModuleAccess("clientes"));
+  type Row = { id: string; nome: string; telefone: string; email: string };
   if (!auth) {
-    return { success: false as const, error: "Não autenticado", clients: [] as Array<{ id: string; nome: string; telefone: string }> };
+    return { success: false as const, error: "Não autenticado", clients: [] as Row[] };
   }
   try {
     assertCompanyAccess(auth, companyId);
@@ -396,7 +397,7 @@ export async function getClientsForWhatsAppMessaging(companyId: string) {
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Acesso negado",
-      clients: [] as Array<{ id: string; nome: string; telefone: string }>,
+      clients: [] as Row[],
     };
   }
 
@@ -404,14 +405,14 @@ export async function getClientsForWhatsAppMessaging(companyId: string) {
     return {
       success: false as const,
       error: "Erro de conexão ao banco de dados",
-      clients: [] as Array<{ id: string; nome: string; telefone: string }>,
+      clients: [] as Row[],
     };
   }
 
   try {
     const clients = await prisma.client.findMany({
       where: { company_id: companyId },
-      select: { id: true, nome: true, telefone: true },
+      select: { id: true, nome: true, telefone: true, email: true },
       orderBy: { nome: "asc" },
     });
 
@@ -421,6 +422,7 @@ export async function getClientsForWhatsAppMessaging(companyId: string) {
         id: c.id,
         nome: c.nome,
         telefone: c.telefone || "",
+        email: c.email || "",
       })),
     };
   } catch (error) {
@@ -428,7 +430,7 @@ export async function getClientsForWhatsAppMessaging(companyId: string) {
     return {
       success: false as const,
       error: "Erro de conexão ao banco de dados",
-      clients: [] as Array<{ id: string; nome: string; telefone: string }>,
+      clients: [] as Row[],
     };
   }
 }

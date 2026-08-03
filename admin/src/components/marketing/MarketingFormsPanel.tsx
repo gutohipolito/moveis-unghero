@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   ChevronRight,
@@ -8,9 +8,12 @@ import {
   Copy,
   ExternalLink,
   Link2,
+  Loader2,
+  Mail,
   MessageCircle,
   Package,
   PenTool,
+  Send,
   UserPlus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -23,7 +26,16 @@ import {
   MARKETING_FORMS,
   type MarketingForm,
 } from "@/lib/marketingForms";
-import { buildWhatsAppUrl } from "@/lib/google-review";
+import {
+  buildWhatsAppUrl,
+  type GoogleReviewClientOption,
+} from "@/lib/google-review";
+import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
+import { sendMailboxEmail } from "@/app/actions/emailInbox";
+import {
+  buildMarketingFormEmailHtml,
+  buildMarketingFormEmailSubject,
+} from "@/lib/marketingEmail";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -66,10 +78,6 @@ function FormIconBox({ form, size = "md" }: { form: MarketingForm; size?: "md" |
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Card resumo (grade)                                                         */
-/* -------------------------------------------------------------------------- */
-
 function MarketingFormSummaryCard({
   form,
   onOpen,
@@ -111,16 +119,49 @@ function MarketingFormSummaryCard({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Detalhe (modal)                                                             */
-/* -------------------------------------------------------------------------- */
-
-function MarketingFormDetail({ form }: { form: MarketingForm }) {
+function MarketingFormDetail({
+  form,
+  clients,
+  mailboxes,
+}: {
+  form: MarketingForm;
+  clients: GoogleReviewClientOption[];
+  mailboxes: EmailMailboxDTO[];
+}) {
   const shortUrl = getMarketingFormShortUrl(form);
   const adminUrl = getMarketingFormAdminUrl(form);
   const [selectedMessageId, setSelectedMessageId] = useState(form.messages[0]?.id ?? "");
   const [linkCopied, setLinkCopied] = useState(false);
   const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [clientQuery, setClientQuery] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [mailboxId, setMailboxId] = useState(mailboxes[0]?.id || "");
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === selectedClientId) ?? null,
+    [clients, selectedClientId]
+  );
+
+  const filteredClients = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase();
+    const digits = q.replace(/\D/g, "");
+    const list = !q
+      ? clients
+      : clients.filter(
+          (c) =>
+            c.nome.toLowerCase().includes(q) ||
+            (c.email || "").toLowerCase().includes(q) ||
+            (digits.length > 0 && c.telefone.replace(/\D/g, "").includes(digits))
+        );
+    return { items: list.slice(0, 80), total: list.length };
+  }, [clients, clientQuery]);
 
   const messageText = useMemo(
     () => buildMarketingFormMessage(form, selectedMessageId),
@@ -132,6 +173,15 @@ function MarketingFormDetail({ form }: { form: MarketingForm }) {
     return buildWhatsAppUrl(whatsappPhone, messageText);
   }, [messageText, whatsappPhone]);
 
+  useEffect(() => {
+    setEmailSubject(buildMarketingFormEmailSubject(form.title));
+  }, [form.title]);
+
+  useEffect(() => {
+    if (selectedClient?.email) setEmailTo(selectedClient.email);
+    if (selectedClient?.telefone) setWhatsappPhone(selectedClient.telefone);
+  }, [selectedClient]);
+
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(shortUrl);
@@ -140,6 +190,39 @@ function MarketingFormDetail({ form }: { form: MarketingForm }) {
     } catch {
       window.prompt("Copie o link:", shortUrl);
     }
+  }
+
+  const canSendEmail =
+    Boolean(mailboxId) &&
+    Boolean(emailTo.trim().includes("@")) &&
+    Boolean(emailSubject.trim()) &&
+    Boolean(messageText.trim()) &&
+    !sendingEmail;
+
+  async function handleSendEmail() {
+    if (!canSendEmail || !mailboxId) return;
+    setSendingEmail(true);
+    setEmailFeedback(null);
+    const res = await sendMailboxEmail({
+      mailboxId,
+      to: emailTo.trim(),
+      subject: emailSubject.trim(),
+      text: messageText.trim(),
+      html: buildMarketingFormEmailHtml({
+        bodyText: messageText,
+        ctaUrl: shortUrl,
+        ctaLabel: "Abrir formulário",
+      }),
+    });
+    setSendingEmail(false);
+    if (!res.success) {
+      setEmailFeedback({
+        type: "err",
+        text: res.error || "Falha ao enviar e-mail.",
+      });
+      return;
+    }
+    setEmailFeedback({ type: "ok", text: "E-mail enviado." });
   }
 
   return (
@@ -163,7 +246,7 @@ function MarketingFormDetail({ form }: { form: MarketingForm }) {
           Link para compartilhar
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Use o link curto no domínio <strong className="text-foreground">moveisunghero.com.br</strong> — mais fácil de enviar no WhatsApp.
+          Use o link curto no domínio <strong className="text-foreground">moveisunghero.com.br</strong> — mais fácil de enviar no WhatsApp ou e-mail.
         </p>
         <code className="block text-[11px] break-all rounded-lg bg-slate-950 text-slate-100 px-2.5 py-2">
           {shortUrl}
@@ -201,7 +284,7 @@ function MarketingFormDetail({ form }: { form: MarketingForm }) {
           Mensagem pré-pronta
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Selecione um modelo, copie ou envie direto no WhatsApp com o link já inserido.
+          Selecione um modelo, copie ou envie direto no WhatsApp / e-mail com o link já inserido.
         </p>
         <select
           value={selectedMessageId}
@@ -228,6 +311,55 @@ function MarketingFormDetail({ form }: { form: MarketingForm }) {
           <MessageCircle className="h-4 w-4 text-emerald-600" />
           Enviar no WhatsApp
         </p>
+        {clients.length > 0 ? (
+          <div className="space-y-2">
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Cliente (opcional)
+            </label>
+            <input
+              type="search"
+              value={clientQuery}
+              onChange={(e) => setClientQuery(e.target.value)}
+              placeholder="Buscar cliente para preencher telefone/e-mail…"
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            />
+            <ul className="max-h-28 overflow-y-auto rounded-lg border border-border bg-background divide-y divide-border/60">
+              {filteredClients.total === 0 ? (
+                <li className="px-3 py-2 text-xs text-muted-foreground">Nenhum cliente.</li>
+              ) : (
+                <>
+                  {filteredClients.items.map((client) => (
+                    <li key={client.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClientId(client.id);
+                          setClientQuery("");
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                          selectedClientId === client.id
+                            ? "bg-emerald-50 font-semibold"
+                            : "hover:bg-muted/60"
+                        }`}
+                      >
+                        <span className="block font-semibold">{client.nome}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {client.telefone || "Sem telefone"}
+                          {client.email ? ` · ${client.email}` : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                  {filteredClients.total > filteredClients.items.length ? (
+                    <li className="px-3 py-1.5 text-[10px] text-muted-foreground">
+                      Mostrando {filteredClients.items.length} de {filteredClients.total}.
+                    </li>
+                  ) : null}
+                </>
+              )}
+            </ul>
+          </div>
+        ) : null}
         <label className="block text-[11px] font-semibold text-muted-foreground">
           Telefone do destinatário (com DDD)
         </label>
@@ -255,11 +387,93 @@ function MarketingFormDetail({ form }: { form: MarketingForm }) {
           )}
         </div>
       </div>
+
+      <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 space-y-3">
+        <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <Mail className="h-4 w-4 text-sky-600" />
+          Enviar por e-mail
+        </p>
+        {mailboxes.length === 0 ? (
+          <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Nenhuma caixa de e-mail disponível. Peça à Diretoria para liberar o módulo E-mails.
+          </p>
+        ) : (
+          <>
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Enviar de
+            </label>
+            <select
+              value={mailboxId}
+              onChange={(e) => setMailboxId(e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            >
+              {mailboxes.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.areaLabel} — {m.address}
+                </option>
+              ))}
+            </select>
+            <label className="block text-[11px] font-semibold text-muted-foreground">Para</label>
+            <input
+              type="email"
+              value={emailTo}
+              onChange={(e) => setEmailTo(e.target.value)}
+              placeholder="destinatario@email.com"
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            />
+            <label className="block text-[11px] font-semibold text-muted-foreground">
+              Assunto
+            </label>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              O e-mail inclui a mensagem selecionada e um botão para abrir o formulário.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="text-xs font-bold"
+                disabled={!canSendEmail}
+                onClick={() => void handleSendEmail()}
+              >
+                {sendingEmail ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Enviar e-mail
+              </Button>
+              {emailFeedback ? (
+                <span
+                  className={`text-[11px] font-semibold ${
+                    emailFeedback.type === "ok" ? "text-emerald-700" : "text-rose-600"
+                  }`}
+                >
+                  {emailFeedback.text}
+                </span>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-export default function MarketingFormsPanel() {
+type Props = {
+  clients?: GoogleReviewClientOption[];
+  mailboxes?: EmailMailboxDTO[];
+};
+
+export default function MarketingFormsPanel({
+  clients = [],
+  mailboxes = [],
+}: Props) {
   const [activeFormId, setActiveFormId] = useState<string | null>(null);
   const activeForm = MARKETING_FORMS.find((f) => f.id === activeFormId) ?? null;
 
@@ -268,8 +482,8 @@ export default function MarketingFormsPanel() {
       <Card className="p-5 border-primary/20 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
         <p className="text-sm font-semibold text-foreground">Central de formulários públicos</p>
         <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-          Toque em um formulário para ver o link curto e as mensagens prontas. Os formulários
-          preenchidos entram automaticamente no funil comercial ou na base de projetistas.
+          Toque em um formulário para ver o link curto e as mensagens prontas. Envie pelo WhatsApp
+          ou e-mail — as respostas entram no funil comercial ou na base de projetistas.
         </p>
       </Card>
 
@@ -283,8 +497,14 @@ export default function MarketingFormsPanel() {
         ))}
       </div>
 
-      <Dialog isOpen={!!activeForm} onClose={() => setActiveFormId(null)} className="max-w-lg w-full">
-        {activeForm && <MarketingFormDetail form={activeForm} />}
+      <Dialog isOpen={!!activeForm} onClose={() => setActiveFormId(null)} className="max-w-xl w-full">
+        {activeForm ? (
+          <MarketingFormDetail
+            form={activeForm}
+            clients={clients}
+            mailboxes={mailboxes}
+          />
+        ) : null}
       </Dialog>
     </div>
   );

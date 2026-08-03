@@ -7,6 +7,9 @@ import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import { guardModule } from "@/lib/moduleAccess";
 import { auth } from "@/lib/auth";
 import { canViewFullMarketing } from "@/lib/permissions";
+import { getClientsForWhatsAppMessaging } from "@/app/actions/cliente";
+import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
+import type { GoogleReviewClientOption } from "@/lib/google-review";
 
 export default async function MarketingFormulariosPage() {
   await guardModule("marketing");
@@ -19,6 +22,27 @@ export default async function MarketingFormulariosPage() {
   if (!canViewFullMarketing(cargo)) {
     redirect("/marketing/mensagens");
   }
+
+  const companyId = session?.user?.company_id || "mock-company-id";
+  const [clientsResponse, mailboxesResponse] = await Promise.all([
+    getClientsForWhatsAppMessaging(companyId),
+    listEmailMailboxesForUser().catch(() => ({
+      success: false as const,
+      data: [] as Awaited<ReturnType<typeof listEmailMailboxesForUser>>["data"],
+    })),
+  ]);
+
+  const clients: GoogleReviewClientOption[] = clientsResponse.success
+    ? clientsResponse.clients.map((client) => ({
+        id: client.id,
+        nome: client.nome,
+        telefone: client.telefone,
+        email: client.email,
+      }))
+    : [];
+
+  const mailboxes = mailboxesResponse.success ? mailboxesResponse.data : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -29,14 +53,14 @@ export default async function MarketingFormulariosPage() {
             title="Captação de leads"
             items={[
               "Compartilhe links curtos dos formulários de orçamento, parceiros e fornecedores.",
-              "Copie mensagens prontas para enviar pelo WhatsApp.",
+              "Copie mensagens prontas ou envie pelo WhatsApp e e-mail.",
               "As respostas caem automaticamente no funil comercial ou no estoque.",
             ]}
           />
         }
       />
       <MarketingSectionTabs />
-      <MarketingFormsPanel />
+      <MarketingFormsPanel clients={clients} mailboxes={mailboxes} />
     </div>
   );
 }

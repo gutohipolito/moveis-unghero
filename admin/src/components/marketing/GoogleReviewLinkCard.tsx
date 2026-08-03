@@ -8,9 +8,12 @@ import {
   Download,
   ExternalLink,
   Link2,
+  Loader2,
+  Mail,
   MessageCircle,
   QrCode,
   Search,
+  Send,
   User,
   X,
 } from "lucide-react";
@@ -23,9 +26,17 @@ import {
   GOOGLE_REVIEW_URL,
   type GoogleReviewClientOption,
 } from "@/lib/google-review";
+import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
+import { sendMailboxEmail } from "@/app/actions/emailInbox";
+import {
+  buildGoogleReviewEmailHtml,
+  buildGoogleReviewEmailSubject,
+  buildGoogleReviewEmailText,
+} from "@/lib/marketingEmail";
 
 interface GoogleReviewLinkCardProps {
   clients: GoogleReviewClientOption[];
+  mailboxes?: EmailMailboxDTO[];
 }
 
 interface LinkCardProps {
@@ -118,7 +129,10 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardProps) {
+export default function GoogleReviewLinkCard({
+  clients,
+  mailboxes = [],
+}: GoogleReviewLinkCardProps) {
   const shortUrl = getGoogleReviewShortUrl();
   const qrUrl = GOOGLE_REVIEW_SHORT_URL;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -127,6 +141,16 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [mailboxId, setMailboxId] = useState(mailboxes[0]?.id || "");
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
 
   const selectedClient = useMemo(
     () => clients.find((client) => client.id === selectedClientId) ?? null,
@@ -144,6 +168,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
       : clients.filter(
           (client) =>
             client.nome.toLowerCase().includes(query) ||
+            (client.email || "").toLowerCase().includes(query) ||
             (digits.length > 0 && client.telefone.replace(/\D/g, "").includes(digits))
         );
     return { items: list.slice(0, 80), total: list.length };
@@ -164,6 +189,24 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   }, [personalizedPhone, whatsappMessage]);
 
   const formattedPhone = personalizedPhone ? formatPhoneForWhatsApp(personalizedPhone) : "";
+
+  useEffect(() => {
+    setEmailSubject(buildGoogleReviewEmailSubject(personalizedName));
+    setEmailBody(
+      buildGoogleReviewEmailText({
+        clientName: personalizedName,
+        reviewUrl: shortUrl,
+      })
+    );
+  }, [personalizedName, shortUrl]);
+
+  useEffect(() => {
+    if (selectedClient?.email) {
+      setEmailTo(selectedClient.email);
+      return;
+    }
+    if (manualEmail.trim()) setEmailTo(manualEmail.trim());
+  }, [selectedClient, manualEmail]);
 
   useEffect(() => {
     let active = true;
@@ -191,6 +234,8 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
     setListOpen(false);
     setManualName("");
     setManualPhone("");
+    setManualEmail("");
+    if (client.email) setEmailTo(client.email);
   }
 
   function handleClearClient() {
@@ -199,6 +244,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
     setListOpen(false);
     setManualName("");
     setManualPhone("");
+    setManualEmail("");
   }
 
   function handleManualNameChange(value: string) {
@@ -222,6 +268,38 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
     link.href = qrDataUrl;
     link.download = "avaliar-moveis-unghero.png";
     link.click();
+  }
+
+  const canSendEmail =
+    Boolean(mailboxId) &&
+    Boolean(emailTo.trim().includes("@")) &&
+    Boolean(emailSubject.trim()) &&
+    Boolean(emailBody.trim()) &&
+    !sendingEmail;
+
+  async function handleSendEmail() {
+    if (!canSendEmail || !mailboxId) return;
+    setSendingEmail(true);
+    setEmailFeedback(null);
+    const res = await sendMailboxEmail({
+      mailboxId,
+      to: emailTo.trim(),
+      subject: emailSubject.trim(),
+      text: emailBody.trim(),
+      html: buildGoogleReviewEmailHtml({
+        clientName: personalizedName,
+        reviewUrl: shortUrl,
+      }),
+    });
+    setSendingEmail(false);
+    if (!res.success) {
+      setEmailFeedback({
+        type: "err",
+        text: res.error || "Falha ao enviar e-mail.",
+      });
+      return;
+    }
+    setEmailFeedback({ type: "ok", text: "E-mail enviado." });
   }
 
   return (
@@ -259,7 +337,10 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
             <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{selectedClient.nome}</p>
-                <p className="text-xs text-muted-foreground">{selectedClient.telefone}</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedClient.telefone || "Sem telefone"}
+                  {selectedClient.email ? ` · ${selectedClient.email}` : ""}
+                </p>
               </div>
               <button
                 type="button"
@@ -304,7 +385,10 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{client.nome}</p>
-                            <p className="text-xs text-muted-foreground">{client.telefone}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {client.telefone || "Sem telefone"}
+                              {client.email ? ` · ${client.email}` : ""}
+                            </p>
                           </div>
                         </button>
                       </li>
@@ -369,6 +453,22 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                     className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
                   />
                 </div>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="manual-review-email" className="text-[11px] font-semibold text-muted-foreground">
+                  E-mail (opcional)
+                </label>
+                <input
+                  id="manual-review-email"
+                  type="email"
+                  value={manualEmail}
+                  onChange={(event) => {
+                    setManualEmail(event.target.value);
+                    if (event.target.value.trim()) setSelectedClientId(null);
+                  }}
+                  placeholder="cliente@email.com"
+                  className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                />
               </div>
             </div>
           )}
@@ -454,6 +554,97 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
             Baixar PNG
           </button>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <Mail className="h-5 w-5 text-sky-600 mt-0.5 shrink-0" />
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Enviar por e-mail</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Assunto chamativo e layout HTML com botão para avaliar no Google.
+            </p>
+          </div>
+        </div>
+
+        {mailboxes.length === 0 ? (
+          <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Nenhuma caixa de e-mail disponível. Peça à Diretoria para liberar o módulo E-mails.
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-muted-foreground">Enviar de</label>
+                <select
+                  value={mailboxId}
+                  onChange={(e) => setMailboxId(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm"
+                >
+                  {mailboxes.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.areaLabel} — {m.address}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-muted-foreground">Para</label>
+                <input
+                  type="email"
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  placeholder="cliente@email.com"
+                  className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-muted-foreground">Assunto</label>
+              <input
+                type="text"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                className="w-full rounded-lg border border-input bg-card py-2 px-3 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-muted-foreground">
+                Mensagem (texto)
+              </label>
+              <textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={7}
+                className="w-full rounded-lg border border-input bg-card px-3 py-2 text-xs leading-relaxed"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!canSendEmail}
+                onClick={() => void handleSendEmail()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700 transition-colors disabled:opacity-50"
+              >
+                {sendingEmail ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Enviar e-mail
+              </button>
+              {emailFeedback ? (
+                <span
+                  className={`text-[11px] font-semibold ${
+                    emailFeedback.type === "ok" ? "text-emerald-700" : "text-rose-600"
+                  }`}
+                >
+                  {emailFeedback.text}
+                </span>
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

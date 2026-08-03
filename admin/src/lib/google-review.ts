@@ -61,4 +61,5 @@ export interface GoogleReviewClientOption {
   id: string;
   nome: string;
   telefone: string;
+  email?: string;
 }

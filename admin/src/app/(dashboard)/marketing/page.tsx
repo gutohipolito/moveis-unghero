@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { guardModule } from "@/lib/moduleAccess";
 import { getClients } from "@/app/actions/cliente";
+import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
@@ -24,15 +25,24 @@ export default async function MarketingPage() {
   }
 
   const companyId = session?.user?.company_id || "mock-company-id";
-  const clientsResponse = await getClients(companyId);
+  const [clientsResponse, mailboxesResponse] = await Promise.all([
+    getClients(companyId),
+    listEmailMailboxesForUser().catch(() => ({
+      success: false as const,
+      data: [] as Awaited<ReturnType<typeof listEmailMailboxesForUser>>["data"],
+    })),
+  ]);
 
   const clients: GoogleReviewClientOption[] = clientsResponse.success
     ? clientsResponse.clients.map((client) => ({
         id: client.id,
         nome: client.nome,
         telefone: client.telefone,
+        email: client.email || "",
       }))
     : [];
+
+  const mailboxes = mailboxesResponse.success ? mailboxesResponse.data : [];
 
   return (
     <div className="space-y-6">
@@ -44,7 +54,7 @@ export default async function MarketingPage() {
             title="Peça avaliações"
             items={[
               "Selecione o cliente e gere um link curto ou QR Code para o Google.",
-              "Envie a mensagem pronta pelo WhatsApp após a entrega.",
+              "Envie pelo WhatsApp ou por e-mail (layout especial) após a entrega.",
               "Mais avaliações melhoram a reputação e o alcance nas buscas.",
             ]}
           />
@@ -53,7 +63,11 @@ export default async function MarketingPage() {
 
       <MarketingSectionTabs />
 
-      <MarketingReviewClients initialClients={clients} companyId={companyId} />
+      <MarketingReviewClients
+        initialClients={clients}
+        companyId={companyId}
+        mailboxes={mailboxes}
+      />
     </div>
   );
 }
