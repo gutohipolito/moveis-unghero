@@ -337,7 +337,7 @@ const PartnerCard = ({
 export default function ParceirosClient({ initialParceiros, companyId }: ParceirosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
-  const { isReadOnly, isOpsLimited, role } = usePermissions();
+  const { isReadOnly, isOpsLimited, role, isAdmin } = usePermissions();
   const canManagePartners = canManageParceiros(role);
   const { privacyLocked, privacyMode } = usePrivacy();
   const sensitive = useSensitiveDisplay();
@@ -697,15 +697,28 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             </p>
           </div>
 
-          {canManagePartners && (
-          <Button 
-            onClick={openCreate} 
-            className="font-bold btn-metallic gap-2 h-10 px-4 shrink-0 self-start md:self-auto"
-          >
-            <UserPlus className="h-4 w-4" />
-            Cadastrar Parceiro
-          </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-auto">
+            {isAdmin && (
+              <Button
+                type="button"
+                variant="outline"
+                className="font-bold gap-2 h-10 px-4"
+                onClick={() => window.open("/parceiro/login", "_blank", "noopener,noreferrer")}
+              >
+                <ExternalLink className="h-4 w-4" />
+                Ver portal
+              </Button>
+            )}
+            {canManagePartners && (
+              <Button
+                onClick={openCreate}
+                className="font-bold btn-metallic gap-2 h-10 px-4"
+              >
+                <UserPlus className="h-4 w-4" />
+                Cadastrar Parceiro
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Barra de Filtros e Busca */}

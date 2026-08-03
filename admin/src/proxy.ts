@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { parseClientSessionToken } from "@/lib/clientSession";
+import { parsePartnerSessionToken } from "@/lib/partnerSession";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 
-const PUBLIC_PATHS = new Set(["/login", "/cliente/login", "/briefing", "/cadastro-parceiro"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/cliente/login",
+  "/parceiro/login",
+  "/briefing",
+  "/cadastro-parceiro",
+]);
 
 const PUBLIC_PREFIXES = ["/api/auth", "/api/o/", "/api/public/"];
 
@@ -189,6 +196,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/parceiro/painel")) {
+    const partnerSession = request.cookies.get("parceiro-session")?.value;
+    if (!parsePartnerSessionToken(partnerSession)) {
+      return NextResponse.redirect(new URL("/parceiro/login", request.url));
+    }
+    return NextResponse.next();
+  }
+
   if (isProtectedPath(pathname)) {
     const sessionToken = getSessionToken(request);
     if (!sessionToken) {
@@ -234,6 +249,9 @@ export const config = {
     "/sem-acesso",
     "/cliente/login",
     "/cliente/dashboard/:path*",
+    "/parceiro/login",
+    "/parceiro/painel",
+    "/parceiro/painel/:path*",
     "/briefing",
     "/cadastro",
     "/cadastro-parceiro",
