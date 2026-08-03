@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { Mail, Phone, ArrowRight, Loader2 } from "lucide-react";
 
 interface LoginFormParceiroProps {
   loginAction: (data: {
@@ -41,43 +42,76 @@ export default function LoginFormParceiro({ loginAction }: LoginFormParceiroProp
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20 animate-in fade-in duration-200">
+        <div
+          role="alert"
+          className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20 animate-in fade-in duration-200"
+        >
           {error}
         </div>
       )}
 
-      <div>
-        <label className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider mb-1">
+      <div className="space-y-1.5">
+        <label
+          htmlFor="parceiro-email"
+          className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider"
+        >
           E-mail cadastrado
         </label>
-        <Input
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="seu@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            id="parceiro-email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="seu@email.com"
+            className="pl-10 h-11 bg-white/90 border-border/70 focus-visible:ring-primary/30"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider mb-1">
+      <div className="space-y-1.5">
+        <label
+          htmlFor="parceiro-telefone"
+          className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider"
+        >
           Telefone cadastrado
         </label>
-        <Input
-          type="tel"
-          required
-          autoComplete="tel"
-          placeholder={PHONE_PLACEHOLDER}
-          value={telefone}
-          onChange={(e) => setTelefone(formatPhoneInput(e.target.value))}
-        />
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            id="parceiro-telefone"
+            type="tel"
+            required
+            autoComplete="tel"
+            placeholder={PHONE_PLACEHOLDER}
+            className="pl-10 h-11 bg-white/90 border-border/70 focus-visible:ring-primary/30"
+            value={telefone}
+            onChange={(e) => setTelefone(formatPhoneInput(e.target.value))}
+          />
+        </div>
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full font-bold btn-metallic">
-        {loading ? "Acessando..." : "Entrar no painel"}
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full font-bold btn-metallic h-11 gap-2 mt-1"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Acessando...
+          </>
+        ) : (
+          <>
+            Entrar no painel
+            <ArrowRight className="h-4 w-4" />
+          </>
+        )}
       </Button>
     </form>
   );
