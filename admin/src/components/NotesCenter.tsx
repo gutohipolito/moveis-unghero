@@ -44,14 +44,33 @@ export default function NotesCenter({
     }
   }, [companyId]);
 
+  const [loadedOnce, setLoadedOnce] = useState(initialNotes.length > 0);
+
   useLiveEntity("workspace", {
     sync: syncWorkspace,
-    enabled: !pending && !open,
+    skipInitialSync: true,
+    enabled: !pending && loadedOnce,
   });
 
   useEffect(() => {
     setNotes(initialNotes);
   }, [initialNotes]);
+
+  useEffect(() => {
+    if (!open || loadedOnce) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await getWorkspaceLiveSnapshot(companyId);
+      if (cancelled) return;
+      if (result.success && result.notes) {
+        setNotes(result.notes);
+      }
+      setLoadedOnce(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, loadedOnce, companyId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

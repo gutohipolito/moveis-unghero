@@ -165,7 +165,10 @@ export function useLiveEntity(
   options: {
     sync: () => void | Promise<void>;
     enabled?: boolean;
+    /** Delay antes do sync inicial. Ignorado se `skipInitialSync` for true. */
     initialDelayMs?: number;
+    /** Não refetch no mount — use quando a tela já veio com dados SSR. */
+    skipInitialSync?: boolean;
   }
 ) {
   const { subscribe } = useLiveSyncContext();
@@ -175,11 +178,14 @@ export function useLiveEntity(
   enabledRef.current = options.enabled ?? true;
 
   useEffect(() => {
-    const initialTimer = window.setTimeout(() => {
-      if (enabledRef.current) {
-        void syncRef.current();
-      }
-    }, options.initialDelayMs ?? 2_000);
+    let initialTimer: number | undefined;
+    if (!options.skipInitialSync) {
+      initialTimer = window.setTimeout(() => {
+        if (enabledRef.current) {
+          void syncRef.current();
+        }
+      }, options.initialDelayMs ?? 2_000);
+    }
 
     const unsubscribe = subscribe({
       entity,
@@ -188,8 +194,8 @@ export function useLiveEntity(
     });
 
     return () => {
-      window.clearTimeout(initialTimer);
+      if (initialTimer !== undefined) window.clearTimeout(initialTimer);
       unsubscribe();
     };
-  }, [entity, options.initialDelayMs, subscribe]);
+  }, [entity, options.initialDelayMs, options.skipInitialSync, subscribe]);
 }

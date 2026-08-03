@@ -1,10 +1,6 @@
 import DashboardHeader from "@/components/DashboardHeader";
 import MobileTopBar from "@/components/MobileTopBar";
-import { getNotifications } from "@/app/actions/notifications";
-import {
-  getOperatorNotesForUser,
-  getOperatorRemindersForUser,
-} from "@/app/actions/operatorWorkspace";
+import type { AppNotification } from "@/lib/notifications";
 
 interface DashboardHeaderSlotProps {
   user: {
@@ -15,22 +11,16 @@ interface DashboardHeaderSlotProps {
     cargo?: string;
   };
   companyId: string;
+  /** Já buscadas no layout — evita segundo getNotifications por navegação. */
+  initialNotifications?: AppNotification[];
 }
 
 export default async function DashboardHeaderSlot({
   user,
   companyId,
+  initialNotifications = [],
 }: DashboardHeaderSlotProps) {
-  const [notificationsRes, notesRes, remindersRes] = await Promise.all([
-    getNotifications(companyId).catch(() => ({ notifications: [] })),
-    getOperatorNotesForUser(user.id, companyId).catch(() => ({ notes: [] })),
-    getOperatorRemindersForUser(user.id, companyId).catch(() => ({ reminders: [] })),
-  ]);
-
-  const notifications = notificationsRes.notifications;
-  const notes = notesRes.notes;
-  const reminders = remindersRes.reminders;
-
+  // Notes/reminders: vazios no SSR — carregam ao abrir o painel.
   const headerUser = {
     name: user.name,
     email: user.email ?? undefined,
@@ -46,18 +36,18 @@ export default async function DashboardHeaderSlot({
           email: user.email ?? "",
         }}
         companyId={companyId}
-        initialNotifications={notifications}
-        initialNotes={notes}
-        initialReminders={reminders}
+        initialNotifications={initialNotifications}
+        initialNotes={[]}
+        initialReminders={[]}
       />
 
       <div className="hidden md:block">
         <DashboardHeader
           user={headerUser}
           companyId={companyId}
-          initialNotifications={notifications}
-          initialNotes={notes}
-          initialReminders={reminders}
+          initialNotifications={initialNotifications}
+          initialNotes={[]}
+          initialReminders={[]}
         />
       </div>
     </>

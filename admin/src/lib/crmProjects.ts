@@ -46,6 +46,8 @@ export const CRM_PROJECT_SELECT = {
     orderBy: {
       data: "desc",
     },
+    // Suficiente para inferir entrada de etapa e preview no card; evita timeline completa.
+    take: 40,
   },
   client: {
     select: {
@@ -75,10 +77,6 @@ export const CRM_PROJECT_SELECT = {
       utm_source: true,
       utm_medium: true,
       utm_campaign: true,
-      gclid: true,
-      fbclid: true,
-      ip: true,
-      user_agent: true,
       dispositivo: true,
       os: true,
       resolution: true,

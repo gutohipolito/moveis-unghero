@@ -69,6 +69,7 @@ export default async function DashboardLayout({
                   cargo: user.cargo,
                 }}
                 companyId={companyId}
+                initialNotifications={notificationsRes.notifications}
               />
             </Suspense>
           }

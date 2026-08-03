@@ -1,5 +1,3 @@
-import { getClients } from "@/app/actions/cliente";
-import { getColaboradores } from "@/app/actions/colaboradores";
 import { getUserPreferences } from "@/app/actions/preferences";
 import { guardModule } from "@/lib/moduleAccess";
 import { fetchCrmProjects } from "@/lib/crmProjects";
@@ -12,23 +10,12 @@ export default async function CRMPage() {
   await guardModule("crm");
   const userCompanyId = await getSessionCompanyId();
 
-  const [formattedProjects, clientResponse, preferences, colaboradoresRes] = await Promise.all([
+  // Board first — colaboradores carregam no cliente (não bloqueiam o funil).
+  const [formattedProjects, preferences] = await Promise.all([
     fetchCrmProjects(userCompanyId),
-    getClients(userCompanyId),
     getUserPreferences(),
-    getColaboradores(userCompanyId),
   ]);
 
-  const clientsList = clientResponse.success ? clientResponse.clients : [];
-  const colaboradores =
-    colaboradoresRes.success && colaboradoresRes.colaboradores
-      ? colaboradoresRes.colaboradores.map((c) => ({
-          id: c.id,
-          name: c.name,
-          cargo: String(c.cargo),
-          image: c.image ?? null,
-        }))
-      : [];
   const initialFollowUpSla = resolveFollowUpSla(
     (preferences?.[CRM_FOLLOW_UP_SLA_PREF_KEY] as Partial<FollowUpSlaConfig> | undefined) ?? null
   );
@@ -38,8 +25,6 @@ export default async function CRMPage() {
       <KanbanBoard
         initialProjects={formattedProjects}
         companyId={userCompanyId}
-        clients={clientsList as any}
-        colaboradores={colaboradores}
         initialFollowUpSla={initialFollowUpSla}
       />
     </div>

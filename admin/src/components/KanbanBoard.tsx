@@ -181,25 +181,8 @@ interface KanbanBoardProps {
   initialProjects: Project[];
   companyId: string;
   initialFollowUpSla?: Partial<FollowUpSlaConfig> | null;
+  /** Se omitido, carrega no cliente após o board pintar. */
   colaboradores?: Array<{ id: string; name: string; cargo: string; image?: string | null }>;
-  clients?: Array<{
-    id: string;
-    nome: string;
-    email: string;
-    telefone: string;
-    cidade: string;
-    origem: Origin;
-    tipo_pessoa?: string | null;
-    cnpj?: string | null;
-    cep?: string | null;
-    endereco?: string | null;
-    numero?: string | null;
-    bairro?: string | null;
-    uf?: string | null;
-    tipo_imovel?: string | null;
-    obs_imovel?: string | null;
-    obs_entrega?: string | null;
-  }>;
 }
 
 const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
@@ -537,8 +520,7 @@ function BoardViewMobileSwitch({
 export default function KanbanBoard({
   initialProjects,
   companyId,
-  clients = [],
-  colaboradores = [],
+  colaboradores: initialColaboradores = [],
   initialFollowUpSla = null,
 }: KanbanBoardProps) {
   const { isReadOnly, isOpsLimited, role } = usePermissions();
@@ -548,6 +530,7 @@ export default function KanbanBoard({
   const funnelColumns = isOpsLimited ? OPS_FUNNEL_COLUMNS : FUNNEL_COLUMNS;
   const sensitive = useSensitiveDisplay();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [colaboradores, setColaboradores] = useState(initialColaboradores);
   const [isMobile, setIsMobile] = useState(false);
 
   React.useEffect(() => {
@@ -557,6 +540,28 @@ export default function KanbanBoard({
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
+
+  // Colaboradores após o first paint — não bloqueiam o funil no SSR.
+  React.useEffect(() => {
+    if (initialColaboradores.length > 0 || isOpsLimited) return;
+    let cancelled = false;
+    void (async () => {
+      const { getColaboradores } = await import("@/app/actions/colaboradores");
+      const res = await getColaboradores(companyId);
+      if (cancelled || !res.success || !res.colaboradores) return;
+      setColaboradores(
+        res.colaboradores.map((c) => ({
+          id: c.id,
+          name: c.name,
+          cargo: String(c.cargo),
+          image: c.image ?? null,
+        }))
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, initialColaboradores.length, isOpsLimited]);
 
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<"negociacao" | "briefing">("negociacao");
@@ -606,6 +611,7 @@ export default function KanbanBoard({
 
   useLiveEntity("crm", {
     sync: syncCrm,
+    skipInitialSync: true,
     enabled: !activeDragId && !loading && !isEditLeadOpen && !lossModalProject,
   });
 
@@ -620,7 +626,8 @@ export default function KanbanBoard({
     return () => {
       cancelled = true;
     };
-  }, [projects, boardView]);
+    // Não re-buscar a cada live sync do board — só na montagem / troca de visão.
+  }, [boardView]);
 
   useEffect(() => {
     if (boardView !== "funil") setBannersExpanded(false);

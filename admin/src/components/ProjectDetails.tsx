@@ -19,26 +19,17 @@ import { deleteQuote, getQuoteForEdit } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
-import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
+import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
+import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
+import dynamic from "next/dynamic";
+import type { QuoteBuilderEditingQuote } from "@/components/QuoteBuilder";
+import type { ReceiptIssuePrefill } from "@/components/finance/ReceiptIssueDialog";
+import type { ConfTecnicaWhatsAppTarget } from "@/components/ConfTecnicaWhatsAppDialog";
+import type { EnvironmentGalleryTarget } from "@/components/EnvironmentGalleryModal";
 import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
-import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
-import { getParceiros } from "@/app/actions/parceiros";
-import InstallmentLaunchDialog from "@/components/finance/InstallmentLaunchDialog";
-import ReceiptIssueDialog, {
-  type ReceiptIssuePrefill,
-} from "@/components/finance/ReceiptIssueDialog";
-import ConfTecnicaWhatsAppDialog, {
-  type ConfTecnicaWhatsAppTarget,
-} from "@/components/ConfTecnicaWhatsAppDialog";
-import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
-import QuoteBuilder, { type QuoteBuilderEditingQuote } from "@/components/QuoteBuilder";
 import SlaRadar from "@/components/SlaRadar";
-import SlaVerificationModal from "@/components/SlaVerificationModal";
 import ClientConsentCard from "@/components/clientes/ClientConsentCard";
-import EnvironmentGalleryModal, {
-  type EnvironmentGalleryTarget,
-} from "@/components/EnvironmentGalleryModal";
 import {
   resolveClientConsent,
   stripConsentFromObservacoes,
@@ -61,6 +52,37 @@ import {
   formatQuoteViewLabel,
   toQuoteViewStats,
 } from "@/lib/quoteViewTracking";
+
+const QuoteBuilder = dynamic(() => import("@/components/QuoteBuilder"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-border/40 bg-card/40 p-8 text-sm text-muted-foreground animate-pulse">
+      Carregando construtor de orçamento…
+    </div>
+  ),
+});
+const QuoteApprovalDialog = dynamic(() => import("@/components/quotes/QuoteApprovalDialog"), {
+  ssr: false,
+});
+const InstallmentLaunchDialog = dynamic(
+  () => import("@/components/finance/InstallmentLaunchDialog"),
+  { ssr: false }
+);
+const ReceiptIssueDialog = dynamic(
+  () => import("@/components/finance/ReceiptIssueDialog"),
+  { ssr: false }
+);
+const ConfTecnicaWhatsAppDialog = dynamic(
+  () => import("@/components/ConfTecnicaWhatsAppDialog"),
+  { ssr: false }
+);
+const SlaVerificationModal = dynamic(() => import("@/components/SlaVerificationModal"), {
+  ssr: false,
+});
+const EnvironmentGalleryModal = dynamic(
+  () => import("@/components/EnvironmentGalleryModal"),
+  { ssr: false }
+);
 import {
   ArrowLeft,
   User, 
@@ -372,15 +394,21 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     project.status_geral === "APROVADO" || project.status_geral === "CONFERENCIA_TECNICA";
 
   useEffect(() => {
-    if (isOpsLimited) return;
+    if (isOpsLimited || !isEditingMeta) return;
+    let cancelled = false;
     async function loadPartners() {
+      const { getParceiros } = await import("@/app/actions/parceiros");
       const res = await getParceiros(companyId);
+      if (cancelled) return;
       if (res.success && res.parceiros) {
-         setPartners(res.parceiros);
+        setPartners(res.parceiros);
       }
     }
-    loadPartners();
-  }, [companyId, isOpsLimited]);
+    void loadPartners();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, isOpsLimited, isEditingMeta]);
 
   const handleSaveProjectDetails = async () => {
     setLoading(true);
@@ -468,6 +496,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
   useLiveEntity("projects", {
     sync: syncProject,
+    skipInitialSync: true,
     enabled:
       !loading &&
       !isEditingMeta &&

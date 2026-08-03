@@ -26,6 +26,9 @@ const nextConfig: NextConfig = {
     root: monorepoRoot,
   },
   outputFileTracingRoot: monorepoRoot,
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
   async headers() {
     // Formulários públicos exibidos via iframe no site institucional
     // (moveisunghero.com.br/cadastro, /orcamento, /cadastro-parceiro).

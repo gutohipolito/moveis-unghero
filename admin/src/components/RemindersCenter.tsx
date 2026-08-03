@@ -52,9 +52,12 @@ export default function RemindersCenter({
     }
   }, [companyId]);
 
+  const [loadedOnce, setLoadedOnce] = useState(initialReminders.length > 0);
+
   useLiveEntity("workspace", {
     sync: syncWorkspace,
-    enabled: !pending && !open,
+    skipInitialSync: true,
+    enabled: !pending && loadedOnce,
   });
 
   const activeCount = countActiveReminders(reminders);
@@ -63,6 +66,62 @@ export default function RemindersCenter({
   useEffect(() => {
     setReminders(initialReminders);
   }, [initialReminders]);
+
+  useEffect(() => {
+    if (!open || loadedOnce) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await getWorkspaceLiveSnapshot(companyId);
+      if (cancelled) return;
+      if (result.success && result.reminders) {
+        setReminders(result.reminders);
+      }
+      setLoadedOnce(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, loadedOnce, companyId]);
+
+  // Badge de urgência: carrega em idle sem bloquear o shell.
+  useEffect(() => {
+    if (loadedOnce) return;
+    let cancelled = false;
+    const run = () => {
+      void (async () => {
+        const result = await getWorkspaceLiveSnapshot(companyId);
+        if (cancelled) return;
+        if (result.success && result.reminders) {
+          setReminders(result.reminders);
+        }
+        setLoadedOnce(true);
+      })();
+    };
+
+    let idleHandle: number | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+
+    if (typeof ric === "function") {
+      idleHandle = ric(run, { timeout: 4000 });
+    } else {
+      timeoutHandle = setTimeout(run, 2500);
+    }
+
+    return () => {
+      cancelled = true;
+      const cic = (
+        window as Window & { cancelIdleCallback?: (id: number) => void }
+      ).cancelIdleCallback;
+      if (idleHandle !== undefined && typeof cic === "function") cic(idleHandle);
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
+    };
+  }, [companyId, loadedOnce]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

@@ -6,7 +6,6 @@ import { getCatalogGroups, getCatalogItemsBySlug } from "@/app/actions/cadastros
 import { getParceiros } from "@/app/actions/parceiros";
 import { getInventoryAndSuppliers } from "@/app/actions/estoque";
 import { getQuotes } from "@/app/actions/quotes";
-import { getProjectDetailsAction } from "@/app/actions/project";
 import {
   getOperatorNotesForUser,
   getOperatorRemindersForUser,
@@ -556,19 +555,52 @@ export async function getWorkspaceLiveSnapshot(companyId: string) {
 }
 
 export async function getProjectLiveSnapshot(projectId: string) {
-  const auth = await getAuthContext();
-  if (!auth) return { success: false as const, error: "Não autenticado" };
-
   try {
-    const result = await getProjectDetailsAction(projectId);
-    if (!result.success || !result.project) {
-      return { success: false as const, error: result.error || "Projeto não encontrado" };
+    const {
+      projectInclude,
+      formatProjectDetails,
+      restrictProjectDetailsForRole,
+    } = await import("@/lib/formatProjectDetails");
+    const { getProjectSla } = await import("@/app/actions/productionSla");
+    const { requireProjectInCompany } = await import("@/lib/auth-guard");
+    const { getModuleAccess } = await import("@/lib/moduleAccess");
+
+    const moduleAuth = await getModuleAccess("crm");
+    if (!moduleAuth) {
+      return { success: false as const, error: "Não autenticado" };
     }
+    try {
+      await requireProjectInCompany(projectId, moduleAuth.companyId);
+    } catch (error) {
+      return {
+        success: false as const,
+        error: error instanceof Error ? error.message : "Acesso negado",
+      };
+    }
+
+    // Snapshot leve (somente leitura): sem sync de ambientes, colaboradores ou ensure SLA.
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, client: { company_id: moduleAuth.companyId } },
+      include: projectInclude,
+    });
+
+    if (!project) {
+      return { success: false as const, error: "Projeto não encontrado" };
+    }
+
+    const formattedProject = formatProjectDetails(project);
+    const safeProject = restrictProjectDetailsForRole(
+      maybeRedactForViewer(formattedProject, moduleAuth.cargo),
+      moduleAuth.cargo
+    );
+
+    const hasProductionApproval = safeProject.files.some((f) => f.aprovado_producao);
+    const sla = hasProductionApproval ? await getProjectSla(projectId) : null;
 
     return {
       success: true as const,
-      project: result.project,
-      sla: result.sla ?? null,
+      project: safeProject,
+      sla,
     };
   } catch (error) {
     console.warn("Falha ao sincronizar projeto:", error);
