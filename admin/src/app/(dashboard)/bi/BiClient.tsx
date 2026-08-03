@@ -7,6 +7,7 @@ import { getBiLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { toISODateBR } from "@/lib/brazilDate";
 import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/select";
 import {
   TrendingUp,
   DollarSign,
@@ -128,6 +129,24 @@ const FUNNEL_ACTIVE_STATUSES = [
 const CLOSED_STATUSES = ["APROVADO", "PRODUCAO", "INSTALACAO", "FINALIZADO"];
 const PARTNER_COMMISSION_RATE = 0.05;
 
+type BiTab = "geral" | "funil_orcamentos" | "producao" | "parceiros" | "exportar";
+type PdfPeriod = "all" | "month" | "quarter" | "year";
+
+const BI_TABS: { id: BiTab; label: string }[] = [
+  { id: "geral", label: "Visão Geral" },
+  { id: "funil_orcamentos", label: "Funil & Orçamentos" },
+  { id: "producao", label: "Produção (Fábrica)" },
+  { id: "parceiros", label: "Parceiros" },
+  { id: "exportar", label: "Exportar Relatório" },
+];
+
+const PDF_PERIOD_OPTIONS: { id: PdfPeriod; label: string }[] = [
+  { id: "all", label: "Histórico Total" },
+  { id: "month", label: "Mês Atual" },
+  { id: "quarter", label: "Trimestre" },
+  { id: "year", label: "Ano Comercial" },
+];
+
 const ORIGIN_LABELS: Record<string, string> = {
   INSTAGRAM: "Instagram",
   INDICACAO: "Indicação de Clientes",
@@ -167,7 +186,7 @@ export default function BiClient({
   const [environments, setEnvironments] = useState(initialEnvironments);
 
   // Estados de navegação e busca
-  const [activeTab, setActiveTab] = useState<"geral" | "funil_orcamentos" | "producao" | "parceiros" | "exportar">("geral");
+  const [activeTab, setActiveTab] = useState<BiTab>("geral");
   const [searchTerm, setSearchTerm] = useState("");
 
   // Estados específicos para Parceiros
@@ -177,7 +196,7 @@ export default function BiClient({
   const [pageSize, setPageSize] = useState(10);
 
   // Estados de Configuração da Exportação PDF
-  const [pdfPeriod, setPdfPeriod] = useState<"all" | "month" | "quarter" | "year">("all");
+  const [pdfPeriod, setPdfPeriod] = useState<PdfPeriod>("all");
   const [pdfSections, setPdfSections] = useState({
     kpis: true,
     crm: true,
@@ -672,9 +691,34 @@ export default function BiClient({
         `
       }} />
 
-      {/* Navegação de Abas Premium */}
-      <div className="shrink-0 flex items-center justify-between border-b border-border/40 pb-1 print:hidden">
-        <div className="flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
+      {/* Navegação: dropdown no mobile, abas no desktop */}
+      <div className="shrink-0 border-b border-border/40 pb-2 print:hidden">
+        <div className="md:hidden space-y-1">
+          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            Relatório
+          </label>
+          <Select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as BiTab)}
+            className="h-10 bg-slate-50 border-slate-200"
+            aria-label="Selecionar relatório"
+          >
+            {BI_TABS.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+                {tab.id === "producao" && activeEnvironments.length > 0
+                  ? ` (${activeEnvironments.length})`
+                  : ""}
+                {tab.id === "parceiros" && designerRanking.length > 0
+                  ? ` (${designerRanking.length})`
+                  : ""}
+                {tab.id === "exportar" ? " — PDF" : ""}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="hidden md:flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
           <button
             onClick={() => setActiveTab("geral")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
@@ -686,7 +730,7 @@ export default function BiClient({
             <PieChart className="h-4 w-4" />
             <span>Visão Geral</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab("funil_orcamentos")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
@@ -1708,47 +1752,35 @@ export default function BiClient({
                   <label className="text-xs font-extrabold uppercase text-muted-foreground tracking-wide block">
                     1. Período do Relatório
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <button
-                      onClick={() => setPdfPeriod("all")}
-                      className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                        pdfPeriod === "all"
-                          ? "bg-neutral-900 border-neutral-900 text-white shadow-sm"
-                          : "bg-white border-border hover:bg-slate-50 text-neutral-700"
-                      }`}
+                  <div className="md:hidden">
+                    <Select
+                      value={pdfPeriod}
+                      onChange={(e) => setPdfPeriod(e.target.value as PdfPeriod)}
+                      className="h-10 bg-slate-50 border-slate-200"
+                      aria-label="Período do relatório"
                     >
-                      Histórico Total
-                    </button>
-                    <button
-                      onClick={() => setPdfPeriod("month")}
-                      className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                        pdfPeriod === "month"
-                          ? "bg-neutral-900 border-neutral-900 text-white shadow-sm"
-                          : "bg-white border-border hover:bg-slate-50 text-neutral-700"
-                      }`}
-                    >
-                      Mês Atual
-                    </button>
-                    <button
-                      onClick={() => setPdfPeriod("quarter")}
-                      className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                        pdfPeriod === "quarter"
-                          ? "bg-neutral-900 border-neutral-900 text-white shadow-sm"
-                          : "bg-white border-border hover:bg-slate-50 text-neutral-700"
-                      }`}
-                    >
-                      Trimestre
-                    </button>
-                    <button
-                      onClick={() => setPdfPeriod("year")}
-                      className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                        pdfPeriod === "year"
-                          ? "bg-neutral-900 border-neutral-900 text-white shadow-sm"
-                          : "bg-white border-border hover:bg-slate-50 text-neutral-700"
-                      }`}
-                    >
-                      Ano Comercial
-                    </button>
+                      {PDF_PERIOD_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="hidden md:grid grid-cols-4 gap-2">
+                    {PDF_PERIOD_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setPdfPeriod(opt.id)}
+                        className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                          pdfPeriod === opt.id
+                            ? "bg-neutral-900 border-neutral-900 text-white shadow-sm"
+                            : "bg-white border-border hover:bg-slate-50 text-neutral-700"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
