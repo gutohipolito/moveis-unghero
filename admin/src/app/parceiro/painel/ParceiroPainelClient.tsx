@@ -48,9 +48,13 @@ function getInitials(name: string) {
 
 interface ParceiroPainelClientProps {
   partner: PartnerPortalData;
+  isAdminPreview?: boolean;
 }
 
-export default function ParceiroPainelClient({ partner }: ParceiroPainelClientProps) {
+export default function ParceiroPainelClient({
+  partner,
+  isAdminPreview = false,
+}: ParceiroPainelClientProps) {
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
   const registroLabel = formatPartnerRegistro(partner.tipo, partner.registro_profissional);
   const activeCount = partner.projects.filter(
@@ -61,6 +65,17 @@ export default function ParceiroPainelClient({ partner }: ParceiroPainelClientPr
     <div className="min-h-screen bg-radial-gradient from-[#221c18] to-[#120e0c] text-foreground relative overflow-x-hidden">
       <div className="absolute top-0 right-0 w-[420px] h-[420px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[380px] h-[380px] rounded-full bg-amber-500/5 blur-[100px] pointer-events-none" />
+
+      {isAdminPreview && (
+        <div className="relative z-20 bg-amber-500/15 border-b border-amber-400/25 text-amber-100">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2 text-[11px] font-semibold tracking-wide flex flex-wrap items-center justify-between gap-2">
+            <span>Visualização da Diretoria — você está vendo o portal como {partner.nome}.</span>
+            <Link href="/parceiros" className="underline underline-offset-2 hover:text-white">
+              Voltar ao admin
+            </Link>
+          </div>
+        </div>
+      )}
 
       <header className="relative z-10 border-b border-border/40 bg-black/25 backdrop-blur-md sticky top-0">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
@@ -93,7 +108,7 @@ export default function ParceiroPainelClient({ partner }: ParceiroPainelClientPr
               className="gap-1.5 border-border/50 bg-white/5 hover:bg-white/10"
             >
               <LogOut className="h-3.5 w-3.5" />
-              Sair
+              {isAdminPreview ? "Sair do portal" : "Sair"}
             </Button>
           </form>
         </div>

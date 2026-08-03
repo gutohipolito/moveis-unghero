@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import { getProjectDetailsAction } from "@/app/actions/project";
+import { adminEnterPartnerPortal } from "@/app/actions/parceiroPortal";
 import ProjectDetails from "@/components/ProjectDetails";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
@@ -360,6 +361,9 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     : privacyLocked || isReadOnly || privacyMode;
   const hidePartnerValues = isOpsLimited;
   const [viewingPartner, setViewingPartner] = useState<ParceiroDTO | null>(null);
+  const [isPortalPickerOpen, setIsPortalPickerOpen] = useState(false);
+  const [portalSearch, setPortalSearch] = useState("");
+  const [portalEnteringId, setPortalEnteringId] = useState<string | null>(null);
 
   React.useEffect(() => {
     async function loadColabs() {
@@ -541,6 +545,39 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     });
   }, [parceiros, search, filterTipo]);
 
+  const portalCandidates = useMemo(() => {
+    const q = portalSearch.trim().toLowerCase();
+    return parceiros
+      .filter((p) => p.ativo)
+      .filter((p) => {
+        if (!q) return true;
+        return (
+          p.nome.toLowerCase().includes(q) ||
+          (p.escritorio?.toLowerCase().includes(q) ?? false) ||
+          (p.cidade?.toLowerCase().includes(q) ?? false)
+        );
+      })
+      .slice(0, 40);
+  }, [parceiros, portalSearch]);
+
+  const handleEnterPartnerPortal = async (partnerId: string) => {
+    setPortalEnteringId(partnerId);
+    try {
+      const res = await adminEnterPartnerPortal(partnerId);
+      if (!res.success) {
+        showError("Não foi possível abrir", res.error || "Tente novamente.");
+        return;
+      }
+      setIsPortalPickerOpen(false);
+      setPortalSearch("");
+      window.open("/parceiro/painel", "_blank", "noopener,noreferrer");
+    } catch {
+      showError("Erro de conexão", "Falha ao abrir o portal do parceiro.");
+    } finally {
+      setPortalEnteringId(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim()) {
@@ -703,7 +740,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 type="button"
                 variant="outline"
                 className="font-bold gap-2 h-10 px-4"
-                onClick={() => window.open("/parceiro/login", "_blank", "noopener,noreferrer")}
+                onClick={() => setIsPortalPickerOpen(true)}
               >
                 <ExternalLink className="h-4 w-4" />
                 Ver portal
@@ -773,6 +810,76 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
           </div>
         )}
       </div>
+
+      <Dialog
+        isOpen={isPortalPickerOpen}
+        onClose={() => {
+          if (portalEnteringId) return;
+          setIsPortalPickerOpen(false);
+          setPortalSearch("");
+        }}
+        className="max-w-md"
+      >
+        <div className="space-y-4 pr-2">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight">Abrir portal do parceiro</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Entre direto no painel como a Diretoria — o parceiro não precisa digitar e-mail ou telefone.
+            </p>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={portalSearch}
+              onChange={(e) => setPortalSearch(e.target.value)}
+              placeholder="Buscar parceiro..."
+              className="pl-9 bg-card"
+              autoFocus
+            />
+          </div>
+
+          <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+            {portalCandidates.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-8">
+                Nenhum parceiro ativo encontrado.
+              </p>
+            ) : (
+              portalCandidates.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  disabled={portalEnteringId !== null}
+                  onClick={() => void handleEnterPartnerPortal(p.id)}
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-border/70 bg-white hover:border-primary/35 hover:bg-amber-50/40 text-left transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  <div className="partner-card-avatar h-10 w-10 shrink-0">
+                    {p.fotoUrl ? (
+                      <img src={p.fotoUrl} alt="" className="h-full w-full object-contain" />
+                    ) : (
+                      <div className="partner-card-avatar-fallback h-10 w-10 text-[10px] rounded-[inherit]">
+                        {p.nome.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-foreground truncate">{p.nome}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {getPartnerRoleLabel(p.tipo, p.nome)}
+                      {p.cidade ? ` · ${p.cidade}` : ""}
+                    </p>
+                  </div>
+                  {portalEnteringId === p.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                  ) : (
+                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </Dialog>
 
       <Dialog
         isOpen={isCreateOpen}

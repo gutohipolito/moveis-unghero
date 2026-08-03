@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { parsePartnerSessionToken } from "@/lib/partnerSession";
 import { loadPartnerPortalData } from "@/lib/partnerPortal";
+import { isPartnerAdminPreview } from "@/app/actions/parceiroPortal";
 import ParceiroPainelClient from "./ParceiroPainelClient";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
@@ -30,5 +31,7 @@ export default async function ParceiroPainelPage() {
     redirect("/parceiro/login");
   }
 
-  return <ParceiroPainelClient partner={partner} />;
+  const isAdminPreview = await isPartnerAdminPreview();
+
+  return <ParceiroPainelClient partner={partner} isAdminPreview={isAdminPreview} />;
 }
