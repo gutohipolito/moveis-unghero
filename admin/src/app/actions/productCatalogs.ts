@@ -218,3 +218,45 @@ export async function deleteProductCatalog(
     return { success: false, error: "Não foi possível excluir o catálogo." };
   }
 }
+
+/** Garante share_code e devolve a URL pública do catálogo. */
+export async function ensureCatalogPublicShare(
+  companyId: string,
+  catalogId: string
+): Promise<{
+  success: boolean;
+  share_code?: string;
+  public_url?: string | null;
+  error?: string;
+}> {
+  const auth = await getModuleAccess("produtos");
+  if (!auth) return { success: false, error: "Não autenticado" };
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch {
+    return { success: false, error: "Acesso negado" };
+  }
+  if (isDatabaseOffline()) return { success: false, error: "Banco indisponível" };
+
+  try {
+    const existing = await prisma.productCatalog.findFirst({
+      where: { id: catalogId, company_id: companyId },
+      select: { id: true, share_code: true },
+    });
+    if (!existing) return { success: false, error: "Catálogo não encontrado." };
+
+    const { ensureCatalogShareCode } = await import("@/lib/catalogShare");
+    const code = await ensureCatalogShareCode(catalogId);
+    if (!code) return { success: false, error: "Não foi possível gerar o link." };
+
+    return {
+      success: true,
+      share_code: code,
+      public_url: resolveCatalogPublicUrl(code),
+    };
+  } catch (error) {
+    console.error("ensureCatalogPublicShare:", error);
+    return { success: false, error: "Não foi possível gerar o link público." };
+  }
+}
+

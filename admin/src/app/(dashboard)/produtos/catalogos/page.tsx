@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { getSessionSafe } from "@/lib/auth";
 import { listProductCatalogs } from "@/app/actions/productCatalogs";
 import { getInventoryAndSuppliers } from "@/app/actions/estoque";
+import { getClientsForCatalogShare } from "@/app/actions/cliente";
+import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
 import CatalogosClient from "../CatalogosClient";
 
 export default async function ProdutosCatalogosPage() {
@@ -10,9 +12,15 @@ export default async function ProdutosCatalogosPage() {
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
 
-  const [catalogsRes, inventoryRes] = await Promise.all([
+  const [catalogsRes, inventoryRes, clientsRes, mailboxesRes] = await Promise.all([
     listProductCatalogs(companyId),
     getInventoryAndSuppliers(companyId),
+    getClientsForCatalogShare(companyId),
+    listEmailMailboxesForUser().catch(() => ({
+      success: false as const,
+      error: "unavailable",
+      data: [],
+    })),
   ]);
 
   return (
@@ -25,6 +33,8 @@ export default async function ProdutosCatalogosPage() {
         nomeFantasia: s.nomeFantasia ?? null,
         logoUrl: s.logoUrl ?? null,
       }))}
+      shareClients={clientsRes.success ? clientsRes.clients : []}
+      mailboxes={mailboxesRes.success ? mailboxesRes.data : []}
     />
   );
 }

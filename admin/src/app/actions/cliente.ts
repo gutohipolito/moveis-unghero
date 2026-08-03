@@ -433,6 +433,58 @@ export async function getClientsForWhatsAppMessaging(companyId: string) {
   }
 }
 
+/** Contatos para compartilhar catálogo (WhatsApp + e-mail). */
+export async function getClientsForCatalogShare(companyId: string) {
+  const auth =
+    (await getModuleAccess("produtos")) || (await getModuleAccess("clientes"));
+  type Row = { id: string; nome: string; telefone: string; email: string };
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado", clients: [] as Row[] };
+  }
+  try {
+    assertCompanyAccess(auth, companyId);
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Acesso negado",
+      clients: [] as Row[],
+    };
+  }
+
+  if (isDatabaseOffline()) {
+    return {
+      success: false as const,
+      error: "Erro de conexão ao banco de dados",
+      clients: [] as Row[],
+    };
+  }
+
+  try {
+    const clients = await prisma.client.findMany({
+      where: { company_id: companyId },
+      select: { id: true, nome: true, telefone: true, email: true },
+      orderBy: { nome: "asc" },
+    });
+
+    return {
+      success: true as const,
+      clients: clients.map((c) => ({
+        id: c.id,
+        nome: c.nome,
+        telefone: c.telefone || "",
+        email: c.email || "",
+      })),
+    };
+  } catch (error) {
+    console.warn("Falha ao listar contatos para catálogo.", error);
+    return {
+      success: false as const,
+      error: "Erro de conexão ao banco de dados",
+      clients: [] as Row[],
+    };
+  }
+}
+
 // 2. Cadastrar Cliente
 export async function createClientAction(formData: {
   nome: string;

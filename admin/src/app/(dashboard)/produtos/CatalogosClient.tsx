@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import {
   updateProductCatalog,
+  ensureCatalogPublicShare,
   type ProductCatalogDTO,
 } from "@/app/actions/productCatalogs";
 import { generateCapaFromPdfFile } from "@/lib/pdfCover";
@@ -17,6 +18,12 @@ import { usePermissions } from "@/context/PermissionsContext";
 import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
+import CatalogActionsModal from "@/components/produtos/CatalogActionsModal";
+import CatalogShareWhatsAppDialog, {
+  type CatalogShareClient,
+} from "@/components/produtos/CatalogShareWhatsAppDialog";
+import CatalogShareEmailDialog from "@/components/produtos/CatalogShareEmailDialog";
+import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,12 +137,16 @@ interface CatalogosClientProps {
   companyId: string;
   initialCatalogs: ProductCatalogDTO[];
   suppliers?: SupplierOption[];
+  shareClients?: CatalogShareClient[];
+  mailboxes?: EmailMailboxDTO[];
 }
 
 export default function CatalogosClient({
   companyId,
   initialCatalogs,
   suppliers = [],
+  shareClients = [],
+  mailboxes = [],
 }: CatalogosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
@@ -174,6 +185,12 @@ export default function CatalogosClient({
     name: string;
   } | null>(null);
   const [bulkLog, setBulkLog] = useState<string[]>([]);
+
+  const [actionCatalog, setActionCatalog] = useState<ProductCatalogDTO | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [resolvingShare, setResolvingShare] = useState(false);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const supplierById = useMemo(() => {
     const map = new Map<string, SupplierOption>();
@@ -237,19 +254,94 @@ export default function CatalogosClient({
   }, []);
 
   const openCatalog = (catalog: ProductCatalogDTO) => {
-    // Preferir o arquivo completo (PDF) — o link curto também aponta para o visualizador.
-    const url =
-      catalog.arquivo_url ||
-      catalog.public_url ||
-      resolveCatalogPublicUrl(catalog.share_code);
+    setActionCatalog(catalog);
+    setShareUrl(catalog.public_url || resolveCatalogPublicUrl(catalog.share_code));
+    setWhatsAppOpen(false);
+    setEmailOpen(false);
+  };
+
+  const resolveShareLink = async (catalog: ProductCatalogDTO) => {
+    const existing =
+      catalog.public_url || resolveCatalogPublicUrl(catalog.share_code);
+    if (existing) {
+      setShareUrl(existing);
+      return existing;
+    }
+    setResolvingShare(true);
+    try {
+      const res = await ensureCatalogPublicShare(companyId, catalog.id);
+      if (res.success && res.public_url) {
+        setShareUrl(res.public_url);
+        setCatalogs((prev) =>
+          prev.map((c) =>
+            c.id === catalog.id
+              ? {
+                  ...c,
+                  share_code: res.share_code ?? c.share_code,
+                  public_url: res.public_url ?? c.public_url,
+                }
+              : c
+          )
+        );
+        setActionCatalog((prev) =>
+          prev && prev.id === catalog.id
+            ? {
+                ...prev,
+                share_code: res.share_code ?? prev.share_code,
+                public_url: res.public_url ?? prev.public_url,
+              }
+            : prev
+        );
+        return res.public_url;
+      }
+      showError("Link indisponível", res.error || "Não foi possível gerar o link.");
+      return null;
+    } finally {
+      setResolvingShare(false);
+    }
+  };
+
+  const viewCatalogFile = (catalog: ProductCatalogDTO) => {
+    const url = catalog.arquivo_url;
     if (!url) {
-      showError(
-        "Link indisponível",
-        "Este catálogo ainda não possui um link público. Entre em contato com o Administrador do Sistema."
-      );
+      showError("Arquivo indisponível", "Este catálogo não possui arquivo.");
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadCatalogFile = async (catalog: ProductCatalogDTO) => {
+    const url = catalog.arquivo_url;
+    if (!url) {
+      showError("Arquivo indisponível", "Este catálogo não possui arquivo.");
+      return;
+    }
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = catalog.arquivo_nome || `${catalog.titulo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const openWhatsAppShare = async () => {
+    if (!actionCatalog) return;
+    await resolveShareLink(actionCatalog);
+    setWhatsAppOpen(true);
+  };
+
+  const openEmailShare = async () => {
+    if (!actionCatalog) return;
+    await resolveShareLink(actionCatalog);
+    setEmailOpen(true);
   };
 
   const filtered = scopeCatalogs.filter((c) => {
@@ -1076,6 +1168,56 @@ export default function CatalogosClient({
             </div>
           </div>
         </Dialog>
+      ) : null}
+
+      <CatalogActionsModal
+        catalog={actionCatalog}
+        companyId={companyId}
+        onClose={() => {
+          setActionCatalog(null);
+          setWhatsAppOpen(false);
+          setEmailOpen(false);
+        }}
+        onView={() => {
+          if (actionCatalog) viewCatalogFile(actionCatalog);
+        }}
+        onDownload={() => {
+          if (actionCatalog) void downloadCatalogFile(actionCatalog);
+        }}
+        onWhatsApp={() => void openWhatsAppShare()}
+        onEmail={() => void openEmailShare()}
+        onCapaSaved={(catalogId, capaUrl) => {
+          setCatalogs((prev) =>
+            prev.map((c) => (c.id === catalogId ? { ...c, capa_url: capaUrl } : c))
+          );
+          setActionCatalog((prev) =>
+            prev && prev.id === catalogId ? { ...prev, capa_url: capaUrl } : prev
+          );
+        }}
+      />
+
+      {actionCatalog ? (
+        <>
+          <CatalogShareWhatsAppDialog
+            open={whatsAppOpen}
+            onClose={() => setWhatsAppOpen(false)}
+            catalogTitle={actionCatalog.titulo}
+            catalogUrl={shareUrl}
+            resolvingLink={resolvingShare}
+            clients={shareClients}
+          />
+          <CatalogShareEmailDialog
+            open={emailOpen}
+            onClose={() => setEmailOpen(false)}
+            catalogTitle={actionCatalog.titulo}
+            catalogUrl={shareUrl}
+            resolvingLink={resolvingShare}
+            clients={shareClients}
+            mailboxes={mailboxes}
+            onSent={() => showSuccess("E-mail enviado", "Mensagem registrada na caixa.")}
+            onError={(message) => showError("Falha no envio", message)}
+          />
+        </>
       ) : null}
     </div>
   );
