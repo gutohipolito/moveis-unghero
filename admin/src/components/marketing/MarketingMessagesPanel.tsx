@@ -128,6 +128,7 @@ function MarketingMessageDetail({
   const [clientQuery, setClientQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [phoneOverride, setPhoneOverride] = useState("");
+  const [listOpen, setListOpen] = useState(false);
 
   const selectedClient = useMemo(
     () => clients.find((c) => c.id === selectedClientId) ?? null,
@@ -136,8 +137,8 @@ function MarketingMessageDetail({
 
   const filteredClients = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
-    if (!q) return [] as GoogleReviewClientOption[];
     const digits = q.replace(/\D/g, "");
+    if (!q) return clients;
     return clients.filter(
       (c) =>
         c.nome.toLowerCase().includes(q) ||
@@ -161,6 +162,7 @@ function MarketingMessageDetail({
     setSelectedClientId(client.id);
     setPhoneOverride(client.telefone || "");
     setClientQuery("");
+    setListOpen(false);
   }
 
   function clearClient() {
@@ -223,12 +225,17 @@ function MarketingMessageDetail({
               <input
                 type="search"
                 value={clientQuery}
-                onChange={(e) => setClientQuery(e.target.value)}
-                placeholder="Buscar cliente por nome ou telefone…"
+                onChange={(e) => {
+                  setClientQuery(e.target.value);
+                  setListOpen(true);
+                }}
+                onFocus={() => setListOpen(true)}
+                onClick={() => setListOpen(true)}
+                placeholder="Clique para ver clientes ou busque por nome/telefone…"
                 className="w-full h-10 pl-9 pr-3 rounded-md border border-border bg-background text-sm"
               />
             </div>
-            {clientQuery.trim() ? (
+            {listOpen ? (
               <ul className="max-h-52 overflow-y-auto rounded-lg border border-border bg-background divide-y divide-border/60">
                 {filteredClients.length === 0 ? (
                   <li className="px-3 py-2.5 text-xs text-muted-foreground">
@@ -254,13 +261,13 @@ function MarketingMessageDetail({
                     ))}
                     {hasMoreClients ? (
                       <li className="px-3 py-2 text-[11px] text-muted-foreground">
-                        Mostrando {visibleClients.length} de {filteredClients.length}. Refine a
-                        busca para achar mais rápido.
+                        Mostrando {visibleClients.length} de {filteredClients.length}. Digite para
+                        filtrar.
                       </li>
                     ) : (
                       <li className="px-3 py-1.5 text-[10px] text-muted-foreground">
                         {filteredClients.length}{" "}
-                        {filteredClients.length === 1 ? "resultado" : "resultados"}
+                        {filteredClients.length === 1 ? "cliente" : "clientes"}
                       </li>
                     )}
                   </>
@@ -268,8 +275,8 @@ function MarketingMessageDetail({
               </ul>
             ) : (
               <p className="text-[11px] text-muted-foreground">
-                Digite o nome ou telefone para buscar entre {clients.length} clientes. Sem cliente,
-                a mensagem sai genérica (“Olá, tudo bem?”).
+                Clique no campo para ver os {clients.length} clientes. Sem cliente, a mensagem sai
+                genérica (“Olá, tudo bem?”).
               </p>
             )}
           </div>

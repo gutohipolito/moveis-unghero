@@ -123,6 +123,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   const qrUrl = GOOGLE_REVIEW_SHORT_URL;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
+  const [listOpen, setListOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
@@ -138,12 +139,13 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   const filteredClients = useMemo(() => {
     const query = clientSearch.trim().toLowerCase();
     const digits = query.replace(/\D/g, "");
-    if (!query) return { items: [] as typeof clients, total: 0 };
-    const list = clients.filter(
-      (client) =>
-        client.nome.toLowerCase().includes(query) ||
-        (digits.length > 0 && client.telefone.replace(/\D/g, "").includes(digits))
-    );
+    const list = !query
+      ? clients
+      : clients.filter(
+          (client) =>
+            client.nome.toLowerCase().includes(query) ||
+            (digits.length > 0 && client.telefone.replace(/\D/g, "").includes(digits))
+        );
     return { items: list.slice(0, 80), total: list.length };
   }, [clientSearch, clients]);
 
@@ -186,6 +188,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   function handleSelectClient(client: GoogleReviewClientOption) {
     setSelectedClientId(client.id);
     setClientSearch("");
+    setListOpen(false);
     setManualName("");
     setManualPhone("");
   }
@@ -193,6 +196,7 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
   function handleClearClient() {
     setSelectedClientId(null);
     setClientSearch("");
+    setListOpen(false);
     setManualName("");
     setManualPhone("");
   }
@@ -274,13 +278,19 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                   <input
                     type="search"
                     value={clientSearch}
-                    onChange={(event) => setClientSearch(event.target.value)}
-                    placeholder="Buscar cliente por nome ou telefone..."
+                    onChange={(event) => {
+                      setClientSearch(event.target.value);
+                      setListOpen(true);
+                    }}
+                    onFocus={() => setListOpen(true)}
+                    onClick={() => setListOpen(true)}
+                    placeholder="Clique para ver clientes ou busque por nome/telefone..."
                     className="w-full rounded-lg border border-input bg-card py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
                   />
                 </div>
 
-                {filteredClients.items.length > 0 ? (
+                {listOpen ? (
+                  filteredClients.items.length > 0 ? (
                   <ul className="max-h-52 overflow-y-auto rounded-lg border border-border bg-card divide-y divide-border">
                     {filteredClients.items.map((client) => (
                       <li key={client.id}>
@@ -301,16 +311,26 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                     ))}
                     {filteredClients.total > filteredClients.items.length ? (
                       <li className="px-3 py-2 text-[11px] text-muted-foreground">
-                        Mostrando {filteredClients.items.length} de {filteredClients.total}. Refine a
-                        busca.
+                        Mostrando {filteredClients.items.length} de {filteredClients.total}. Digite
+                        para filtrar.
                       </li>
-                    ) : null}
+                    ) : (
+                      <li className="px-3 py-1.5 text-[10px] text-muted-foreground">
+                        {filteredClients.total}{" "}
+                        {filteredClients.total === 1 ? "cliente" : "clientes"}
+                      </li>
+                    )}
                   </ul>
-                ) : clientSearch.trim() ? (
+                  ) : (
                   <p className="text-xs text-muted-foreground px-1">
                     Nenhum cliente encontrado. Use o nome manual abaixo ou cadastre em Clientes.
                   </p>
-                ) : null}
+                  )
+                ) : (
+                  <p className="text-xs text-muted-foreground px-1">
+                    Clique no campo para ver os {clients.length} clientes.
+                  </p>
+                )}
               </div>
 
               <div className="relative">
