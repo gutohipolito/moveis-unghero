@@ -137,15 +137,14 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
 
   const filteredClients = useMemo(() => {
     const query = clientSearch.trim().toLowerCase();
-    if (!query) return clients.slice(0, 8);
-
-    return clients
-      .filter(
-        (client) =>
-          client.nome.toLowerCase().includes(query) ||
-          client.telefone.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
-      )
-      .slice(0, 8);
+    const digits = query.replace(/\D/g, "");
+    if (!query) return { items: [] as typeof clients, total: 0 };
+    const list = clients.filter(
+      (client) =>
+        client.nome.toLowerCase().includes(query) ||
+        (digits.length > 0 && client.telefone.replace(/\D/g, "").includes(digits))
+    );
+    return { items: list.slice(0, 80), total: list.length };
   }, [clientSearch, clients]);
 
   const whatsappMessage = useMemo(
@@ -281,9 +280,9 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                   />
                 </div>
 
-                {filteredClients.length > 0 ? (
-                  <ul className="max-h-44 overflow-y-auto rounded-lg border border-border bg-card divide-y divide-border">
-                    {filteredClients.map((client) => (
+                {filteredClients.items.length > 0 ? (
+                  <ul className="max-h-52 overflow-y-auto rounded-lg border border-border bg-card divide-y divide-border">
+                    {filteredClients.items.map((client) => (
                       <li key={client.id}>
                         <button
                           type="button"
@@ -300,6 +299,12 @@ export default function GoogleReviewLinkCard({ clients }: GoogleReviewLinkCardPr
                         </button>
                       </li>
                     ))}
+                    {filteredClients.total > filteredClients.items.length ? (
+                      <li className="px-3 py-2 text-[11px] text-muted-foreground">
+                        Mostrando {filteredClients.items.length} de {filteredClients.total}. Refine a
+                        busca.
+                      </li>
+                    ) : null}
                   </ul>
                 ) : clientSearch.trim() ? (
                   <p className="text-xs text-muted-foreground px-1">
