@@ -686,6 +686,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     "Cadastre arquitetos e projetistas que indicam clientes.",
                     "Vincule um parceiro a um orçamento para dar o devido crédito.",
                     "Acompanhe indicações e desempenho de cada parceiro.",
+                    "Parceiros com e-mail e telefone acessam o portal em /parceiro/login.",
                     "O olho de valores no topo do painel também oculta nomes em apresentações (fotos ficam visíveis).",
                   ]}
                 />

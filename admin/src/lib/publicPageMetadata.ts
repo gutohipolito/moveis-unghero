@@ -76,4 +76,9 @@ export const PUBLIC_PAGE_COPY = {
     description:
       "Acompanhe o andamento do seu projeto de móveis sob medida com a Móveis Unghero.",
   },
+  portalParceiro: {
+    title: `Portal do parceiro | ${BRAND}`,
+    description:
+      "Acompanhe as obras que você indicou ou co-projeta com a Móveis Unghero.",
+  },
 } as const;

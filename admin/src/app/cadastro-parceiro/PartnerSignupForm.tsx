@@ -333,7 +333,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   if (success) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-6 partner-container">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm text-center py-12 px-6 space-y-8 animate-in fade-in duration-500 partner-card flex flex-col items-center">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm text-center py-12 px-6 space-y-8 animate-in fade-in duration-500 flex flex-col items-center">
           <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full mx-auto">
             <CheckCircle className="h-14 w-14 animate-bounce" />
           </div>
@@ -346,6 +346,13 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               Nossa equipe analisará seu perfil e entrará em contato em breve para alinharmos os detalhes.
             </p>
           </div>
+
+          <a
+            href="/parceiro/login"
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-bold btn-metallic"
+          >
+            Já sou parceiro? Acessar painel
+          </a>
 
           <div className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-3.5 shadow-inner">
             <p className="text-xs font-bold text-slate-800 uppercase tracking-widest text-center">Canais Oficiais</p>
@@ -384,7 +391,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       <form
         onSubmit={handleSubmit}
         onKeyDown={handleFormKeyDown}
-        className="bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-300 partner-card text-slate-800 overflow-hidden"
+        className="bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-300 text-slate-800 overflow-hidden"
       >
         <FormProgressBar
           step={step}

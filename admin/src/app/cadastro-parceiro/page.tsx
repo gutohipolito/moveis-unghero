@@ -36,7 +36,13 @@ export default function CadastroParceiroPage() {
       </div>
 
       <footer className="w-full border-t border-slate-900/60 bg-slate-950/80 backdrop-blur-sm py-6 text-center text-xs font-bold text-slate-500 z-10 shrink-0">
-        <p>© {new Date().getFullYear()} Móveis Unghero — Todos os direitos reservados.</p>
+        <p>
+          Já é parceiro?{" "}
+          <a href="/parceiro/login" className="text-amber-400/90 hover:text-amber-300 font-bold underline-offset-2 hover:underline">
+            Acessar painel
+          </a>
+        </p>
+        <p className="mt-3">© {new Date().getFullYear()} Móveis Unghero — Todos os direitos reservados.</p>
         <p className="text-[10px] font-semibold text-slate-600 mt-1">Farroupilha · RS · desde 2006</p>
       </footer>
     </main>
