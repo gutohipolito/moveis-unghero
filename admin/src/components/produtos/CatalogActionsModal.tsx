@@ -8,6 +8,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import type { ProductCatalogDTO } from "@/app/actions/productCatalogs";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 
@@ -41,9 +42,7 @@ export default function CatalogActionsModal({
       hint: "Mensagem pronta para o cliente",
       icon: MessageCircle,
       onClick: onWhatsApp,
-      className:
-        "border-emerald-200/90 bg-gradient-to-br from-emerald-50 to-emerald-100/80 text-emerald-900 hover:from-emerald-100 hover:to-emerald-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
-      iconClass: "text-emerald-600",
+      className: "btn-whatsapp-relief font-bold justify-start gap-3 h-auto py-3 px-3.5",
     },
     {
       key: "email",
@@ -51,9 +50,7 @@ export default function CatalogActionsModal({
       hint: "Abrir rascunho no sistema",
       icon: Mail,
       onClick: onEmail,
-      className:
-        "border-sky-200/90 bg-gradient-to-br from-sky-50 to-sky-100/70 text-sky-950 hover:from-sky-100 hover:to-sky-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
-      iconClass: "text-sky-600",
+      className: "btn-mail-relief font-bold justify-start gap-3 h-auto py-3 px-3.5",
     },
     {
       key: "download",
@@ -61,19 +58,15 @@ export default function CatalogActionsModal({
       hint: "Baixar o arquivo original",
       icon: Download,
       onClick: onDownload,
-      className:
-        "border-amber-200/90 bg-gradient-to-br from-amber-50 to-amber-100/70 text-amber-950 hover:from-amber-100 hover:to-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
-      iconClass: "text-amber-700",
+      className: "btn-download-relief font-bold justify-start gap-3 h-auto py-3 px-3.5",
     },
     {
       key: "view",
       label: "Visualizar",
-      hint: "Abrir PDF / arquivo",
+      hint: "Abrir o link público do catálogo",
       icon: Eye,
       onClick: onView,
-      className:
-        "border-primary/30 bg-gradient-to-br from-[hsl(43_100%_96%)] to-[hsl(42_80%_90%)] text-slate-900 hover:brightness-[1.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]",
-      iconClass: "text-primary",
+      className: "btn-metallic font-bold justify-start gap-3 h-auto py-3 px-3.5",
     },
   ] as const;
 
@@ -110,22 +103,22 @@ export default function CatalogActionsModal({
             {actions.map((action) => {
               const Icon = action.icon;
               return (
-                <button
+                <Button
                   key={action.key}
                   type="button"
                   onClick={action.onClick}
-                  className={`flex items-center gap-3 w-full rounded-[var(--radius-sm)] border px-3.5 py-3 text-left transition-all cursor-pointer ${action.className}`}
+                  className={`w-full text-left ${action.className}`}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-white/70 border border-black/5 shrink-0">
-                    <Icon className={`h-5 w-5 ${action.iconClass}`} strokeWidth={2.1} />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-black/10 shrink-0">
+                    <Icon className="h-4.5 w-4.5" strokeWidth={2.2} />
                   </span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 text-left">
                     <span className="block text-sm font-bold leading-tight">{action.label}</span>
-                    <span className="block text-[11px] font-medium opacity-70 mt-0.5">
+                    <span className="block text-[11px] font-medium opacity-80 mt-0.5">
                       {action.hint}
                     </span>
                   </span>
-                </button>
+                </Button>
               );
             })}
           </div>

@@ -17,6 +17,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   catalogTitle: string;
+  partnerName?: string | null;
   catalogUrl: string | null;
   resolvingLink?: boolean;
   clients: CatalogShareClient[];
@@ -29,6 +30,7 @@ export default function CatalogShareEmailDialog({
   open,
   onClose,
   catalogTitle,
+  partnerName,
   catalogUrl,
   resolvingLink,
   clients,
@@ -66,9 +68,10 @@ export default function CatalogShareEmailDialog({
         catalogTitle,
         catalogUrl: catalogUrl || "",
         clientName: selected?.nome,
+        partnerName,
       })
     );
-  }, [open, catalogTitle, catalogUrl, selected?.nome, mailboxes]);
+  }, [open, catalogTitle, catalogUrl, partnerName, selected?.nome, mailboxes]);
 
   useEffect(() => {
     if (!open) return;

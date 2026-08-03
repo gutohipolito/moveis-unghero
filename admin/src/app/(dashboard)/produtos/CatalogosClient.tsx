@@ -301,12 +301,9 @@ export default function CatalogosClient({
     }
   };
 
-  const viewCatalogFile = (catalog: ProductCatalogDTO) => {
-    const url = catalog.arquivo_url;
-    if (!url) {
-      showError("Arquivo indisponível", "Este catálogo não possui arquivo.");
-      return;
-    }
+  const viewCatalogFile = async (catalog: ProductCatalogDTO) => {
+    const url = await resolveShareLink(catalog);
+    if (!url) return;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -1179,7 +1176,7 @@ export default function CatalogosClient({
           setEmailOpen(false);
         }}
         onView={() => {
-          if (actionCatalog) viewCatalogFile(actionCatalog);
+          if (actionCatalog) void viewCatalogFile(actionCatalog);
         }}
         onDownload={() => {
           if (actionCatalog) void downloadCatalogFile(actionCatalog);
@@ -1202,6 +1199,7 @@ export default function CatalogosClient({
             open={whatsAppOpen}
             onClose={() => setWhatsAppOpen(false)}
             catalogTitle={actionCatalog.titulo}
+            partnerName={actionCatalog.supplierNome || actionCatalog.marca}
             catalogUrl={shareUrl}
             resolvingLink={resolvingShare}
             clients={shareClients}
@@ -1210,6 +1208,7 @@ export default function CatalogosClient({
             open={emailOpen}
             onClose={() => setEmailOpen(false)}
             catalogTitle={actionCatalog.titulo}
+            partnerName={actionCatalog.supplierNome || actionCatalog.marca}
             catalogUrl={shareUrl}
             resolvingLink={resolvingShare}
             clients={shareClients}

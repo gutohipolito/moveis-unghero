@@ -20,6 +20,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   catalogTitle: string;
+  partnerName?: string | null;
   catalogUrl: string | null;
   resolvingLink?: boolean;
   clients: CatalogShareClient[];
@@ -29,6 +30,7 @@ export default function CatalogShareWhatsAppDialog({
   open,
   onClose,
   catalogTitle,
+  partnerName,
   catalogUrl,
   resolvingLink,
   clients,
@@ -58,9 +60,10 @@ export default function CatalogShareWhatsAppDialog({
         catalogTitle,
         catalogUrl: catalogUrl || "",
         clientName: selected?.nome,
+        partnerName,
       })
     );
-  }, [open, catalogTitle, catalogUrl, selected?.nome]);
+  }, [open, catalogTitle, catalogUrl, partnerName, selected?.nome]);
 
   useEffect(() => {
     if (!open) return;
