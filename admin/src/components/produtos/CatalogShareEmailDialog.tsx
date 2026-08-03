@@ -80,14 +80,14 @@ export default function CatalogShareEmailDialog({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return clients.slice(0, 40);
-    return clients
-      .filter(
-        (c) =>
-          c.nome.toLowerCase().includes(q) ||
-          (c.email || "").toLowerCase().includes(q)
-      )
-      .slice(0, 40);
+    const list = !q
+      ? clients
+      : clients.filter(
+          (c) =>
+            c.nome.toLowerCase().includes(q) ||
+            (c.email || "").toLowerCase().includes(q)
+        );
+    return { items: list.slice(0, 80), total: list.length };
   }, [clients, query]);
 
   const canSend =
@@ -171,26 +171,33 @@ export default function CatalogShareEmailDialog({
             placeholder="Buscar para preencher o e-mail…"
           />
           <div className="max-h-28 overflow-y-auto rounded-[var(--radius-sm)] border border-slate-200 divide-y divide-slate-100">
-            {filtered.length === 0 ? (
+            {filtered.total === 0 ? (
               <p className="text-xs text-muted-foreground px-3 py-2">Nenhum cliente.</p>
             ) : (
-              filtered.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setClientId(c.id)}
-                  className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer ${
-                    clientId === c.id
-                      ? "bg-sky-50 text-sky-950 font-semibold"
-                      : "hover:bg-slate-50 text-slate-700"
-                  }`}
-                >
-                  <span className="block font-semibold">{c.nome}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {c.email || "Sem e-mail"}
-                  </span>
-                </button>
-              ))
+              <>
+                {filtered.items.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setClientId(c.id)}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer ${
+                      clientId === c.id
+                        ? "bg-sky-50 text-sky-950 font-semibold"
+                        : "hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <span className="block font-semibold">{c.nome}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {c.email || "Sem e-mail"}
+                    </span>
+                  </button>
+                ))}
+                {filtered.total > filtered.items.length ? (
+                  <p className="text-[10px] text-muted-foreground px-3 py-2">
+                    Mostrando {filtered.items.length} de {filtered.total}. Digite para filtrar.
+                  </p>
+                ) : null}
+              </>
             )}
           </div>
         </div>

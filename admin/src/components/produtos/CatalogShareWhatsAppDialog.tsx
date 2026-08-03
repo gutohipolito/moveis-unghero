@@ -72,14 +72,15 @@ export default function CatalogShareWhatsAppDialog({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return clients.slice(0, 40);
-    return clients
-      .filter(
-        (c) =>
-          c.nome.toLowerCase().includes(q) ||
-          c.telefone.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-      )
-      .slice(0, 40);
+    const digits = q.replace(/\D/g, "");
+    const list = !q
+      ? clients
+      : clients.filter(
+          (c) =>
+            c.nome.toLowerCase().includes(q) ||
+            (digits.length > 0 && c.telefone.replace(/\D/g, "").includes(digits))
+        );
+    return { items: list.slice(0, 80), total: list.length };
   }, [clients, query]);
 
   const phoneReady = Boolean(formatPhoneForWhatsApp(phone));
@@ -132,25 +133,34 @@ export default function CatalogShareWhatsAppDialog({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nome ou telefone…"
           />
-          <div className="max-h-36 overflow-y-auto rounded-[var(--radius-sm)] border border-slate-200 divide-y divide-slate-100">
-            {filtered.length === 0 ? (
+          <div className="max-h-48 overflow-y-auto rounded-[var(--radius-sm)] border border-slate-200 divide-y divide-slate-100">
+            {filtered.total === 0 ? (
               <p className="text-xs text-muted-foreground px-3 py-2">Nenhum cliente encontrado.</p>
             ) : (
-              filtered.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setClientId(c.id)}
-                  className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer ${
-                    clientId === c.id
-                      ? "bg-emerald-50 text-emerald-900 font-semibold"
-                      : "hover:bg-slate-50 text-slate-700"
-                  }`}
-                >
-                  <span className="block font-semibold">{c.nome}</span>
-                  <span className="text-[10px] text-muted-foreground">{c.telefone || "Sem telefone"}</span>
-                </button>
-              ))
+              <>
+                {filtered.items.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setClientId(c.id)}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer ${
+                      clientId === c.id
+                        ? "bg-emerald-50 text-emerald-900 font-semibold"
+                        : "hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <span className="block font-semibold">{c.nome}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {c.telefone || "Sem telefone"}
+                    </span>
+                  </button>
+                ))}
+                {filtered.total > filtered.items.length ? (
+                  <p className="text-[10px] text-muted-foreground px-3 py-2">
+                    Mostrando {filtered.items.length} de {filtered.total}. Digite para filtrar.
+                  </p>
+                ) : null}
+              </>
             )}
           </div>
         </div>

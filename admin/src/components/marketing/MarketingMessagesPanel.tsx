@@ -136,15 +136,17 @@ function MarketingMessageDetail({
 
   const filteredClients = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
-    if (!q) return clients.slice(0, 8);
-    return clients
-      .filter(
-        (c) =>
-          c.nome.toLowerCase().includes(q) ||
-          c.telefone.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-      )
-      .slice(0, 8);
+    if (!q) return [] as GoogleReviewClientOption[];
+    const digits = q.replace(/\D/g, "");
+    return clients.filter(
+      (c) =>
+        c.nome.toLowerCase().includes(q) ||
+        (digits.length > 0 && c.telefone.replace(/\D/g, "").includes(digits))
+    );
   }, [clients, clientQuery]);
+
+  const visibleClients = filteredClients.slice(0, 80);
+  const hasMoreClients = filteredClients.length > visibleClients.length;
 
   const messageText = useMemo(
     () => message.build({ clientName: selectedClient?.nome }),
@@ -227,33 +229,47 @@ function MarketingMessageDetail({
               />
             </div>
             {clientQuery.trim() ? (
-              <ul className="max-h-40 overflow-y-auto rounded-lg border border-border bg-background divide-y divide-border/60">
+              <ul className="max-h-52 overflow-y-auto rounded-lg border border-border bg-background divide-y divide-border/60">
                 {filteredClients.length === 0 ? (
                   <li className="px-3 py-2.5 text-xs text-muted-foreground">
                     Nenhum cliente encontrado.
                   </li>
                 ) : (
-                  filteredClients.map((client) => (
-                    <li key={client.id}>
-                      <button
-                        type="button"
-                        onClick={() => selectClient(client)}
-                        className="w-full text-left px-3 py-2.5 hover:bg-muted/60 transition-colors"
-                      >
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {client.nome}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {client.telefone || "Sem telefone"}
-                        </p>
-                      </button>
-                    </li>
-                  ))
+                  <>
+                    {visibleClients.map((client) => (
+                      <li key={client.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectClient(client)}
+                          className="w-full text-left px-3 py-2.5 hover:bg-muted/60 transition-colors"
+                        >
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {client.nome}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {client.telefone || "Sem telefone"}
+                          </p>
+                        </button>
+                      </li>
+                    ))}
+                    {hasMoreClients ? (
+                      <li className="px-3 py-2 text-[11px] text-muted-foreground">
+                        Mostrando {visibleClients.length} de {filteredClients.length}. Refine a
+                        busca para achar mais rápido.
+                      </li>
+                    ) : (
+                      <li className="px-3 py-1.5 text-[10px] text-muted-foreground">
+                        {filteredClients.length}{" "}
+                        {filteredClients.length === 1 ? "resultado" : "resultados"}
+                      </li>
+                    )}
+                  </>
                 )}
               </ul>
             ) : (
               <p className="text-[11px] text-muted-foreground">
-                Sem cliente, a mensagem sai genérica (“Olá, tudo bem?”).
+                Digite o nome ou telefone para buscar entre {clients.length} clientes. Sem cliente,
+                a mensagem sai genérica (“Olá, tudo bem?”).
               </p>
             )}
           </div>
