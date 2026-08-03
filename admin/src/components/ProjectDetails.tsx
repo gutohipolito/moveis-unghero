@@ -452,7 +452,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [timelineFilter, setTimelineFilter] = useState<"ALL" | "PUBLIC" | "PRIVATE">("ALL");
   const [uploadForm, setUploadForm] = useState({ tipo: "RENDER" as FileType, nome_arquivo: "" });
   const [loading, setLoading] = useState(false);
-  const [isImportingPromob, setIsImportingPromob] = useState(false);
   const [isRenderingPro, setIsRenderingPro] = useState(false);
 
   const syncProject = useCallback(async () => {
@@ -478,67 +477,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       !isAddInstallmentOpen,
   });
 
-  // Simula a importação inteligente de arquivos XML/TXT do Promob via IA
-  const handleSimulatePromobImport = () => {
-    setIsImportingPromob(true);
-    setTimeout(() => {
-      // Cria cômodos simulados extraídos do arquivo do Promob
-      const simulatedEnv1 = {
-        id: "promob-env-1-" + Date.now(),
-        nome: "Cozinha Gourmet Integrada (Promob XML)",
-        tipo: "COZINHA" as EnvironmentType,
-        status: "PRONTO_PRODUCAO" as any,
-        fase_atual: 1,
-        progresso_fase: 100,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      const simulatedEnv2 = {
-        id: "promob-env-2-" + Date.now(),
-        nome: "Closet Suíte Master (Promob XML)",
-        tipo: "CLOSET" as EnvironmentType,
-        status: "PRONTO_PRODUCAO" as any,
-        fase_atual: 1,
-        progresso_fase: 100,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const newFile = {
-        id: "promob-file-" + Date.now(),
-        nome_arquivo: "Projeto_Final_Promob_Import.xml",
-        tipo: "PRODUCAO" as FileType,
-        aprovado_producao: true,
-        aprovado_cliente: true,
-        data_upload: new Date(),
-        url: "#",
-        versao: 1
-      };
-
-      // Atualiza o estado
-      setProject(prev => ({
-        ...prev,
-        environments: [...prev.environments, simulatedEnv1, simulatedEnv2],
-        files: [...prev.files, newFile],
-        timeline: [
-          {
-            id: "promob-time-" + Date.now(),
-            acao: "Importação Promob bem-sucedida via IA. Cômodos adicionados à fila de produção.",
-            data: new Date().toISOString(),
-            interno_sotamente: false,
-            user: { name: "Sistema (IA)" }
-          },
-          ...prev.timeline
-        ]
-      }));
-
-      setIsImportingPromob(false);
-      showSuccess(
-        "Promob importado",
-        "Arquivo XML interpretado com sucesso. Cozinha Gourmet e Closet foram adicionados aos ambientes."
-      );
-    }, 2000);
+  const handlePromobImportClick = () => {
+    showSuccess(
+      "Importação Promob — em breve",
+      "Esse botão era só um protótipo. Nada é gravado no projeto nem enviado à fábrica. A leitura real do XML/TXT do Promob ainda será ligada."
+    );
   };
 
   // Simula a IA transformando o desenho técnico em um render fotorrealista
@@ -1474,21 +1417,32 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
         {/* Tab 2: Arquivos Técnicos */}
         <TabsContent value="files" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold">Gerenciador de Arquivos & Renders</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-bold leading-snug">Gerenciador de Arquivos & Renders</h3>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                 Faça upload de projetos em DWG, SketchUp, PDFs de medição e renders em alta definição.
               </p>
             </div>
             {!isOpsLimited && (
-              <div className="flex items-center gap-2">
-                <Button onClick={() => handleSimulatePromobImport()} size="sm" variant="outline" className="border-border text-primary hover:bg-secondary/20 font-semibold cursor-pointer">
-                  <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 animate-pulse" />
-                  {isImportingPromob ? "Importando..." : "Importar Promob (IA)"}
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+                <Button
+                  onClick={() => handlePromobImportClick()}
+                  size="sm"
+                  variant="outline"
+                  className="border-border text-primary hover:bg-secondary/20 font-semibold cursor-pointer w-full sm:w-auto justify-center"
+                  title="Funcionalidade em desenvolvimento"
+                >
+                  <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 shrink-0" />
+                  <span className="truncate">Importar Promob (em breve)</span>
                 </Button>
-                <Button onClick={() => setIsUploadOpen(true)} size="sm" className="btn-metallic">
-                  <Upload className="h-4 w-4 mr-1.5" /> Upload de Arquivo
+                <Button
+                  onClick={() => setIsUploadOpen(true)}
+                  size="sm"
+                  className="btn-metallic w-full sm:w-auto justify-center"
+                >
+                  <Upload className="h-4 w-4 mr-1.5 shrink-0" />
+                  Upload de Arquivo
                 </Button>
               </div>
             )}
@@ -1518,26 +1472,25 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      {/* Toggle de Liberação para Produção */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       {!isOpsLimited && (
                         <button
                           onClick={() => handleToggleFileApproval(file.id, file.aprovado_producao)}
                           className={`flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                          file.aprovado_producao 
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
-                            : "bg-secondary text-muted-foreground border-border/60 hover:text-foreground hover:bg-accent/40"
+                            file.aprovado_producao
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                              : "bg-secondary text-muted-foreground border-border/60 hover:text-foreground hover:bg-accent/40"
                           }`}
                         >
-                        {file.aprovado_producao ? (
-                          <>
-                            <ShieldCheck className="h-4 w-4 mr-1.5 text-emerald-400" /> Aprovado Fábrica
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle className="h-4 w-4 mr-1.5" /> Liberar p/ Fábrica
-                          </>
-                        )}
+                          {file.aprovado_producao ? (
+                            <>
+                              <ShieldCheck className="h-4 w-4 mr-1.5 text-emerald-400" /> Aprovado Fábrica
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-4 w-4 mr-1.5" /> Liberar p/ Fábrica
+                            </>
+                          )}
                         </button>
                       )}
 
