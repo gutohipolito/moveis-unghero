@@ -1731,7 +1731,7 @@ export default function KanbanBoard({
             )
           }
         >
-          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={toggleAllCardsCollapse}
