@@ -85,6 +85,32 @@ interface TabsListProps {
 }
 
 export function TabsList({ children, className, activeTab, setActiveTab }: TabsListProps) {
+  const triggers: React.ReactElement[] = []
+
+  function collectTriggers(nodes: React.ReactNode) {
+    React.Children.forEach(nodes, (child) => {
+      if (!React.isValidElement(child)) return
+      const type = child.type
+      // Flatten fragments / conditionals so every TabsTrigger gets onClick
+      if (type === React.Fragment) {
+        collectTriggers((child as React.ReactElement<{ children?: React.ReactNode }>).props.children)
+        return
+      }
+      const name =
+        typeof type === "function" || typeof type === "object"
+          ? (type as { displayName?: string }).displayName
+          : undefined
+      if (name === "TabsTrigger" || type === TabsTrigger) {
+        triggers.push(child as React.ReactElement)
+        return
+      }
+      const nested = (child as React.ReactElement<{ children?: React.ReactNode }>).props?.children
+      if (nested != null) collectTriggers(nested)
+    })
+  }
+
+  collectTriggers(children)
+
   return (
     <div
       role="tablist"
@@ -93,15 +119,13 @@ export function TabsList({ children, className, activeTab, setActiveTab }: TabsL
         className
       )}
     >
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          const element = child as React.ReactElement<{ value: string; [key: string]: any }>
-          return React.cloneElement(element, {
-            active: activeTab === element.props.value,
-            onClick: () => setActiveTab && setActiveTab(element.props.value),
-          })
-        }
-        return child
+      {triggers.map((element) => {
+        const value = (element.props as { value: string }).value
+        return React.cloneElement(element as React.ReactElement<TabsTriggerProps>, {
+          key: value,
+          active: activeTab === value,
+          onClick: () => setActiveTab && setActiveTab(value),
+        })
       })}
     </div>
   )

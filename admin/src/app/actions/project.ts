@@ -413,7 +413,32 @@ export async function getProjectDetailsAction(projectId: string) {
       return { success: false, error: "Projeto não encontrado" };
     }
 
-    const formattedProject = formatProjectDetails(project);
+    // Projetos aprovados/em obra: garante ambientes a partir dos itens do orçamento
+    // (cobre aprovações antigas ou falhas de criação).
+    const shouldSyncEnvs = [
+      "APROVADO",
+      "CONFERENCIA_TECNICA",
+      "PRODUCAO",
+      "INSTALACAO",
+      "FINALIZADO",
+    ].includes(project.status_geral);
+
+    let projectForFormat = project;
+    if (shouldSyncEnvs) {
+      const { ensureEnvironmentsFromApprovedQuotes } = await import(
+        "@/lib/syncEnvironmentsFromQuotes"
+      );
+      const sync = await ensureEnvironmentsFromApprovedQuotes(prisma, projectId);
+      if (sync.created.length > 0 || sync.linked > 0) {
+        const refreshed = await prisma.project.findFirst({
+          where: { id: projectId, client: { company_id: auth.companyId } },
+          include: projectInclude,
+        });
+        if (refreshed) projectForFormat = refreshed;
+      }
+    }
+
+    const formattedProject = formatProjectDetails(projectForFormat);
     const colaboradoresRes = await getColaboradores(auth.companyId);
     const colaboradores =
       colaboradoresRes.success && colaboradoresRes.colaboradores

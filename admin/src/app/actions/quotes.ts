@@ -15,6 +15,7 @@ import {
   getModuleAccess as getBaseModuleAccess,
   getWriteAccess as getBaseWriteAccess,
 } from "@/lib/moduleAccess";
+import { upsertEnvironmentsFromApprovedItems } from "@/lib/syncEnvironmentsFromQuotes";
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import { parseISODateOnlyBrazil } from "@/lib/brazilDate";
@@ -829,71 +830,13 @@ export async function approveQuote(
         },
       });
 
-      const existingEnvs = await tx.environment.findMany({
-        where: { project_id: projectId },
-        select: { id: true, nome: true, quote_item_id: true },
-      });
-      const linkedItemIds = new Set(
-        existingEnvs.map((e) => e.quote_item_id).filter((id): id is string => Boolean(id))
-      );
-      const existingNames = new Set(
-        existingEnvs.map((e) => e.nome.trim().toLowerCase())
+      const sync = await upsertEnvironmentsFromApprovedItems(
+        tx,
+        projectId,
+        selectedItems.map((item) => ({ id: item.id, descricao: item.descricao }))
       );
 
-      const created: string[] = [];
-      for (const item of selectedItems) {
-        if (linkedItemIds.has(item.id)) continue;
-
-        const nome = capitalizeText((item.descricao || "").trim());
-        if (!nome) continue;
-
-        const key = nome.toLowerCase();
-        // Reusa ambiente existente com mesmo nome se ainda não vinculado.
-        const reusable = existingEnvs.find(
-          (e) => !e.quote_item_id && e.nome.trim().toLowerCase() === key
-        );
-        if (reusable) {
-          await tx.environment.update({
-            where: { id: reusable.id },
-            data: { quote_item_id: item.id },
-          });
-          linkedItemIds.add(item.id);
-          continue;
-        }
-
-        if (existingNames.has(key)) {
-          // Nome já existe vinculado a outro item — cria com sufixo curto.
-          const uniqueNome = `${nome} (${item.id.slice(0, 4)})`;
-          await tx.environment.create({
-            data: {
-              project_id: projectId,
-              nome: uniqueNome,
-              tipo: inferEnvironmentTypeFromName(nome),
-              status: "PRONTO_PRODUCAO",
-              quote_item_id: item.id,
-            },
-          });
-          existingNames.add(uniqueNome.toLowerCase());
-          linkedItemIds.add(item.id);
-          created.push(uniqueNome);
-          continue;
-        }
-
-        await tx.environment.create({
-          data: {
-            project_id: projectId,
-            nome,
-            tipo: inferEnvironmentTypeFromName(nome),
-            status: "PRONTO_PRODUCAO",
-            quote_item_id: item.id,
-          },
-        });
-        existingNames.add(key);
-        linkedItemIds.add(item.id);
-        created.push(nome);
-      }
-
-      return created;
+      return sync.created;
     });
 
     const remainingPending = comparative

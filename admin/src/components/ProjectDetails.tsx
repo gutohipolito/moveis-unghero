@@ -299,7 +299,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     if (status === "LEAD" || status === "ORCAMENTO" || status === "NEGOCIACAO") {
       return (initialProject.quotes?.length ?? 0) > 0 ? "quotes" : "briefing";
     }
-    if (status === "APROVADO" || status === "CONFERENCIA_TECNICA") return "quotes";
+    if (status === "APROVADO" || status === "CONFERENCIA_TECNICA") {
+      return (initialProject.environments?.length ?? 0) > 0 ? "environments" : "quotes";
+    }
     if (status === "PRODUCAO" || status === "INSTALACAO") return "environments";
     if (status === "FINALIZADO") return "finances";
     return "quotes";
@@ -1336,8 +1338,21 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {project.environments.length === 0 ? (
-              <div className="col-span-2 border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
-                Nenhum ambiente adicionado a este projeto. Clique em "Novo Cômodo" para começar.
+              <div className="col-span-2 border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground space-y-2">
+                <p>
+                  Nenhum ambiente neste projeto.
+                  {!isOpsLimited
+                    ? ' Use "Novo Cômodo" ou aprove itens no orçamento — cada item aprovado vira um ambiente aqui.'
+                    : " Quando o comercial aprovar o orçamento, os cômodos aparecem automaticamente."}
+                </p>
+                {(project.status_geral === "APROVADO" ||
+                  project.status_geral === "PRODUCAO" ||
+                  project.status_geral === "CONFERENCIA_TECNICA") && (
+                  <p className="text-xs">
+                    Toque em um ambiente (quando listado) para adicionar fotos do local, projeto,
+                    medição e renders.
+                  </p>
+                )}
               </div>
             ) : (
               project.environments.map((env) => {
@@ -1383,7 +1398,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
                         <Images className="h-3.5 w-3.5 shrink-0" />
-                        Ver imagens
+                        {canManageEnvGallery ? "Fotos e arquivos" : "Ver imagens"}
                       </span>
                       {!isOpsLimited ? (
                         <div

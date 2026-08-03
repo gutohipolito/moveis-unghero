@@ -40,6 +40,28 @@ export default async function ProjectPage({ params }: RouteParams) {
     notFound();
   }
 
+  const shouldSyncEnvs = [
+    "APROVADO",
+    "CONFERENCIA_TECNICA",
+    "PRODUCAO",
+    "INSTALACAO",
+    "FINALIZADO",
+  ].includes(project.status_geral);
+
+  if (shouldSyncEnvs) {
+    const { ensureEnvironmentsFromApprovedQuotes } = await import(
+      "@/lib/syncEnvironmentsFromQuotes"
+    );
+    const sync = await ensureEnvironmentsFromApprovedQuotes(prisma, id);
+    if (sync.created.length > 0 || sync.linked > 0) {
+      project = await prisma.project.findFirst({
+        where: { id, client: { company_id: userCompanyId } },
+        include: projectInclude,
+      });
+      if (!project) notFound();
+    }
+  }
+
   const colaboradoresRes = await getColaboradores(userCompanyId);
   const colaboradores =
     colaboradoresRes.success && colaboradoresRes.colaboradores
