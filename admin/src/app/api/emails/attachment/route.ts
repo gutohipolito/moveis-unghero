@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadAccessibleMailboxSecrets } from "@/app/actions/emailMailboxes";
-import { fetchInboxAttachment } from "@/lib/emailImap";
+import {
+  fetchFolderAttachment,
+  resolveMailFolderPath,
+  type MailFolderKey,
+} from "@/lib/emailImap";
 
 export const maxDuration = 60;
 
@@ -10,14 +14,22 @@ function contentDisposition(filename: string) {
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`;
 }
 
+function isMailFolderKey(value: string): value is MailFolderKey {
+  return value === "inbox" || value === "unread" || value === "spam" || value === "trash";
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const mailboxId = searchParams.get("mailboxId") || "";
   const uid = Number(searchParams.get("uid"));
   const index = Number(searchParams.get("index"));
+  const folderParam = searchParams.get("folder") || "inbox";
 
   if (!mailboxId || !Number.isFinite(uid) || !Number.isFinite(index) || index < 0) {
     return NextResponse.json({ success: false, error: "Parâmetros inválidos." }, { status: 400 });
+  }
+  if (!isMailFolderKey(folderParam)) {
+    return NextResponse.json({ success: false, error: "Pasta inválida." }, { status: 400 });
   }
 
   const loaded = await loadAccessibleMailboxSecrets(mailboxId);
@@ -26,16 +38,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const att = await fetchInboxAttachment(
-      {
-        host: loaded.mailbox.imap_host,
-        port: loaded.mailbox.imap_port,
-        user: loaded.mailbox.address,
-        pass: loaded.password,
-      },
-      uid,
-      index
-    );
+    const config = {
+      host: loaded.mailbox.imap_host,
+      port: loaded.mailbox.imap_port,
+      user: loaded.mailbox.address,
+      pass: loaded.password,
+    };
+    const folderPath = await resolveMailFolderPath(config, folderParam);
+    const att = await fetchFolderAttachment(config, folderPath, uid, index);
     if (!att) {
       return NextResponse.json({ success: false, error: "Anexo não encontrado." }, { status: 404 });
     }

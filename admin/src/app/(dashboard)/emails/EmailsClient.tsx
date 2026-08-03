@@ -15,6 +15,7 @@ import {
   Settings2,
   ShieldAlert,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -29,15 +30,18 @@ import EmailRichEditor, {
 import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
 import {
   getMailboxMessage,
-  listMailboxInbox,
+  listMailboxFolder,
   markMailboxMessageSeen,
+  moveMailboxMessageToInbox,
   moveMailboxMessageToSpam,
   moveMailboxMessageToTrash,
   sendMailboxEmail,
+  type MailFolderKey,
 } from "@/app/actions/emailInbox";
 import type { EmailListItem } from "@/lib/emailImap";
 import { EMAIL_MAX_ATTACHMENT_BYTES } from "@/lib/emailAreas";
 import { usePermissions } from "@/context/PermissionsContext";
+import { cn } from "@/lib/utils";
 
 type MessageDetail = {
   uid: number;
@@ -64,6 +68,17 @@ interface EmailsClientProps {
   isAdmin: boolean;
 }
 
+const FOLDER_NAV: {
+  id: MailFolderKey;
+  label: string;
+  icon: typeof Inbox;
+}[] = [
+  { id: "inbox", label: "Entrada", icon: Inbox },
+  { id: "unread", label: "Não lidos", icon: Mail },
+  { id: "spam", label: "Spam", icon: ShieldAlert },
+  { id: "trash", label: "Lixeira", icon: Trash2 },
+];
+
 function formatMsgDate(iso: string | null) {
   if (!iso) return "—";
   try {
@@ -78,12 +93,101 @@ function formatMsgDate(iso: string | null) {
   }
 }
 
+function displayFrom(from: string) {
+  const name = from.replace(/<[^>]+>/g, "").trim();
+  return name || from;
+}
+
+function MessageGroup({
+  title,
+  messages,
+  selectedUid,
+  onOpen,
+  hideHeader,
+}: {
+  title: string;
+  messages: EmailListItem[];
+  selectedUid: number | null;
+  onOpen: (uid: number) => void;
+  hideHeader?: boolean;
+}) {
+  return (
+    <div>
+      {!hideHeader && (
+        <div className="sticky top-0 z-10 px-3 py-1.5 bg-slate-100/95 border-b border-border/40 backdrop-blur-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            {title}
+          </p>
+        </div>
+      )}
+      <ul>
+        {messages.map((msg) => {
+          const selected = selectedUid === msg.uid;
+          const unread = !msg.seen;
+          return (
+            <li key={msg.uid}>
+              <button
+                type="button"
+                onClick={() => onOpen(msg.uid)}
+                className={cn(
+                  "relative w-full text-left px-3 py-2.5 transition-colors cursor-pointer border-b border-border/20",
+                  selected
+                    ? "bg-amber-50"
+                    : unread
+                      ? "bg-sky-50/70 hover:bg-sky-50"
+                      : "bg-white hover:bg-slate-50"
+                )}
+              >
+                {unread && (
+                  <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-500" aria-hidden />
+                )}
+                <div className="flex items-start justify-between gap-2 pl-1">
+                  <p
+                    className={cn(
+                      "text-xs truncate",
+                      unread ? "font-bold text-slate-900" : "font-medium text-slate-500"
+                    )}
+                  >
+                    {displayFrom(msg.from)}
+                  </p>
+                  <span
+                    className={cn(
+                      "text-[10px] shrink-0",
+                      unread ? "font-semibold text-sky-700" : "text-muted-foreground"
+                    )}
+                  >
+                    {formatMsgDate(msg.date)}
+                  </span>
+                </div>
+                <p
+                  className={cn(
+                    "text-sm truncate mt-0.5 pl-1",
+                    unread ? "font-semibold text-slate-900" : "text-slate-600"
+                  )}
+                >
+                  {msg.subject}
+                </p>
+                {msg.hasAttachments && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-1 pl-1">
+                    <Paperclip className="h-3 w-3" /> anexo
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClientProps) {
   const { isReadOnly } = usePermissions();
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [mailboxes] = useState(initialMailboxes);
   const [mailboxId, setMailboxId] = useState(initialMailboxes[0]?.id || "");
+  const [folder, setFolder] = useState<MailFolderKey>("inbox");
   const [messages, setMessages] = useState<EmailListItem[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
@@ -109,16 +213,34 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     [mailboxes, mailboxId]
   );
 
-  const loadInbox = useCallback(async (id: string) => {
+  const unreadCount = useMemo(
+    () => messages.filter((m) => !m.seen).length,
+    [messages]
+  );
+
+  const groupedMessages = useMemo(() => {
+    if (folder !== "inbox") {
+      return { unread: [] as EmailListItem[], read: messages };
+    }
+    const unread: EmailListItem[] = [];
+    const read: EmailListItem[] = [];
+    for (const msg of messages) {
+      if (msg.seen) read.push(msg);
+      else unread.push(msg);
+    }
+    return { unread, read };
+  }, [folder, messages]);
+
+  const loadFolder = useCallback(async (id: string, nextFolder: MailFolderKey) => {
     if (!id) return;
     setLoadingList(true);
     setListError(null);
     setSelectedUid(null);
     setDetail(null);
-    const res = await listMailboxInbox(id);
+    const res = await listMailboxFolder(id, nextFolder);
     setLoadingList(false);
     if (!res.success) {
-      setListError(res.error || "Falha ao carregar inbox.");
+      setListError(res.error || "Falha ao carregar pasta.");
       setMessages([]);
       return;
     }
@@ -126,21 +248,23 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   }, []);
 
   useEffect(() => {
-    if (mailboxId) void loadInbox(mailboxId);
-  }, [mailboxId, loadInbox]);
+    if (mailboxId) void loadFolder(mailboxId, folder);
+  }, [mailboxId, folder, loadFolder]);
 
   const openMessage = async (uid: number) => {
     if (!mailboxId) return;
     setSelectedUid(uid);
     setLoadingDetail(true);
     setDetail(null);
-    const res = await getMailboxMessage(mailboxId, uid);
+    const res = await getMailboxMessage(mailboxId, uid, folder);
     setLoadingDetail(false);
     if (res.success && res.data) {
       setDetail(res.data);
       setMessages((prev) =>
         prev.map((m) => (m.uid === uid ? { ...m, seen: true } : m))
       );
+    } else if (!res.success) {
+      showError("Falha", res.error || "Não foi possível abrir a mensagem.");
     }
   };
 
@@ -157,7 +281,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   const handleMarkUnseen = async () => {
     if (!mailboxId || !selectedUid || isReadOnly) return;
     setActionBusy(true);
-    const res = await markMailboxMessageSeen(mailboxId, selectedUid, false);
+    const res = await markMailboxMessageSeen(mailboxId, selectedUid, false, folder);
     setActionBusy(false);
     if (!res.success) {
       showError("Falha", res.error || "Não foi possível marcar como não lida.");
@@ -173,13 +297,15 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     if (!mailboxId || !selectedUid || isReadOnly) return;
     const uid = selectedUid;
     confirmAction({
-      title: "Excluir mensagem?",
+      title: folder === "trash" ? "Excluir permanentemente?" : "Excluir mensagem?",
       message:
-        "A mensagem será movida para a Lixeira da caixa (ou excluída se a pasta não existir).",
+        folder === "trash"
+          ? "A mensagem será removida da Lixeira."
+          : "A mensagem será movida para a Lixeira da caixa.",
       confirmLabel: "Excluir",
       onConfirm: async () => {
         setActionBusy(true);
-        const res = await moveMailboxMessageToTrash(mailboxId, uid);
+        const res = await moveMailboxMessageToTrash(mailboxId, uid, folder);
         setActionBusy(false);
         if (!res.success) {
           showError("Falha ao excluir", res.error || "Não foi possível excluir.");
@@ -188,9 +314,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         removeFromList(uid);
         showSuccess(
           "Mensagem excluída",
-          res.deleted
-            ? "Removida permanentemente da caixa."
-            : "Movida para a Lixeira."
+          res.deleted ? "Removida permanentemente." : "Movida para a Lixeira."
         );
       },
     });
@@ -205,14 +329,36 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
       confirmLabel: "Mover para spam",
       onConfirm: async () => {
         setActionBusy(true);
-        const res = await moveMailboxMessageToSpam(mailboxId, uid);
+        const res = await moveMailboxMessageToSpam(mailboxId, uid, folder);
         setActionBusy(false);
         if (!res.success) {
           showError("Falha no spam", res.error || "Não foi possível mover.");
           return;
         }
         removeFromList(uid);
-        showSuccess("Movida para spam", "A mensagem saiu da caixa de entrada.");
+        showSuccess("Movida para spam", "A mensagem saiu desta pasta.");
+      },
+    });
+  };
+
+  const handleRestoreToInbox = () => {
+    if (!mailboxId || !selectedUid || isReadOnly) return;
+    if (folder !== "spam" && folder !== "trash") return;
+    const uid = selectedUid;
+    confirmAction({
+      title: "Restaurar para Entrada?",
+      message: "A mensagem voltará para a caixa de entrada.",
+      confirmLabel: "Restaurar",
+      onConfirm: async () => {
+        setActionBusy(true);
+        const res = await moveMailboxMessageToInbox(mailboxId, uid, folder);
+        setActionBusy(false);
+        if (!res.success) {
+          showError("Falha", res.error || "Não foi possível restaurar.");
+          return;
+        }
+        removeFromList(uid);
+        showSuccess("Restaurada", "Mensagem movida para a Entrada.");
       },
     });
   };
@@ -354,12 +500,16 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
               <button
                 key={box.id}
                 type="button"
-                onClick={() => setMailboxId(box.id)}
-                className={`min-w-0 max-w-full sm:max-w-[280px] text-left rounded-[var(--radius-sm)] px-3.5 py-2.5 transition-colors cursor-pointer border ${
+                onClick={() => {
+                  setMailboxId(box.id);
+                  setFolder("inbox");
+                }}
+                className={cn(
+                  "min-w-0 max-w-full sm:max-w-[280px] text-left rounded-[var(--radius-sm)] px-3.5 py-2.5 transition-colors cursor-pointer border",
                   mailboxId === box.id
                     ? "bg-amber-500/15 border-amber-500/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
                     : "bg-white border-border/50 hover:bg-slate-50"
-                }`}
+                )}
               >
                 <p className="text-xs font-bold text-foreground truncate">{box.areaLabel}</p>
                 <p className="text-[11px] text-muted-foreground truncate">{box.address}</p>
@@ -367,21 +517,47 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
             ))}
           </div>
 
-          {/* Inbox 25% · Corpo 75% */}
-          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-3 flex-1 min-h-0">
-            <section className="rounded-xl border border-border/50 bg-white overflow-hidden flex flex-col min-h-[320px] md:min-h-0 md:h-full">
-              <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/40 bg-slate-50/80 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Inbox className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-semibold truncate">
-                    Inbox · {selectedMailbox?.displayName || selectedMailbox?.areaLabel}
-                  </span>
+          {/* Pastas + lista 25% · Corpo 75% */}
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,28%)_minmax(0,72%)] gap-3 flex-1 min-h-0">
+            <section className="rounded-xl border border-border/50 bg-white overflow-hidden flex flex-col min-h-[360px] md:min-h-0 md:h-full">
+              <div className="flex items-center justify-between gap-2 px-2.5 py-2 border-b border-border/40 bg-slate-50/80 shrink-0">
+                <div className="flex items-center gap-1 min-w-0 overflow-x-auto no-scrollbar">
+                  {FOLDER_NAV.map((item) => {
+                    const Icon = item.icon;
+                    const active = folder === item.id;
+                    const badge =
+                      item.id === "inbox" && folder === "inbox" && unreadCount > 0
+                        ? unreadCount
+                        : null;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setFolder(item.id)}
+                        className={cn(
+                          "inline-flex items-center gap-1 shrink-0 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer",
+                          active
+                            ? "bg-white text-foreground border border-border/60 shadow-xs"
+                            : "text-muted-foreground hover:bg-white/70 border border-transparent"
+                        )}
+                        title={item.label}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        <span className="truncate max-w-[4.75rem]">{item.label}</span>
+                        {badge ? (
+                          <span className="min-w-[1.1rem] h-4 px-1 rounded-full bg-sky-600 text-white text-[9px] font-bold leading-4 text-center">
+                            {badge}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2"
-                  onClick={() => void loadInbox(mailboxId)}
+                  className="h-8 px-2 shrink-0"
+                  onClick={() => void loadFolder(mailboxId, folder)}
                   disabled={loadingList}
                   title="Atualizar"
                 >
@@ -397,47 +573,49 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                 <div className="p-4 text-sm text-rose-600">{listError}</div>
               ) : messages.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-6 text-center">
-                  Caixa vazia ou sem mensagens recentes.
+                  {folder === "unread"
+                    ? "Nenhuma mensagem não lida."
+                    : folder === "spam"
+                      ? "Pasta de spam vazia."
+                      : folder === "trash"
+                        ? "Lixeira vazia."
+                        : "Caixa vazia ou sem mensagens recentes."}
                 </div>
               ) : (
-                <ul className="flex-1 overflow-y-auto divide-y divide-border/30">
-                  {messages.map((msg) => (
-                    <li key={msg.uid}>
-                      <button
-                        type="button"
-                        onClick={() => void openMessage(msg.uid)}
-                        className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${
-                          selectedUid === msg.uid ? "bg-amber-50/80" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p
-                            className={`text-xs truncate ${
-                              msg.seen ? "text-muted-foreground" : "font-bold text-foreground"
-                            }`}
-                          >
-                            {msg.from}
-                          </p>
-                          <span className="text-[10px] text-muted-foreground shrink-0">
-                            {formatMsgDate(msg.date)}
-                          </span>
-                        </div>
-                        <p
-                          className={`text-sm truncate mt-0.5 ${
-                            msg.seen ? "text-slate-600" : "font-semibold text-foreground"
-                          }`}
-                        >
-                          {msg.subject}
-                        </p>
-                        {msg.hasAttachments && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                            <Paperclip className="h-3 w-3" /> anexo
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex-1 overflow-y-auto">
+                  {folder === "inbox" ? (
+                    <>
+                      {groupedMessages.unread.length > 0 && (
+                        <MessageGroup
+                          title={`Não lidas (${groupedMessages.unread.length})`}
+                          messages={groupedMessages.unread}
+                          selectedUid={selectedUid}
+                          onOpen={(uid) => void openMessage(uid)}
+                        />
+                      )}
+                      {groupedMessages.read.length > 0 && (
+                        <MessageGroup
+                          title={
+                            groupedMessages.unread.length > 0
+                              ? `Lidas (${groupedMessages.read.length})`
+                              : "Mensagens"
+                          }
+                          messages={groupedMessages.read}
+                          selectedUid={selectedUid}
+                          onOpen={(uid) => void openMessage(uid)}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <MessageGroup
+                      title={FOLDER_NAV.find((f) => f.id === folder)?.label || "Mensagens"}
+                      messages={messages}
+                      selectedUid={selectedUid}
+                      onOpen={(uid) => void openMessage(uid)}
+                      hideHeader={folder === "unread"}
+                    />
+                  )}
+                </div>
               )}
             </section>
 
@@ -467,33 +645,50 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                     </p>
                     {!isReadOnly && (
                       <div className="flex flex-wrap gap-2 pt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 gap-1.5"
-                          onClick={openComposeReply}
-                          disabled={actionBusy}
-                        >
-                          <Reply className="h-3.5 w-3.5" /> Responder
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 gap-1.5"
-                          onClick={() => void handleMarkUnseen()}
-                          disabled={actionBusy}
-                        >
-                          <MailOpen className="h-3.5 w-3.5" /> Não lida
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 gap-1.5 text-amber-800 border-amber-200 hover:bg-amber-50"
-                          onClick={handleMoveToSpam}
-                          disabled={actionBusy}
-                        >
-                          <ShieldAlert className="h-3.5 w-3.5" /> Spam
-                        </Button>
+                        {(folder === "inbox" || folder === "unread") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1.5"
+                            onClick={openComposeReply}
+                            disabled={actionBusy}
+                          >
+                            <Reply className="h-3.5 w-3.5" /> Responder
+                          </Button>
+                        )}
+                        {(folder === "inbox" || folder === "unread") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1.5"
+                            onClick={() => void handleMarkUnseen()}
+                            disabled={actionBusy}
+                          >
+                            <MailOpen className="h-3.5 w-3.5" /> Não lida
+                          </Button>
+                        )}
+                        {(folder === "spam" || folder === "trash") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1.5"
+                            onClick={handleRestoreToInbox}
+                            disabled={actionBusy}
+                          >
+                            <Undo2 className="h-3.5 w-3.5" /> Restaurar
+                          </Button>
+                        )}
+                        {folder !== "spam" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1.5 text-amber-800 border-amber-200 hover:bg-amber-50"
+                            onClick={handleMoveToSpam}
+                            disabled={actionBusy}
+                          >
+                            <ShieldAlert className="h-3.5 w-3.5" /> Spam
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -534,7 +729,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                           {detail.attachments.map((a) => (
                             <li key={`${a.index}-${a.filename}`}>
                               <a
-                                href={`/api/emails/attachment?mailboxId=${encodeURIComponent(mailboxId)}&uid=${detail.uid}&index=${a.index}`}
+                                href={`/api/emails/attachment?mailboxId=${encodeURIComponent(mailboxId)}&uid=${detail.uid}&index=${a.index}&folder=${encodeURIComponent(folder === "unread" ? "inbox" : folder)}`}
                                 className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900 hover:underline"
                               >
                                 <Paperclip className="h-3.5 w-3.5" />

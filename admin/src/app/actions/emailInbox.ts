@@ -7,11 +7,14 @@ import { isReadOnlyRole } from "@/lib/permissions";
 import { decryptVaultSecret } from "@/lib/accessVaultCrypto";
 import { EMAIL_INBOX_PAGE_SIZE, EMAIL_MAX_ATTACHMENT_BYTES } from "@/lib/emailAreas";
 import {
-  fetchInboxMessage,
-  listInboxMessages,
-  moveInboxMessage,
-  setInboxMessageSeen,
+  fetchFolderMessage,
+  listFolderMessages,
+  moveFolderMessage,
+  resolveMailFolderPath,
+  setFolderMessageSeen,
   type EmailListItem,
+  type MailFolderKey,
+  type MoveDestination,
 } from "@/lib/emailImap";
 import { sendSmtpEmail } from "@/lib/emailSmtp";
 import { composeBodyWithSignature } from "@/lib/emailSignature";
@@ -27,65 +30,7 @@ import {
 import type { EmailMailboxArea } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
-export async function listMailboxInbox(mailboxId: string) {
-  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
-  if (!loaded) {
-    return { success: false as const, error: "Caixa indisponível.", data: [] as EmailListItem[] };
-  }
-
-  try {
-    const data = await listInboxMessages(
-      {
-        host: loaded.mailbox.imap_host,
-        port: loaded.mailbox.imap_port,
-        user: loaded.mailbox.address,
-        pass: loaded.password,
-      },
-      { limit: EMAIL_INBOX_PAGE_SIZE }
-    );
-    return { success: true as const, data };
-  } catch (error) {
-    console.error("listMailboxInbox:", error);
-    return {
-      success: false as const,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível listar a caixa de entrada.",
-      data: [] as EmailListItem[],
-    };
-  }
-}
-
-export async function getMailboxMessage(mailboxId: string, uid: number) {
-  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
-  if (!loaded) {
-    return { success: false as const, error: "Caixa indisponível." };
-  }
-
-  try {
-    const data = await fetchInboxMessage(
-      {
-        host: loaded.mailbox.imap_host,
-        port: loaded.mailbox.imap_port,
-        user: loaded.mailbox.address,
-        pass: loaded.password,
-      },
-      uid
-    );
-    if (!data) {
-      return { success: false as const, error: "Mensagem não encontrada." };
-    }
-    return { success: true as const, data };
-  } catch (error) {
-    console.error("getMailboxMessage:", error);
-    return {
-      success: false as const,
-      error:
-        error instanceof Error ? error.message : "Não foi possível abrir a mensagem.",
-    };
-  }
-}
+export type { MailFolderKey };
 
 function imapConfigFromLoaded(loaded: NonNullable<Awaited<ReturnType<typeof loadAccessibleMailboxSecrets>>>) {
   return {
@@ -96,17 +41,99 @@ function imapConfigFromLoaded(loaded: NonNullable<Awaited<ReturnType<typeof load
   };
 }
 
+function isMailFolderKey(value: string): value is MailFolderKey {
+  return value === "inbox" || value === "unread" || value === "spam" || value === "trash";
+}
+
+export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey) {
+  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
+  if (!loaded) {
+    return {
+      success: false as const,
+      error: "Caixa indisponível.",
+      data: [] as EmailListItem[],
+      folderPath: null as string | null,
+    };
+  }
+
+  try {
+    const result = await listFolderMessages(imapConfigFromLoaded(loaded), folder, {
+      limit: EMAIL_INBOX_PAGE_SIZE,
+    });
+    return {
+      success: true as const,
+      data: result.items,
+      folderPath: result.folderPath,
+    };
+  } catch (error) {
+    console.error("listMailboxFolder:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível listar a pasta.",
+      data: [] as EmailListItem[],
+      folderPath: null as string | null,
+    };
+  }
+}
+
+/** @deprecated use listMailboxFolder */
+export async function listMailboxInbox(mailboxId: string) {
+  const res = await listMailboxFolder(mailboxId, "inbox");
+  return {
+    success: res.success,
+    error: "error" in res ? res.error : undefined,
+    data: res.data,
+  };
+}
+
+export async function getMailboxMessage(
+  mailboxId: string,
+  uid: number,
+  folder: MailFolderKey = "inbox"
+) {
+  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
+  if (!loaded) {
+    return { success: false as const, error: "Caixa indisponível." };
+  }
+  if (!isMailFolderKey(folder)) {
+    return { success: false as const, error: "Pasta inválida." };
+  }
+
+  try {
+    const config = imapConfigFromLoaded(loaded);
+    const folderPath = await resolveMailFolderPath(config, folder);
+    const data = await fetchFolderMessage(config, folderPath, uid);
+    if (!data) {
+      return { success: false as const, error: "Mensagem não encontrada." };
+    }
+    return { success: true as const, data, folderPath };
+  } catch (error) {
+    console.error("getMailboxMessage:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : "Não foi possível abrir a mensagem.",
+    };
+  }
+}
+
 export async function markMailboxMessageSeen(
   mailboxId: string,
   uid: number,
-  seen: boolean
+  seen: boolean,
+  folder: MailFolderKey = "inbox"
 ) {
   const loaded = await loadAccessibleMailboxSecrets(mailboxId);
   if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
     return { success: false as const, error: "Sem permissão para alterar a mensagem." };
   }
   try {
-    await setInboxMessageSeen(imapConfigFromLoaded(loaded), uid, seen);
+    const config = imapConfigFromLoaded(loaded);
+    const folderPath = await resolveMailFolderPath(config, folder);
+    await setFolderMessageSeen(config, folderPath, uid, seen);
     return { success: true as const };
   } catch (error) {
     console.error("markMailboxMessageSeen:", error);
@@ -120,44 +147,65 @@ export async function markMailboxMessageSeen(
   }
 }
 
-export async function moveMailboxMessageToTrash(mailboxId: string, uid: number) {
+async function moveFromFolder(
+  mailboxId: string,
+  uid: number,
+  fromFolder: MailFolderKey,
+  destination: MoveDestination,
+  deniedMessage: string
+) {
   const loaded = await loadAccessibleMailboxSecrets(mailboxId);
   if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
-    return { success: false as const, error: "Sem permissão para excluir." };
+    return { success: false as const, error: deniedMessage };
   }
   try {
-    const result = await moveInboxMessage(imapConfigFromLoaded(loaded), uid, "trash");
+    const config = imapConfigFromLoaded(loaded);
+    const fromPath = await resolveMailFolderPath(config, fromFolder);
+    const result = await moveFolderMessage(config, fromPath, uid, destination);
     return { success: true as const, ...result };
   } catch (error) {
-    console.error("moveMailboxMessageToTrash:", error);
+    console.error("moveFromFolder:", error);
     return {
       success: false as const,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível mover para a lixeira.",
+      error: error instanceof Error ? error.message : "Não foi possível mover a mensagem.",
     };
   }
 }
 
-export async function moveMailboxMessageToSpam(mailboxId: string, uid: number) {
-  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
-  if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
-    return { success: false as const, error: "Sem permissão para marcar como spam." };
-  }
-  try {
-    const result = await moveInboxMessage(imapConfigFromLoaded(loaded), uid, "junk");
-    return { success: true as const, ...result };
-  } catch (error) {
-    console.error("moveMailboxMessageToSpam:", error);
-    return {
-      success: false as const,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível mover para spam.",
-    };
-  }
+export async function moveMailboxMessageToTrash(
+  mailboxId: string,
+  uid: number,
+  fromFolder: MailFolderKey = "inbox"
+) {
+  return moveFromFolder(mailboxId, uid, fromFolder, "trash", "Sem permissão para excluir.");
+}
+
+export async function moveMailboxMessageToSpam(
+  mailboxId: string,
+  uid: number,
+  fromFolder: MailFolderKey = "inbox"
+) {
+  return moveFromFolder(
+    mailboxId,
+    uid,
+    fromFolder,
+    "junk",
+    "Sem permissão para marcar como spam."
+  );
+}
+
+export async function moveMailboxMessageToInbox(
+  mailboxId: string,
+  uid: number,
+  fromFolder: MailFolderKey
+) {
+  return moveFromFolder(
+    mailboxId,
+    uid,
+    fromFolder,
+    "inbox",
+    "Sem permissão para mover a mensagem."
+  );
 }
 
 export type ComposeEmailInput = {

@@ -13,6 +13,9 @@ export type ImapConnectionConfig = {
   pass: string;
 };
 
+/** Pastas lógicas do painel (mapeiam para pastas IMAP reais). */
+export type MailFolderKey = "inbox" | "unread" | "spam" | "trash";
+
 export type EmailListItem = {
   uid: number;
   seq: number;
@@ -50,6 +53,18 @@ export type EmailAttachmentPayload = {
   content: Buffer;
 };
 
+type SpecialFolderKind = "trash" | "junk";
+
+const SPECIAL_USE: Record<SpecialFolderKind, string> = {
+  trash: "\\Trash",
+  junk: "\\Junk",
+};
+
+const FOLDER_NAME_HINTS: Record<SpecialFolderKind, string[]> = {
+  trash: ["trash", "lixeira", "deleted", "bin", "excluídos", "excluidos"],
+  junk: ["junk", "spam", "lixo", "bulk", "bulk mail", "correio não solicitado"],
+};
+
 function createClient(config: ImapConnectionConfig) {
   const client = new ImapFlow({
     host: config.host,
@@ -77,7 +92,6 @@ function normalizeParsedBody(parsed: ParsedMail): { text: string; html: string |
       ? repairEmailText(parsed.html)
       : null;
 
-  // textAsHtml do mailparser (quando não há HTML real)
   if (!html && typeof parsed.textAsHtml === "string" && parsed.textAsHtml.trim()) {
     const asHtml = repairEmailText(parsed.textAsHtml);
     if (!looksLikeBrokenEncoding(asHtml)) {
@@ -105,6 +119,122 @@ function mapAttachments(parsed: ParsedMail) {
   }));
 }
 
+function mapFetchToListItem(msg: {
+  uid: number;
+  seq: number;
+  envelope?: {
+    subject?: string | null;
+    date?: Date | string | null;
+    from?: Array<{ name?: string | null; address?: string | null }> | null;
+  } | null;
+  flags?: Set<string> | null;
+  bodyStructure?: {
+    childNodes?: Array<{
+      disposition?: string | null;
+      dispositionParameters?: { filename?: string } | null;
+    }>;
+  } | null;
+}): EmailListItem {
+  const fromEntry = msg.envelope?.from?.[0];
+  const fromName = fromEntry?.name?.trim();
+  const fromAddress = fromEntry?.address || "";
+  const from = fromName
+    ? `${fromName} <${fromAddress}>`
+    : fromAddress || "(sem remetente)";
+
+  const hasAttachments = Boolean(
+    msg.bodyStructure &&
+      "childNodes" in msg.bodyStructure &&
+      Array.isArray(msg.bodyStructure.childNodes) &&
+      msg.bodyStructure.childNodes.some(
+        (node) =>
+          node.disposition === "attachment" ||
+          (node.disposition === "inline" && node.dispositionParameters?.filename)
+      )
+  );
+
+  return {
+    uid: msg.uid,
+    seq: msg.seq,
+    subject: repairEmailText(msg.envelope?.subject?.trim() || "(sem assunto)"),
+    from: repairEmailText(from),
+    fromAddress,
+    date: msg.envelope?.date ? new Date(msg.envelope.date).toISOString() : null,
+    seen: Boolean(msg.flags?.has("\\Seen")),
+    hasAttachments,
+  };
+}
+
+async function resolveSpecialFolderPath(
+  client: ImapFlow,
+  kind: SpecialFolderKind
+): Promise<string | null> {
+  const folders = await client.list();
+  const special = SPECIAL_USE[kind];
+  const bySpecial = folders.find((f) => f.specialUse === special);
+  if (bySpecial?.path) return bySpecial.path;
+
+  const hints = FOLDER_NAME_HINTS[kind];
+  const byName = folders.find((f) => {
+    const name = (f.name || "").toLowerCase();
+    const path = (f.path || "").toLowerCase();
+    return hints.some((h) => name === h || path.endsWith(h) || path.includes(`.${h}`));
+  });
+  return byName?.path || null;
+}
+
+/** Resolve o caminho IMAP real para a pasta lógica do painel. */
+export async function resolveMailFolderPath(
+  config: ImapConnectionConfig,
+  folderKey: MailFolderKey
+): Promise<string> {
+  if (folderKey === "inbox" || folderKey === "unread") return "INBOX";
+
+  const client = createClient(config);
+  await client.connect();
+  try {
+    const kind: SpecialFolderKind = folderKey === "spam" ? "junk" : "trash";
+    const path = await resolveSpecialFolderPath(client, kind);
+    if (!path) {
+      throw new Error(
+        folderKey === "spam"
+          ? "Pasta de Spam/Junk não encontrada nesta caixa."
+          : "Pasta de Lixeira não encontrada nesta caixa."
+      );
+    }
+    return path;
+  } finally {
+    try {
+      await client.logout();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+async function withFolderClient<T>(
+  config: ImapConnectionConfig,
+  folderPath: string,
+  fn: (client: ImapFlow) => Promise<T>
+): Promise<T> {
+  const client = createClient(config);
+  await client.connect();
+  try {
+    const lock = await client.getMailboxLock(folderPath);
+    try {
+      return await fn(client);
+    } finally {
+      lock.release();
+    }
+  } finally {
+    try {
+      await client.logout();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 export async function testImapConnection(config: ImapConnectionConfig) {
   const client = createClient(config);
   try {
@@ -127,64 +257,78 @@ export async function testImapConnection(config: ImapConnectionConfig) {
   }
 }
 
-export async function listInboxMessages(
+export async function listFolderMessages(
   config: ImapConnectionConfig,
+  folderKey: MailFolderKey,
   options?: { limit?: number }
-): Promise<EmailListItem[]> {
+): Promise<{ folderPath: string; items: EmailListItem[] }> {
   const limit = options?.limit ?? 40;
   const client = createClient(config);
   await client.connect();
   try {
-    const lock = await client.getMailboxLock("INBOX");
+    let folderPath = "INBOX";
+    if (folderKey === "spam" || folderKey === "trash") {
+      const kind: SpecialFolderKind = folderKey === "spam" ? "junk" : "trash";
+      const resolved = await resolveSpecialFolderPath(client, kind);
+      if (!resolved) {
+        throw new Error(
+          folderKey === "spam"
+            ? "Pasta de Spam/Junk não encontrada nesta caixa."
+            : "Pasta de Lixeira não encontrada nesta caixa."
+        );
+      }
+      folderPath = resolved;
+    }
+
+    const lock = await client.getMailboxLock(folderPath);
     try {
       const mailbox = client.mailbox;
       const total =
         mailbox && typeof mailbox === "object" && "exists" in mailbox
           ? Number(mailbox.exists) || 0
           : 0;
-      if (total === 0) return [];
+      if (total === 0) return { folderPath, items: [] };
+
+      const items: EmailListItem[] = [];
+
+      if (folderKey === "unread") {
+        const searched = await client.search({ seen: false }, { uid: true });
+        const uids = Array.isArray(searched) ? searched : [];
+        if (uids.length === 0) {
+          return { folderPath, items: [] };
+        }
+        const slice = uids.slice(-limit);
+        for await (const msg of client.fetch(
+          slice,
+          {
+            uid: true,
+            flags: true,
+            envelope: true,
+            bodyStructure: true,
+          },
+          { uid: true }
+        )) {
+          items.push(mapFetchToListItem(msg));
+        }
+        items.sort((a, b) => {
+          const da = a.date ? Date.parse(a.date) : 0;
+          const db = b.date ? Date.parse(b.date) : 0;
+          return db - da;
+        });
+        return { folderPath, items };
+      }
 
       const start = Math.max(1, total - limit + 1);
       const range = `${start}:${total}`;
-      const items: EmailListItem[] = [];
-
       for await (const msg of client.fetch(range, {
         uid: true,
         flags: true,
         envelope: true,
         bodyStructure: true,
       })) {
-        const fromEntry = msg.envelope?.from?.[0];
-        const fromName = fromEntry?.name?.trim();
-        const fromAddress = fromEntry?.address || "";
-        const from = fromName
-          ? `${fromName} <${fromAddress}>`
-          : fromAddress || "(sem remetente)";
-
-        const hasAttachments = Boolean(
-          msg.bodyStructure &&
-            "childNodes" in msg.bodyStructure &&
-            Array.isArray(msg.bodyStructure.childNodes) &&
-            msg.bodyStructure.childNodes.some(
-              (node) =>
-                node.disposition === "attachment" ||
-                (node.disposition === "inline" && node.dispositionParameters?.filename)
-            )
-        );
-
-        items.push({
-          uid: msg.uid,
-          seq: msg.seq,
-          subject: repairEmailText(msg.envelope?.subject?.trim() || "(sem assunto)"),
-          from: repairEmailText(from),
-          fromAddress,
-          date: msg.envelope?.date ? new Date(msg.envelope.date).toISOString() : null,
-          seen: Boolean(msg.flags?.has("\\Seen")),
-          hasAttachments,
-        });
+        items.push(mapFetchToListItem(msg));
       }
-
-      return items.reverse();
+      return { folderPath, items: items.reverse() };
     } finally {
       lock.release();
     }
@@ -197,118 +341,113 @@ export async function listInboxMessages(
   }
 }
 
-async function loadParsedMessage(
+/** @deprecated use listFolderMessages — mantido para compatibilidade */
+export async function listInboxMessages(
   config: ImapConnectionConfig,
+  options?: { limit?: number }
+): Promise<EmailListItem[]> {
+  const res = await listFolderMessages(config, "inbox", options);
+  return res.items;
+}
+
+export async function fetchFolderMessage(
+  config: ImapConnectionConfig,
+  folderPath: string,
   uid: number
-): Promise<{ uid: number; parsed: ParsedMail } | null> {
-  const client = createClient(config);
-  await client.connect();
-  try {
-    const lock = await client.getMailboxLock("INBOX");
-    try {
-      const msg = await client.fetchOne(
-        String(uid),
-        { uid: true, source: true },
-        { uid: true }
-      );
-      if (!msg || !msg.source) return null;
-      const parsed = await simpleParser(msg.source);
-      return { uid: msg.uid, parsed };
-    } finally {
-      lock.release();
+): Promise<EmailMessageDetail | null> {
+  return withFolderClient(config, folderPath, async (client) => {
+    const msg = await client.fetchOne(
+      String(uid),
+      { uid: true, envelope: true, source: true, flags: true },
+      { uid: true }
+    );
+    if (!msg || !msg.source) return null;
+
+    if (!msg.flags?.has("\\Seen")) {
+      try {
+        await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+      } catch {
+        /* ignore */
+      }
     }
-  } finally {
-    try {
-      await client.logout();
-    } catch {
-      /* ignore */
-    }
-  }
+
+    const parsed = await simpleParser(msg.source);
+    const { text, html } = normalizeParsedBody(parsed);
+
+    const fromEntry = msg.envelope?.from?.[0];
+    const fromName = fromEntry?.name?.trim();
+    const fromAddress = fromEntry?.address || parsed.from?.value?.[0]?.address || "";
+    const from = repairEmailText(
+      fromName
+        ? `${fromName} <${fromAddress}>`
+        : parsed.from?.text || fromAddress || "(sem remetente)"
+    );
+
+    const parsedTo = parsed.to;
+    const parsedToText = Array.isArray(parsedTo)
+      ? parsedTo.map((a) => a.text).join(", ")
+      : parsedTo?.text || "";
+    const to = repairEmailText(
+      msg.envelope?.to?.map((t) => t.address).filter(Boolean).join(", ") ||
+        parsedToText ||
+        ""
+    );
+
+    const refs = parsed.references
+      ? Array.isArray(parsed.references)
+        ? parsed.references
+        : [parsed.references]
+      : [];
+
+    return {
+      uid: msg.uid,
+      subject: repairEmailText(
+        msg.envelope?.subject?.trim() || parsed.subject || "(sem assunto)"
+      ),
+      from,
+      fromAddress,
+      to,
+      date: msg.envelope?.date
+        ? new Date(msg.envelope.date).toISOString()
+        : parsed.date
+          ? parsed.date.toISOString()
+          : null,
+      text,
+      html,
+      messageId: parsed.messageId || msg.envelope?.messageId || null,
+      inReplyTo: parsed.inReplyTo || null,
+      references: refs.map(String),
+      attachments: mapAttachments(parsed),
+    };
+  });
 }
 
 export async function fetchInboxMessage(
   config: ImapConnectionConfig,
   uid: number
 ): Promise<EmailMessageDetail | null> {
-  const client = createClient(config);
-  await client.connect();
-  try {
-    const lock = await client.getMailboxLock("INBOX");
-    try {
-      const msg = await client.fetchOne(
-        String(uid),
-        { uid: true, envelope: true, source: true, flags: true },
-        { uid: true }
-      );
-      if (!msg || !msg.source) return null;
+  return fetchFolderMessage(config, "INBOX", uid);
+}
 
-      // Ao abrir, marca como lida (comportamento de cliente de e-mail).
-      if (!msg.flags?.has("\\Seen")) {
-        try {
-          await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
-        } catch {
-          /* ignore — leitura ainda funciona */
-        }
-      }
-
-      const parsed = await simpleParser(msg.source);
-      const { text, html } = normalizeParsedBody(parsed);
-
-      const fromEntry = msg.envelope?.from?.[0];
-      const fromName = fromEntry?.name?.trim();
-      const fromAddress = fromEntry?.address || parsed.from?.value?.[0]?.address || "";
-      const from = repairEmailText(
-        fromName
-          ? `${fromName} <${fromAddress}>`
-          : parsed.from?.text || fromAddress || "(sem remetente)"
-      );
-
-      const parsedTo = parsed.to;
-      const parsedToText = Array.isArray(parsedTo)
-        ? parsedTo.map((a) => a.text).join(", ")
-        : parsedTo?.text || "";
-      const to = repairEmailText(
-        msg.envelope?.to?.map((t) => t.address).filter(Boolean).join(", ") ||
-          parsedToText ||
-          ""
-      );
-
-      const refs = parsed.references
-        ? Array.isArray(parsed.references)
-          ? parsed.references
-          : [parsed.references]
-        : [];
-
-      return {
-        uid: msg.uid,
-        subject: repairEmailText(
-          msg.envelope?.subject?.trim() || parsed.subject || "(sem assunto)"
-        ),
-        from,
-        fromAddress,
-        to,
-        date: msg.envelope?.date
-          ? new Date(msg.envelope.date).toISOString()
-          : parsed.date
-            ? parsed.date.toISOString()
-            : null,
-        text,
-        html,
-        messageId: parsed.messageId || msg.envelope?.messageId || null,
-        inReplyTo: parsed.inReplyTo || null,
-        references: refs.map(String),
-        attachments: mapAttachments(parsed),
-      };
-    } finally {
-      lock.release();
-    }
-  } finally {
-    try {
-      await client.logout();
-    } catch {
-      /* ignore */
-    }
-  }
+export async function fetchFolderAttachment(
+  config: ImapConnectionConfig,
+  folderPath: string,
+  uid: number,
+  attachmentIndex: number
+): Promise<EmailAttachmentPayload | null> {
+  return withFolderClient(config, folderPath, async (client) => {
+    const msg = await client.fetchOne(String(uid), { uid: true, source: true }, { uid: true });
+    if (!msg || !msg.source) return null;
+    const parsed = await simpleParser(msg.source);
+    const att = parsed.attachments?.[attachmentIndex];
+    if (!att || !att.content) return null;
+    const content = Buffer.isBuffer(att.content) ? att.content : Buffer.from(att.content);
+    return {
+      filename: att.filename || `anexo-${attachmentIndex + 1}`,
+      contentType: att.contentType || "application/octet-stream",
+      content,
+    };
+  });
 }
 
 export async function fetchInboxAttachment(
@@ -316,79 +455,16 @@ export async function fetchInboxAttachment(
   uid: number,
   attachmentIndex: number
 ): Promise<EmailAttachmentPayload | null> {
-  const loaded = await loadParsedMessage(config, uid);
-  if (!loaded) return null;
-  const att = loaded.parsed.attachments?.[attachmentIndex];
-  if (!att || !att.content) return null;
-  const content = Buffer.isBuffer(att.content)
-    ? att.content
-    : Buffer.from(att.content);
-  return {
-    filename: att.filename || `anexo-${attachmentIndex + 1}`,
-    contentType: att.contentType || "application/octet-stream",
-    content,
-  };
+  return fetchFolderAttachment(config, "INBOX", uid, attachmentIndex);
 }
 
-type SpecialFolderKind = "trash" | "junk";
-
-const SPECIAL_USE: Record<SpecialFolderKind, string> = {
-  trash: "\\Trash",
-  junk: "\\Junk",
-};
-
-const FOLDER_NAME_HINTS: Record<SpecialFolderKind, string[]> = {
-  trash: ["trash", "lixeira", "deleted", "bin", "excluídos", "excluidos"],
-  junk: ["junk", "spam", "lixo", "bulk", "bulk mail", "correio não solicitado"],
-};
-
-async function resolveSpecialFolderPath(
-  client: ImapFlow,
-  kind: SpecialFolderKind
-): Promise<string | null> {
-  const folders = await client.list();
-  const special = SPECIAL_USE[kind];
-  const bySpecial = folders.find((f) => f.specialUse === special);
-  if (bySpecial?.path) return bySpecial.path;
-
-  const hints = FOLDER_NAME_HINTS[kind];
-  const byName = folders.find((f) => {
-    const name = (f.name || "").toLowerCase();
-    const path = (f.path || "").toLowerCase();
-    return hints.some((h) => name === h || path.endsWith(h) || path.includes(`.${h}`));
-  });
-  return byName?.path || null;
-}
-
-async function withInboxClient<T>(
+export async function setFolderMessageSeen(
   config: ImapConnectionConfig,
-  fn: (client: ImapFlow) => Promise<T>
-): Promise<T> {
-  const client = createClient(config);
-  await client.connect();
-  try {
-    const lock = await client.getMailboxLock("INBOX");
-    try {
-      return await fn(client);
-    } finally {
-      lock.release();
-    }
-  } finally {
-    try {
-      await client.logout();
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-/** Marca mensagem da INBOX como lida ou não lida. */
-export async function setInboxMessageSeen(
-  config: ImapConnectionConfig,
+  folderPath: string,
   uid: number,
   seen: boolean
 ): Promise<void> {
-  await withInboxClient(config, async (client) => {
+  await withFolderClient(config, folderPath, async (client) => {
     if (seen) {
       await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
     } else {
@@ -397,18 +473,38 @@ export async function setInboxMessageSeen(
   });
 }
 
-/**
- * Move mensagem da INBOX para Lixeira ou Spam.
- * Se a pasta Lixeira não existir, usa exclusão IMAP (\\Deleted + expunge).
- */
-export async function moveInboxMessage(
+export async function setInboxMessageSeen(
   config: ImapConnectionConfig,
   uid: number,
-  destination: SpecialFolderKind
+  seen: boolean
+): Promise<void> {
+  return setFolderMessageSeen(config, "INBOX", uid, seen);
+}
+
+export type MoveDestination = "trash" | "junk" | "inbox";
+
+/**
+ * Move mensagem entre pastas.
+ * Se destino for lixeira e a pasta não existir, usa exclusão IMAP.
+ */
+export async function moveFolderMessage(
+  config: ImapConnectionConfig,
+  fromFolderPath: string,
+  uid: number,
+  destination: MoveDestination
 ): Promise<{ folder: string | null; deleted: boolean }> {
-  return withInboxClient(config, async (client) => {
-    const folder = await resolveSpecialFolderPath(client, destination);
+  return withFolderClient(config, fromFolderPath, async (client) => {
+    if (destination === "inbox") {
+      if (fromFolderPath === "INBOX") return { folder: "INBOX", deleted: false };
+      const moved = await client.messageMove(String(uid), "INBOX", { uid: true });
+      if (!moved) throw new Error("Não foi possível mover para a Entrada.");
+      return { folder: "INBOX", deleted: false };
+    }
+
+    const kind: SpecialFolderKind = destination === "junk" ? "junk" : "trash";
+    const folder = await resolveSpecialFolderPath(client, kind);
     if (folder) {
+      if (folder === fromFolderPath) return { folder, deleted: false };
       const moved = await client.messageMove(String(uid), folder, { uid: true });
       if (!moved) {
         throw new Error(
@@ -430,4 +526,12 @@ export async function moveInboxMessage(
       "Pasta de Spam/Junk não encontrada nesta caixa. Verifique no webmail do HostGator."
     );
   });
+}
+
+export async function moveInboxMessage(
+  config: ImapConnectionConfig,
+  uid: number,
+  destination: SpecialFolderKind
+): Promise<{ folder: string | null; deleted: boolean }> {
+  return moveFolderMessage(config, "INBOX", uid, destination);
 }
