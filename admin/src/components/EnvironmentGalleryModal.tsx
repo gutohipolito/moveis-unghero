@@ -18,9 +18,15 @@ import {
 } from "@/lib/factoryEnvironment";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import CameraCaptureModal from "@/components/CameraCaptureModal";
+import SpotlightTour, {
+  type SpotlightTourStep,
+} from "@/components/ui/SpotlightTour";
 import {
+  Camera,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Download,
   ExternalLink,
   Images,
@@ -54,6 +60,45 @@ const TIPO_LABELS: Record<string, string> = {
   OUTROS: "Outros",
 };
 
+const CATEGORY_HINTS: Record<EnvironmentAttachmentCategory, string> = {
+  PROJETO_ARQUITETO: "Plantas e arquivos do arquiteto",
+  PROJETO_FABRICA: "Desenhos técnicos da fábrica",
+  RENDER: "Imagens 3D / fotorrealismo",
+  REFERENCIA: "Inspiração e referências",
+  MEDICAO: "Fotos da obra, cotas e medidas",
+  CONFERENCIA: "Fotos da conferência técnica",
+  FOTO: "Fotos gerais do cômodo / local",
+};
+
+const TOUR_STORAGE_KEY = "env-gallery-tour-v1";
+
+const TOUR_STEPS: SpotlightTourStep[] = [
+  {
+    id: "category",
+    title: "1. Escolha o tipo",
+    body: "Antes de fotografar, toque no tipo do registro (ex.: Medição ou Foto). A câmera e a galeria usam essa categoria.",
+    target: '[data-tour-id="env-category"]',
+  },
+  {
+    id: "capture",
+    title: "2. Tire a foto ou envie da galeria",
+    body: "Use Abrir câmera na visita (tablet/celular) ou Da galeria para arquivos já salvos no aparelho.",
+    target: '[data-tour-id="env-capture"]',
+  },
+  {
+    id: "filter",
+    title: "3. Filtrar só para ver",
+    body: "“Ver só” organiza a grade. Não muda o destino do próximo envio — isso fica no tipo escolhido acima.",
+    target: '[data-tour-id="env-filter"]',
+  },
+  {
+    id: "grid",
+    title: "4. Ampiar e capa",
+    body: "Toque numa imagem para ampliar. Em cada card você pode definir a capa do ambiente ou excluir.",
+    target: '[data-tour-id="env-grid"]',
+  },
+];
+
 interface EnvironmentGalleryModalProps {
   environment: EnvironmentGalleryTarget | null;
   canManage: boolean;
@@ -70,12 +115,20 @@ export default function EnvironmentGalleryModal({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [filterCategory, setFilterCategory] = useState<AttachmentFilter>("ALL");
+  const [workCategory, setWorkCategory] =
+    useState<EnvironmentAttachmentCategory>("FOTO");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [pendingCategory, setPendingCategory] =
     useState<EnvironmentAttachmentCategory>("FOTO");
   const [preview, setPreview] = useState<PreviewTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [pendingPreviewUrls, setPendingPreviewUrls] = useState<string[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
 
   const loadAttachments = useCallback(async (environmentId: string) => {
     setLoading(true);
@@ -97,13 +150,37 @@ export default function EnvironmentGalleryModal({
       setAttachments([]);
       setCapaId(null);
       setFilterCategory("ALL");
+      setWorkCategory("FOTO");
       setPendingFiles([]);
       setPreview(null);
       setError(null);
+      setCameraOpen(false);
+      setTourOpen(false);
       return;
     }
     void loadAttachments(environment.id);
-  }, [environment, loadAttachments]);
+
+    if (canManage) {
+      try {
+        const seen = window.localStorage.getItem(TOUR_STORAGE_KEY);
+        if (!seen) {
+          window.setTimeout(() => setTourOpen(true), 450);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [environment, loadAttachments, canManage]);
+
+  useEffect(() => {
+    const urls = pendingFiles
+      .filter((f) => f.type.startsWith("image/"))
+      .map((f) => URL.createObjectURL(f));
+    setPendingPreviewUrls(urls);
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [pendingFiles]);
 
   const filteredAttachments =
     filterCategory === "ALL"
@@ -149,11 +226,28 @@ export default function EnvironmentGalleryModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- listeners bound to current preview set
   }, [preview, previewableAttachments]);
 
-  function queueFilesForUpload(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
-    setPendingFiles(Array.from(fileList));
-    setPendingCategory(filterCategory === "ALL" ? "FOTO" : filterCategory);
+  function queueFilesForUpload(fileList: FileList | File[] | null) {
+    if (!fileList) return;
+    const list = Array.isArray(fileList) ? fileList : Array.from(fileList);
+    if (list.length === 0) return;
+    setPendingFiles(list);
+    setPendingCategory(workCategory);
     setError(null);
+  }
+
+  function preferNativeCameraCapture() {
+    if (typeof window === "undefined") return false;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const narrow = window.matchMedia("(max-width: 900px)").matches;
+    return coarse || narrow;
+  }
+
+  function openCamera() {
+    if (preferNativeCameraCapture()) {
+      cameraInputRef.current?.click();
+    } else {
+      setCameraOpen(true);
+    }
   }
 
   async function confirmPendingUpload() {
@@ -211,6 +305,15 @@ export default function EnvironmentGalleryModal({
     setCapaId(result.capaAttachmentId);
   }
 
+  function markTourDone() {
+    try {
+      window.localStorage.setItem(TOUR_STORAGE_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setTourOpen(false);
+  }
+
   const tipoLabel = environment
     ? TIPO_LABELS[environment.tipo] || environment.tipo
     : "";
@@ -224,50 +327,105 @@ export default function EnvironmentGalleryModal({
         bodyClassName="p-0"
       >
         {environment ? (
-          <div className="flex flex-col max-h-[min(88dvh,900px)]">
+          <div ref={modalBodyRef} className="flex flex-col max-h-[min(88dvh,900px)]">
             <div className="shrink-0 border-b border-border px-4 sm:px-5 py-4 space-y-1">
-              <div className="flex items-center gap-2 text-primary">
-                <Images className="h-4 w-4 shrink-0" />
-                <p className="text-[10px] font-bold uppercase tracking-wider">
-                  Imagens do ambiente
-                </p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Images className="h-4 w-4 shrink-0" />
+                    <p className="text-[10px] font-bold uppercase tracking-wider">
+                      Imagens do ambiente
+                    </p>
+                  </div>
+                  <h3 className="text-lg font-black text-foreground leading-tight break-words">
+                    {environment.nome}
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                    {tipoLabel}
+                    {canManage
+                      ? " · Registre fotos por tipo (medição, conferência…). A câmera usa a categoria selecionada."
+                      : " · Somente visualização"}
+                  </p>
+                </div>
+                {canManage ? (
+                  <button
+                    type="button"
+                    onClick={() => setTourOpen(true)}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                    title="Ver passo a passo"
+                  >
+                    <CircleHelp className="h-3.5 w-3.5" />
+                    Como funciona?
+                  </button>
+                ) : null}
               </div>
-              <h3 className="text-lg font-black text-foreground leading-tight break-words">
-                {environment.nome}
-              </h3>
-              <p className="text-xs text-muted-foreground font-medium">
-                {tipoLabel}
-                {canManage
-                  ? " · Você pode adicionar e organizar arquivos"
-                  : " · Somente visualização"}
-              </p>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-4 space-y-4">
               {canManage && (
                 <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div data-tour-id="env-category" className="space-y-2">
                     <div>
                       <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                        Enviar arquivos
+                        1. O que você está registrando?
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Projeto, conferência, medição, renders… JPG, PNG, WEBP ou PDF até 10 MB.
+                        Escolha o tipo <strong className="text-foreground">antes</strong> de
+                        fotografar. Próximas fotos vão para essa categoria.
                       </p>
                     </div>
-                    <button
+                    <div className="flex flex-wrap gap-1.5">
+                      {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => {
+                        const active = workCategory === cat.value;
+                        return (
+                          <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => {
+                              setWorkCategory(cat.value);
+                              if (pendingFiles.length > 0) setPendingCategory(cat.value);
+                            }}
+                            disabled={uploading}
+                            title={CATEGORY_HINTS[cat.value]}
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-colors cursor-pointer ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background text-muted-foreground border-border hover:text-foreground"
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                      {CATEGORY_HINTS[workCategory]}
+                    </p>
+                  </div>
+
+                  <div
+                    data-tour-id="env-capture"
+                    className="flex flex-col sm:flex-row gap-2 pt-1"
+                  >
+                    <Button
                       type="button"
                       disabled={uploading || pendingFiles.length > 0}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground cursor-pointer hover:opacity-90 disabled:opacity-60"
+                      onClick={openCamera}
+                      className="flex-1 h-10 text-xs font-bold gap-1.5"
                     >
-                      {uploading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      {uploading ? "Enviando…" : "Selecionar arquivos"}
-                    </button>
+                      <Camera className="h-4 w-4" />
+                      Abrir câmera
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading || pendingFiles.length > 0}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 h-10 text-xs font-bold gap-1.5"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Da galeria
+                    </Button>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -280,15 +438,27 @@ export default function EnvironmentGalleryModal({
                         e.target.value = "";
                       }}
                     />
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        queueFilesForUpload(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
                   </div>
 
                   {pendingFiles.length > 0 && (
                     <div className="rounded-lg border border-primary/25 bg-background p-3 space-y-3">
                       <div className="flex items-start justify-between gap-2">
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground">
-                            {pendingFiles.length} arquivo
-                            {pendingFiles.length > 1 ? "s" : ""} para enviar
+                            3. Confirmar envio · {pendingFiles.length} arquivo
+                            {pendingFiles.length > 1 ? "s" : ""}
                           </p>
                           <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[280px]">
                             {pendingFiles.map((f) => f.name).join(", ")}
@@ -305,9 +475,23 @@ export default function EnvironmentGalleryModal({
                         </button>
                       </div>
 
+                      {pendingPreviewUrls.length > 0 ? (
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {pendingPreviewUrls.map((url) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={url}
+                              src={url}
+                              alt=""
+                              className="h-16 w-16 rounded-lg object-cover border border-border shrink-0"
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+
                       <div className="space-y-1.5">
                         <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                          Categoria
+                          Categoria deste envio
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                           {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => {
@@ -316,7 +500,10 @@ export default function EnvironmentGalleryModal({
                               <button
                                 key={cat.value}
                                 type="button"
-                                onClick={() => setPendingCategory(cat.value)}
+                                onClick={() => {
+                                  setPendingCategory(cat.value);
+                                  setWorkCategory(cat.value);
+                                }}
                                 disabled={uploading}
                                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-colors cursor-pointer ${
                                   active
@@ -360,9 +547,12 @@ export default function EnvironmentGalleryModal({
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div data-tour-id="env-filter" className="space-y-2">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                  Filtrar por categoria
+                  Ver só (filtro da grade)
+                </p>
+                <p className="text-[10px] text-muted-foreground -mt-1">
+                  Organiza o que você vê abaixo. Não altera a categoria do próximo envio.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -417,117 +607,121 @@ export default function EnvironmentGalleryModal({
                 </p>
               )}
 
-              {loading ? (
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando arquivos…
-                </p>
-              ) : attachments.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                  Nenhuma imagem ou arquivo neste ambiente ainda.
-                  {canManage ? " Use o envio acima para adicionar." : ""}
-                </div>
-              ) : filteredAttachments.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Nenhum arquivo nesta categoria. Escolha outra
-                  {canManage ? " ou envie um novo." : "."}
-                </p>
-              ) : (
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filteredAttachments.map((file) => {
-                    const isCover = capaId === file.id;
-                    const image = isImageMime(file.mime_type);
-                    return (
-                      <li
-                        key={file.id}
-                        className={`rounded-xl border p-2.5 space-y-2 ${
-                          isCover ? "border-primary bg-primary/5" : "border-border"
-                        }`}
-                      >
-                        {image ? (
-                          <button
-                            type="button"
-                            onClick={() => openPreview(file)}
-                            className="block w-full text-left cursor-pointer group"
-                            title="Ampliar imagem"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={file.url}
-                              alt={file.nome}
-                              className="w-full h-28 object-cover rounded-lg border border-border group-hover:opacity-95 transition-opacity"
-                            />
-                          </button>
-                        ) : (
-                          <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
-                            PDF / documento
-                          </div>
-                        )}
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-semibold truncate" title={file.nome}>
-                            {file.nome}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {attachmentCategoryLabel(file.categoria)}
-                            {file.size_bytes ? ` · ${formatAttachmentSize(file.size_bytes)}` : ""}
-                            {file.uploaded_by ? ` · ${file.uploaded_by}` : ""}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
+              <div data-tour-id="env-grid">
+                {loading ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando arquivos…
+                  </p>
+                ) : attachments.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                    Nenhuma imagem ou arquivo neste ambiente ainda.
+                    {canManage
+                      ? " Escolha o tipo acima e use Abrir câmera ou Da galeria."
+                      : ""}
+                  </div>
+                ) : filteredAttachments.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum arquivo neste filtro. Escolha “Todas” ou outra categoria
+                    {canManage ? " — ou envie um novo." : "."}
+                  </p>
+                ) : (
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {filteredAttachments.map((file) => {
+                      const isCover = capaId === file.id;
+                      const image = isImageMime(file.mime_type);
+                      return (
+                        <li
+                          key={file.id}
+                          className={`rounded-xl border p-2.5 space-y-2 ${
+                            isCover ? "border-primary bg-primary/5" : "border-border"
+                          }`}
+                        >
                           {image ? (
                             <button
                               type="button"
                               onClick={() => openPreview(file)}
-                              className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary cursor-pointer"
+                              className="block w-full text-left cursor-pointer group"
+                              title="Ampliar imagem"
                             >
-                              Ampliar
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={file.url}
+                                alt={file.nome}
+                                className="w-full h-28 object-cover rounded-lg border border-border group-hover:opacity-95 transition-opacity"
+                              />
                             </button>
                           ) : (
+                            <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
+                              PDF / documento
+                            </div>
+                          )}
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-semibold truncate" title={file.nome}>
+                              {file.nome}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {attachmentCategoryLabel(file.categoria)}
+                              {file.size_bytes ? ` · ${formatAttachmentSize(file.size_bytes)}` : ""}
+                              {file.uploaded_by ? ` · ${file.uploaded_by}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {image ? (
+                              <button
+                                type="button"
+                                onClick={() => openPreview(file)}
+                                className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary cursor-pointer"
+                              >
+                                Ampliar
+                              </button>
+                            ) : (
+                              <a
+                                href={file.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Abrir PDF
+                              </a>
+                            )}
                             <a
                               href={file.url}
-                              target="_blank"
-                              rel="noreferrer"
+                              download={file.nome}
                               className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary"
                             >
-                              <ExternalLink className="h-3 w-3" />
-                              Abrir PDF
+                              <Download className="h-3 w-3" />
+                              Baixar
                             </a>
-                          )}
-                          <a
-                            href={file.url}
-                            download={file.nome}
-                            className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary"
-                          >
-                            <Download className="h-3 w-3" />
-                            Baixar
-                          </a>
-                          {canManage && image && (
-                            <button
-                              type="button"
-                              onClick={() => void handleSetCover(file.id)}
-                              className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary cursor-pointer"
-                            >
-                              <Star
-                                className={`h-3 w-3 ${isCover ? "fill-current text-amber-500" : ""}`}
-                              />
-                              {isCover ? "Capa" : "Definir capa"}
-                            </button>
-                          )}
-                          {canManage && (
-                            <button
-                              type="button"
-                              onClick={() => void handleDelete(file.id)}
-                              className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Excluir
-                            </button>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+                            {canManage && image && (
+                              <button
+                                type="button"
+                                onClick={() => void handleSetCover(file.id)}
+                                className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-border hover:bg-secondary cursor-pointer"
+                              >
+                                <Star
+                                  className={`h-3 w-3 ${isCover ? "fill-current text-amber-500" : ""}`}
+                                />
+                                {isCover ? "Capa" : "Definir capa"}
+                              </button>
+                            )}
+                            {canManage && (
+                              <button
+                                type="button"
+                                onClick={() => void handleDelete(file.id)}
+                                className="inline-flex items-center gap-1 h-7 px-2 text-[10px] font-semibold rounded-md border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Excluir
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
 
             <div className="shrink-0 border-t border-border px-4 sm:px-5 py-3 flex justify-end">
@@ -538,6 +732,24 @@ export default function EnvironmentGalleryModal({
           </div>
         ) : null}
       </Dialog>
+
+      <CameraCaptureModal
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        title={`Foto · ${attachmentCategoryLabel(workCategory)}`}
+        onCapture={async (file) => {
+          queueFilesForUpload([file]);
+          setCameraOpen(false);
+        }}
+      />
+
+      <SpotlightTour
+        open={tourOpen && Boolean(environment) && canManage}
+        steps={TOUR_STEPS}
+        rootRef={modalBodyRef}
+        onClose={markTourDone}
+        onFinish={markTourDone}
+      />
 
       {preview && typeof document !== "undefined"
         ? createPortal(
