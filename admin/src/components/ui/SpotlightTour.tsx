@@ -5,6 +5,7 @@ import {
   useEffect,
   useLayoutEffect,
   useState,
+  type CSSProperties,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -102,6 +103,24 @@ export default function SpotlightTour({
       ? hole.top + hole.height + 12
       : Math.max(16, (hole?.top ?? 80) - 160);
 
+  const isNarrow =
+    typeof window !== "undefined" && window.innerWidth < 768;
+
+  const cardStyle: CSSProperties = isNarrow
+    ? {
+        left: 12,
+        right: 12,
+        bottom: "max(12px, env(safe-area-inset-bottom, 0px))",
+        width: "auto",
+        transform: "none",
+      }
+    : {
+        top: cardTop,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "min(340px, calc(100vw - 24px))",
+      };
+
   const content: ReactNode = (
     <div className="fixed inset-0 z-[220]" role="dialog" aria-modal="true" aria-label="Tour guiado">
       {/* Dim via four panes around the hole so the target stays “vivo” */}
@@ -170,12 +189,8 @@ export default function SpotlightTour({
       )}
 
       <div
-        className="absolute z-[221] w-[min(340px,calc(100vw-24px))] rounded-xl border border-border bg-card p-4 shadow-xl"
-        style={{
-          top: cardTop,
-          left: "50%",
-          transform: "translateX(-50%)",
-        }}
+        className="absolute z-[221] rounded-xl border border-border bg-card p-4 shadow-xl"
+        style={cardStyle}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2 mb-2">
@@ -195,11 +210,11 @@ export default function SpotlightTour({
           </button>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{step.body}</p>
-        <div className="flex items-center justify-between gap-2 mt-4">
+          <div className="flex items-center justify-between gap-2 mt-4">
           <button
             type="button"
             onClick={onClose}
-            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer min-h-10 px-2 touch-manipulation"
           >
             Pular
           </button>
@@ -209,7 +224,7 @@ export default function SpotlightTour({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="text-xs font-semibold h-8"
+                className="text-xs font-semibold h-10 min-w-[5.5rem] touch-manipulation"
                 onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
               >
                 <ChevronLeft className="h-3.5 w-3.5 mr-0.5" />
@@ -219,7 +234,7 @@ export default function SpotlightTour({
             <Button
               type="button"
               size="sm"
-              className="text-xs font-semibold h-8"
+              className="text-xs font-semibold h-10 min-w-[5.5rem] touch-manipulation"
               onClick={() => {
                 if (isLast) {
                   onFinish();
