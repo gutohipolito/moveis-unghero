@@ -242,6 +242,15 @@ export async function fetchInboxMessage(
       );
       if (!msg || !msg.source) return null;
 
+      // Ao abrir, marca como lida (comportamento de cliente de e-mail).
+      if (!msg.flags?.has("\\Seen")) {
+        try {
+          await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+        } catch {
+          /* ignore — leitura ainda funciona */
+        }
+      }
+
       const parsed = await simpleParser(msg.source);
       const { text, html } = normalizeParsedBody(parsed);
 
@@ -319,4 +328,106 @@ export async function fetchInboxAttachment(
     contentType: att.contentType || "application/octet-stream",
     content,
   };
+}
+
+type SpecialFolderKind = "trash" | "junk";
+
+const SPECIAL_USE: Record<SpecialFolderKind, string> = {
+  trash: "\\Trash",
+  junk: "\\Junk",
+};
+
+const FOLDER_NAME_HINTS: Record<SpecialFolderKind, string[]> = {
+  trash: ["trash", "lixeira", "deleted", "bin", "excluídos", "excluidos"],
+  junk: ["junk", "spam", "lixo", "bulk", "bulk mail", "correio não solicitado"],
+};
+
+async function resolveSpecialFolderPath(
+  client: ImapFlow,
+  kind: SpecialFolderKind
+): Promise<string | null> {
+  const folders = await client.list();
+  const special = SPECIAL_USE[kind];
+  const bySpecial = folders.find((f) => f.specialUse === special);
+  if (bySpecial?.path) return bySpecial.path;
+
+  const hints = FOLDER_NAME_HINTS[kind];
+  const byName = folders.find((f) => {
+    const name = (f.name || "").toLowerCase();
+    const path = (f.path || "").toLowerCase();
+    return hints.some((h) => name === h || path.endsWith(h) || path.includes(`.${h}`));
+  });
+  return byName?.path || null;
+}
+
+async function withInboxClient<T>(
+  config: ImapConnectionConfig,
+  fn: (client: ImapFlow) => Promise<T>
+): Promise<T> {
+  const client = createClient(config);
+  await client.connect();
+  try {
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      return await fn(client);
+    } finally {
+      lock.release();
+    }
+  } finally {
+    try {
+      await client.logout();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Marca mensagem da INBOX como lida ou não lida. */
+export async function setInboxMessageSeen(
+  config: ImapConnectionConfig,
+  uid: number,
+  seen: boolean
+): Promise<void> {
+  await withInboxClient(config, async (client) => {
+    if (seen) {
+      await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+    } else {
+      await client.messageFlagsRemove(String(uid), ["\\Seen"], { uid: true });
+    }
+  });
+}
+
+/**
+ * Move mensagem da INBOX para Lixeira ou Spam.
+ * Se a pasta Lixeira não existir, usa exclusão IMAP (\\Deleted + expunge).
+ */
+export async function moveInboxMessage(
+  config: ImapConnectionConfig,
+  uid: number,
+  destination: SpecialFolderKind
+): Promise<{ folder: string | null; deleted: boolean }> {
+  return withInboxClient(config, async (client) => {
+    const folder = await resolveSpecialFolderPath(client, destination);
+    if (folder) {
+      const moved = await client.messageMove(String(uid), folder, { uid: true });
+      if (!moved) {
+        throw new Error(
+          destination === "junk"
+            ? "Não foi possível mover para Spam."
+            : "Não foi possível mover para a Lixeira."
+        );
+      }
+      return { folder, deleted: false };
+    }
+
+    if (destination === "trash") {
+      const ok = await client.messageDelete(String(uid), { uid: true });
+      if (!ok) throw new Error("Não foi possível excluir a mensagem.");
+      return { folder: null, deleted: true };
+    }
+
+    throw new Error(
+      "Pasta de Spam/Junk não encontrada nesta caixa. Verifique no webmail do HostGator."
+    );
+  });
 }

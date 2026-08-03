@@ -6,18 +6,22 @@ import {
   Inbox,
   Loader2,
   Mail,
+  MailOpen,
   Paperclip,
   PencilLine,
   RefreshCw,
   Reply,
   Send,
   Settings2,
+  ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import EmailRichEditor, {
   htmlToPlainText,
   plainTextToEditorHtml,
@@ -26,6 +30,9 @@ import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
 import {
   getMailboxMessage,
   listMailboxInbox,
+  markMailboxMessageSeen,
+  moveMailboxMessageToSpam,
+  moveMailboxMessageToTrash,
   sendMailboxEmail,
 } from "@/app/actions/emailInbox";
 import type { EmailListItem } from "@/lib/emailImap";
@@ -73,6 +80,8 @@ function formatMsgDate(iso: string | null) {
 
 export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClientProps) {
   const { isReadOnly } = usePermissions();
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
   const [mailboxes] = useState(initialMailboxes);
   const [mailboxId, setMailboxId] = useState(initialMailboxes[0]?.id || "");
   const [messages, setMessages] = useState<EmailListItem[]>([]);
@@ -81,6 +90,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
   const [detail, setDetail] = useState<MessageDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeMode, setComposeMode] = useState<"new" | "reply">("new");
   const [to, setTo] = useState("");
@@ -128,7 +138,83 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     setLoadingDetail(false);
     if (res.success && res.data) {
       setDetail(res.data);
+      setMessages((prev) =>
+        prev.map((m) => (m.uid === uid ? { ...m, seen: true } : m))
+      );
     }
+  };
+
+  const clearSelection = () => {
+    setSelectedUid(null);
+    setDetail(null);
+  };
+
+  const removeFromList = (uid: number) => {
+    setMessages((prev) => prev.filter((m) => m.uid !== uid));
+    if (selectedUid === uid) clearSelection();
+  };
+
+  const handleMarkUnseen = async () => {
+    if (!mailboxId || !selectedUid || isReadOnly) return;
+    setActionBusy(true);
+    const res = await markMailboxMessageSeen(mailboxId, selectedUid, false);
+    setActionBusy(false);
+    if (!res.success) {
+      showError("Falha", res.error || "Não foi possível marcar como não lida.");
+      return;
+    }
+    setMessages((prev) =>
+      prev.map((m) => (m.uid === selectedUid ? { ...m, seen: false } : m))
+    );
+    showSuccess("Atualizado", "Mensagem marcada como não lida.");
+  };
+
+  const handleMoveToTrash = () => {
+    if (!mailboxId || !selectedUid || isReadOnly) return;
+    const uid = selectedUid;
+    confirmAction({
+      title: "Excluir mensagem?",
+      message:
+        "A mensagem será movida para a Lixeira da caixa (ou excluída se a pasta não existir).",
+      confirmLabel: "Excluir",
+      onConfirm: async () => {
+        setActionBusy(true);
+        const res = await moveMailboxMessageToTrash(mailboxId, uid);
+        setActionBusy(false);
+        if (!res.success) {
+          showError("Falha ao excluir", res.error || "Não foi possível excluir.");
+          return;
+        }
+        removeFromList(uid);
+        showSuccess(
+          "Mensagem excluída",
+          res.deleted
+            ? "Removida permanentemente da caixa."
+            : "Movida para a Lixeira."
+        );
+      },
+    });
+  };
+
+  const handleMoveToSpam = () => {
+    if (!mailboxId || !selectedUid || isReadOnly) return;
+    const uid = selectedUid;
+    confirmAction({
+      title: "Marcar como spam?",
+      message: "A mensagem será movida para a pasta Spam/Junk desta caixa.",
+      confirmLabel: "Mover para spam",
+      onConfirm: async () => {
+        setActionBusy(true);
+        const res = await moveMailboxMessageToSpam(mailboxId, uid);
+        setActionBusy(false);
+        if (!res.success) {
+          showError("Falha no spam", res.error || "Não foi possível mover.");
+          return;
+        }
+        removeFromList(uid);
+        showSuccess("Movida para spam", "A mensagem saiu da caixa de entrada.");
+      },
+    });
   };
 
   const openComposeNew = () => {
@@ -211,6 +297,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
 
   return (
     <div className="space-y-5">
+      <ActionDialogHost dialog={dialog} />
       <PageHeader
         title="E-mails"
         description="Caixas por área — leia e responda sem usar o webmail."
@@ -368,7 +455,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                 <div className="p-4 text-sm text-rose-600">Não foi possível abrir a mensagem.</div>
               ) : (
                 <>
-                  <div className="px-4 py-3 border-b border-border/40 space-y-1 shrink-0">
+                  <div className="px-4 py-3 border-b border-border/40 space-y-2 shrink-0">
                     <h2 className="text-base font-bold text-foreground leading-snug">
                       {detail.subject}
                     </h2>
@@ -379,14 +466,47 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                       Para: {detail.to || "—"} · {formatMsgDate(detail.date)}
                     </p>
                     {!isReadOnly && (
-                      <div className="pt-2">
+                      <div className="flex flex-wrap gap-2 pt-1">
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-8 gap-1.5"
                           onClick={openComposeReply}
+                          disabled={actionBusy}
                         >
                           <Reply className="h-3.5 w-3.5" /> Responder
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5"
+                          onClick={() => void handleMarkUnseen()}
+                          disabled={actionBusy}
+                        >
+                          <MailOpen className="h-3.5 w-3.5" /> Não lida
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5 text-amber-800 border-amber-200 hover:bg-amber-50"
+                          onClick={handleMoveToSpam}
+                          disabled={actionBusy}
+                        >
+                          <ShieldAlert className="h-3.5 w-3.5" /> Spam
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5 text-rose-700 border-rose-200 hover:bg-rose-50"
+                          onClick={handleMoveToTrash}
+                          disabled={actionBusy}
+                        >
+                          {actionBusy ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                          Excluir
                         </Button>
                       </div>
                     )}

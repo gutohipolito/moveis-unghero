@@ -9,6 +9,8 @@ import { EMAIL_INBOX_PAGE_SIZE, EMAIL_MAX_ATTACHMENT_BYTES } from "@/lib/emailAr
 import {
   fetchInboxMessage,
   listInboxMessages,
+  moveInboxMessage,
+  setInboxMessageSeen,
   type EmailListItem,
 } from "@/lib/emailImap";
 import { sendSmtpEmail } from "@/lib/emailSmtp";
@@ -81,6 +83,79 @@ export async function getMailboxMessage(mailboxId: string, uid: number) {
       success: false as const,
       error:
         error instanceof Error ? error.message : "Não foi possível abrir a mensagem.",
+    };
+  }
+}
+
+function imapConfigFromLoaded(loaded: NonNullable<Awaited<ReturnType<typeof loadAccessibleMailboxSecrets>>>) {
+  return {
+    host: loaded.mailbox.imap_host,
+    port: loaded.mailbox.imap_port,
+    user: loaded.mailbox.address,
+    pass: loaded.password,
+  };
+}
+
+export async function markMailboxMessageSeen(
+  mailboxId: string,
+  uid: number,
+  seen: boolean
+) {
+  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
+  if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
+    return { success: false as const, error: "Sem permissão para alterar a mensagem." };
+  }
+  try {
+    await setInboxMessageSeen(imapConfigFromLoaded(loaded), uid, seen);
+    return { success: true as const };
+  } catch (error) {
+    console.error("markMailboxMessageSeen:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar o status da mensagem.",
+    };
+  }
+}
+
+export async function moveMailboxMessageToTrash(mailboxId: string, uid: number) {
+  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
+  if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
+    return { success: false as const, error: "Sem permissão para excluir." };
+  }
+  try {
+    const result = await moveInboxMessage(imapConfigFromLoaded(loaded), uid, "trash");
+    return { success: true as const, ...result };
+  } catch (error) {
+    console.error("moveMailboxMessageToTrash:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível mover para a lixeira.",
+    };
+  }
+}
+
+export async function moveMailboxMessageToSpam(mailboxId: string, uid: number) {
+  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
+  if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
+    return { success: false as const, error: "Sem permissão para marcar como spam." };
+  }
+  try {
+    const result = await moveInboxMessage(imapConfigFromLoaded(loaded), uid, "junk");
+    return { success: true as const, ...result };
+  } catch (error) {
+    console.error("moveMailboxMessageToSpam:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível mover para spam.",
     };
   }
 }
