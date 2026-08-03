@@ -33,9 +33,31 @@ import {
   Settings2,
   ArrowLeft,
   Building2,
+  FolderUp,
 } from "lucide-react";
 
 const CATALOG_MAX_SIZE_LABEL = formatCatalogSize(PRODUCT_CATALOG_MAX_BYTES);
+const CATALOG_ACCEPT =
+  "application/pdf,image/jpeg,image/png,image/webp,image/jpg";
+
+function isAllowedCatalogFile(file: File): boolean {
+  const t = (file.type || "").toLowerCase();
+  if (
+    t === "application/pdf" ||
+    t === "image/jpeg" ||
+    t === "image/png" ||
+    t === "image/webp" ||
+    t === "image/jpg"
+  ) {
+    return true;
+  }
+  return /\.(pdf|jpe?g|png|webp)$/i.test(file.name);
+}
+
+function titleFromFilename(name: string): string {
+  const base = name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+  return base || name;
+}
 
 function describeCatalogUploadError(error: unknown, status?: number): string {
   const rawMessage =
@@ -117,7 +139,7 @@ export default function CatalogosClient({
 }: CatalogosClientProps) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
-  const { role, isReadOnly } = usePermissions();
+  const { role, isReadOnly, isAdmin } = usePermissions();
   const canManageCatalogs = canManageProductsRole(role);
 
   const [catalogs, setCatalogs] = useState(initialCatalogs);
@@ -138,6 +160,20 @@ export default function CatalogosClient({
   const [capa, setCapa] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
+  const bulkFileRef = useRef<HTMLInputElement>(null);
+  const bulkCancelRef = useRef(false);
+
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkFiles, setBulkFiles] = useState<File[]>([]);
+  const [bulkSupplierId, setBulkSupplierId] = useState("");
+  const [bulkMarca, setBulkMarca] = useState("");
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    current: number;
+    total: number;
+    name: string;
+  } | null>(null);
+  const [bulkLog, setBulkLog] = useState<string[]>([]);
 
   const supplierById = useMemo(() => {
     const map = new Map<string, SupplierOption>();
@@ -292,6 +328,194 @@ export default function CatalogosClient({
     setCapa(selected);
   };
 
+  const createCatalogFromFile = async (
+    file: File,
+    opts: {
+      titulo?: string;
+      marca?: string | null;
+      supplierId?: string | null;
+      descricao?: string | null;
+      capa?: File | null;
+    }
+  ): Promise<ProductCatalogDTO> => {
+    if (file.size > PRODUCT_CATALOG_MAX_BYTES) {
+      throw new Error(`Arquivo muito grande (máx. ${CATALOG_MAX_SIZE_LABEL}).`);
+    }
+    if (!isAllowedCatalogFile(file)) {
+      throw new Error("Formato não aceito. Use PDF, JPG, PNG ou WEBP.");
+    }
+    if (opts.capa && opts.capa.size > PRODUCT_CATALOG_MAX_BYTES) {
+      throw new Error("A imagem de capa selecionada é muito grande.");
+    }
+
+    let finalCapa: File | null = opts.capa || null;
+    const isPdf =
+      file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!finalCapa && isPdf) {
+      try {
+        finalCapa = await generateCapaFromPdfFile(file);
+      } catch (err) {
+        console.error("Falha ao gerar capa automática do PDF:", err);
+      }
+    }
+
+    const blob = await upload(file.name, file, {
+      access: "public",
+      handleUploadUrl: "/api/produtos/catalogos/upload",
+    });
+
+    let capaUrl: string | null = null;
+    if (finalCapa) {
+      const capaBlob = await upload(finalCapa.name, finalCapa, {
+        access: "public",
+        handleUploadUrl: "/api/produtos/catalogos/upload",
+      });
+      capaUrl = capaBlob.url;
+    }
+
+    const mimeType =
+      file.type ||
+      (isPdf
+        ? "application/pdf"
+        : /\.png$/i.test(file.name)
+          ? "image/png"
+          : /\.webp$/i.test(file.name)
+            ? "image/webp"
+            : "image/jpeg");
+
+    const payload = {
+      titulo: (opts.titulo || titleFromFilename(file.name)).trim() || file.name,
+      descricao: opts.descricao?.trim() || null,
+      marca: opts.marca?.trim() || null,
+      supplierId: opts.supplierId?.trim() || null,
+      arquivoUrl: blob.url,
+      arquivoNome: file.name,
+      mimeType,
+      sizeBytes: file.size,
+      capaUrl,
+    };
+
+    const res = await fetch("/api/produtos/catalogos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success || !data?.catalog) {
+      throw new Error(describeCatalogUploadError(data?.error, res.status));
+    }
+    return data.catalog as ProductCatalogDTO;
+  };
+
+  const openBulk = () => {
+    bulkCancelRef.current = false;
+    setBulkFiles([]);
+    setBulkLog([]);
+    setBulkProgress(null);
+    setBulkMarca("");
+    setBulkSupplierId(
+      selectedSupplierId && selectedSupplierId !== NONE_SUPPLIER_ID
+        ? selectedSupplierId
+        : ""
+    );
+    if (bulkFileRef.current) bulkFileRef.current.value = "";
+    setBulkOpen(true);
+  };
+
+  const selectBulkFiles = (list: FileList | null) => {
+    if (!list?.length) {
+      setBulkFiles([]);
+      return;
+    }
+    const accepted: File[] = [];
+    const rejected: string[] = [];
+    for (const f of Array.from(list)) {
+      if (!isAllowedCatalogFile(f)) {
+        rejected.push(`${f.name}: formato inválido`);
+        continue;
+      }
+      if (f.size > PRODUCT_CATALOG_MAX_BYTES) {
+        rejected.push(`${f.name}: acima de ${CATALOG_MAX_SIZE_LABEL}`);
+        continue;
+      }
+      accepted.push(f);
+    }
+    setBulkFiles(accepted);
+    setBulkLog(rejected.length ? rejected.slice(0, 12) : []);
+    if (rejected.length > 12) {
+      setBulkLog((prev) => [...prev, `… e mais ${rejected.length - 12} ignorados`]);
+    }
+  };
+
+  const runBulkImport = async () => {
+    if (!bulkFiles.length) {
+      showError("Sem arquivos", "Selecione um ou mais PDFs/imagens para importar.");
+      return;
+    }
+    bulkCancelRef.current = false;
+    setBulkRunning(true);
+    setBulkLog([]);
+    let ok = 0;
+    let fail = 0;
+    const created: ProductCatalogDTO[] = [];
+    const errors: string[] = [];
+
+    try {
+      for (let i = 0; i < bulkFiles.length; i++) {
+        if (bulkCancelRef.current) break;
+        const file = bulkFiles[i];
+        setBulkProgress({
+          current: i + 1,
+          total: bulkFiles.length,
+          name: file.name,
+        });
+        try {
+          const catalog = await createCatalogFromFile(file, {
+            marca: bulkMarca || null,
+            supplierId: bulkSupplierId || null,
+          });
+          created.push(catalog);
+          ok += 1;
+        } catch (err) {
+          fail += 1;
+          errors.push(
+            `${file.name}: ${err instanceof Error ? err.message : "falha no envio"}`
+          );
+        }
+      }
+
+      if (created.length) {
+        setCatalogs((prev) =>
+          [...prev, ...created].sort((a, b) =>
+            a.titulo.localeCompare(b.titulo, "pt-BR")
+          )
+        );
+      }
+
+      if (bulkCancelRef.current) {
+        showError(
+          "Importação interrompida",
+          `${ok} enviado(s), ${fail} com erro. O restante foi cancelado.`
+        );
+      } else if (fail === 0) {
+        showSuccess(
+          "Importação concluída",
+          `${ok} catálogo(s) adicionados à biblioteca.`
+        );
+        setBulkOpen(false);
+      } else {
+        showSuccess(
+          "Importação parcial",
+          `${ok} ok, ${fail} com erro. Veja o log no diálogo.`
+        );
+      }
+      setBulkLog(errors);
+    } finally {
+      setBulkRunning(false);
+      setBulkProgress(null);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -326,84 +550,18 @@ export default function CatalogosClient({
       showError("Arquivo obrigatório", "Selecione o PDF ou a imagem do catálogo.");
       return;
     }
-    if (file.size > PRODUCT_CATALOG_MAX_BYTES) {
-      showError(
-        "Arquivo muito grande",
-        "O arquivo selecionado é muito grande."
-      );
-      return;
-    }
-    if (capa && capa.size > PRODUCT_CATALOG_MAX_BYTES) {
-      showError(
-        "Capa muito grande",
-        "A imagem de capa selecionada é muito grande."
-      );
-      return;
-    }
 
     setUploading(true);
     try {
-      // Se for PDF e não houver capa manual, gera a capa da primeira página automaticamente
-      let finalCapa = capa;
-      if (file.type === "application/pdf" && !capa) {
-        try {
-          const generated = await generateCapaFromPdfFile(file);
-          if (generated) {
-            finalCapa = generated;
-          }
-        } catch (err) {
-          console.error("Falha ao gerar capa automática do PDF:", err);
-        }
-      }
-
-      // 1. Upload do PDF/Imagem do catálogo direto do navegador para o Vercel Blob
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/produtos/catalogos/upload",
-      });
-
-      // 2. Upload da capa do catálogo (se houver)
-      let capaUrl = null;
-      if (finalCapa) {
-        const capaBlob = await upload(finalCapa.name, finalCapa, {
-          access: "public",
-          handleUploadUrl: "/api/produtos/catalogos/upload",
-        });
-        capaUrl = capaBlob.url;
-      }
-
-      // 3. Envia os metadados e as URLs salvas para criar no banco via JSON
-      const payload = {
-        titulo: titulo.trim() || file.name,
+      const catalog = await createCatalogFromFile(file, {
+        titulo: titulo.trim() || undefined,
         descricao: descricao.trim() || null,
         marca: marca.trim() || null,
         supplierId: supplierId.trim() || null,
-        arquivoUrl: blob.url,
-        arquivoNome: file.name,
-        mimeType: file.type || "application/octet-stream",
-        sizeBytes: file.size,
-        capaUrl,
-      };
-
-      const res = await fetch("/api/produtos/catalogos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        capa,
       });
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.success || !data?.catalog) {
-        showError(
-          "Não foi possível adicionar",
-          describeCatalogUploadError(data?.error, res.status)
-        );
-        return;
-      }
-
       setCatalogs((prev) =>
-        [...prev, data.catalog as ProductCatalogDTO].sort((a, b) =>
-          a.titulo.localeCompare(b.titulo, "pt-BR")
-        )
+        [...prev, catalog].sort((a, b) => a.titulo.localeCompare(b.titulo, "pt-BR"))
       );
       showSuccess("Catálogo adicionado", "Disponível para uso com os clientes.");
       setModalOpen(false);
@@ -412,7 +570,7 @@ export default function CatalogosClient({
       console.error(err);
       showError(
         "Não foi possível enviar",
-        describeCatalogUploadError(err)
+        err instanceof Error ? err.message : describeCatalogUploadError(err)
       );
     } finally {
       setUploading(false);
@@ -489,6 +647,18 @@ export default function CatalogosClient({
             <Settings2 className="h-4 w-4" />
             {manageMode ? "Edição ativa" : "Habilitar edição"}
           </Button>
+          {isAdmin ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openBulk}
+              className="font-bold gap-1.5 w-full sm:w-auto"
+              disabled={bulkRunning}
+            >
+              <FolderUp className="h-4 w-4" />
+              Importar em lote
+            </Button>
+          ) : null}
           <Button onClick={openCreate} className="font-bold btn-metallic gap-1.5 w-full sm:w-auto">
             <Plus className="h-4.5 w-4.5" /> Novo catálogo
           </Button>
@@ -777,6 +947,136 @@ export default function CatalogosClient({
           </div>
         </form>
       </Dialog>
+
+      {isAdmin ? (
+        <Dialog
+          isOpen={bulkOpen}
+          onClose={() => {
+            if (bulkRunning) {
+              bulkCancelRef.current = true;
+              return;
+            }
+            setBulkOpen(false);
+          }}
+          className="max-w-lg w-full"
+        >
+          <div className="space-y-4 pr-2">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Importar catálogos em lote</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Somente Diretoria. Selecione vários PDFs/imagens — título vem do nome do arquivo;
+                capa da 1ª página em PDFs. Envio um a um para o armazenamento (até{" "}
+                {CATALOG_MAX_SIZE_LABEL} cada).
+              </p>
+            </div>
+
+            {suppliers.length > 0 ? (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600">Fornecedor</label>
+                <select
+                  value={bulkSupplierId}
+                  onChange={(e) => setBulkSupplierId(e.target.value)}
+                  disabled={bulkRunning}
+                  className="w-full h-10 rounded-[var(--radius-sm)] border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Sem fornecedor</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nomeFantasia || s.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">
+                Categoria / linha (opcional, vale para todos)
+              </label>
+              <Input
+                value={bulkMarca}
+                onChange={(e) => setBulkMarca(e.target.value)}
+                disabled={bulkRunning}
+                placeholder="Ex.: Puxadores, Pastas técnicas…"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Arquivos *</label>
+              <input
+                ref={bulkFileRef}
+                type="file"
+                multiple
+                accept={CATALOG_ACCEPT}
+                disabled={bulkRunning}
+                onChange={(e) => selectBulkFiles(e.target.files)}
+                className="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {bulkFiles.length > 0
+                  ? `${bulkFiles.length} arquivo(s) prontos para envio.`
+                  : "PDF, JPG, PNG ou WEBP. Pode selecionar dezenas de uma vez."}
+              </p>
+            </div>
+
+            {bulkProgress ? (
+              <div className="rounded-[var(--radius-sm)] border border-amber-200 bg-amber-50/80 px-3 py-2.5 space-y-1">
+                <p className="text-xs font-bold text-amber-900">
+                  Enviando {bulkProgress.current}/{bulkProgress.total}
+                </p>
+                <p className="text-[11px] text-amber-800/80 truncate">{bulkProgress.name}</p>
+                <div className="h-1.5 rounded-full bg-amber-100 overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 transition-all"
+                    style={{
+                      width: `${Math.round(
+                        (bulkProgress.current / Math.max(bulkProgress.total, 1)) * 100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {bulkLog.length > 0 ? (
+              <div className="max-h-32 overflow-y-auto rounded-[var(--radius-sm)] border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 space-y-0.5">
+                {bulkLog.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (bulkRunning) {
+                    bulkCancelRef.current = true;
+                    return;
+                  }
+                  setBulkOpen(false);
+                }}
+              >
+                {bulkRunning ? "Parar após o atual" : "Fechar"}
+              </Button>
+              <Button
+                type="button"
+                className="btn-metallic font-bold"
+                disabled={bulkRunning || bulkFiles.length === 0}
+                onClick={() => void runBulkImport()}
+              >
+                {bulkRunning ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <FolderUp className="h-4 w-4 mr-1.5" />
+                )}
+                {bulkRunning ? "Importando…" : `Importar ${bulkFiles.length || ""}`}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      ) : null}
     </div>
   );
 }
