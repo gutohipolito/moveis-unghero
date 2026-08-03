@@ -68,91 +68,6 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-const PALETTES = [
-  {
-    accent: "bg-gradient-to-r from-emerald-500 to-teal-600",
-    bgCard: "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/60 hover:border-emerald-350",
-    hoverText: "group-hover/card:text-emerald-700",
-    text: "text-emerald-700",
-    badge: "bg-emerald-500/10 border-emerald-500/20 text-emerald-700",
-    avatar: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25",
-    editHover: "hover:text-emerald-600 hover:bg-white hover:border-emerald-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-indigo-500 to-violet-600",
-    bgCard: "bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-200/60 hover:border-indigo-350",
-    hoverText: "group-hover/card:text-indigo-700",
-    text: "text-indigo-700",
-    badge: "bg-indigo-500/10 border-indigo-500/20 text-indigo-700",
-    avatar: "bg-indigo-500/15 text-indigo-700 border-indigo-500/25",
-    editHover: "hover:text-indigo-600 hover:bg-white hover:border-indigo-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-rose-500 to-pink-600",
-    bgCard: "bg-gradient-to-br from-rose-50 to-pink-50 border-rose-200/60 hover:border-rose-350",
-    hoverText: "group-hover/card:text-rose-700",
-    text: "text-rose-700",
-    badge: "bg-rose-500/10 border-rose-500/20 text-rose-700",
-    avatar: "bg-rose-500/15 text-rose-700 border-rose-500/25",
-    editHover: "hover:text-rose-600 hover:bg-white hover:border-rose-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-amber-500 to-orange-600",
-    bgCard: "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200/60 hover:border-amber-350",
-    hoverText: "group-hover/card:text-amber-700",
-    text: "text-amber-700",
-    badge: "bg-amber-500/10 border-amber-500/20 text-amber-700",
-    avatar: "bg-amber-500/15 text-amber-700 border-amber-500/25",
-    editHover: "hover:text-amber-600 hover:bg-white hover:border-amber-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-cyan-500 to-blue-600",
-    bgCard: "bg-gradient-to-br from-cyan-50 to-blue-50 border-cyan-200/60 hover:border-cyan-350",
-    hoverText: "group-hover/card:text-cyan-700",
-    text: "text-cyan-700",
-    badge: "bg-cyan-500/10 border-cyan-500/20 text-cyan-700",
-    avatar: "bg-cyan-500/15 text-cyan-700 border-cyan-500/25",
-    editHover: "hover:text-cyan-600 hover:bg-white hover:border-cyan-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-purple-500 to-fuchsia-600",
-    bgCard: "bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-200/60 hover:border-purple-350",
-    hoverText: "group-hover/card:text-purple-700",
-    text: "text-purple-700",
-    badge: "bg-purple-500/10 border-purple-500/20 text-purple-700",
-    avatar: "bg-purple-500/15 text-purple-700 border-purple-500/25",
-    editHover: "hover:text-purple-600 hover:bg-white hover:border-purple-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-sky-500 to-indigo-600",
-    bgCard: "bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200/60 hover:border-sky-350",
-    hoverText: "group-hover/card:text-sky-700",
-    text: "text-sky-700",
-    badge: "bg-sky-500/10 border-sky-500/20 text-sky-700",
-    avatar: "bg-sky-500/15 text-sky-700 border-sky-500/25",
-    editHover: "hover:text-sky-600 hover:bg-white hover:border-sky-200",
-  },
-  {
-    accent: "bg-gradient-to-r from-violet-500 to-fuchsia-600",
-    bgCard: "bg-gradient-to-br from-violet-50 to-fuchsia-50 border-violet-200/60 hover:border-violet-350",
-    hoverText: "group-hover/card:text-violet-700",
-    text: "text-violet-700",
-    badge: "bg-violet-500/10 border-violet-500/20 text-violet-700",
-    avatar: "bg-violet-500/15 text-violet-700 border-violet-500/25",
-    editHover: "hover:text-violet-600 hover:bg-white hover:border-violet-200",
-  },
-];
-
-function getPartnerPalette(id: string) {
-  let hash = 0;
-  const seed = id || "default";
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % PALETTES.length;
-  return PALETTES[index];
-}
-
 interface PartnerCardProps {
   p: ParceiroDTO;
   privacyMode: boolean;
@@ -190,23 +105,19 @@ const PartnerCard = ({
   );
   const registroLabel = formatPartnerRegistro(p.tipo, p.registro_profissional);
 
-  const palette = getPartnerPalette(p.id);
-
   return (
     <div
       key={p.id}
       onClick={() => onViewDetails(p)}
-      className={`border rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative cursor-pointer ${palette.bgCard}`}
+      className="partner-card group/card"
     >
-      <div className={`h-1.5 w-full ${palette.accent}`} />
-      
+      <div className="partner-card-accent" />
+
       <div className="p-5 flex flex-col gap-4 flex-1">
-        {/* Perfil & Cabeçalho */}
-        <div className="flex items-start gap-5">
-          {/* Avatar com upload rápido */}
-          <div 
+        <div className="flex items-start gap-4">
+          <div
             onClick={(e) => e.stopPropagation()}
-            className="relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl overflow-hidden transition-all duration-300"
+            className="partner-card-avatar relative group/avatar h-16 w-auto min-w-16 max-w-28"
           >
             {p.fotoUrl ? (
               <img
@@ -215,7 +126,7 @@ const PartnerCard = ({
                 className="h-full w-auto max-w-28 object-contain group-hover/avatar:scale-105 transition-transform duration-500"
               />
             ) : (
-              <div className={`h-16 w-16 flex items-center justify-center text-lg font-black rounded-2xl ${palette.avatar}`}>
+              <div className="partner-card-avatar-fallback h-16 w-16 text-lg rounded-[inherit]">
                 {getInitials(p.nome)}
               </div>
             )}
@@ -235,17 +146,17 @@ const PartnerCard = ({
               ) : null}
             </label>
             {canManage && (
-            <input
-              id={`avatar-upload-${p.id}`}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleUploadImage(p.id, file, "avatar");
-              }}
-              disabled={uploadingId !== null}
-            />
+              <input
+                id={`avatar-upload-${p.id}`}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadImage(p.id, file, "avatar");
+                }}
+                disabled={uploadingId !== null}
+              />
             )}
             {canManage && p.fotoUrl && (
               <button
@@ -263,108 +174,112 @@ const PartnerCard = ({
           </div>
 
           <div className="min-w-0 flex-1 pt-0.5">
-            <h3 className={`font-extrabold text-slate-800 text-sm leading-tight tracking-tight transition-colors truncate ${palette.hoverText} ${privacyMode && !hideValues ? "blur-[6px] select-none" : ""}`}>{p.nome}</h3>
+            <h3
+              className={`font-display font-bold text-foreground text-sm leading-tight tracking-tight truncate group-hover/card:text-primary transition-colors ${privacyMode && !hideValues ? "blur-[6px] select-none" : ""}`}
+            >
+              {p.nome}
+            </h3>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${palette.badge}`}>
+              <span className="partner-card-badge text-[9px] px-2 py-0.5">
                 <Icon className="h-2.5 w-2.5" />
                 {getPartnerRoleLabel(p.tipo, p.nome)}
               </span>
-              
+
               {p.cidade && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-slate-500 bg-white/70 px-2 py-0.5 rounded-full border border-white/90">
-                  <MapPin className="h-2.5 w-2.5 text-slate-400" />
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-muted-foreground bg-white/70 px-2 py-0.5 rounded-full border border-border/60">
+                  <MapPin className="h-2.5 w-2.5 text-muted-foreground/70" />
                   {p.cidade}
                 </span>
               )}
             </div>
             {registroLabel && (
-              <p className="mt-1.5 text-[10px] font-semibold text-slate-500 truncate">
+              <p className="mt-1.5 text-[10px] font-semibold text-muted-foreground truncate">
                 {registroLabel}
               </p>
             )}
           </div>
 
-          {/* Editar / Excluir no topo (ícones) */}
           {canManage && (
-          <div className="flex items-center gap-1 shrink-0 -mt-0.5" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => openEdit(p)}
-              title="Editar cadastro"
-              className={`p-2 rounded-xl border border-white/60 bg-white/80 text-slate-600 transition-colors cursor-pointer ${palette.editHover}`}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDelete(p)}
-              title="Excluir parceiro"
-              className="p-2 rounded-xl border border-white/60 bg-white/80 text-slate-500 hover:text-red-650 hover:bg-red-50 hover:border-red-100 transition-colors cursor-pointer"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+            <div className="flex items-center gap-1 shrink-0 -mt-0.5" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => openEdit(p)}
+                title="Editar cadastro"
+                className="p-2 rounded-xl border border-border/70 bg-white/90 text-muted-foreground hover:text-primary hover:border-primary/35 hover:bg-white transition-colors cursor-pointer"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(p)}
+                title="Excluir parceiro"
+                className="p-2 rounded-xl border border-border/70 bg-white/90 text-muted-foreground hover:text-red-650 hover:bg-red-50 hover:border-red-100 transition-colors cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Dados Comerciais / Escritório */}
         {p.escritorio && (
-          <div className="flex items-center gap-2 p-2 bg-white/80 border border-white/90 rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-            <Building2 className="h-4 w-4 text-slate-450 shrink-0" />
+          <div className="flex items-center gap-2 p-2 partner-card-metric">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0 flex-1">
-              <span className="text-[8px] font-black text-slate-455 uppercase tracking-widest block leading-none">Escritório / Studio</span>
-              <span className="text-[10px] font-extrabold text-slate-700 truncate block mt-0.5">{p.escritorio}</span>
+              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block leading-none">
+                Escritório / Studio
+              </span>
+              <span className="text-[10px] font-extrabold text-foreground truncate block mt-0.5">
+                {p.escritorio}
+              </span>
             </div>
           </div>
         )}
 
-        {/* Projetos vinculados (sempre visível) */}
-        <div className="rounded-xl border border-white/95 bg-white/90 p-3.5 space-y-2 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+        <div className="partner-card-metric p-3.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-450">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
               Projetos vinculados
             </span>
-            <span className="text-[10px] font-black tabular-nums text-slate-750 bg-white border border-slate-200/80 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-black tabular-nums text-foreground bg-white border border-border/70 px-2 py-0.5 rounded-full">
               {projectCount}
             </span>
           </div>
           {!hideValues && (
             <>
-              <p className="text-lg font-black tracking-tight text-slate-800 tabular-nums leading-none">
-                <PrivacyMoney value={totalLinkedValue} />
+              <p className="text-lg font-display font-bold tracking-tight tabular-nums leading-none">
+                <PrivacyMoney value={totalLinkedValue} className="text-gradient-gold" />
               </p>
-              <p className="text-[9px] font-semibold text-slate-400">
+              <p className="text-[9px] font-semibold text-muted-foreground">
                 Valor total dos projetos no CRM
               </p>
             </>
           )}
         </div>
 
-        {/* Contatos Rápidos em Grid */}
         <div className="grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
           {p.telefone ? (
             sensitive.whatsappHref(p.telefone) ? (
-            <a
-              href={sensitive.whatsappHref(p.telefone)!}
-              target="_blank"
-              rel="noreferrer"
-              className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-100 hover:border-emerald-250 text-slate-500 hover:text-emerald-600 transition-all gap-1 cursor-pointer"
-              title={`Falar no WhatsApp: ${sensitive.phone(p.telefone)}`}
-            >
-              <Phone className="h-4 w-4 shrink-0" />
-              <span className="text-[9px] font-bold">WhatsApp</span>
-            </a>
+              <a
+                href={sensitive.whatsappHref(p.telefone)!}
+                target="_blank"
+                rel="noreferrer"
+                className="partner-card-action partner-card-action-whatsapp"
+                title={`Falar no WhatsApp: ${sensitive.phone(p.telefone)}`}
+              >
+                <Phone className="h-4 w-4 shrink-0" />
+                <span className="text-[9px] font-bold">WhatsApp</span>
+              </a>
             ) : (
-            <div
-              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 gap-1 cursor-not-allowed"
-              title="Contato oculto"
-            >
-              <Phone className="h-4 w-4 shrink-0" />
-              <span className="text-[9px] font-bold">WhatsApp</span>
-            </div>
+              <div
+                className="partner-card-action partner-card-action-muted cursor-not-allowed"
+                title="Contato oculto"
+              >
+                <Phone className="h-4 w-4 shrink-0" />
+                <span className="text-[9px] font-bold">WhatsApp</span>
+              </div>
             )
           ) : (
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
+            <div className="partner-card-action partner-card-action-muted">
               <Phone className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">WhatsApp</span>
             </div>
@@ -372,25 +287,25 @@ const PartnerCard = ({
 
           {p.email ? (
             sensitive.hide ? (
-            <div
-              className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 gap-1 cursor-not-allowed"
-              title="E-mail oculto"
-            >
-              <Mail className="h-4 w-4 shrink-0" />
-              <span className="text-[9px] font-bold">E-mail</span>
-            </div>
+              <div
+                className="partner-card-action partner-card-action-muted cursor-not-allowed"
+                title="E-mail oculto"
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                <span className="text-[9px] font-bold">E-mail</span>
+              </div>
             ) : (
-            <a
-              href={`mailto:${p.email}`}
-              className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-blue-50 border border-slate-100 hover:border-blue-250 text-slate-500 hover:text-blue-600 transition-all gap-1 cursor-pointer"
-              title={`Enviar e-mail: ${p.email}`}
-            >
-              <Mail className="h-4 w-4 shrink-0" />
-              <span className="text-[9px] font-bold">E-mail</span>
-            </a>
+              <a
+                href={`mailto:${p.email}`}
+                className="partner-card-action"
+                title={`Enviar e-mail: ${p.email}`}
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                <span className="text-[9px] font-bold">E-mail</span>
+              </a>
             )
           ) : (
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
+            <div className="partner-card-action partner-card-action-muted">
               <Mail className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">E-mail</span>
             </div>
@@ -401,14 +316,14 @@ const PartnerCard = ({
               href={p.portfolioUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex flex-col items-center justify-center p-2 rounded-xl bg-white hover:bg-pink-50 border border-slate-100 hover:border-pink-250 text-slate-500 hover:text-pink-600 transition-all gap-1 cursor-pointer"
+              className="partner-card-action"
               title="Acessar Portfólio / Instagram"
             >
               <Globe className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">Portfólio</span>
             </a>
           ) : (
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/40 border border-white/60 text-slate-300 opacity-60">
+            <div className="partner-card-action partner-card-action-muted">
               <Globe className="h-4 w-4 shrink-0" />
               <span className="text-[9px] font-bold">Portfólio</span>
             </div>
@@ -784,7 +699,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
           {canManagePartners && (
           <Button 
             onClick={openCreate} 
-            className="font-extrabold bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl h-10 px-4 border-none shadow-sm cursor-pointer flex items-center gap-2 shrink-0 self-start md:self-auto"
+            className="font-bold btn-metallic gap-2 h-10 px-4 shrink-0 self-start md:self-auto"
           >
             <UserPlus className="h-4 w-4" />
             Cadastrar Parceiro
@@ -1043,7 +958,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
           const p = viewingPartner;
           const style = PARTNER_TYPE_STYLES[p.tipo];
           const Icon = style.icon;
-          const palette = getPartnerPalette(p.id);
           const imagesList = p.imagens ? p.imagens.split(",").filter(Boolean) : [];
           const projectCount = p.projects?.length ?? 0;
           const totalLinkedValue = (p.projects ?? []).reduce(
@@ -1056,12 +970,10 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
           return (
             <div className="space-y-5 pr-6">
-              {/* Header com destaque de gradiente */}
-              <div className="relative rounded-2xl overflow-hidden border border-slate-100 p-5 shadow-sm bg-slate-50/50 flex flex-col sm:flex-row items-center gap-5">
-                <div className={`absolute inset-x-0 top-0 h-1.5 ${palette.accent}`} />
-                
-                {/* Avatar */}
-                <div className="relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl overflow-hidden">
+              <div className="partner-card-detail-header flex flex-col sm:flex-row items-center gap-5 p-5">
+                <div className="partner-card-accent absolute inset-x-0 top-0" />
+
+                <div className="partner-card-avatar relative flex h-20 w-auto min-w-20 max-w-36">
                   {p.fotoUrl ? (
                     <img
                       src={p.fotoUrl}
@@ -1069,30 +981,32 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       className="h-full w-auto max-w-36 object-contain"
                     />
                   ) : (
-                    <div className={`h-20 w-20 flex items-center justify-center text-2xl font-black rounded-2xl ${palette.avatar}`}>
+                    <div className="partner-card-avatar-fallback h-20 w-20 text-2xl rounded-[inherit]">
                       {getInitials(p.nome)}
                     </div>
                   )}
                 </div>
 
                 <div className="text-center sm:text-left min-w-0 flex-1 space-y-1.5 sm:pl-1">
-                  <h3 className={`font-extrabold text-slate-800 text-lg leading-tight tracking-tight ${effectivePrivacyMode ? "blur-[6px] select-none" : ""}`}>
+                  <h3
+                    className={`font-display font-bold text-foreground text-lg leading-tight tracking-tight ${effectivePrivacyMode ? "blur-[6px] select-none" : ""}`}
+                  >
                     {p.nome}
                   </h3>
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${palette.badge}`}>
+                    <span className="partner-card-badge text-[10px] px-2.5 py-0.5">
                       <Icon className="h-3 w-3" />
                       {getPartnerRoleLabel(p.tipo, p.nome)}
                     </span>
                     {p.cidade && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                        <MapPin className="h-3 w-3 text-slate-400" />
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-muted-foreground bg-white/80 px-2.5 py-0.5 rounded-full border border-border/60">
+                        <MapPin className="h-3 w-3 text-muted-foreground/70" />
                         {p.cidade}
                       </span>
                     )}
                   </div>
                   {registroLabel && (
-                    <p className="text-xs font-semibold text-slate-500">
+                    <p className="text-xs font-semibold text-muted-foreground">
                       {registroLabel}
                     </p>
                   )}
@@ -1102,31 +1016,31 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               {/* Informações Comerciais / Contatos / Obs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
                     Detalhes do Profissional
                   </h4>
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2.5 text-xs text-slate-650">
+                  <div className="partner-card-metric p-4 space-y-2.5 text-xs text-foreground/80">
                     {p.escritorio && (
                       <p className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
+                        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span><strong>Escritório:</strong> {p.escritorio}</span>
                       </p>
                     )}
                     {p.telefone && (
                       <p className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span><strong>WhatsApp:</strong> {sensitive.phone(p.telefone)}</span>
                       </p>
                     )}
                     {p.email && (
                       <p className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span><strong>E-mail:</strong> {sensitive.email(p.email)}</span>
                       </p>
                     )}
                     {p.portfolioUrl && (
                       <p className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-slate-400 shrink-0" />
+                        <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span>
                           <strong>Portfólio: </strong>
                           <a href={p.portfolioUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline font-bold">
@@ -1139,20 +1053,20 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
                     {hidePartnerValues ? "Projetos" : "Projetos & Receita"}
                   </h4>
-                  <div className="rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-4 space-y-2.5">
+                  <div className="partner-card-metric p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-600">Projetos no CRM:</span>
-                      <span className="text-xs font-extrabold text-slate-800 bg-white border border-slate-150 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold text-muted-foreground">Projetos no CRM:</span>
+                      <span className="text-xs font-extrabold text-foreground bg-white border border-border/70 px-2 py-0.5 rounded-full">
                         {projectCount}
                       </span>
                     </div>
                     {!hidePartnerValues && (
                       <div>
-                        <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wide block">Total em Projetos</span>
-                        <PrivacyMoney value={totalLinkedValue} as="span" className="text-xl font-black text-slate-800 leading-none" />
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">Total em Projetos</span>
+                        <PrivacyMoney value={totalLinkedValue} as="span" className="text-xl font-display font-bold text-gradient-gold leading-none" />
                       </div>
                     )}
                   </div>
