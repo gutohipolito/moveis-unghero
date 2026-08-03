@@ -260,177 +260,179 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,1.1fr)] gap-3 min-h-[70vh]">
-          <aside className="rounded-xl border border-border/50 bg-white p-3 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-              Caixas
-            </p>
+        <div className="flex flex-col gap-3 md:min-h-[calc(100vh-var(--dashboard-chrome-offset)-8rem)]">
+          {/* Caixas no topo */}
+          <div className="flex flex-wrap gap-2 shrink-0">
             {mailboxes.map((box) => (
               <button
                 key={box.id}
                 type="button"
                 onClick={() => setMailboxId(box.id)}
-                className={`w-full text-left rounded-lg px-3 py-2.5 transition-colors cursor-pointer ${
+                className={`min-w-0 max-w-full sm:max-w-[280px] text-left rounded-[var(--radius-sm)] px-3.5 py-2.5 transition-colors cursor-pointer border ${
                   mailboxId === box.id
-                    ? "bg-amber-500/15 border border-amber-500/30"
-                    : "hover:bg-slate-50 border border-transparent"
+                    ? "bg-amber-500/15 border-amber-500/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                    : "bg-white border-border/50 hover:bg-slate-50"
                 }`}
               >
-                <p className="text-xs font-bold text-foreground">{box.areaLabel}</p>
+                <p className="text-xs font-bold text-foreground truncate">{box.areaLabel}</p>
                 <p className="text-[11px] text-muted-foreground truncate">{box.address}</p>
               </button>
             ))}
-          </aside>
+          </div>
 
-          <section className="rounded-xl border border-border/50 bg-white overflow-hidden flex flex-col min-h-[420px]">
-            <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/40 bg-slate-50/80">
-              <div className="flex items-center gap-2 min-w-0">
-                <Inbox className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-semibold truncate">
-                  Inbox · {selectedMailbox?.displayName}
-                </span>
+          {/* Inbox 25% · Corpo 75% */}
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-3 flex-1 min-h-0">
+            <section className="rounded-xl border border-border/50 bg-white overflow-hidden flex flex-col min-h-[320px] md:min-h-0 md:h-full">
+              <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/40 bg-slate-50/80 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Inbox className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold truncate">
+                    Inbox · {selectedMailbox?.displayName || selectedMailbox?.areaLabel}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => void loadInbox(mailboxId)}
+                  disabled={loadingList}
+                  title="Atualizar"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingList ? "animate-spin" : ""}`} />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => void loadInbox(mailboxId)}
-                disabled={loadingList}
-                title="Atualizar"
-              >
-                <RefreshCw className={`h-4 w-4 ${loadingList ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
 
-            {loadingList ? (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground gap-2 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
-              </div>
-            ) : listError ? (
-              <div className="p-4 text-sm text-rose-600">{listError}</div>
-            ) : messages.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-6 text-center">
-                Caixa vazia ou sem mensagens recentes.
-              </div>
-            ) : (
-              <ul className="flex-1 overflow-y-auto divide-y divide-border/30">
-                {messages.map((msg) => (
-                  <li key={msg.uid}>
-                    <button
-                      type="button"
-                      onClick={() => void openMessage(msg.uid)}
-                      className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${
-                        selectedUid === msg.uid ? "bg-amber-50/80" : ""
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p
-                          className={`text-xs truncate ${
-                            msg.seen ? "text-muted-foreground" : "font-bold text-foreground"
-                          }`}
-                        >
-                          {msg.from}
-                        </p>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {formatMsgDate(msg.date)}
-                        </span>
-                      </div>
-                      <p
-                        className={`text-sm truncate mt-0.5 ${
-                          msg.seen ? "text-slate-600" : "font-semibold text-foreground"
+              {loadingList ? (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground gap-2 text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+                </div>
+              ) : listError ? (
+                <div className="p-4 text-sm text-rose-600">{listError}</div>
+              ) : messages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-6 text-center">
+                  Caixa vazia ou sem mensagens recentes.
+                </div>
+              ) : (
+                <ul className="flex-1 overflow-y-auto divide-y divide-border/30">
+                  {messages.map((msg) => (
+                    <li key={msg.uid}>
+                      <button
+                        type="button"
+                        onClick={() => void openMessage(msg.uid)}
+                        className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${
+                          selectedUid === msg.uid ? "bg-amber-50/80" : ""
                         }`}
                       >
-                        {msg.subject}
-                      </p>
-                      {msg.hasAttachments && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                          <Paperclip className="h-3 w-3" /> anexo
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className={`text-xs truncate ${
+                              msg.seen ? "text-muted-foreground" : "font-bold text-foreground"
+                            }`}
+                          >
+                            {msg.from}
+                          </p>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {formatMsgDate(msg.date)}
+                          </span>
+                        </div>
+                        <p
+                          className={`text-sm truncate mt-0.5 ${
+                            msg.seen ? "text-slate-600" : "font-semibold text-foreground"
+                          }`}
+                        >
+                          {msg.subject}
+                        </p>
+                        {msg.hasAttachments && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                            <Paperclip className="h-3 w-3" /> anexo
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
-          <section className="rounded-xl border border-border/50 bg-white overflow-hidden flex flex-col min-h-[420px]">
-            {!selectedUid ? (
-              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-6">
-                Selecione uma mensagem para ler.
-              </div>
-            ) : loadingDetail ? (
-              <div className="flex-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Abrindo…
-              </div>
-            ) : !detail ? (
-              <div className="p-4 text-sm text-rose-600">Não foi possível abrir a mensagem.</div>
-            ) : (
-              <>
-                <div className="px-4 py-3 border-b border-border/40 space-y-1">
-                  <h2 className="text-base font-bold text-foreground leading-snug">
-                    {detail.subject}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    De: <span className="text-foreground font-medium">{detail.from}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Para: {detail.to || "—"} · {formatMsgDate(detail.date)}
-                  </p>
-                  {!isReadOnly && (
-                    <div className="pt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 gap-1.5"
-                        onClick={openComposeReply}
-                      >
-                        <Reply className="h-3.5 w-3.5" /> Responder
-                      </Button>
-                    </div>
-                  )}
+            <section className="rounded-xl border border-border/50 bg-white overflow-hidden flex flex-col min-h-[360px] md:min-h-0 md:h-full">
+              {!selectedUid ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-sm text-muted-foreground p-6 gap-2">
+                  <Mail className="h-8 w-8 text-slate-300" />
+                  <p>Selecione uma mensagem para ler.</p>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  {detail.html ? (
-                    <iframe
-                      title={detail.subject}
-                      sandbox="allow-popups allow-popups-to-escape-sandbox"
-                      srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank" rel="noopener noreferrer"><style>body{margin:0;font-family:system-ui,sans-serif;font-size:14px;line-height:1.55;color:#1e293b;word-wrap:break-word;}img{max-width:100%;height:auto;}a{color:#0369a1;}table{max-width:100%;}</style></head><body>${detail.html.replace(/<\/(script|iframe|object|embed)/gi, "&lt;/$1")}</body></html>`}
-                      className="w-full min-h-[280px] border-0 bg-white rounded-md"
-                      style={{ height: "min(60vh, 520px)" }}
-                    />
-                  ) : (
-                    <pre className="whitespace-pre-wrap text-sm text-slate-800 font-sans">
-                      {detail.text || "(sem conteúdo)"}
-                    </pre>
-                  )}
-                  {detail.attachments.length > 0 && mailboxId && (
-                    <div className="mt-4 pt-3 border-t border-border/40">
-                      <p className="text-[11px] font-bold uppercase text-muted-foreground mb-2">
-                        Anexos
-                      </p>
-                      <ul className="space-y-1.5">
-                        {detail.attachments.map((a) => (
-                          <li key={`${a.index}-${a.filename}`}>
-                            <a
-                              href={`/api/emails/attachment?mailboxId=${encodeURIComponent(mailboxId)}&uid=${detail.uid}&index=${a.index}`}
-                              className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900 hover:underline"
-                            >
-                              <Paperclip className="h-3.5 w-3.5" />
-                              {a.filename}
-                              <span className="text-muted-foreground font-normal">
-                                ({Math.max(1, Math.round(a.size / 1024))} KB)
-                              </span>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+              ) : loadingDetail ? (
+                <div className="flex-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Abrindo…
                 </div>
-              </>
-            )}
-          </section>
+              ) : !detail ? (
+                <div className="p-4 text-sm text-rose-600">Não foi possível abrir a mensagem.</div>
+              ) : (
+                <>
+                  <div className="px-4 py-3 border-b border-border/40 space-y-1 shrink-0">
+                    <h2 className="text-base font-bold text-foreground leading-snug">
+                      {detail.subject}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      De: <span className="text-foreground font-medium">{detail.from}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Para: {detail.to || "—"} · {formatMsgDate(detail.date)}
+                    </p>
+                    {!isReadOnly && (
+                      <div className="pt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5"
+                          onClick={openComposeReply}
+                        >
+                          <Reply className="h-3.5 w-3.5" /> Responder
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 min-h-0">
+                    {detail.html ? (
+                      <iframe
+                        title={detail.subject}
+                        sandbox="allow-popups allow-popups-to-escape-sandbox"
+                        srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank" rel="noopener noreferrer"><style>body{margin:0;font-family:system-ui,sans-serif;font-size:14px;line-height:1.55;color:#1e293b;word-wrap:break-word;}img{max-width:100%;height:auto;}a{color:#0369a1;}table{max-width:100%;}</style></head><body>${detail.html.replace(/<\/(script|iframe|object|embed)/gi, "&lt;/$1")}</body></html>`}
+                        className="w-full min-h-[320px] border-0 bg-white rounded-md"
+                        style={{ height: "min(65vh, 640px)" }}
+                      />
+                    ) : (
+                      <pre className="whitespace-pre-wrap text-sm text-slate-800 font-sans">
+                        {detail.text || "(sem conteúdo)"}
+                      </pre>
+                    )}
+                    {detail.attachments.length > 0 && mailboxId && (
+                      <div className="mt-4 pt-3 border-t border-border/40">
+                        <p className="text-[11px] font-bold uppercase text-muted-foreground mb-2">
+                          Anexos
+                        </p>
+                        <ul className="space-y-1.5">
+                          {detail.attachments.map((a) => (
+                            <li key={`${a.index}-${a.filename}`}>
+                              <a
+                                href={`/api/emails/attachment?mailboxId=${encodeURIComponent(mailboxId)}&uid=${detail.uid}&index=${a.index}`}
+                                className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900 hover:underline"
+                              >
+                                <Paperclip className="h-3.5 w-3.5" />
+                                {a.filename}
+                                <span className="text-muted-foreground font-normal">
+                                  ({Math.max(1, Math.round(a.size / 1024))} KB)
+                                </span>
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
         </div>
       )}
 
