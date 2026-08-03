@@ -8,7 +8,6 @@ import {
   Building2,
 } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import type { ProductCatalogDTO } from "@/app/actions/productCatalogs";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
 
@@ -24,7 +23,7 @@ type Props = {
 };
 
 const actionBtnClass =
-  "w-full text-left font-bold justify-start gap-3 h-auto min-h-0 md:h-auto md:min-h-0 py-3.5 px-4";
+  "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3.5 py-2.5 text-left cursor-pointer transition-[filter,box-shadow,background] duration-[var(--motion-fast)] ease-[var(--ease-out)]";
 
 export default function CatalogActionsModal({
   catalog,
@@ -72,11 +71,11 @@ export default function CatalogActionsModal({
     <Dialog
       isOpen={Boolean(catalog)}
       onClose={onClose}
-      className="max-w-3xl w-full"
+      className="max-w-4xl w-full"
       bodyClassName="max-h-[min(92svh,880px)] overflow-y-auto"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 items-stretch pr-1">
-        <div className="rounded-[var(--radius-md)] overflow-hidden border border-slate-200 bg-slate-50 aspect-[3/4] sm:min-h-[300px] relative">
+      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-5 sm:gap-6 items-stretch pr-1">
+        <div className="rounded-[var(--radius-md)] overflow-hidden border border-slate-200 bg-slate-50 aspect-[3/4] sm:min-h-[280px] sm:max-h-[420px] relative">
           <CatalogCoverThumb
             catalog={catalog}
             companyId={companyId}
@@ -85,70 +84,70 @@ export default function CatalogActionsModal({
           />
         </div>
 
-        <div className="flex flex-col min-h-0 sm:py-1">
-          <div className="flex flex-col items-center text-center gap-1.5 px-2 pb-4">
+        <div className="flex flex-col min-h-0 justify-center gap-4">
+          <div className="flex flex-col items-center text-center gap-1 px-1">
             {partnerLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={partnerLogo}
                 alt={partnerName || "Parceiro"}
-                className="h-16 sm:h-20 w-auto max-w-[180px] object-contain"
+                className="h-9 sm:h-10 w-auto max-w-[120px] object-contain"
               />
             ) : partnerName ? (
-              <Building2 className="h-10 w-10 text-slate-300" />
+              <Building2 className="h-7 w-7 text-slate-300" />
             ) : null}
             {partnerName ? (
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 {partnerName}
               </p>
             ) : null}
-            <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-800 leading-snug">
+            <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-800 leading-snug">
               {catalog.titulo}
             </h3>
-            <p className="text-[11px] text-muted-foreground leading-snug max-w-[16rem]">
+            <p className="text-[11px] text-muted-foreground leading-snug">
               Escolha como compartilhar ou abrir este catálogo.
             </p>
           </div>
 
-          <div className="flex flex-col gap-2.5 mt-auto">
+          <div className="flex flex-col gap-2">
             {shareActions.map((action) => {
               const Icon = action.icon;
               return (
-                <Button
+                <button
                   key={action.key}
                   type="button"
                   onClick={action.onClick}
                   className={`${actionBtnClass} ${action.tone}`}
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-black/10 shrink-0">
-                    <Icon className="h-4.5 w-4.5" strokeWidth={2.2} />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-[calc(var(--radius-sm)-2px)] bg-black/10 shrink-0">
+                    <Icon className="h-4 w-4" strokeWidth={2.2} />
                   </span>
-                  <span className="min-w-0 flex-1 text-left py-0.5">
+                  <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold leading-tight">{action.label}</span>
                     <span className="block text-[11px] font-medium opacity-80 mt-0.5 leading-snug">
                       {action.hint}
                     </span>
                   </span>
-                </Button>
+                </button>
               );
             })}
 
-            <div className="mt-1.5 pt-3 border-t border-slate-200/80">
-              <Button
+            <div className="mt-1 pt-2.5 border-t border-slate-200/80">
+              <button
                 type="button"
                 onClick={onView}
                 className={`${actionBtnClass} btn-metallic`}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-black/10 shrink-0">
-                  <Eye className="h-4.5 w-4.5" strokeWidth={2.2} />
+                <span className="flex h-8 w-8 items-center justify-center rounded-[calc(var(--radius-sm)-2px)] bg-black/10 shrink-0">
+                  <Eye className="h-4 w-4" strokeWidth={2.2} />
                 </span>
-                <span className="min-w-0 flex-1 text-left py-0.5">
+                <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold leading-tight">Visualizar</span>
                   <span className="block text-[11px] font-medium opacity-80 mt-0.5 leading-snug">
                     Abrir o link público do catálogo
                   </span>
                 </span>
-              </Button>
+              </button>
             </div>
           </div>
         </div>
