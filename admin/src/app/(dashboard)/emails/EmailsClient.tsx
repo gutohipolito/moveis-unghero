@@ -36,10 +36,12 @@ import {
   moveMailboxMessageToSpam,
   moveMailboxMessageToTrash,
   sendMailboxEmail,
-  type MailFolderKey,
 } from "@/app/actions/emailInbox";
-import type { EmailListItem } from "@/lib/emailImap";
-import { EMAIL_MAX_ATTACHMENT_BYTES } from "@/lib/emailAreas";
+import {
+  EMAIL_MAX_ATTACHMENT_BYTES,
+  type EmailListItem,
+  type MailFolderKey,
+} from "@/lib/emailAreas";
 import { usePermissions } from "@/context/PermissionsContext";
 import { cn } from "@/lib/utils";
 

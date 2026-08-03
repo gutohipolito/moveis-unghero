@@ -33,3 +33,22 @@ export const DEFAULT_SMTP_PORT = 465;
 
 export const EMAIL_MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 export const EMAIL_INBOX_PAGE_SIZE = 40;
+
+/** Pastas lógicas do painel de e-mails (mapeiam para pastas IMAP). */
+export type MailFolderKey = "inbox" | "unread" | "spam" | "trash";
+
+export function isMailFolderKey(value: string): value is MailFolderKey {
+  return value === "inbox" || value === "unread" || value === "spam" || value === "trash";
+}
+
+/** Item da lista de mensagens (compartilhado client/server). */
+export type EmailListItem = {
+  uid: number;
+  seq: number;
+  subject: string;
+  from: string;
+  fromAddress: string;
+  date: string | null;
+  seen: boolean;
+  hasAttachments: boolean;
+};

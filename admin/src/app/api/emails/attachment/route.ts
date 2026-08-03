@@ -3,8 +3,8 @@ import { loadAccessibleMailboxSecrets } from "@/app/actions/emailMailboxes";
 import {
   fetchFolderAttachment,
   resolveMailFolderPath,
-  type MailFolderKey,
 } from "@/lib/emailImap";
+import { isMailFolderKey, type MailFolderKey } from "@/lib/emailAreas";
 
 export const maxDuration = 60;
 
@@ -12,10 +12,6 @@ function contentDisposition(filename: string) {
   const ascii = filename.replace(/[^\x20-\x7E]/g, "_") || "anexo";
   const encoded = encodeURIComponent(filename);
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`;
-}
-
-function isMailFolderKey(value: string): value is MailFolderKey {
-  return value === "inbox" || value === "unread" || value === "spam" || value === "trash";
 }
 
 export async function GET(request: NextRequest) {

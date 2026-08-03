@@ -5,26 +5,15 @@ import {
   plainTextToSafeHtml,
   repairEmailText,
 } from "@/lib/emailText";
+import type { MailFolderKey, EmailListItem } from "@/lib/emailAreas";
+
+export type { MailFolderKey, EmailListItem };
 
 export type ImapConnectionConfig = {
   host: string;
   port: number;
   user: string;
   pass: string;
-};
-
-/** Pastas lógicas do painel (mapeiam para pastas IMAP reais). */
-export type MailFolderKey = "inbox" | "unread" | "spam" | "trash";
-
-export type EmailListItem = {
-  uid: number;
-  seq: number;
-  subject: string;
-  from: string;
-  fromAddress: string;
-  date: string | null;
-  seen: boolean;
-  hasAttachments: boolean;
 };
 
 export type EmailMessageDetail = {

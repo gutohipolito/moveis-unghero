@@ -5,15 +5,13 @@ import { ensureActorUserId } from "@/lib/currentUser";
 import { getWriteAccess } from "@/lib/moduleAccess";
 import { isReadOnlyRole } from "@/lib/permissions";
 import { decryptVaultSecret } from "@/lib/accessVaultCrypto";
-import { EMAIL_INBOX_PAGE_SIZE, EMAIL_MAX_ATTACHMENT_BYTES } from "@/lib/emailAreas";
+import { EMAIL_INBOX_PAGE_SIZE, EMAIL_MAX_ATTACHMENT_BYTES, isMailFolderKey, type MailFolderKey, type EmailListItem } from "@/lib/emailAreas";
 import {
   fetchFolderMessage,
   listFolderMessages,
   moveFolderMessage,
   resolveMailFolderPath,
   setFolderMessageSeen,
-  type EmailListItem,
-  type MailFolderKey,
   type MoveDestination,
 } from "@/lib/emailImap";
 import { sendSmtpEmail } from "@/lib/emailSmtp";
@@ -30,8 +28,6 @@ import {
 import type { EmailMailboxArea } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
-export type { MailFolderKey };
-
 function imapConfigFromLoaded(loaded: NonNullable<Awaited<ReturnType<typeof loadAccessibleMailboxSecrets>>>) {
   return {
     host: loaded.mailbox.imap_host,
@@ -39,10 +35,6 @@ function imapConfigFromLoaded(loaded: NonNullable<Awaited<ReturnType<typeof load
     user: loaded.mailbox.address,
     pass: loaded.password,
   };
-}
-
-function isMailFolderKey(value: string): value is MailFolderKey {
-  return value === "inbox" || value === "unread" || value === "spam" || value === "trash";
 }
 
 export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey) {
