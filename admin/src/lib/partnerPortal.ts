@@ -20,6 +20,7 @@ export interface PartnerPortalProject {
 
 export interface PartnerPortalData {
   id: string;
+  company_id: string;
   nome: string;
   tipo: PartnerType;
   fotoUrl: string | null;
@@ -30,6 +31,16 @@ export interface PartnerPortalData {
   projects: PartnerPortalProject[];
 }
 
+export interface PartnerPortalProduct {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  categoria: string | null;
+  imagem_url: string | null;
+  imagens: string[];
+  preco_exibicao: number | null;
+}
+
 export async function loadPartnerPortalData(
   partnerId: string
 ): Promise<PartnerPortalData | null> {
@@ -37,6 +48,7 @@ export async function loadPartnerPortalData(
     where: { id: partnerId },
     select: {
       id: true,
+      company_id: true,
       nome: true,
       tipo: true,
       fotoUrl: true,
@@ -76,6 +88,7 @@ export async function loadPartnerPortalData(
 
   return {
     id: partner.id,
+    company_id: partner.company_id,
     nome: partner.nome,
     tipo: partner.tipo,
     fotoUrl: partner.fotoUrl,
@@ -100,4 +113,36 @@ export async function loadPartnerPortalData(
       })),
     })),
   };
+}
+
+export async function loadPartnerPortalProducts(
+  companyId: string
+): Promise<PartnerPortalProduct[]> {
+  const products = await prisma.showcaseProduct.findMany({
+    where: { company_id: companyId, ativo: true },
+    orderBy: [{ ordem: "asc" }, { nome: "asc" }],
+    select: {
+      id: true,
+      nome: true,
+      descricao: true,
+      categoria: true,
+      imagem_url: true,
+      imagens: true,
+      preco_exibicao: true,
+    },
+  });
+
+  return products.map((p) => {
+    const imagens = (p.imagens || []).filter(Boolean);
+    const cover = imagens[0] || p.imagem_url;
+    return {
+      id: p.id,
+      nome: p.nome,
+      descricao: p.descricao,
+      categoria: p.categoria,
+      imagem_url: cover,
+      imagens: imagens.length > 0 ? imagens : cover ? [cover] : [],
+      preco_exibicao: p.preco_exibicao == null ? null : Number(p.preco_exibicao),
+    };
+  });
 }
