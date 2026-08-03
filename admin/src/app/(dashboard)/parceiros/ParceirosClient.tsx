@@ -206,7 +206,7 @@ const PartnerCard = ({
           {/* Avatar com upload rápido */}
           <div 
             onClick={(e) => e.stopPropagation()}
-            className={`relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl overflow-hidden transition-all duration-300 ${privacyMode && !hideValues ? "blur-md select-none" : ""}`}
+            className="relative group/avatar flex h-16 w-auto min-w-16 max-w-28 shrink-0 items-center justify-center rounded-2xl overflow-hidden transition-all duration-300"
           >
             {p.fotoUrl ? (
               <img
@@ -439,7 +439,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   
-  // Ops: sem blur de nomes/fotos e sem valores financeiros.
+  // Ops: sem blur de nomes e sem valores financeiros. Fotos ficam sempre visíveis.
   const effectivePrivacyMode = isOpsLimited
     ? false
     : privacyLocked || isReadOnly || privacyMode;
@@ -771,7 +771,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     "Cadastre arquitetos e projetistas que indicam clientes.",
                     "Vincule um parceiro a um orçamento para dar o devido crédito.",
                     "Acompanhe indicações e desempenho de cada parceiro.",
-                    "O olho de valores no topo do painel também oculta nomes e fotos em apresentações.",
+                    "O olho de valores no topo do painel também oculta nomes em apresentações (fotos ficam visíveis).",
                   ]}
                 />
               </InfoTooltip>
@@ -1061,7 +1061,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 <div className={`absolute inset-x-0 top-0 h-1.5 ${palette.accent}`} />
                 
                 {/* Avatar */}
-                <div className={`relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl overflow-hidden ${effectivePrivacyMode ? "blur-md select-none" : ""}`}>
+                <div className="relative flex h-20 w-auto min-w-20 max-w-36 shrink-0 items-center justify-center rounded-2xl overflow-hidden">
                   {p.fotoUrl ? (
                     <img
                       src={p.fotoUrl}
