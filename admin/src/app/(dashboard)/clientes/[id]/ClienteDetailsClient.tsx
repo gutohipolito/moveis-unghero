@@ -66,6 +66,9 @@ interface ClientDetails {
   lgpd_aceite?: boolean;
   lgpd_aceite_em?: string | null;
   marketing_aceite?: boolean;
+  partner_id?: string | null;
+  partnerNome?: string | null;
+  partnerTipo?: string | null;
   projects?: ProjectSummary[];
 }
 
@@ -256,6 +259,12 @@ export default function ClienteDetailsClient({
             {canManage && (
               <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-muted-foreground font-medium">
                 <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Origem: {ORIGIN_LABELS[client.origem] || client.origem}</span>
+                {client.partnerNome && (
+                  <span className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                    Parceiro: {client.partnerNome}
+                  </span>
+                )}
               </div>
             )}
           </div>

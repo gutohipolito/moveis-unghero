@@ -6,6 +6,7 @@ import {
   MapPin,
   Phone,
   Search,
+  Sparkles,
   Users,
 } from "lucide-react";
 import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal";
@@ -13,10 +14,23 @@ import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { Input } from "@/components/ui/input";
 
+const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 interface ParceiroClientesClientProps {
   partner: PartnerPortalData;
   clients: PartnerPortalClient[];
   isAdminPreview?: boolean;
+}
+
+type TabId = "all" | "new";
+
+function isNewClient(client: PartnerPortalClient, now: number) {
+  const attributed = client.partnerAttributedAt
+    ? new Date(client.partnerAttributedAt).getTime()
+    : null;
+  if (attributed != null && now - attributed <= NEW_CLIENT_WINDOW_MS) return true;
+  // Fallback: cadastro recente sem attributed (legado) não conta como "novo" de indicação
+  return false;
 }
 
 export default function ParceiroClientesClient({
@@ -25,11 +39,19 @@ export default function ParceiroClientesClient({
   isAdminPreview = false,
 }: ParceiroClientesClientProps) {
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<TabId>("all");
+  const now = Date.now();
+
+  const newClients = useMemo(
+    () => clients.filter((c) => isNewClient(c, now)),
+    [clients, now]
+  );
 
   const filtered = useMemo(() => {
+    const base = tab === "new" ? newClients : clients;
     const q = search.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((c) => {
+    if (!q) return base;
+    return base.filter((c) => {
       const address = formatPartnerClientAddress(c).toLowerCase();
       return (
         c.nome.toLowerCase().includes(q) ||
@@ -39,7 +61,7 @@ export default function ParceiroClientesClient({
         c.cidade.toLowerCase().includes(q)
       );
     });
-  }, [clients, search]);
+  }, [clients, newClients, search, tab]);
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
@@ -50,13 +72,42 @@ export default function ParceiroClientesClient({
               Clientes
             </h1>
             <p className="text-xs text-white/60 mt-1 max-w-lg">
-              Clientes com obras vinculadas a você na Móveis Unghero. Documentos pessoais não são
+              Clientes indicados por você ou com obras vinculadas. Documentos pessoais não são
               exibidos.
             </p>
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest text-white/70 bg-white/10 border border-white/15 px-2.5 py-1 rounded-full self-start sm:self-auto">
             {filtered.length} cliente{filtered.length === 1 ? "" : "s"}
           </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setTab("all")}
+            className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+              tab === "all"
+                ? "bg-white text-slate-900 border-white"
+                : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" />
+            Todos
+            <span className="opacity-70">{clients.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("new")}
+            className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+              tab === "new"
+                ? "bg-white text-slate-900 border-white"
+                : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Novos
+            <span className="opacity-70">{newClients.length}</span>
+          </button>
         </div>
 
         <div className="relative max-w-md">
@@ -73,13 +124,17 @@ export default function ParceiroClientesClient({
           <div className="partner-card p-10 text-center">
             <div className="partner-card-accent" />
             <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-              <Users className="h-6 w-6" />
+              {tab === "new" ? <Sparkles className="h-6 w-6" /> : <Users className="h-6 w-6" />}
             </div>
-            <h2 className="font-display font-bold text-slate-900">Nenhum cliente vinculado</h2>
+            <h2 className="font-display font-bold text-slate-900">
+              {tab === "new" ? "Nenhum cadastro novo" : "Nenhum cliente vinculado"}
+            </h2>
             <p className="text-sm text-slate-600 mt-2 max-w-md mx-auto">
-              {clients.length === 0
-                ? "Quando a Móveis Unghero vincular um projeto ao seu nome, o cliente aparece aqui."
-                : "Tente outro termo de busca."}
+              {tab === "new"
+                ? "Aqui entram clientes que se cadastraram pelo seu link nos últimos 7 dias."
+                : clients.length === 0
+                  ? "Compartilhe seu link em Marketing ou aguarde a Unghero vincular um projeto ao seu nome."
+                  : "Tente outro termo de busca."}
             </p>
           </div>
         ) : (
@@ -94,6 +149,7 @@ export default function ParceiroClientesClient({
                     ? `55${phoneDigits.slice(-11)}`
                     : null;
               const waHref = waNumber ? `https://wa.me/${waNumber}` : null;
+              const isNew = isNewClient(client, now);
 
               return (
                 <li key={client.id} className="partner-card">
@@ -101,9 +157,16 @@ export default function ParceiroClientesClient({
                   <div className="p-5 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h2 className="font-display font-bold text-slate-900 truncate">
-                          {client.nome}
-                        </h2>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="font-display font-bold text-slate-900 truncate">
+                            {client.nome}
+                          </h2>
+                          {isNew && (
+                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                              Novo
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] font-semibold text-slate-500 mt-0.5">
                           {client.projectsCount} obra
                           {client.projectsCount === 1 ? "" : "s"} vinculada

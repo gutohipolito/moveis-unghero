@@ -87,6 +87,7 @@ function isPublicSharePath(pathname: string) {
     pathname.startsWith("/o/") ||
     pathname.startsWith("/c/") ||
     pathname.startsWith("/r/") ||
+    pathname.startsWith("/a/") ||
     pathname.startsWith("/catalogos/")
   );
 }
@@ -95,6 +96,7 @@ function isPublicFormPath(pathname: string) {
   return (
     pathname === "/briefing" ||
     pathname === "/cadastro" ||
+    pathname.startsWith("/a/") ||
     pathname === "/cadastro-parceiro" ||
     pathname === "/cadastro-fornecedor" ||
     pathname.startsWith("/api/public/")
@@ -199,7 +201,8 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/parceiro/painel") ||
     pathname.startsWith("/parceiro/produtos") ||
-    pathname.startsWith("/parceiro/clientes")
+    pathname.startsWith("/parceiro/clientes") ||
+    pathname.startsWith("/parceiro/marketing")
   ) {
     const partnerSession = request.cookies.get("parceiro-session")?.value;
     if (!parsePartnerSessionToken(partnerSession)) {
@@ -260,12 +263,15 @@ export const config = {
     "/parceiro/produtos/:path*",
     "/parceiro/clientes",
     "/parceiro/clientes/:path*",
+    "/parceiro/marketing",
+    "/parceiro/marketing/:path*",
     "/api/parceiro/:path*",
     "/briefing",
     "/cadastro",
     "/cadastro-parceiro",
     "/cadastro-fornecedor",
     "/o/:path*",
+    "/a/:path*",
     "/c/:path*",
     "/r/:path*",
     "/catalogos/:path*",

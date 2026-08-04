@@ -10,6 +10,7 @@ import { stripConsentFromObservacoes } from "@/lib/clientConsent";
 import { isValidBrPhoneDigits } from "@/lib/phone";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { resolvePartnerByInviteCode } from "@/lib/partnerInvite";
 import { headers } from "next/headers";
 
 export interface ClientSignupData {
@@ -29,6 +30,8 @@ export interface ClientSignupData {
   company_id?: string;
   lgpd_aceite?: boolean;
   marketing_aceite?: boolean;
+  /** Código do link /a/[code] — atribui ao arquiteto. */
+  partnerInviteCode?: string;
 }
 
 export async function submitPublicClientSignupAction(data: ClientSignupData) {
@@ -70,6 +73,15 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     // Ignora company_id do cliente (IDOR / tenant pollution).
     const companyId = resolvePublicCompanyId();
 
+    let partnerId: string | null = null;
+    if (data.partnerInviteCode?.trim()) {
+      const partner = await resolvePartnerByInviteCode(data.partnerInviteCode);
+      if (!partner || partner.company_id !== companyId) {
+        return { success: false, error: "Link de indicação inválido ou expirado." };
+      }
+      partnerId = partner.id;
+    }
+
     const tipoPessoa: TipoPessoa = data.tipo_pessoa === "PJ" ? "PJ" : "PF";
     const documentoDigits = data.documento?.replace(/\D/g, "") || "";
     const cpf = tipoPessoa === "PF" ? documentoDigits || null : null;
@@ -84,6 +96,28 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     });
 
     if (existing) {
+      if (partnerId) {
+        const current = await prisma.client.findUnique({
+          where: { id: existing.id },
+          select: { partner_id: true },
+        });
+        if (current && !current.partner_id) {
+          await prisma.client.update({
+            where: { id: existing.id },
+            data: {
+              partner_id: partnerId,
+              partner_attributed_at: new Date(),
+            },
+          });
+          revalidatePath("/clientes");
+          revalidatePath("/parceiro/clientes");
+          return {
+            success: true,
+            id: existing.id,
+            attributedExisting: true,
+          };
+        }
+      }
       return {
         success: false,
         error:
@@ -101,6 +135,8 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
       endereco: data.endereco,
     });
 
+    const attributedAt = partnerId ? new Date() : null;
+
     const client = await prisma.client.create({
       data: {
         nome: capitalizeText(nome),
@@ -108,7 +144,7 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         telefone: contact.telefone,
         telefone_digits: contact.phoneDigits || null,
         cidade: address.cidade,
-        origem: "FORMULARIO",
+        origem: partnerId ? "INDICACAO" : "FORMULARIO",
         status: "LEAD",
         observacoes,
         company_id: companyId,
@@ -124,11 +160,16 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         lgpd_aceite: true,
         lgpd_aceite_em: new Date(),
         marketing_aceite: Boolean(data.marketing_aceite),
+        partner_id: partnerId,
+        partner_attributed_at: attributedAt,
       },
     });
 
     revalidatePath("/clientes");
     revalidatePath("/marketing/formularios");
+    if (partnerId) {
+      revalidatePath("/parceiro/clientes");
+    }
 
     return { success: true, id: client.id };
   } catch (error) {

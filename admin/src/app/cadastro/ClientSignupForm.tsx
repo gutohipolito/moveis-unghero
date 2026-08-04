@@ -41,7 +41,13 @@ const inputClass =
   "w-full border border-slate-800 bg-slate-950/60 rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary font-semibold text-slate-100 placeholder-slate-500 transition-all";
 const labelClass = "text-xs font-bold text-slate-300 flex items-center gap-1.5";
 
-export default function ClientSignupForm({ companyId }: { companyId?: string }) {
+export default function ClientSignupForm({
+  companyId,
+  partnerInviteCode,
+}: {
+  companyId?: string;
+  partnerInviteCode?: string;
+}) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
@@ -240,6 +246,7 @@ export default function ClientSignupForm({ companyId }: { companyId?: string }) 
       company_id: companyId,
       lgpd_aceite: aceitaTermos,
       marketing_aceite: false,
+      partnerInviteCode,
     });
     setLoading(false);
 

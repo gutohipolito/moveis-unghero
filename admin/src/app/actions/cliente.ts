@@ -65,6 +65,8 @@ function formatClientRecord(c: {
   lgpd_aceite?: boolean | null;
   lgpd_aceite_em?: Date | string | null;
   marketing_aceite?: boolean | null;
+  partner_id?: string | null;
+  partner?: { id: string; nome: string; tipo: string } | null;
   createdAt?: Date | null;
   projects?: {
     id: string;
@@ -98,6 +100,9 @@ function formatClientRecord(c: {
           ? c.lgpd_aceite_em
           : null,
     marketing_aceite: Boolean(c.marketing_aceite),
+    partner_id: c.partner_id || null,
+    partnerNome: c.partner?.nome || null,
+    partnerTipo: c.partner?.tipo || null,
     cep: c.cep || "",
     endereco: c.endereco || "",
     numero: c.numero || "",
@@ -1089,6 +1094,9 @@ export async function getClientDetailsAction(clientId: string) {
     const client = await prisma.client.findUnique({
       where: { id: clientId },
       include: {
+        partner: {
+          select: { id: true, nome: true, tipo: true },
+        },
         projects: {
           select: {
             id: true,

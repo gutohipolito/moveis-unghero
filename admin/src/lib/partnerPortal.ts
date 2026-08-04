@@ -58,6 +58,9 @@ export interface PartnerPortalClient {
   uf: string | null;
   cep: string | null;
   projectsCount: number;
+  /** Quando o vínculo direto com o parceiro foi gravado (cadastro /a). */
+  partnerAttributedAt: string | null;
+  createdAt: string;
 }
 
 type CrmUpload = { tipo?: string; url?: string };
@@ -208,31 +211,58 @@ export async function loadPartnerPortalProducts(
   });
 }
 
-/** Clientes com projeto vinculado a este arquiteto/parceiro — sem documentos. */
+/** Clientes do arquiteto: indicação direta (partner_id) + via projetos — sem documentos. */
 export async function loadPartnerPortalClients(
   partnerId: string
 ): Promise<PartnerPortalClient[]> {
-  const projects = await prisma.project.findMany({
-    where: { partner_id: partnerId },
-    select: {
-      client: {
-        select: {
-          id: true,
-          nome: true,
-          telefone: true,
-          email: true,
-          endereco: true,
-          numero: true,
-          bairro: true,
-          cidade: true,
-          uf: true,
-          cep: true,
-        },
+  const clientSelect = {
+    id: true,
+    nome: true,
+    telefone: true,
+    email: true,
+    endereco: true,
+    numero: true,
+    bairro: true,
+    cidade: true,
+    uf: true,
+    cep: true,
+    partner_attributed_at: true,
+    createdAt: true,
+  } as const;
+
+  const [referred, projects] = await Promise.all([
+    prisma.client.findMany({
+      where: { partner_id: partnerId },
+      select: clientSelect,
+    }),
+    prisma.project.findMany({
+      where: { partner_id: partnerId },
+      select: {
+        client: { select: clientSelect },
       },
-    },
-  });
+    }),
+  ]);
 
   const byClient = new Map<string, PartnerPortalClient>();
+
+  for (const c of referred) {
+    byClient.set(c.id, {
+      id: c.id,
+      nome: c.nome,
+      telefone: c.telefone,
+      email: c.email,
+      endereco: c.endereco,
+      numero: c.numero,
+      bairro: c.bairro,
+      cidade: c.cidade,
+      uf: c.uf,
+      cep: c.cep,
+      projectsCount: 0,
+      partnerAttributedAt: c.partner_attributed_at?.toISOString() ?? null,
+      createdAt: c.createdAt.toISOString(),
+    });
+  }
+
   for (const project of projects) {
     const c = project.client;
     const existing = byClient.get(c.id);
@@ -252,7 +282,25 @@ export async function loadPartnerPortalClients(
       uf: c.uf,
       cep: c.cep,
       projectsCount: 1,
+      partnerAttributedAt: c.partner_attributed_at?.toISOString() ?? null,
+      createdAt: c.createdAt.toISOString(),
     });
+  }
+
+  // Contagem de projetos para referidos que também têm obras
+  if (referred.length > 0) {
+    const counts = await prisma.project.groupBy({
+      by: ["client_id"],
+      where: {
+        partner_id: partnerId,
+        client_id: { in: referred.map((c) => c.id) },
+      },
+      _count: { _all: true },
+    });
+    for (const row of counts) {
+      const entry = byClient.get(row.client_id);
+      if (entry) entry.projectsCount = row._count._all;
+    }
   }
 
   return Array.from(byClient.values()).sort((a, b) =>

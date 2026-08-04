@@ -178,6 +178,10 @@ model Client {
   lgpd_aceite       Boolean   @default(false)
   lgpd_aceite_em    DateTime?
   marketing_aceite  Boolean   @default(false)
+  /** Arquiteto/parceiro que indicou o cliente (cadastro frio /a/[code]). */
+  partner_id        String?
+  partner           ProfessionalPartner? @relation("PartnerReferredClients", fields: [partner_id], references: [id], onDelete: SetNull)
+  partner_attributed_at DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now()) @updatedAt
   attachments  ClientAttachment[]
@@ -186,6 +190,7 @@ model Client {
 
   @@index([company_id, telefone_digits])
   @@index([company_id, updatedAt])
+  @@index([partner_id, partner_attributed_at])
 }
 
 enum Origin {
@@ -231,8 +236,11 @@ model ProfessionalPartner {
   portfolioUrl           String?
   /** Opt-in de comunicações comerciais / novidades para parceiros. */
   marketing_aceite       Boolean     @default(false)
+  /** Código curto do link de indicação (/a/[code]). */
+  invite_code            String?     @unique
   projects               Project[]   @relation("PartnerProjects")
   quotes                 Quote[]     @relation("PartnerQuotes")
+  referredClients        Client[]    @relation("PartnerReferredClients")
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 }
