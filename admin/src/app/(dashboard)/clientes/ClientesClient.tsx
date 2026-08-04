@@ -14,7 +14,9 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  PlusCircle
+  PlusCircle,
+  Sparkles,
+  Users,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,7 @@ import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients } from "@/lib/permissions";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface ProjectSummary {
   id: string;
@@ -101,6 +104,7 @@ interface Client {
   tipo_imovel?: string | null;
   obs_imovel?: string | null;
   obs_entrega?: string | null;
+  createdAt?: string | null;
   projects?: ProjectSummary[];
 }
 
@@ -130,6 +134,13 @@ const STATUS_BADGES: Record<string, { bg: string; text: string }> = {
   INATIVO: { bg: "bg-rose-500/10", text: "text-rose-600" }
 };
 
+function isNewClient(client: { createdAt?: string | null }, now: number) {
+  if (!client.createdAt) return false;
+  const created = new Date(client.createdAt).getTime();
+  if (!Number.isFinite(created)) return false;
+  return now - created <= NEW_CLIENT_WINDOW_MS;
+}
+
 export default function ClientesClient({ initialClients, companyId, initialPageSize = 20 }: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const { sensitiveHidden } = usePrivacy();
@@ -147,6 +158,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const [filterCidade, setFilterCidade] = useState<string>("ALL");
   const [filterBairro, setFilterBairro] = useState<string>("ALL");
   const [activeTipoTab, setActiveTipoTab] = useState<"todos" | "PF" | "PJ">("todos");
+  const [filterRecency, setFilterRecency] = useState<"all" | "new">("all");
   // Mobile: busca e filtros começam minimizados
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount = [
@@ -154,6 +166,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     canManage && filterOrigin !== "ALL",
     filterCidade !== "ALL",
     filterBairro !== "ALL",
+    filterRecency !== "all",
   ].filter(Boolean).length;
 
   // Paginação (pageSize salvo na conta do usuário)
@@ -182,6 +195,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     enabled: !loading && !isCreateOpen && !isEditOpen && !isProjectModalOpen,
   });
 
+  const now = Date.now();
+
   const tipoCounts = useMemo(() => {
     const counts = { todos: 0, PF: 0, PJ: 0 };
     for (const c of clients) {
@@ -192,6 +207,11 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     }
     return counts;
   }, [clients]);
+
+  const newClientsCount = useMemo(
+    () => clients.filter((c) => isNewClient(c, now)).length,
+    [clients, now]
+  );
 
   const cidadeOptions = useMemo(() => {
     const set = new Set(
@@ -217,38 +237,53 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     }
   }, [filterBairro, bairroOptions]);
 
-  const filteredClients = clients.filter((c) => {
-    const doc = resolveClientDocument(c);
-    const location = resolveClientLocation(c);
-    const searchLower = search.toLowerCase();
-    const matchesSearch = isFactoryRole
-      ? c.nome.toLowerCase().includes(searchLower)
-      : hideClientContact
-        ? c.nome.toLowerCase().includes(searchLower) ||
-          location.cidade.toLowerCase().includes(searchLower) ||
-          location.bairro.toLowerCase().includes(searchLower)
-        : c.nome.toLowerCase().includes(searchLower) ||
-          c.email.toLowerCase().includes(searchLower) ||
-          c.telefone.includes(search) ||
-          location.cidade.toLowerCase().includes(searchLower) ||
-          location.bairro.toLowerCase().includes(searchLower) ||
-          (doc.cpf || "").includes(search) ||
-          (doc.cnpj || "").includes(search);
-    const matchesOrigin =
-      !canManage || filterOrigin === "ALL" || c.origem === filterOrigin;
-    const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
-    const matchesBairro = filterBairro === "ALL" || location.bairro === filterBairro;
-    const matchesTipo =
-      isFactoryRole ||
-      activeTipoTab === "todos" ||
-      doc.tipo_pessoa === activeTipoTab;
-    return matchesSearch && matchesOrigin && matchesCidade && matchesBairro && matchesTipo;
-  });
+  const filteredClients = clients
+    .filter((c) => {
+      const doc = resolveClientDocument(c);
+      const location = resolveClientLocation(c);
+      const searchLower = search.toLowerCase();
+      const matchesSearch = isFactoryRole
+        ? c.nome.toLowerCase().includes(searchLower)
+        : hideClientContact
+          ? c.nome.toLowerCase().includes(searchLower) ||
+            location.cidade.toLowerCase().includes(searchLower) ||
+            location.bairro.toLowerCase().includes(searchLower)
+          : c.nome.toLowerCase().includes(searchLower) ||
+            c.email.toLowerCase().includes(searchLower) ||
+            c.telefone.includes(search) ||
+            location.cidade.toLowerCase().includes(searchLower) ||
+            location.bairro.toLowerCase().includes(searchLower) ||
+            (doc.cpf || "").includes(search) ||
+            (doc.cnpj || "").includes(search);
+      const matchesOrigin =
+        !canManage || filterOrigin === "ALL" || c.origem === filterOrigin;
+      const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
+      const matchesBairro = filterBairro === "ALL" || location.bairro === filterBairro;
+      const matchesTipo =
+        isFactoryRole ||
+        activeTipoTab === "todos" ||
+        doc.tipo_pessoa === activeTipoTab;
+      const matchesRecency = filterRecency === "all" || isNewClient(c, now);
+      return (
+        matchesSearch &&
+        matchesOrigin &&
+        matchesCidade &&
+        matchesBairro &&
+        matchesTipo &&
+        matchesRecency
+      );
+    })
+    .sort((a, b) => {
+      if (filterRecency !== "new") return 0;
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
 
   // Paginação: volta para a página 1 quando filtros/busca mudam
   useEffect(() => {
     setPage(1);
-  }, [search, filterOrigin, filterCidade, filterBairro, activeTipoTab]);
+  }, [search, filterOrigin, filterCidade, filterBairro, activeTipoTab, filterRecency]);
 
   const totalPages = Math.max(1, Math.ceil(filteredClients.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -316,7 +351,12 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     setLoading(false);
 
     if (res.success && res.client) {
-      const newCli = { id: res.client.id, ...data, projects: [] };
+      const newCli = {
+        id: res.client.id,
+        ...data,
+        createdAt: new Date().toISOString(),
+        projects: [],
+      };
       setClients([newCli, ...clients]);
       setIsCreateOpen(false);
       showSuccess("Cliente cadastrado", `${form.nome} foi adicionado à base de clientes.`);
@@ -516,6 +556,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                   title="Base de clientes"
                   items={[
                     "Cadastre clientes Pessoa Física ou Jurídica escolhendo o tipo antes.",
+                    "Use a aba Novos para ver cadastros dos últimos 7 dias.",
                     "Clique em qualquer parte da linha (fora dos botões) para abrir o cliente.",
                     "Os olhos do topo do painel ocultam telefone, e-mail, documento e totais financeiros (revelação temporária).",
                     "Ajuste quantos itens aparecem por página no rodapé da lista.",
@@ -636,6 +677,37 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         </div>
       </Card>
 
+      <Tabs
+        value={filterRecency}
+        onValueChange={(v) => setFilterRecency(v as "all" | "new")}
+      >
+        <TabsList className="grid w-full grid-cols-2 h-auto gap-1 p-1">
+          <TabsTrigger
+            value="all"
+            className="whitespace-normal text-xs sm:text-sm py-2.5 px-1.5 sm:px-3 gap-1.5"
+          >
+            <Users className="h-3.5 w-3.5 shrink-0" />
+            Todos
+            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">
+              ({clients.length})
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="new"
+            className="whitespace-normal text-xs sm:text-sm py-2.5 px-1.5 sm:px-3 gap-1.5"
+          >
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
+            Novos
+            <span className="hidden sm:inline text-[10px] opacity-70 font-semibold">
+              · 7 dias
+            </span>
+            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">
+              ({newClientsCount})
+            </span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {!isFactoryRole && (
       <Tabs value={activeTipoTab} onValueChange={(v) => setActiveTipoTab(v as "todos" | "PF" | "PJ")}>
         <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
@@ -690,6 +762,12 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                           >
                             {client.nome}
                           </Link>
+                          {isNewClient(client, now) && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-200/80">
+                              <Sparkles className="h-3 w-3" />
+                              Novo
+                            </span>
+                          )}
                           {!isFactoryRole && (
                             <span className="badge-meta px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                               {docInfo.tipo_pessoa}
@@ -819,6 +897,12 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                                 >
                                   {client.nome}
                                 </Link>
+                                {isNewClient(client, now) && (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-200/80">
+                                    <Sparkles className="h-3 w-3" />
+                                    Novo
+                                  </span>
+                                )}
                                 {!isFactoryRole && (
                                   <span className={`text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-55 bg-opacity-10 text-indigo-700 border border-indigo-200" : "bg-purple-55 bg-opacity-10 text-purple-700 border border-purple-200"}`}>
                                     {docInfo.tipo_pessoa}
