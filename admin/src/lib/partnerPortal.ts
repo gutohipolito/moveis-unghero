@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { PartnerType, ProjectStatus } from "@prisma/client";
+import { partnerProductImagePath } from "@/lib/partnerProductWatermark";
 
 export interface PartnerPortalProject {
   id: string;
@@ -188,15 +189,18 @@ export async function loadPartnerPortalProducts(
   });
 
   return products.map((p) => {
-    const imagens = (p.imagens || []).filter(Boolean);
-    const cover = imagens[0] || p.imagem_url;
+    const rawImagens = (p.imagens || []).filter(Boolean);
+    const rawCover = rawImagens[0] || p.imagem_url;
+    const rawList = rawImagens.length > 0 ? rawImagens : rawCover ? [rawCover] : [];
+    // Portal nunca recebe URL original — só o proxy com marca d'água nos pixels
+    const imagens = rawList.map((_, i) => partnerProductImagePath(p.id, i));
     return {
       id: p.id,
       nome: p.nome,
       descricao: p.descricao,
       categoria: p.categoria,
-      imagem_url: cover,
-      imagens: imagens.length > 0 ? imagens : cover ? [cover] : [],
+      imagem_url: imagens[0] ?? null,
+      imagens,
       preco_exibicao: p.preco_exibicao == null ? null : Number(p.preco_exibicao),
       supplier_id: p.supplier_id,
       supplierNome: p.supplier?.nomeFantasia || p.supplier?.nome || null,
