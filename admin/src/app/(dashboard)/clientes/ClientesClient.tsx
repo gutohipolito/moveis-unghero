@@ -694,7 +694,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           <Users className="h-4 w-4 shrink-0 opacity-70" />
           Todos
           <span className="text-[10px] font-bold tabular-nums opacity-55">
-            {clients.length}
+            ({clients.length})
           </span>
         </button>
         <button
@@ -708,11 +708,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         >
           <UserPlus className="h-4 w-4 shrink-0 opacity-70" />
           Novos
-          <span className="hidden sm:inline text-[10px] font-semibold opacity-50">
-            7 dias
-          </span>
           <span className="text-[10px] font-bold tabular-nums opacity-55">
-            {newClientsCount}
+            ({newClientsCount})
           </span>
         </button>
       </div>
