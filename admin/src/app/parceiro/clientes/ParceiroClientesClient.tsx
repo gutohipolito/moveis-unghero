@@ -133,7 +133,7 @@ export default function ParceiroClientesClient({
               {tab === "new"
                 ? "Aqui entram clientes que se cadastraram pelo seu link nos últimos 7 dias."
                 : clients.length === 0
-                  ? "Compartilhe seu link em Marketing ou aguarde a Unghero vincular um projeto ao seu nome."
+                  ? "Compartilhe seu link em Marketing ou aguarde a Móveis Unghero vincular um projeto ao seu nome."
                   : "Tente outro termo de busca."}
             </p>
           </div>

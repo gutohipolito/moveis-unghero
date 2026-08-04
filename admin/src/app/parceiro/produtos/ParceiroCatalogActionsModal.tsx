@@ -153,7 +153,7 @@ export default function ParceiroCatalogActionsModal({ catalog, onClose }: Props)
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold leading-tight">Download</span>
                 <span className="block text-[11px] font-medium opacity-80 mt-0.5 leading-snug">
-                  PDF com marca d&apos;água Unghero
+                  Baixar o arquivo do catálogo
                 </span>
               </span>
             </button>
