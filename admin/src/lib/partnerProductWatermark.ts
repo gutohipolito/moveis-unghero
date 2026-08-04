@@ -7,7 +7,10 @@ import sharp, { type OverlayOptions } from "sharp";
 
 const MAX_EDGE = 1000;
 const JPEG_QUALITY = 80;
-const MAX_TILES = 36;
+const MAX_TILES = 28;
+/** Logo do sistema (MU + MÓVEIS UNGHERO) — public/logo.png */
+const LOGO_FILE = "logo.png";
+const LOGO_ASPECT = 266 / 55;
 
 let logoPngCache: Buffer | null = null;
 
@@ -21,11 +24,11 @@ function hashSeed(seed: string) {
   };
 }
 
-/** Converte o MU (branco no preto) em PNG branco com alpha. */
+/** Converte o logo do sistema (branco no preto) em PNG branco com alpha. */
 async function getTransparentLogoPng(): Promise<Buffer> {
   if (logoPngCache) return logoPngCache;
 
-  const file = await readFile(path.join(process.cwd(), "public", "mu-watermark.png"));
+  const file = await readFile(path.join(process.cwd(), "public", LOGO_FILE));
   const { data, info } = await sharp(file)
     .ensureAlpha()
     .raw()
@@ -71,53 +74,9 @@ async function fadeLogo(logoPng: Buffer, width: number, height: number, opacity:
     .toBuffer();
 }
 
-function buildOverlaySvg(
-  w: number,
-  h: number,
-  seed: ReturnType<typeof hashSeed>
-): Buffer {
-  const fontSize = Math.max(13, Math.min(w, h) * 0.03);
-  const bandGap = fontSize * 5;
-  const label = "MÓVEIS UNGHERO  ·  ";
-  const angle1 = -26 + seed.rotDeg * 0.4;
-  const angle2 = 20 - seed.rotDeg * 0.3;
-  const approxTextW = Math.max(160, label.length * fontSize * 0.52);
-  const lines1: string[] = [];
-  const lines2: string[] = [];
-
-  // Poucas faixas — suficiente para marcar e leve no sharp
-  for (let y = fontSize; y < h + bandGap; y += bandGap) {
-    const shift = (seed.phase * approxTextW + (y / bandGap) * 40) % approxTextW;
-    for (let x = -approxTextW + shift; x < w + approxTextW; x += approxTextW) {
-      lines1.push(`<text x="${x.toFixed(0)}" y="${y.toFixed(0)}">${label}</text>`);
-    }
-  }
-  for (let y = fontSize * 2; y < h + bandGap; y += bandGap * 1.4) {
-    for (let x = 0; x < w + approxTextW; x += approxTextW) {
-      lines2.push(`<text x="${x.toFixed(0)}" y="${y.toFixed(0)}">${label}</text>`);
-    }
-  }
-
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-  <g transform="rotate(${angle1.toFixed(2)} ${w / 2} ${h / 2})"
-     fill="rgba(255,255,255,0.17)"
-     font-family="Arial, Helvetica, sans-serif"
-     font-size="${fontSize.toFixed(1)}"
-     font-weight="600">${lines1.join("")}</g>
-  <g transform="rotate(${angle2.toFixed(2)} ${w / 2} ${h / 2})"
-     fill="rgba(0,0,0,0.09)"
-     font-family="Arial, Helvetica, sans-serif"
-     font-size="${(fontSize * 0.85).toFixed(1)}"
-     font-weight="500">${lines2.join("")}</g>
-</svg>`;
-
-  return Buffer.from(svg);
-}
-
 /**
- * Grava a marca Unghero nos pixels (não é overlay CSS).
- * Usa sharp (nativo na Vercel) — tiles do monograma + texto diagonal + cantos.
+ * Grava o logo Unghero do sistema nos pixels (não é overlay CSS).
+ * Tiles + cantos com public/logo.png.
  */
 export async function applyPartnerProductWatermark(
   source: Buffer,
@@ -134,24 +93,22 @@ export async function applyPartnerProductWatermark(
   const seedVals = hashSeed(seed);
   const logoPng = await getTransparentLogoPng();
 
-  const tile = Math.max(56, Math.round(Math.min(w, h) * 0.15));
-  const logoRatio = 404 / 563;
-  const tileH = Math.round(tile * logoRatio);
+  // Logo horizontal: largura ~22% da menor aresta
+  const tileW = Math.max(90, Math.round(Math.min(w, h) * 0.22));
+  const tileH = Math.max(20, Math.round(tileW / LOGO_ASPECT));
+  const cornerW = Math.max(72, Math.round(Math.min(w, h) * 0.18));
+  const cornerH = Math.max(16, Math.round(cornerW / LOGO_ASPECT));
+
   const [tileLogo, cornerLogo] = await Promise.all([
-    fadeLogo(logoPng, tile, tileH, 0.16),
-    fadeLogo(
-      logoPng,
-      Math.max(32, Math.round(Math.min(w, h) * 0.1)),
-      Math.max(24, Math.round(Math.min(w, h) * 0.1 * logoRatio)),
-      0.28
-    ),
+    fadeLogo(logoPng, tileW, tileH, 0.18),
+    fadeLogo(logoPng, cornerW, cornerH, 0.32),
   ]);
 
   const tileMeta = await sharp(tileLogo).metadata();
-  const tw = tileMeta.width || tile;
+  const tw = tileMeta.width || tileW;
   const th = tileMeta.height || tileH;
-  const gapX = Math.round(tile * 1.7);
-  const gapY = Math.round(tile * 1.5);
+  const gapX = Math.round(tw * 1.55);
+  const gapY = Math.round(th * 2.4);
   const offsetX = Math.round(seedVals.ox * gapX);
   const offsetY = Math.round(seedVals.oy * gapY);
 
@@ -159,7 +116,7 @@ export async function applyPartnerProductWatermark(
   let tileCount = 0;
   for (let y = -gapY; y < h + gapY && tileCount < MAX_TILES; y += gapY) {
     const row = Math.round(y / gapY);
-    const stagger = row % 2 === 0 ? 0 : Math.round(gapX * 0.5);
+    const stagger = row % 2 === 0 ? 0 : Math.round(gapX * 0.45);
     for (let x = -gapX; x < w + gapX && tileCount < MAX_TILES; x += gapX) {
       const left = x + offsetX + stagger;
       const top = y + offsetY;
@@ -174,16 +131,15 @@ export async function applyPartnerProductWatermark(
   }
 
   const cMeta = await sharp(cornerLogo).metadata();
-  const cw = cMeta.width || 40;
-  const ch = cMeta.height || 30;
-  const pad = Math.round(cw * 0.35);
+  const cw = cMeta.width || cornerW;
+  const ch = cMeta.height || cornerH;
+  const pad = Math.max(10, Math.round(Math.min(w, h) * 0.025));
   composites.push({ input: cornerLogo, left: pad, top: pad });
   composites.push({
     input: cornerLogo,
     left: Math.max(0, w - pad - cw),
     top: Math.max(0, h - pad - ch),
   });
-  composites.push({ input: buildOverlaySvg(w, h, seedVals), top: 0, left: 0 });
 
   const buffer = await sharp(source, { failOn: "none" })
     .rotate()

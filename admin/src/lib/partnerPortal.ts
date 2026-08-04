@@ -41,7 +41,6 @@ export interface PartnerPortalProduct {
   categoria: string | null;
   imagem_url: string | null;
   imagens: string[];
-  preco_exibicao: number | null;
   supplier_id: string | null;
   supplierNome: string | null;
   supplierLogoUrl: string | null;
@@ -178,7 +177,6 @@ export async function loadPartnerPortalProducts(
       categoria: true,
       imagem_url: true,
       imagens: true,
-      preco_exibicao: true,
       supplier_id: true,
       supplier: {
         select: {
@@ -203,7 +201,6 @@ export async function loadPartnerPortalProducts(
       categoria: p.categoria,
       imagem_url: imagens[0] ?? null,
       imagens,
-      preco_exibicao: p.preco_exibicao == null ? null : Number(p.preco_exibicao),
       supplier_id: p.supplier_id,
       supplierNome: p.supplier?.nomeFantasia || p.supplier?.nome || null,
       supplierLogoUrl: extractLogoUrl(p.supplier?.crmUploads),
