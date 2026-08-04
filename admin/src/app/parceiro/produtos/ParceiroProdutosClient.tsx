@@ -39,6 +39,7 @@ export default function ParceiroProdutosClient({
 }: ParceiroProdutosClientProps) {
   const [search, setSearch] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [viewingProduct, setViewingProduct] = useState<PartnerPortalProduct | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [copiedText, setCopiedText] = useState(false);
@@ -88,16 +89,28 @@ export default function ParceiroProdutosClient({
     return products.filter((p) => p.supplier_id === selectedSupplierId);
   }, [products, selectedSupplierId]);
 
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of supplierProducts) {
+      if (p.categoria?.trim()) set.add(p.categoria.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [supplierProducts]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return supplierProducts;
-    return supplierProducts.filter(
-      (p) =>
+    return supplierProducts.filter((p) => {
+      const matchesCategory =
+        filterCategory === "ALL" || (p.categoria || "").trim() === filterCategory;
+      if (!matchesCategory) return false;
+      if (!q) return true;
+      return (
         p.nome.toLowerCase().includes(q) ||
         (p.categoria?.toLowerCase().includes(q) ?? false) ||
         (p.descricao?.toLowerCase().includes(q) ?? false)
-    );
-  }, [supplierProducts, search]);
+      );
+    });
+  }, [supplierProducts, search, filterCategory]);
 
   const selectedLabel =
     selectedSupplierId == null
@@ -136,28 +149,61 @@ export default function ParceiroProdutosClient({
         </div>
 
         {!showingSuppliers && (
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <Button
-              type="button"
-              variant="outline"
-              className="font-bold gap-1.5 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white w-fit"
-              onClick={() => {
-                setSelectedSupplierId(null);
-                setSearch("");
-              }}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Fornecedores
-            </Button>
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome ou categoria..."
-                className="pl-9 h-11 bg-white/95 border-white/20"
-              />
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <Button
+                type="button"
+                variant="outline"
+                className="font-bold gap-1.5 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white w-fit"
+                onClick={() => {
+                  setSelectedSupplierId(null);
+                  setSearch("");
+                  setFilterCategory("ALL");
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Fornecedores
+              </Button>
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por nome ou categoria..."
+                  className="pl-9 h-11 bg-white/95 border-white/20"
+                />
+              </div>
             </div>
+
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilterCategory("ALL")}
+                  className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+                    filterCategory === "ALL"
+                      ? "bg-white text-slate-900 border-white"
+                      : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
+                  }`}
+                >
+                  Todas
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setFilterCategory(cat)}
+                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+                      filterCategory === cat
+                        ? "bg-white text-slate-900 border-white"
+                        : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -182,6 +228,7 @@ export default function ParceiroProdutosClient({
                   onClick={() => {
                     setSelectedSupplierId(tile.id);
                     setSearch("");
+                    setFilterCategory("ALL");
                   }}
                   className="partner-card text-left cursor-pointer overflow-hidden hover:border-primary/40 transition-colors"
                 >
