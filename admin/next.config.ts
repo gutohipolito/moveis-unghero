@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
     root: monorepoRoot,
   },
   outputFileTracingRoot: monorepoRoot,
+  serverExternalPackages: ["@napi-rs/canvas", "sharp"],
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },

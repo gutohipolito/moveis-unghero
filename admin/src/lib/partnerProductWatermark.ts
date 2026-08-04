@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createCanvas, loadImage, type Image, type SKRSContext2D } from "@napi-rs/canvas";
 import { createHash } from "crypto";
 import { readFile } from "fs/promises";
@@ -181,8 +183,4 @@ export async function applyPartnerProductWatermark(
     buffer: canvas.toBuffer("image/jpeg", JPEG_QUALITY),
     contentType: "image/jpeg",
   };
-}
-
-export function partnerProductImagePath(productId: string, index: number) {
-  return `/api/parceiro/produto-imagem?productId=${encodeURIComponent(productId)}&i=${index}`;
 }

@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import type { PartnerType, ProjectStatus } from "@prisma/client";
-import { partnerProductImagePath } from "@/lib/partnerProductWatermark";
 
+function partnerProductImagePath(productId: string, index: number) {
+  return `/api/parceiro/produto-imagem?productId=${encodeURIComponent(productId)}&i=${index}`;
+}
 export interface PartnerPortalProject {
   id: string;
   valor_previsto: number;
