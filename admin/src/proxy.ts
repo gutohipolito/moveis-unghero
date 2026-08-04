@@ -196,7 +196,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/parceiro/painel") || pathname.startsWith("/parceiro/produtos")) {
+  if (
+    pathname.startsWith("/parceiro/painel") ||
+    pathname.startsWith("/parceiro/produtos") ||
+    pathname.startsWith("/parceiro/clientes")
+  ) {
     const partnerSession = request.cookies.get("parceiro-session")?.value;
     if (!parsePartnerSessionToken(partnerSession)) {
       return NextResponse.redirect(new URL("/parceiro/login", request.url));
@@ -254,6 +258,8 @@ export const config = {
     "/parceiro/painel/:path*",
     "/parceiro/produtos",
     "/parceiro/produtos/:path*",
+    "/parceiro/clientes",
+    "/parceiro/clientes/:path*",
     "/api/parceiro/:path*",
     "/briefing",
     "/cadastro",

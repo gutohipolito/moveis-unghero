@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, Loader2, LogOut, LayoutDashboard, Package } from "lucide-react";
+import { Camera, Loader2, LogOut, LayoutDashboard, Package, Users } from "lucide-react";
 import { logoutParceiro } from "@/app/actions/parceiroPortal";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/parceiro/painel", label: "Início", icon: LayoutDashboard },
   { href: "/parceiro/produtos", label: "Produtos", icon: Package },
+  { href: "/parceiro/clientes", label: "Clientes", icon: Users },
 ] as const;
 
 function getInitials(name: string) {

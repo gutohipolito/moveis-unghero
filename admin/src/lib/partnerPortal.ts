@@ -39,6 +39,53 @@ export interface PartnerPortalProduct {
   imagem_url: string | null;
   imagens: string[];
   preco_exibicao: number | null;
+  supplier_id: string | null;
+  supplierNome: string | null;
+  supplierLogoUrl: string | null;
+}
+
+export interface PartnerPortalClient {
+  id: string;
+  nome: string;
+  telefone: string;
+  email: string;
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string;
+  uf: string | null;
+  cep: string | null;
+  projectsCount: number;
+}
+
+type CrmUpload = { tipo?: string; url?: string };
+
+function extractLogoUrl(crmUploads: unknown): string | null {
+  if (!Array.isArray(crmUploads)) return null;
+  const logo = crmUploads.find(
+    (entry): entry is CrmUpload =>
+      !!entry &&
+      typeof entry === "object" &&
+      (entry as CrmUpload).tipo === "Logo" &&
+      typeof (entry as CrmUpload).url === "string"
+  );
+  return logo?.url ?? null;
+}
+
+function formatAddressLine(client: {
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string;
+  uf: string | null;
+  cep: string | null;
+}): string {
+  const street = [client.endereco, client.numero].filter(Boolean).join(", ");
+  const cityUf = [client.cidade, client.uf].filter(Boolean).join(" / ");
+  const parts = [street, client.bairro, cityUf, client.cep ? `CEP ${client.cep}` : null].filter(
+    Boolean
+  );
+  return parts.join(" · ") || "Endereço não informado";
 }
 
 export async function loadPartnerPortalData(
@@ -129,6 +176,14 @@ export async function loadPartnerPortalProducts(
       imagem_url: true,
       imagens: true,
       preco_exibicao: true,
+      supplier_id: true,
+      supplier: {
+        select: {
+          nome: true,
+          nomeFantasia: true,
+          crmUploads: true,
+        },
+      },
     },
   });
 
@@ -143,6 +198,70 @@ export async function loadPartnerPortalProducts(
       imagem_url: cover,
       imagens: imagens.length > 0 ? imagens : cover ? [cover] : [],
       preco_exibicao: p.preco_exibicao == null ? null : Number(p.preco_exibicao),
+      supplier_id: p.supplier_id,
+      supplierNome: p.supplier?.nomeFantasia || p.supplier?.nome || null,
+      supplierLogoUrl: extractLogoUrl(p.supplier?.crmUploads),
     };
   });
+}
+
+/** Clientes com projeto vinculado a este arquiteto/parceiro — sem documentos. */
+export async function loadPartnerPortalClients(
+  partnerId: string
+): Promise<PartnerPortalClient[]> {
+  const projects = await prisma.project.findMany({
+    where: { partner_id: partnerId },
+    select: {
+      client: {
+        select: {
+          id: true,
+          nome: true,
+          telefone: true,
+          email: true,
+          endereco: true,
+          numero: true,
+          bairro: true,
+          cidade: true,
+          uf: true,
+          cep: true,
+        },
+      },
+    },
+  });
+
+  const byClient = new Map<string, PartnerPortalClient>();
+  for (const project of projects) {
+    const c = project.client;
+    const existing = byClient.get(c.id);
+    if (existing) {
+      existing.projectsCount += 1;
+      continue;
+    }
+    byClient.set(c.id, {
+      id: c.id,
+      nome: c.nome,
+      telefone: c.telefone,
+      email: c.email,
+      endereco: c.endereco,
+      numero: c.numero,
+      bairro: c.bairro,
+      cidade: c.cidade,
+      uf: c.uf,
+      cep: c.cep,
+      projectsCount: 1,
+    });
+  }
+
+  return Array.from(byClient.values()).sort((a, b) =>
+    a.nome.localeCompare(b.nome, "pt-BR")
+  );
+}
+
+export function formatPartnerClientAddress(
+  client: Pick<
+    PartnerPortalClient,
+    "endereco" | "numero" | "bairro" | "cidade" | "uf" | "cep"
+  >
+): string {
+  return formatAddressLine(client);
 }
