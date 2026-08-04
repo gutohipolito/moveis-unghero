@@ -15,7 +15,7 @@ import {
   Phone, 
   MapPin, 
   PlusCircle,
-  Sparkles,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -677,36 +677,45 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         </div>
       </Card>
 
-      <Tabs
-        value={filterRecency}
-        onValueChange={(v) => setFilterRecency(v as "all" | "new")}
+      <div
+        className="section-tabs"
+        role="tablist"
+        aria-label="Filtrar por recência do cadastro"
       >
-        <TabsList className="grid w-full grid-cols-2 h-auto gap-1 p-1">
-          <TabsTrigger
-            value="all"
-            className="whitespace-normal text-xs sm:text-sm py-2.5 px-1.5 sm:px-3 gap-1.5"
-          >
-            <Users className="h-3.5 w-3.5 shrink-0" />
-            Todos
-            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">
-              ({clients.length})
-            </span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="new"
-            className="whitespace-normal text-xs sm:text-sm py-2.5 px-1.5 sm:px-3 gap-1.5"
-          >
-            <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            Novos
-            <span className="hidden sm:inline text-[10px] opacity-70 font-semibold">
-              · 7 dias
-            </span>
-            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">
-              ({newClientsCount})
-            </span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterRecency === "all"}
+          onClick={() => setFilterRecency("all")}
+          className={`section-tabs-item ${
+            filterRecency === "all" ? "section-tabs-item-active" : ""
+          }`}
+        >
+          <Users className="h-4 w-4 shrink-0 opacity-70" />
+          Todos
+          <span className="text-[10px] font-bold tabular-nums opacity-55">
+            {clients.length}
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterRecency === "new"}
+          onClick={() => setFilterRecency("new")}
+          className={`section-tabs-item ${
+            filterRecency === "new" ? "section-tabs-item-active" : ""
+          }`}
+        >
+          <UserPlus className="h-4 w-4 shrink-0 opacity-70" />
+          Novos
+          <span className="hidden sm:inline text-[10px] font-semibold opacity-50">
+            7 dias
+          </span>
+          <span className="text-[10px] font-bold tabular-nums opacity-55">
+            {newClientsCount}
+          </span>
+        </button>
+      </div>
 
       {!isFactoryRole && (
       <Tabs value={activeTipoTab} onValueChange={(v) => setActiveTipoTab(v as "todos" | "PF" | "PJ")}>
@@ -763,8 +772,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                             {client.nome}
                           </Link>
                           {isNewClient(client, now) && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-200/80">
-                              <Sparkles className="h-3 w-3" />
+                            <span className="badge-meta inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md">
+                              <UserPlus className="h-3 w-3 opacity-70" />
                               Novo
                             </span>
                           )}
@@ -898,8 +907,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
                                   {client.nome}
                                 </Link>
                                 {isNewClient(client, now) && (
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-200/80">
-                                    <Sparkles className="h-3 w-3" />
+                                  <span className="badge-meta inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md">
+                                    <UserPlus className="h-3 w-3 opacity-70" />
                                     Novo
                                   </span>
                                 )}
