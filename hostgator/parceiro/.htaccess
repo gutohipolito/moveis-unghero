@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /parceiro/
+
+# moveisunghero.com.br/parceiro/... → iframe do portal do parceiro
+RewriteRule ^(.*)$ index.php?path=$1 [L,QSA]
+
+DirectoryIndex index.php

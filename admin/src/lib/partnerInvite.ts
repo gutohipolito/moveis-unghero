@@ -4,22 +4,28 @@ export const PARTNER_INVITE_SHORT_PATH = "/a";
 
 const SHARE_CODE_ALPHABET = "abcdefghijkmnopqrstuvwxyz23456789";
 
-export function getPartnerInviteBaseUrl() {
+/** Domínio público (site) — nunca admin.* nem *.vercel.app. */
+export function getPartnerPublicBaseUrl() {
   const fromEnv = process.env.NEXT_PUBLIC_PARTNER_INVITE_URL?.replace(/\/$/, "");
   if (fromEnv) return fromEnv;
 
   const quoteBase = process.env.NEXT_PUBLIC_QUOTE_PDF_SHORT_URL?.replace(/\/$/, "");
   if (quoteBase) return quoteBase;
 
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
-  }
+  return "https://moveisunghero.com.br";
+}
 
-  return "https://admin.moveisunghero.com.br";
+/** @deprecated use getPartnerPublicBaseUrl */
+export function getPartnerInviteBaseUrl() {
+  return getPartnerPublicBaseUrl();
 }
 
 export function buildPartnerInviteUrl(code: string) {
-  return `${getPartnerInviteBaseUrl()}${PARTNER_INVITE_SHORT_PATH}/${code}`;
+  return `${getPartnerPublicBaseUrl()}${PARTNER_INVITE_SHORT_PATH}/${code}`;
+}
+
+export function buildPartnerPortalLoginUrl() {
+  return `${getPartnerPublicBaseUrl()}/parceiro/login`;
 }
 
 export function generatePartnerInviteCode(length = 10) {

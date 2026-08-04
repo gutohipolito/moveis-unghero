@@ -13,13 +13,14 @@ interface ParceiroMarketingClientProps {
   isAdminPreview?: boolean;
 }
 
-function buildDefaultWhatsAppMessage(partnerName: string, inviteUrl: string) {
-  const first = partnerName.trim().split(/\s+/)[0] || "seu arquiteto";
+function buildDefaultWhatsAppMessage(_partnerName: string, inviteUrl: string) {
   return (
-    `Olá! Sou ${first}, parceiro(a) da Móveis Unghero.\n\n` +
-    `Para darmos andamento ao seu projeto de móveis sob medida, peço que faça um cadastro rápido neste link:\n` +
-    `${inviteUrl}\n\n` +
-    `É só preencher os dados — a equipe da Unghero recebe automaticamente e eu acompanho junto com você.`
+    `Olá! Tudo bem?\n\n` +
+    `Para fazer o orçamento dos móveis, vou precisar que você faça um cadastro rápido com a Móveis Unghero. ` +
+    `Com esses dados eles conseguem montar o orçamento.\n\n` +
+    `Pode inserir só os dados pessoais — sobre o projeto eu vejo diretamente com eles. Pode ser?\n\n` +
+    `Segue o link para o cadastro:\n` +
+    `${inviteUrl}`
   );
 }
 
@@ -67,8 +68,8 @@ export default function ParceiroMarketingClient({
             Marketing
           </h1>
           <p className="text-xs text-white/60 mt-1 max-w-lg">
-            Envie o link de cadastro para clientes frios. Quem se cadastrar por ele aparece
-            automaticamente na sua lista de clientes.
+            Envie o link de cadastro para o seu cliente. Quem se cadastrar por ele aparece
+            automaticamente na sua lista.
           </p>
         </div>
 
@@ -129,7 +130,7 @@ export default function ParceiroMarketingClient({
               Mensagem para WhatsApp
             </h2>
             <p className="text-xs text-slate-600 mt-0.5">
-              Texto pronto para cliente frio. Você pode ajustar antes de enviar.
+              Texto pronto para enviar ao seu cliente. Você pode ajustar antes de enviar.
             </p>
           </div>
 

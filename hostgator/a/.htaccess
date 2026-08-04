@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /a/
+
+# moveisunghero.com.br/a/abc123 → iframe do cadastro com indicação
+RewriteRule ^([a-zA-Z0-9]{6,16})/?$ index.php?code=$1 [L,QSA]
+
+DirectoryIndex index.php
