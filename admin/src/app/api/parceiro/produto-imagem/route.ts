@@ -5,10 +5,10 @@ import { parsePartnerSessionToken } from "@/lib/partnerSession";
 import { applyPartnerProductWatermark } from "@/lib/partnerProductWatermark";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 20;
 
-const FETCH_TIMEOUT_MS = 20_000;
-const MAX_SOURCE_BYTES = 12 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 12_000;
+const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
 
 function resolveProductUrls(product: {
   imagens: string[];
