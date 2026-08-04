@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import type { PartnerType, ProjectStatus } from "@prisma/client";
+import {
+  ensureCatalogShareCode,
+  resolveCatalogPublicUrl,
+} from "@/lib/catalogShare";
 
 function partnerProductImagePath(productId: string, index: number) {
   return `/api/parceiro/produto-imagem?productId=${encodeURIComponent(productId)}&i=${index}`;
@@ -44,6 +48,27 @@ export interface PartnerPortalProduct {
   supplier_id: string | null;
   supplierNome: string | null;
   supplierLogoUrl: string | null;
+}
+
+export interface PartnerPortalCatalog {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  marca: string | null;
+  mime_type: string;
+  arquivo_nome: string;
+  capa_url: string | null;
+  supplier_id: string | null;
+  supplierNome: string | null;
+  supplierLogoUrl: string | null;
+  /** Link público curto em moveisunghero.com.br — nunca Blob/admin. */
+  publicUrl: string;
+  /** Proxy autenticado com marca d'água. */
+  downloadPath: string;
+}
+
+function partnerCatalogDownloadPath(catalogId: string) {
+  return `/api/parceiro/catalogo-arquivo?id=${encodeURIComponent(catalogId)}`;
 }
 
 export interface PartnerPortalClient {
@@ -209,6 +234,62 @@ export async function loadPartnerPortalProducts(
       supplierLogoUrl: extractLogoUrl(p.supplier?.crmUploads),
     };
   });
+}
+
+/** Catálogos PDF/imagem ativos da empresa — link público + download com marca d'água. */
+export async function loadPartnerPortalCatalogs(
+  companyId: string
+): Promise<PartnerPortalCatalog[]> {
+  const rows = await prisma.productCatalog.findMany({
+    where: { company_id: companyId, ativo: true },
+    orderBy: [{ ordem: "asc" }, { titulo: "asc" }],
+    select: {
+      id: true,
+      titulo: true,
+      descricao: true,
+      marca: true,
+      mime_type: true,
+      arquivo_nome: true,
+      capa_url: true,
+      share_code: true,
+      supplier_id: true,
+      supplier: {
+        select: {
+          nome: true,
+          nomeFantasia: true,
+          crmUploads: true,
+        },
+      },
+    },
+  });
+
+  const catalogs: PartnerPortalCatalog[] = [];
+
+  for (const row of rows) {
+    let shareCode = row.share_code;
+    if (!shareCode) {
+      shareCode = await ensureCatalogShareCode(row.id);
+    }
+    const publicUrl = resolveCatalogPublicUrl(shareCode);
+    if (!publicUrl) continue;
+
+    catalogs.push({
+      id: row.id,
+      titulo: row.titulo,
+      descricao: row.descricao,
+      marca: row.marca,
+      mime_type: row.mime_type,
+      arquivo_nome: row.arquivo_nome,
+      capa_url: row.capa_url,
+      supplier_id: row.supplier_id,
+      supplierNome: row.supplier?.nomeFantasia || row.supplier?.nome || null,
+      supplierLogoUrl: extractLogoUrl(row.supplier?.crmUploads),
+      publicUrl,
+      downloadPath: partnerCatalogDownloadPath(row.id),
+    });
+  }
+
+  return catalogs;
 }
 
 /** Clientes do arquiteto: indicação direta (partner_id) + via projetos — sem documentos. */

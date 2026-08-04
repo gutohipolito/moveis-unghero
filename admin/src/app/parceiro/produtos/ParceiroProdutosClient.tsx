@@ -3,27 +3,37 @@
 import React, { useMemo, useState } from "react";
 import {
   ArrowLeft,
+  BookOpen,
   Building2,
   Check,
   Copy,
   Download,
   ImageIcon,
+  Images,
   Package,
   Search,
   X,
 } from "lucide-react";
-import type { PartnerPortalData, PartnerPortalProduct } from "@/lib/partnerPortal";
+import type {
+  PartnerPortalCatalog,
+  PartnerPortalData,
+  PartnerPortalProduct,
+} from "@/lib/partnerPortal";
 import { acabamentosToSwatches, parseShowcaseDescricao } from "@/lib/zenAcabamentos";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
+import ParceiroCatalogActionsModal from "./ParceiroCatalogActionsModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 
 const NONE_SUPPLIER_ID = "__none__";
 
+type SectionTab = "produtos" | "catalogos";
+
 interface ParceiroProdutosClientProps {
   partner: PartnerPortalData;
   products: PartnerPortalProduct[];
+  catalogs: PartnerPortalCatalog[];
   isAdminPreview?: boolean;
 }
 
@@ -32,53 +42,72 @@ function productGallery(product: PartnerPortalProduct) {
   return product.imagem_url ? [product.imagem_url] : [];
 }
 
+function buildSupplierTiles(
+  items: Array<{
+    supplier_id: string | null;
+    supplierNome: string | null;
+    supplierLogoUrl: string | null;
+  }>
+) {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const key = item.supplier_id || NONE_SUPPLIER_ID;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  const tiles: Array<{
+    id: string;
+    nome: string;
+    logoUrl: string | null;
+    count: number;
+  }> = [];
+
+  for (const [id, count] of counts) {
+    if (id === NONE_SUPPLIER_ID) {
+      tiles.push({ id, nome: "Sem fornecedor", logoUrl: null, count });
+      continue;
+    }
+    const sample = items.find((p) => p.supplier_id === id);
+    tiles.push({
+      id,
+      nome: sample?.supplierNome || "Fornecedor",
+      logoUrl: sample?.supplierLogoUrl || null,
+      count,
+    });
+  }
+
+  return tiles.sort((a, b) => {
+    if (a.id === NONE_SUPPLIER_ID) return 1;
+    if (b.id === NONE_SUPPLIER_ID) return -1;
+    return a.nome.localeCompare(b.nome, "pt-BR");
+  });
+}
+
 export default function ParceiroProdutosClient({
   partner,
   products,
+  catalogs,
   isAdminPreview = false,
 }: ParceiroProdutosClientProps) {
+  const [section, setSection] = useState<SectionTab>("produtos");
   const [search, setSearch] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [viewingProduct, setViewingProduct] = useState<PartnerPortalProduct | null>(null);
+  const [actionCatalog, setActionCatalog] = useState<PartnerPortalCatalog | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [copiedText, setCopiedText] = useState(false);
 
-  const supplierTiles = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of products) {
-      const key = p.supplier_id || NONE_SUPPLIER_ID;
-      counts.set(key, (counts.get(key) || 0) + 1);
-    }
+  const switchSection = (next: SectionTab) => {
+    setSection(next);
+    setSelectedSupplierId(null);
+    setSearch("");
+    setFilterCategory("ALL");
+  };
 
-    const tiles: Array<{
-      id: string;
-      nome: string;
-      logoUrl: string | null;
-      count: number;
-    }> = [];
-
-    for (const [id, count] of counts) {
-      if (id === NONE_SUPPLIER_ID) {
-        tiles.push({ id, nome: "Sem fornecedor", logoUrl: null, count });
-        continue;
-      }
-      const sample = products.find((p) => p.supplier_id === id);
-      tiles.push({
-        id,
-        nome: sample?.supplierNome || "Fornecedor",
-        logoUrl: sample?.supplierLogoUrl || null,
-        count,
-      });
-    }
-
-    return tiles.sort((a, b) => {
-      if (a.id === NONE_SUPPLIER_ID) return 1;
-      if (b.id === NONE_SUPPLIER_ID) return -1;
-      return a.nome.localeCompare(b.nome, "pt-BR");
-    });
-  }, [products]);
-
+  const productSupplierTiles = useMemo(() => buildSupplierTiles(products), [products]);
+  const catalogSupplierTiles = useMemo(() => buildSupplierTiles(catalogs), [catalogs]);
+  const supplierTiles = section === "produtos" ? productSupplierTiles : catalogSupplierTiles;
   const showingSuppliers = selectedSupplierId == null;
 
   const supplierProducts = useMemo(() => {
@@ -89,6 +118,14 @@ export default function ParceiroProdutosClient({
     return products.filter((p) => p.supplier_id === selectedSupplierId);
   }, [products, selectedSupplierId]);
 
+  const supplierCatalogs = useMemo(() => {
+    if (selectedSupplierId == null) return catalogs;
+    if (selectedSupplierId === NONE_SUPPLIER_ID) {
+      return catalogs.filter((c) => !c.supplier_id);
+    }
+    return catalogs.filter((c) => c.supplier_id === selectedSupplierId);
+  }, [catalogs, selectedSupplierId]);
+
   const categories = useMemo(() => {
     const set = new Set<string>();
     for (const p of supplierProducts) {
@@ -97,7 +134,7 @@ export default function ParceiroProdutosClient({
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [supplierProducts]);
 
-  const filtered = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return supplierProducts.filter((p) => {
       const matchesCategory =
@@ -112,6 +149,18 @@ export default function ParceiroProdutosClient({
     });
   }, [supplierProducts, search, filterCategory]);
 
+  const filteredCatalogs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return supplierCatalogs;
+    return supplierCatalogs.filter(
+      (c) =>
+        c.titulo.toLowerCase().includes(q) ||
+        (c.marca?.toLowerCase().includes(q) ?? false) ||
+        (c.descricao?.toLowerCase().includes(q) ?? false) ||
+        (c.supplierNome?.toLowerCase().includes(q) ?? false)
+    );
+  }, [supplierCatalogs, search]);
+
   const selectedLabel =
     selectedSupplierId == null
       ? null
@@ -125,6 +174,15 @@ export default function ParceiroProdutosClient({
     setCopiedText(false);
   };
 
+  const countBadge =
+    section === "produtos"
+      ? showingSuppliers
+        ? `${supplierTiles.length} fornecedor${supplierTiles.length === 1 ? "" : "es"}`
+        : `${filteredProducts.length} item${filteredProducts.length === 1 ? "" : "s"}`
+      : showingSuppliers
+        ? `${supplierTiles.length} fornecedor${supplierTiles.length === 1 ? "" : "es"}`
+        : `${filteredCatalogs.length} catálogo${filteredCatalogs.length === 1 ? "" : "s"}`;
+
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
       <div className="space-y-5">
@@ -134,18 +192,49 @@ export default function ParceiroProdutosClient({
               Produtos
             </h1>
             <p className="text-xs text-white/60 mt-1 max-w-lg">
-              {showingSuppliers
-                ? "Escolha o fornecedor para ver o catálogo da Móveis Unghero."
-                : selectedLabel
-                  ? `Produtos de ${selectedLabel}. Toque para abrir a ficha.`
-                  : "Catálogo ativo da Móveis Unghero."}
+              {section === "produtos"
+                ? showingSuppliers
+                  ? "Escolha o fornecedor para ver a vitrine da Móveis Unghero."
+                  : selectedLabel
+                    ? `Produtos de ${selectedLabel}. Toque para abrir a ficha.`
+                    : "Vitrine ativa da Móveis Unghero."
+                : showingSuppliers
+                  ? "Escolha o fornecedor para ver os catálogos em PDF."
+                  : selectedLabel
+                    ? `Catálogos de ${selectedLabel}. Toque para compartilhar.`
+                    : "Catálogos ativos da Móveis Unghero."}
             </p>
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest text-white/70 bg-white/10 border border-white/15 px-2.5 py-1 rounded-full self-start sm:self-auto">
-            {showingSuppliers
-              ? `${supplierTiles.length} fornecedor${supplierTiles.length === 1 ? "" : "es"}`
-              : `${filtered.length} item${filtered.length === 1 ? "" : "s"}`}
+            {countBadge}
           </span>
+        </div>
+
+        <div className="flex gap-1 p-1 rounded-xl bg-white/10 border border-white/15 w-fit">
+          <button
+            type="button"
+            onClick={() => switchSection("produtos")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+              section === "produtos"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-white/75 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <Images className="h-3.5 w-3.5" />
+            Produtos
+          </button>
+          <button
+            type="button"
+            onClick={() => switchSection("catalogos")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+              section === "catalogos"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-white/75 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Catálogos
+          </button>
         </div>
 
         {!showingSuppliers && (
@@ -169,13 +258,17 @@ export default function ParceiroProdutosClient({
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por nome ou categoria..."
+                  placeholder={
+                    section === "produtos"
+                      ? "Buscar por nome ou categoria..."
+                      : "Buscar catálogo..."
+                  }
                   className="pl-9 h-11 bg-white/95 border-white/20"
                 />
               </div>
             </div>
 
-            {categories.length > 0 && (
+            {section === "produtos" && categories.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -212,11 +305,21 @@ export default function ParceiroProdutosClient({
             <div className="partner-card p-10 text-center">
               <div className="partner-card-accent" />
               <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-                <Package className="h-6 w-6" />
+                {section === "produtos" ? (
+                  <Package className="h-6 w-6" />
+                ) : (
+                  <BookOpen className="h-6 w-6" />
+                )}
               </div>
-              <h2 className="font-display font-bold text-slate-900">Nenhum produto encontrado</h2>
+              <h2 className="font-display font-bold text-slate-900">
+                {section === "produtos"
+                  ? "Nenhum produto encontrado"
+                  : "Nenhum catálogo encontrado"}
+              </h2>
               <p className="text-sm text-slate-600 mt-2">
-                A Móveis Unghero ainda não publicou produtos no catálogo.
+                {section === "produtos"
+                  ? "A Móveis Unghero ainda não publicou produtos no catálogo."
+                  : "A Móveis Unghero ainda não publicou catálogos PDF."}
               </p>
             </div>
           ) : (
@@ -235,6 +338,7 @@ export default function ParceiroProdutosClient({
                   <div className="partner-card-accent" />
                   <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center p-5 border-b border-slate-200/70">
                     {tile.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={tile.logoUrl}
                         alt={tile.nome}
@@ -254,65 +358,127 @@ export default function ParceiroProdutosClient({
                       {tile.nome}
                     </h3>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
-                      {tile.count} {tile.count === 1 ? "produto" : "produtos"}
+                      {tile.count}{" "}
+                      {section === "produtos"
+                        ? tile.count === 1
+                          ? "produto"
+                          : "produtos"
+                        : tile.count === 1
+                          ? "catálogo"
+                          : "catálogos"}
                     </p>
                   </div>
                 </button>
               ))}
             </div>
           )
-        ) : filtered.length === 0 ? (
+        ) : section === "produtos" ? (
+          filteredProducts.length === 0 ? (
+            <div className="partner-card p-10 text-center">
+              <div className="partner-card-accent" />
+              <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
+                <Package className="h-6 w-6" />
+              </div>
+              <h2 className="font-display font-bold text-slate-900">Nenhum produto encontrado</h2>
+              <p className="text-sm text-slate-600 mt-2">Tente outro termo de busca.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => openProduct(product)}
+                  className="partner-card overflow-hidden flex flex-col text-left cursor-pointer hover:border-primary/40 transition-colors"
+                >
+                  <div className="partner-card-accent" />
+                  <div className="aspect-[4/3] bg-slate-100 border-b border-slate-200/80 overflow-hidden">
+                    {product.imagem_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={product.imagem_url}
+                        alt={product.nome}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-slate-400">
+                        <Package className="h-8 w-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 flex flex-col gap-2 flex-1">
+                    {product.categoria && (
+                      <span className="partner-card-badge text-[9px] px-2 py-0.5 self-start">
+                        {product.categoria}
+                      </span>
+                    )}
+                    <h2 className="font-display font-bold text-slate-900 text-sm leading-snug">
+                      {product.nome}
+                    </h2>
+                    {product.descricao && (
+                      <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">
+                        {product.descricao}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        ) : filteredCatalogs.length === 0 ? (
           <div className="partner-card p-10 text-center">
             <div className="partner-card-accent" />
             <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-              <Package className="h-6 w-6" />
+              <BookOpen className="h-6 w-6" />
             </div>
-            <h2 className="font-display font-bold text-slate-900">Nenhum produto encontrado</h2>
+            <h2 className="font-display font-bold text-slate-900">Nenhum catálogo encontrado</h2>
             <p className="text-sm text-slate-600 mt-2">Tente outro termo de busca.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((product) => (
+            {filteredCatalogs.map((catalog) => (
               <button
-                key={product.id}
+                key={catalog.id}
                 type="button"
-                onClick={() => openProduct(product)}
+                onClick={() => setActionCatalog(catalog)}
                 className="partner-card overflow-hidden flex flex-col text-left cursor-pointer hover:border-primary/40 transition-colors"
               >
                 <div className="partner-card-accent" />
-                <div className="aspect-[4/3] bg-slate-100 border-b border-slate-200/80 overflow-hidden">
-                  {product.imagem_url ? (
+                <div className="aspect-[3/4] bg-slate-100 border-b border-slate-200/80 overflow-hidden flex items-center justify-center">
+                  {catalog.capa_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={product.imagem_url}
-                      alt={product.nome}
+                      src={catalog.capa_url}
+                      alt={catalog.titulo}
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-slate-400">
-                      <Package className="h-8 w-8" />
-                    </div>
+                    <BookOpen className="h-10 w-10 text-slate-300" />
                   )}
                 </div>
-                <div className="p-4 flex flex-col gap-2 flex-1">
-                  {product.categoria && (
+                <div className="p-4 flex flex-col gap-1.5 flex-1">
+                  {(catalog.marca || catalog.supplierNome) && (
                     <span className="partner-card-badge text-[9px] px-2 py-0.5 self-start">
-                      {product.categoria}
+                      {catalog.marca || catalog.supplierNome}
                     </span>
                   )}
                   <h2 className="font-display font-bold text-slate-900 text-sm leading-snug">
-                    {product.nome}
+                    {catalog.titulo}
                   </h2>
-                  {product.descricao && (
-                    <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">
-                      {product.descricao}
-                    </p>
-                  )}
+                  <p className="text-[10px] text-slate-500 font-medium truncate mt-auto pt-1">
+                    {catalog.publicUrl.replace(/^https?:\/\//, "")}
+                  </p>
                 </div>
               </button>
             ))}
           </div>
         )}
       </div>
+
+      <ParceiroCatalogActionsModal
+        catalog={actionCatalog}
+        onClose={() => setActionCatalog(null)}
+      />
 
       <Dialog
         isOpen={viewingProduct !== null}
@@ -393,6 +559,7 @@ export default function ParceiroProdutosClient({
                   <div className="lg:col-span-7 space-y-3">
                     <div className="aspect-[4/3] sm:aspect-square bg-slate-100 rounded-[var(--radius-md)] overflow-hidden border border-border relative flex items-center justify-center shadow-xs">
                       {currentImg ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={currentImg}
                           alt={product.nome}
@@ -416,6 +583,7 @@ export default function ParceiroProdutosClient({
                                 : "border-border hover:border-slate-400"
                             }`}
                           >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={url}
                               alt={`Miniatura ${idx + 1}`}
@@ -466,6 +634,7 @@ export default function ParceiroProdutosClient({
                               >
                                 <div className="w-full aspect-square rounded-[var(--radius-sm)] overflow-hidden border border-slate-200 bg-slate-100 shadow-xs">
                                   {swatch.imagem ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                       src={swatch.imagem}
                                       alt={swatch.nome}

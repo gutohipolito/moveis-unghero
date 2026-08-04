@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
     root: monorepoRoot,
   },
   outputFileTracingRoot: monorepoRoot,
-  serverExternalPackages: ["sharp"],
+  serverExternalPackages: ["sharp", "pdf-lib"],
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },

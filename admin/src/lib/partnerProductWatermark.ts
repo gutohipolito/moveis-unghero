@@ -19,7 +19,7 @@ let logoPngCache: Buffer | null = null;
  * logo.png já é branco + transparência — NÃO usar luminância (virava quadrado branco).
  * mu-watermark (fundo preto) usaria luminância; aqui preservamos o alpha existente.
  */
-async function getTransparentLogoPng(): Promise<Buffer> {
+export async function getTransparentLogoPng(): Promise<Buffer> {
   if (logoPngCache) return logoPngCache;
 
   const file = await readFile(path.join(process.cwd(), "public", LOGO_FILE));

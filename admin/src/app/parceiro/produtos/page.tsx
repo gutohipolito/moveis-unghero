@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { parsePartnerSessionToken } from "@/lib/partnerSession";
 import {
+  loadPartnerPortalCatalogs,
   loadPartnerPortalData,
   loadPartnerPortalProducts,
 } from "@/lib/partnerPortal";
@@ -34,13 +35,17 @@ export default async function ParceiroProdutosPage() {
     redirect("/parceiro/login");
   }
 
-  const products = await loadPartnerPortalProducts(partner.company_id);
+  const [products, catalogs] = await Promise.all([
+    loadPartnerPortalProducts(partner.company_id),
+    loadPartnerPortalCatalogs(partner.company_id),
+  ]);
   const isAdminPreview = await isPartnerAdminPreview();
 
   return (
     <ParceiroProdutosClient
       partner={partner}
       products={products}
+      catalogs={catalogs}
       isAdminPreview={isAdminPreview}
     />
   );
