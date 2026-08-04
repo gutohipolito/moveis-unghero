@@ -524,6 +524,7 @@ export async function updateExistingQuote(
           validade: parseISODateOnlyBrazil(data.validade),
           observacoes: data.observacoes || "",
           partner_id: partnerId,
+          valores_atualizados_em: new Date(),
         },
       });
     });
@@ -1120,6 +1121,7 @@ export async function revisePendingQuoteItems(input: {
           subtotal,
           desconto,
           valor_final: valorFinal,
+          valores_atualizados_em: new Date(),
           ...(input.validade
             ? { validade: parseISODateOnlyBrazil(input.validade) }
             : {}),

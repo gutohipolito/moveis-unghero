@@ -28,6 +28,7 @@ type LoadedPrintQuote = {
   approvedTotal?: number;
   pendingTotal?: number;
   rejectedTotal?: number;
+  valuesCalculatedAt?: string | null;
   lastUpdatedAt?: string | null;
   partner: {
     nome: string;
@@ -124,11 +125,9 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
       }));
       const summary = summarizeQuoteItems(items);
-      const lastApproved = items
-        .map((i) => i.aprovado_em)
-        .filter(Boolean)
-        .sort()
-        .at(-1);
+      const calculatedAt =
+        dbQuote.valores_calculados_em ?? dbQuote.createdAt;
+      const updatedAt = dbQuote.valores_atualizados_em;
 
       quote = {
         id: dbQuote.id,
@@ -145,9 +144,8 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         approvedTotal: summary.approvedTotal,
         pendingTotal: summary.pendingTotal,
         rejectedTotal: summary.rejectedTotal,
-        lastUpdatedAt: lastApproved
-          ? formatDateBR(lastApproved)
-          : formatDateBR(dbQuote.createdAt),
+        valuesCalculatedAt: formatDateBR(calculatedAt),
+        lastUpdatedAt: updatedAt ? formatDateBR(updatedAt) : null,
         items,
       };
     }

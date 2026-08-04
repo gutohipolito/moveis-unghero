@@ -79,6 +79,9 @@ export type QuotePrintData = {
   approvedTotal?: number;
   pendingTotal?: number;
   rejectedTotal?: number;
+  /** Data em que os valores comerciais foram definidos (criação). */
+  valuesCalculatedAt?: string | null;
+  /** Data da última edição comercial; omitir se nunca editado. */
   lastUpdatedAt?: string | null;
 };
 
@@ -770,17 +773,31 @@ export default function QuotePrintDocument({
                         Ainda pendente: {formatCurrency(quote.pendingTotal)}.
                       </p>
                     ) : null}
-                    {quote.lastUpdatedAt ? (
+                    {quote.valuesCalculatedAt ? (
                       <p className="text-[8px] text-neutral-500 text-right pt-0.5">
+                        Valores calculados em {quote.valuesCalculatedAt}
+                      </p>
+                    ) : null}
+                    {quote.lastUpdatedAt ? (
+                      <p className="text-[8px] text-neutral-500 text-right">
                         Atualizado em {quote.lastUpdatedAt}
                       </p>
                     ) : null}
                   </div>
                 </div>
-              ) : quote.lastUpdatedAt ? (
-                <p className="text-[8px] text-neutral-500 text-right">
-                  Atualizado em {quote.lastUpdatedAt}
-                </p>
+              ) : quote.valuesCalculatedAt || quote.lastUpdatedAt ? (
+                <div className="text-right space-y-0.5">
+                  {quote.valuesCalculatedAt ? (
+                    <p className="text-[8px] text-neutral-500">
+                      Valores calculados em {quote.valuesCalculatedAt}
+                    </p>
+                  ) : null}
+                  {quote.lastUpdatedAt ? (
+                    <p className="text-[8px] text-neutral-500">
+                      Atualizado em {quote.lastUpdatedAt}
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
 
               {quote.observacoes?.trim() ? (

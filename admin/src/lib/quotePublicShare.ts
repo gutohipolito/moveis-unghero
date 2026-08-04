@@ -60,11 +60,8 @@ export async function loadPublicQuoteByShareCode(code: string) {
     aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
   }));
   const summary = summarizeQuoteItems(items);
-  const lastApproved = items
-    .map((i) => i.aprovado_em)
-    .filter(Boolean)
-    .sort()
-    .at(-1);
+  const calculatedAt = dbQuote.valores_calculados_em ?? dbQuote.createdAt;
+  const updatedAt = dbQuote.valores_atualizados_em;
 
   const quote: QuotePrintData = {
     id: dbQuote.id,
@@ -77,9 +74,8 @@ export async function loadPublicQuoteByShareCode(code: string) {
     approvedTotal: summary.approvedTotal,
     pendingTotal: summary.pendingTotal,
     rejectedTotal: summary.rejectedTotal,
-    lastUpdatedAt: lastApproved
-      ? formatDateBR(lastApproved)
-      : formatDateBR(dbQuote.pdf_shared_at ?? dbQuote.createdAt),
+    valuesCalculatedAt: formatDateBR(calculatedAt),
+    lastUpdatedAt: updatedAt ? formatDateBR(updatedAt) : null,
     items,
   };
 

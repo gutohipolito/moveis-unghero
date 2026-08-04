@@ -398,6 +398,10 @@ model Quote {
   pdf_last_device String?
   pdf_last_os String?
   aprovado_em   DateTime?
+  /** Quando os valores comerciais desta versão foram definidos (criação). */
+  valores_calculados_em DateTime @default(now())
+  /** Última edição comercial (itens/preços/obs); null se nunca editado após criar. */
+  valores_atualizados_em DateTime?
   partner_id  String?
   partner     ProfessionalPartner? @relation("PartnerQuotes", fields: [partner_id], references: [id], onDelete: SetNull)
   items       QuoteItem[]
