@@ -52,3 +52,26 @@ Qualquer dúvida, ficamos à disposição.
 Atenciosamente,
 Móveis Unghero`;
 }
+
+/**
+ * Mensagem do portal do arquiteto → cliente (tom pessoal, não corporativo).
+ * `brandName` = fornecedor/marca do catálogo; `catalogTitle` = título do PDF.
+ */
+export function buildPartnerPortalCatalogWhatsAppMessage(options: {
+  catalogTitle: string;
+  catalogUrl: string;
+  brandName?: string | null;
+}) {
+  const title = options.catalogTitle.trim();
+  const brand = options.brandName?.trim();
+  const catalogLabel = brand
+    ? `*${brand}* — *${title}*`
+    : `*${title}*`;
+
+  return (
+    `Olá! Tudo bem?\n\n` +
+    `Esse aqui é o catálogo ${catalogLabel} pra você olhar com calma e ver algumas referências e acessórios.\n\n` +
+    `${options.catalogUrl}\n\n` +
+    `Qualquer dúvida, me chama.`
+  );
+}

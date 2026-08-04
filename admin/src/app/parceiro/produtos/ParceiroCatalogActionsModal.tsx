@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import type { PartnerPortalCatalog } from "@/lib/partnerPortal";
-import { buildCatalogWhatsAppMessage } from "@/lib/catalogShareMessage";
+import { buildPartnerPortalCatalogWhatsAppMessage } from "@/lib/catalogShareMessage";
 
 type Props = {
   catalog: PartnerPortalCatalog | null;
@@ -41,10 +41,10 @@ export default function ParceiroCatalogActionsModal({ catalog, onClose }: Props)
   };
 
   const openWhatsApp = () => {
-    const text = buildCatalogWhatsAppMessage({
+    const text = buildPartnerPortalCatalogWhatsAppMessage({
       catalogTitle: catalog.titulo,
       catalogUrl: catalog.publicUrl,
-      partnerName: brandName,
+      brandName: brandName,
     });
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
