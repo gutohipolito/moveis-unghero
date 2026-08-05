@@ -25,8 +25,11 @@ import ParceiroCatalogActionsModal from "./ParceiroCatalogActionsModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 
 const NONE_SUPPLIER_ID = "__none__";
+const PAGE_SIZE_OPTIONS = [12, 24, 36];
+const DEFAULT_PAGE_SIZE = 12;
 
 type SectionTab = "produtos" | "catalogos";
 
@@ -97,12 +100,15 @@ export default function ParceiroProdutosClient({
   const [actionCatalog, setActionCatalog] = useState<PartnerPortalCatalog | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [copiedText, setCopiedText] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const switchSection = (next: SectionTab) => {
     setSection(next);
     setSelectedSupplierId(null);
     setSearch("");
     setFilterCategory("ALL");
+    setPage(1);
   };
 
   const productSupplierTiles = useMemo(() => buildSupplierTiles(products), [products]);
@@ -160,6 +166,28 @@ export default function ParceiroProdutosClient({
         (c.supplierNome?.toLowerCase().includes(q) ?? false)
     );
   }, [supplierCatalogs, search]);
+
+  const listTotal =
+    section === "produtos" ? filteredProducts.length : filteredCatalogs.length;
+  const totalPages = Math.max(1, Math.ceil(listTotal / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+
+  const paginatedProducts = useMemo(
+    () => filteredProducts.slice(pageStart, pageStart + pageSize),
+    [filteredProducts, pageStart, pageSize]
+  );
+  const paginatedCatalogs = useMemo(
+    () => filteredCatalogs.slice(pageStart, pageStart + pageSize),
+    [filteredCatalogs, pageStart, pageSize]
+  );
+
+  const goToPage = (next: number) => {
+    setPage(next);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const selectedLabel =
     selectedSupplierId == null
@@ -257,7 +285,10 @@ export default function ParceiroProdutosClient({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                   placeholder={
                     section === "produtos"
                       ? "Buscar por nome ou categoria..."
@@ -272,7 +303,10 @@ export default function ParceiroProdutosClient({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setFilterCategory("ALL")}
+                  onClick={() => {
+                    setFilterCategory("ALL");
+                    setPage(1);
+                  }}
                   className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
                     filterCategory === "ALL"
                       ? "bg-white text-slate-900 border-white"
@@ -285,7 +319,10 @@ export default function ParceiroProdutosClient({
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setFilterCategory(cat)}
+                    onClick={() => {
+                      setFilterCategory(cat);
+                      setPage(1);
+                    }}
                     className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
                       filterCategory === cat
                         ? "bg-white text-slate-900 border-white"
@@ -332,6 +369,7 @@ export default function ParceiroProdutosClient({
                     setSelectedSupplierId(tile.id);
                     setSearch("");
                     setFilterCategory("ALL");
+                    setPage(1);
                   }}
                   className="partner-card text-left cursor-pointer overflow-hidden hover:border-primary/40 transition-colors"
                 >
@@ -383,8 +421,9 @@ export default function ParceiroProdutosClient({
               <p className="text-sm text-slate-600 mt-2">Tente outro termo de busca.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProducts.map((product) => (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedProducts.map((product) => (
                 <button
                   key={product.id}
                   type="button"
@@ -423,6 +462,23 @@ export default function ParceiroProdutosClient({
                   </div>
                 </button>
               ))}
+              </div>
+              {listTotal > PAGE_SIZE_OPTIONS[0] || currentPage > 1 ? (
+                <div className="parceiro-pagination-wrap">
+                  <Pagination
+                    page={currentPage}
+                    pageSize={pageSize}
+                    total={listTotal}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    itemLabel="produtos"
+                    onPageChange={goToPage}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size);
+                      setPage(1);
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
           )
         ) : filteredCatalogs.length === 0 ? (
@@ -435,8 +491,9 @@ export default function ParceiroProdutosClient({
             <p className="text-sm text-slate-600 mt-2">Tente outro termo de busca.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCatalogs.map((catalog) => (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedCatalogs.map((catalog) => (
               <button
                 key={catalog.id}
                 type="button"
@@ -471,6 +528,23 @@ export default function ParceiroProdutosClient({
                 </div>
               </button>
             ))}
+            </div>
+            {listTotal > PAGE_SIZE_OPTIONS[0] || currentPage > 1 ? (
+              <div className="parceiro-pagination-wrap">
+                <Pagination
+                  page={currentPage}
+                  pageSize={pageSize}
+                  total={listTotal}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  itemLabel="catálogos"
+                  onPageChange={goToPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
         )}
       </div>
