@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, Pencil } from "lucide-react";
+import { ExternalLink, Loader2, Pencil } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
-import { formatPartnerRegistro, partnerRegistroLabel } from "@/lib/partnerTypes";
+import { partnerRegistroLabel } from "@/lib/partnerTypes";
 import { updateParceiroProfileAction } from "@/app/actions/parceiroPortal";
 import { fetchViaCep } from "@/lib/viaCep";
 import { normalizeCidade } from "@/lib/address";
+import { cn } from "@/lib/utils";
 
 type ProfileFields = {
   nome: string;
@@ -46,12 +47,14 @@ function toFields(partner: PartnerPortalData): ProfileFields {
 function Field({
   label,
   children,
+  className,
 }: {
   label: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", className)}>
       <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
         {label}
       </label>
@@ -62,38 +65,6 @@ function Field({
 
 function SectionDivider() {
   return <div className="parceiro-info-section-rule" role="separator" />;
-}
-
-function ViewRow({
-  label,
-  value,
-  href,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-}) {
-  return (
-    <div className="parceiro-info-view-row">
-      <dt className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-        {label}
-      </dt>
-      <dd className="text-sm font-semibold text-slate-900 mt-0.5 break-all">
-        {href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-2"
-          >
-            {value}
-          </a>
-        ) : (
-          value
-        )}
-      </dd>
-    </div>
-  );
 }
 
 type Props = {
@@ -119,11 +90,8 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
     }
   }, [open, partner]);
 
-  const registroLabel = formatPartnerRegistro(
-    partner.tipo,
-    fields.registro_profissional
-  );
   const registroHint = partnerRegistroLabel(partner.tipo);
+  const inputClass = "h-10 parceiro-info-input";
 
   const setField = (key: keyof ProfileFields, value: string) => {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -180,6 +148,8 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
     setEditing(false);
   };
 
+  const display = (value: string) => value.trim() || "—";
+
   return (
     <Dialog
       isOpen={open}
@@ -215,115 +185,152 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
           )}
         </div>
 
-        {editing ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="sm:col-span-2">
-                <Field label="Nome">
-                  <Input
-                    value={fields.nome}
-                    onChange={(e) => setField("nome", e.target.value)}
-                    className="h-10"
-                    autoComplete="name"
-                  />
-                </Field>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Nome" className="sm:col-span-2">
+              <Input
+                value={editing ? fields.nome : display(fields.nome)}
+                onChange={(e) => setField("nome", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+                autoComplete="name"
+              />
+            </Field>
+            <Field label="E-mail">
+              <Input
+                type={editing ? "email" : "text"}
+                value={editing ? fields.email : display(fields.email)}
+                onChange={(e) => setField("email", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+                autoComplete="email"
+              />
+            </Field>
+            <Field label="Telefone">
+              <Input
+                value={editing ? fields.telefone : display(fields.telefone)}
+                onChange={(e) => setField("telefone", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+                autoComplete="tel"
+              />
+            </Field>
+          </div>
+
+          <SectionDivider />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="CEP">
+              <div className="relative">
+                <Input
+                  value={
+                    editing
+                      ? formatCepDisplay(fields.cep)
+                      : fields.cep
+                        ? formatCepDisplay(fields.cep)
+                        : "—"
+                  }
+                  onChange={(e) => handleCepChange(e.target.value)}
+                  className={inputClass}
+                  readOnly={!editing}
+                  tabIndex={editing ? 0 : -1}
+                  inputMode="numeric"
+                  placeholder={editing ? "00000-000" : undefined}
+                  autoComplete="postal-code"
+                />
+                {editing && cepLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+                )}
               </div>
-              <Field label="E-mail">
-                <Input
-                  type="email"
-                  value={fields.email}
-                  onChange={(e) => setField("email", e.target.value)}
-                  className="h-10"
-                  autoComplete="email"
-                />
-              </Field>
-              <Field label="Telefone">
-                <Input
-                  value={fields.telefone}
-                  onChange={(e) => setField("telefone", e.target.value)}
-                  className="h-10"
-                  autoComplete="tel"
-                />
-              </Field>
-            </div>
+            </Field>
+            <Field label="Cidade">
+              <Input
+                value={editing ? fields.cidade : display(fields.cidade)}
+                onChange={(e) => setField("cidade", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+                autoComplete="address-level2"
+              />
+            </Field>
+            <Field label="Endereço" className="sm:col-span-2">
+              <Input
+                value={editing ? fields.endereco : display(fields.endereco)}
+                onChange={(e) => setField("endereco", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+                autoComplete="street-address"
+              />
+            </Field>
+          </div>
 
-            <SectionDivider />
+          <SectionDivider />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="CEP">
-                <div className="relative">
-                  <Input
-                    value={formatCepDisplay(fields.cep)}
-                    onChange={(e) => handleCepChange(e.target.value)}
-                    className="h-10"
-                    inputMode="numeric"
-                    placeholder="00000-000"
-                    autoComplete="postal-code"
-                  />
-                  {cepLoading && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Empresa / escritório">
+              <Input
+                value={editing ? fields.escritorio : display(fields.escritorio)}
+                onChange={(e) => setField("escritorio", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+              />
+            </Field>
+            <Field label={registroHint}>
+              <Input
+                value={
+                  editing
+                    ? fields.registro_profissional
+                    : display(fields.registro_profissional)
+                }
+                onChange={(e) => setField("registro_profissional", e.target.value)}
+                className={inputClass}
+                readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
+                placeholder={editing ? "Número do registro" : undefined}
+              />
+            </Field>
+            <Field label="Portfólio (URL)" className="sm:col-span-2">
+              {editing ? (
+                <Input
+                  value={fields.portfolioUrl}
+                  onChange={(e) => setField("portfolioUrl", e.target.value)}
+                  className={inputClass}
+                  placeholder="https://..."
+                  autoComplete="url"
+                />
+              ) : fields.portfolioUrl ? (
+                <a
+                  href={fields.portfolioUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(
+                    inputClass,
+                    "flex items-center gap-2 px-3 border border-input bg-transparent rounded-md text-sm font-medium text-slate-900 hover:underline"
                   )}
-                </div>
-              </Field>
-              <Field label="Cidade">
-                <Input
-                  value={fields.cidade}
-                  onChange={(e) => setField("cidade", e.target.value)}
-                  className="h-10"
-                  autoComplete="address-level2"
-                />
-              </Field>
-              <div className="sm:col-span-2">
-                <Field label="Endereço">
-                  <Input
-                    value={fields.endereco}
-                    onChange={(e) => setField("endereco", e.target.value)}
-                    className="h-10"
-                    autoComplete="street-address"
-                  />
-                </Field>
-              </div>
-            </div>
+                >
+                  <span className="truncate flex-1">{fields.portfolioUrl}</span>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                </a>
+              ) : (
+                <Input value="—" className={inputClass} readOnly tabIndex={-1} />
+              )}
+            </Field>
+          </div>
 
-            <SectionDivider />
+          {editing && error && (
+            <p className="text-xs font-semibold text-rose-600">{error}</p>
+          )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Empresa / escritório">
-                <Input
-                  value={fields.escritorio}
-                  onChange={(e) => setField("escritorio", e.target.value)}
-                  className="h-10"
-                />
-              </Field>
-              <Field label={registroHint}>
-                <Input
-                  value={fields.registro_profissional}
-                  onChange={(e) => setField("registro_profissional", e.target.value)}
-                  className="h-10"
-                  placeholder="Número do registro"
-                />
-              </Field>
-              <div className="sm:col-span-2">
-                <Field label="Portfólio (URL)">
-                  <Input
-                    value={fields.portfolioUrl}
-                    onChange={(e) => setField("portfolioUrl", e.target.value)}
-                    className="h-10"
-                    placeholder="https://..."
-                    autoComplete="url"
-                  />
-                </Field>
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-xs font-semibold text-rose-600">{error}</p>
-            )}
-
+          {editing && (
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <Button
                 type="button"
-                className="font-bold h-11 btn-cancel-silver-rose"
+                className="font-bold h-11 btn-cancel-rose-glow"
                 disabled={saving}
                 onClick={() => {
                   setFields(toFields(partner));
@@ -349,42 +356,8 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
                 )}
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <dl className="space-y-2.5">
-              <ViewRow label="Nome" value={fields.nome || "—"} />
-              <ViewRow label="E-mail" value={fields.email || "—"} />
-              <ViewRow label="Telefone" value={fields.telefone || "—"} />
-            </dl>
-
-            <SectionDivider />
-
-            <dl className="space-y-2.5">
-              <ViewRow
-                label="CEP"
-                value={fields.cep ? formatCepDisplay(fields.cep) : "—"}
-              />
-              <ViewRow label="Cidade" value={fields.cidade || "—"} />
-              <ViewRow label="Endereço" value={fields.endereco || "—"} />
-            </dl>
-
-            <SectionDivider />
-
-            <dl className="space-y-2.5">
-              <ViewRow label="Empresa / escritório" value={fields.escritorio || "—"} />
-              <ViewRow
-                label={registroHint}
-                value={registroLabel || fields.registro_profissional || "—"}
-              />
-              <ViewRow
-                label="Portfólio"
-                value={fields.portfolioUrl || "—"}
-                href={fields.portfolioUrl || undefined}
-              />
-            </dl>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Dialog>
   );

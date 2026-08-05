@@ -1201,42 +1201,101 @@ body {
   );
 }
 
-.parceiro-info-view-row {
-  border-radius: 0.85rem;
-  border: 1px solid hsl(32 14% 86% / 0.9);
-  background: hsl(40 30% 98% / 0.85);
-  padding: 0.65rem 0.9rem;
-}
-
-.btn-cancel-silver-rose {
-  background: linear-gradient(
-    145deg,
-    hsl(0 28% 92%) 0%,
-    hsl(0 22% 78%) 42%,
-    hsl(355 30% 62%) 100%
-  );
-  border: 1px solid hsl(355 28% 48% / 0.45);
-  color: hsl(355 40% 22%);
-  box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.55),
-    0 1px 2px hsl(24 14% 14% / 0.08),
-    0 4px 12px hsl(355 30% 35% / 0.14);
+/* Focus dourado — futuro: --parceiro-brand-glow = cor da marca do arquiteto */
+.parceiro-info-input {
   transition:
-    filter var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
     box-shadow var(--motion-fast) var(--ease-out);
 }
 
-.btn-cancel-silver-rose:hover {
-  filter: brightness(1.03);
+.parceiro-info-input:focus,
+.parceiro-info-input:focus-visible {
+  outline: none;
+  border-color: hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.85) !important;
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.6),
-    0 2px 4px hsl(24 14% 14% / 0.1),
-    0 6px 16px hsl(355 30% 35% / 0.2);
+    0 0 0 1px hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.35),
+    0 0 0 3px hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.12);
 }
 
-.btn-cancel-silver-rose:active {
-  filter: brightness(0.97);
-  box-shadow: inset 0 1px 3px hsl(355 30% 20% / 0.2);
+.parceiro-info-input[readonly] {
+  cursor: default;
+  background: hsl(40 30% 98% / 0.9);
+  color: hsl(24 14% 18%);
+}
+
+.parceiro-info-input[readonly]:focus,
+.parceiro-info-input[readonly]:focus-visible {
+  border-color: hsl(32 14% 82%) !important;
+  box-shadow: none;
+}
+
+/* Cancelar — gradiente vermelho escuro + glow em movimento (sem branco) */
+.btn-cancel-rose-glow {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(
+    145deg,
+    hsl(355 42% 42%) 0%,
+    hsl(350 48% 32%) 48%,
+    hsl(348 52% 24%) 100%
+  );
+  border: 1px solid hsl(350 40% 18% / 0.55);
+  color: hsl(30 40% 96%);
+  box-shadow:
+    inset 0 1px 0 hsl(0 40% 70% / 0.22),
+    0 1px 2px hsl(24 14% 14% / 0.1),
+    0 4px 12px hsl(350 45% 22% / 0.22);
+  transition: box-shadow var(--motion-fast) var(--ease-out);
+}
+
+.btn-cancel-rose-glow::before {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    hsl(0 55% 70% / 0.22) 48%,
+    hsl(0 60% 85% / 0.28) 50%,
+    hsl(0 55% 70% / 0.22) 52%,
+    transparent 65%
+  );
+  transform: translateX(-45%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.btn-cancel-rose-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-cancel-rose-glow:hover {
+  box-shadow:
+    inset 0 1px 0 hsl(0 40% 70% / 0.28),
+    0 0 0 1px hsl(350 50% 40% / 0.25),
+    0 0 18px hsl(350 55% 38% / 0.35),
+    0 6px 16px hsl(350 45% 22% / 0.28);
+}
+
+.btn-cancel-rose-glow:hover::before {
+  opacity: 1;
+  animation: parceiro-cancel-glow-sweep 1.1s var(--ease-out) both;
+}
+
+.btn-cancel-rose-glow:active {
+  box-shadow: inset 0 1px 3px hsl(350 50% 12% / 0.35);
+}
+
+@keyframes parceiro-cancel-glow-sweep {
+  from {
+    transform: translateX(-45%);
+  }
+  to {
+    transform: translateX(45%);
+  }
 }
 
 .btn-secondary-relief:active {
