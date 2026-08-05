@@ -2,12 +2,25 @@ import type { Role } from "@prisma/client";
 import type { AppNotification, NotificationType } from "@/lib/notifications";
 import {
   canAccessModule,
+  isOpsLimitedRole,
   moduleKeyForHref,
   type CompanyPermissions,
 } from "@/lib/permissions";
 
 /** IDs de notificações limpas no servidor para um usuário. */
 export const NOTIFICATION_CLEARED_IDS_PREF = "notificationClearedIds";
+
+/**
+ * Funil comercial / follow-up — só Comercial, Financeiro, Viewer e Diretoria.
+ * Projetista e Fábrica (marceneiros) não devem ver estas alertas.
+ */
+const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
+  "follow_up",
+  "new_briefing",
+  "quote_stale",
+  "lead_no_quote",
+  "quote_expiring",
+]);
 
 const MODULE_BY_TYPE: Partial<Record<NotificationType, string>> = {
   follow_up: "crm",
@@ -40,6 +53,12 @@ export function notificationModuleKey(notification: AppNotification): string | n
   return null;
 }
 
+export function isCommercialFunnelNotification(
+  notification: Pick<AppNotification, "type">
+): boolean {
+  return COMMERCIAL_FUNNEL_TYPES.has(notification.type);
+}
+
 /** Segurança server-side para sino, toast, navegador e Web Push. */
 export function filterNotificationsForAccess(
   notifications: AppNotification[],
@@ -51,6 +70,12 @@ export function filterNotificationsForAccess(
 
   return notifications.filter((notification) => {
     if (cleared.has(notification.id)) return false;
+
+    // Follow-up, contato e funil comercial não vão para fábrica/projetista.
+    if (isOpsLimitedRole(role) && isCommercialFunnelNotification(notification)) {
+      return false;
+    }
+
     const moduleKey = notificationModuleKey(notification);
     return moduleKey === null || canAccessModule(permissions, role, moduleKey);
   });
