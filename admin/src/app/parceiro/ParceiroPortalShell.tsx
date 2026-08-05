@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Camera, Loader2, LogOut, LayoutDashboard, Package, Users, Megaphone } from "lucide-react";
@@ -24,6 +24,53 @@ function getInitials(name: string) {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }
   return name.substring(0, 2).toUpperCase();
+}
+
+function TypedHeroGreeting({ firstName }: { firstName: string }) {
+  const fullText = `Olá, ${firstName}`;
+  const [shown, setShown] = useState("");
+  const [typing, setTyping] = useState(true);
+
+  useEffect(() => {
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      setShown(fullText);
+      setTyping(false);
+      return;
+    }
+
+    setShown("");
+    setTyping(true);
+    let i = 0;
+    const id = window.setInterval(() => {
+      i += 1;
+      setShown(fullText.slice(0, i));
+      if (i >= fullText.length) {
+        window.clearInterval(id);
+        window.setTimeout(() => setTyping(false), 900);
+      }
+    }, 52);
+
+    return () => window.clearInterval(id);
+  }, [fullText]);
+
+  return (
+    <h1 className="parceiro-portal-hero-title" aria-label={fullText}>
+      <span className="parceiro-portal-hero-title-gradient" aria-hidden>
+        {shown}
+      </span>
+      <span
+        className={cn(
+          "parceiro-portal-hero-title-cursor",
+          !typing && "parceiro-portal-hero-title-cursor-done"
+        )}
+        aria-hidden
+      />
+    </h1>
+  );
 }
 
 interface ParceiroPortalShellProps {
@@ -183,7 +230,7 @@ export default function ParceiroPortalShell({
 
               <div className="min-w-0 flex-1 text-center sm:text-left space-y-2">
                 <p className="parceiro-portal-hero-eyebrow">{roleLabel}</p>
-                <h1 className="parceiro-portal-hero-title">Olá, {partner.nome.split(" ")[0]}</h1>
+                <TypedHeroGreeting firstName={partner.nome.split(" ")[0] || "parceiro"} />
                 <p className="parceiro-portal-hero-copy">
                   Acompanhe seus projetos e o catálogo da Móveis Unghero neste espaço.
                 </p>

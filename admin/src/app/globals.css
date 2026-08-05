@@ -944,8 +944,74 @@ body {
   font-size: clamp(1.5rem, 3vw, 1.85rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #1a120c;
   line-height: 1.15;
+  display: inline-flex;
+  align-items: baseline;
+  min-height: 1.15em;
+}
+
+.parceiro-portal-hero-title-gradient {
+  background: linear-gradient(
+    115deg,
+    #050505 0%,
+    #1a1a1a 28%,
+    #3a3a3a 52%,
+    #0d0d0d 78%,
+    #222 100%
+  );
+  background-size: 180% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: parceiro-hero-title-sheen 4.5s ease-in-out infinite;
+}
+
+.parceiro-portal-hero-title-cursor {
+  display: inline-block;
+  width: 0.12em;
+  height: 0.95em;
+  margin-left: 0.12em;
+  border-radius: 1px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #050505 100%);
+  vertical-align: baseline;
+  transform: translateY(0.08em);
+  animation: parceiro-hero-cursor-blink 0.85s steps(1, end) infinite;
+}
+
+.parceiro-portal-hero-title-cursor-done {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes parceiro-hero-title-sheen {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes parceiro-hero-cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parceiro-portal-hero-title-gradient {
+    animation: none;
+  }
+
+  .parceiro-portal-hero-title-cursor {
+    display: none;
+  }
 }
 
 .parceiro-portal-hero-copy {
