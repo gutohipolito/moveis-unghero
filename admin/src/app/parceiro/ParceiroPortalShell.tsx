@@ -26,10 +26,16 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
+/** Uma vez por carga da página — reset só no reload completo. */
+let partnerGreetingSmilePlayed = false;
+
 function TypedHeroGreeting({ firstName }: { firstName: string }) {
-  const fullText = `Olá, ${firstName}`;
-  const [shown, setShown] = useState("");
-  const [typing, setTyping] = useState(true);
+  const playfulText = `Olá, ${firstName}.  :)`;
+  const finalText = `Olá, ${firstName}!`;
+  const [shown, setShown] = useState(() =>
+    partnerGreetingSmilePlayed ? finalText : ""
+  );
+  const [typing, setTyping] = useState(() => !partnerGreetingSmilePlayed);
 
   useEffect(() => {
     const reduceMotion =
@@ -37,28 +43,74 @@ function TypedHeroGreeting({ firstName }: { firstName: string }) {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reduceMotion) {
-      setShown(fullText);
+      setShown(finalText);
+      setTyping(false);
+      partnerGreetingSmilePlayed = true;
+      return;
+    }
+
+    if (partnerGreetingSmilePlayed) {
+      setShown(finalText);
       setTyping(false);
       return;
     }
 
-    setShown("");
-    setTyping(true);
-    let i = 0;
-    const id = window.setInterval(() => {
-      i += 1;
-      setShown(fullText.slice(0, i));
-      if (i >= fullText.length) {
-        window.clearInterval(id);
-        window.setTimeout(() => setTyping(false), 900);
-      }
-    }, 52);
+    let cancelled = false;
+    const timers: number[] = [];
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timers.push(window.setTimeout(resolve, ms));
+      });
 
-    return () => window.clearInterval(id);
-  }, [fullText]);
+    const run = async () => {
+      setTyping(true);
+      let text = "";
+      setShown("");
+
+      for (let i = 1; i <= playfulText.length; i += 1) {
+        if (cancelled) return;
+        text = playfulText.slice(0, i);
+        setShown(text);
+        await wait(50);
+      }
+
+      if (cancelled) return;
+      await wait(750);
+      if (cancelled) return;
+
+      const keepPrefix = `Olá, ${firstName}`;
+      while (text.length > keepPrefix.length) {
+        if (cancelled) return;
+        text = text.slice(0, -1);
+        setShown(text);
+        await wait(26);
+      }
+
+      if (cancelled) return;
+
+      for (let i = text.length + 1; i <= finalText.length; i += 1) {
+        if (cancelled) return;
+        text = finalText.slice(0, i);
+        setShown(text);
+        await wait(55);
+      }
+
+      if (cancelled) return;
+      partnerGreetingSmilePlayed = true;
+      await wait(700);
+      if (!cancelled) setTyping(false);
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      timers.forEach((id) => window.clearTimeout(id));
+    };
+  }, [firstName, playfulText, finalText]);
 
   return (
-    <h1 className="parceiro-portal-hero-title" aria-label={fullText}>
+    <h1 className="parceiro-portal-hero-title" aria-label={finalText}>
       <span className="parceiro-portal-hero-title-gradient" aria-hidden>
         {shown}
       </span>
