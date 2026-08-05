@@ -236,7 +236,6 @@ export default function ParceiroPortalShell({
 
           <ParceiroUserMenu
             partner={partner}
-            isAdminPreview={isAdminPreview}
             onOpenSettings={() => setInfoOpen(true)}
           />
         </div>

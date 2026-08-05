@@ -30,7 +30,6 @@ import {
   DEFAULT_NOTIFICATION_PREFS,
   type NotificationPreferences,
 } from "@/lib/notificationChannels";
-import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { cn } from "@/lib/utils";
 
 function getInitials(name: string) {
@@ -122,7 +121,7 @@ function PartnerNotificationSettings() {
                 ? "Bloqueado nas configurações do navegador."
                 : browserActive
                   ? "Alertas do portal liberados neste dispositivo."
-                  : "Receba avisos mesmo fora do portal."}
+                  : "Receba notificações importantes sobre projetos em andamento."}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {!browserSupported ? (
@@ -208,19 +207,16 @@ function PartnerNotificationSettings() {
 
 type Props = {
   partner: PartnerPortalData;
-  isAdminPreview?: boolean;
   onOpenSettings: () => void;
 };
 
 export default function ParceiroUserMenu({
   partner,
-  isAdminPreview = false,
   onOpenSettings,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
-  const { canInstall, install, installing } = usePwaInstall();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -330,27 +326,21 @@ export default function ParceiroUserMenu({
               <IdCard className="h-4 w-4" />
               Configurações
             </button>
-            {canInstall && (
-              <button
-                type="button"
-                onClick={() => {
-                  void install();
-                  setMenuOpen(false);
-                }}
-                disabled={installing}
-                className="dashboard-user-menu-item w-full rounded-lg"
-              >
-                <Download className="h-4 w-4" />
-                {installing ? "Instalando..." : "Instalar aplicativo"}
-              </button>
-            )}
+            <div
+              className="parceiro-user-menu-soon"
+              aria-disabled="true"
+            >
+              <Download className="h-4 w-4 shrink-0 opacity-55" />
+              <span className="flex-1">Instalar aplicativo</span>
+              <span className="parceiro-soon-sticker">Em breve</span>
+            </div>
             <form action={logoutParceiro}>
               <button
                 type="submit"
                 className="dashboard-user-menu-item dashboard-user-menu-logout w-full rounded-lg"
               >
                 <LogOut className="h-4 w-4" />
-                {isAdminPreview ? "Sair da visualização" : "Sair do portal"}
+                Sair
               </button>
             </form>
           </div>
