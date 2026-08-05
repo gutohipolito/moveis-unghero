@@ -226,6 +226,7 @@ model ProfessionalPartner {
   email                  String?
   telefone               String?
   cidade                 String?
+  cep                    String?
   endereco               String?
   escritorio             String?
   registro_profissional  String?

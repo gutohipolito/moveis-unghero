@@ -13,6 +13,7 @@ export interface ModalShellProps {
   bodyClassName?: string;
   viewportClassName?: string;
   closeClassName?: string;
+  backdropClassName?: string;
   showClose?: boolean;
   closeOnBackdrop?: boolean;
   fullscreen?: boolean;
@@ -26,6 +27,7 @@ export function ModalShell({
   bodyClassName,
   viewportClassName,
   closeClassName,
+  backdropClassName,
   showClose = true,
   closeOnBackdrop = true,
   fullscreen = false,
@@ -59,7 +61,7 @@ export function ModalShell({
     <div className="modal-root" role="dialog" aria-modal="true">
       <button
         type="button"
-        className="modal-backdrop"
+        className={cn("modal-backdrop", backdropClassName)}
         aria-label="Fechar modal"
         tabIndex={-1}
         onClick={closeOnBackdrop ? onClose : undefined}

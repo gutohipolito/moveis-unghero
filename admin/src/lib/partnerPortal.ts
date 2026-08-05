@@ -34,6 +34,7 @@ export interface PartnerPortalData {
   telefone: string | null;
   fotoUrl: string | null;
   cidade: string | null;
+  cep: string | null;
   endereco: string | null;
   escritorio: string | null;
   registro_profissional: string | null;
@@ -135,6 +136,7 @@ export async function loadPartnerPortalData(
       telefone: true,
       fotoUrl: true,
       cidade: true,
+      cep: true,
       endereco: true,
       escritorio: true,
       registro_profissional: true,
@@ -178,6 +180,7 @@ export async function loadPartnerPortalData(
     telefone: partner.telefone,
     fotoUrl: partner.fotoUrl,
     cidade: partner.cidade,
+    cep: partner.cep,
     endereco: partner.endereco,
     escritorio: partner.escritorio,
     registro_profissional: partner.registro_profissional,

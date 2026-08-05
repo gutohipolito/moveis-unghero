@@ -24,6 +24,7 @@ export interface ParceiroDTO {
   email: string | null;
   telefone: string | null;
   cidade: string | null;
+  cep: string | null;
   endereco: string | null;
   escritorio: string | null;
   registro_profissional: string | null;
@@ -197,6 +198,7 @@ export async function updateParceiro(
     email?: string;
     telefone?: string;
     cidade?: string;
+    cep?: string;
     endereco?: string;
     escritorio?: string;
     registro_profissional?: string;
@@ -236,6 +238,9 @@ export async function updateParceiro(
         ...(data.telefone !== undefined ? { telefone: data.telefone.trim() || null } : {}),
         ...(data.cidade !== undefined
           ? { cidade: data.cidade ? normalizeCidade(data.cidade).cidade || null : null }
+          : {}),
+        ...(data.cep !== undefined
+          ? { cep: data.cep?.replace(/\D/g, "").slice(0, 8) || null }
           : {}),
         ...(data.endereco !== undefined
           ? { endereco: data.endereco ? capitalizeText(data.endereco) : null }

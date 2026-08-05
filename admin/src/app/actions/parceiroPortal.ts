@@ -173,6 +173,7 @@ export type PartnerProfileUpdateInput = {
   email: string;
   telefone: string;
   cidade: string;
+  cep: string;
   endereco: string;
   escritorio: string;
   registro_profissional: string;
@@ -231,6 +232,7 @@ export async function updateParceiroProfileAction(data: PartnerProfileUpdateInpu
         cidade: data.cidade?.trim()
           ? normalizeCidade(data.cidade).cidade || null
           : null,
+        cep: data.cep?.replace(/\D/g, "").slice(0, 8) || null,
         endereco: data.endereco?.trim() ? capitalizeText(data.endereco) : null,
         escritorio: data.escritorio?.trim() ? capitalizeText(data.escritorio) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
@@ -242,6 +244,7 @@ export async function updateParceiroProfileAction(data: PartnerProfileUpdateInpu
         email: true,
         telefone: true,
         cidade: true,
+        cep: true,
         endereco: true,
         escritorio: true,
         registro_profissional: true,

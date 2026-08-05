@@ -10,6 +10,7 @@ export interface DialogProps {
   bodyClassName?: string;
   viewportClassName?: string;
   closeClassName?: string;
+  backdropClassName?: string;
   showClose?: boolean;
   closeOnBackdrop?: boolean;
   fullscreen?: boolean;
@@ -23,6 +24,7 @@ export function Dialog({
   bodyClassName,
   viewportClassName,
   closeClassName,
+  backdropClassName,
   showClose = true,
   closeOnBackdrop = true,
   fullscreen = false,
@@ -38,6 +40,7 @@ export function Dialog({
       bodyClassName={bodyClassName}
       viewportClassName={viewportClassName}
       closeClassName={closeClassName}
+      backdropClassName={backdropClassName}
     >
       {children}
     </ModalShell>
