@@ -6,6 +6,7 @@ import NotesCenter from "@/components/NotesCenter";
 import RemindersCenter from "@/components/RemindersCenter";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
+import { usePermissions } from "@/context/PermissionsContext";
 
 type HeaderMenu = "notes" | "reminders" | "notifications";
 
@@ -23,6 +24,7 @@ export default function HeaderQuickActions({
   initialReminders,
 }: HeaderQuickActionsProps) {
   const [openMenu, setOpenMenu] = useState<HeaderMenu | null>(null);
+  const { isReadOnly } = usePermissions();
 
   return (
     <div className="flex items-center gap-1">
@@ -38,10 +40,12 @@ export default function HeaderQuickActions({
         isOpen={openMenu === "reminders"}
         onOpenChange={(open) => setOpenMenu(open ? "reminders" : null)}
       />
-      <NotificationCenter
-        isOpen={openMenu === "notifications"}
-        onOpenChange={(open) => setOpenMenu(open ? "notifications" : null)}
-      />
+      {!isReadOnly && (
+        <NotificationCenter
+          isOpen={openMenu === "notifications"}
+          onOpenChange={(open) => setOpenMenu(open ? "notifications" : null)}
+        />
+      )}
     </div>
   );
 }
