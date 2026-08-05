@@ -227,17 +227,19 @@ export default function ParceiroPortalShell({
                   href={item.href}
                   className={cn("parceiro-portal-nav-link", active && "is-active")}
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                  {item.label}
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="parceiro-portal-nav-label">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <ParceiroUserMenu
-            partner={partner}
-            onOpenSettings={() => setInfoOpen(true)}
-          />
+          <div className="parceiro-portal-header-user">
+            <ParceiroUserMenu
+              partner={partner}
+              onOpenSettings={() => setInfoOpen(true)}
+            />
+          </div>
         </div>
       </header>
 
@@ -304,6 +306,21 @@ export default function ParceiroPortalShell({
 
         {children}
       </main>
+
+      <footer className="parceiro-portal-footer">
+        <div className="parceiro-portal-footer-inner">
+          <p className="parceiro-portal-footer-product">
+            Portal do Parceiro — um produto{" "}
+            <span className="parceiro-portal-footer-brand">Móveis Unghero</span>
+          </p>
+          <p className="parceiro-portal-footer-copy">
+            Espaço exclusivo para arquitetos e profissionais parceiros.
+          </p>
+          <p className="parceiro-portal-footer-legal">
+            © {new Date().getFullYear()} Móveis Unghero. Todos os direitos reservados.
+          </p>
+        </div>
+      </footer>
 
       <ParceiroInfoModal
         open={infoOpen}

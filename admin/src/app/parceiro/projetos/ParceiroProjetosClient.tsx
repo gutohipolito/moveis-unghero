@@ -85,14 +85,14 @@ export default function ParceiroProjetosClient({
                 <article key={project.id} className="parceiro-project-card">
                   <div className="parceiro-project-card-sheen" aria-hidden />
                   <div className="parceiro-project-card-body">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <div className="min-w-0">
                         <h3 className="font-display font-bold text-[1.05rem] leading-snug truncate text-[#1a1208]">
                           {project.client.nome}
                         </h3>
-                        <p className="text-[11px] font-semibold text-black/70 mt-0.5 inline-flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {project.client.cidade || "Cidade não informada"}
+                        <p className="text-[11px] font-semibold text-black/70 mt-0.5 inline-flex items-center gap-1 min-w-0">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{project.client.cidade || "Cidade não informada"}</span>
                         </p>
                       </div>
                       <p className="text-sm font-display font-extrabold tabular-nums shrink-0 text-[#1a1208]">

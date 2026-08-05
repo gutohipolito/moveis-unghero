@@ -703,6 +703,8 @@ body {
 /* ─── Portal do parceiro — shell logado ─── */
 .parceiro-portal-shell {
   min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(165deg, #1c1612 0%, #120e0c 48%, #0c0a08 100%);
   color: #f5f0e8;
 }
@@ -746,25 +748,83 @@ body {
 .parceiro-portal-header-inner {
   max-width: 64rem;
   margin: 0 auto;
-  padding: 1.15rem 1rem;
-  display: flex;
+  padding: 0.85rem 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  grid-template-areas: "brand nav user";
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-@media (min-width: 640px) {
-  .parceiro-portal-header-inner {
-    padding: 1.35rem 1.5rem;
-  }
+  gap: 0.65rem 0.75rem;
 }
 
 .parceiro-portal-brand {
+  grid-area: brand;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.35rem;
   min-width: 0;
+}
+
+.parceiro-portal-nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  justify-content: center;
+  min-width: 0;
+}
+
+.parceiro-portal-header-user {
+  grid-area: user;
+  justify-self: end;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .parceiro-portal-header-inner {
+    padding: 1.1rem 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .parceiro-portal-header-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand user"
+      "nav nav";
+  }
+
+  .parceiro-portal-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+    padding-bottom: 0.1rem;
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+  }
+
+  .parceiro-portal-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .parceiro-portal-brand-sub {
+    display: none;
+  }
+
+  .parceiro-portal-brand-logo {
+    height: 2rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .parceiro-portal-nav-label {
+    display: none;
+  }
+
+  .parceiro-portal-nav-link {
+    padding: 0.5rem;
+  }
 }
 
 .parceiro-portal-brand-logo {
@@ -782,14 +842,6 @@ body {
   margin-left: 0.1rem;
 }
 
-.parceiro-portal-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 1;
-  justify-content: center;
-}
-
 .parceiro-portal-nav-link {
   display: inline-flex;
   align-items: center;
@@ -800,6 +852,8 @@ body {
   font-weight: 700;
   color: hsl(40 15% 85% / 0.72);
   border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition:
     color 0.15s ease,
     background 0.15s ease,
@@ -910,18 +964,67 @@ body {
 
 .parceiro-portal-main {
   max-width: 64rem;
+  width: 100%;
   margin: 0 auto;
-  padding: 1.5rem 1rem 2.5rem;
+  padding: 1.5rem 1rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  flex: 1;
 }
 
 @media (min-width: 640px) {
   .parceiro-portal-main {
-    padding: 2rem 1.5rem 3rem;
+    padding: 2rem 1.5rem 2.5rem;
     gap: 1.5rem;
   }
+}
+
+.parceiro-portal-footer {
+  margin-top: auto;
+  border-top: 1px solid hsl(36 20% 100% / 0.08);
+  background: hsl(20 18% 6% / 0.65);
+}
+
+.parceiro-portal-footer-inner {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.35rem 1rem 1.75rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .parceiro-portal-footer-inner {
+    padding: 1.5rem 1.5rem 2rem;
+  }
+}
+
+.parceiro-portal-footer-product {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(40 18% 88% / 0.82);
+  letter-spacing: 0.01em;
+}
+
+.parceiro-portal-footer-brand {
+  font-weight: 800;
+  color: hsl(43 85% 68%);
+}
+
+.parceiro-portal-footer-copy {
+  margin-top: 0.35rem;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: hsl(40 12% 75% / 0.55);
+}
+
+.parceiro-portal-footer-legal {
+  margin-top: 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: hsl(40 10% 70% / 0.42);
 }
 
 .parceiro-portal-hero {
@@ -1279,6 +1382,32 @@ body {
     hsl(24 35% 12% / 0.72) 100%
   );
   box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.15);
+}
+
+/* Home — Informações + Meus projetos */
+.parceiro-home-tiles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .parceiro-home-tiles {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+.parceiro-home-tiles > .parceiro-home-bullet,
+.parceiro-home-tiles > .parceiro-home-project-tile {
+  min-height: 5.25rem;
+  height: 100%;
+  width: 100%;
+}
+
+.parceiro-home-project-tile {
+  display: flex;
 }
 
 /* Home — bullet Informações */
