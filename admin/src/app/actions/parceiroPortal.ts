@@ -13,6 +13,12 @@ import {
 import { getAuthContext } from "@/lib/auth-guard";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
+import {
+  MAX_PORTFOLIO_URLS,
+  normalizePortfolioUrl,
+  parsePortfolioUrls,
+  serializePortfolioUrls,
+} from "@/lib/portfolioUrls";
 
 const ADMIN_PREVIEW_COOKIE = "parceiro-admin-preview";
 
@@ -198,17 +204,16 @@ export async function updateParceiroProfileAction(data: PartnerProfileUpdateInpu
     return { success: false as const, error: "Informe um e-mail válido." };
   }
 
-  let portfolioUrl = data.portfolioUrl?.trim() || "";
-  if (portfolioUrl) {
-    if (!/^https?:\/\//i.test(portfolioUrl)) {
-      portfolioUrl = `https://${portfolioUrl}`;
-    }
-    try {
-      new URL(portfolioUrl);
-    } catch {
+  const rawUrls = parsePortfolioUrls(data.portfolioUrl).slice(0, MAX_PORTFOLIO_URLS);
+  const normalizedUrls: string[] = [];
+  for (const raw of rawUrls) {
+    const normalized = normalizePortfolioUrl(raw);
+    if (!normalized) {
       return { success: false as const, error: "Informe uma URL de portfólio válida." };
     }
+    normalizedUrls.push(normalized);
   }
+  const portfolioUrl = serializePortfolioUrls(normalizedUrls);
 
   if (isDatabaseOffline()) {
     return { success: false as const, error: "Serviço temporariamente indisponível." };

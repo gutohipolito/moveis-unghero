@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ExternalLink, Loader2, Pencil } from "lucide-react";
+import { ExternalLink, Loader2, Pencil, Plus, X } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,12 @@ import { partnerRegistroLabel } from "@/lib/partnerTypes";
 import { updateParceiroProfileAction } from "@/app/actions/parceiroPortal";
 import { fetchViaCep } from "@/lib/viaCep";
 import { normalizeCidade } from "@/lib/address";
+import { faviconUrlFor } from "@/lib/accessCategories";
+import {
+  MAX_PORTFOLIO_URLS,
+  parsePortfolioUrls,
+  serializePortfolioUrls,
+} from "@/lib/portfolioUrls";
 import { cn } from "@/lib/utils";
 
 type ProfileFields = {
@@ -21,7 +27,7 @@ type ProfileFields = {
   endereco: string;
   escritorio: string;
   registro_profissional: string;
-  portfolioUrl: string;
+  portfolioUrls: string[];
 };
 
 function formatCepDisplay(value: string) {
@@ -31,6 +37,7 @@ function formatCepDisplay(value: string) {
 }
 
 function toFields(partner: PartnerPortalData): ProfileFields {
+  const urls = parsePortfolioUrls(partner.portfolioUrl);
   return {
     nome: partner.nome || "",
     email: partner.email || "",
@@ -40,7 +47,7 @@ function toFields(partner: PartnerPortalData): ProfileFields {
     endereco: partner.endereco || "",
     escritorio: partner.escritorio || "",
     registro_profissional: partner.registro_profissional || "",
-    portfolioUrl: partner.portfolioUrl || "",
+    portfolioUrls: urls.length ? urls : [""],
   };
 }
 
@@ -65,6 +72,26 @@ function Field({
 
 function SectionDivider() {
   return <div className="parceiro-info-section-rule" role="separator" />;
+}
+
+function PortfolioFavicon({ url }: { url: string }) {
+  const src = faviconUrlFor(url.trim() || null);
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
+
+  return (
+    <span className="parceiro-portfolio-favicon" aria-hidden>
+      {src && !broken ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" width={16} height={16} onError={() => setBroken(true)} />
+      ) : (
+        <span className="parceiro-portfolio-favicon-fallback" />
+      )}
+    </span>
+  );
 }
 
 type Props = {
@@ -93,8 +120,35 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
   const registroHint = partnerRegistroLabel(partner.tipo);
   const inputClass = "h-10 parceiro-info-input";
 
-  const setField = (key: keyof ProfileFields, value: string) => {
+  const setField = <K extends keyof ProfileFields>(key: K, value: ProfileFields[K]) => {
     setFields((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const setPortfolioUrlAt = (index: number, value: string) => {
+    setFields((prev) => {
+      const next = [...prev.portfolioUrls];
+      next[index] = value;
+      return { ...prev, portfolioUrls: next };
+    });
+  };
+
+  const addPortfolioUrl = () => {
+    setFields((prev) => {
+      if (prev.portfolioUrls.length >= MAX_PORTFOLIO_URLS) return prev;
+      return { ...prev, portfolioUrls: [...prev.portfolioUrls, ""] };
+    });
+  };
+
+  const removePortfolioUrl = (index: number) => {
+    setFields((prev) => {
+      if (prev.portfolioUrls.length <= 1) {
+        return { ...prev, portfolioUrls: [""] };
+      }
+      return {
+        ...prev,
+        portfolioUrls: prev.portfolioUrls.filter((_, i) => i !== index),
+      };
+    });
   };
 
   const lookupCep = async (cepValue: string) => {
@@ -128,7 +182,18 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    const res = await updateParceiroProfileAction(fields);
+    const payload = {
+      nome: fields.nome,
+      email: fields.email,
+      telefone: fields.telefone,
+      cep: fields.cep,
+      cidade: fields.cidade,
+      endereco: fields.endereco,
+      escritorio: fields.escritorio,
+      registro_profissional: fields.registro_profissional,
+      portfolioUrl: serializePortfolioUrls(fields.portfolioUrls) || "",
+    };
+    const res = await updateParceiroProfileAction(payload);
     setSaving(false);
     if (!res.success) {
       setError(res.error || "Não foi possível salvar.");
@@ -149,6 +214,49 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
   };
 
   const display = (value: string) => value.trim() || "—";
+  const isEmptyDisplay = (value: string) => !value.trim();
+  const viewPortfolioUrls = fields.portfolioUrls.map((u) => u.trim()).filter(Boolean);
+
+  const fieldInput = (
+    key: Exclude<keyof ProfileFields, "portfolioUrls">,
+    opts?: {
+      type?: string;
+      autoComplete?: string;
+      placeholder?: string;
+      className?: string;
+      valueOverride?: string;
+      onChange?: (raw: string) => void;
+      inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+    }
+  ) => {
+    const raw = fields[key];
+    const showEmpty = !editing && isEmptyDisplay(raw);
+    return (
+      <Input
+        type={opts?.type || "text"}
+        value={
+          opts?.valueOverride !== undefined
+            ? opts.valueOverride
+            : editing
+              ? raw
+              : display(raw)
+        }
+        onChange={(e) =>
+          opts?.onChange ? opts.onChange(e.target.value) : setField(key, e.target.value)
+        }
+        className={cn(
+          inputClass,
+          opts?.className,
+          (editing ? !raw.trim() : showEmpty) && "parceiro-info-input-empty"
+        )}
+        readOnly={!editing}
+        tabIndex={editing ? 0 : -1}
+        autoComplete={opts?.autoComplete}
+        placeholder={editing ? opts?.placeholder : undefined}
+        inputMode={opts?.inputMode}
+      />
+    );
+  };
 
   return (
     <Dialog
@@ -188,35 +296,16 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Nome" className="sm:col-span-2">
-              <Input
-                value={editing ? fields.nome : display(fields.nome)}
-                onChange={(e) => setField("nome", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-                autoComplete="name"
-              />
+              {fieldInput("nome", { autoComplete: "name" })}
             </Field>
             <Field label="E-mail">
-              <Input
-                type={editing ? "email" : "text"}
-                value={editing ? fields.email : display(fields.email)}
-                onChange={(e) => setField("email", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-                autoComplete="email"
-              />
+              {fieldInput("email", {
+                type: editing ? "email" : "text",
+                autoComplete: "email",
+              })}
             </Field>
             <Field label="Telefone">
-              <Input
-                value={editing ? fields.telefone : display(fields.telefone)}
-                onChange={(e) => setField("telefone", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-                autoComplete="tel"
-              />
+              {fieldInput("telefone", { autoComplete: "tel" })}
             </Field>
           </div>
 
@@ -225,46 +314,28 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="CEP">
               <div className="relative">
-                <Input
-                  value={
-                    editing
+                {fieldInput("cep", {
+                  valueOverride: editing
+                    ? formatCepDisplay(fields.cep)
+                    : fields.cep
                       ? formatCepDisplay(fields.cep)
-                      : fields.cep
-                        ? formatCepDisplay(fields.cep)
-                        : "—"
-                  }
-                  onChange={(e) => handleCepChange(e.target.value)}
-                  className={inputClass}
-                  readOnly={!editing}
-                  tabIndex={editing ? 0 : -1}
-                  inputMode="numeric"
-                  placeholder={editing ? "00000-000" : undefined}
-                  autoComplete="postal-code"
-                />
+                      : "—",
+                  onChange: handleCepChange,
+                  inputMode: "numeric",
+                  placeholder: "00000-000",
+                  autoComplete: "postal-code",
+                  className: cepLoading ? "pr-9" : undefined,
+                })}
                 {editing && cepLoading && (
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
                 )}
               </div>
             </Field>
             <Field label="Cidade">
-              <Input
-                value={editing ? fields.cidade : display(fields.cidade)}
-                onChange={(e) => setField("cidade", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-                autoComplete="address-level2"
-              />
+              {fieldInput("cidade", { autoComplete: "address-level2" })}
             </Field>
             <Field label="Endereço" className="sm:col-span-2">
-              <Input
-                value={editing ? fields.endereco : display(fields.endereco)}
-                onChange={(e) => setField("endereco", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-                autoComplete="street-address"
-              />
+              {fieldInput("endereco", { autoComplete: "street-address" })}
             </Field>
           </div>
 
@@ -272,53 +343,87 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Empresa / escritório">
-              <Input
-                value={editing ? fields.escritorio : display(fields.escritorio)}
-                onChange={(e) => setField("escritorio", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-              />
+              {fieldInput("escritorio")}
             </Field>
             <Field label={registroHint}>
-              <Input
-                value={
-                  editing
-                    ? fields.registro_profissional
-                    : display(fields.registro_profissional)
-                }
-                onChange={(e) => setField("registro_profissional", e.target.value)}
-                className={inputClass}
-                readOnly={!editing}
-                tabIndex={editing ? 0 : -1}
-                placeholder={editing ? "Número do registro" : undefined}
-              />
+              {fieldInput("registro_profissional", {
+                placeholder: "Número do registro",
+              })}
             </Field>
-            <Field label="Portfólio (URL)" className="sm:col-span-2">
-              {editing ? (
-                <Input
-                  value={fields.portfolioUrl}
-                  onChange={(e) => setField("portfolioUrl", e.target.value)}
-                  className={inputClass}
-                  placeholder="https://..."
-                  autoComplete="url"
-                />
-              ) : fields.portfolioUrl ? (
-                <a
-                  href={fields.portfolioUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(
-                    inputClass,
-                    "flex items-center gap-2 px-3 border border-input bg-transparent rounded-md text-sm font-medium text-slate-900 hover:underline"
-                  )}
-                >
-                  <span className="truncate flex-1">{fields.portfolioUrl}</span>
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                </a>
-              ) : (
-                <Input value="—" className={inputClass} readOnly tabIndex={-1} />
-              )}
+            <Field label="Portfólio" className="sm:col-span-2">
+              <div className="space-y-2">
+                {editing
+                  ? fields.portfolioUrls.map((url, index) => {
+                      const canAdd =
+                        index === fields.portfolioUrls.length - 1 &&
+                        fields.portfolioUrls.length < MAX_PORTFOLIO_URLS;
+                      const canRemove = fields.portfolioUrls.length > 1;
+                      return (
+                        <div key={index} className="parceiro-portfolio-row">
+                          <PortfolioFavicon url={url} />
+                          <Input
+                            value={url}
+                            onChange={(e) => setPortfolioUrlAt(index, e.target.value)}
+                            className={cn(
+                              inputClass,
+                              "parceiro-portfolio-input",
+                              !url.trim() && "parceiro-info-input-empty"
+                            )}
+                            placeholder="https://..."
+                            autoComplete="url"
+                          />
+                          <div className="parceiro-portfolio-actions">
+                            {canRemove ? (
+                              <button
+                                type="button"
+                                className="parceiro-portfolio-icon-btn"
+                                aria-label="Remover link"
+                                onClick={() => removePortfolioUrl(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <span className="parceiro-portfolio-actions-spacer" />
+                            )}
+                            {canAdd ? (
+                              <button
+                                type="button"
+                                className="parceiro-portfolio-icon-btn parceiro-portfolio-icon-btn-add"
+                                aria-label="Adicionar link"
+                                onClick={addPortfolioUrl}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <span className="parceiro-portfolio-actions-spacer" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  : viewPortfolioUrls.length > 0
+                    ? viewPortfolioUrls.map((url) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="parceiro-portfolio-row parceiro-portfolio-row-link"
+                        >
+                          <PortfolioFavicon url={url} />
+                          <span className="parceiro-portfolio-link-text truncate">{url}</span>
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-55" />
+                        </a>
+                      ))
+                    : (
+                        <Input
+                          value="—"
+                          className={cn(inputClass, "parceiro-info-input-empty")}
+                          readOnly
+                          tabIndex={-1}
+                        />
+                      )}
+              </div>
             </Field>
           </div>
 
@@ -330,7 +435,8 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <Button
                 type="button"
-                className="font-bold h-11 btn-cancel-rose-glow"
+                variant="ghost"
+                className="font-bold h-11 btn-cancel-rose-glow hover:bg-transparent"
                 disabled={saving}
                 onClick={() => {
                   setFields(toFields(partner));
@@ -342,7 +448,7 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
               </Button>
               <Button
                 type="button"
-                className="font-bold h-11 btn-metallic gap-1.5"
+                className="font-bold h-11 btn-metallic btn-parceiro-save gap-1.5"
                 disabled={saving || cepLoading}
                 onClick={() => void handleSave()}
               >

@@ -36,6 +36,7 @@ import { getProjectDetailsAction } from "@/app/actions/project";
 import { adminEnterPartnerPortal } from "@/app/actions/parceiroPortal";
 import ProjectDetails from "@/components/ProjectDetails";
 import { compressImageFile } from "@/lib/imageCompression";
+import { primaryPortfolioUrl } from "@/lib/portfolioUrls";
 import {
   Search,
   UserPlus,
@@ -312,9 +313,9 @@ const PartnerCard = ({
             </div>
           )}
 
-          {p.portfolioUrl ? (
+          {primaryPortfolioUrl(p.portfolioUrl) ? (
             <a
-              href={p.portfolioUrl}
+              href={primaryPortfolioUrl(p.portfolioUrl)!}
               target="_blank"
               rel="noreferrer"
               className="partner-card-action"
@@ -1159,12 +1160,17 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                         <span><strong>E-mail:</strong> {sensitive.email(p.email)}</span>
                       </p>
                     )}
-                    {p.portfolioUrl && (
+                    {primaryPortfolioUrl(p.portfolioUrl) && (
                       <p className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span>
                           <strong>Portfólio: </strong>
-                          <a href={p.portfolioUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline font-bold">
+                          <a
+                            href={primaryPortfolioUrl(p.portfolioUrl)!}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline font-bold"
+                          >
                             Link externo
                           </a>
                         </span>
