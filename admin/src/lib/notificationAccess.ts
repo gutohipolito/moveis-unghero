@@ -11,8 +11,8 @@ import {
 export const NOTIFICATION_CLEARED_IDS_PREF = "notificationClearedIds";
 
 /**
- * Funil comercial / follow-up — só Comercial, Financeiro, Viewer e Diretoria.
- * Projetista e Fábrica (marceneiros) não devem ver estas alertas.
+ * Funil comercial / follow-up — Comercial, Financeiro e Diretoria.
+ * Projetista, Fábrica e Viewer não recebem estas alertas.
  */
 const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
   "follow_up",
@@ -66,6 +66,9 @@ export function filterNotificationsForAccess(
   role: Role,
   clearedIds: Iterable<string> = []
 ): AppNotification[] {
+  // Somente leitura: sem sino, toast nem push.
+  if (role === "VIEWER") return [];
+
   const cleared = new Set(clearedIds);
 
   return notifications.filter((notification) => {

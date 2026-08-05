@@ -69,7 +69,7 @@ export default function DashboardHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { canInstall, installing, install } = usePwaInstall();
-  const { isOpsLimited } = usePermissions();
+  const { isOpsLimited, isReadOnly } = usePermissions();
 
   useEffect(() => {
     setNow(new Date());
@@ -230,16 +230,20 @@ export default function DashboardHeader({
                 </div>
               )}
 
-              <div className="dashboard-user-menu-settings">
-                <NotificationChannelSettings />
-              </div>
+              {!isReadOnly && (
+                <>
+                  <div className="dashboard-user-menu-settings">
+                    <NotificationChannelSettings />
+                  </div>
 
-              <div className="flex items-center gap-2 border-t border-border bg-muted/20 px-3 py-2">
-                <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
-                <p className="text-[10px] text-muted-foreground">
-                  Preferências salvas neste dispositivo.
-                </p>
-              </div>
+                  <div className="flex items-center gap-2 border-t border-border bg-muted/20 px-3 py-2">
+                    <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground">
+                      Preferências salvas neste dispositivo.
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div className="p-2">
               <Link

@@ -8,7 +8,7 @@ import { DEFAULT_COMPANY_ID } from "../src/lib/constants";
 
 const EMAIL = "teste@moveisunghero.com.br";
 const NAME = "Usuário Teste (Leitura)";
-const PASSWORD = process.env.VIEWER_TEST_PASSWORD || "UngheroLeitura!2026";
+const PASSWORD = process.env.VIEWER_TEST_PASSWORD || "MuV!Reader2026#xK9";
 
 async function main() {
   const company = await prisma.company.upsert({
