@@ -18,6 +18,7 @@ $allowedPrefixes = [
     'produtos',
     'clientes',
     'marketing',
+    'projetos',
 ];
 
 $ok = $path === '';

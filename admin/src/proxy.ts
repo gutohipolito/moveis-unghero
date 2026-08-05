@@ -202,7 +202,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/parceiro/painel") ||
     pathname.startsWith("/parceiro/produtos") ||
     pathname.startsWith("/parceiro/clientes") ||
-    pathname.startsWith("/parceiro/marketing")
+    pathname.startsWith("/parceiro/marketing") ||
+    pathname.startsWith("/parceiro/projetos")
   ) {
     const partnerSession = request.cookies.get("parceiro-session")?.value;
     if (!parsePartnerSessionToken(partnerSession)) {
@@ -265,6 +266,8 @@ export const config = {
     "/parceiro/clientes/:path*",
     "/parceiro/marketing",
     "/parceiro/marketing/:path*",
+    "/parceiro/projetos",
+    "/parceiro/projetos/:path*",
     "/api/parceiro/:path*",
     "/briefing",
     "/cadastro",

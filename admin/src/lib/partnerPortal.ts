@@ -30,8 +30,11 @@ export interface PartnerPortalData {
   company_id: string;
   nome: string;
   tipo: PartnerType;
+  email: string | null;
+  telefone: string | null;
   fotoUrl: string | null;
   cidade: string | null;
+  endereco: string | null;
   escritorio: string | null;
   registro_profissional: string | null;
   portfolioUrl: string | null;
@@ -128,8 +131,11 @@ export async function loadPartnerPortalData(
       company_id: true,
       nome: true,
       tipo: true,
+      email: true,
+      telefone: true,
       fotoUrl: true,
       cidade: true,
+      endereco: true,
       escritorio: true,
       registro_profissional: true,
       portfolioUrl: true,
@@ -168,8 +174,11 @@ export async function loadPartnerPortalData(
     company_id: partner.company_id,
     nome: partner.nome,
     tipo: partner.tipo,
+    email: partner.email,
+    telefone: partner.telefone,
     fotoUrl: partner.fotoUrl,
     cidade: partner.cidade,
+    endereco: partner.endereco,
     escritorio: partner.escritorio,
     registro_profissional: partner.registro_profissional,
     portfolioUrl: partner.portfolioUrl,

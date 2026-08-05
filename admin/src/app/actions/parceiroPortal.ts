@@ -2,11 +2,17 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
-import { createPartnerSessionToken } from "@/lib/partnerSession";
+import {
+  createPartnerSessionToken,
+  parsePartnerSessionToken,
+} from "@/lib/partnerSession";
 import { getAuthContext } from "@/lib/auth-guard";
+import { capitalizeText } from "@/lib/utils";
+import { normalizeCidade } from "@/lib/address";
 
 const ADMIN_PREVIEW_COOKIE = "parceiro-admin-preview";
 
@@ -160,4 +166,95 @@ export async function logoutParceiro() {
 export async function isPartnerAdminPreview(): Promise<boolean> {
   const cookieStore = await cookies();
   return cookieStore.get(ADMIN_PREVIEW_COOKIE)?.value === "1";
+}
+
+export type PartnerProfileUpdateInput = {
+  nome: string;
+  email: string;
+  telefone: string;
+  cidade: string;
+  endereco: string;
+  escritorio: string;
+  registro_profissional: string;
+  portfolioUrl: string;
+};
+
+/** Parceiro atualiza o próprio cadastro — reflete no admin. */
+export async function updateParceiroProfileAction(data: PartnerProfileUpdateInput) {
+  const cookieStore = await cookies();
+  const partnerId = parsePartnerSessionToken(cookieStore.get("parceiro-session")?.value);
+  if (!partnerId) {
+    return { success: false as const, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  const nome = data.nome?.trim() || "";
+  if (nome.length < 2) {
+    return { success: false as const, error: "Informe seu nome completo." };
+  }
+
+  const email = data.email?.trim().toLowerCase() || "";
+  if (email && !email.includes("@")) {
+    return { success: false as const, error: "Informe um e-mail válido." };
+  }
+
+  let portfolioUrl = data.portfolioUrl?.trim() || "";
+  if (portfolioUrl) {
+    if (!/^https?:\/\//i.test(portfolioUrl)) {
+      portfolioUrl = `https://${portfolioUrl}`;
+    }
+    try {
+      new URL(portfolioUrl);
+    } catch {
+      return { success: false as const, error: "Informe uma URL de portfólio válida." };
+    }
+  }
+
+  if (isDatabaseOffline()) {
+    return { success: false as const, error: "Serviço temporariamente indisponível." };
+  }
+
+  try {
+    const existing = await prisma.professionalPartner.findFirst({
+      where: { id: partnerId, ativo: true },
+      select: { id: true },
+    });
+    if (!existing) {
+      return { success: false as const, error: "Parceiro não encontrado." };
+    }
+
+    const updated = await prisma.professionalPartner.update({
+      where: { id: partnerId },
+      data: {
+        nome: capitalizeText(nome),
+        email: email || null,
+        telefone: data.telefone?.trim() || null,
+        cidade: data.cidade?.trim()
+          ? normalizeCidade(data.cidade).cidade || null
+          : null,
+        endereco: data.endereco?.trim() ? capitalizeText(data.endereco) : null,
+        escritorio: data.escritorio?.trim() ? capitalizeText(data.escritorio) : null,
+        registro_profissional: data.registro_profissional?.trim() || null,
+        portfolioUrl: portfolioUrl || null,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        cidade: true,
+        endereco: true,
+        escritorio: true,
+        registro_profissional: true,
+        portfolioUrl: true,
+      },
+    });
+
+    revalidatePath("/parceiro/painel");
+    revalidatePath("/parceiros");
+
+    return { success: true as const, profile: updated };
+  } catch (error) {
+    console.error("Falha ao atualizar perfil do parceiro:", error);
+    return { success: false as const, error: "Não foi possível salvar as alterações." };
+  }
 }
