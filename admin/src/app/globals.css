@@ -823,6 +823,58 @@ body {
   box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.35);
 }
 
+.parceiro-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.55rem 0.3rem 0.3rem;
+  border-radius: 0.875rem;
+  border: 1px solid hsl(40 20% 100% / 0.14);
+  background: hsl(0 0% 100% / 0.06);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+.parceiro-user-trigger:hover {
+  background: hsl(0 0% 100% / 0.1);
+  border-color: hsl(40 40% 70% / 0.35);
+  box-shadow: 0 4px 14px hsl(0 0% 0% / 0.2);
+}
+
+.parceiro-user-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(42 70% 55% / 0.35);
+  background: hsl(36 30% 18%);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.parceiro-user-online-dot {
+  position: absolute;
+  right: -0.0625rem;
+  bottom: -0.0625rem;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border: 2px solid hsl(20 18% 10%);
+  border-radius: 9999px;
+  background: hsl(152 69% 42%);
+}
+
+.parceiro-user-menu {
+  z-index: 60;
+}
+
 .parceiro-portal-main {
   max-width: 64rem;
   margin: 0 auto;

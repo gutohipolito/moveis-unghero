@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, Loader2, LogOut, LayoutDashboard, Package, Users, Megaphone } from "lucide-react";
-import { logoutParceiro } from "@/app/actions/parceiroPortal";
+import { Camera, Loader2, LayoutDashboard, Package, Users, Megaphone } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
-import { Button } from "@/components/ui/button";
 import { compressImageFile } from "@/lib/imageCompression";
 import { cn } from "@/lib/utils";
+import ParceiroUserMenu from "./ParceiroUserMenu";
+import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 
 const NAV = [
   { href: "/parceiro/painel", label: "Início", icon: LayoutDashboard },
@@ -17,6 +17,14 @@ const NAV = [
   { href: "/parceiro/clientes", label: "Clientes", icon: Users },
   { href: "/parceiro/marketing", label: "Marketing", icon: Megaphone },
 ] as const;
+
+type ShellUi = { openInfo: () => void };
+
+const ParceiroShellUiContext = createContext<ShellUi | null>(null);
+
+export function useParceiroShellUi() {
+  return useContext(ParceiroShellUiContext);
+}
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -132,6 +140,7 @@ interface ParceiroPortalShellProps {
   /** Foto maior no hero da página (com upload). */
   showHeroPhoto?: boolean;
   onFotoUrlChange?: (url: string) => void;
+  onPartnerChange?: (profile: Partial<PartnerPortalData>) => void;
 }
 
 export default function ParceiroPortalShell({
@@ -140,14 +149,20 @@ export default function ParceiroPortalShell({
   children,
   showHeroPhoto = false,
   onFotoUrlChange,
+  onPartnerChange,
 }: ParceiroPortalShellProps) {
   const pathname = usePathname();
   const fileRef = useRef<HTMLInputElement>(null);
   const [partner, setPartner] = useState(initialPartner);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
+
+  useEffect(() => {
+    setPartner(initialPartner);
+  }, [initialPartner]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -175,7 +190,12 @@ export default function ParceiroPortalShell({
     }
   };
 
+  const shellUi: ShellUi = {
+    openInfo: () => setInfoOpen(true),
+  };
+
   return (
+    <ParceiroShellUiContext.Provider value={shellUi}>
     <div className="parceiro-portal-shell">
       {isAdminPreview && (
         <div className="parceiro-portal-admin-banner">
@@ -214,25 +234,11 @@ export default function ParceiroPortalShell({
             })}
           </nav>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden md:flex flex-col items-end min-w-0 mr-1">
-              <span className="text-xs font-semibold text-white truncate max-w-[9rem]">
-                {partner.nome.split(" ")[0]}
-              </span>
-              <span className="text-[10px] text-white/55 truncate max-w-[9rem]">{roleLabel}</span>
-            </div>
-            <form action={logoutParceiro}>
-              <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{isAdminPreview ? "Sair" : "Sair"}</span>
-              </Button>
-            </form>
-          </div>
+          <ParceiroUserMenu
+            partner={partner}
+            isAdminPreview={isAdminPreview}
+            onOpenSettings={() => setInfoOpen(true)}
+          />
         </div>
       </header>
 
@@ -299,6 +305,17 @@ export default function ParceiroPortalShell({
 
         {children}
       </main>
+
+      <ParceiroInfoModal
+        open={infoOpen}
+        partner={partner}
+        onClose={() => setInfoOpen(false)}
+        onSaved={(profile) => {
+          setPartner((prev) => ({ ...prev, ...profile }));
+          onPartnerChange?.(profile);
+        }}
+      />
     </div>
+    </ParceiroShellUiContext.Provider>
   );
 }
