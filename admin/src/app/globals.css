@@ -1230,12 +1230,12 @@ body {
   box-shadow: none;
 }
 
-/* Campos sem conteúdo — fundo e borda cinza mais escuro */
+/* Campos sem conteúdo — cinza suave (fundo e borda) */
 .parceiro-info-input.parceiro-info-input-empty,
 .parceiro-info-input.parceiro-info-input-empty[readonly] {
-  background: hsl(30 8% 88%);
-  border-color: hsl(30 8% 72%);
-  color: hsl(24 8% 42%);
+  background: hsl(32 12% 94%);
+  border-color: hsl(32 10% 84%);
+  color: hsl(24 8% 48%);
 }
 
 .parceiro-info-input.parceiro-info-input-empty:focus,
@@ -1251,6 +1251,7 @@ body {
   grid-template-columns: 2rem minmax(0, 1fr) 4.5rem;
   align-items: center;
   gap: 0.45rem;
+  padding-left: 0.4rem;
 }
 
 .parceiro-portfolio-row-link {
@@ -1332,8 +1333,23 @@ body {
 }
 
 .parceiro-portfolio-icon-btn-add {
-  border-color: hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.45);
-  color: hsl(36 70% 32%);
+  border-color: hsl(142 48% 40%);
+  color: hsl(142 52% 34%);
+  background: hsl(142 40% 97%);
+}
+
+.parceiro-portfolio-icon-btn-add:hover {
+  box-shadow: 0 0 0 2px hsl(142 48% 40% / 0.22);
+}
+
+.parceiro-portfolio-icon-btn-remove {
+  border-color: hsl(0 58% 48%);
+  color: hsl(0 62% 42%);
+  background: hsl(0 45% 98%);
+}
+
+.parceiro-portfolio-icon-btn-remove:hover {
+  box-shadow: 0 0 0 2px hsl(0 58% 48% / 0.22);
 }
 
 .parceiro-portfolio-link-text {

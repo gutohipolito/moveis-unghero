@@ -14,6 +14,8 @@ interface ActionDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   loading?: boolean;
+  /** Tom do botão de confirmação (padrão: destructive). */
+  confirmTone?: "destructive" | "primary";
   onConfirm?: () => void;
   onClose: () => void;
 }
@@ -47,6 +49,7 @@ export default function ActionDialog({
   confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
   loading = false,
+  confirmTone = "destructive",
   onConfirm,
   onClose,
 }: ActionDialogProps) {
@@ -80,8 +83,8 @@ export default function ActionDialog({
               </Button>
               <Button
                 type="button"
-                variant="destructive"
-                className="flex-1 font-semibold"
+                variant={confirmTone === "primary" ? "default" : "destructive"}
+                className={`flex-1 font-semibold${confirmTone === "primary" ? " btn-metallic" : ""}`}
                 onClick={onConfirm}
                 disabled={loading}
               >

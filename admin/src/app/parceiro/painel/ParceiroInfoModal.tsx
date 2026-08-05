@@ -5,6 +5,7 @@ import { ExternalLink, Loader2, Pencil, Plus, X } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import ActionDialog from "@/components/ActionDialog";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { partnerRegistroLabel } from "@/lib/partnerTypes";
 import { updateParceiroProfileAction } from "@/app/actions/parceiroPortal";
@@ -104,6 +105,7 @@ type Props = {
 export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: Props) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<ProfileFields>(() => toFields(partner));
@@ -114,6 +116,7 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
       setEditing(false);
       setError(null);
       setCepLoading(false);
+      setConfirmSaveOpen(false);
     }
   }, [open, partner]);
 
@@ -195,6 +198,7 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
     };
     const res = await updateParceiroProfileAction(payload);
     setSaving(false);
+    setConfirmSaveOpen(false);
     if (!res.success) {
       setError(res.error || "Não foi possível salvar.");
       return;
@@ -376,7 +380,7 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
                             {canRemove ? (
                               <button
                                 type="button"
-                                className="parceiro-portfolio-icon-btn"
+                                className="parceiro-portfolio-icon-btn parceiro-portfolio-icon-btn-remove"
                                 aria-label="Remover link"
                                 onClick={() => removePortfolioUrl(index)}
                               >
@@ -450,21 +454,32 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
                 type="button"
                 className="font-bold h-11 btn-metallic btn-parceiro-save gap-1.5"
                 disabled={saving || cepLoading}
-                onClick={() => void handleSave()}
+                onClick={() => {
+                  setError(null);
+                  setConfirmSaveOpen(true);
+                }}
               >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando…
-                  </>
-                ) : (
-                  "Salvar"
-                )}
+                Salvar
               </Button>
             </div>
           )}
         </div>
       </div>
+
+      <ActionDialog
+        open={confirmSaveOpen}
+        variant="confirm"
+        title="Salvar alterações?"
+        message="As informações do seu cadastro serão atualizadas na Móveis Unghero."
+        confirmLabel="Salvar"
+        cancelLabel="Voltar"
+        confirmTone="primary"
+        loading={saving}
+        onClose={() => {
+          if (!saving) setConfirmSaveOpen(false);
+        }}
+        onConfirm={() => void handleSave()}
+      />
     </Dialog>
   );
 }
