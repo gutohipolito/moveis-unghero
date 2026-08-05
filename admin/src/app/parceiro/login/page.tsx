@@ -34,8 +34,8 @@ export default function ParceiroLoginPage() {
               <span className="parceiro-login-badge">Acesso do parceiro</span>
               <h1 className="parceiro-login-title">Acessar seu painel</h1>
               <p className="parceiro-login-subtitle">
-                Use o e-mail e o telefone do seu cadastro para acompanhar as obras
-                vinculadas a você.
+                Use o e-mail e o telefone do seu cadastro para acompanhar os projetos
+                vinculados a você.
               </p>
             </div>
 

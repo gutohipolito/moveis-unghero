@@ -746,7 +746,7 @@ body {
 .parceiro-portal-header-inner {
   max-width: 64rem;
   margin: 0 auto;
-  padding: 0.75rem 1rem;
+  padding: 1.15rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -755,32 +755,31 @@ body {
 
 @media (min-width: 640px) {
   .parceiro-portal-header-inner {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding: 1.35rem 1.5rem;
   }
 }
 
+.parceiro-portal-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
 .parceiro-portal-brand-logo {
-  height: 2.25rem;
+  height: 2.35rem;
   width: auto;
   object-fit: contain;
 }
 
-.parceiro-portal-brand-name {
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-}
-
 .parceiro-portal-brand-sub {
   font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: hsl(40 20% 78% / 0.65);
+  color: hsl(40 20% 78% / 0.7);
+  margin-left: 0.1rem;
 }
 
 .parceiro-portal-nav {
@@ -982,6 +981,153 @@ body {
 
 .parceiro-portal-chip-link:hover {
   text-decoration: underline;
+}
+
+/* Card Informações (painel do parceiro) */
+.parceiro-info-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  border: 1px solid hsl(36 28% 78% / 0.55);
+  background: linear-gradient(
+    155deg,
+    hsl(40 35% 99%) 0%,
+    hsl(38 28% 96%) 50%,
+    hsl(36 22% 93%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.85),
+    0 6px 22px hsl(24 30% 4% / 0.22);
+  color: #1c1410;
+}
+
+.parceiro-info-card-accent {
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    hsl(43 100% 62%) 0%,
+    hsl(42 98% 50%) 50%,
+    hsl(38 92% 42%) 100%
+  );
+}
+
+.parceiro-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .parceiro-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.parceiro-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.parceiro-info-label {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: hsl(36 20% 42%);
+}
+
+.parceiro-info-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a120c;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.parceiro-info-value a {
+  color: hsl(36 55% 28%);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.parceiro-info-value a:hover {
+  text-decoration: underline;
+}
+
+/* Meus projetos — ouro vivo (mais saturado que o CTA padrão) */
+.parceiro-project-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  border: 1px solid hsl(38 72% 38% / 0.55);
+  background: linear-gradient(
+    148deg,
+    hsl(44 100% 62%) 0%,
+    hsl(42 98% 52%) 38%,
+    hsl(38 94% 44%) 72%,
+    hsl(34 88% 38%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.45),
+    inset 0 -1px 0 hsl(28 60% 22% / 0.18),
+    0 2px 4px hsl(24 30% 8% / 0.12),
+    0 10px 28px hsl(38 70% 28% / 0.32);
+  color: #1a1208;
+  transition:
+    filter var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.parceiro-project-card:hover {
+  filter: brightness(1.04);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.5),
+    inset 0 -1px 0 hsl(28 60% 22% / 0.15),
+    0 4px 8px hsl(24 30% 8% / 0.14),
+    0 14px 34px hsl(38 75% 30% / 0.38);
+}
+
+.parceiro-project-card-sheen {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    hsl(0 0% 100% / 0.28) 0%,
+    hsl(0 0% 100% / 0.06) 28%,
+    transparent 52%
+  );
+}
+
+.parceiro-project-card-body {
+  position: relative;
+  z-index: 1;
+  padding: 1.15rem 1.2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.parceiro-project-step {
+  height: 0.35rem;
+  flex: 1;
+  border-radius: 999px;
+  background: hsl(28 40% 18% / 0.18);
+}
+
+.parceiro-project-step-done {
+  background: linear-gradient(
+    90deg,
+    hsl(28 45% 16% / 0.55) 0%,
+    hsl(24 35% 12% / 0.72) 100%
+  );
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.15);
 }
 
 .btn-secondary-relief:active {

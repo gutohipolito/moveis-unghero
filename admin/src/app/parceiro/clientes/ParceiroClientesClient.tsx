@@ -72,7 +72,7 @@ export default function ParceiroClientesClient({
               Clientes
             </h1>
             <p className="text-xs text-white/60 mt-1 max-w-lg">
-              Clientes indicados por você ou com obras vinculadas. Documentos pessoais não são
+              Clientes indicados por você ou com projetos vinculados. Documentos pessoais não são
               exibidos.
             </p>
           </div>
@@ -168,7 +168,8 @@ export default function ParceiroClientesClient({
                           )}
                         </div>
                         <p className="text-[10px] font-semibold text-slate-500 mt-0.5">
-                          {client.projectsCount} obra
+                          {client.projectsCount}{" "}
+                          {client.projectsCount === 1 ? "projeto" : "projetos"}
                           {client.projectsCount === 1 ? "" : "s"} vinculada
                           {client.projectsCount === 1 ? "" : "s"}
                         </p>

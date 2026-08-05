@@ -93,12 +93,9 @@ export default function ParceiroPortalShell({
 
       <header className="parceiro-portal-header">
         <div className="parceiro-portal-header-inner">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="parceiro-portal-brand">
             <img src="/logo.png" alt="Móveis Unghero" className="parceiro-portal-brand-logo" />
-            <div className="min-w-0 hidden sm:block">
-              <p className="parceiro-portal-brand-name">Móveis Unghero</p>
-              <p className="parceiro-portal-brand-sub">Portal do parceiro</p>
-            </div>
+            <p className="parceiro-portal-brand-sub">Portal do parceiro</p>
           </div>
 
           <nav className="parceiro-portal-nav" aria-label="Menu do portal">
@@ -188,7 +185,7 @@ export default function ParceiroPortalShell({
                 <p className="parceiro-portal-hero-eyebrow">{roleLabel}</p>
                 <h1 className="parceiro-portal-hero-title">Olá, {partner.nome.split(" ")[0]}</h1>
                 <p className="parceiro-portal-hero-copy">
-                  Acompanhe suas obras e o catálogo da Móveis Unghero neste espaço.
+                  Acompanhe seus projetos e o catálogo da Móveis Unghero neste espaço.
                 </p>
                 {uploadError && (
                   <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
