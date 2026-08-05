@@ -1264,12 +1264,7 @@ body {
   transform: translateX(-45%);
   opacity: 0;
   pointer-events: none;
-  z-index: 0;
-}
-
-.btn-cancel-rose-glow > * {
-  position: relative;
-  z-index: 1;
+  z-index: -1;
 }
 
 .btn-cancel-rose-glow:hover {
