@@ -11,6 +11,7 @@ import { isValidBrPhoneDigits } from "@/lib/phone";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { resolvePartnerByInviteCode } from "@/lib/partnerInvite";
+import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { headers } from "next/headers";
 
 export interface ClientSignupData {
@@ -170,6 +171,13 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     if (partnerId) {
       revalidatePath("/parceiro/clientes");
     }
+
+    void sendSignupConfirmationEmail({
+      companyId,
+      kind: "cliente",
+      nome: client.nome,
+      email: client.email,
+    });
 
     return { success: true, id: client.id };
   } catch (error) {

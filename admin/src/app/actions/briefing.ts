@@ -12,6 +12,7 @@ import {
 } from "@/lib/clientMatch";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { headers } from "next/headers";
 
 export interface BriefingSubmitData {
@@ -274,7 +275,14 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
 
     revalidatePath("/crm");
     revalidatePath("/clientes");
-    
+
+    void sendSignupConfirmationEmail({
+      companyId,
+      kind: "briefing",
+      nome: data.nome,
+      email: cleanEmail || client.email,
+    });
+
     return {
       success: true,
       projectId: project.id,

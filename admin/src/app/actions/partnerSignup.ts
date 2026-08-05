@@ -7,6 +7,7 @@ import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { headers } from "next/headers";
 
 export interface PartnerSignupData {
@@ -116,6 +117,13 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
 
     revalidatePath("/parceiros");
     revalidatePath("/marketing/formularios");
+
+    void sendSignupConfirmationEmail({
+      companyId,
+      kind: "parceiro",
+      nome: parceiro.nome,
+      email: parceiro.email,
+    });
 
     return { success: true, id: parceiro.id };
   } catch (error) {

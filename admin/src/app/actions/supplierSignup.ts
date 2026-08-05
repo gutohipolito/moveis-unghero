@@ -6,7 +6,8 @@ import { capitalizeText } from "@/lib/utils";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { headers } from "next/headers";
-import {requireModuleAccess, requireWriteAccess } from "@/lib/moduleAccess";
+import { requireWriteAccess } from "@/lib/moduleAccess";
+import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 
 export interface SupplierSignupData {
   company_id?: string;
@@ -217,6 +218,16 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
 
     revalidatePath("/estoque");
     revalidatePath(`/estoque/fornecedores/${fornecedor.id}`);
+
+    if (!data.viaPainel) {
+      void sendSignupConfirmationEmail({
+        companyId,
+        kind: "fornecedor",
+        nome: fornecedor.nomeFantasia || fornecedor.nome,
+        email: fornecedor.email,
+      });
+    }
+
     return { success: true, id: fornecedor.id };
   } catch (error) {
     console.error("Erro ao cadastrar fornecedor:", error);
