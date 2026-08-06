@@ -5,15 +5,23 @@ import {
   resolveCatalogPublicUrl,
 } from "@/lib/catalogShare";
 
+import {
+  backfillProjectPartnerFromClients,
+  partnerOwnedProjectsWhere,
+} from "@/lib/partnerAttribution";
+import { buildQuotePdfShortUrl } from "@/lib/quotePdfShare";
+
 function partnerProductImagePath(productId: string, index: number) {
   return `/api/parceiro/produto-imagem?productId=${encodeURIComponent(productId)}&i=${index}`;
 }
+
 export interface PartnerPortalProject {
   id: string;
   valor_previsto: number;
   status_geral: ProjectStatus;
   updatedAt: string;
   client: {
+    id: string;
     nome: string;
     cidade: string;
   };
@@ -142,34 +150,39 @@ export async function loadPartnerPortalData(
       registro_profissional: true,
       portfolioUrl: true,
       ativo: true,
-      projects: {
-        orderBy: { updatedAt: "desc" },
-        select: {
-          id: true,
-          valor_previsto: true,
-          status_geral: true,
-          updatedAt: true,
-          client: {
-            select: {
-              nome: true,
-              cidade: true,
-            },
-          },
-          environments: {
-            orderBy: { nome: "asc" },
-            select: {
-              id: true,
-              nome: true,
-              tipo: true,
-              status: true,
-            },
-          },
-        },
-      },
     },
   });
 
   if (!partner || !partner.ativo) return null;
+
+  await backfillProjectPartnerFromClients(partnerId);
+
+  const projects = await prisma.project.findMany({
+    where: partnerOwnedProjectsWhere(partnerId),
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      valor_previsto: true,
+      status_geral: true,
+      updatedAt: true,
+      client: {
+        select: {
+          id: true,
+          nome: true,
+          cidade: true,
+        },
+      },
+      environments: {
+        orderBy: { nome: "asc" },
+        select: {
+          id: true,
+          nome: true,
+          tipo: true,
+          status: true,
+        },
+      },
+    },
+  });
 
   return {
     id: partner.id,
@@ -185,12 +198,13 @@ export async function loadPartnerPortalData(
     escritorio: partner.escritorio,
     registro_profissional: partner.registro_profissional,
     portfolioUrl: partner.portfolioUrl,
-    projects: partner.projects.map((project) => ({
+    projects: projects.map((project) => ({
       id: project.id,
       valor_previsto: Number(project.valor_previsto),
       status_geral: project.status_geral,
       updatedAt: project.updatedAt.toISOString(),
       client: {
+        id: project.client.id,
         nome: project.client.nome,
         cidade: project.client.cidade,
       },
@@ -329,7 +343,7 @@ export async function loadPartnerPortalClients(
       select: clientSelect,
     }),
     prisma.project.findMany({
-      where: { partner_id: partnerId },
+      where: partnerOwnedProjectsWhere(partnerId),
       select: {
         client: { select: clientSelect },
       },
@@ -385,8 +399,10 @@ export async function loadPartnerPortalClients(
     const counts = await prisma.project.groupBy({
       by: ["client_id"],
       where: {
-        partner_id: partnerId,
-        client_id: { in: referred.map((c) => c.id) },
+        AND: [
+          partnerOwnedProjectsWhere(partnerId),
+          { client_id: { in: referred.map((c) => c.id) } },
+        ],
       },
       _count: { _all: true },
     });
@@ -408,4 +424,286 @@ export function formatPartnerClientAddress(
   >
 ): string {
   return formatAddressLine(client);
+}
+
+export interface PartnerProjectNoteDTO {
+  id: string;
+  body: string;
+  partnerNome: string;
+  createdAt: string;
+}
+
+export interface PartnerProjectFileDTO {
+  id: string;
+  nome: string;
+  mime_type: string;
+  url: string;
+  size_bytes: number | null;
+  partnerNome: string;
+  createdAt: string;
+}
+
+export interface PartnerProjectQuoteItemDTO {
+  id: string;
+  descricao: string;
+  quantidade: number;
+  valor_total: number;
+  status: string;
+}
+
+export interface PartnerProjectQuoteDTO {
+  id: string;
+  versao: number;
+  codigo: string | null;
+  subtotal: number;
+  desconto: number;
+  valor_final: number;
+  validade: string;
+  aprovado_em: string | null;
+  publicUrl: string | null;
+  items: PartnerProjectQuoteItemDTO[];
+}
+
+export interface PartnerProjectDetail {
+  id: string;
+  valor_previsto: number;
+  status_geral: ProjectStatus;
+  updatedAt: string;
+  data_entrega_prevista: string | null;
+  client: {
+    id: string;
+    nome: string;
+    telefone: string;
+    email: string;
+    endereco: string | null;
+    numero: string | null;
+    bairro: string | null;
+    cidade: string;
+    uf: string | null;
+    cep: string | null;
+  };
+  environments: Array<{
+    id: string;
+    nome: string;
+    tipo: string;
+    status: string;
+  }>;
+  quotes: PartnerProjectQuoteDTO[];
+  notes: PartnerProjectNoteDTO[];
+  files: PartnerProjectFileDTO[];
+}
+
+/** Garante que o projeto pertence ao parceiro (direto ou via cliente indicado). */
+export async function assertPartnerOwnsProject(
+  partnerId: string,
+  projectId: string
+): Promise<{ ok: true; companyId: string } | { ok: false }> {
+  const partner = await prisma.professionalPartner.findFirst({
+    where: { id: partnerId, ativo: true },
+    select: { id: true, company_id: true },
+  });
+  if (!partner) return { ok: false };
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      AND: [
+        partnerOwnedProjectsWhere(partnerId),
+        { client: { company_id: partner.company_id } },
+      ],
+    },
+    select: { id: true },
+  });
+  if (!project) return { ok: false };
+  return { ok: true, companyId: partner.company_id };
+}
+
+export async function loadPartnerProjectDetail(
+  partnerId: string,
+  projectId: string
+): Promise<PartnerProjectDetail | null> {
+  await backfillProjectPartnerFromClients(partnerId);
+
+  const ownership = await assertPartnerOwnsProject(partnerId, projectId);
+  if (!ownership.ok) return null;
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      ...partnerOwnedProjectsWhere(partnerId),
+    },
+    select: {
+      id: true,
+      valor_previsto: true,
+      status_geral: true,
+      updatedAt: true,
+      data_entrega_prevista: true,
+      client: {
+        select: {
+          id: true,
+          nome: true,
+          telefone: true,
+          email: true,
+          endereco: true,
+          numero: true,
+          bairro: true,
+          cidade: true,
+          uf: true,
+          cep: true,
+        },
+      },
+      environments: {
+        orderBy: { nome: "asc" },
+        select: { id: true, nome: true, tipo: true, status: true },
+      },
+      quotes: {
+        orderBy: { versao: "desc" },
+        select: {
+          id: true,
+          versao: true,
+          codigo: true,
+          subtotal: true,
+          desconto: true,
+          valor_final: true,
+          validade: true,
+          aprovado_em: true,
+          pdf_share_code: true,
+          pdf_share_url: true,
+          items: {
+            orderBy: { descricao: "asc" },
+            select: {
+              id: true,
+              descricao: true,
+              quantidade: true,
+              valor_total: true,
+              status: true,
+            },
+          },
+        },
+      },
+      partnerNotes: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          partner: { select: { nome: true } },
+        },
+      },
+      partnerFiles: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          nome: true,
+          mime_type: true,
+          url: true,
+          size_bytes: true,
+          createdAt: true,
+          partner: { select: { nome: true } },
+        },
+      },
+    },
+  });
+
+  if (!project) return null;
+
+  return {
+    id: project.id,
+    valor_previsto: Number(project.valor_previsto),
+    status_geral: project.status_geral,
+    updatedAt: project.updatedAt.toISOString(),
+    data_entrega_prevista: project.data_entrega_prevista?.toISOString() ?? null,
+    client: project.client,
+    environments: project.environments.map((env) => ({
+      id: env.id,
+      nome: env.nome,
+      tipo: env.tipo,
+      status: env.status,
+    })),
+    quotes: project.quotes.map((q) => ({
+      id: q.id,
+      versao: q.versao,
+      codigo: q.codigo,
+      subtotal: Number(q.subtotal),
+      desconto: Number(q.desconto),
+      valor_final: Number(q.valor_final),
+      validade: q.validade.toISOString(),
+      aprovado_em: q.aprovado_em?.toISOString() ?? null,
+      publicUrl: q.pdf_share_code
+        ? buildQuotePdfShortUrl(q.pdf_share_code)
+        : q.pdf_share_url,
+      items: q.items.map((item) => ({
+        id: item.id,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        valor_total: Number(item.valor_total),
+        status: item.status,
+      })),
+    })),
+    notes: project.partnerNotes.map((n) => ({
+      id: n.id,
+      body: n.body,
+      partnerNome: n.partner.nome,
+      createdAt: n.createdAt.toISOString(),
+    })),
+    files: project.partnerFiles.map((f) => ({
+      id: f.id,
+      nome: f.nome,
+      mime_type: f.mime_type,
+      url: f.url,
+      size_bytes: f.size_bytes,
+      partnerNome: f.partner.nome,
+      createdAt: f.createdAt.toISOString(),
+    })),
+  };
+}
+
+/** Contribuições do parceiro para o CRM (somente leitura). */
+export async function loadPartnerContributionsForProject(projectId: string): Promise<{
+  notes: PartnerProjectNoteDTO[];
+  files: PartnerProjectFileDTO[];
+}> {
+  const [notes, files] = await Promise.all([
+    prisma.partnerProjectNote.findMany({
+      where: { project_id: projectId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        partner: { select: { nome: true } },
+      },
+    }),
+    prisma.partnerProjectFile.findMany({
+      where: { project_id: projectId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        nome: true,
+        mime_type: true,
+        url: true,
+        size_bytes: true,
+        createdAt: true,
+        partner: { select: { nome: true } },
+      },
+    }),
+  ]);
+
+  return {
+    notes: notes.map((n) => ({
+      id: n.id,
+      body: n.body,
+      partnerNome: n.partner.nome,
+      createdAt: n.createdAt.toISOString(),
+    })),
+    files: files.map((f) => ({
+      id: f.id,
+      nome: f.nome,
+      mime_type: f.mime_type,
+      url: f.url,
+      size_bytes: f.size_bytes,
+      partnerNome: f.partner.nome,
+      createdAt: f.createdAt.toISOString(),
+    })),
+  };
 }

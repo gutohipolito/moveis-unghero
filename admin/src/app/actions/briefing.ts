@@ -17,6 +17,7 @@ import { headers } from "next/headers";
 import { isValidBrPhoneDigits } from "@/lib/phone";
 import { FORM_FIELD_LIMITS, truncateField } from "@/lib/brDocuments";
 import { validateOptionalEmail } from "@/lib/email";
+import { withInheritedPartnerId } from "@/lib/partnerAttribution";
 
 export interface BriefingSubmitData {
   nome: string;
@@ -206,8 +207,9 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
       roteiro += `* **Atenção a condomínios**: Imóvel é um Apartamento. Pergunte sobre restrições de horários de barulho e entrega de materiais do prédio.\n`;
     }
 
-    // 7. Criar Projeto
+    // 7. Criar Projeto (herda parceiro do cliente indicado, se houver)
     const statusInicial = "LEAD";
+    const inheritedPartner = await withInheritedPartnerId(client.id);
     const project = await prisma.project.create({
       data: {
         client_id: client.id,
@@ -216,7 +218,8 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
         ultimo_contato_em: new Date(),
         observacoes: data.observacoes_adicionais
           ? truncateField(data.observacoes_adicionais, FORM_FIELD_LIMITS.observacoes)
-          : null
+          : null,
+        ...inheritedPartner,
       }
     });
 

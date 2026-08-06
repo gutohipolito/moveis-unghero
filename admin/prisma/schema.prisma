@@ -243,6 +243,8 @@ model ProfessionalPartner {
   projects               Project[]   @relation("PartnerProjects")
   quotes                 Quote[]     @relation("PartnerQuotes")
   referredClients        Client[]    @relation("PartnerReferredClients")
+  projectNotes           PartnerProjectNote[]
+  projectFiles           PartnerProjectFile[]
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 }
@@ -284,6 +286,8 @@ model Project {
   expenses              Expense[]
   contracts             Contract[]
   paymentReceipts       PaymentReceipt[]
+  partnerNotes          PartnerProjectNote[]
+  partnerFiles          PartnerProjectFile[]
 
   @@index([client_id])
   @@index([status_geral])
@@ -291,6 +295,39 @@ model Project {
   @@index([responsavel_id])
   @@index([conf_tecnica_resp1_id])
   @@index([conf_tecnica_resp2_id])
+}
+
+/** Notas deixadas pelo parceiro no projeto (visível no portal e no CRM). */
+model PartnerProjectNote {
+  id         String              @id @default(uuid())
+  project_id String
+  project    Project             @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  partner_id String
+  partner    ProfessionalPartner @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  body       String              @db.Text
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([project_id, createdAt])
+  @@index([partner_id])
+}
+
+/** Arquivos enviados pelo parceiro (plantas, PDFs, referências). */
+model PartnerProjectFile {
+  id         String              @id @default(uuid())
+  project_id String
+  project    Project             @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  partner_id String
+  partner    ProfessionalPartner @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  company_id String
+  nome       String
+  mime_type  String
+  url        String
+  size_bytes Int?
+  createdAt  DateTime            @default(now())
+
+  @@index([project_id, createdAt])
+  @@index([partner_id])
 }
 
 enum ProjectStatus {

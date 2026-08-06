@@ -12,6 +12,7 @@ import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { guardModule } from "@/lib/moduleAccess";
 import { notFound } from "next/navigation";
 import ProjectDetails from "@/components/ProjectDetails";
+import { loadPartnerContributionsForProject } from "@/lib/partnerPortal";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -85,6 +86,16 @@ export default async function ProjectPage({ params }: RouteParams) {
     initialSla = await getProjectSla(id);
   }
 
+  let partnerContributions: Awaited<ReturnType<typeof loadPartnerContributionsForProject>> = {
+    notes: [],
+    files: [],
+  };
+  try {
+    partnerContributions = await loadPartnerContributionsForProject(id);
+  } catch (error) {
+    console.warn("Falha ao carregar contribuições do parceiro:", error);
+  }
+
   return (
     <div className="space-y-6">
       <ProjectDetails
@@ -93,6 +104,7 @@ export default async function ProjectPage({ params }: RouteParams) {
         colaboradores={colaboradores}
         isMock={false}
         initialSla={initialSla}
+        partnerContributions={partnerContributions}
       />
     </div>
   );

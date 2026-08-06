@@ -110,7 +110,13 @@ import {
   ChevronDown,
   Receipt,
   Images,
+  Paperclip,
+  MessageSquare,
 } from "lucide-react";
+import type {
+  PartnerProjectFileDTO,
+  PartnerProjectNoteDTO,
+} from "@/lib/partnerPortal";
 
 interface Environment {
   id: string;
@@ -265,6 +271,10 @@ interface ProjectDetailsProps {
   backLabel?: string;
   onClose?: () => void;
   initialOpenCreateQuote?: boolean;
+  partnerContributions?: {
+    notes: PartnerProjectNoteDTO[];
+    files: PartnerProjectFileDTO[];
+  };
 }
 
 const ENVIRONMENT_STATUSES: { value: EnvironmentStatus; label: string; bg: string }[] = [
@@ -286,7 +296,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
   { value: "PROJETO_TECNICO", label: "Projeto Técnico (CAD/SketchUp)" }
 ];
 
-export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false }: ProjectDetailsProps) {
+export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false, partnerContributions }: ProjectDetailsProps) {
   const { isAdmin, isOpsLimited, role } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
   const canManageEnvGallery = canManageEnvironmentAttachments(role);
@@ -1115,6 +1125,64 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     <div className="sm:col-span-3 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1 text-slate-600">
                       <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">Observações do Projeto:</span>
                       <p className="text-slate-700 font-medium whitespace-pre-wrap">{project.observacoes}</p>
+                    </div>
+                  )}
+
+                  {partnerContributions &&
+                    (partnerContributions.notes.length > 0 ||
+                      partnerContributions.files.length > 0) && (
+                    <div className="sm:col-span-3 bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 space-y-3">
+                      <span className="font-bold text-[9px] text-amber-800/80 uppercase tracking-wider block">
+                        Contribuições do parceiro
+                      </span>
+                      {partnerContributions.notes.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" /> Notas
+                          </p>
+                          <ul className="space-y-2">
+                            {partnerContributions.notes.map((note) => (
+                              <li
+                                key={note.id}
+                                className="rounded-lg border border-amber-100/80 bg-white/70 px-3 py-2"
+                              >
+                                <p className="text-[10px] font-bold text-slate-500">
+                                  {note.partnerNome} ·{" "}
+                                  {new Date(note.createdAt).toLocaleDateString("pt-BR")}
+                                </p>
+                                <p className="text-xs text-slate-700 font-medium whitespace-pre-wrap mt-1">
+                                  {note.body}
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {partnerContributions.files.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <Paperclip className="h-3 w-3" /> Arquivos
+                          </p>
+                          <ul className="space-y-1.5">
+                            {partnerContributions.files.map((file) => (
+                              <li key={file.id}>
+                                <a
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs font-bold text-primary hover:underline"
+                                >
+                                  {file.nome}
+                                </a>
+                                <span className="text-[10px] text-slate-400 ml-2">
+                                  {file.partnerNome} ·{" "}
+                                  {new Date(file.createdAt).toLocaleDateString("pt-BR")}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

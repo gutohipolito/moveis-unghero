@@ -266,3 +266,117 @@ export async function updateParceiroProfileAction(data: PartnerProfileUpdateInpu
     return { success: false as const, error: "Não foi possível salvar as alterações." };
   }
 }
+
+const NOTE_MAX = 4000;
+
+async function requirePartnerSession() {
+  const cookieStore = await cookies();
+  const partnerId = parsePartnerSessionToken(cookieStore.get("parceiro-session")?.value);
+  if (!partnerId) return null;
+  return partnerId;
+}
+
+export async function addPartnerProjectNoteAction(projectId: string, body: string) {
+  const partnerId = await requirePartnerSession();
+  if (!partnerId) {
+    return { success: false as const, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  const ip = getRequestIp(await headers());
+  const rate = checkRateLimit(`parceiro-note:${partnerId}:${ip}`, {
+    limit: 30,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!rate.ok) {
+    return {
+      success: false as const,
+      error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s.`,
+    };
+  }
+
+  const text = body?.trim() || "";
+  if (text.length < 2) {
+    return { success: false as const, error: "Escreva uma nota com pelo menos 2 caracteres." };
+  }
+  if (text.length > NOTE_MAX) {
+    return { success: false as const, error: `Nota muito longa (máx. ${NOTE_MAX} caracteres).` };
+  }
+
+  const { assertPartnerOwnsProject } = await import("@/lib/partnerPortal");
+  const ownership = await assertPartnerOwnsProject(partnerId, projectId);
+  if (!ownership.ok) {
+    return { success: false as const, error: "Projeto não encontrado." };
+  }
+
+  try {
+    const note = await prisma.partnerProjectNote.create({
+      data: {
+        project_id: projectId,
+        partner_id: partnerId,
+        body: text,
+      },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        partner: { select: { nome: true } },
+      },
+    });
+
+    revalidatePath(`/parceiro/projetos/${projectId}`);
+    revalidatePath(`/projects/${projectId}`);
+
+    return {
+      success: true as const,
+      note: {
+        id: note.id,
+        body: note.body,
+        partnerNome: note.partner.nome,
+        createdAt: note.createdAt.toISOString(),
+      },
+    };
+  } catch (error) {
+    console.error("addPartnerProjectNote:", error);
+    return { success: false as const, error: "Não foi possível salvar a nota." };
+  }
+}
+
+export async function deletePartnerProjectNoteAction(noteId: string) {
+  const partnerId = await requirePartnerSession();
+  if (!partnerId) {
+    return { success: false as const, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  const note = await prisma.partnerProjectNote.findFirst({
+    where: { id: noteId, partner_id: partnerId },
+    select: { id: true, project_id: true },
+  });
+  if (!note) {
+    return { success: false as const, error: "Nota não encontrada." };
+  }
+
+  await prisma.partnerProjectNote.delete({ where: { id: note.id } });
+  revalidatePath(`/parceiro/projetos/${note.project_id}`);
+  revalidatePath(`/projects/${note.project_id}`);
+  return { success: true as const };
+}
+
+export async function deletePartnerProjectFileAction(fileId: string) {
+  const partnerId = await requirePartnerSession();
+  if (!partnerId) {
+    return { success: false as const, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  const file = await prisma.partnerProjectFile.findFirst({
+    where: { id: fileId, partner_id: partnerId },
+    select: { id: true, project_id: true },
+  });
+  if (!file) {
+    return { success: false as const, error: "Arquivo não encontrado." };
+  }
+
+  await prisma.partnerProjectFile.delete({ where: { id: file.id } });
+  revalidatePath(`/parceiro/projetos/${file.project_id}`);
+  revalidatePath(`/projects/${file.project_id}`);
+  return { success: true as const };
+}

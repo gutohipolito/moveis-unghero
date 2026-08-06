@@ -14,6 +14,7 @@ import { capitalizeText } from "@/lib/utils";
 import { normalizeAddressFields } from "@/lib/address";
 import { assertOpsCrmStatusMove } from "@/lib/crmOpsAccess";
 import { isOpsLimitedRole } from "@/lib/permissions";
+import { withInheritedPartnerIdTx } from "@/lib/partnerAttribution";
 
 export type ProjectStatus =
   | "LEAD"
@@ -354,12 +355,15 @@ export async function createLead(formData: {
         }
       }
 
+      const inheritedPartner = await withInheritedPartnerIdTx(tx, client.id);
+
       const project = await tx.project.create({
         data: {
           client_id: client.id,
           valor_previsto: formData.valor_previsto,
           status_geral: statusInicial,
           ultimo_contato_em: now,
+          ...inheritedPartner,
         },
       });
 

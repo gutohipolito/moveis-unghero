@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, Loader2, LayoutDashboard, Package, Users, Megaphone } from "lucide-react";
+import { Camera, Loader2, LayoutDashboard, Package, Users, Megaphone, FolderKanban } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { compressImageFile } from "@/lib/imageCompression";
@@ -13,6 +13,7 @@ import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 
 const NAV = [
   { href: "/parceiro/painel", label: "Início", icon: LayoutDashboard },
+  { href: "/parceiro/projetos", label: "Projetos", icon: FolderKanban },
   { href: "/parceiro/produtos", label: "Produtos", icon: Package },
   { href: "/parceiro/clientes", label: "Clientes", icon: Users },
   { href: "/parceiro/marketing", label: "Marketing", icon: Megaphone },

@@ -28,6 +28,7 @@ import {
   isComparativeTemplate,
   normalizeQuoteTemplateId,
 } from "@/lib/quoteTemplates";
+import { withInheritedPartnerId, withInheritedPartnerIdTx } from "@/lib/partnerAttribution";
 import { buildQuoteCodigoBase } from "@/lib/quoteCodigo";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { randomUUID } from "crypto";
@@ -1479,11 +1480,13 @@ export async function createProjectForClient(clientId: string, companyId: string
   }
 
   try {
+    const inheritedPartner = await withInheritedPartnerId(clientId);
     const project = await prisma.project.create({
       data: {
         client_id: clientId,
         valor_previsto: 0,
-        status_geral: "ORCAMENTO"
+        status_geral: "ORCAMENTO",
+        ...inheritedPartner,
       }
     });
 
@@ -1559,11 +1562,13 @@ export async function createQuickClientAndProject(data: {
         });
       }
 
+      const inheritedPartner = await withInheritedPartnerIdTx(tx, client.id);
       const project = await tx.project.create({
         data: {
           client_id: client.id,
           valor_previsto: 0,
           status_geral: "ORCAMENTO",
+          ...inheritedPartner,
         },
       });
 
