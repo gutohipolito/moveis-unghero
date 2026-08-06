@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext, assertCompanyAccess } from "@/lib/auth-guard";
+import { assertCompanyAccess } from "@/lib/auth-guard";
+import { getWriteAccess } from "@/lib/moduleAccess";
+import { canManageProducts } from "@/lib/permissions";
+import type { AuthContext } from "@/lib/auth-guard";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGES = 12;
@@ -13,14 +16,36 @@ function resolveImagens(product: { imagens: string[]; imagem_url: string | null 
   return product.imagem_url ? [product.imagem_url] : [];
 }
 
+async function requireProductImageWriteAccess(): Promise<
+  { auth: AuthContext } | { error: NextResponse }
+> {
+  const auth = await getWriteAccess("produtos");
+  if (!auth) {
+    return {
+      error: NextResponse.json(
+        { success: false, error: "Não autenticado ou sem permissão de escrita." },
+        { status: 401 }
+      ),
+    };
+  }
+  if (!canManageProducts(auth.cargo)) {
+    return {
+      error: NextResponse.json(
+        { success: false, error: "Acesso negado." },
+        { status: 403 }
+      ),
+    };
+  }
+  return { auth };
+}
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
-  }
+  const access = await requireProductImageWriteAccess();
+  if ("error" in access) return access.error;
+  const { auth } = access;
 
   const { id: productId } = await context.params;
 
@@ -128,10 +153,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
-  }
+  const access = await requireProductImageWriteAccess();
+  if ("error" in access) return access.error;
+  const { auth } = access;
 
   const { id: productId } = await context.params;
   const product = await prisma.showcaseProduct.findFirst({
@@ -196,10 +220,9 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
-  }
+  const access = await requireProductImageWriteAccess();
+  if ("error" in access) return access.error;
+  const { auth } = access;
 
   const { id: productId } = await context.params;
   const product = await prisma.showcaseProduct.findFirst({
@@ -214,6 +237,14 @@ export async function DELETE(
 
   try {
     if (targetUrl) {
+      // Só remove blob se a URL pertencer a este produto (evita exclusão arbitrária no store).
+      if (!current.includes(targetUrl)) {
+        return NextResponse.json(
+          { success: false, error: "Imagem não pertence a este produto." },
+          { status: 400 }
+        );
+      }
+
       const next = current.filter((url) => url !== targetUrl);
       if (
         process.env.BLOB_READ_WRITE_TOKEN &&

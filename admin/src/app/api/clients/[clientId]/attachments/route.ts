@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext, requireClientInCompany } from "@/lib/auth-guard";
+import { requireClientInCompany } from "@/lib/auth-guard";
 import { requireWriteAccess } from "@/lib/moduleAccess";
 import { putSensitiveBlob } from "@/lib/secureBlob";
 import {
@@ -153,8 +153,10 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ clientId: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
+  let auth;
+  try {
+    auth = await requireWriteAccess("clientes");
+  } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
 
@@ -207,8 +209,10 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ clientId: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
+  let auth;
+  try {
+    auth = await requireWriteAccess("clientes");
+  } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
 

@@ -136,7 +136,7 @@ export async function verifySlaStage(
   completed: boolean,
   extraDays?: number
 ): Promise<{ success: boolean; error?: string; sla?: ProjectSlaView }> {
-  const auth = await getModuleAccess("factory");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
