@@ -183,7 +183,7 @@ export default function ParceiroProjetoDetailClient({
                 {initial.client.cidade || "Cidade não informada"}
               </p>
             </div>
-            <p className="text-lg font-display font-semibold tabular-nums text-[hsl(42_80%_72%)]">
+            <p className="text-lg font-display font-semibold tabular-nums text-[hsl(210_12%_78%)]">
               {moneyFmt.format(initial.valor_previsto)}
             </p>
           </div>
@@ -229,7 +229,7 @@ export default function ParceiroProjetoDetailClient({
                       title={step.label}
                       className={`h-1 flex-1 rounded-full ${
                         idx <= current
-                          ? "bg-[linear-gradient(90deg,hsl(43_80%_52%),hsl(38_75%_42%))]"
+                          ? "bg-[linear-gradient(90deg,hsl(0_0%_78%),hsl(210_8%_58%))]"
                           : "bg-stone-200"
                       }`}
                     />

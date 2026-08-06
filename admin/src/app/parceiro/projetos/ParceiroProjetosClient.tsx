@@ -47,7 +47,7 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
   return (
     <Link
       href={`/parceiro/projetos/${project.id}`}
-      className="parceiro-project-card block no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(42_70%_52%/0.45)]"
+      className="parceiro-project-card block no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(210_10%_68%/0.45)]"
     >
       <div className="parceiro-project-card-sheen" aria-hidden />
       <div className="parceiro-project-card-body">
@@ -61,7 +61,7 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
               <span className="truncate">{project.client.cidade || "Cidade não informada"}</span>
             </p>
           </div>
-          <p className="text-sm font-display font-semibold tabular-nums shrink-0 text-[hsl(42_80%_72%)]">
+          <p className="text-sm font-display font-semibold tabular-nums shrink-0 text-[hsl(210_12%_78%)]">
             {moneyFmt.format(project.valor_previsto)}
           </p>
         </div>

@@ -373,7 +373,7 @@ body {
   cursor: default;
   border-radius: 0.95rem;
   border: 1px solid hsl(36 20% 82% / 0.55);
-  border-left: 2px solid hsl(42 55% 48% / 0.45);
+  border-left: 2px solid hsl(210 10% 62% / 0.55);
   background: linear-gradient(
     160deg,
     hsl(40 30% 99%) 0%,
@@ -390,7 +390,7 @@ body {
 
 .partner-card:hover {
   border-color: hsl(36 20% 78% / 0.7);
-  border-left-color: hsl(42 55% 48% / 0.45);
+  border-left-color: hsl(210 10% 62% / 0.55);
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.7),
     0 1px 2px hsl(24 14% 14% / 0.04),
@@ -407,8 +407,8 @@ button.partner-card,
 a.partner-card:hover,
 button.partner-card:hover,
 .partner-card-interactive:hover {
-  border-color: hsl(42 50% 55% / 0.4);
-  border-left-color: hsl(42 75% 48% / 0.85);
+  border-color: hsl(210 10% 58% / 0.45);
+  border-left-color: hsl(210 12% 55% / 0.9);
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.8),
     0 2px 4px hsl(24 14% 14% / 0.06),
@@ -426,7 +426,7 @@ button.partner-card:hover,
   overflow: hidden;
   flex-shrink: 0;
   border-radius: var(--radius-md, 0.75rem);
-  border: 1px solid hsl(36 45% 55% / 0.35);
+  border: 1px solid hsl(210 8% 62% / 0.4);
   background: linear-gradient(
     145deg,
     hsl(40 30% 98%) 0%,
@@ -443,11 +443,11 @@ button.partner-card:hover,
   justify-content: center;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: hsl(36 55% 32%);
+  color: hsl(210 12% 32%);
   background: linear-gradient(
     145deg,
-    hsl(43 80% 92%) 0%,
-    hsl(40 55% 82%) 100%
+    hsl(210 12% 94%) 0%,
+    hsl(210 8% 82%) 100%
   );
 }
 
@@ -456,9 +456,9 @@ button.partner-card:hover,
   align-items: center;
   gap: 0.25rem;
   border-radius: 999px;
-  border: 1px solid hsl(36 50% 55% / 0.35);
-  background: hsl(42 80% 96% / 0.85);
-  color: hsl(36 55% 28%);
+  border: 1px solid hsl(210 10% 58% / 0.4);
+  background: hsl(210 12% 94% / 0.9);
+  color: hsl(210 12% 28%);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -504,8 +504,8 @@ button.partner-card:hover,
 }
 
 .partner-card-action:hover {
-  border-color: hsl(var(--primary) / 0.4);
-  color: hsl(36 55% 28%);
+  border-color: hsl(210 12% 55% / 0.45);
+  color: hsl(210 12% 28%);
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.85),
     0 2px 4px hsl(24 14% 14% / 0.07);
@@ -642,7 +642,7 @@ button.partner-card:hover,
     inset 0 1px 0 hsl(0 0% 100% / 0.75),
     0 1px 2px hsl(24 14% 14% / 0.12),
     0 24px 48px -12px hsl(24 30% 4% / 0.55),
-    0 0 0 1px hsl(42 50% 40% / 0.08);
+    0 0 0 1px hsl(210 10% 45% / 0.1);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -652,9 +652,9 @@ button.partner-card:hover,
   width: 100%;
   background: linear-gradient(
     90deg,
-    hsl(43 100% 58%) 0%,
-    hsl(42 96% 46%) 45%,
-    hsl(36 88% 40%) 100%
+    hsl(0 0% 88%) 0%,
+    hsl(210 8% 68%) 45%,
+    hsl(210 10% 52%) 100%
   );
   box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.35);
 }
@@ -675,9 +675,9 @@ button.partner-card:hover,
   padding: 0.25rem 0.55rem;
   margin-bottom: 0.65rem;
   border-radius: 0.375rem;
-  border: 1px solid hsl(42 70% 42% / 0.22);
-  background: hsl(42 90% 48% / 0.1);
-  color: hsl(36 55% 28%);
+  border: 1px solid hsl(210 10% 48% / 0.28);
+  background: hsl(210 12% 92% / 0.85);
+  color: hsl(210 12% 28%);
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -707,7 +707,7 @@ button.partner-card:hover,
 }
 
 .parceiro-login-footer-link {
-  color: hsl(43 90% 62%);
+  color: hsl(210 12% 72%);
   font-weight: 600;
   text-decoration: none;
 }
@@ -888,10 +888,10 @@ button.partner-card:hover,
 }
 
 .parceiro-portal-nav-link.is-active {
-  color: #f8f1e4;
+  color: #f4f4f5;
   background: hsl(0 0% 100% / 0.08);
-  border-color: hsl(42 55% 55% / 0.35);
-  box-shadow: inset 0 -1px 0 hsl(42 80% 55% / 0.85);
+  border-color: hsl(210 10% 68% / 0.4);
+  box-shadow: inset 0 -1px 0 hsl(210 12% 72% / 0.9);
 }
 
 .parceiro-user-trigger {
@@ -925,8 +925,8 @@ button.partner-card:hover,
   width: 2.125rem;
   height: 2.125rem;
   border-radius: 9999px;
-  border: 1px solid hsl(42 70% 55% / 0.35);
-  background: hsl(36 30% 18%);
+  border: 1px solid hsl(210 10% 68% / 0.4);
+  background: hsl(210 8% 18%);
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -1024,7 +1024,7 @@ button.partner-card:hover,
 
 .parceiro-portal-footer-brand {
   font-weight: 800;
-  color: hsl(43 85% 68%);
+  color: hsl(210 12% 72%);
 }
 
 .parceiro-portal-footer-copy {
@@ -1048,7 +1048,7 @@ button.partner-card:hover,
   overflow: hidden;
   border-radius: 1.1rem;
   border: 1px solid hsl(36 18% 82% / 0.4);
-  border-left: 2px solid hsl(42 60% 50% / 0.55);
+  border-left: 2px solid hsl(210 10% 62% / 0.6);
   background: linear-gradient(
     160deg,
     hsl(40 28% 99%) 0%,
@@ -1092,8 +1092,8 @@ button.partner-card:hover,
   font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 800;
-  color: hsl(36 55% 32%);
-  background: linear-gradient(145deg, hsl(43 80% 92%), hsl(40 55% 82%));
+  color: hsl(210 12% 32%);
+  background: linear-gradient(145deg, hsl(210 12% 94%), hsl(210 8% 82%));
 }
 
 .parceiro-portal-avatar-edit {
@@ -1133,7 +1133,7 @@ button.partner-card:hover,
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: hsl(36 55% 32%);
+  color: hsl(210 10% 38%);
 }
 
 .parceiro-portal-hero-title {
@@ -1238,7 +1238,7 @@ button.partner-card:hover,
 }
 
 .parceiro-portal-chip-link {
-  color: hsl(43 90% 68%);
+  color: hsl(210 12% 72%);
   text-decoration: none;
 }
 
@@ -1269,9 +1269,9 @@ button.partner-card:hover,
   width: 100%;
   background: linear-gradient(
     90deg,
-    hsl(43 100% 62%) 0%,
-    hsl(42 98% 50%) 50%,
-    hsl(38 92% 42%) 100%
+    hsl(0 0% 88%) 0%,
+    hsl(210 8% 68%) 50%,
+    hsl(210 10% 52%) 100%
   );
 }
 
@@ -1311,7 +1311,7 @@ button.partner-card:hover,
 }
 
 .parceiro-info-value a {
-  color: hsl(36 55% 28%);
+  color: hsl(210 12% 28%);
   text-decoration: none;
   font-weight: 700;
 }
@@ -1320,7 +1320,7 @@ button.partner-card:hover,
   text-decoration: underline;
 }
 
-/* Projetos — painel escuro com filete dourado (luxo contido) */
+/* Projetos — painel escuro com filete prateado (luxo contido) */
 .parceiro-project-card {
   position: relative;
   display: flex;
@@ -1328,7 +1328,7 @@ button.partner-card:hover,
   overflow: hidden;
   border-radius: 1rem;
   border: 1px solid hsl(36 18% 100% / 0.1);
-  border-left: 2px solid hsl(42 70% 52% / 0.75);
+  border-left: 2px solid hsl(210 12% 68% / 0.8);
   background: linear-gradient(
     155deg,
     hsl(30 18% 16%) 0%,
@@ -1347,7 +1347,7 @@ button.partner-card:hover,
 
 .parceiro-project-card:hover {
   border-color: hsl(36 25% 100% / 0.16);
-  border-left-color: hsl(42 85% 58% / 0.95);
+  border-left-color: hsl(210 12% 78% / 0.95);
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.08),
     0 12px 34px hsl(20 40% 4% / 0.42);
@@ -1384,10 +1384,10 @@ button.partner-card:hover,
 .parceiro-project-step-done {
   background: linear-gradient(
     90deg,
-    hsl(43 80% 58%) 0%,
-    hsl(38 75% 46%) 100%
+    hsl(0 0% 78%) 0%,
+    hsl(210 8% 58%) 100%
   );
-  box-shadow: 0 0 8px hsl(42 80% 50% / 0.25);
+  box-shadow: 0 0 8px hsl(210 12% 60% / 0.22);
 }
 
 /* Página — intro discreta (evita H1 = label do nav) */
@@ -1396,7 +1396,7 @@ button.partner-card:hover,
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: hsl(42 40% 70% / 0.65);
+  color: hsl(210 10% 72% / 0.7);
 }
 
 .parceiro-page-title {
@@ -1438,14 +1438,14 @@ button.partner-card:hover,
 
 .parceiro-filter-chip.is-active {
   background: hsl(0 0% 100% / 0.12);
-  border-color: hsl(42 55% 55% / 0.4);
-  color: #f8f1e4;
+  border-color: hsl(210 10% 68% / 0.45);
+  color: #f4f4f5;
 }
 
 .parceiro-panel {
   border-radius: 1rem;
   border: 1px solid hsl(36 18% 82% / 0.5);
-  border-left: 2px solid hsl(42 55% 48% / 0.4);
+  border-left: 2px solid hsl(210 10% 62% / 0.45);
   background: linear-gradient(
     160deg,
     hsl(40 28% 99%) 0%,
@@ -1516,7 +1516,7 @@ button.partner-card:hover,
   border-radius: 0.75rem;
   border: 1px solid hsl(0 0% 100% / 0.14);
   background: hsl(0 0% 100% / 0.08);
-  color: hsl(43 90% 72%);
+  color: hsl(210 12% 78%);
   flex-shrink: 0;
 }
 
@@ -1562,9 +1562,9 @@ button.partner-card:hover,
   width: 100%;
   background: linear-gradient(
     90deg,
-    hsl(43 100% 58%) 0%,
-    hsl(42 96% 46%) 45%,
-    hsl(36 88% 40%) 100%
+    hsl(0 0% 88%) 0%,
+    hsl(210 8% 68%) 45%,
+    hsl(210 10% 52%) 100%
   );
 }
 
@@ -1579,9 +1579,9 @@ button.partner-card:hover,
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.75rem;
-  border: 1px solid hsl(42 55% 42% / 0.28);
-  background: hsl(42 80% 92%);
-  color: hsl(36 70% 28%);
+  border: 1px solid hsl(210 10% 55% / 0.35);
+  background: hsl(210 12% 94%);
+  color: hsl(210 12% 28%);
   flex-shrink: 0;
 }
 
@@ -1625,10 +1625,10 @@ button.partner-card:hover,
 
 .parceiro-marketing-textarea:focus {
   outline: none;
-  border-color: hsl(42 80% 48% / 0.75);
+  border-color: hsl(210 12% 55% / 0.75);
   box-shadow:
-    0 0 0 1px hsl(42 80% 48% / 0.28),
-    0 0 0 3px hsl(42 80% 48% / 0.1);
+    0 0 0 1px hsl(210 12% 55% / 0.28),
+    0 0 0 3px hsl(210 12% 55% / 0.1);
 }
 
 .parceiro-marketing-actions {
@@ -1710,9 +1710,9 @@ button.partner-card:hover,
 }
 
 .parceiro-info-modal {
-  /* Shadow dourado suave — futuro: cor da marca do arquiteto */
-  --parceiro-brand-glow: 42 80% 48%;
-  border: 1px solid hsl(42 45% 72% / 0.55) !important;
+  /* Shadow prateado suave — futuro: cor da marca do arquiteto */
+  --parceiro-brand-glow: 210 12% 55%;
+  border: 1px solid hsl(210 10% 72% / 0.55) !important;
   box-shadow:
     0 0 0 1px hsl(var(--parceiro-brand-glow) / 0.08),
     0 8px 28px hsl(var(--parceiro-brand-glow) / 0.14),
@@ -1742,10 +1742,10 @@ button.partner-card:hover,
 .parceiro-info-input:focus,
 .parceiro-info-input:focus-visible {
   outline: none;
-  border-color: hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.85) !important;
+  border-color: hsl(var(--parceiro-brand-glow, 210 12% 55%) / 0.85) !important;
   box-shadow:
-    0 0 0 1px hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.35),
-    0 0 0 3px hsl(var(--parceiro-brand-glow, 42 80% 48%) / 0.12);
+    0 0 0 1px hsl(var(--parceiro-brand-glow, 210 12% 55%) / 0.35),
+    0 0 0 3px hsl(var(--parceiro-brand-glow, 210 12% 55%) / 0.12);
 }
 
 .parceiro-info-input[readonly] {
@@ -1973,21 +1973,38 @@ button.partner-card:hover,
 .parceiro-info-modal .btn-parceiro-save.btn-metallic:focus-visible {
   background: linear-gradient(
     145deg,
-    hsl(43 100% 58%) 0%,
-    hsl(42 96% 46%) 45%,
-    hsl(36 88% 40%) 100%
+    hsl(0 0% 88%) 0%,
+    hsl(210 8% 68%) 45%,
+    hsl(210 10% 48%) 100%
   ) !important;
   filter: none !important;
-  color: hsl(24 28% 12%) !important;
+  color: hsl(220 15% 12%) !important;
 }
 
 .parceiro-info-modal .btn-parceiro-save.btn-metallic:hover,
 .parceiro-info-modal .btn-parceiro-save.btn-metallic:focus-visible {
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.42),
-    0 0 0 1px hsl(42 80% 42% / 0.28),
-    0 0 18px hsl(42 90% 48% / 0.38),
-    0 6px 18px hsl(42 70% 28% / 0.28);
+    0 0 0 1px hsl(210 10% 48% / 0.3),
+    0 0 18px hsl(210 12% 60% / 0.28),
+    0 6px 18px hsl(210 10% 30% / 0.22);
+}
+
+.parceiro-login-shell .btn-metallic,
+.parceiro-login-shell .btn-metallic:hover,
+.parceiro-login-shell .btn-metallic:focus-visible {
+  background: linear-gradient(
+    145deg,
+    hsl(0 0% 88%) 0%,
+    hsl(210 8% 68%) 45%,
+    hsl(210 10% 48%) 100%
+  );
+  border-color: hsl(210 10% 38% / 0.4);
+  color: hsl(220 15% 12%);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.4),
+    0 1px 2px hsl(220 15% 10% / 0.08),
+    0 4px 14px hsl(210 10% 30% / 0.18);
 }
 
 .btn-secondary-relief:active {

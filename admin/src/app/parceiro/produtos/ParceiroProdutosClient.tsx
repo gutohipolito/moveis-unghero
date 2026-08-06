@@ -672,7 +672,7 @@ export default function ParceiroProdutosClient({
                             </span>
                           ) : null}
                           {parsed.linha ? (
-                            <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-amber-800/80 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-100">
+                            <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-zinc-700 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200">
                               Linha {parsed.linha}
                             </span>
                           ) : null}

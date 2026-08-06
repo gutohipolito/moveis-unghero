@@ -251,7 +251,7 @@ export default function ParceiroUserMenu({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={partner.fotoUrl} alt="" className="h-full w-full rounded-full object-cover" />
           ) : (
-            <span className="text-[10px] font-black tracking-wide text-amber-100/90">
+            <span className="text-[10px] font-black tracking-wide text-zinc-200/90">
               {getInitials(partner.nome)}
             </span>
           )}

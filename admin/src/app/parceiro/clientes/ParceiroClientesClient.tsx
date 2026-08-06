@@ -157,7 +157,7 @@ export default function ParceiroClientesClient({
                             {client.nome}
                           </h2>
                           {isNew && (
-                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-zinc-700 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">
                               Novo
                             </span>
                           )}
