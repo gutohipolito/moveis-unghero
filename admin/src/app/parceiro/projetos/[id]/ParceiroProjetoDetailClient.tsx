@@ -223,7 +223,7 @@ export default function ParceiroProjetoDetailClient({
 
         {tab === "resumo" && (
           <div className="space-y-4">
-            <div className="partner-card p-5 cursor-default">
+            <div className="partner-card p-5 space-y-3">
               <div className="partner-card-accent" />
               {isLost ? (
                 <p className="text-sm font-bold text-rose-700">Projeto perdido</p>
@@ -255,7 +255,7 @@ export default function ParceiroProjetoDetailClient({
               )}
             </div>
 
-            <div className="partner-card p-5 cursor-default space-y-3">
+            <div className="partner-card p-5 space-y-3">
               <div className="partner-card-accent" />
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">
                 Cliente
@@ -287,7 +287,7 @@ export default function ParceiroProjetoDetailClient({
             </div>
 
             {initial.environments.length > 0 && (
-              <div className="partner-card p-5 cursor-default space-y-3">
+              <div className="partner-card p-5 space-y-3">
                 <div className="partner-card-accent" />
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                   <Layers className="h-3.5 w-3.5" />
@@ -313,82 +313,51 @@ export default function ParceiroProjetoDetailClient({
 
         {tab === "orcamentos" && (
           <div className="space-y-3">
-            {initial.quotes.length === 0 ? (
-              <div className="partner-card p-8 text-center cursor-default">
+            {initial.quotes.filter((q) => q.publicUrl).length === 0 ? (
+              <div className="partner-card p-8 text-center">
                 <div className="partner-card-accent" />
                 <p className="text-sm text-slate-600 font-semibold">
-                  Nenhum orçamento disponível ainda.
+                  Nenhum orçamento em PDF disponível ainda.
+                </p>
+                <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
+                  Quando a Móveis Unghero compartilhar o orçamento, o link aparece aqui.
                 </p>
               </div>
             ) : (
-              initial.quotes.map((quote) => (
-                <div key={quote.id} className="partner-card p-5 cursor-default space-y-3">
-                  <div className="partner-card-accent" />
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-display font-bold text-slate-900">
-                        Orçamento v{quote.versao}
+              initial.quotes
+                .filter((q) => q.publicUrl)
+                .map((quote) => (
+                  <a
+                    key={quote.id}
+                    href={quote.publicUrl!}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="partner-card p-4 flex items-center justify-between gap-3 no-underline hover:no-underline"
+                  >
+                    <div className="partner-card-accent" />
+                    <div className="min-w-0 flex-1 px-1">
+                      <p className="font-display font-bold text-slate-900 text-sm">
+                        Orçamento
+                        {quote.versao > 1 ? ` v${quote.versao}` : ""}
                         {quote.codigo ? ` · ${quote.codigo}` : ""}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Validade {dateFmt.format(new Date(quote.validade))}
-                        {quote.aprovado_em
-                          ? ` · Aprovado em ${dateFmt.format(new Date(quote.aprovado_em))}`
-                          : ""}
+                      </p>
+                      <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                        Abrir PDF
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-base font-display font-extrabold text-slate-900 tabular-nums">
-                        {moneyFmt.format(quote.valor_final)}
-                      </p>
-                      {quote.desconto > 0 && (
-                        <p className="text-[11px] text-slate-500">
-                          Subtotal {moneyFmt.format(quote.subtotal)} · desconto{" "}
-                          {moneyFmt.format(quote.desconto)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {quote.items.length > 0 && (
-                    <ul className="rounded-xl border border-slate-100 bg-slate-50/80 divide-y divide-slate-100">
-                      {quote.items.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
-                        >
-                          <span className="font-semibold text-slate-800 truncate">
-                            {item.descricao}
-                            <span className="text-slate-400 font-medium"> ×{item.quantidade}</span>
-                          </span>
-                          <span className="tabular-nums font-bold text-slate-900 shrink-0">
-                            {moneyFmt.format(item.valor_total)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {quote.publicUrl && (
-                    <a
-                      href={quote.publicUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
-                    >
+                    <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-slate-900 text-white text-xs font-bold shrink-0">
                       <ExternalLink className="h-3.5 w-3.5" />
-                      Abrir PDF / link público
-                    </a>
-                  )}
-                </div>
-              ))
+                      PDF
+                    </span>
+                  </a>
+                ))
             )}
           </div>
         )}
 
         {tab === "arquivos" && (
           <div className="space-y-4">
-            <div className="partner-card p-5 cursor-default space-y-3">
+            <div className="partner-card p-5 space-y-3">
               <div className="partner-card-accent" />
               <p className="text-sm text-slate-600 font-semibold">
                 Envie plantas, PDFs ou referências do projeto. A equipe Unghero também vê estes
@@ -417,7 +386,7 @@ export default function ParceiroProjetoDetailClient({
             </div>
 
             {files.length === 0 ? (
-              <div className="partner-card p-8 text-center cursor-default">
+              <div className="partner-card p-8 text-center">
                 <div className="partner-card-accent" />
                 <p className="text-sm text-slate-600 font-semibold">Nenhum arquivo enviado ainda.</p>
               </div>
@@ -426,7 +395,7 @@ export default function ParceiroProjetoDetailClient({
                 {files.map((file) => (
                   <li
                     key={file.id}
-                    className="partner-card p-4 flex items-center justify-between gap-3 cursor-default"
+                    className="partner-card p-4 flex items-center justify-between gap-3"
                   >
                     <div className="partner-card-accent" />
                     <div className="min-w-0 flex-1">
@@ -461,7 +430,7 @@ export default function ParceiroProjetoDetailClient({
 
         {tab === "notas" && (
           <div className="space-y-4">
-            <div className="partner-card p-5 cursor-default space-y-3">
+            <div className="partner-card p-5 space-y-3">
               <div className="partner-card-accent" />
               <textarea
                 value={noteBody}
@@ -482,14 +451,14 @@ export default function ParceiroProjetoDetailClient({
             </div>
 
             {notes.length === 0 ? (
-              <div className="partner-card p-8 text-center cursor-default">
+              <div className="partner-card p-8 text-center">
                 <div className="partner-card-accent" />
                 <p className="text-sm text-slate-600 font-semibold">Nenhuma nota ainda.</p>
               </div>
             ) : (
               <ul className="space-y-2">
                 {notes.map((note) => (
-                  <li key={note.id} className="partner-card p-4 cursor-default space-y-2">
+                  <li key={note.id} className="partner-card p-4 space-y-2">
                     <div className="partner-card-accent" />
                     <div className="flex items-start justify-between gap-3">
                       <div>

@@ -372,7 +372,7 @@ export default function ParceiroProdutosClient({
                     setFilterCategory("ALL");
                     setPage(1);
                   }}
-                  className="partner-card text-left cursor-pointer overflow-hidden hover:border-primary/40 transition-colors"
+                  className="partner-card partner-card-interactive text-left overflow-hidden hover:border-primary/40 transition-colors"
                 >
                   <div className="partner-card-accent" />
                   <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center p-5 border-b border-slate-200/70">
@@ -429,7 +429,7 @@ export default function ParceiroProdutosClient({
                   key={product.id}
                   type="button"
                   onClick={() => openProduct(product)}
-                  className="partner-card overflow-hidden flex flex-col text-left cursor-pointer hover:border-primary/40 transition-colors"
+                  className="partner-card partner-card-interactive overflow-hidden flex flex-col text-left hover:border-primary/40 transition-colors"
                 >
                   <div className="partner-card-accent" />
                   <div className="aspect-[4/3] bg-slate-100 border-b border-slate-200/80 overflow-hidden">
@@ -499,7 +499,7 @@ export default function ParceiroProdutosClient({
                 key={catalog.id}
                 type="button"
                 onClick={() => setActionCatalog(catalog)}
-                className="partner-card overflow-hidden flex flex-col text-left cursor-pointer hover:border-primary/40 transition-colors"
+                className="partner-card partner-card-interactive overflow-hidden flex flex-col text-left hover:border-primary/40 transition-colors"
               >
                 <div className="partner-card-accent" />
                 <div className="aspect-[3/4] bg-slate-100 border-b border-slate-200/80 overflow-hidden flex items-center justify-center">

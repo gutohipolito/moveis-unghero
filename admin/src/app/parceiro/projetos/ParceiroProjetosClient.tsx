@@ -216,7 +216,7 @@ export default function ParceiroProjetosClient({
         </div>
 
         {partner.projects.length === 0 ? (
-          <div className="partner-card p-10 text-center cursor-default">
+          <div className="partner-card p-10 text-center">
             <div className="partner-card-accent" />
             <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
               <HighlightAnimatedIcon icon={LibraryIcon} size={24} playOnMount />
@@ -230,7 +230,7 @@ export default function ParceiroProjetosClient({
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="partner-card p-8 text-center cursor-default">
+          <div className="partner-card p-8 text-center">
             <div className="partner-card-accent" />
             <p className="text-sm text-slate-600 font-semibold">
               Nenhum projeto neste filtro.
