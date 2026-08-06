@@ -111,11 +111,11 @@ const PartnerCard = ({
     <div
       key={p.id}
       onClick={() => onViewDetails(p)}
-      className="partner-card group/card"
+      className="partner-card group/card h-full cursor-pointer"
     >
       <div className="partner-card-accent" />
 
-      <div className="p-5 flex flex-col gap-4 flex-1">
+      <div className="p-5 flex flex-col gap-4 flex-1 min-h-0">
         <div className="flex items-start gap-4">
           <div
             onClick={(e) => e.stopPropagation()}
@@ -181,24 +181,34 @@ const PartnerCard = ({
             >
               {p.nome}
             </h3>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5 min-h-[1.375rem]">
               <span className="partner-card-badge text-[9px] px-2 py-0.5">
                 <Icon className="h-2.5 w-2.5" />
                 {getPartnerRoleLabel(p.tipo, p.nome)}
               </span>
 
-              {p.cidade && (
+              {p.cidade ? (
                 <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-muted-foreground bg-white/70 px-2 py-0.5 rounded-full border border-border/60">
                   <MapPin className="h-2.5 w-2.5 text-muted-foreground/70" />
                   {p.cidade}
                 </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full border border-transparent text-transparent select-none pointer-events-none"
+                  aria-hidden
+                >
+                  <MapPin className="h-2.5 w-2.5" />
+                  —
+                </span>
               )}
             </div>
-            {registroLabel && (
-              <p className="mt-1.5 text-[10px] font-semibold text-muted-foreground truncate">
-                {registroLabel}
-              </p>
-            )}
+            <p
+              className={`mt-1.5 text-[10px] font-semibold truncate min-h-[1.25rem] ${
+                registroLabel ? "text-muted-foreground" : "text-muted-foreground/35"
+              }`}
+            >
+              {registroLabel || "—"}
+            </p>
           </div>
 
           {canManage && (
@@ -223,21 +233,23 @@ const PartnerCard = ({
           )}
         </div>
 
-        {p.escritorio && (
-          <div className="flex items-center gap-2 p-2 partner-card-metric">
-            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="min-w-0 flex-1">
-              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block leading-none">
-                Escritório / Studio
-              </span>
-              <span className="text-[10px] font-extrabold text-foreground truncate block mt-0.5">
-                {p.escritorio}
-              </span>
-            </div>
+        <div
+          className={`flex items-center gap-2 p-2 partner-card-metric ${
+            p.escritorio ? "" : "opacity-45"
+          }`}
+        >
+          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0 flex-1">
+            <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block leading-none">
+              Escritório / Studio
+            </span>
+            <span className="text-[10px] font-extrabold text-foreground truncate block mt-0.5">
+              {p.escritorio || "—"}
+            </span>
           </div>
-        )}
+        </div>
 
-        <div className="partner-card-metric p-3.5 space-y-2">
+        <div className="partner-card-metric p-3.5 space-y-2 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
               Projetos vinculados
@@ -258,7 +270,7 @@ const PartnerCard = ({
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="grid grid-cols-3 gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
           {p.telefone ? (
             sensitive.whatsappHref(p.telefone) ? (
               <a
