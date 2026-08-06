@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Mail, ArrowRight } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
+import { ArrowNarrowRightIcon, LockIcon } from "@/components/icons";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -61,7 +62,10 @@ export default function LoginPage() {
           
           <div className="login-card">
             <div className="mb-6">
-              <span className="login-card-badge">Acesso Restrito</span>
+              <span className="login-card-badge inline-flex items-center gap-1.5">
+                <LockIcon size={14} className="shrink-0" />
+                Acesso Restrito
+              </span>
               <h2 className="page-title text-xl font-bold mt-1">Entrar no painel</h2>
               <p className="detail-text mt-1">Use o e-mail cadastrado pela equipe.</p>
             </div>
@@ -97,7 +101,7 @@ export default function LoginPage() {
 
               <button type="submit" className="w-full login-submit-btn mt-2" disabled={loading}>
                 {loading ? "Entrando..." : "Acessar painel"}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowNarrowRightIcon size={16} className="ml-2" />
               </button>
             </form>
           </div>

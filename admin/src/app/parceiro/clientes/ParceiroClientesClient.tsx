@@ -6,9 +6,8 @@ import {
   MapPin,
   Phone,
   Search,
-  Sparkles,
-  Users,
 } from "lucide-react";
+import { PartyPopperIcon, SparklesIcon, UsersIcon } from "@/components/icons";
 import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal";
 import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
@@ -91,7 +90,7 @@ export default function ParceiroClientesClient({
                 : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
             }`}
           >
-            <Users className="h-3.5 w-3.5" />
+            <UsersIcon size={14} />
             Todos
             <span className="opacity-70">{clients.length}</span>
           </button>
@@ -104,7 +103,7 @@ export default function ParceiroClientesClient({
                 : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
             }`}
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <SparklesIcon size={14} />
             Novos
             <span className="opacity-70">{newClients.length}</span>
           </button>
@@ -124,7 +123,7 @@ export default function ParceiroClientesClient({
           <div className="partner-card p-10 text-center">
             <div className="partner-card-accent" />
             <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-              {tab === "new" ? <Sparkles className="h-6 w-6" /> : <Users className="h-6 w-6" />}
+              {tab === "new" ? <PartyPopperIcon size={24} /> : <UsersIcon size={24} />}
             </div>
             <h2 className="font-display font-bold text-slate-900">
               {tab === "new" ? "Nenhum cadastro novo" : "Nenhum cliente vinculado"}

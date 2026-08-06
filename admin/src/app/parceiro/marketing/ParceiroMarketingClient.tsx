@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Check, Copy, ExternalLink, MessageCircle, Megaphone } from "lucide-react";
+import { Check, Copy, ExternalLink, Megaphone } from "lucide-react";
+import { WhatsappIcon } from "@/components/icons";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { Input } from "@/components/ui/input";
@@ -154,7 +155,7 @@ export default function ParceiroMarketingClient({
                 rel="noopener noreferrer"
                 className="parceiro-marketing-btn parceiro-marketing-btn-whatsapp"
               >
-                <MessageCircle className="h-4 w-4" />
+                <WhatsappIcon size={16} />
                 Abrir WhatsApp
               </a>
               <button

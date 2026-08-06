@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
-import { Mail, Phone, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Phone, Loader2 } from "lucide-react";
+import { ArrowNarrowRightIcon } from "@/components/icons";
 
 interface LoginFormParceiroProps {
   loginAction: (data: {
@@ -109,7 +110,7 @@ export default function LoginFormParceiro({ loginAction }: LoginFormParceiroProp
         ) : (
           <>
             Entrar no painel
-            <ArrowRight className="h-4 w-4" />
+            <ArrowNarrowRightIcon size={16} />
           </>
         )}
       </Button>

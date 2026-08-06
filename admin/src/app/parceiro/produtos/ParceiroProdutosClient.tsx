@@ -14,6 +14,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { CartIcon } from "@/components/icons";
 import type {
   PartnerPortalCatalog,
   PartnerPortalData,
@@ -343,7 +344,7 @@ export default function ParceiroProdutosClient({
               <div className="partner-card-accent" />
               <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
                 {section === "produtos" ? (
-                  <Package className="h-6 w-6" />
+                  <CartIcon size={24} />
                 ) : (
                   <BookOpen className="h-6 w-6" />
                 )}
@@ -415,7 +416,7 @@ export default function ParceiroProdutosClient({
             <div className="partner-card p-10 text-center">
               <div className="partner-card-accent" />
               <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-                <Package className="h-6 w-6" />
+                <CartIcon size={24} />
               </div>
               <h2 className="font-display font-bold text-slate-900">Nenhum produto encontrado</h2>
               <p className="text-sm text-slate-600 mt-2">Tente outro termo de busca.</p>

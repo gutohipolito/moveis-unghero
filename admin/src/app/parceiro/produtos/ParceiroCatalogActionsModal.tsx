@@ -8,8 +8,8 @@ import {
   Copy,
   Download,
   Eye,
-  MessageCircle,
 } from "lucide-react";
+import { WhatsappIcon } from "@/components/icons";
 import { Dialog } from "@/components/ui/dialog";
 import type { PartnerPortalCatalog } from "@/lib/partnerPortal";
 import { buildPartnerPortalCatalogWhatsAppMessage } from "@/lib/catalogShareMessage";
@@ -110,7 +110,7 @@ export default function ParceiroCatalogActionsModal({ catalog, onClose }: Props)
               className={`${actionBtnClass} btn-whatsapp-relief`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-[calc(var(--radius-sm)-2px)] bg-black/10 shrink-0">
-                <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
+                <WhatsappIcon size={16} strokeWidth={2.2} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold leading-tight">WhatsApp</span>

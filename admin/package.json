@@ -25,6 +25,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "mailparser": "^3.9.14",
+    "motion": "^13.0.0",
     "next": "16.2.10",
     "nodemailer": "^9.0.3",
     "pdf-lib": "^1.17.1",

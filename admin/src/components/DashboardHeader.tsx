@@ -14,12 +14,12 @@ import {
   ChevronDown,
   Clock,
   CloudSun,
-  Download,
   LogOut,
   Mail,
   User as UserIcon,
   UserCog,
 } from "lucide-react";
+import { DownloadIcon } from "@/components/icons";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -264,7 +264,7 @@ export default function DashboardHeader({
                   disabled={installing}
                   className="dashboard-user-menu-item w-full rounded-lg"
                 >
-                  <Download className="h-4 w-4" />
+                  <DownloadIcon size={16} />
                   {installing ? "Instalando..." : "Instalar aplicativo"}
                 </button>
               )}

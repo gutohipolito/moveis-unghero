@@ -3,6 +3,7 @@ import Link from "next/link";
 import { loginParceiro } from "@/app/actions/parceiroPortal";
 import LoginFormParceiro from "./LoginFormParceiro";
 import ParceiroLoginBackground from "./ParceiroLoginBackground";
+import ParceiroLoginBadgeIcon from "./ParceiroLoginBadgeIcon";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const metadata = publicPageMetadata({
@@ -31,7 +32,10 @@ export default function ParceiroLoginPage() {
           <div className="parceiro-login-card-accent" />
           <div className="parceiro-login-card-body">
             <div className="mb-5">
-              <span className="parceiro-login-badge">Acesso do parceiro</span>
+              <span className="parceiro-login-badge inline-flex items-center gap-1.5">
+                <ParceiroLoginBadgeIcon />
+                Acesso do parceiro
+              </span>
               <h1 className="parceiro-login-title">Acessar seu painel</h1>
               <p className="parceiro-login-subtitle">
                 Use o e-mail e o telefone do seu cadastro para acompanhar os projetos

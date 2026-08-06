@@ -1,7 +1,7 @@
 import React from "react";
 import { loginCliente } from "@/app/actions/cliente";
 import LoginFormClient from "./LoginFormClient";
-import { Sparkles } from "lucide-react";
+import ClienteLoginHeroIcon from "./ClienteLoginHeroIcon";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const metadata = publicPageMetadata({
@@ -18,7 +18,7 @@ export default function ClienteLoginPage() {
       <div className="w-full max-w-[420px] space-y-6 z-10 animate-in fade-in duration-300">
         <div className="text-center space-y-2">
           <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-3">
-            <Sparkles className="h-7 w-7" />
+            <ClienteLoginHeroIcon />
           </div>
           <h1 className="text-2xl font-extrabold tracking-widest text-foreground uppercase leading-none">
             MÓVEIS UNGHERO
