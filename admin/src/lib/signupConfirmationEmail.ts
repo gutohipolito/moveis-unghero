@@ -139,9 +139,11 @@ export async function sendSignupConfirmationEmail(options: {
   kind: SignupConfirmationKind;
   nome: string;
   email?: string | null;
-}): Promise<void> {
+}): Promise<{ sent: boolean; error?: string }> {
   const to = normalizeClientEmail(options.email);
-  if (!hasRealClientEmail(to)) return;
+  if (!hasRealClientEmail(to)) {
+    return { sent: false, error: "E-mail inválido ou ausente." };
+  }
 
   try {
     const mailbox = await resolveOutboundMailbox(options.companyId);
@@ -149,7 +151,7 @@ export async function sendSignupConfirmationEmail(options: {
       console.warn(
         "[signupConfirmationEmail] Nenhuma caixa SMTP ativa para envio de confirmação."
       );
-      return;
+      return { sent: false, error: "Nenhuma caixa SMTP ativa." };
     }
 
     let password: string;
@@ -157,7 +159,7 @@ export async function sendSignupConfirmationEmail(options: {
       password = decryptVaultSecret(mailbox.password_enc);
     } catch (error) {
       console.error("[signupConfirmationEmail] Falha ao descriptografar SMTP:", error);
-      return;
+      return { sent: false, error: "Falha ao ler senha SMTP." };
     }
 
     const content = buildSignupConfirmationEmail({
@@ -188,7 +190,12 @@ export async function sendSignupConfirmationEmail(options: {
         replyTo: replyToBox?.address || mailbox.address,
       }
     );
+    return { sent: true };
   } catch (error) {
     console.error("[signupConfirmationEmail] Falha ao enviar confirmação:", error);
+    return {
+      sent: false,
+      error: error instanceof Error ? error.message : "Falha no envio SMTP.",
+    };
   }
 }
