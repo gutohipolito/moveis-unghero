@@ -7,7 +7,7 @@ import {
   Phone,
   Search,
 } from "lucide-react";
-import { PartyPopperIcon, SparklesIcon, UsersIcon } from "@/components/icons";
+import { PartyPopperIcon, SparklesIcon, UsersIcon, HighlightAnimatedIcon } from "@/components/icons";
 import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal";
 import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
@@ -90,7 +90,7 @@ export default function ParceiroClientesClient({
                 : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
             }`}
           >
-            <UsersIcon size={14} />
+            <HighlightAnimatedIcon icon={UsersIcon} size={14} />
             Todos
             <span className="opacity-70">{clients.length}</span>
           </button>
@@ -103,7 +103,7 @@ export default function ParceiroClientesClient({
                 : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
             }`}
           >
-            <SparklesIcon size={14} />
+            <HighlightAnimatedIcon icon={SparklesIcon} size={14} />
             Novos
             <span className="opacity-70">{newClients.length}</span>
           </button>
@@ -123,7 +123,11 @@ export default function ParceiroClientesClient({
           <div className="partner-card p-10 text-center">
             <div className="partner-card-accent" />
             <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-              {tab === "new" ? <PartyPopperIcon size={24} /> : <UsersIcon size={24} />}
+              {tab === "new" ? (
+                <HighlightAnimatedIcon icon={PartyPopperIcon} size={24} playOnMount />
+              ) : (
+                <HighlightAnimatedIcon icon={UsersIcon} size={24} playOnMount />
+              )}
             </div>
             <h2 className="font-display font-bold text-slate-900">
               {tab === "new" ? "Nenhum cadastro novo" : "Nenhum cliente vinculado"}

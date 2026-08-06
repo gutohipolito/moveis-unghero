@@ -30,7 +30,7 @@ import {
   type NotificationPreferences,
 } from "@/lib/notificationChannels";
 import { cn } from "@/lib/utils";
-import { DownloadIcon } from "@/components/icons";
+import { DownloadIcon, useAnimatedIconHover } from "@/components/icons";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -216,6 +216,7 @@ export default function ParceiroUserMenu({
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const installIcon = useAnimatedIconHover();
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
 
   useEffect(() => {
@@ -329,8 +330,9 @@ export default function ParceiroUserMenu({
             <div
               className="parceiro-user-menu-soon"
               aria-disabled="true"
+              {...installIcon.hoverHandlers}
             >
-              <DownloadIcon size={16} className="shrink-0 opacity-55" />
+              <DownloadIcon ref={installIcon.iconRef} size={16} className="shrink-0 opacity-55" />
               <span className="flex-1">Instalar aplicativo</span>
               <span className="parceiro-soon-sticker">Em breve</span>
             </div>

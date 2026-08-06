@@ -940,7 +940,6 @@ body {
   border-radius: 0.5rem;
   cursor: default;
   user-select: none;
-  pointer-events: none;
 }
 
 .parceiro-soon-sticker {
@@ -4134,11 +4133,11 @@ body.viewer-privacy-lock .privacy-value {
 }
 
 .login-submit-btn svg {
-  transition: transform 0.2s ease !important;
+  transition: none;
 }
 
 .login-submit-btn:hover svg {
-  transform: translateX(4px) !important;
+  transform: none;
 }
 
 .pwa-install-banner {

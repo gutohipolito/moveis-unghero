@@ -7,4 +7,5 @@ export { default as PartyPopperIcon } from "./party-popper-icon";
 export { default as SparklesIcon } from "./sparkles-icon";
 export { default as UsersIcon } from "./users-icon";
 export { default as WhatsappIcon } from "./whatsapp-icon";
+export { HighlightAnimatedIcon, useAnimatedIconHover } from "./hover";
 export type { AnimatedIconHandle, AnimatedIconProps } from "./types";

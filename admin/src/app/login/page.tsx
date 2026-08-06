@@ -5,7 +5,12 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Mail } from "lucide-react";
-import { ArrowNarrowRightIcon, LockIcon } from "@/components/icons";
+import {
+  ArrowNarrowRightIcon,
+  HighlightAnimatedIcon,
+  LockIcon,
+  useAnimatedIconHover,
+} from "@/components/icons";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const dialog = useActionDialog();
   const { showError } = dialog;
+  const submitIcon = useAnimatedIconHover();
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +69,7 @@ export default function LoginPage() {
           <div className="login-card">
             <div className="mb-6">
               <span className="login-card-badge inline-flex items-center gap-1.5">
-                <LockIcon size={14} className="shrink-0" />
+                <HighlightAnimatedIcon icon={LockIcon} size={14} className="shrink-0" playOnMount />
                 Acesso Restrito
               </span>
               <h2 className="page-title text-xl font-bold mt-1">Entrar no painel</h2>
@@ -99,9 +105,18 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full login-submit-btn mt-2" disabled={loading}>
+              <button
+                type="submit"
+                className="w-full login-submit-btn mt-2"
+                disabled={loading}
+                {...submitIcon.hoverHandlers}
+              >
                 {loading ? "Entrando..." : "Acessar painel"}
-                <ArrowNarrowRightIcon size={16} className="ml-2" />
+                <ArrowNarrowRightIcon
+                  ref={submitIcon.iconRef}
+                  size={16}
+                  className="ml-2"
+                />
               </button>
             </form>
           </div>

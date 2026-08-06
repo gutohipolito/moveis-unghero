@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { Mail, Phone, Loader2 } from "lucide-react";
-import { ArrowNarrowRightIcon } from "@/components/icons";
+import { ArrowNarrowRightIcon, useAnimatedIconHover } from "@/components/icons";
 
 interface LoginFormParceiroProps {
   loginAction: (data: {
@@ -21,6 +21,7 @@ export default function LoginFormParceiro({ loginAction }: LoginFormParceiroProp
   const [telefone, setTelefone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const submitIcon = useAnimatedIconHover();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +102,7 @@ export default function LoginFormParceiro({ loginAction }: LoginFormParceiroProp
         type="submit"
         disabled={loading}
         className="w-full font-bold btn-metallic h-11 gap-2 mt-1"
+        {...submitIcon.hoverHandlers}
       >
         {loading ? (
           <>
@@ -110,7 +112,7 @@ export default function LoginFormParceiro({ loginAction }: LoginFormParceiroProp
         ) : (
           <>
             Entrar no painel
-            <ArrowNarrowRightIcon size={16} />
+            <ArrowNarrowRightIcon ref={submitIcon.iconRef} size={16} />
           </>
         )}
       </Button>

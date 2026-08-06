@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Layers, MapPin } from "lucide-react";
-import { LibraryIcon } from "@/components/icons";
+import { HighlightAnimatedIcon, LibraryIcon } from "@/components/icons";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 
@@ -66,7 +66,7 @@ export default function ParceiroProjetosClient({
           <div className="partner-card p-10 text-center cursor-default">
             <div className="partner-card-accent" />
             <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-              <LibraryIcon size={24} />
+              <HighlightAnimatedIcon icon={LibraryIcon} size={24} playOnMount />
             </div>
             <h2 className="font-display font-bold text-slate-900 text-base">
               Nenhum projeto vinculado ainda

@@ -19,7 +19,7 @@ import {
   User as UserIcon,
   UserCog,
 } from "lucide-react";
-import { DownloadIcon } from "@/components/icons";
+import { DownloadIcon, useAnimatedIconHover } from "@/components/icons";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -70,6 +70,7 @@ export default function DashboardHeader({
   const menuRef = useRef<HTMLDivElement>(null);
   const { canInstall, installing, install } = usePwaInstall();
   const { isOpsLimited, isReadOnly } = usePermissions();
+  const installIcon = useAnimatedIconHover();
 
   useEffect(() => {
     setNow(new Date());
@@ -263,8 +264,9 @@ export default function DashboardHeader({
                   }}
                   disabled={installing}
                   className="dashboard-user-menu-item w-full rounded-lg"
+                  {...installIcon.hoverHandlers}
                 >
-                  <DownloadIcon size={16} />
+                  <DownloadIcon ref={installIcon.iconRef} size={16} />
                   {installing ? "Instalando..." : "Instalar aplicativo"}
                 </button>
               )}

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, Megaphone } from "lucide-react";
-import { WhatsappIcon } from "@/components/icons";
+import { useAnimatedIconHover, WhatsappIcon } from "@/components/icons";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ export default function ParceiroMarketingClient({
   );
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState(false);
+  const waIcon = useAnimatedIconHover();
 
   const waHref = useMemo(() => {
     const text = message.trim() || buildDefaultWhatsAppMessage(partner.nome, inviteUrl);
@@ -154,8 +155,9 @@ export default function ParceiroMarketingClient({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="parceiro-marketing-btn parceiro-marketing-btn-whatsapp"
+                {...waIcon.hoverHandlers}
               >
-                <WhatsappIcon size={16} />
+                <WhatsappIcon ref={waIcon.iconRef} size={16} />
                 Abrir WhatsApp
               </a>
               <button

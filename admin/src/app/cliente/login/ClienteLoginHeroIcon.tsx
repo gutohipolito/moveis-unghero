@@ -1,7 +1,14 @@
 "use client";
 
-import { SparklesIcon } from "@/components/icons";
+import { HighlightAnimatedIcon, SparklesIcon } from "@/components/icons";
 
 export default function ClienteLoginHeroIcon() {
-  return <SparklesIcon size={28} className="text-primary" />;
+  return (
+    <HighlightAnimatedIcon
+      icon={SparklesIcon}
+      size={28}
+      className="text-primary"
+      playOnMount
+    />
+  );
 }

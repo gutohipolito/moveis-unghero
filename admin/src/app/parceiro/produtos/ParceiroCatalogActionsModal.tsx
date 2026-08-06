@@ -9,7 +9,7 @@ import {
   Download,
   Eye,
 } from "lucide-react";
-import { WhatsappIcon } from "@/components/icons";
+import { WhatsappIcon, useAnimatedIconHover } from "@/components/icons";
 import { Dialog } from "@/components/ui/dialog";
 import type { PartnerPortalCatalog } from "@/lib/partnerPortal";
 import { buildPartnerPortalCatalogWhatsAppMessage } from "@/lib/catalogShareMessage";
@@ -24,6 +24,7 @@ const actionBtnClass =
 
 export default function ParceiroCatalogActionsModal({ catalog, onClose }: Props) {
   const [copied, setCopied] = useState(false);
+  const waIcon = useAnimatedIconHover();
 
   if (!catalog) return null;
 
@@ -108,9 +109,10 @@ export default function ParceiroCatalogActionsModal({ catalog, onClose }: Props)
               type="button"
               onClick={openWhatsApp}
               className={`${actionBtnClass} btn-whatsapp-relief`}
+              {...waIcon.hoverHandlers}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-[calc(var(--radius-sm)-2px)] bg-black/10 shrink-0">
-                <WhatsappIcon size={16} strokeWidth={2.2} />
+                <WhatsappIcon ref={waIcon.iconRef} size={16} strokeWidth={2.2} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold leading-tight">WhatsApp</span>
