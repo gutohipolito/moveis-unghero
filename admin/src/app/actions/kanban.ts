@@ -8,7 +8,7 @@ import {
   requireClientInCompany,
   requireProjectInCompany,
 } from "@/lib/auth-guard";
-import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { getWriteAccess } from "@/lib/moduleAccess";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeAddressFields } from "@/lib/address";
@@ -208,7 +208,7 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
 }
 
 export async function restoreProjectFromLoss(projectId: string, newStatus: ProjectStatus = "LEAD") {
-  const auth = await getModuleAccess("crm");
+  const auth = await getWriteAccess("crm");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }

@@ -12,7 +12,7 @@ const PUBLIC_PATHS = new Set([
   "/cadastro-parceiro",
 ]);
 
-const PUBLIC_PREFIXES = ["/api/auth", "/api/o/", "/api/public/"];
+const PUBLIC_PREFIXES = ["/api/auth", "/api/o/", "/api/r/", "/api/public/"];
 
 const PROTECTED_PREFIXES = [
   "/bi",
@@ -152,6 +152,18 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Recibos públicos usam o mesmo PIN de 4 dígitos — precisa do mesmo freio de força-bruta.
+  if (pathname.startsWith("/api/r/")) {
+    const result = checkRateLimit(`receipt-unlock:${ip}`, SHARE_RATE);
+    if (!result.ok) {
+      return rateLimitedJson(
+        `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        result.retryAfterSec,
+        SHARE_RATE.limit
+      );
+    }
+  }
+
   if (isPublicSharePath(pathname)) {
     const result = checkRateLimit(`share:${ip}`, SHARE_RATE);
     if (!result.ok) {
@@ -229,6 +241,7 @@ export const config = {
     "/api/auth/:path*",
     "/api/public/:path*",
     "/api/o/:path*",
+    "/api/r/:path*",
     "/bi/:path*",
     "/marketing/:path*",
     "/avaliar",

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext } from "@/lib/auth-guard";
+import type { AuthContext } from "@/lib/auth-guard";
+import { getWriteAccess } from "@/lib/moduleAccess";
+import { canManageParceiros } from "@/lib/permissions";
 
 const PARTNER_IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const PARTNER_IMAGE_MIME_TYPES = new Set([
@@ -12,14 +14,40 @@ const PARTNER_IMAGE_MIME_TYPES = new Set([
   "image/heif",
 ]);
 
+async function requirePartnerImageWriteAccess(): Promise<
+  { auth: AuthContext } | { error: NextResponse }
+> {
+  const auth = await getWriteAccess("parceiros");
+  if (!auth) {
+    return {
+      error: NextResponse.json(
+        { success: false, error: "Não autenticado ou sem permissão de escrita." },
+        { status: 401 }
+      ),
+    };
+  }
+  if (!canManageParceiros(auth.cargo)) {
+    return {
+      error: NextResponse.json(
+        { success: false, error: "Acesso negado." },
+        { status: 403 }
+      ),
+    };
+  }
+  return { auth };
+}
+
+function partnerGalleryUrls(imagens: string | null | undefined): string[] {
+  return imagens ? imagens.split(",").map((s) => s.trim()).filter(Boolean) : [];
+}
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ partnerId: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
-  }
+  const access = await requirePartnerImageWriteAccess();
+  if ("error" in access) return access.error;
+  const { auth } = access;
 
   const { partnerId } = await context.params;
 
@@ -98,7 +126,7 @@ export async function POST(
       });
     } else {
       // Galeria de imagens (adicionar à lista separada por vírgulas)
-      const currentImagens = partner.imagens ? partner.imagens.split(",").filter(Boolean) : [];
+      const currentImagens = partnerGalleryUrls(partner.imagens);
       currentImagens.push(fileUrl);
       
       updatedPartner = await prisma.professionalPartner.update({
@@ -118,10 +146,9 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ partnerId: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
-  }
+  const access = await requirePartnerImageWriteAccess();
+  if ("error" in access) return access.error;
+  const { auth } = access;
 
   const { partnerId } = await context.params;
   const imageUrl = request.nextUrl.searchParams.get("url");
@@ -139,8 +166,26 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: "Parceiro não encontrado ou acesso negado." }, { status: 404 });
   }
 
+  const gallery = partnerGalleryUrls(partner.imagens);
+  const ownsAvatar = Boolean(partner.fotoUrl && partner.fotoUrl === imageUrl);
+  const ownsGalleryImage = gallery.includes(imageUrl);
+
+  if (isAvatar) {
+    if (!ownsAvatar) {
+      return NextResponse.json(
+        { success: false, error: "Imagem não pertence a este parceiro." },
+        { status: 400 }
+      );
+    }
+  } else if (!ownsGalleryImage) {
+    return NextResponse.json(
+      { success: false, error: "Imagem não pertence a este parceiro." },
+      { status: 400 }
+    );
+  }
+
   try {
-    // Tenta deletar no Vercel Blob se o token estiver ativo e a imagem for do storage
+    // Só deleta no Blob após confirmar ownership (evita exclusão arbitrária no store).
     if (process.env.BLOB_READ_WRITE_TOKEN && imageUrl.includes("blob.vercel-storage.com")) {
       try {
         await del(imageUrl, { token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -156,8 +201,7 @@ export async function DELETE(
         data: { fotoUrl: null },
       });
     } else {
-      const currentImagens = partner.imagens ? partner.imagens.split(",").filter(Boolean) : [];
-      const newImagens = currentImagens.filter((img) => img !== imageUrl);
+      const newImagens = gallery.filter((img) => img !== imageUrl);
       
       updatedPartner = await prisma.professionalPartner.update({
         where: { id: partnerId },
