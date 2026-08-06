@@ -10,15 +10,34 @@ import {
   hasRealClientEmail,
   normalizeClientEmail,
 } from "@/lib/clientMatch";
-import { EMAIL_SIGNATURE_ASSET_BASE } from "@/lib/emailSignature";
+import { EMAIL_SIGNATURE_ASSET_BASE, EMAIL_SIGNATURE_BRAND } from "@/lib/emailSignature";
 
 const LOGO_SRC = `${EMAIL_SIGNATURE_ASSET_BASE}/logo.png`;
+const WHATSAPP_DISPLAY = EMAIL_SIGNATURE_BRAND.whatsappDisplay;
+const WHATSAPP_NUMBER = "5554999971050";
 
 export type SignupConfirmationKind =
   | "cliente"
   | "parceiro"
   | "fornecedor"
   | "briefing";
+
+const WHATSAPP_MESSAGE_BY_KIND: Record<SignupConfirmationKind, string> = {
+  cliente:
+    "Olá! Acabei de me cadastrar pelo formulário e gostaria de falar com a Móveis Unghero.",
+  parceiro:
+    "Olá! Acabei de me cadastrar como parceiro e gostaria de falar com a Móveis Unghero.",
+  fornecedor:
+    "Olá! Acabei de me cadastrar como fornecedor e gostaria de falar com a Móveis Unghero.",
+  briefing:
+    "Olá! Enviei uma solicitação pelo formulário e gostaria de falar com a Móveis Unghero.",
+};
+
+function buildWhatsAppHref(kind: SignupConfirmationKind) {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    WHATSAPP_MESSAGE_BY_KIND[kind]
+  )}`;
+}
 
 const PURPOSE_BY_KIND: Record<SignupConfirmationKind, string> = {
   cliente: CLIENT_LGPD_FORM_PURPOSE,
@@ -63,6 +82,9 @@ export function buildSignupConfirmationEmail(options: {
     ? `Nossa equipe analisará o pedido e entrará em contato quando for o momento.`
     : `Nossa equipe poderá entrar em contato quando for necessário.`;
 
+  const whatsappHref = buildWhatsAppHref(options.kind);
+  const whatsappLabel = `WhatsApp ${WHATSAPP_DISPLAY}`;
+
   const text = [
     `Olá, ${greetingName}.`,
     "",
@@ -73,7 +95,7 @@ export function buildSignupConfirmationEmail(options: {
     `De acordo com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018), as informações enviadas serão tratadas com confidencialidade e utilizadas apenas para ${purpose}.`,
     "",
     "Se precisar falar conosco:",
-    "WhatsApp (54) 9 9997-1050",
+    `${whatsappLabel}: ${whatsappHref}`,
     "atendimento@moveisunghero.com.br",
     "",
     "Obrigado,",
@@ -102,7 +124,7 @@ export function buildSignupConfirmationEmail(options: {
             <p style="margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#64748b;">Proteção dos seus dados (LGPD)</p>
             <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.65;color:#475569;">De acordo com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018), as informações enviadas serão tratadas com confidencialidade e utilizadas apenas para ${escapeHtml(purpose)}.</p>
             <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;color:#64748b;">Se precisar falar conosco:</p>
-            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;color:#334155;">WhatsApp (54) 9 9997-1050<br/>atendimento@moveisunghero.com.br</p>
+            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;color:#334155;"><a href="${escapeHtml(whatsappHref)}" style="color:#0f172a;text-decoration:underline;">${escapeHtml(whatsappLabel)}</a><br/><a href="mailto:atendimento@moveisunghero.com.br" style="color:#0f172a;text-decoration:underline;">atendimento@moveisunghero.com.br</a></p>
             <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.6;color:#0f172a;">Obrigado,<br/><strong>Móveis Unghero</strong></p>
           </td>
         </tr>
