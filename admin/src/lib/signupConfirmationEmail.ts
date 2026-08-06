@@ -10,6 +10,9 @@ import {
   hasRealClientEmail,
   normalizeClientEmail,
 } from "@/lib/clientMatch";
+import { EMAIL_SIGNATURE_ASSET_BASE } from "@/lib/emailSignature";
+
+const LOGO_SRC = `${EMAIL_SIGNATURE_ASSET_BASE}/logo.png`;
 
 export type SignupConfirmationKind =
   | "cliente"
@@ -87,8 +90,8 @@ export function buildSignupConfirmationEmail(options: {
     <tr><td align="center">
       <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
         <tr>
-          <td style="padding:18px 24px;background:#0f172a;">
-            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24;font-weight:700;">Móveis Unghero</p>
+          <td style="padding:20px 24px;background:#0f172a;">
+            <img src="${LOGO_SRC}" width="168" height="35" alt="Móveis Unghero" style="display:block;border:0;outline:none;height:35px;width:auto;max-width:168px;" />
           </td>
         </tr>
         <tr>
