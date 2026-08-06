@@ -165,33 +165,32 @@ export default function ParceiroProjetoDetailClient({
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div>
           <Link
             href="/parceiro/projetos"
-            className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-[var(--radius-sm)] border border-white/20 bg-white/5 text-white text-sm font-bold hover:bg-white/10 w-fit mb-3"
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/50 hover:text-white/80 w-fit mb-3"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Projetos
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
-              <h1 className="text-xl sm:text-2xl font-display font-bold text-white tracking-tight">
-                {initial.client.nome}
-              </h1>
-              <p className="text-xs text-white/60 mt-1 inline-flex items-center gap-1">
+              <p className="parceiro-page-kicker">Projeto</p>
+              <h1 className="parceiro-page-title">{initial.client.nome}</h1>
+              <p className="text-[12px] text-white/45 mt-1 inline-flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {initial.client.cidade || "Cidade não informada"}
               </p>
             </div>
-            <p className="text-lg font-display font-extrabold text-white tabular-nums">
+            <p className="text-lg font-display font-semibold tabular-nums text-[hsl(42_80%_72%)]">
               {moneyFmt.format(initial.valor_previsto)}
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-400/40 bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-100">
+          <div className="rounded-xl border border-rose-400/40 bg-rose-500/15 px-4 py-3 text-sm font-medium text-rose-100">
             {error}
           </div>
         )}
@@ -205,70 +204,56 @@ export default function ParceiroProjetoDetailClient({
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[11px] font-bold border transition-colors",
-                  tab === t.id
-                    ? "bg-white text-slate-900 border-white"
-                    : "bg-white/5 text-white/75 border-white/15 hover:bg-white/10"
+                  "parceiro-filter-chip inline-flex items-center gap-1.5",
+                  tab === t.id && "is-active"
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
                 {t.label}
-                {typeof t.count === "number" && t.count > 0 && (
-                  <span className="opacity-70">({t.count})</span>
-                )}
+                {typeof t.count === "number" && t.count > 0 ? ` · ${t.count}` : ""}
               </button>
             );
           })}
         </div>
 
         {tab === "resumo" && (
-          <div className="space-y-4">
-            <div className="partner-card p-5 space-y-3">
-              <div className="partner-card-accent" />
-              {isLost ? (
-                <p className="text-sm font-bold text-rose-700">Projeto perdido</p>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex gap-1">
-                    {PROJECT_STEPS.map((step, idx) => (
-                      <div
-                        key={step.id}
-                        title={step.label}
-                        className={`parceiro-project-step ${
-                          idx <= current ? "parceiro-project-step-done" : ""
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm font-semibold text-slate-700">
-                    Etapa:{" "}
-                    <span className="font-bold text-slate-900">
-                      {PROJECT_STEPS[current]?.label ?? initial.status_geral}
-                    </span>
-                  </p>
-                  {initial.data_entrega_prevista && (
-                    <p className="text-xs text-slate-500">
-                      Entrega prevista: {dateFmt.format(new Date(initial.data_entrega_prevista))}
-                    </p>
-                  )}
+          <div className="parceiro-panel p-5 sm:p-6 space-y-5">
+            {isLost ? (
+              <p className="text-sm font-medium text-rose-700">Projeto perdido</p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-1 max-w-md">
+                  {PROJECT_STEPS.map((step, idx) => (
+                    <div
+                      key={step.id}
+                      title={step.label}
+                      className={`h-1 flex-1 rounded-full ${
+                        idx <= current
+                          ? "bg-[linear-gradient(90deg,hsl(43_80%_52%),hsl(38_75%_42%))]"
+                          : "bg-stone-200"
+                      }`}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
+                <p className="text-sm text-stone-600">
+                  {PROJECT_STEPS[current]?.label ?? initial.status_geral}
+                  {initial.data_entrega_prevista
+                    ? ` · entrega ${dateFmt.format(new Date(initial.data_entrega_prevista))}`
+                    : ""}
+                </p>
+              </div>
+            )}
 
-            <div className="partner-card p-5 space-y-3">
-              <div className="partner-card-accent" />
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">
-                Cliente
-              </h2>
-              <p className="font-display font-bold text-slate-900">{initial.client.nome}</p>
-              <p className="text-sm text-slate-600">{address}</p>
-              <div className="flex flex-wrap gap-3 text-sm">
+            <div className="border-t border-stone-200/80 pt-4 space-y-2">
+              <p className="text-[11px] font-medium text-stone-500">Contato</p>
+              <p className="text-sm text-stone-700 leading-relaxed">{address}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
                 {initial.client.telefone && (
                   <a
                     href={`https://wa.me/55${initial.client.telefone.replace(/\D/g, "")}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 font-semibold text-slate-800 hover:text-primary"
+                    className="inline-flex items-center gap-1.5 font-medium text-stone-800 hover:text-primary"
                   >
                     <Phone className="h-3.5 w-3.5" />
                     {initial.client.telefone}
@@ -277,7 +262,7 @@ export default function ParceiroProjetoDetailClient({
                 {initial.client.email && !initial.client.email.includes("placeholder") && (
                   <a
                     href={`mailto:${initial.client.email}`}
-                    className="inline-flex items-center gap-1.5 font-semibold text-slate-800 hover:text-primary"
+                    className="inline-flex items-center gap-1.5 font-medium text-stone-800 hover:text-primary"
                   >
                     <Mail className="h-3.5 w-3.5" />
                     {initial.client.email}
@@ -287,20 +272,16 @@ export default function ParceiroProjetoDetailClient({
             </div>
 
             {initial.environments.length > 0 && (
-              <div className="partner-card p-5 space-y-3">
-                <div className="partner-card-accent" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                  <Layers className="h-3.5 w-3.5" />
-                  Ambientes
-                </h2>
+              <div className="border-t border-stone-200/80 pt-4 space-y-2">
+                <p className="text-[11px] font-medium text-stone-500">Ambientes</p>
                 <ul className="space-y-2">
                   {initial.environments.map((env) => (
                     <li
                       key={env.id}
-                      className="flex items-center justify-between gap-2 text-sm border-b border-slate-100 pb-2 last:border-0 last:pb-0"
+                      className="flex items-center justify-between gap-2 text-sm"
                     >
-                      <span className="font-semibold text-slate-900">{env.nome}</span>
-                      <span className="text-xs text-slate-500 font-medium">
+                      <span className="font-medium text-stone-900">{env.nome}</span>
+                      <span className="text-xs text-stone-500">
                         {env.status.replace(/_/g, " ").toLowerCase()}
                       </span>
                     </li>
@@ -314,13 +295,9 @@ export default function ParceiroProjetoDetailClient({
         {tab === "orcamentos" && (
           <div className="space-y-3">
             {initial.quotes.filter((q) => q.publicUrl).length === 0 ? (
-              <div className="partner-card p-8 text-center">
-                <div className="partner-card-accent" />
-                <p className="text-sm text-slate-600 font-semibold">
+              <div className="parceiro-panel p-8 text-center">
+                <p className="text-sm text-stone-600 font-medium">
                   Nenhum orçamento em PDF disponível ainda.
-                </p>
-                <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
-                  Quando a Móveis Unghero compartilhar o orçamento, o link aparece aqui.
                 </p>
               </div>
             ) : (
@@ -332,20 +309,17 @@ export default function ParceiroProjetoDetailClient({
                     href={quote.publicUrl!}
                     target="_blank"
                     rel="noreferrer"
-                    className="partner-card p-4 flex items-center justify-between gap-3 no-underline hover:no-underline"
+                    className="parceiro-panel p-4 flex items-center justify-between gap-3 no-underline hover:no-underline transition-shadow hover:shadow-md"
                   >
-                    <div className="partner-card-accent" />
-                    <div className="min-w-0 flex-1 px-1">
-                      <p className="font-display font-bold text-slate-900 text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display font-semibold text-stone-900 text-sm">
                         Orçamento
                         {quote.versao > 1 ? ` v${quote.versao}` : ""}
                         {quote.codigo ? ` · ${quote.codigo}` : ""}
                       </p>
-                      <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
-                        Abrir PDF
-                      </p>
+                      <p className="text-[11px] text-stone-500 mt-0.5">Abrir PDF</p>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-slate-900 text-white text-xs font-bold shrink-0">
+                    <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-stone-900 text-white text-xs font-semibold shrink-0">
                       <ExternalLink className="h-3.5 w-3.5" />
                       PDF
                     </span>
@@ -356,12 +330,10 @@ export default function ParceiroProjetoDetailClient({
         )}
 
         {tab === "arquivos" && (
-          <div className="space-y-4">
-            <div className="partner-card p-5 space-y-3">
-              <div className="partner-card-accent" />
-              <p className="text-sm text-slate-600 font-semibold">
-                Envie plantas, PDFs ou referências do projeto. A equipe Unghero também vê estes
-                arquivos no CRM.
+          <div className="space-y-3">
+            <div className="parceiro-panel p-5 space-y-3">
+              <p className="text-sm text-stone-600">
+                Envie plantas e referências — a equipe Unghero também vê no CRM.
               </p>
               <input
                 ref={fileRef}
@@ -374,7 +346,7 @@ export default function ParceiroProjetoDetailClient({
                 type="button"
                 disabled={uploading}
                 onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60"
               >
                 {uploading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -386,28 +358,24 @@ export default function ParceiroProjetoDetailClient({
             </div>
 
             {files.length === 0 ? (
-              <div className="partner-card p-8 text-center">
-                <div className="partner-card-accent" />
-                <p className="text-sm text-slate-600 font-semibold">Nenhum arquivo enviado ainda.</p>
-              </div>
+              <p className="text-sm text-white/45 px-1">Nenhum arquivo enviado.</p>
             ) : (
               <ul className="space-y-2">
                 {files.map((file) => (
                   <li
                     key={file.id}
-                    className="partner-card p-4 flex items-center justify-between gap-3"
+                    className="parceiro-panel p-4 flex items-center justify-between gap-3"
                   >
-                    <div className="partner-card-accent" />
                     <div className="min-w-0 flex-1">
                       <a
                         href={file.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-bold text-slate-900 text-sm hover:text-primary truncate block"
+                        className="font-semibold text-stone-900 text-sm hover:text-primary truncate block"
                       >
                         {file.nome}
                       </a>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-[11px] text-stone-500 mt-0.5">
                         {dateFmt.format(new Date(file.createdAt))}
                         {file.size_bytes ? ` · ${formatBytes(file.size_bytes)}` : ""}
                       </p>
@@ -416,7 +384,7 @@ export default function ParceiroProjetoDetailClient({
                       type="button"
                       disabled={pending}
                       onClick={() => removeFile(file.id)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                      className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50"
                       title="Excluir"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -429,21 +397,20 @@ export default function ParceiroProjetoDetailClient({
         )}
 
         {tab === "notas" && (
-          <div className="space-y-4">
-            <div className="partner-card p-5 space-y-3">
-              <div className="partner-card-accent" />
+          <div className="space-y-3">
+            <div className="parceiro-panel p-5 space-y-3">
               <textarea
                 value={noteBody}
                 onChange={(e) => setNoteBody(e.target.value.slice(0, 4000))}
                 rows={4}
-                placeholder="Escreva uma observação para a equipe Unghero..."
-                className="w-full border border-slate-200 bg-white rounded-xl text-sm p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 font-semibold text-slate-900 placeholder:text-slate-400"
+                placeholder="Observação para a equipe Unghero..."
+                className="w-full border border-stone-200 bg-white rounded-xl text-sm p-3.5 focus:outline-none focus:ring-1 focus:ring-stone-400 font-medium text-stone-900 placeholder:text-stone-400"
               />
               <button
                 type="button"
                 disabled={pending || noteBody.trim().length < 2}
                 onClick={submitNote}
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Publicar nota
@@ -451,21 +418,17 @@ export default function ParceiroProjetoDetailClient({
             </div>
 
             {notes.length === 0 ? (
-              <div className="partner-card p-8 text-center">
-                <div className="partner-card-accent" />
-                <p className="text-sm text-slate-600 font-semibold">Nenhuma nota ainda.</p>
-              </div>
+              <p className="text-sm text-white/45 px-1">Nenhuma nota ainda.</p>
             ) : (
               <ul className="space-y-2">
                 {notes.map((note) => (
-                  <li key={note.id} className="partner-card p-4 space-y-2">
-                    <div className="partner-card-accent" />
+                  <li key={note.id} className="parceiro-panel p-4 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-bold text-slate-500">
+                        <p className="text-[11px] font-medium text-stone-500">
                           {note.partnerNome} · {dateFmt.format(new Date(note.createdAt))}
                         </p>
-                        <p className="text-sm text-slate-800 mt-1 whitespace-pre-wrap font-medium">
+                        <p className="text-sm text-stone-800 mt-1 whitespace-pre-wrap">
                           {note.body}
                         </p>
                       </div>
@@ -473,7 +436,7 @@ export default function ParceiroProjetoDetailClient({
                         type="button"
                         disabled={pending}
                         onClick={() => removeNote(note.id)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                        className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
                         title="Excluir"
                       >
                         <Trash2 className="h-4 w-4" />

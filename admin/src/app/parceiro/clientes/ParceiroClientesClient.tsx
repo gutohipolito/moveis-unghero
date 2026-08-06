@@ -7,11 +7,12 @@ import {
   Phone,
   Search,
 } from "lucide-react";
-import { PartyPopperIcon, SparklesIcon, UsersIcon, HighlightAnimatedIcon } from "@/components/icons";
+import { PartyPopperIcon, UsersIcon, HighlightAnimatedIcon } from "@/components/icons";
 import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal";
 import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -67,45 +68,36 @@ export default function ParceiroClientesClient({
       <div className="space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-display font-bold text-white tracking-tight">
-              Clientes
+            <p className="parceiro-page-kicker">Carteira</p>
+            <h1 className="parceiro-page-title">
+              {clients.length} cliente{clients.length === 1 ? "" : "s"}
             </h1>
-            <p className="text-xs text-white/60 mt-1 max-w-lg">
-              Clientes indicados por você ou com projetos vinculados. Documentos pessoais não são
-              exibidos.
+            <p className="parceiro-page-desc">
+              Indicados por você ou com projetos vinculados.
             </p>
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/70 bg-white/10 border border-white/15 px-2.5 py-1 rounded-full self-start sm:self-auto">
-            {filtered.length} cliente{filtered.length === 1 ? "" : "s"}
-          </span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
             onClick={() => setTab("all")}
-            className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-              tab === "all"
-                ? "bg-white text-slate-900 border-white"
-                : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
-            }`}
+            className={cn(
+              "parceiro-filter-chip",
+              tab === "all" && "is-active"
+            )}
           >
-            <HighlightAnimatedIcon icon={UsersIcon} size={14} />
-            Todos
-            <span className="opacity-70">{clients.length}</span>
+            Todos · {clients.length}
           </button>
           <button
             type="button"
             onClick={() => setTab("new")}
-            className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-              tab === "new"
-                ? "bg-white text-slate-900 border-white"
-                : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
-            }`}
+            className={cn(
+              "parceiro-filter-chip",
+              tab === "new" && "is-active"
+            )}
           >
-            <HighlightAnimatedIcon icon={SparklesIcon} size={14} />
-            Novos
-            <span className="opacity-70">{newClients.length}</span>
+            Novos · {newClients.length}
           </button>
         </div>
 

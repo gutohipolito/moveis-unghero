@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Check, Copy, ExternalLink, Megaphone } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { useAnimatedIconHover, WhatsappIcon } from "@/components/icons";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
@@ -63,32 +63,19 @@ export default function ParceiroMarketingClient({
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
-      <div className="parceiro-marketing space-y-5 max-w-2xl w-full">
+      <div className="parceiro-marketing space-y-6 max-w-2xl w-full">
         <div>
-          <h1 className="text-xl sm:text-2xl font-display font-bold text-white tracking-tight">
-            Marketing
-          </h1>
-          <p className="text-xs text-white/60 mt-1 max-w-lg leading-relaxed">
-            Envie o link de cadastro para o seu cliente. Quem se cadastrar por ele aparece
-            automaticamente na sua lista.
+          <p className="parceiro-page-kicker">Indicação</p>
+          <h1 className="parceiro-page-title">Seu link</h1>
+          <p className="parceiro-page-desc">
+            Quem se cadastrar por ele aparece na sua lista de clientes.
           </p>
         </div>
 
         <section className="parceiro-marketing-card">
-          <div className="parceiro-marketing-card-accent" aria-hidden />
           <div className="parceiro-marketing-card-body space-y-4">
-            <div className="flex items-start gap-3">
-              <span className="parceiro-marketing-icon">
-                <Megaphone className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <h2 className="font-display font-bold text-[#1a1208] text-base tracking-tight">
-                  Seu link de indicação
-                </h2>
-                <p className="text-xs text-stone-600 mt-0.5 leading-snug">
-                  Exclusivo seu — a Móveis Unghero identifica que o lead veio de você.
-                </p>
-              </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium text-stone-500">Link exclusivo</p>
             </div>
 
             <div className="parceiro-marketing-link-row">

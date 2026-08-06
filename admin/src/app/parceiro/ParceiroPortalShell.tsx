@@ -35,105 +35,6 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-/** Uma vez por carga da página — reset só no reload completo. */
-let partnerGreetingSmilePlayed = false;
-
-function TypedHeroGreeting({ firstName }: { firstName: string }) {
-  const playfulText = `Olá, ${firstName}.  :)`;
-  const finalText = `Olá, ${firstName}!`;
-  const [shown, setShown] = useState(() =>
-    partnerGreetingSmilePlayed ? finalText : ""
-  );
-  const [typing, setTyping] = useState(() => !partnerGreetingSmilePlayed);
-
-  useEffect(() => {
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (reduceMotion) {
-      setShown(finalText);
-      setTyping(false);
-      partnerGreetingSmilePlayed = true;
-      return;
-    }
-
-    if (partnerGreetingSmilePlayed) {
-      setShown(finalText);
-      setTyping(false);
-      return;
-    }
-
-    let cancelled = false;
-    const timers: number[] = [];
-    const wait = (ms: number) =>
-      new Promise<void>((resolve) => {
-        timers.push(window.setTimeout(resolve, ms));
-      });
-
-    const run = async () => {
-      setTyping(true);
-      let text = "";
-      setShown("");
-
-      for (let i = 1; i <= playfulText.length; i += 1) {
-        if (cancelled) return;
-        text = playfulText.slice(0, i);
-        setShown(text);
-        await wait(50);
-      }
-
-      if (cancelled) return;
-      await wait(750);
-      if (cancelled) return;
-
-      const keepPrefix = `Olá, ${firstName}`;
-      while (text.length > keepPrefix.length) {
-        if (cancelled) return;
-        text = text.slice(0, -1);
-        setShown(text);
-        await wait(26);
-      }
-
-      if (cancelled) return;
-
-      for (let i = text.length + 1; i <= finalText.length; i += 1) {
-        if (cancelled) return;
-        text = finalText.slice(0, i);
-        setShown(text);
-        await wait(55);
-      }
-
-      if (cancelled) return;
-      partnerGreetingSmilePlayed = true;
-      await wait(700);
-      if (!cancelled) setTyping(false);
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-      timers.forEach((id) => window.clearTimeout(id));
-    };
-  }, [firstName, playfulText, finalText]);
-
-  return (
-    <h1 className="parceiro-portal-hero-title" aria-label={finalText}>
-      <span className="parceiro-portal-hero-title-gradient" aria-hidden>
-        {shown}
-      </span>
-      <span
-        className={cn(
-          "parceiro-portal-hero-title-cursor",
-          !typing && "parceiro-portal-hero-title-cursor-done"
-        )}
-        aria-hidden
-      />
-    </h1>
-  );
-}
-
 interface ParceiroPortalShellProps {
   partner: PartnerPortalData;
   isAdminPreview?: boolean;
@@ -247,8 +148,7 @@ export default function ParceiroPortalShell({
       <main className="parceiro-portal-main">
         {showHeroPhoto && (
           <section className="parceiro-portal-hero">
-            <div className="parceiro-portal-hero-accent" />
-            <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 p-5 sm:p-7">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 p-5 sm:p-6">
               <div className="relative group/avatar mx-auto sm:mx-0">
                 <div className="parceiro-portal-avatar-lg">
                   {partner.fotoUrl ? (
@@ -288,18 +188,19 @@ export default function ParceiroPortalShell({
                 />
               </div>
 
-              <div className="min-w-0 flex-1 text-center sm:text-left space-y-2">
+              <div className="min-w-0 flex-1 text-center sm:text-left space-y-1.5">
                 <p className="parceiro-portal-hero-eyebrow">{roleLabel}</p>
-                <TypedHeroGreeting firstName={partner.nome.split(" ")[0] || "parceiro"} />
+                <h1 className="parceiro-portal-hero-title">
+                  <span className="parceiro-portal-hero-title-gradient">
+                    Olá, {partner.nome.split(" ")[0] || "parceiro"}
+                  </span>
+                </h1>
                 <p className="parceiro-portal-hero-copy">
-                  Acompanhe seus projetos e o catálogo da Móveis Unghero neste espaço.
+                  Seu espaço com a Móveis Unghero.
                 </p>
                 {uploadError && (
                   <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
                 )}
-                <p className="text-[11px] text-slate-500">
-                  Clique em Alterar foto para atualizar sua imagem de perfil.
-                </p>
               </div>
             </div>
           </section>
@@ -310,15 +211,8 @@ export default function ParceiroPortalShell({
 
       <footer className="parceiro-portal-footer">
         <div className="parceiro-portal-footer-inner">
-          <p className="parceiro-portal-footer-product">
-            Portal do Parceiro — um produto{" "}
-            <span className="parceiro-portal-footer-brand">Móveis Unghero</span>
-          </p>
-          <p className="parceiro-portal-footer-copy">
-            Espaço exclusivo para arquitetos e profissionais parceiros.
-          </p>
           <p className="parceiro-portal-footer-legal">
-            © {new Date().getFullYear()} Móveis Unghero. Todos os direitos reservados.
+            © {new Date().getFullYear()} Móveis Unghero
           </p>
         </div>
       </footer>

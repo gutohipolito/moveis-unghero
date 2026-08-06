@@ -214,51 +214,43 @@ export default function ParceiroProdutosClient({
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
-      <div className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-display font-bold text-white tracking-tight">
-              Produtos
-            </h1>
-            <p className="text-xs text-white/60 mt-1 max-w-lg">
-              {section === "produtos"
-                ? showingSuppliers
-                  ? "Escolha o fornecedor para ver a vitrine da Móveis Unghero."
-                  : selectedLabel
-                    ? `Produtos de ${selectedLabel}. Toque para abrir a ficha.`
-                    : "Vitrine ativa da Móveis Unghero."
-                : showingSuppliers
-                  ? "Escolha o fornecedor para ver os catálogos em PDF."
-                  : selectedLabel
-                    ? `Catálogos de ${selectedLabel}. Toque para compartilhar.`
-                    : "Catálogos ativos da Móveis Unghero."}
-            </p>
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/70 bg-white/10 border border-white/15 px-2.5 py-1 rounded-full self-start sm:self-auto">
-            {countBadge}
-          </span>
+      <div className="space-y-6">
+        <div>
+          <p className="parceiro-page-kicker">Catálogo</p>
+          <h1 className="parceiro-page-title">
+            {section === "produtos" ? "Vitrine" : "Catálogos PDF"}
+          </h1>
+          <p className="parceiro-page-desc">
+            {section === "produtos"
+              ? showingSuppliers
+                ? "Escolha o fornecedor para ver a vitrine."
+                : selectedLabel
+                  ? `${selectedLabel} · ${countBadge}`
+                  : countBadge
+              : showingSuppliers
+                ? "Escolha o fornecedor para ver os PDFs."
+                : selectedLabel
+                  ? `${selectedLabel} · ${countBadge}`
+                  : countBadge}
+          </p>
         </div>
 
-        <div className="flex gap-1 p-1 rounded-xl bg-white/10 border border-white/15 w-fit">
+        <div className="flex gap-1.5 w-fit">
           <button
             type="button"
             onClick={() => switchSection("produtos")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              section === "produtos"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-white/75 hover:text-white hover:bg-white/10"
+            className={`parceiro-filter-chip inline-flex items-center gap-1.5 ${
+              section === "produtos" ? "is-active" : ""
             }`}
           >
             <Images className="h-3.5 w-3.5" />
-            Produtos
+            Vitrine
           </button>
           <button
             type="button"
             onClick={() => switchSection("catalogos")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              section === "catalogos"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-white/75 hover:text-white hover:bg-white/10"
+            className={`parceiro-filter-chip inline-flex items-center gap-1.5 ${
+              section === "catalogos" ? "is-active" : ""
             }`}
           >
             <BookOpen className="h-3.5 w-3.5" />
