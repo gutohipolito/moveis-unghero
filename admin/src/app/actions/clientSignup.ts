@@ -8,6 +8,15 @@ import type { TipoPessoa } from "@/lib/clientDocument";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { stripConsentFromObservacoes } from "@/lib/clientConsent";
 import { isValidBrPhoneDigits } from "@/lib/phone";
+import {
+  FORM_FIELD_LIMITS,
+  cleanCepDigits,
+  truncateField,
+  validateOptionalCep,
+  validateOptionalCnpj,
+  validateOptionalCpf,
+} from "@/lib/brDocuments";
+import { normalizeEmailInput, validateOptionalEmail } from "@/lib/email";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { resolvePartnerByInviteCode } from "@/lib/partnerInvite";
@@ -49,8 +58,8 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
       };
     }
 
-    const nome = data.nome?.trim();
-    const telefone = data.telefone?.trim();
+    const nome = truncateField(data.nome || "", FORM_FIELD_LIMITS.nome);
+    const telefone = data.telefone?.trim() || "";
 
     if (!nome || nome.length < 3) {
       return { success: false, error: "Informe seu nome completo." };
@@ -64,6 +73,12 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         error: "Informe um telefone válido com DDD (fixo ou celular).",
       };
     }
+
+    const emailError = validateOptionalEmail(data.email || "");
+    if (emailError) {
+      return { success: false, error: emailError };
+    }
+
     if (!data.lgpd_aceite) {
       return {
         success: false,
@@ -84,14 +99,30 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
     }
 
     const tipoPessoa: TipoPessoa = data.tipo_pessoa === "PJ" ? "PJ" : "PF";
+    const docError =
+      tipoPessoa === "PJ"
+        ? validateOptionalCnpj(data.documento || "")
+        : validateOptionalCpf(data.documento || "");
+    if (docError) {
+      return { success: false, error: docError };
+    }
+
+    const cepError = validateOptionalCep(data.cep || "");
+    if (cepError) {
+      return { success: false, error: cepError };
+    }
+
     const documentoDigits = data.documento?.replace(/\D/g, "") || "";
     const cpf = tipoPessoa === "PF" ? documentoDigits || null : null;
     const cnpj = tipoPessoa === "PJ" ? documentoDigits || null : null;
+    const emailNormalized = normalizeEmailInput(data.email || "") || undefined;
+    const cepDigits = cleanCepDigits(data.cep || "");
+    const cepFormatted = cepDigits ? `${cepDigits.slice(0, 5)}-${cepDigits.slice(5)}` : null;
 
     const existing = await findExistingClient({
       companyId,
       telefone,
-      email: data.email,
+      email: emailNormalized,
       cpf: cpf || undefined,
       cnpj: cnpj || undefined,
     });
@@ -126,14 +157,16 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
       };
     }
 
-    const contact = resolveClientContactFields(telefone, data.email);
-    const observacoes = stripConsentFromObservacoes(data.observacoes?.trim() || "");
+    const contact = resolveClientContactFields(telefone, emailNormalized);
+    const observacoes = stripConsentFromObservacoes(
+      truncateField(data.observacoes || "", FORM_FIELD_LIMITS.observacoes)
+    );
 
     const address = normalizeAddressFields({
-      cidade: data.cidade,
-      bairro: data.bairro,
+      cidade: truncateField(data.cidade || "", FORM_FIELD_LIMITS.cidade),
+      bairro: truncateField(data.bairro || "", FORM_FIELD_LIMITS.bairro),
       uf: data.uf,
-      endereco: data.endereco,
+      endereco: truncateField(data.endereco || "", FORM_FIELD_LIMITS.endereco),
     });
 
     const attributedAt = partnerId ? new Date() : null;
@@ -152,9 +185,9 @@ export async function submitPublicClientSignupAction(data: ClientSignupData) {
         tipo_pessoa: tipoPessoa,
         cpf,
         cnpj,
-        cep: data.cep?.trim() || null,
+        cep: cepFormatted,
         endereco: address.endereco || null,
-        numero: data.numero?.trim() || null,
+        numero: truncateField(data.numero || "", FORM_FIELD_LIMITS.numero) || null,
         bairro: address.bairro || null,
         uf: address.uf,
         tipo_imovel: data.tipo_imovel?.trim() || null,

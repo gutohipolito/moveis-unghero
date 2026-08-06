@@ -21,6 +21,8 @@ import {
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
 import { PARTNER_ORIGEM_OPTIONS, PARTNER_SIGNUP_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
 import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { FORM_FIELD_LIMITS } from "@/lib/brDocuments";
+import { validateOptionalEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 import { CIDADES_SERRA_GAUCHA } from "@/lib/address";
@@ -172,9 +174,9 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         }
       }
       if (email.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
-          setError("Por favor, insira um e-mail válido.");
+        const emailError = validateOptionalEmail(email);
+        if (emailError) {
+          setError(emailError);
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
@@ -257,9 +259,9 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       }
     }
     if (email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        setError("Por favor, insira um e-mail válido.");
+      const emailError = validateOptionalEmail(email);
+      if (emailError) {
+        setError(emailError);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -482,7 +484,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   type="text"
                   placeholder="Seu nome completo"
                   value={nome}
-                  onChange={(e) => setNome(e.target.value)}
+                  onChange={(e) => setNome(e.target.value.slice(0, FORM_FIELD_LIMITS.nome))}
+                  maxLength={FORM_FIELD_LIMITS.nome}
                   className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                 />
               </div>
@@ -496,7 +499,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     type="text"
                     placeholder="Nome do seu studio de design/arquitetura"
                     value={escritorio}
-                    onChange={(e) => setEscritorio(e.target.value)}
+                    onChange={(e) => setEscritorio(e.target.value.slice(0, FORM_FIELD_LIMITS.escritorio))}
+                    maxLength={FORM_FIELD_LIMITS.escritorio}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
                 </div>
@@ -531,7 +535,8 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   type="text"
                   placeholder={tipo === "ARQUITETO" ? "Ex: A123456-7" : tipo === "ENGENHEIRO" ? "Ex: 123.456-D" : "Ex: CAU, CREA ou ABD (se houver)"}
                   value={registroProfissional}
-                  onChange={(e) => setRegistroProfissional(e.target.value)}
+                  onChange={(e) => setRegistroProfissional(e.target.value.slice(0, FORM_FIELD_LIMITS.registroProfissional))}
+                  maxLength={FORM_FIELD_LIMITS.registroProfissional}
                   className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   required={tipo === "ARQUITETO" || tipo === "ENGENHEIRO"}
                 />
@@ -576,9 +581,11 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   <input
                     required
                     type="tel"
+                    inputMode="numeric"
                     placeholder={PHONE_PLACEHOLDER}
                     value={telefone}
                     onChange={handleTelefoneChange}
+                    maxLength={16}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
                   <p className="text-[10px] text-slate-400">Celular ou fixo com DDD</p>
@@ -591,9 +598,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   <input
                     required
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     placeholder="arquiteto@exemplo.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.slice(0, FORM_FIELD_LIMITS.email))}
+                    maxLength={FORM_FIELD_LIMITS.email}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
                   />
                 </div>

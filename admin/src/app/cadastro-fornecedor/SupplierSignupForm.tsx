@@ -19,7 +19,17 @@ import {
   DollarSign
 } from "lucide-react";
 import { submitPublicSupplierSignupAction, SupplierSignupData } from "@/app/actions/supplierSignup";
-import { formatPhoneInput } from "@/lib/phone";
+import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
+import {
+  CEP_PLACEHOLDER,
+  CNPJ_PLACEHOLDER,
+  FORM_FIELD_LIMITS,
+  formatCepInput,
+  formatCnpjInput,
+  isValidCnpj,
+  validateOptionalCep,
+} from "@/lib/brDocuments";
+import { validateRequiredEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 
 const TOTAL_STEPS = 5;
@@ -292,24 +302,11 @@ export default function SupplierSignupForm({
   }
 
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 14) value = value.slice(0, 14);
-
-    const cleanCnpj = value;
-
-    if (value.length > 12) {
-      value = `${value.slice(0, 2)}.${value.slice(2, 5)}.${value.slice(5, 8)}/${value.slice(8, 12)}-${value.slice(12)}`;
-    } else if (value.length > 8) {
-      value = `${value.slice(0, 2)}.${value.slice(2, 5)}.${value.slice(5, 8)}/${value.slice(8)}`;
-    } else if (value.length > 5) {
-      value = `${value.slice(0, 2)}.${value.slice(2, 5)}.${value.slice(5)}`;
-    } else if (value.length > 2) {
-      value = `${value.slice(0, 2)}.${value.slice(2)}`;
-    }
+    const value = formatCnpjInput(e.target.value);
     setCnpj(value);
-
-    if (cleanCnpj.length === 14) {
-      fetchCompanyByCnpj(cleanCnpj);
+    const clean = value.replace(/\D/g, "");
+    if (clean.length === 14) {
+      void fetchCompanyByCnpj(clean);
     }
   };
 
@@ -318,12 +315,7 @@ export default function SupplierSignupForm({
   };
 
   const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 8) value = value.slice(0, 8);
-    if (value.length > 5) {
-      value = `${value.slice(0, 5)}-${value.slice(5)}`;
-    }
-    setContatoCep(value);
+    setContatoCep(formatCepInput(e.target.value));
   };
 
   // --- Handlers de Upload ---
@@ -371,15 +363,26 @@ export default function SupplierSignupForm({
     setError(null);
     if (step === 1) {
       if (!nome.trim()) return "Razão Social é obrigatória.";
-      const cleanCnpj = cnpj.replace(/\D/g, "");
-      if (cleanCnpj.length !== 14) return "CNPJ incompleto ou inválido.";
+      const clean = cnpj.replace(/\D/g, "");
+      if (clean.length !== 14) return "CNPJ incompleto. Use o formato 00.000.000/0000-00.";
+      if (!isValidCnpj(clean)) return "Informe um CNPJ válido.";
       if (!categoria.trim()) return "Categoria principal é obrigatória.";
     }
     if (step === 2) {
       if (!contatoRepresentante.trim()) return "Nome do representante é obrigatório.";
-      if (!email.trim()) return "E-mail comercial é obrigatório.";
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) return "Insira um e-mail válido.";
+      const emailError = validateRequiredEmail(email);
+      if (emailError) return emailError;
+      if (contatoWhatsapp.trim() && !isValidBrPhoneDigits(contatoWhatsapp)) {
+        return "Informe um WhatsApp válido com DDD.";
+      }
+      if (telefone.trim() && !isValidBrPhoneDigits(telefone)) {
+        return "Informe um telefone comercial válido com DDD.";
+      }
+      if (contatoTelefoneSecundario.trim() && !isValidBrPhoneDigits(contatoTelefoneSecundario)) {
+        return "Informe um telefone secundário válido com DDD.";
+      }
+      const cepError = validateOptionalCep(contatoCep);
+      if (cepError) return cepError;
     }
     return null;
   };
@@ -636,7 +639,9 @@ export default function SupplierSignupForm({
                     type="text" 
                     value={cnpj} 
                     onChange={handleCnpjChange}
-                    placeholder="00.000.000/0000-00" 
+                    placeholder={CNPJ_PLACEHOLDER}
+                    maxLength={18}
+                    inputMode="numeric"
                     className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                   />
                   <p className="text-[10px] text-slate-500">Informe o CNPJ primeiro para preencher os dados automaticamente.</p>
@@ -823,7 +828,11 @@ export default function SupplierSignupForm({
                     required 
                     type="email" 
                     value={email} 
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value.slice(0, FORM_FIELD_LIMITS.email))}
+                    maxLength={FORM_FIELD_LIMITS.email}
+                    placeholder="contato@empresa.com.br"
+                    inputMode="email"
+                    autoComplete="email"
                     className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 focus:border-blue-500 outline-none"
                   />
                 </div>
@@ -885,7 +894,9 @@ export default function SupplierSignupForm({
                       type="text" 
                       value={contatoCep} 
                       onChange={handleCepChange}
-                      placeholder="00000-000" 
+                      placeholder={CEP_PLACEHOLDER}
+                      maxLength={9}
+                      inputMode="numeric"
                       className="w-full bg-slate-950/60 border border-slate-800 rounded-lg text-sm p-2.5 text-slate-100 placeholder-slate-650 focus:border-blue-500 outline-none"
                     />
                   </div>

@@ -9,6 +9,9 @@ import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { headers } from "next/headers";
+import { isValidBrPhoneDigits } from "@/lib/phone";
+import { FORM_FIELD_LIMITS, truncateField } from "@/lib/brDocuments";
+import { normalizeEmailInput, validateOptionalEmail } from "@/lib/email";
 
 export interface PartnerSignupData {
   nome: string;
@@ -45,9 +48,13 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
       };
     }
 
-    const nome = data.nome?.trim();
+    const nome = truncateField(data.nome || "", FORM_FIELD_LIMITS.nome);
     if (!nome || nome.length < 3) {
       return { success: false, error: "Informe seu nome completo." };
+    }
+    const nameParts = nome.split(/\s+/).filter((part) => part.length > 0);
+    if (nameParts.length < 2) {
+      return { success: false, error: "Informe seu nome e sobrenome (nome completo)." };
     }
 
     if (!data.tipo) {
@@ -55,11 +62,22 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
     }
 
     const telefone = data.telefone?.trim() || null;
-    const email = data.email?.trim().toLowerCase() || null;
+    const emailRaw = data.email?.trim() || "";
+    const emailError = validateOptionalEmail(emailRaw);
+    if (emailError) {
+      return { success: false, error: emailError };
+    }
+    const email = emailRaw ? normalizeEmailInput(emailRaw) : null;
     const phoneDigits = telefone ? cleanPhone(telefone) : "";
 
     if (!telefone && !email) {
       return { success: false, error: "Informe telefone ou e-mail para contato." };
+    }
+    if (telefone && !isValidBrPhoneDigits(telefone)) {
+      return {
+        success: false,
+        error: "Informe um telefone válido com DDD (fixo ou celular).",
+      };
     }
 
     if (!data.lgpd_aceite) {
@@ -105,11 +123,21 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
         cidade: data.cidade?.trim()
           ? normalizeCidade(data.cidade.trim()).cidade || null
           : null,
-        escritorio: data.escritorio?.trim() ? capitalizeText(data.escritorio.trim()) : null,
-        registro_profissional: data.registro_profissional?.trim() || null,
-        portfolioUrl: data.portfolio_url?.trim() || null,
-        origem: data.origem?.trim() || null,
-        observacoes: data.observacoes?.trim() || null,
+        escritorio: data.escritorio?.trim()
+          ? capitalizeText(truncateField(data.escritorio, FORM_FIELD_LIMITS.escritorio))
+          : null,
+        registro_profissional: data.registro_profissional?.trim()
+          ? truncateField(data.registro_profissional, FORM_FIELD_LIMITS.registroProfissional)
+          : null,
+        portfolioUrl: data.portfolio_url?.trim()
+          ? truncateField(data.portfolio_url, FORM_FIELD_LIMITS.portfolioUrl)
+          : null,
+        origem: data.origem?.trim()
+          ? truncateField(data.origem, FORM_FIELD_LIMITS.origem)
+          : null,
+        observacoes: data.observacoes?.trim()
+          ? truncateField(data.observacoes, FORM_FIELD_LIMITS.observacoes)
+          : null,
         marketing_aceite: Boolean(data.marketing_aceite),
         ativo: true,
       },

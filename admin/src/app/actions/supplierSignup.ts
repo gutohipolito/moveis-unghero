@@ -8,6 +8,16 @@ import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { headers } from "next/headers";
 import { requireWriteAccess } from "@/lib/moduleAccess";
 import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
+import {
+  FORM_FIELD_LIMITS,
+  cleanCepDigits,
+  cleanCnpjDigits,
+  isValidCnpj,
+  truncateField,
+  validateOptionalCep,
+} from "@/lib/brDocuments";
+import { normalizeEmailInput, validateRequiredEmail } from "@/lib/email";
+import { isValidBrPhoneDigits } from "@/lib/phone";
 
 export interface SupplierSignupData {
   company_id?: string;
@@ -72,10 +82,6 @@ export interface SupplierSignupData {
   logisticaAreaCobertura?: string;
 }
 
-function cleanCnpj(cnpj: string) {
-  return cnpj.replace(/\D/g, "");
-}
-
 export async function submitPublicSupplierSignupAction(data: SupplierSignupData) {
   try {
     let companyId: string;
@@ -98,22 +104,26 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
       companyId = resolvePublicCompanyId();
     }
 
-    const nome = data.nome?.trim();
+    const nome = truncateField(data.nome || "", FORM_FIELD_LIMITS.nome);
     if (!nome) {
       return { success: false, error: "A Razão Social é obrigatória." };
     }
 
-    const cnpj = cleanCnpj(data.cnpj || "");
-    if (!cnpj || cnpj.length !== 14) {
-      return { success: false, error: "Informe um CNPJ válido com 14 dígitos." };
+    const cnpj = cleanCnpjDigits(data.cnpj || "");
+    if (!cnpj || cnpj.length !== 14 || !isValidCnpj(cnpj)) {
+      return { success: false, error: "Informe um CNPJ válido." };
     }
 
-    const email = data.email?.trim().toLowerCase();
-    if (!email) {
-      return { success: false, error: "O e-mail comercial é obrigatório." };
+    const emailError = validateRequiredEmail(data.email || "");
+    if (emailError) {
+      return { success: false, error: emailError };
     }
+    const email = normalizeEmailInput(data.email || "");
 
-    const contatoRepresentante = data.contatoRepresentante?.trim();
+    const contatoRepresentante = truncateField(
+      data.contatoRepresentante || "",
+      FORM_FIELD_LIMITS.nome
+    );
     if (!contatoRepresentante) {
       return { success: false, error: "O nome do representante é obrigatório." };
     }
@@ -122,6 +132,23 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
     if (!categoria) {
       return { success: false, error: "A categoria principal é obrigatória." };
     }
+
+    for (const [label, phone] of [
+      ["WhatsApp", data.contatoWhatsapp],
+      ["telefone comercial", data.telefone],
+      ["telefone secundário", data.contatoTelefoneSecundario],
+    ] as const) {
+      if (phone?.trim() && !isValidBrPhoneDigits(phone)) {
+        return { success: false, error: `Informe um ${label} válido com DDD.` };
+      }
+    }
+
+    const cepError = validateOptionalCep(data.contatoCep || "");
+    if (cepError) {
+      return { success: false, error: cepError };
+    }
+    const cepDigits = cleanCepDigits(data.contatoCep || "");
+    const contatoCep = cepDigits ? `${cepDigits.slice(0, 5)}-${cepDigits.slice(5)}` : null;
 
     // Verificar CNPJ duplicado
     const existing = await prisma.supplier.findFirst({
@@ -168,8 +195,10 @@ export async function submitPublicSupplierSignupAction(data: SupplierSignupData)
         contatoTelefoneSecundario: data.contatoTelefoneSecundario?.trim() || null,
         contatoCidade: data.contatoCidade?.trim() ? capitalizeText(data.contatoCidade.trim()) : null,
         contatoEstado: data.contatoEstado?.trim() || null,
-        contatoEndereco: data.contatoEndereco?.trim() || null,
-        contatoCep: data.contatoCep?.trim() || null,
+        contatoEndereco: data.contatoEndereco?.trim()
+          ? truncateField(data.contatoEndereco, FORM_FIELD_LIMITS.endereco)
+          : null,
+        contatoCep,
 
         // Produtos
         produtosFornecidos: data.produtosFornecidos?.trim() || null,

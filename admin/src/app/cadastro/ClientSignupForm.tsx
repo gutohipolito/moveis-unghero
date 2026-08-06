@@ -18,7 +18,20 @@ import {
 } from "lucide-react";
 import { submitPublicClientSignupAction } from "@/app/actions/clientSignup";
 import type { TipoPessoa } from "@/lib/clientDocument";
-import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
+import {
+  CEP_PLACEHOLDER,
+  CNPJ_PLACEHOLDER,
+  CPF_PLACEHOLDER,
+  FORM_FIELD_LIMITS,
+  formatCepInput,
+  formatCnpjInput,
+  formatCpfInput,
+  validateOptionalCep,
+  validateOptionalCnpj,
+  validateOptionalCpf,
+} from "@/lib/brDocuments";
+import { validateOptionalEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 import { normalizeCidade, normalizeBairro } from "@/lib/address";
@@ -156,6 +169,19 @@ export default function ClientSignupForm({
     setTelefone(formatPhoneInput(e.target.value));
   };
 
+  const handleDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted =
+      tipoPessoa === "PJ" ? formatCnpjInput(e.target.value) : formatCpfInput(e.target.value);
+    setDocumento(formatted);
+    if (tipoPessoa === "PJ") void fetchCompanyByCnpj(formatted);
+  };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCepInput(e.target.value);
+    setCep(formatted);
+    void fetchAddressByCep(formatted);
+  };
+
   async function fetchAddressByCep(cepValue: string) {
     const addr = await fetchViaCep(cepValue);
     if (!addr) return;
@@ -178,7 +204,7 @@ export default function ClientSignupForm({
       const { cidade: city } = normalizeCidade(json.municipio || "");
       setNome((prev) => json.nome_fantasia || json.razao_social || prev);
       setEmail((prev) => json.email || prev);
-      setCep((prev) => json.cep || prev);
+      setCep((prev) => (json.cep ? formatCepInput(json.cep) : prev));
       setEndereco((prev) => json.logradouro || prev);
       setNumero((prev) => json.numero || prev);
       setBairro((prev) => normalizeBairro(json.bairro || prev, city) || prev);
@@ -196,10 +222,40 @@ export default function ClientSignupForm({
 
   function nextStep() {
     setError(null);
-    if (step === 2 && (!nome.trim() || !telefone.trim())) {
-      setError("Por favor, preencha seu nome e telefone/WhatsApp.");
-      scrollTop();
-      return;
+    if (step === 1) {
+      const docError =
+        tipoPessoa === "PJ" ? validateOptionalCnpj(documento) : validateOptionalCpf(documento);
+      if (docError) {
+        setError(docError);
+        scrollTop();
+        return;
+      }
+    }
+    if (step === 2) {
+      if (!nome.trim() || !telefone.trim()) {
+        setError("Por favor, preencha seu nome e telefone/WhatsApp.");
+        scrollTop();
+        return;
+      }
+      if (!isValidBrPhoneDigits(telefone)) {
+        setError("Informe um telefone válido com DDD (fixo ou celular).");
+        scrollTop();
+        return;
+      }
+      const emailError = validateOptionalEmail(email);
+      if (emailError) {
+        setError(emailError);
+        scrollTop();
+        return;
+      }
+    }
+    if (step === 3) {
+      const cepError = validateOptionalCep(cep);
+      if (cepError) {
+        setError(cepError);
+        scrollTop();
+        return;
+      }
     }
     setStep((s) => Math.min(s + 1, TOTAL_STEPS));
     scrollTop();
@@ -218,6 +274,34 @@ export default function ClientSignupForm({
     if (!nome.trim() || !telefone.trim()) {
       setError("Por favor, preencha seu nome e telefone/WhatsApp.");
       setStep(2);
+      scrollTop();
+      return;
+    }
+    if (!isValidBrPhoneDigits(telefone)) {
+      setError("Informe um telefone válido com DDD (fixo ou celular).");
+      setStep(2);
+      scrollTop();
+      return;
+    }
+    const docError =
+      tipoPessoa === "PJ" ? validateOptionalCnpj(documento) : validateOptionalCpf(documento);
+    if (docError) {
+      setError(docError);
+      setStep(1);
+      scrollTop();
+      return;
+    }
+    const emailError = validateOptionalEmail(email);
+    if (emailError) {
+      setError(emailError);
+      setStep(2);
+      scrollTop();
+      return;
+    }
+    const cepError = validateOptionalCep(cep);
+    if (cepError) {
+      setError(cepError);
+      setStep(3);
       scrollTop();
       return;
     }
@@ -362,7 +446,10 @@ export default function ClientSignupForm({
                   <button
                     key={tipo}
                     type="button"
-                    onClick={() => setTipoPessoa(tipo)}
+                    onClick={() => {
+                      setTipoPessoa(tipo);
+                      setDocumento("");
+                    }}
                     className={`text-left rounded-2xl border p-4 transition-all cursor-pointer ${
                       selected
                         ? "border-primary ring-1 ring-primary bg-primary/5 text-slate-100"
@@ -397,12 +484,12 @@ export default function ClientSignupForm({
               </label>
               <input
                 type="text"
+                inputMode="numeric"
+                autoComplete={tipoPessoa === "PJ" ? "off" : "off"}
                 value={documento}
-                onChange={(e) => {
-                  setDocumento(e.target.value);
-                  if (tipoPessoa === "PJ") fetchCompanyByCnpj(e.target.value);
-                }}
-                placeholder={tipoPessoa === "PJ" ? "00.000.000/0001-00" : "000.000.000-00"}
+                onChange={handleDocumentoChange}
+                placeholder={tipoPessoa === "PJ" ? CNPJ_PLACEHOLDER : CPF_PLACEHOLDER}
+                maxLength={tipoPessoa === "PJ" ? 18 : 14}
                 className={inputClass}
               />
             </div>
@@ -437,7 +524,8 @@ export default function ClientSignupForm({
                 <input
                   type="text"
                   value={nome}
-                  onChange={(e) => setNome(e.target.value)}
+                  onChange={(e) => setNome(e.target.value.slice(0, FORM_FIELD_LIMITS.nome))}
+                  maxLength={FORM_FIELD_LIMITS.nome}
                   className={inputClass}
                 />
               </div>
@@ -449,9 +537,11 @@ export default function ClientSignupForm({
                   </label>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     value={telefone}
                     onChange={handleTelefoneChange}
                     placeholder={PHONE_PLACEHOLDER}
+                    maxLength={16}
                     className={inputClass}
                   />
                   <p className="text-[10px] text-slate-400">
@@ -464,8 +554,12 @@ export default function ClientSignupForm({
                   </label>
                   <input
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.slice(0, FORM_FIELD_LIMITS.email))}
+                    placeholder="nome@empresa.com.br"
+                    maxLength={FORM_FIELD_LIMITS.email}
                     className={inputClass}
                   />
                 </div>
@@ -507,24 +601,36 @@ export default function ClientSignupForm({
                   <label className={labelClass}>CEP</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={cep}
-                    onChange={(e) => {
-                      setCep(e.target.value);
-                      fetchAddressByCep(e.target.value);
-                    }}
+                    onChange={handleCepChange}
+                    placeholder={CEP_PLACEHOLDER}
+                    maxLength={9}
                     className={inputClass}
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className={labelClass}>Rua / Logradouro</label>
-                  <input type="text" value={endereco} onChange={(e) => setEndereco(e.target.value)} className={inputClass} />
+                  <input
+                    type="text"
+                    value={endereco}
+                    onChange={(e) => setEndereco(e.target.value.slice(0, FORM_FIELD_LIMITS.endereco))}
+                    maxLength={FORM_FIELD_LIMITS.endereco}
+                    className={inputClass}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className={labelClass}>Número</label>
-                  <input type="text" value={numero} onChange={(e) => setNumero(e.target.value)} className={inputClass} />
+                  <input
+                    type="text"
+                    value={numero}
+                    onChange={(e) => setNumero(e.target.value.slice(0, FORM_FIELD_LIMITS.numero))}
+                    maxLength={FORM_FIELD_LIMITS.numero}
+                    className={inputClass}
+                  />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className={labelClass}>Bairro</label>
@@ -614,7 +720,8 @@ export default function ClientSignupForm({
                 </label>
                 <textarea
                   value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
+                  onChange={(e) => setObservacoes(e.target.value.slice(0, FORM_FIELD_LIMITS.observacoes))}
+                  maxLength={FORM_FIELD_LIMITS.observacoes}
                   rows={4}
                   className={`${inputClass} resize-none bg-slate-950/60 text-slate-100 border border-slate-800`}
                 />

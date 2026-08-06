@@ -14,6 +14,9 @@ import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { headers } from "next/headers";
+import { isValidBrPhoneDigits } from "@/lib/phone";
+import { FORM_FIELD_LIMITS, truncateField } from "@/lib/brDocuments";
+import { validateOptionalEmail } from "@/lib/email";
 
 export interface BriefingSubmitData {
   nome: string;
@@ -54,8 +57,8 @@ export interface BriefingSubmitData {
 
 export async function submitPublicBriefingAction(data: BriefingSubmitData) {
   try {
-    const ip = getRequestIp(await headers());
-    const rate = checkRateLimit(`public-briefing:${ip}`, {
+    const requestIp = getRequestIp(await headers());
+    const rate = checkRateLimit(`public-briefing:${requestIp}`, {
       limit: 10,
       windowMs: 60 * 60 * 1000,
     });
@@ -64,6 +67,25 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
         success: false,
         error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
       };
+    }
+
+    const nome = truncateField(data.nome || "", FORM_FIELD_LIMITS.nome);
+    const telefone = data.telefone?.trim() || "";
+    if (!nome || nome.length < 3) {
+      return { success: false, error: "Informe seu nome completo." };
+    }
+    if (!telefone) {
+      return { success: false, error: "Informe um telefone/WhatsApp para contato." };
+    }
+    if (!isValidBrPhoneDigits(telefone)) {
+      return {
+        success: false,
+        error: "Informe um telefone válido com DDD (fixo ou celular).",
+      };
+    }
+    const emailError = validateOptionalEmail(data.email || "");
+    if (emailError) {
+      return { success: false, error: emailError };
     }
 
     // Ignora company_id do cliente (IDOR / tenant pollution).
@@ -79,25 +101,25 @@ export async function submitPublicBriefingAction(data: BriefingSubmitData) {
 
     // 3. Localizar cliente existente ou criar novo cadastro
     const cleanEmail = normalizeClientEmail(data.email);
-    const contact = resolveClientContactFields(data.telefone, data.email);
+    const contact = resolveClientContactFields(telefone, data.email);
 
     let client = await findExistingClient({
       companyId,
-      telefone: data.telefone,
+      telefone,
       email: data.email,
     });
 
     const isExistingClient = Boolean(client);
 
     const address = normalizeAddressFields({
-      cidade: data.cidade,
-      bairro: data.bairro,
+      cidade: truncateField(data.cidade || "", FORM_FIELD_LIMITS.cidade),
+      bairro: truncateField(data.bairro || "", FORM_FIELD_LIMITS.bairro),
     });
 
     if (!client) {
       client = await prisma.client.create({
         data: {
-          nome: capitalizeText(data.nome),
+          nome: capitalizeText(nome),
           email: contact.email,
           telefone: contact.telefone,
           telefone_digits: contact.phoneDigits || null,
@@ -192,7 +214,9 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
         valor_previsto: 0,
         status_geral: statusInicial,
         ultimo_contato_em: new Date(),
-        observacoes: data.observacoes_adicionais || null
+        observacoes: data.observacoes_adicionais
+          ? truncateField(data.observacoes_adicionais, FORM_FIELD_LIMITS.observacoes)
+          : null
       }
     });
 
@@ -213,13 +237,13 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
         referencia_url: data.referencia_url || null,
         origem_lead: data.origem_lead,
         
-        // Metadados
+        // Metadados — IP vem do request (não confiar no client)
         utm_source: data.utm_source || null,
         utm_medium: data.utm_medium || null,
         utm_campaign: data.utm_campaign || null,
         gclid: data.gclid || null,
         fbclid: data.fbclid || null,
-        ip: data.ip || null,
+        ip: requestIp || null,
         user_agent: data.user_agent || null,
         dispositivo: data.dispositivo || null,
         os: data.os || null,
@@ -266,8 +290,8 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
           user_id: u.id,
           company_id: companyId,
           title: isExistingClient
-            ? `Nova solicitação: ${data.nome.trim()}`
-            : `Solicitação de Orçamento: ${data.nome.trim()}`,
+            ? `Nova solicitação: ${nome}`
+            : `Solicitação de Orçamento: ${nome}`,
           due_at: dueAt
         }))
       });
@@ -279,7 +303,7 @@ Fale com o cliente focando nestes pontos baseados nas respostas dele:
     void sendSignupConfirmationEmail({
       companyId,
       kind: "briefing",
-      nome: data.nome,
+      nome: nome,
       email: cleanEmail || client.email,
     });
 

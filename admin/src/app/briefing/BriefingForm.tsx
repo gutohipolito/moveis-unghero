@@ -22,7 +22,9 @@ import {
   ChevronDown
 } from "lucide-react";
 import { submitPublicBriefingAction } from "@/app/actions/briefing";
-import { formatPhoneInput, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { FORM_FIELD_LIMITS } from "@/lib/brDocuments";
+import { validateOptionalEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
 import { BAIRROS_FARROUPILHA } from "@/lib/address";
@@ -415,6 +417,22 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
     if (!submitUnlocked || step !== TOTAL_STEPS) return;
     if (!nome.trim() || !telefone.trim()) {
       setError("Por favor, preencha seu nome e seu WhatsApp de contato.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (nome.trim().length < 3) {
+      setError("Informe seu nome completo.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (!isValidBrPhoneDigits(telefone)) {
+      setError("Informe um telefone válido com DDD (fixo ou celular).");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const emailError = validateOptionalEmail(email);
+    if (emailError) {
+      setError(emailError);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -1169,7 +1187,8 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                   type="text"
                   placeholder="Ex: João da Silva"
                   value={nome}
-                  onChange={e => setNome(e.target.value)}
+                  onChange={e => setNome(e.target.value.slice(0, FORM_FIELD_LIMITS.nome))}
+                  maxLength={FORM_FIELD_LIMITS.nome}
                   className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                 />
               </div>
@@ -1182,9 +1201,11 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                   <input
                     required
                     type="tel"
+                    inputMode="numeric"
                     placeholder={PHONE_PLACEHOLDER}
                     value={telefone}
                     onChange={handleTelefoneChange}
+                    maxLength={16}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                   />
                   <p className="text-[10px] text-slate-400">Celular ou fixo com DDD</p>
@@ -1196,9 +1217,12 @@ export default function BriefingForm({ companyId }: { companyId?: string }) {
                   </label>
                   <input
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     placeholder="joao@exemplo.com"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value.slice(0, FORM_FIELD_LIMITS.email))}
+                    maxLength={FORM_FIELD_LIMITS.email}
                     className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold"
                   />
                 </div>
