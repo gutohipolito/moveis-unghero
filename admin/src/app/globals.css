@@ -107,6 +107,18 @@ body {
   line-height: var(--leading-normal);
 }
 .text-body { font-size: var(--text-body); line-height: var(--leading-relaxed); }
+
+/*
+ * iOS Safari dá zoom automático ao focar input/textarea/select com fonte < 16px.
+ * Não é um zoom nosso — é do celular. Forçar 16px no mobile evita o “samba” de layout.
+ */
+@media (max-width: 767.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="image"]):not([type="color"]):not([type="hidden"]),
+  textarea,
+  select {
+    font-size: 1rem !important;
+  }
+}
 .text-caption { font-size: var(--text-caption); line-height: var(--leading-normal); }
 .text-label {
   font-size: var(--text-label);
