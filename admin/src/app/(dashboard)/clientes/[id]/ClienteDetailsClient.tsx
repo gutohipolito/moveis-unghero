@@ -6,11 +6,13 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  type Activity, 
-  type Payment, 
+import { Dialog } from "@/components/ui/dialog";
+import {
+  type Activity,
+  type Payment,
   addActivityAction,
-  updateClientObservacoesAction 
+  updateClientAction,
+  updateClientObservacoesAction,
 } from "@/app/actions/cliente";
 import { getClientDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
@@ -21,21 +23,24 @@ import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
 import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 import { formatPhoneDisplay } from "@/lib/phone";
-import { 
-  ArrowLeft, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  FileText, 
-  MessageCircle, 
-  Clock, 
-  User, 
-  CreditCard, 
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
+  MessageCircle,
+  Clock,
+  User,
+  CreditCard,
   Layers,
   Send,
   ShieldCheck,
   ImageIcon,
   ChevronDown,
+  Pencil,
+  Home,
+  Truck,
 } from "lucide-react";
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
@@ -50,6 +55,8 @@ import {
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients } from "@/lib/permissions";
+import type { Origin } from "@/app/actions/kanban";
+import ClientWizard, { type ClientWizardData } from "../ClientWizard";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -71,6 +78,14 @@ interface ClientDetails {
   partner_id?: string | null;
   partnerNome?: string | null;
   partnerTipo?: string | null;
+  cep?: string;
+  endereco?: string;
+  numero?: string;
+  bairro?: string;
+  uf?: string;
+  tipo_imovel?: string;
+  obs_imovel?: string;
+  obs_entrega?: string;
   projects?: ProjectSummary[];
 }
 
@@ -89,7 +104,7 @@ const ORIGIN_LABELS: Record<string, string> = {
   GOOGLE: "Busca Google",
   WHATSAPP: "WhatsApp Comercial",
   FACEBOOK: "Campanha Facebook",
-  FORMULARIO: "Formulário de Qualificação"
+  FORMULARIO: "Formulário de Qualificação",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -97,7 +112,7 @@ const STATUS_LABELS: Record<string, string> = {
   EM_CONTATO: "Em Contato",
   NEGOCIACAO: "Em Negociação",
   APROVADO: "Cliente Aprovado",
-  INATIVO: "Inativo"
+  INATIVO: "Inativo",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -105,15 +120,62 @@ const STATUS_COLORS: Record<string, string> = {
   EM_CONTATO: "bg-cyan-100 text-cyan-800 border-cyan-200",
   NEGOCIACAO: "bg-blue-100 text-blue-800 border-blue-200",
   APROVADO: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  INATIVO: "bg-rose-100 text-rose-800 border-rose-200"
+  INATIVO: "bg-rose-100 text-rose-800 border-rose-200",
 };
 
-export default function ClienteDetailsClient({ 
-  initialClient, 
-  initialActivities, 
+const TIPO_IMOVEL_LABELS: Record<string, string> = {
+  CASA: "Casa Residencial",
+  APARTAMENTO: "Apartamento",
+  COMERCIAL: "Comercial / Escritório",
+  SOBRADO: "Sobrado / Triplex",
+  OUTRO: "Outro",
+};
+
+function formatCepDisplay(cep: string | undefined) {
+  const digits = (cep || "").replace(/\D/g, "").slice(0, 8);
+  if (digits.length !== 8) return cep?.trim() || "";
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function buildAddressLines(client: ClientDetails) {
+  const streetParts = [client.endereco?.trim(), client.numero?.trim()].filter(Boolean);
+  const street = streetParts.join(", ");
+  const locality = [client.bairro?.trim(), client.cidade?.trim(), client.uf?.trim()]
+    .filter(Boolean)
+    .join(" · ");
+  const cep = formatCepDisplay(client.cep);
+  return { street, locality, cep };
+}
+
+function clientToWizardData(client: ClientDetails): Partial<ClientWizardData> {
+  const doc = resolveClientDocument(client);
+  return {
+    tipo_pessoa: doc.tipo_pessoa,
+    documento: doc.documento,
+    nome: client.nome,
+    email: hasRealClientEmail(client.email) ? client.email : "",
+    telefone: client.telefone,
+    cep: client.cep || "",
+    endereco: client.endereco || "",
+    numero: client.numero || "",
+    bairro: client.bairro || "",
+    cidade: client.cidade,
+    uf: client.uf || "",
+    tipo_imovel: client.tipo_imovel || "CASA",
+    origem: (client.origem as Origin) || "INSTAGRAM",
+    status: client.status,
+    observacoes: doc.observacoes,
+    obs_imovel: client.obs_imovel || "",
+    obs_entrega: client.obs_entrega || "",
+  };
+}
+
+export default function ClienteDetailsClient({
+  initialClient,
+  initialActivities,
   initialPayments,
   initialAttachments,
-  companyId 
+  companyId,
 }: ClienteDetailsClientProps) {
   const [client, setClient] = useState<ClientDetails>(initialClient);
   const [projects, setProjects] = useState<ClientProjectSummary[]>(
@@ -122,25 +184,33 @@ export default function ClienteDetailsClient({
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
-  
-  // Abas: overview, projects, documents, finance, timeline
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "finance" | "timeline" | "documents" | "notas">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "projects" | "finance" | "timeline" | "documents" | "notas"
+  >("overview");
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "finance" || tab === "projects" || tab === "documents" || tab === "timeline" || tab === "overview" || tab === "notas") {
+    if (
+      tab === "finance" ||
+      tab === "projects" ||
+      tab === "documents" ||
+      tab === "timeline" ||
+      tab === "overview" ||
+      tab === "notas"
+    ) {
       setActiveTab(tab);
     }
   }, [searchParams]);
 
-  // Notas da Timeline
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
 
-  // Aba Notas — observações editáveis (sem o bloco legado de LGPD)
   const [notesValue, setNotesValue] = useState(
     stripConsentFromObservacoes(initialClient.observacoes ?? "")
   );
@@ -158,12 +228,15 @@ export default function ClienteDetailsClient({
       if (result.client.projects) {
         setProjects(result.client.projects as ClientProjectSummary[]);
       }
+      if (typeof result.client.observacoes === "string") {
+        setNotesValue(stripConsentFromObservacoes(result.client.observacoes));
+      }
     }
   }, [client.id]);
 
   useLiveEntity("clients", {
     sync: syncClientDetails,
-    enabled: !isSubmittingNote,
+    enabled: !isSubmittingNote && !editSaving,
   });
 
   const dialog = useActionDialog();
@@ -172,10 +245,8 @@ export default function ClienteDetailsClient({
   const { sensitiveHidden } = usePrivacy();
   const sensitive = useSensitiveDisplay();
   const { isOpsLimited, role } = usePermissions();
-  /** Marceneiro: no painel do cliente só o nome (sem contato, origem, consentimentos). */
   const isFactoryRole = role === "PRODUCAO";
   const canManage = canManageClients(role);
-  /** Projetista e Marceneiro: sem telefone/e-mail do cliente. */
   const hideClientContact = isOpsLimited;
 
   useEffect(() => {
@@ -185,14 +256,26 @@ export default function ClienteDetailsClient({
     }
   }, [isOpsLimited, activeTab]);
 
-  // Link formatado para WhatsApp com saudação (sem vazar telefone quando oculto)
   const greeting = `Olá ${getFirstName(client.nome)}, tudo bem? Aqui é da Móveis Unghero. 😊`;
   const whatsappUrl =
     hideClientContact || sensitive.hide
       ? null
       : buildWhatsAppUrl(client.telefone, greeting);
 
-  // Adicionar Anotação na Timeline
+  const notesPreview = stripConsentFromObservacoes(client.observacoes ?? "").trim();
+  const addressLines = buildAddressLines(client);
+  const hasAddress =
+    Boolean(addressLines.street) ||
+    Boolean(addressLines.locality) ||
+    Boolean(addressLines.cep);
+  const imovelLabel = client.tipo_imovel
+    ? TIPO_IMOVEL_LABELS[client.tipo_imovel] || client.tipo_imovel
+    : "";
+  const hasImovel =
+    Boolean(imovelLabel) ||
+    Boolean(client.obs_imovel?.trim()) ||
+    Boolean(client.obs_entrega?.trim());
+
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle || !newDesc) return;
@@ -210,7 +293,6 @@ export default function ClienteDetailsClient({
     setIsSubmittingNote(false);
   };
 
-  // Salvar Observações / Notas do cliente
   const handleSaveNotes = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingNotes(true);
@@ -228,12 +310,55 @@ export default function ClienteDetailsClient({
     setSavingNotes(false);
   };
 
+  const submitUpdate = async (form: ClientWizardData) => {
+    setEditSaving(true);
+    const data = {
+      nome: form.nome,
+      email: form.email,
+      telefone: form.telefone,
+      cidade: form.cidade,
+      origem: form.origem,
+      status: form.status,
+      observacoes: form.observacoes,
+      tipo_pessoa: form.tipo_pessoa,
+      cpf: form.tipo_pessoa === "PF" ? form.documento : undefined,
+      cnpj: form.tipo_pessoa === "PJ" ? form.documento : undefined,
+      cep: form.cep,
+      endereco: form.endereco,
+      numero: form.numero,
+      bairro: form.bairro,
+      uf: form.uf,
+      tipo_imovel: form.tipo_imovel,
+      obs_imovel: form.obs_imovel,
+      obs_entrega: form.obs_entrega,
+    };
+    const res = await updateClientAction(client.id, data);
+    if (res.success) {
+      setClient((prev) => ({
+        ...prev,
+        ...data,
+        cpf: data.cpf ?? "",
+        cnpj: data.cnpj ?? "",
+      }));
+      setNotesValue(stripConsentFromObservacoes(form.observacoes ?? ""));
+      setIsEditOpen(false);
+      showSuccess("Cliente atualizado", `As informações de ${form.nome} foram salvas.`);
+      await syncClientDetails();
+      setEditSaving(false);
+      return { success: true };
+    }
+    const errMsg =
+      res.error || "Ocorreu um erro ao atualizar o cliente. Tente novamente.";
+    showError("Não foi possível salvar", errMsg);
+    setEditSaving(false);
+    return { success: false, error: errMsg };
+  };
+
   return (
     <div className="space-y-6">
-      {/* Botão Voltar */}
       <div className="flex items-center gap-3">
-        <Link 
-          href="/clientes" 
+        <Link
+          href="/clientes"
           className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-all flex items-center justify-center cursor-pointer"
         >
           <ArrowLeft className="h-4.5 w-4.5" />
@@ -241,14 +366,19 @@ export default function ClienteDetailsClient({
         <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
       </div>
 
-      {/* ─── PERFIL DO CLIENTE — HEADER (com contato integrado) ─── */}
-      <Card className={`p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-5"}`}>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
+      <Card className={`p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"}`}>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-5">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
               {!isFactoryRole && (
-                <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${docInfo.tipo_pessoa === "PF" ? "bg-indigo-50 text-indigo-600 border border-indigo-200" : "bg-purple-50 text-purple-600 border border-purple-200"}`}>
+                <span
+                  className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${
+                    docInfo.tipo_pessoa === "PF"
+                      ? "bg-indigo-50 text-indigo-600 border border-indigo-200"
+                      : "bg-purple-50 text-purple-600 border border-purple-200"
+                  }`}
+                >
                   {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
                 </span>
               )}
@@ -256,30 +386,59 @@ export default function ClienteDetailsClient({
 
             {!isOpsLimited && docInfo.documento && (
               <span className="text-xs font-semibold text-slate-500 block mt-0.5 select-none">
-                {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}: {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
+                {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}:{" "}
+                {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
               </span>
             )}
 
             {canManage && (
-              <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-muted-foreground font-medium">
-                <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> Origem: {ORIGIN_LABELS[client.origem] || client.origem}</span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 text-xs text-muted-foreground font-medium">
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  Origem: {ORIGIN_LABELS[client.origem] || client.origem}
+                </span>
                 {client.partnerNome && (
-                  <span className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5 text-primary" />
-                    Parceiro: {client.partnerNome}
+                    Parceiro:{" "}
+                    {client.partner_id ? (
+                      <Link
+                        href={`/parceiros/${client.partner_id}`}
+                        className="text-primary hover:underline font-semibold"
+                      >
+                        {client.partnerNome}
+                      </Link>
+                    ) : (
+                      client.partnerNome
+                    )}
                   </span>
                 )}
               </div>
             )}
           </div>
 
-          {!hideClientContact && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-              <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto shrink-0">
+            {!isFactoryRole && (
+              <span
+                className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${
+                  STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"
+                }`}
+              >
                 {STATUS_LABELS[client.status] || client.status}
               </span>
-
-              {whatsappUrl ? (
+            )}
+            {canManage && (
+              <Button
+                type="button"
+                variant="outline"
+                className="text-xs font-bold gap-1.5 h-9"
+                onClick={() => setIsEditOpen(true)}
+              >
+                <Pencil className="h-3.5 w-3.5" /> Editar
+              </Button>
+            )}
+            {!hideClientContact &&
+              (whatsappUrl ? (
                 <a
                   href={whatsappUrl}
                   target="_blank"
@@ -295,45 +454,39 @@ export default function ClienteDetailsClient({
                 >
                   <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
                 </span>
-              )}
-            </div>
-          )}
-          {hideClientContact && !isFactoryRole && (
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"}`}>
-              {STATUS_LABELS[client.status] || client.status}
-            </span>
-          )}
+              ))}
+          </div>
         </div>
 
         {!isFactoryRole && (
           <>
-            {/* Informações de contato — ocultas para Projetista/Marceneiro */}
             {!hideClientContact && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-                  <Phone className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Telefone / WhatsApp</span>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border/40 pt-3 text-sm">
+                <div className="inline-flex items-center gap-2 min-w-0">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   {sensitiveHidden ? (
-                    <span className="text-sm font-semibold text-foreground select-none tracking-wide">{maskPhone(client.telefone)}</span>
+                    <span className="font-semibold text-foreground select-none tracking-wide">
+                      {maskPhone(client.telefone)}
+                    </span>
                   ) : whatsappUrl ? (
-                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">{formatPhoneDisplay(client.telefone)}</a>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-emerald-600 hover:underline"
+                    >
+                      {formatPhoneDisplay(client.telefone)}
+                    </a>
                   ) : (
-                    <span className="text-sm font-semibold text-foreground">{formatPhoneDisplay(client.telefone) || "—"}</span>
+                    <span className="font-semibold text-foreground">
+                      {formatPhoneDisplay(client.telefone) || "—"}
+                    </span>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-                  <Mail className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">E-mail Cadastrado</span>
+                <div className="inline-flex items-center gap-2 min-w-0">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   {sensitiveHidden ? (
-                    <span className="text-sm font-semibold text-foreground select-none break-all">
+                    <span className="font-semibold text-foreground select-none break-all">
                       {hasRealClientEmail(client.email)
                         ? maskEmail(client.email)
                         : formatClientEmailDisplay(client.email)}
@@ -341,95 +494,98 @@ export default function ClienteDetailsClient({
                   ) : hasRealClientEmail(client.email) ? (
                     <a
                       href={`mailto:${client.email}`}
-                      className="text-sm font-semibold text-primary hover:underline break-all"
+                      className="font-semibold text-primary hover:underline break-all"
                     >
                       {formatClientEmailDisplay(client.email)}
                     </a>
                   ) : (
-                    <span className="text-sm font-semibold text-muted-foreground break-all">
+                    <span className="font-semibold text-muted-foreground break-all">
                       {formatClientEmailDisplay(client.email)}
                     </span>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
-                  <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
+                <div className="inline-flex items-center gap-2 min-w-0">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="font-semibold text-foreground">{client.cidade || "—"}</span>
                 </div>
               </div>
-            </div>
             )}
             {hideClientContact && (
-            <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 border-t border-border/40 pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-500 shrink-0">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">Cidade de Atendimento</span>
-                  <span className="text-sm font-semibold text-foreground">{client.cidade}</span>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border/40 pt-3 text-sm">
+                <div className="inline-flex items-center gap-2 min-w-0">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="font-semibold text-foreground">{client.cidade || "—"}</span>
                 </div>
               </div>
-            </div>
             )}
 
             {!isOpsLimited && (
-            <ClientConsentCard
-              className="mt-4"
-              consent={resolveClientConsent({
-                lgpd_aceite: client.lgpd_aceite,
-                lgpd_aceite_em: client.lgpd_aceite_em,
-                marketing_aceite: client.marketing_aceite,
-                observacoes: client.observacoes,
-              })}
-            />
+              <ClientConsentCard
+                className="mt-1"
+                collapsible
+                consent={resolveClientConsent({
+                  lgpd_aceite: client.lgpd_aceite,
+                  lgpd_aceite_em: client.lgpd_aceite_em,
+                  marketing_aceite: client.marketing_aceite,
+                  observacoes: client.observacoes,
+                })}
+              />
             )}
           </>
         )}
       </Card>
 
-      {/* ─── CONTEÚDO ─── */}
-      {/* Seletor de abas full-width e, abaixo, cada aba ocupando toda a largura. */}
       <div className="space-y-6">
-
-        {/* ─── SELETOR DE ABAS ─── */}
         <div>
-          {/* Mobile: dropdown de seção */}
           <div className="relative sm:hidden">
             <select
               value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value as "overview" | "projects" | "finance" | "timeline" | "documents" | "notas")}
+              onChange={(e) =>
+                setActiveTab(
+                  e.target.value as
+                    | "overview"
+                    | "projects"
+                    | "finance"
+                    | "timeline"
+                    | "documents"
+                    | "notas"
+                )
+              }
               className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             >
               <option value="overview">Visão Geral</option>
               <option value="projects">Projetos ({projects.length})</option>
               <option value="documents">Fotos &amp; Docs ({attachments.length})</option>
               {!isOpsLimited && <option value="finance">Financeiro</option>}
-              {!isOpsLimited && <option value="timeline">Linha do Tempo</option>}
-              <option value="notas">Notas</option>
+              {!isOpsLimited && (
+                <option value="timeline">Linha do Tempo (atividades)</option>
+              )}
+              <option value="notas">Notas (observações)</option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>
 
-          {/* Desktop/tablet: faixa de abas */}
           <div className="hidden sm:block sm:overflow-x-auto sm:-mx-1 sm:px-1">
             <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-max min-w-full md:w-fit">
               <button
                 type="button"
                 onClick={() => setActiveTab("overview")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "overview" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "overview"
+                    ? "bg-white text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 <User className="h-4 w-4 shrink-0" /> Visão Geral
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("projects")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "projects" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "projects"
+                    ? "bg-white text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 <Layers className="h-4 w-4 shrink-0" /> Projetos
                 <span className="text-[10px] opacity-70 tabular-nums">({projects.length})</span>
@@ -437,16 +593,26 @@ export default function ClienteDetailsClient({
               <button
                 type="button"
                 onClick={() => setActiveTab("documents")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "documents" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "documents"
+                    ? "bg-white text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
-                <span className="text-[10px] opacity-70 tabular-nums">({attachments.length})</span>
+                <span className="text-[10px] opacity-70 tabular-nums">
+                  ({attachments.length})
+                </span>
               </button>
               {!isOpsLimited && (
                 <button
                   type="button"
                   onClick={() => setActiveTab("finance")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "finance" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === "finance"
+                      ? "bg-white text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
                 </button>
@@ -455,7 +621,11 @@ export default function ClienteDetailsClient({
                 <button
                   type="button"
                   onClick={() => setActiveTab("timeline")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "timeline" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === "timeline"
+                      ? "bg-white text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
                 </button>
@@ -463,7 +633,11 @@ export default function ClienteDetailsClient({
               <button
                 type="button"
                 onClick={() => setActiveTab("notas")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === "notas" ? "bg-white text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === "notas"
+                    ? "bg-white text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 <FileText className="h-4 w-4 shrink-0" /> Notas
               </button>
@@ -471,63 +645,193 @@ export default function ClienteDetailsClient({
           </div>
         </div>
 
-        {/* Conteúdo Dinâmico (largura total) */}
         <div className="space-y-6">
-
-          {/* ABA: VISÃO GERAL — resumo rápido */}
           {activeTab === "overview" && (
             <>
-            <Card className="p-5 glass-card space-y-4">
-              <h3 className="text-base font-bold text-foreground">Resumo do cliente</h3>
-              <div className={`grid grid-cols-2 ${isOpsLimited ? "sm:grid-cols-2" : "sm:grid-cols-4"} gap-3`}>
-                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Projetos</p>
-                  <p className="text-xl font-black text-foreground mt-1">{projects.length}</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Anexos</p>
-                  <p className="text-xl font-black text-foreground mt-1">{attachments.length}</p>
-                </div>
-                {!isOpsLimited && (
-                  <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Parcelas</p>
-                    <p className="text-xl font-black text-foreground mt-1">{payments.length}</p>
-                  </div>
-                )}
-                {!isOpsLimited && (
-                  <div className="rounded-xl border border-border/60 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Eventos</p>
-                    <p className="text-xl font-black text-foreground mt-1">{activities.length}</p>
-                  </div>
-                )}
-              </div>
-              {(projects.length ?? 0) > 0 ? (
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="text-xs font-bold gap-1.5"
-                    onClick={() => setActiveTab("projects")}
-                  >
-                    <Layers className="h-4 w-4" /> Ver todos os projetos
-                  </Button>
-                </div>
-              ) : null}
-            </Card>
+              {docInfo.tipo_pessoa === "PJ" && !isOpsLimited && (
+                <ClienteContactsSection
+                  clientId={client.id}
+                  canManage={canManage}
+                  showSuccess={showSuccess}
+                  showError={showError}
+                  confirmAction={confirmAction}
+                />
+              )}
 
-            {docInfo.tipo_pessoa === "PJ" && !isOpsLimited && (
-              <ClienteContactsSection
-                clientId={client.id}
-                canManage={canManage}
-                showSuccess={showSuccess}
-                showError={showError}
-                confirmAction={confirmAction}
-              />
-            )}
+              <div
+                className={`grid grid-cols-1 ${
+                  hasAddress || hasImovel || !isOpsLimited ? "lg:grid-cols-2" : ""
+                } gap-4`}
+              >
+                <Card className="p-5 glass-card space-y-3">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4 text-primary" /> Endereço / entrega
+                  </h3>
+                  {hasAddress ? (
+                    <div className="space-y-1 text-sm text-foreground">
+                      {addressLines.street ? (
+                        <p className="font-semibold">{addressLines.street}</p>
+                      ) : null}
+                      {addressLines.locality ? (
+                        <p className="text-muted-foreground">{addressLines.locality}</p>
+                      ) : null}
+                      {addressLines.cep ? (
+                        <p className="text-xs font-medium text-muted-foreground">
+                          CEP {addressLines.cep}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum endereço completo cadastrado.
+                      {canManage ? " Use Editar para preencher." : null}
+                    </p>
+                  )}
+                </Card>
+
+                <Card className="p-5 glass-card space-y-3">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <Home className="h-4 w-4 text-primary" /> Imóvel
+                  </h3>
+                  {hasImovel ? (
+                    <div className="space-y-2 text-sm">
+                      {imovelLabel ? (
+                        <p className="font-semibold text-foreground">{imovelLabel}</p>
+                      ) : null}
+                      {client.obs_imovel?.trim() ? (
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                          {client.obs_imovel.trim()}
+                        </p>
+                      ) : null}
+                      {client.obs_entrega?.trim() ? (
+                        <p className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
+                          <Truck className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+                          <span>
+                            <span className="font-semibold text-foreground">Entrega: </span>
+                            {client.obs_entrega.trim()}
+                          </span>
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Tipo de imóvel e observações de entrega não preenchidos.
+                    </p>
+                  )}
+                </Card>
+              </div>
+
+              <Card className="p-5 glass-card space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-primary" /> Observações
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("notas")}
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    Abrir notas
+                  </button>
+                </div>
+                {notesPreview ? (
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line line-clamp-4">
+                    {notesPreview}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Sem observações permanentes. Eventos com data ficam na Linha do Tempo.
+                  </p>
+                )}
+                {!isOpsLimited && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("timeline")}
+                    className="text-[11px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    Ver histórico de atividades →
+                  </button>
+                )}
+              </Card>
+
+              <Card className="p-4 glass-card space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    Atalhos
+                  </h3>
+                  {(projects.length ?? 0) > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="text-xs font-bold gap-1.5 h-8"
+                      onClick={() => setActiveTab("projects")}
+                    >
+                      <Layers className="h-3.5 w-3.5" /> Ver projetos
+                    </Button>
+                  ) : null}
+                </div>
+                <div
+                  className={`grid grid-cols-2 ${
+                    isOpsLimited ? "sm:grid-cols-2" : "sm:grid-cols-4"
+                  } gap-2`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("projects")}
+                    className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+                  >
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Projetos
+                    </p>
+                    <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
+                      {projects.length}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("documents")}
+                    className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+                  >
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Anexos
+                    </p>
+                    <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
+                      {attachments.length}
+                    </p>
+                  </button>
+                  {!isOpsLimited && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("finance")}
+                      className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+                    >
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Parcelas
+                      </p>
+                      <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
+                        {payments.length}
+                      </p>
+                    </button>
+                  )}
+                  {!isOpsLimited && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("timeline")}
+                      className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+                    >
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Eventos
+                      </p>
+                      <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
+                        {activities.length}
+                      </p>
+                    </button>
+                  )}
+                </div>
+              </Card>
             </>
           )}
 
-          {/* ABA: PROJETOS */}
           {activeTab === "projects" && (
             <ClienteProjectsTab
               clientId={client.id}
@@ -554,7 +858,6 @@ export default function ClienteDetailsClient({
             />
           )}
 
-          {/* ABA: FOTOS & DOCUMENTOS */}
           {activeTab === "documents" && (
             <ClienteDocumentsTab
               clientId={client.id}
@@ -564,28 +867,47 @@ export default function ClienteDetailsClient({
             />
           )}
 
-          {/* ABA 3: LINHA DO TEMPO & NOTAS */}
           {activeTab === "timeline" && !isOpsLimited && (
             <div className="space-y-6">
-              {/* Registrar anotação rápida */}
               <Card className="p-5 glass-card space-y-3">
-                <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Registrar Atividade Comercial / Nota</h3>
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/40 pb-2">
+                  <div>
+                    <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                      Registrar atividade
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Histórico comercial com data e autor. Observações permanentes ficam em{" "}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("notas")}
+                        className="font-bold text-primary hover:underline cursor-pointer"
+                      >
+                        Notas
+                      </button>
+                      .
+                    </p>
+                  </div>
+                </div>
                 <form onSubmit={handleAddNote} className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground block">Assunto / Título</label>
-                    <Input 
+                    <label className="text-[10px] font-bold text-muted-foreground block">
+                      Assunto / Título
+                    </label>
+                    <Input
                       required
                       value={newTitle}
-                      onChange={e => setNewTitle(e.target.value)}
+                      onChange={(e) => setNewTitle(e.target.value)}
                       className="border-border bg-slate-50 text-xs py-1"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground block">Detalhamento</label>
-                    <textarea 
+                    <label className="text-[10px] font-bold text-muted-foreground block">
+                      Detalhamento
+                    </label>
+                    <textarea
                       required
                       value={newDesc}
-                      onChange={e => setNewDesc(e.target.value)}
+                      onChange={(e) => setNewDesc(e.target.value)}
                       className="w-full h-16 bg-slate-50 border border-border rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -595,20 +917,22 @@ export default function ClienteDetailsClient({
                   )}
 
                   <div className="flex justify-end">
-                    <Button 
-                      type="submit" 
-                      disabled={isSubmittingNote} 
+                    <Button
+                      type="submit"
+                      disabled={isSubmittingNote}
                       className="text-xs font-bold gap-1.5 btn-metallic h-8 py-0"
                     >
-                      <Send className="h-3 w-3" /> {isSubmittingNote ? "Registrando..." : "Publicar no Histórico"}
+                      <Send className="h-3 w-3" />{" "}
+                      {isSubmittingNote ? "Registrando..." : "Publicar no Histórico"}
                     </Button>
                   </div>
                 </form>
               </Card>
 
-              {/* Timeline das atividades */}
               <Card className="p-5 glass-card space-y-4">
-                <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">Histórico de Eventos</h3>
+                <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">
+                  Histórico de atividades
+                </h3>
 
                 <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
                   {activities.length === 0 ? (
@@ -619,49 +943,54 @@ export default function ClienteDetailsClient({
                     activities.map((act) => {
                       const isRegistration = act.tipo === "cadastro";
                       return (
-                    <div key={act.id} className="relative group">
-                      {/* Ponto indicador da timeline */}
-                      <span
-                        className={`absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs transition-transform group-hover:scale-125 ${
-                          isRegistration ? "bg-emerald-500" : "bg-primary"
-                        }`}
-                      />
+                        <div key={act.id} className="relative group">
+                          <span
+                            className={`absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs transition-transform group-hover:scale-125 ${
+                              isRegistration ? "bg-emerald-500" : "bg-primary"
+                            }`}
+                          />
 
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <strong className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                            {isRegistration ? (
-                              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <strong className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                {isRegistration ? (
+                                  <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                                ) : null}
+                                {act.titulo}
+                              </strong>
+                              <span className="text-[10px] font-semibold text-muted-foreground shrink-0 tabular-nums">
+                                {new Date(act.data).toLocaleDateString("pt-BR", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                            {act.descricao ? (
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                {act.descricao}
+                              </p>
                             ) : null}
-                            {act.titulo}
-                          </strong>
-                          <span className="text-[10px] font-semibold text-muted-foreground shrink-0 tabular-nums">
-                            {new Date(act.data).toLocaleDateString("pt-BR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                                isRegistration
+                                  ? "text-emerald-700 bg-emerald-50"
+                                  : "text-primary/70 bg-primary/5"
+                              }`}
+                            >
+                              {isRegistration ? (
+                                <ShieldCheck className="h-2.5 w-2.5" />
+                              ) : (
+                                <User className="h-2.5 w-2.5" />
+                              )}
+                              {isRegistration
+                                ? "Registro automático"
+                                : `Registrado por: ${act.autor}`}
+                            </span>
+                          </div>
                         </div>
-                        {act.descricao ? (
-                          <p className="text-xs text-slate-600 leading-relaxed">{act.descricao}</p>
-                        ) : null}
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
-                          isRegistration
-                            ? "text-emerald-700 bg-emerald-50"
-                            : "text-primary/70 bg-primary/5"
-                        }`}>
-                          {isRegistration ? (
-                            <ShieldCheck className="h-2.5 w-2.5" />
-                          ) : (
-                            <User className="h-2.5 w-2.5" />
-                          )}
-                          {isRegistration ? "Registro automático" : `Registrado por: ${act.autor}`}
-                        </span>
-                      </div>
-                    </div>
                       );
                     })
                   )}
@@ -670,19 +999,31 @@ export default function ClienteDetailsClient({
             </div>
           )}
 
-          {/* ABA: NOTAS / OBSERVAÇÕES */}
           {activeTab === "notas" && (
             <Card className="p-5 glass-card space-y-3">
               <div className="flex items-center justify-between gap-3 border-b border-border/40 pb-2">
                 <h3 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="h-4 w-4 text-primary" /> Observações / Notas
+                  <FileText className="h-4 w-4 text-primary" /> Observações permanentes
                 </h3>
                 {notesSaved && (
                   <span className="text-[11px] font-bold text-emerald-600">Salvo ✓</span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Anotações livres e permanentes sobre o cliente (preferências, restrições, contexto). Para registrar eventos com data e autor, use a Linha do Tempo.
+                Preferências, restrições e contexto do cliente. Para eventos com data e autor,
+                use a{" "}
+                {!isOpsLimited ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("timeline")}
+                    className="font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    Linha do Tempo
+                  </button>
+                ) : (
+                  "Linha do Tempo"
+                )}
+                .
               </p>
               <form onSubmit={handleSaveNotes} className="space-y-3">
                 <textarea
@@ -705,16 +1046,31 @@ export default function ClienteDetailsClient({
                     }
                     className="text-xs font-bold gap-1.5 btn-metallic"
                   >
-                    <Send className="h-3.5 w-3.5" /> {savingNotes ? "Salvando..." : "Salvar notas"}
+                    <Send className="h-3.5 w-3.5" />{" "}
+                    {savingNotes ? "Salvando..." : "Salvar notas"}
                   </Button>
                 </div>
               </form>
             </Card>
           )}
-
         </div>
-
       </div>
+
+      <Dialog
+        isOpen={isEditOpen}
+        onClose={() => {
+          if (editSaving) return;
+          setIsEditOpen(false);
+        }}
+        className="max-w-2xl w-full"
+      >
+        <ClientWizard
+          mode="edit"
+          initial={clientToWizardData(client)}
+          onCancel={() => setIsEditOpen(false)}
+          onSubmit={submitUpdate}
+        />
+      </Dialog>
 
       <ActionDialogHost dialog={dialog} />
     </div>
