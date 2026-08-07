@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import HowToAccordion from "@/components/ui/HowToAccordion";
 import {
   Ban,
   CheckCircle2,
@@ -94,6 +95,10 @@ export default function PartnerCommissionsTab({
     );
   });
 
+  /** Sem nenhum lançamento: CTA só no empty state. Com lista: CTA no topo. */
+  const isTrulyEmpty = !loading && commissions.length === 0;
+  const showTopLaunch = canManage && !isTrulyEmpty;
+
   const handleMarkPaid = (c: PartnerCommissionDTO) => {
     confirmAction({
       title: "Confirmar que a comissão foi paga?",
@@ -147,10 +152,9 @@ export default function PartnerCommissionsTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3.5 text-xs text-amber-950/85 leading-relaxed space-y-2">
-        <p className="font-bold text-sm text-amber-950">
-          {lockPartnerId ? "Como lançar para este parceiro" : "Como usar esta aba"}
-        </p>
+      <HowToAccordion
+        title={lockPartnerId ? "Como lançar para este parceiro" : "Como usar esta aba"}
+      >
         <ol className="list-decimal pl-4 space-y-1">
           <li>
             Clique em <strong>Lançar comissão</strong>
@@ -172,7 +176,7 @@ export default function PartnerCommissionsTab({
             ) : null}
           </li>
         </ol>
-      </div>
+      </HowToAccordion>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <div className="relative flex-1 max-w-md">
@@ -211,7 +215,7 @@ export default function PartnerCommissionsTab({
             Ver todos os parceiros
           </Button>
         )}
-        {canManage && (
+        {showTopLaunch && (
           <Button
             type="button"
             className="font-bold gap-2 h-10 px-4 cursor-pointer shrink-0"
@@ -231,14 +235,18 @@ export default function PartnerCommissionsTab({
         <div className="rounded-xl border border-border bg-card p-10 text-center space-y-3 max-w-lg mx-auto">
           <Percent className="h-8 w-8 text-muted-foreground/50 mx-auto" />
           <p className="text-sm font-semibold text-foreground">
-            Nenhuma comissão nesta lista
+            {isTrulyEmpty
+              ? "Nenhuma comissão nesta lista"
+              : "Nenhum resultado com este filtro"}
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            {lockPartnerId
-              ? "Confirme que este parceiro está no projeto do CRM e que o orçamento já foi aprovado. Depois use o botão abaixo."
-              : "Se o filtro estiver ativo, limpe a busca ou o status. Para o primeiro lançamento: confirme que o parceiro está no projeto e que o orçamento já foi aprovado; depois use o botão abaixo."}
+            {isTrulyEmpty
+              ? lockPartnerId
+                ? "Confirme que este parceiro está no projeto do CRM e que o orçamento já foi aprovado. Depois use o botão abaixo."
+                : "Para o primeiro lançamento: confirme que o parceiro está no projeto e que o orçamento já foi aprovado; depois use o botão abaixo."
+              : "Limpe a busca ou o status para ver os lançamentos. Para criar outro, use o botão no topo."}
           </p>
-          {canManage && (
+          {canManage && isTrulyEmpty && (
             <Button
               type="button"
               className="font-bold gap-2 cursor-pointer"

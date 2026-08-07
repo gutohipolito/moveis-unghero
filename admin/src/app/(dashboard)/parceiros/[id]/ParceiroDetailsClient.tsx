@@ -23,6 +23,7 @@ import PartnerCommissionsTab from "@/components/PartnerCommissionsTab";
 import ParceiroComprovantesTab from "@/components/ParceiroComprovantesTab";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
+import HowToAccordion from "@/components/ui/HowToAccordion";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -309,24 +310,23 @@ export default function ParceiroDetailsClient({
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="p-5 space-y-3">
-            <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-              Como usar esta ficha
-            </h3>
-            <ol className="list-decimal pl-4 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
-              <li>
-                Em <strong>Comissões</strong>, lance o % depois que o orçamento do cliente for
-                aprovado.
-              </li>
-              <li>
-                Quando pagar o parceiro, marque como paga na mesma aba.
-              </li>
-              <li>
-                Em <strong>Comprovantes</strong>, reabra os documentos já emitidos para imprimir
-                ou enviar ao parceiro.
-              </li>
-            </ol>
+            <HowToAccordion title="Como usar esta ficha" tone="neutral">
+              <ol className="list-decimal pl-4 space-y-1.5 leading-relaxed">
+                <li>
+                  Em <strong className="text-foreground">Comissões</strong>, lance o % depois que o
+                  orçamento do cliente for aprovado.
+                </li>
+                <li>
+                  Quando pagar o parceiro, marque como paga na mesma aba.
+                </li>
+                <li>
+                  Em <strong className="text-foreground">Comprovantes</strong>, reabra os documentos
+                  já emitidos para imprimir ou enviar ao parceiro.
+                </li>
+              </ol>
+            </HowToAccordion>
             {!hidePartnerValues && (
-              <div className="pt-2 border-t border-border/40 space-y-2">
+              <div className="pt-1 space-y-2">
                 <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
                   Projetos no CRM
                 </p>

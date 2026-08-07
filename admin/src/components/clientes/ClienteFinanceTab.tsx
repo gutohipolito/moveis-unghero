@@ -111,6 +111,9 @@ export default function ClienteFinanceTab({
   }
 
   const canAdd = projects.length > 0;
+  const isPaymentsEmpty = payments.length === 0;
+  /** Sem parcelas: CTAs só no empty state. Com lista: CTAs no topo. */
+  const showTopActions = canAdd && !isPaymentsEmpty;
   const projectOptions = projects.map((p) => ({
     id: p.id,
     label: `${p.status_geral} · ${p.id.slice(0, 8)}`,
@@ -133,22 +136,25 @@ export default function ClienteFinanceTab({
             <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full">
               {payments.length} parcela{payments.length === 1 ? "" : "s"}
             </span>
-            <Button
-              type="button"
-              variant="outline"
-              className="text-xs font-bold gap-1.5"
-              onClick={openAvulsoReceipt}
-            >
-              <Receipt className="h-4 w-4" /> Recibo avulso
-            </Button>
-            <Button
-              type="button"
-              className="text-xs font-bold gap-1.5 btn-metallic"
-              disabled={!canAdd}
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" /> Lançar parcelas
-            </Button>
+            {showTopActions ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-xs font-bold gap-1.5"
+                  onClick={openAvulsoReceipt}
+                >
+                  <Receipt className="h-4 w-4" /> Recibo avulso
+                </Button>
+                <Button
+                  type="button"
+                  className="text-xs font-bold gap-1.5 btn-metallic"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" /> Lançar parcelas
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -161,7 +167,7 @@ export default function ClienteFinanceTab({
               </Button>
             ) : null}
           </div>
-        ) : payments.length === 0 ? (
+        ) : isPaymentsEmpty ? (
           <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl space-y-3">
             <p>Nenhuma parcela lançada ainda.</p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -295,6 +301,11 @@ export default function ClienteFinanceTab({
           ) : receipts.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border/60 px-4 py-5 text-center text-xs text-muted-foreground">
               Nenhum recibo emitido para este cliente.
+              {isPaymentsEmpty && canAdd
+                ? " Use “Emitir recibo avulso” acima ou emita a partir de uma parcela paga."
+                : showTopActions
+                  ? " Use “Recibo avulso” no topo ou “Emitir recibo” em uma parcela paga."
+                  : ""}
             </div>
           ) : (
             <div className="grid gap-2">
