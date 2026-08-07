@@ -76,9 +76,7 @@ export default function PartnerCommissionReceiptPrint({
   const roleLabel = getPartnerRoleLabel(receipt.parceiro_tipo, receipt.parceiro_nome);
   const numeroLabel = String(receipt.numero).padStart(4, "0");
   const logoSrc = `${assetBase}/logo.png`;
-  const orcamentoCodigo =
-    receipt.orcamento_codigo?.trim() ||
-    (receipt.orcamento_versao != null ? `v${receipt.orcamento_versao}` : null);
+  const orcamentoCodigo = receipt.orcamento_codigo?.trim() || null;
   const emitidoEm = formatContractDateLong(new Date(receipt.createdAt));
 
   return (
@@ -96,10 +94,10 @@ export default function PartnerCommissionReceiptPrint({
               className="commission-logo-black h-12 w-auto object-contain shrink-0 invert brightness-[0.25]"
             />
             <div className="text-right space-y-0.5 shrink-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
                 Comprovante de comissão
               </p>
-              <p className="text-2xl font-black text-neutral-950 tabular-nums tracking-tight leading-none">
+              <p className="text-sm font-medium text-neutral-600 tabular-nums tracking-tight">
                 Nº {numeroLabel}
               </p>
               <p className="text-[10px] text-neutral-500 pt-0.5">Emitido em {emitidoEm}</p>
@@ -124,16 +122,12 @@ export default function PartnerCommissionReceiptPrint({
               )}
             </div>
             <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500">
-                Orçamento / projeto
+              <p className="text-sm font-bold text-neutral-950">
+                Orçamento aprovado
               </p>
-              {orcamentoCodigo ? (
-                <p className="text-[17px] font-bold text-neutral-950 tabular-nums leading-snug">
-                  {orcamentoCodigo}
-                </p>
-              ) : (
-                <p className="text-[17px] font-bold text-neutral-950 leading-snug">—</p>
-              )}
+              <p className="text-[17px] font-medium text-neutral-800 tabular-nums leading-snug tracking-tight">
+                {orcamentoCodigo || "—"}
+              </p>
               <p className="text-xs text-neutral-600">
                 Cliente: <span className="font-semibold text-neutral-800">{receipt.cliente_nome}</span>
               </p>

@@ -165,10 +165,16 @@ function mapCommission(row: {
   createdAt: Date;
   partner: { nome: string; tipo: string };
   project: { client: { nome: string } };
-  quote: { codigo: string | null; versao: number };
+  quote: { id?: string; codigo: string | null; versao: number };
   receipts: { id: string; numero: number }[];
 }): PartnerCommissionDTO {
   const latestReceipt = row.receipts[0] ?? null;
+  // Lazy require avoided — format inline for list labels
+  const codigo =
+    row.quote.codigo?.trim()?.toUpperCase() ||
+    (row.quote.id || row.quote_id
+      ? `ORC-${(row.quote.id || row.quote_id).substring(0, 5).toUpperCase()}`
+      : null);
   return {
     id: row.id,
     partner_id: row.partner_id,
@@ -177,7 +183,7 @@ function mapCommission(row: {
     project_id: row.project_id,
     cliente_nome: row.project.client.nome,
     quote_id: row.quote_id,
-    orcamento_codigo: row.quote.codigo,
+    orcamento_codigo: codigo,
     orcamento_versao: row.quote.versao,
     percentual: toNumber(row.percentual),
     base_valor: toNumber(row.base_valor),
@@ -199,7 +205,7 @@ function mapCommission(row: {
 const commissionInclude = {
   partner: { select: { nome: true, tipo: true } },
   project: { select: { client: { select: { nome: true } } } },
-  quote: { select: { codigo: true, versao: true } },
+  quote: { select: { id: true, codigo: true, versao: true } },
   receipts: {
     select: { id: true, numero: true },
     orderBy: { createdAt: "desc" as const },
@@ -695,6 +701,12 @@ export async function issuePartnerCommissionReceipt(input: {
     commission.partner.registro_profissional
   );
 
+  const { formatQuoteCodigo } = await import("@/lib/quoteCodigo");
+  const orcamentoCodigo = formatQuoteCodigo({
+    id: commission.quote_id,
+    codigo: commission.quote.codigo,
+  });
+
   const receipt = await prisma.partnerCommissionReceipt.create({
     data: {
       company_id: auth.companyId,
@@ -708,7 +720,7 @@ export async function issuePartnerCommissionReceipt(input: {
       parceiro_telefone: commission.partner.telefone,
       cliente_nome: commission.project.client.nome,
       projeto_ref: `Projeto · ${commission.project.client.nome}`,
-      orcamento_codigo: commission.quote.codigo,
+      orcamento_codigo: orcamentoCodigo,
       orcamento_versao: commission.quote.versao,
       percentual: commission.percentual,
       base_valor: commission.base_valor,
@@ -757,15 +769,34 @@ export async function listPartnerCommissionReceipts(partnerId: string) {
       commission: { partner_id: partnerId },
     },
     include: {
-      commission: { select: { status: true, project_id: true } },
+      commission: {
+        select: {
+          status: true,
+          project_id: true,
+          quote: { select: { id: true, codigo: true, versao: true } },
+        },
+      },
     },
     orderBy: [{ createdAt: "desc" }, { numero: "desc" }],
     take: 200,
   });
 
+  const { formatQuoteCodigo } = await import("@/lib/quoteCodigo");
+
   return {
     success: true as const,
-    receipts: rows.map(mapReceiptRow),
+    receipts: rows.map((row) =>
+      mapReceiptRow({
+        ...row,
+        orcamento_codigo:
+          row.orcamento_codigo?.trim() ||
+          formatQuoteCodigo({
+            id: row.commission.quote.id,
+            codigo: row.commission.quote.codigo,
+          }),
+        orcamento_versao: row.orcamento_versao ?? row.commission.quote.versao,
+      })
+    ),
   };
 }
 
@@ -776,12 +807,31 @@ export async function getPartnerCommissionReceipt(receiptId: string) {
   const row = await prisma.partnerCommissionReceipt.findFirst({
     where: { id: receiptId, company_id: auth.companyId },
     include: {
-      commission: { select: { id: true, project_id: true, partner_id: true, status: true } },
+      commission: {
+        select: {
+          id: true,
+          project_id: true,
+          partner_id: true,
+          status: true,
+          quote_id: true,
+          quote: { select: { id: true, codigo: true, versao: true } },
+        },
+      },
     },
   });
   if (!row) return { success: false as const, error: "Comprovante não encontrado." };
 
-  const dto = mapReceiptRow(row);
+  const { formatQuoteCodigo } = await import("@/lib/quoteCodigo");
+  const dto = mapReceiptRow({
+    ...row,
+    orcamento_codigo:
+      row.orcamento_codigo?.trim() ||
+      formatQuoteCodigo({
+        id: row.commission.quote.id,
+        codigo: row.commission.quote.codigo,
+      }),
+    orcamento_versao: row.orcamento_versao ?? row.commission.quote.versao,
+  });
 
   return {
     success: true as const,
