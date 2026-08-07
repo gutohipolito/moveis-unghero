@@ -46,7 +46,7 @@ import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
 import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import ClienteContactsSection from "@/components/clientes/ClienteContactsSection";
-import ClientConsentCard from "@/components/clientes/ClientConsentCard";
+import { ClientConsentChip } from "@/components/clientes/ClientConsentCard";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import {
   resolveClientConsent,
@@ -115,12 +115,16 @@ const STATUS_LABELS: Record<string, string> = {
   INATIVO: "Inativo",
 };
 
+/** Chips do header — mesmo tamanho/radius para não competirem entre si. */
+const META_CHIP =
+  "inline-flex items-center h-8 px-2.5 rounded-[var(--radius-sm)] border text-[11px] font-bold whitespace-nowrap";
+
 const STATUS_COLORS: Record<string, string> = {
-  LEAD: "bg-amber-100 text-amber-800 border-amber-200",
-  EM_CONTATO: "bg-cyan-100 text-cyan-800 border-cyan-200",
-  NEGOCIACAO: "bg-blue-100 text-blue-800 border-blue-200",
-  APROVADO: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  INATIVO: "bg-rose-100 text-rose-800 border-rose-200",
+  LEAD: "bg-amber-50 text-amber-800 border-amber-200/80",
+  EM_CONTATO: "bg-cyan-50 text-cyan-800 border-cyan-200/80",
+  NEGOCIACAO: "bg-blue-50 text-blue-800 border-blue-200/80",
+  APROVADO: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+  INATIVO: "bg-rose-50 text-rose-800 border-rose-200/80",
 };
 
 const TIPO_IMOVEL_LABELS: Record<string, string> = {
@@ -271,10 +275,6 @@ export default function ClienteDetailsClient({
   const imovelLabel = client.tipo_imovel
     ? TIPO_IMOVEL_LABELS[client.tipo_imovel] || client.tipo_imovel
     : "";
-  const hasImovel =
-    Boolean(imovelLabel) ||
-    Boolean(client.obs_imovel?.trim()) ||
-    Boolean(client.obs_entrega?.trim());
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -366,101 +366,111 @@ export default function ClienteDetailsClient({
         <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
       </div>
 
-      <Card className={`p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"}`}>
-        <div className="flex flex-col md:flex-row justify-between items-start gap-5">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
-              {!isFactoryRole && (
-                <span
-                  className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded-md ${
-                    docInfo.tipo_pessoa === "PF"
-                      ? "bg-indigo-50 text-indigo-600 border border-indigo-200"
-                      : "bg-purple-50 text-purple-600 border border-purple-200"
-                  }`}
-                >
-                  {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
-                </span>
-              )}
-            </div>
+      <Card className={`p-5 sm:p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"}`}>
+        <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
+            <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
 
-            {!isOpsLimited && docInfo.documento && (
-              <span className="text-xs font-semibold text-slate-500 block mt-0.5 select-none">
+            {!isOpsLimited && docInfo.documento ? (
+              <p className="text-xs font-semibold text-slate-500 select-none">
                 {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}:{" "}
                 {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
-              </span>
-            )}
+              </p>
+            ) : null}
 
-            {canManage && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 text-xs text-muted-foreground font-medium">
+            {canManage ? (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-medium">
                 <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-primary" />
-                  Origem: {ORIGIN_LABELS[client.origem] || client.origem}
+                  <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                  {ORIGIN_LABELS[client.origem] || client.origem}
                 </span>
-                {client.partnerNome && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5 text-primary" />
-                    Parceiro:{" "}
+                {client.partnerNome ? (
+                  <span className="inline-flex items-center gap-1.5 min-w-0">
+                    <User className="h-3.5 w-3.5 text-primary shrink-0" />
                     {client.partner_id ? (
                       <Link
                         href={`/parceiros/${client.partner_id}`}
-                        className="text-primary hover:underline font-semibold"
+                        className="text-primary hover:underline font-semibold truncate"
                       >
                         {client.partnerNome}
                       </Link>
                     ) : (
-                      client.partnerNome
+                      <span className="truncate">{client.partnerNome}</span>
                     )}
                   </span>
-                )}
+                ) : null}
               </div>
-            )}
+            ) : null}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto shrink-0">
-            {!isFactoryRole && (
-              <span
-                className={`text-xs font-bold px-3 py-1.5 rounded-full border text-center ${
-                  STATUS_COLORS[client.status] || "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {STATUS_LABELS[client.status] || client.status}
-              </span>
-            )}
-            {canManage && (
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:justify-end">
+            {!isFactoryRole ? (
+              <>
+                <span
+                  className={`${META_CHIP} ${
+                    STATUS_COLORS[client.status] || "bg-slate-50 text-slate-700 border-slate-200"
+                  }`}
+                >
+                  {STATUS_LABELS[client.status] || client.status}
+                </span>
+                <span
+                  className={`${META_CHIP} ${
+                    docInfo.tipo_pessoa === "PF"
+                      ? "bg-slate-50 text-slate-700 border-slate-200"
+                      : "bg-slate-50 text-slate-700 border-slate-200"
+                  }`}
+                >
+                  {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+                </span>
+              </>
+            ) : null}
+
+            {!isOpsLimited ? (
+              <ClientConsentChip
+                consent={resolveClientConsent({
+                  lgpd_aceite: client.lgpd_aceite,
+                  lgpd_aceite_em: client.lgpd_aceite_em,
+                  marketing_aceite: client.marketing_aceite,
+                  observacoes: client.observacoes,
+                })}
+              />
+            ) : null}
+
+            {canManage ? (
               <Button
                 type="button"
-                variant="outline"
-                className="text-xs font-bold gap-1.5 h-9"
+                className="text-xs font-bold gap-1.5 h-8 px-3.5 rounded-[var(--radius-sm)] btn-metallic"
                 onClick={() => setIsEditOpen(true)}
               >
                 <Pencil className="h-3.5 w-3.5" /> Editar
               </Button>
-            )}
-            {!hideClientContact &&
-              (whatsappUrl ? (
+            ) : null}
+
+            {!hideClientContact ? (
+              whatsappUrl ? (
                 <a
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  className={`${META_CHIP} bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 transition-colors`}
                 >
-                  <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
+                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                 </a>
               ) : (
                 <span
-                  className="font-bold text-xs bg-slate-200 text-slate-500 rounded-xl py-2 px-4 flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  className={`${META_CHIP} bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed`}
                   title="Revele os dados sensíveis (olho) para abrir o WhatsApp"
                 >
-                  <MessageCircle className="h-4 w-4" /> Enviar WhatsApp
+                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
                 </span>
-              ))}
+              )
+            ) : null}
           </div>
         </div>
 
-        {!isFactoryRole && (
+        {!isFactoryRole ? (
           <>
-            {!hideClientContact && (
+            {!hideClientContact ? (
               <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border/40 pt-3 text-sm">
                 <div className="inline-flex items-center gap-2 min-w-0">
                   <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -473,7 +483,7 @@ export default function ClienteDetailsClient({
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-semibold text-emerald-600 hover:underline"
+                      className="font-semibold text-emerald-700 hover:underline"
                     >
                       {formatPhoneDisplay(client.telefone)}
                     </a>
@@ -504,35 +514,73 @@ export default function ClienteDetailsClient({
                     </span>
                   )}
                 </div>
-                <div className="inline-flex items-center gap-2 min-w-0">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-semibold text-foreground">{client.cidade || "—"}</span>
-                </div>
               </div>
-            )}
-            {hideClientContact && (
-              <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border/40 pt-3 text-sm">
-                <div className="inline-flex items-center gap-2 min-w-0">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-semibold text-foreground">{client.cidade || "—"}</span>
-                </div>
-              </div>
-            )}
+            ) : null}
 
-            {!isOpsLimited && (
-              <ClientConsentCard
-                className="mt-1"
-                collapsible
-                consent={resolveClientConsent({
-                  lgpd_aceite: client.lgpd_aceite,
-                  lgpd_aceite_em: client.lgpd_aceite_em,
-                  marketing_aceite: client.marketing_aceite,
-                  observacoes: client.observacoes,
-                })}
-              />
-            )}
+            <div className="border-t border-border/40 pt-3 space-y-2">
+              <div className="flex items-start gap-2 text-sm">
+                <Home className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Tipo de imóvel
+                  </p>
+                  <p className="font-semibold text-foreground">
+                    {imovelLabel || "Não informado"}
+                  </p>
+                  {client.obs_imovel?.trim() ? (
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      {client.obs_imovel.trim()}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2 text-sm">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Endereço
+                  </p>
+                  {hasAddress ? (
+                    <div className="space-y-0.5">
+                      {addressLines.street ? (
+                        <p className="font-semibold text-foreground">{addressLines.street}</p>
+                      ) : null}
+                      <p className="text-muted-foreground text-xs">
+                        {[addressLines.locality, addressLines.cep ? `CEP ${addressLines.cep}` : ""]
+                          .filter(Boolean)
+                          .join(" · ") || client.cidade || "—"}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="font-semibold text-foreground">
+                      {client.cidade || "Não informado"}
+                      {canManage ? (
+                        <span className="text-xs font-medium text-muted-foreground ml-1">
+                          — complete em Editar
+                        </span>
+                      ) : null}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {client.obs_entrega?.trim() ? (
+                <div className="flex items-start gap-2 text-sm">
+                  <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      Entrega
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {client.obs_entrega.trim()}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </>
-        )}
+        ) : null}
       </Card>
 
       <div className="space-y-6">
@@ -551,7 +599,7 @@ export default function ClienteDetailsClient({
                     | "notas"
                 )
               }
-              className="w-full appearance-none bg-white border border-border rounded-xl py-3 pl-4 pr-10 text-sm font-bold text-foreground shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              className="w-full appearance-none bg-slate-800 border border-slate-700 rounded-[var(--radius-md)] py-3 pl-4 pr-10 text-sm font-bold text-slate-100 shadow-sm outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             >
               <option value="overview">Visão Geral</option>
               <option value="projects">Projetos ({projects.length})</option>
@@ -562,85 +610,66 @@ export default function ClienteDetailsClient({
               )}
               <option value="notas">Notas (observações)</option>
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           </div>
 
           <div className="hidden sm:block sm:overflow-x-auto sm:-mx-1 sm:px-1">
-            <div className="flex gap-1.5 p-1 bg-slate-100/80 border border-slate-200/50 rounded-xl w-max min-w-full md:w-fit">
-              <button
-                type="button"
-                onClick={() => setActiveTab("overview")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === "overview"
-                    ? "bg-white text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <User className="h-4 w-4 shrink-0" /> Visão Geral
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("projects")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === "projects"
-                    ? "bg-white text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Layers className="h-4 w-4 shrink-0" /> Projetos
-                <span className="text-[10px] opacity-70 tabular-nums">({projects.length})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("documents")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === "documents"
-                    ? "bg-white text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <ImageIcon className="h-4 w-4 shrink-0" /> Fotos & Docs
-                <span className="text-[10px] opacity-70 tabular-nums">
-                  ({attachments.length})
-                </span>
-              </button>
-              {!isOpsLimited && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("finance")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === "finance"
-                      ? "bg-white text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <CreditCard className="h-4 w-4 shrink-0" /> Financeiro
-                </button>
-              )}
-              {!isOpsLimited && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("timeline")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === "timeline"
-                      ? "bg-white text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Clock className="h-4 w-4 shrink-0" /> Linha do Tempo
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setActiveTab("notas")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === "notas"
-                    ? "bg-white text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <FileText className="h-4 w-4 shrink-0" /> Notas
-              </button>
+            <div className="flex gap-1 p-1 bg-slate-800 border border-slate-700/80 rounded-[var(--radius-md)] w-max min-w-full md:w-fit">
+              {(
+                [
+                  { id: "overview" as const, label: "Visão Geral", icon: User, count: null },
+                  {
+                    id: "projects" as const,
+                    label: "Projetos",
+                    icon: Layers,
+                    count: projects.length,
+                  },
+                  {
+                    id: "documents" as const,
+                    label: "Fotos & Docs",
+                    icon: ImageIcon,
+                    count: attachments.length,
+                  },
+                  ...(!isOpsLimited
+                    ? [
+                        {
+                          id: "finance" as const,
+                          label: "Financeiro",
+                          icon: CreditCard,
+                          count: null as number | null,
+                        },
+                        {
+                          id: "timeline" as const,
+                          label: "Linha do Tempo",
+                          icon: Clock,
+                          count: null as number | null,
+                        },
+                      ]
+                    : []),
+                  { id: "notas" as const, label: "Notas", icon: FileText, count: null },
+                ] as const
+              ).map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      active
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-300 hover:text-white hover:bg-slate-700/70"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {tab.label}
+                    {tab.count != null ? (
+                      <span className="text-[10px] opacity-70 tabular-nums">({tab.count})</span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -657,69 +686,6 @@ export default function ClienteDetailsClient({
                   confirmAction={confirmAction}
                 />
               )}
-
-              <div
-                className={`grid grid-cols-1 ${
-                  hasAddress || hasImovel || !isOpsLimited ? "lg:grid-cols-2" : ""
-                } gap-4`}
-              >
-                <Card className="p-5 glass-card space-y-3">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4 text-primary" /> Endereço / entrega
-                  </h3>
-                  {hasAddress ? (
-                    <div className="space-y-1 text-sm text-foreground">
-                      {addressLines.street ? (
-                        <p className="font-semibold">{addressLines.street}</p>
-                      ) : null}
-                      {addressLines.locality ? (
-                        <p className="text-muted-foreground">{addressLines.locality}</p>
-                      ) : null}
-                      {addressLines.cep ? (
-                        <p className="text-xs font-medium text-muted-foreground">
-                          CEP {addressLines.cep}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Nenhum endereço completo cadastrado.
-                      {canManage ? " Use Editar para preencher." : null}
-                    </p>
-                  )}
-                </Card>
-
-                <Card className="p-5 glass-card space-y-3">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <Home className="h-4 w-4 text-primary" /> Imóvel
-                  </h3>
-                  {hasImovel ? (
-                    <div className="space-y-2 text-sm">
-                      {imovelLabel ? (
-                        <p className="font-semibold text-foreground">{imovelLabel}</p>
-                      ) : null}
-                      {client.obs_imovel?.trim() ? (
-                        <p className="text-muted-foreground text-xs leading-relaxed">
-                          {client.obs_imovel.trim()}
-                        </p>
-                      ) : null}
-                      {client.obs_entrega?.trim() ? (
-                        <p className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
-                          <Truck className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                          <span>
-                            <span className="font-semibold text-foreground">Entrega: </span>
-                            {client.obs_entrega.trim()}
-                          </span>
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Tipo de imóvel e observações de entrega não preenchidos.
-                    </p>
-                  )}
-                </Card>
-              </div>
 
               <Card className="p-5 glass-card space-y-3">
                 <div className="flex items-center justify-between gap-3">
@@ -752,82 +718,6 @@ export default function ClienteDetailsClient({
                     Ver histórico de atividades →
                   </button>
                 )}
-              </Card>
-
-              <Card className="p-4 glass-card space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                    Atalhos
-                  </h3>
-                  {(projects.length ?? 0) > 0 ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="text-xs font-bold gap-1.5 h-8"
-                      onClick={() => setActiveTab("projects")}
-                    >
-                      <Layers className="h-3.5 w-3.5" /> Ver projetos
-                    </Button>
-                  ) : null}
-                </div>
-                <div
-                  className={`grid grid-cols-2 ${
-                    isOpsLimited ? "sm:grid-cols-2" : "sm:grid-cols-4"
-                  } gap-2`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("projects")}
-                    className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
-                  >
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Projetos
-                    </p>
-                    <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
-                      {projects.length}
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("documents")}
-                    className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
-                  >
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Anexos
-                    </p>
-                    <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
-                      {attachments.length}
-                    </p>
-                  </button>
-                  {!isOpsLimited && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("finance")}
-                      className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
-                    >
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                        Parcelas
-                      </p>
-                      <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
-                        {payments.length}
-                      </p>
-                    </button>
-                  )}
-                  {!isOpsLimited && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("timeline")}
-                      className="rounded-lg border border-border/60 bg-slate-50/80 px-3 py-2.5 text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
-                    >
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                        Eventos
-                      </p>
-                      <p className="text-lg font-black text-foreground mt-0.5 tabular-nums">
-                        {activities.length}
-                      </p>
-                    </button>
-                  )}
-                </div>
               </Card>
             </>
           )}
