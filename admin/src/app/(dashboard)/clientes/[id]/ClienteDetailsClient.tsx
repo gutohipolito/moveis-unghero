@@ -590,7 +590,7 @@ export default function ClienteDetailsClient({
             >
               <option value="overview">Visão Geral</option>
               <option value="projects">Projetos ({projects.length})</option>
-              <option value="documents">Fotos &amp; Docs ({attachments.length})</option>
+              <option value="documents">Fotos do cliente ({attachments.length})</option>
               {!isOpsLimited && <option value="finance">Financeiro</option>}
               {!isOpsLimited && (
                 <option value="timeline">Linha do Tempo (atividades)</option>
@@ -613,7 +613,7 @@ export default function ClienteDetailsClient({
                   },
                   {
                     id: "documents" as const,
-                    label: "Fotos & Docs",
+                    label: "Fotos do cliente",
                     icon: ImageIcon,
                     count: attachments.length,
                   },
@@ -740,7 +740,6 @@ export default function ClienteDetailsClient({
               clientId={client.id}
               attachments={attachments}
               onAttachmentsChange={setAttachments}
-              projects={projects.map((p) => ({ id: p.id, status_geral: p.status_geral }))}
             />
           )}
 

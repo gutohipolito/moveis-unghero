@@ -1031,7 +1031,7 @@ export async function getClientPaymentsAction(clientId: string): Promise<{
 
 async function loadClientAttachments(clientId: string): Promise<ClientAttachmentDTO[]> {
   const rows = await prisma.clientAttachment.findMany({
-    where: { client_id: clientId },
+    where: { client_id: clientId, project_id: null },
     orderBy: { createdAt: "desc" },
     include: { uploaded_by: { select: { name: true } } },
   });
