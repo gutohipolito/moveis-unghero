@@ -115,7 +115,7 @@ const PartnerCard = ({
     >
       <div className="partner-card-accent" />
 
-      <div className="p-5 flex flex-col gap-4 flex-1 min-h-0">
+      <div className="p-5 flex flex-col gap-4 flex-1">
         <div className="flex items-start gap-4">
           <div
             onClick={(e) => e.stopPropagation()}
@@ -187,27 +187,20 @@ const PartnerCard = ({
                 {getPartnerRoleLabel(p.tipo, p.nome)}
               </span>
 
-              {p.cidade ? (
+              {p.cidade && (
                 <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-muted-foreground bg-white/70 px-2 py-0.5 rounded-full border border-border/60">
                   <MapPin className="h-2.5 w-2.5 text-muted-foreground/70" />
                   {p.cidade}
                 </span>
-              ) : (
-                <span
-                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full border border-transparent text-transparent select-none pointer-events-none"
-                  aria-hidden
-                >
-                  <MapPin className="h-2.5 w-2.5" />
-                  —
-                </span>
               )}
             </div>
             <p
-              className={`mt-1.5 text-[10px] font-semibold truncate min-h-[1.25rem] ${
-                registroLabel ? "text-muted-foreground" : "text-muted-foreground/35"
+              className={`mt-1.5 text-[10px] font-semibold text-muted-foreground truncate min-h-[1.25rem] ${
+                registroLabel ? "" : "invisible"
               }`}
+              aria-hidden={!registroLabel}
             >
-              {registroLabel || "—"}
+              {registroLabel || "\u00A0"}
             </p>
           </div>
 
@@ -235,8 +228,9 @@ const PartnerCard = ({
 
         <div
           className={`flex items-center gap-2 p-2 partner-card-metric ${
-            p.escritorio ? "" : "opacity-45"
+            p.escritorio ? "" : "invisible"
           }`}
+          aria-hidden={!p.escritorio}
         >
           <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0 flex-1">
@@ -244,12 +238,12 @@ const PartnerCard = ({
               Escritório / Studio
             </span>
             <span className="text-[10px] font-extrabold text-foreground truncate block mt-0.5">
-              {p.escritorio || "—"}
+              {p.escritorio || "\u00A0"}
             </span>
           </div>
         </div>
 
-        <div className="partner-card-metric p-3.5 space-y-2 flex-1">
+        <div className="partner-card-metric p-3.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
               Projetos vinculados
