@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog } from "@/components/ui/dialog";
 import {
   type Activity,
   type Payment,
@@ -29,7 +28,6 @@ import {
   Mail,
   MapPin,
   FileText,
-  MessageCircle,
   Clock,
   User,
   CreditCard,
@@ -47,6 +45,7 @@ import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
 import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import ClienteContactsSection from "@/components/clientes/ClienteContactsSection";
 import { ClientConsentChip } from "@/components/clientes/ClientConsentCard";
+import ClienteInlineEditPanel from "@/components/clientes/ClienteInlineEditPanel";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import {
   resolveClientConsent,
@@ -56,7 +55,7 @@ import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients } from "@/lib/permissions";
 import type { Origin } from "@/app/actions/kanban";
-import ClientWizard, { type ClientWizardData } from "../ClientWizard";
+import type { ClientWizardData } from "../ClientWizard";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -188,7 +187,7 @@ export default function ClienteDetailsClient({
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
 
   const searchParams = useSearchParams();
@@ -240,7 +239,7 @@ export default function ClienteDetailsClient({
 
   useLiveEntity("clients", {
     sync: syncClientDetails,
-    enabled: !isSubmittingNote && !editSaving,
+    enabled: !isSubmittingNote && !editSaving && !isEditing,
   });
 
   const dialog = useActionDialog();
@@ -341,7 +340,7 @@ export default function ClienteDetailsClient({
         cnpj: data.cnpj ?? "",
       }));
       setNotesValue(stripConsentFromObservacoes(form.observacoes ?? ""));
-      setIsEditOpen(false);
+      setIsEditing(false);
       showSuccess("Cliente atualizado", `As informações de ${form.nome} foram salvas.`);
       await syncClientDetails();
       setEditSaving(false);
@@ -354,18 +353,7 @@ export default function ClienteDetailsClient({
     return { success: false, error: errMsg };
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/clientes"
-          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-all flex items-center justify-center cursor-pointer"
-        >
-          <ArrowLeft className="h-4.5 w-4.5" />
-        </Link>
-        <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
-      </div>
-
+  const profileCard = (
       <Card className={`p-5 sm:p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"}`}>
         <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
           <div className="min-w-0 flex-1 space-y-2">
@@ -413,13 +401,7 @@ export default function ClienteDetailsClient({
                 >
                   {STATUS_LABELS[client.status] || client.status}
                 </span>
-                <span
-                  className={`${META_CHIP} ${
-                    docInfo.tipo_pessoa === "PF"
-                      ? "bg-slate-50 text-slate-700 border-slate-200"
-                      : "bg-slate-50 text-slate-700 border-slate-200"
-                  }`}
-                >
+                <span className={`${META_CHIP} bg-slate-50 text-slate-700 border-slate-200`}>
                   {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
                 </span>
               </>
@@ -436,34 +418,26 @@ export default function ClienteDetailsClient({
               />
             ) : null}
 
-            {canManage ? (
+            {canManage && !isEditing ? (
               <Button
                 type="button"
-                className="text-xs font-bold gap-1.5 h-8 px-3.5 rounded-[var(--radius-sm)] btn-metallic"
-                onClick={() => setIsEditOpen(true)}
+                className="text-xs font-bold gap-1.5 h-8 px-4 rounded-[var(--radius-sm)] btn-metallic shadow-sm"
+                onClick={() => setIsEditing(true)}
               >
                 <Pencil className="h-3.5 w-3.5" /> Editar
               </Button>
             ) : null}
 
-            {!hideClientContact ? (
-              whatsappUrl ? (
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${META_CHIP} bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 transition-colors`}
-                >
-                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
-                </a>
-              ) : (
-                <span
-                  className={`${META_CHIP} bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed`}
-                  title="Revele os dados sensíveis (olho) para abrir o WhatsApp"
-                >
-                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
-                </span>
-              )
+            {canManage && isEditing ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="text-xs font-bold h-8 px-3.5 rounded-[var(--radius-sm)]"
+                disabled={editSaving}
+                onClick={() => setIsEditing(false)}
+              >
+                Fechar edição
+              </Button>
             ) : null}
           </div>
         </div>
@@ -582,7 +556,9 @@ export default function ClienteDetailsClient({
           </>
         ) : null}
       </Card>
+  );
 
+  const tabsBlock = (
       <div className="space-y-6">
         <div>
           <div className="relative sm:hidden">
@@ -945,22 +921,41 @@ export default function ClienteDetailsClient({
           )}
         </div>
       </div>
+  );
 
-      <Dialog
-        isOpen={isEditOpen}
-        onClose={() => {
-          if (editSaving) return;
-          setIsEditOpen(false);
-        }}
-        className="max-w-2xl w-full"
-      >
-        <ClientWizard
-          mode="edit"
-          initial={clientToWizardData(client)}
-          onCancel={() => setIsEditOpen(false)}
-          onSubmit={submitUpdate}
-        />
-      </Dialog>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link
+          href="/clientes"
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-all flex items-center justify-center cursor-pointer"
+        >
+          <ArrowLeft className="h-4.5 w-4.5" />
+        </Link>
+        <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
+      </div>
+
+      {isEditing && canManage ? (
+        <div className="lg:grid lg:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)] gap-6 items-start">
+          <ClienteInlineEditPanel
+            key={`edit-${client.id}`}
+            className="lg:sticky lg:top-20"
+            initial={clientToWizardData(client)}
+            saving={editSaving}
+            onCancel={() => setIsEditing(false)}
+            onSubmit={submitUpdate}
+          />
+          <div className="space-y-6 min-w-0">
+            {profileCard}
+            {tabsBlock}
+          </div>
+        </div>
+      ) : (
+        <>
+          {profileCard}
+          {tabsBlock}
+        </>
+      )}
 
       <ActionDialogHost dialog={dialog} />
     </div>
