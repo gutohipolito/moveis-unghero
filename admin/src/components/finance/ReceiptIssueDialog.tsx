@@ -211,7 +211,8 @@ export default function ReceiptIssueDialog({
           </h2>
           <p className="text-xs text-muted-foreground">
             Recebedor: <strong>Móveis Unghero LTDA</strong> (PJ). Pagador:{" "}
-            <strong>{clientName}</strong>. O CPF/CNPJ do cliente será lido do cadastro.
+            <strong>{clientName}</strong>. Se houver CPF/CNPJ no cadastro, entra no recibo;
+            sem documento também é possível emitir.
           </p>
         </div>
 

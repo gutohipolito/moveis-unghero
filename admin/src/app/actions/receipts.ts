@@ -197,16 +197,7 @@ export async function createPaymentReceipt(
 
     const docRaw =
       client.tipo_pessoa === "PJ" ? client.cnpj || "" : client.cpf || client.cnpj || "";
-    const cliente_documento = formatDocumentLabel(docRaw, client.tipo_pessoa);
-    if (!cliente_documento) {
-      return {
-        success: false,
-        error:
-          client.tipo_pessoa === "PJ"
-            ? "Cadastre o CNPJ do cliente antes de emitir o recibo."
-            : "Cadastre o CPF do cliente antes de emitir o recibo.",
-      };
-    }
+    const cliente_documento = formatDocumentLabel(docRaw, client.tipo_pessoa) || "";
 
     let projectId = input.projectId || null;
     let installmentId = input.installmentId || null;

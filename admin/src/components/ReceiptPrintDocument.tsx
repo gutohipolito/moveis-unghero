@@ -472,7 +472,9 @@ export default function ReceiptPrintDocument({
                   <div className="space-y-1 pt-1.5">
                     <p className="text-[10px] font-black uppercase tracking-widest">Pagador</p>
                     <p className="text-[9px] font-bold">{receipt.cliente_nome}</p>
-                    <p className="text-[9px]">{receipt.cliente_documento}</p>
+                    {receipt.cliente_documento ? (
+                      <p className="text-[9px]">{receipt.cliente_documento}</p>
+                    ) : null}
                   </div>
                 </div>
               </div>
