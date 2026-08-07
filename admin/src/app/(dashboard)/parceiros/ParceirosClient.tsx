@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
-import { PartnerType } from "@prisma/client";
+import { PartnerType, type PartnerQuoteCardMode } from "@prisma/client";
 import {
   createParceiro,
   deleteParceiro,
@@ -21,6 +21,7 @@ import {
   getPartnerRoleLabel,
   partnerRegistroLabel,
 } from "@/lib/partnerTypes";
+import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import PartnerCommissionsTab from "@/components/PartnerCommissionsTab";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
@@ -415,6 +416,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [observacoes, setObservacoes] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [quoteCardMode, setQuoteCardMode] = useState<PartnerQuoteCardMode>("HIDDEN");
   const [cnpj, setCnpj] = useState("");
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [logoLoading, setLogoLoading] = useState(false);
@@ -522,6 +524,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setObservacoes("");
     setFotoUrl("");
     setPortfolioUrl("");
+    setQuoteCardMode("HIDDEN");
     setEditing(null);
     setCnpj("");
     setCnpjLoading(false);
@@ -547,6 +550,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setObservacoes(p.observacoes || "");
     setFotoUrl(p.fotoUrl || "");
     setPortfolioUrl(p.portfolioUrl || "");
+    setQuoteCardMode(p.quote_card_mode ?? "HIDDEN");
     setIsCreateOpen(true);
   };
 
@@ -617,6 +621,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       observacoes: observacoes || undefined,
       fotoUrl,
       portfolioUrl: portfolioUrl || undefined,
+      quote_card_mode: quoteCardMode,
     };
 
     if (editing) {
@@ -1062,6 +1067,42 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
             </div>
+
+            <fieldset className="space-y-2 rounded-xl border border-border/80 bg-slate-50/40 p-3">
+              <legend className="px-1 text-xs font-bold text-muted-foreground">
+                Uso de dados e imagem no orçamento
+              </legend>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Cadastro pelo link público já vem autorizado e verificado. No painel, escolha
+                se o card pode aparecer no PDF.
+              </p>
+              <div className="space-y-2">
+                {PARTNER_QUOTE_CARD_MODE_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex gap-2.5 items-start rounded-lg border px-2.5 py-2 cursor-pointer transition-colors ${
+                      quoteCardMode === opt.value
+                        ? "border-primary/40 bg-white"
+                        : "border-transparent hover:bg-white/70"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="quote_card_mode"
+                      className="mt-0.5"
+                      checked={quoteCardMode === opt.value}
+                      onChange={() => setQuoteCardMode(opt.value)}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold text-foreground">{opt.label}</span>
+                      <span className="block text-[10px] text-muted-foreground leading-snug">
+                        {opt.hint}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button

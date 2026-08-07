@@ -4,6 +4,7 @@ import { parseQuoteSubitens } from "@/lib/quoteItems";
 import { formatDateBR } from "@/lib/brazilDate";
 import { summarizeQuoteItems } from "@/lib/quoteApproval";
 import { getPhoneLastFourDigits } from "@/lib/phone";
+import { toPartnerQuotePrintPayload } from "@/lib/partnerQuoteCard";
 
 export async function loadPublicQuoteByShareCode(code: string) {
   const normalized = code.trim().toLowerCase();
@@ -28,6 +29,7 @@ export async function loadPublicQuoteByShareCode(code: string) {
           escritorio: true,
           registro_profissional: true,
           fotoUrl: true,
+          quote_card_mode: true,
         },
       },
       project: {
@@ -70,7 +72,7 @@ export async function loadPublicQuoteByShareCode(code: string) {
     desconto: Number(dbQuote.desconto),
     valor_final: Number(dbQuote.valor_final),
     observacoes: dbQuote.observacoes,
-    partner: dbQuote.partner,
+    partner: toPartnerQuotePrintPayload(dbQuote.partner),
     solicitante_nome: dbQuote.solicitante_nome,
     solicitante_area: dbQuote.solicitante_area,
     approvedTotal: summary.approvedTotal,

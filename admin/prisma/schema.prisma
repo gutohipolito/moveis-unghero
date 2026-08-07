@@ -263,6 +263,16 @@ model ProfessionalPartner {
   portfolioUrl           String?
   /** Opt-in de comunicações comerciais / novidades para parceiros. */
   marketing_aceite       Boolean     @default(false)
+  /** Aceite LGPD no cadastro público (portal). */
+  lgpd_aceite            Boolean     @default(false)
+  lgpd_aceite_em         DateTime?
+  /**
+   * Aparência do card no PDF do orçamento.
+   * HIDDEN = não exibe; UNVERIFIED = card sem selo/ouro; VERIFIED = card atual (selo + ouro).
+   */
+  quote_card_mode        PartnerQuoteCardMode @default(HIDDEN)
+  /** PORTAL_PUBLICO | OPERADOR — origem do cadastro no sistema. */
+  cadastro_canal         String?
   /** Código curto do link de indicação (/a/[code]). */
   invite_code            String?     @unique
   projects               Project[]   @relation("PartnerProjects")
@@ -273,6 +283,12 @@ model ProfessionalPartner {
   commissions            PartnerCommission[]
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
+}
+
+enum PartnerQuoteCardMode {
+  HIDDEN
+  UNVERIFIED
+  VERIFIED
 }
 
 model Project {

@@ -59,6 +59,8 @@ export type QuotePrintPartner = {
   escritorio?: string | null;
   registro_profissional?: string | null;
   fotoUrl?: string | null;
+  /** VERIFIED = selo + ouro; UNVERIFIED = borda cinza sem selo. */
+  quote_card_mode?: "UNVERIFIED" | "VERIFIED" | null;
 } | null;
 
 export type QuotePrintClient = {
@@ -274,9 +276,15 @@ export function quotePrintStylesCss() {
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
     .print-partner-card {
-      border: 1px solid rgba(217, 119, 6, 0.5);
       background: #ffffff;
       box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.22);
+    }
+    .print-partner-card--verified {
+      border: 1px solid rgba(217, 119, 6, 0.5);
+    }
+    .print-partner-card--unverified {
+      border: 1px solid #d4d4d8;
+      box-shadow: none;
     }
     .print-footer-link {
       color: #ffffff;
@@ -611,8 +619,22 @@ export default function QuotePrintDocument({
                 </div>
 
                 {quote.partner ? (
-                  <div className="print-partner-card w-full p-3 rounded-xl border border-amber-500/50 bg-white text-[10px] text-neutral-600 space-y-1 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)] leading-tight flex items-center gap-3">
-                    <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden border border-amber-500/45 bg-neutral-50 flex items-center justify-center">
+                  (() => {
+                    const verified =
+                      (quote.partner.quote_card_mode ?? "VERIFIED") !== "UNVERIFIED";
+                    return (
+                  <div
+                    className={`print-partner-card w-full p-3 rounded-xl bg-white text-[10px] text-neutral-600 space-y-1 leading-tight flex items-center gap-3 ${
+                      verified
+                        ? "print-partner-card--verified border border-amber-500/50 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)]"
+                        : "print-partner-card--unverified border border-zinc-300"
+                    }`}
+                  >
+                    <div
+                      className={`h-14 w-14 shrink-0 rounded-full overflow-hidden bg-neutral-50 flex items-center justify-center ${
+                        verified ? "border border-amber-500/45" : "border border-zinc-300"
+                      }`}
+                    >
                       {quote.partner.fotoUrl ? (
                         <img
                           src={quote.partner.fotoUrl}
@@ -630,10 +652,12 @@ export default function QuotePrintDocument({
                         <p className="font-bold text-neutral-900 text-xs leading-snug truncate">
                           {quote.partner.nome}
                         </p>
-                        <BadgeCheck
-                          className="h-3.5 w-3.5 shrink-0 text-amber-600 fill-amber-400/25"
-                          aria-label="Parceiro verificado"
-                        />
+                        {verified ? (
+                          <BadgeCheck
+                            className="h-3.5 w-3.5 shrink-0 text-amber-600 fill-amber-400/25"
+                            aria-label="Parceiro verificado"
+                          />
+                        ) : null}
                       </div>
                       <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block">
                         {partnerRoleLabel}
@@ -646,6 +670,8 @@ export default function QuotePrintDocument({
                       ) : null}
                     </div>
                   </div>
+                    );
+                  })()
                 ) : null}
               </div>
             </section>

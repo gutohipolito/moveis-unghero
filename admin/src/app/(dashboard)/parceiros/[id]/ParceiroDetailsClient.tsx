@@ -34,6 +34,7 @@ import {
   formatPartnerRegistro,
   getPartnerRoleLabel,
 } from "@/lib/partnerTypes";
+import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
 import { primaryPortfolioUrl } from "@/lib/portfolioUrls";
 
 type DetailTab = "overview" | "projects" | "comissoes" | "comprovantes";
@@ -221,6 +222,20 @@ export default function ParceiroDetailsClient({
                   {parceiro.cidade}
                 </span>
               )}
+              {(() => {
+                const modeOpt = PARTNER_QUOTE_CARD_MODE_OPTIONS.find(
+                  (o) => o.value === (parceiro.quote_card_mode ?? "HIDDEN")
+                );
+                if (!modeOpt) return null;
+                return (
+                  <span
+                    className="text-[10px] font-bold text-muted-foreground bg-white/80 px-2.5 py-0.5 rounded-full border border-border/60"
+                    title={modeOpt.hint}
+                  >
+                    Orçamento: {modeOpt.label}
+                  </span>
+                );
+              })()}
               {registroLabel && (
                 <span className="text-[10px] font-semibold text-muted-foreground">
                   {registroLabel}

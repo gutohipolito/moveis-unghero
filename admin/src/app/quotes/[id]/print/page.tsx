@@ -10,6 +10,7 @@ import { ensureQuotePdfShareCode, resolveQuotePdfPublicUrl } from "@/lib/quotePd
 import { formatDateBR } from "@/lib/brazilDate";
 import { summarizeQuoteItems } from "@/lib/quoteApproval";
 import { isOpsLimitedRole } from "@/lib/permissions";
+import { toPartnerQuotePrintPayload } from "@/lib/partnerQuoteCard";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -36,6 +37,7 @@ type LoadedPrintQuote = {
     escritorio: string | null;
     registro_profissional: string | null;
     fotoUrl: string | null;
+    quote_card_mode: "UNVERIFIED" | "VERIFIED";
   } | null;
   solicitante_nome?: string | null;
   solicitante_area?: string | null;
@@ -97,6 +99,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             escritorio: true,
             registro_profissional: true,
             fotoUrl: true,
+            quote_card_mode: true,
           },
         },
         project: {
@@ -141,7 +144,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         observacoes: dbQuote.observacoes,
         validade: dbQuote.validade,
         pdfPublicUrl,
-        partner: dbQuote.partner,
+        partner: toPartnerQuotePrintPayload(dbQuote.partner),
         solicitante_nome: dbQuote.solicitante_nome,
         solicitante_area: dbQuote.solicitante_area,
         project: dbQuote.project,

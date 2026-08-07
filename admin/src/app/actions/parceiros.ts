@@ -1,6 +1,6 @@
 "use server";
 
-import { PartnerType } from "@prisma/client";
+import { PartnerQuoteCardMode, PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
@@ -9,6 +9,21 @@ import { canManageParceiros } from "@/lib/permissions";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
 import { maybeRedactForRole } from "@/lib/viewerRedact";
+
+const QUOTE_CARD_MODES = new Set<PartnerQuoteCardMode>([
+  "HIDDEN",
+  "UNVERIFIED",
+  "VERIFIED",
+]);
+
+function parseQuoteCardMode(
+  value: PartnerQuoteCardMode | string | undefined
+): PartnerQuoteCardMode | undefined {
+  if (value === undefined) return undefined;
+  return QUOTE_CARD_MODES.has(value as PartnerQuoteCardMode)
+    ? (value as PartnerQuoteCardMode)
+    : undefined;
+}
 
 function denyParceiroMutation(cargo: string | null | undefined): string | null {
   if (!canManageParceiros(cargo)) {
@@ -34,6 +49,9 @@ export interface ParceiroDTO {
   fotoUrl: string | null;
   imagens: string | null;
   portfolioUrl: string | null;
+  quote_card_mode: PartnerQuoteCardMode;
+  cadastro_canal: string | null;
+  lgpd_aceite: boolean;
   projects?: {
     id: string;
     valor_previsto: any;
@@ -93,6 +111,9 @@ function mapParceiroRow(p: {
   fotoUrl: string | null;
   imagens: string | null;
   portfolioUrl: string | null;
+  quote_card_mode: PartnerQuoteCardMode;
+  cadastro_canal: string | null;
+  lgpd_aceite: boolean;
   createdAt: Date;
   projects: NonNullable<ParceiroDTO["projects"]>;
   quotes: { project: NonNullable<ParceiroDTO["projects"]>[number] | null }[];
@@ -194,6 +215,7 @@ export async function createParceiro(
     fotoUrl?: string;
     imagens?: string;
     portfolioUrl?: string;
+    quote_card_mode?: PartnerQuoteCardMode | string;
   }
 ) {
   const auth = await getWriteAccess("parceiros");
@@ -215,6 +237,8 @@ export async function createParceiro(
     return { success: false, error: "Cadastro indisponível no modo demonstração offline." };
   }
 
+  const quoteCardMode = parseQuoteCardMode(data.quote_card_mode) ?? "HIDDEN";
+
   try {
     const parceiro = await prisma.professionalPartner.create({
       data: {
@@ -226,11 +250,13 @@ export async function createParceiro(
         cidade: data.cidade ? normalizeCidade(data.cidade).cidade || null : null,
         escritorio: data.escritorio ? capitalizeText(data.escritorio) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
-        origem: data.origem?.trim() || null,
+        origem: data.origem?.trim() || "PAINEL",
         observacoes: data.observacoes?.trim() || null,
         fotoUrl: data.fotoUrl?.trim() || null,
         imagens: data.imagens?.trim() || null,
         portfolioUrl: data.portfolioUrl?.trim() || null,
+        cadastro_canal: "OPERADOR",
+        quote_card_mode: quoteCardMode,
       },
     });
 
@@ -260,6 +286,7 @@ export async function updateParceiro(
     fotoUrl?: string;
     imagens?: string;
     portfolioUrl?: string;
+    quote_card_mode?: PartnerQuoteCardMode | string;
   }
 ) {
   const auth = await getWriteAccess("parceiros");
@@ -280,6 +307,8 @@ export async function updateParceiro(
     if (!existing) {
       return { success: false, error: "Parceiro não encontrado." };
     }
+
+    const quoteCardMode = parseQuoteCardMode(data.quote_card_mode);
 
     const parceiro = await prisma.professionalPartner.update({
       where: { id },
@@ -307,6 +336,7 @@ export async function updateParceiro(
         ...(data.fotoUrl !== undefined ? { fotoUrl: data.fotoUrl?.trim() || null } : {}),
         ...(data.imagens !== undefined ? { imagens: data.imagens?.trim() || null } : {}),
         ...(data.portfolioUrl !== undefined ? { portfolioUrl: data.portfolioUrl?.trim() || null } : {}),
+        ...(quoteCardMode !== undefined ? { quote_card_mode: quoteCardMode } : {}),
       },
       include: {
         projects: {

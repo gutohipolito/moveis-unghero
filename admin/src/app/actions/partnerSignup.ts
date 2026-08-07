@@ -139,6 +139,10 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
           ? truncateField(data.observacoes, FORM_FIELD_LIMITS.observacoes)
           : null,
         marketing_aceite: Boolean(data.marketing_aceite),
+        lgpd_aceite: true,
+        lgpd_aceite_em: new Date(),
+        cadastro_canal: "PORTAL_PUBLICO",
+        quote_card_mode: "VERIFIED",
         ativo: true,
       },
     });

@@ -28,6 +28,10 @@ import { getParceiros } from "@/app/actions/parceiros";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { addCalendarDaysISO, toISODateBR } from "@/lib/brazilDate";
 import { getPricingTextWarning } from "@/lib/quoteItems";
+import {
+  resolvePartnerQuoteCardAppearance,
+  type PartnerQuoteCardAppearance,
+} from "@/lib/partnerQuoteCard";
 
 interface PartnerOption {
   id: string;
@@ -37,6 +41,7 @@ interface PartnerOption {
   escritorio: string | null;
   registro_profissional: string | null;
   cidade: string | null;
+  quote_card_mode: string;
 }
 
 function getPartnerInitials(name: string) {
@@ -214,6 +219,7 @@ export default function QuoteBuilder({
               escritorio: p.escritorio,
               registro_profissional: p.registro_profissional,
               cidade: p.cidade,
+              quote_card_mode: p.quote_card_mode ?? "HIDDEN",
             }))
         );
       }
@@ -671,12 +677,34 @@ export default function QuoteBuilder({
             {(() => {
               const selected = partners.find((p) => p.id === partnerId);
               if (!selected) return null;
+              const appearance: PartnerQuoteCardAppearance =
+                resolvePartnerQuoteCardAppearance(selected.quote_card_mode);
+              if (appearance === "hidden") {
+                return (
+                  <p className="text-[10px] text-amber-800/90 bg-amber-50 border border-amber-200/80 rounded-lg px-2.5 py-2 leading-relaxed">
+                    Parceiro vinculado para CRM e comissão, mas{" "}
+                    <span className="font-semibold">não aparece no PDF</span> — sem
+                    autorização de uso de dados/imagem.
+                  </p>
+                );
+              }
+              const verified = appearance === "verified";
               const roleLabel = getPartnerRoleLabel(selected.tipo, selected.nome);
               const registro = formatPartnerRegistro(selected.tipo, selected.registro_profissional);
               return (
-                <div className="relative overflow-hidden rounded-xl p-3.5 w-fit max-w-sm space-y-1 text-slate-800 text-xs border border-amber-500/50 bg-white shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)]">
+                <div
+                  className={`relative overflow-hidden rounded-xl p-3.5 w-fit max-w-sm space-y-1 text-slate-800 text-xs bg-white ${
+                    verified
+                      ? "border border-amber-500/50 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)]"
+                      : "border border-zinc-300"
+                  }`}
+                >
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden border border-amber-500/45 bg-neutral-50 flex items-center justify-center">
+                    <div
+                      className={`h-12 w-12 shrink-0 rounded-full overflow-hidden bg-neutral-50 flex items-center justify-center ${
+                        verified ? "border border-amber-500/45" : "border border-zinc-300"
+                      }`}
+                    >
                       {selected.fotoUrl ? (
                         <img
                           src={selected.fotoUrl}
@@ -694,10 +722,12 @@ export default function QuoteBuilder({
                         <p className="text-sm font-extrabold text-slate-900 truncate tracking-tight">
                           {selected.nome}
                         </p>
-                        <BadgeCheck
-                          className="h-4 w-4 shrink-0 text-amber-600 fill-amber-400/25"
-                          aria-label="Parceiro verificado"
-                        />
+                        {verified ? (
+                          <BadgeCheck
+                            className="h-4 w-4 shrink-0 text-amber-600 fill-amber-400/25"
+                            aria-label="Parceiro verificado"
+                          />
+                        ) : null}
                       </div>
                       <p className="text-[10px] font-semibold text-slate-500 tracking-wide">
                         {roleLabel}
@@ -719,7 +749,7 @@ export default function QuoteBuilder({
               );
             })()}
             <p className="text-[10px] text-muted-foreground">
-              Aparece de forma discreta no PDF do orçamento.
+              A aparência no PDF depende da autorização de uso cadastrada no parceiro.
             </p>
           </div>
           {clientTipoPessoa === "PJ" ? (
