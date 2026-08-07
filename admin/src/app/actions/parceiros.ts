@@ -45,6 +45,74 @@ export interface ParceiroDTO {
   createdAt: Date;
 }
 
+const parceiroDetailInclude = {
+  projects: {
+    select: {
+      id: true,
+      valor_previsto: true,
+      status_geral: true,
+      client: {
+        select: {
+          nome: true,
+        },
+      },
+    },
+  },
+  quotes: {
+    select: {
+      project: {
+        select: {
+          id: true,
+          valor_previsto: true,
+          status_geral: true,
+          client: {
+            select: {
+              nome: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+function mapParceiroRow(p: {
+  id: string;
+  nome: string;
+  tipo: PartnerType;
+  email: string | null;
+  telefone: string | null;
+  cidade: string | null;
+  cep: string | null;
+  endereco: string | null;
+  escritorio: string | null;
+  registro_profissional: string | null;
+  origem: string | null;
+  observacoes: string | null;
+  ativo: boolean;
+  fotoUrl: string | null;
+  imagens: string | null;
+  portfolioUrl: string | null;
+  createdAt: Date;
+  projects: NonNullable<ParceiroDTO["projects"]>;
+  quotes: { project: NonNullable<ParceiroDTO["projects"]>[number] | null }[];
+}): ParceiroDTO {
+  const byId = new Map<string, NonNullable<ParceiroDTO["projects"]>[number]>();
+  for (const proj of p.projects) {
+    byId.set(proj.id, proj);
+  }
+  for (const quote of p.quotes) {
+    if (quote.project && !byId.has(quote.project.id)) {
+      byId.set(quote.project.id, quote.project);
+    }
+  }
+  const { quotes: _quotes, ...rest } = p;
+  return {
+    ...rest,
+    projects: Array.from(byId.values()),
+  } as unknown as ParceiroDTO;
+}
+
 export async function getParceiros(companyId: string) {
   const auth = await getModuleAccess("parceiros");
   if (!auth) {
@@ -67,55 +135,11 @@ export async function getParceiros(companyId: string) {
   try {
     const parceiros = await prisma.professionalPartner.findMany({
       where: { company_id: companyId },
-      include: {
-        projects: {
-          select: {
-            id: true,
-            valor_previsto: true,
-            status_geral: true,
-            client: {
-              select: {
-                nome: true,
-              },
-            },
-          },
-        },
-        quotes: {
-          select: {
-            project: {
-              select: {
-                id: true,
-                valor_previsto: true,
-                status_geral: true,
-                client: {
-                  select: {
-                    nome: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: parceiroDetailInclude,
       orderBy: [{ ativo: "desc" }, { nome: "asc" }],
     });
 
-    const mapped: ParceiroDTO[] = parceiros.map((p) => {
-      const byId = new Map<string, NonNullable<ParceiroDTO["projects"]>[number]>();
-      for (const proj of p.projects) {
-        byId.set(proj.id, proj);
-      }
-      for (const quote of p.quotes) {
-        if (quote.project && !byId.has(quote.project.id)) {
-          byId.set(quote.project.id, quote.project);
-        }
-      }
-      const { quotes: _quotes, ...rest } = p;
-      return {
-        ...rest,
-        projects: Array.from(byId.values()),
-      } as unknown as ParceiroDTO;
-    });
+    const mapped: ParceiroDTO[] = parceiros.map(mapParceiroRow);
 
     return {
       success: true as const,
@@ -124,6 +148,34 @@ export async function getParceiros(companyId: string) {
   } catch (error) {
     console.error("Erro ao buscar parceiros:", error);
     return { success: false as const, error: "Falha ao carregar parceiros.", parceiros: [] as ParceiroDTO[] };
+  }
+}
+
+export async function getParceiroById(partnerId: string) {
+  const auth = await getModuleAccess("parceiros");
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado.", parceiro: null };
+  }
+
+  if (isDatabaseOffline()) {
+    return { success: false as const, error: "Banco de dados indisponível.", parceiro: null };
+  }
+
+  try {
+    const row = await prisma.professionalPartner.findFirst({
+      where: { id: partnerId, company_id: auth.companyId },
+      include: parceiroDetailInclude,
+    });
+    if (!row) {
+      return { success: false as const, error: "Parceiro não encontrado.", parceiro: null };
+    }
+
+    const mapped = mapParceiroRow(row);
+    const [redacted] = maybeRedactForRole([mapped], auth.cargo);
+    return { success: true as const, parceiro: redacted ?? mapped };
+  } catch (error) {
+    console.error("Erro ao buscar parceiro:", error);
+    return { success: false as const, error: "Falha ao carregar parceiro.", parceiro: null };
   }
 }
 
@@ -273,6 +325,7 @@ export async function updateParceiro(
     });
 
     revalidatePath("/parceiros");
+    revalidatePath(`/parceiros/${id}`);
     return { success: true, parceiro: parceiro as unknown as ParceiroDTO };
   } catch (error: unknown) {
     console.error("Erro ao atualizar parceiro:", error);

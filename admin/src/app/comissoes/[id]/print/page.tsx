@@ -38,7 +38,11 @@ export default async function PartnerCommissionPrintPage({ params }: PrintPagePr
         receipt={res.receipt}
         topBar={
           <PartnerCommissionReceiptToolbar
-            backHref={res.projectId ? `/crm?project=${res.projectId}` : "/parceiros"}
+            backHref={
+              res.partnerId
+                ? `/parceiros/${res.partnerId}?tab=comprovantes`
+                : "/parceiros"
+            }
             numeroLabel={numeroLabel}
           />
         }

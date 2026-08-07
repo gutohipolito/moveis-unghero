@@ -65,6 +65,8 @@ export type PartnerCommissionReceiptDTO = {
   id: string;
   numero: number;
   commission_id: string;
+  commission_status?: PartnerCommissionStatus;
+  project_id?: string | null;
   parceiro_nome: string;
   parceiro_tipo: string;
   parceiro_registro: string | null;
@@ -82,6 +84,57 @@ export type PartnerCommissionReceiptDTO = {
   observacoes: string | null;
   createdAt: string;
 };
+
+function mapReceiptRow(row: {
+  id: string;
+  numero: number;
+  commission_id: string;
+  parceiro_nome: string;
+  parceiro_tipo: string;
+  parceiro_registro: string | null;
+  parceiro_escritorio: string | null;
+  cliente_nome: string;
+  projeto_ref: string | null;
+  orcamento_codigo: string | null;
+  orcamento_versao: number | null;
+  percentual: Prisma.Decimal | number;
+  base_valor: Prisma.Decimal | number;
+  valor_comissao: Prisma.Decimal | number;
+  data_pagamento_prevista: Date | null;
+  data_pagamento_efetiva: Date | null;
+  emitido_por_nome: string | null;
+  observacoes: string | null;
+  createdAt: Date;
+  commission?: { status: PartnerCommissionStatus; project_id: string } | null;
+}): PartnerCommissionReceiptDTO {
+  return {
+    id: row.id,
+    numero: row.numero,
+    commission_id: row.commission_id,
+    commission_status: row.commission?.status,
+    project_id: row.commission?.project_id ?? null,
+    parceiro_nome: row.parceiro_nome,
+    parceiro_tipo: row.parceiro_tipo,
+    parceiro_registro: row.parceiro_registro,
+    parceiro_escritorio: row.parceiro_escritorio,
+    cliente_nome: row.cliente_nome,
+    projeto_ref: row.projeto_ref,
+    orcamento_codigo: row.orcamento_codigo,
+    orcamento_versao: row.orcamento_versao,
+    percentual: toNumber(row.percentual),
+    base_valor: toNumber(row.base_valor),
+    valor_comissao: toNumber(row.valor_comissao),
+    data_pagamento_prevista: row.data_pagamento_prevista
+      ? toISODateBR(row.data_pagamento_prevista)
+      : null,
+    data_pagamento_efetiva: row.data_pagamento_efetiva
+      ? toISODateBR(row.data_pagamento_efetiva)
+      : null,
+    emitido_por_nome: row.emitido_por_nome,
+    observacoes: row.observacoes,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
 
 function mapCommission(row: {
   id: string;
@@ -478,6 +531,7 @@ export async function createPartnerCommission(input: {
   });
 
   revalidatePath("/parceiros");
+  revalidatePath(`/parceiros/${project.partner_id}`);
   revalidatePath(`/crm`);
   return { success: true as const, commission: mapCommission(row) };
 }
@@ -554,6 +608,7 @@ export async function updatePartnerCommission(input: {
   });
 
   revalidatePath("/parceiros");
+  revalidatePath(`/parceiros/${existing.partner_id}`);
   return { success: true as const, commission: mapCommission(row) };
 }
 
@@ -627,6 +682,7 @@ export async function issuePartnerCommissionReceipt(commissionId: string) {
   });
 
   revalidatePath("/parceiros");
+  revalidatePath(`/parceiros/${commission.partner_id}`);
   revalidatePath(`/comissoes/${receipt.id}/print`);
 
   return {
@@ -637,6 +693,38 @@ export async function issuePartnerCommissionReceipt(commissionId: string) {
   };
 }
 
+export async function listPartnerCommissionReceipts(partnerId: string) {
+  const auth = await requireCommissionRead();
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado.", receipts: [] };
+  }
+
+  const partner = await prisma.professionalPartner.findFirst({
+    where: { id: partnerId, company_id: auth.companyId },
+    select: { id: true },
+  });
+  if (!partner) {
+    return { success: false as const, error: "Parceiro não encontrado.", receipts: [] };
+  }
+
+  const rows = await prisma.partnerCommissionReceipt.findMany({
+    where: {
+      company_id: auth.companyId,
+      commission: { partner_id: partnerId },
+    },
+    include: {
+      commission: { select: { status: true, project_id: true } },
+    },
+    orderBy: [{ createdAt: "desc" }, { numero: "desc" }],
+    take: 200,
+  });
+
+  return {
+    success: true as const,
+    receipts: rows.map(mapReceiptRow),
+  };
+}
+
 export async function getPartnerCommissionReceipt(receiptId: string) {
   const auth = await requireCommissionRead();
   if (!auth) return { success: false as const, error: "Não autenticado." };
@@ -644,41 +732,18 @@ export async function getPartnerCommissionReceipt(receiptId: string) {
   const row = await prisma.partnerCommissionReceipt.findFirst({
     where: { id: receiptId, company_id: auth.companyId },
     include: {
-      commission: { select: { id: true, project_id: true, status: true } },
+      commission: { select: { id: true, project_id: true, partner_id: true, status: true } },
     },
   });
   if (!row) return { success: false as const, error: "Comprovante não encontrado." };
 
-  const dto: PartnerCommissionReceiptDTO = {
-    id: row.id,
-    numero: row.numero,
-    commission_id: row.commission_id,
-    parceiro_nome: row.parceiro_nome,
-    parceiro_tipo: row.parceiro_tipo,
-    parceiro_registro: row.parceiro_registro,
-    parceiro_escritorio: row.parceiro_escritorio,
-    cliente_nome: row.cliente_nome,
-    projeto_ref: row.projeto_ref,
-    orcamento_codigo: row.orcamento_codigo,
-    orcamento_versao: row.orcamento_versao,
-    percentual: toNumber(row.percentual),
-    base_valor: toNumber(row.base_valor),
-    valor_comissao: toNumber(row.valor_comissao),
-    data_pagamento_prevista: row.data_pagamento_prevista
-      ? toISODateBR(row.data_pagamento_prevista)
-      : null,
-    data_pagamento_efetiva: row.data_pagamento_efetiva
-      ? toISODateBR(row.data_pagamento_efetiva)
-      : null,
-    emitido_por_nome: row.emitido_por_nome,
-    observacoes: row.observacoes,
-    createdAt: row.createdAt.toISOString(),
-  };
+  const dto = mapReceiptRow(row);
 
   return {
     success: true as const,
     receipt: dto,
     projectId: row.commission.project_id,
+    partnerId: row.commission.partner_id,
     commissionStatus: row.commission.status,
   };
 }

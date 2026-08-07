@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { PartnerType } from "@prisma/client";
 import {
@@ -22,9 +23,6 @@ import {
 } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import PartnerCommissionsTab from "@/components/PartnerCommissionsTab";
-import {
-  getPartnerCommissionTotals,
-} from "@/app/actions/partnerCommissions";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -380,13 +378,11 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     ? false
     : privacyLocked || isReadOnly || privacyMode;
   const hidePartnerValues = isOpsLimited;
-  const [viewingPartner, setViewingPartner] = useState<ParceiroDTO | null>(null);
   const [pageTab, setPageTab] = useState<"cadastro" | "comissoes">("cadastro");
-  const [commissionFilterPartnerId, setCommissionFilterPartnerId] = useState<string | null>(null);
-  const [commissionTotals, setCommissionTotals] = useState<{ pendente: number; pago: number } | null>(null);
   const [isPortalPickerOpen, setIsPortalPickerOpen] = useState(false);
   const [portalSearch, setPortalSearch] = useState("");
   const [portalEnteringId, setPortalEnteringId] = useState<string | null>(null);
+  const router = useRouter();
 
   React.useEffect(() => {
     async function loadColabs() {
@@ -397,26 +393,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     }
     loadColabs();
   }, [companyId]);
-
-  React.useEffect(() => {
-    if (!viewingPartner) {
-      setCommissionTotals(null);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const res = await getPartnerCommissionTotals(viewingPartner.id);
-      if (cancelled) return;
-      if (res.success) {
-        setCommissionTotals({ pendente: res.pendente, pago: res.pago });
-      } else {
-        setCommissionTotals(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [viewingPartner]);
 
   const handleViewProject = async (projectId: string) => {
     setActiveProjectId(projectId);
@@ -765,7 +741,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   items={[
                     "Cadastre arquitetos e projetistas que indicam clientes.",
                     "No CRM, vincule o parceiro ao projeto do cliente.",
-                    "Na aba Comissões: lance o %, marque como pago e emita o comprovante interno.",
+                    "Clique no card do parceiro para abrir a ficha: comissões, comprovantes e projetos.",
+                    "Na aba Comissões da lista: visão de todos os lançamentos de uma vez.",
                     "Parceiros com e-mail e telefone acessam o portal em moveisunghero.com.br/parceiro/login.",
                     "O olho de valores no topo do painel também oculta nomes em apresentações (fotos ficam visíveis).",
                   ]}
@@ -773,8 +750,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </InfoTooltip>
             </div>
             <p className="text-xs text-muted-foreground">
-              Cadastro dos profissionais e, na aba Comissões, o controle do que a Unghero deve
-              pagar a cada um.
+              Cadastro dos profissionais. Abra a ficha de cada um para lançar comissão e
+              reabrir comprovantes — como nos clientes.
             </p>
             <div className="flex gap-1.5 pt-3">
               <button
@@ -829,7 +806,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
         {pageTab === "comissoes" ? (
           <PartnerCommissionsTab
-            initialPartnerId={commissionFilterPartnerId}
             canManage={canManagePartners}
             showSuccess={showSuccess}
             showError={showError}
@@ -883,7 +859,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 handleViewProject={handleViewProject}
                 openEdit={openEdit}
                 handleDelete={handleDelete}
-                onViewDetails={setViewingPartner}
+                onViewDetails={(p) => router.push(`/parceiros/${p.id}`)}
               />
             ))}
           </div>
@@ -1147,315 +1123,6 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             </div>
           )}
         </div>
-      </Dialog>
-
-      {/* Dialog de Detalhes Completos do Parceiro */}
-      <Dialog
-        isOpen={viewingPartner !== null}
-        onClose={() => setViewingPartner(null)}
-        className="max-w-2xl"
-        viewportClassName="flex items-center justify-center p-4"
-      >
-        {viewingPartner && (() => {
-          const p = viewingPartner;
-          const style = PARTNER_TYPE_STYLES[p.tipo];
-          const Icon = style.icon;
-          const imagesList = p.imagens ? p.imagens.split(",").filter(Boolean) : [];
-          const projectCount = p.projects?.length ?? 0;
-          const totalLinkedValue = (p.projects ?? []).reduce(
-            (sum, proj) => sum + Number(proj.valor_previsto || 0),
-            0
-          );
-          const registroLabel = formatPartnerRegistro(p.tipo, p.registro_profissional);
-          const formatCurrency = (val: number) =>
-            val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-          return (
-            <div className="space-y-5 pr-6">
-              <div className="partner-card-detail-header flex flex-col sm:flex-row items-center gap-5 p-5">
-                <div className="partner-card-accent absolute inset-x-0 top-0" />
-
-                <div className="partner-card-avatar relative flex h-20 w-auto min-w-20 max-w-36">
-                  {p.fotoUrl ? (
-                    <img
-                      src={p.fotoUrl}
-                      alt={p.nome}
-                      className="h-full w-auto max-w-36 object-contain"
-                    />
-                  ) : (
-                    <div className="partner-card-avatar-fallback h-20 w-20 text-2xl rounded-[inherit]">
-                      {getInitials(p.nome)}
-                    </div>
-                  )}
-                </div>
-
-                <div className="text-center sm:text-left min-w-0 flex-1 space-y-1.5 sm:pl-1">
-                  <h3
-                    className={`font-display font-bold text-foreground text-lg leading-tight tracking-tight ${effectivePrivacyMode ? "blur-[6px] select-none" : ""}`}
-                  >
-                    {p.nome}
-                  </h3>
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-                    <span className="partner-card-badge text-[10px] px-2.5 py-0.5">
-                      <Icon className="h-3 w-3" />
-                      {getPartnerRoleLabel(p.tipo, p.nome)}
-                    </span>
-                    {p.cidade && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-muted-foreground bg-white/80 px-2.5 py-0.5 rounded-full border border-border/60">
-                        <MapPin className="h-3 w-3 text-muted-foreground/70" />
-                        {p.cidade}
-                      </span>
-                    )}
-                  </div>
-                  {registroLabel && (
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      {registroLabel}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Informações Comerciais / Contatos / Obs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    Detalhes do Profissional
-                  </h4>
-                  <div className="partner-card-metric p-4 space-y-2.5 text-xs text-foreground/80">
-                    {p.escritorio && (
-                      <p className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span><strong>Escritório:</strong> {p.escritorio}</span>
-                      </p>
-                    )}
-                    {p.telefone && (
-                      <p className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span><strong>WhatsApp:</strong> {sensitive.phone(p.telefone)}</span>
-                      </p>
-                    )}
-                    {p.email && (
-                      <p className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span><strong>E-mail:</strong> {sensitive.email(p.email)}</span>
-                      </p>
-                    )}
-                    {primaryPortfolioUrl(p.portfolioUrl) && (
-                      <p className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span>
-                          <strong>Portfólio: </strong>
-                          <a
-                            href={primaryPortfolioUrl(p.portfolioUrl)!}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary hover:underline font-bold"
-                          >
-                            Link externo
-                          </a>
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    {hidePartnerValues ? "Projetos" : "Projetos & Receita"}
-                  </h4>
-                  <div className="partner-card-metric p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Projetos no CRM:</span>
-                      <span className="text-xs font-extrabold text-foreground bg-white border border-border/70 px-2 py-0.5 rounded-full">
-                        {projectCount}
-                      </span>
-                    </div>
-                    {!hidePartnerValues && (
-                      <div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block">Total em Projetos</span>
-                        <PrivacyMoney value={totalLinkedValue} as="span" className="text-xl font-display font-bold text-gradient-gold leading-none" />
-                      </div>
-                    )}
-                  </div>
-                  {!hidePartnerValues && commissionTotals && (
-                    <div className="partner-card-metric p-4 space-y-2 mt-3">
-                      <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                        <Percent className="h-3 w-3" />
-                        Comissões a pagar / pagas
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground font-semibold">Ainda a pagar</span>
-                        <PrivacyMoney value={commissionTotals.pendente} as="span" className="font-bold tabular-nums" />
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground font-semibold">Já pagas</span>
-                        <PrivacyMoney value={commissionTotals.pago} as="span" className="font-bold tabular-nums" />
-                      </div>
-                      <button
-                        type="button"
-                        className="text-[10px] font-bold text-primary hover:underline cursor-pointer mt-1"
-                        onClick={() => {
-                          setCommissionFilterPartnerId(p.id);
-                          setPageTab("comissoes");
-                          setViewingPartner(null);
-                        }}
-                      >
-                        Ir para Comissões deste parceiro →
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Observações */}
-              {p.observacoes && (
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                    Observações internas
-                  </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed italic bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                    "{p.observacoes}"
-                  </p>
-                </div>
-              )}
-
-              {/* Lista de Projetos Detalhada */}
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Projetos Vinculados no CRM
-                </h4>
-                {p.projects && p.projects.length > 0 ? (
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                    {p.projects.map((proj) => {
-                      let statusBg = "bg-slate-50 text-slate-700 border-slate-200";
-                      if (proj.status_geral === "APROVADO" || proj.status_geral === "FINALIZADO") {
-                        statusBg = "bg-emerald-50 text-emerald-700 border-emerald-100";
-                      } else if (proj.status_geral === "LEAD" || proj.status_geral === "ORCAMENTO" || proj.status_geral === "NEGOCIACAO") {
-                        statusBg = "bg-blue-50 text-blue-700 border-blue-100";
-                      } else if (proj.status_geral === "PRODUCAO" || proj.status_geral === "INSTALACAO" || proj.status_geral === "CONFERENCIA_TECNICA") {
-                        statusBg = "bg-amber-50/70 text-amber-700 border-amber-100";
-                      }
-                      
-                      return (
-                        <div 
-                          key={proj.id} 
-                          onClick={() => {
-                            setViewingPartner(null);
-                            handleViewProject(proj.id);
-                          }}
-                          className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer text-xs group/project"
-                        >
-                          <div className="min-w-0 flex-1 pr-2">
-                            <p className="font-bold text-slate-700 group-hover/project:text-primary transition-colors truncate">
-                              {proj.client.nome}
-                            </p>
-                            {!hidePartnerValues ? (
-                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">
-                                {proj.valor_previsto
-                                  ? Number(proj.valor_previsto).toLocaleString("pt-BR", {
-                                      style: "currency",
-                                      currency: "BRL",
-                                    })
-                                  : "R$ 0,00"}
-                              </p>
-                            ) : null}
-                          </div>
-                          <span className={`inline-flex items-center text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusBg}`}>
-                            {proj.status_geral}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-4 rounded-xl border border-dashed border-slate-200 text-center bg-slate-50/30 text-xs text-slate-400">
-                    Nenhum projeto vinculado a este parceiro.
-                  </div>
-                )}
-              </div>
-
-              {/* Galeria de Fotos / Projetos */}
-              <div className="space-y-3 border-t border-slate-100 pt-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                    Galeria de Fotos
-                  </h4>
-                  <span className="text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                    {imagesList.length} fotos
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-5 gap-2">
-                  {imagesList.map((img, idx) => (
-                    <div key={img} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group/img bg-slate-50 shadow-inner">
-                      <img src={img} alt={`Projeto ${idx + 1}`} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500" />
-                      {canManagePartners && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteImage(p.id, img, false);
-                          setViewingPartner(prev => {
-                            if (!prev) return null;
-                            const newImgs = imagesList.filter(i => i !== img).join(",");
-                            return { ...prev, imagens: newImgs };
-                          });
-                        }}
-                        title="Excluir imagem"
-                        className="absolute top-1 right-1 p-1 bg-black/70 hover:bg-red-650 rounded-md text-white opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      )}
-                    </div>
-                  ))}
-
-                  {canManagePartners && imagesList.length < 10 && (
-                    <label
-                      htmlFor={`gallery-upload-modal-${p.id}`}
-                      className="aspect-square rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 hover:border-slate-350 transition-all group/add shadow-sm"
-                      title="Adicionar imagem ao portfólio"
-                    >
-                      {uploadingId === `${p.id}-galeria` ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-                      ) : (
-                        <>
-                          <Plus className="h-5 w-5 text-slate-400 group-hover/add:text-primary transition-colors" />
-                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider mt-1 group-hover/add:text-primary transition-colors">Subir</span>
-                        </>
-                      )}
-                    </label>
-                  )}
-                  
-                  <input
-                    id={`gallery-upload-modal-${p.id}`}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleUploadImage(p.id, file, "galeria");
-                        setViewingPartner(null);
-                      }
-                    }}
-                    disabled={uploadingId !== null}
-                  />
-
-                  {imagesList.length === 0 && (
-                    <label
-                      htmlFor={`gallery-upload-modal-${p.id}`}
-                      className="col-span-5 py-5 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 transition-colors"
-                    >
-                      <ImageIcon className="h-5 w-5 text-slate-400 mb-1" />
-                      <span className="text-[10px] text-slate-400 font-bold">Nenhuma imagem enviada</span>
-                    </label>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
       </Dialog>
 
       <ActionDialogHost dialog={dialog} />

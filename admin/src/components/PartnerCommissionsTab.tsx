@@ -39,6 +39,8 @@ type ConfirmFn = (options: {
 
 interface PartnerCommissionsTabProps {
   initialPartnerId?: string | null;
+  /** Quando true, o filtro fica fixo neste parceiro (ficha do parceiro). */
+  lockPartnerId?: boolean;
   canManage: boolean;
   showSuccess: (title: string, message: string) => void;
   showError: (title: string, message: string) => void;
@@ -47,6 +49,7 @@ interface PartnerCommissionsTabProps {
 
 export default function PartnerCommissionsTab({
   initialPartnerId,
+  lockPartnerId = false,
   canManage,
   showSuccess,
   showError,
@@ -81,8 +84,10 @@ export default function PartnerCommissionsTab({
   const filtered = commissions.filter((c) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
+    const matchesPartner =
+      !lockPartnerId && c.partner_nome.toLowerCase().includes(q);
     return (
-      c.partner_nome.toLowerCase().includes(q) ||
+      matchesPartner ||
       c.cliente_nome.toLowerCase().includes(q) ||
       (c.orcamento_codigo || "").toLowerCase().includes(q)
     );
@@ -146,11 +151,15 @@ export default function PartnerCommissionsTab({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3.5 text-xs text-amber-950/85 leading-relaxed space-y-2">
-        <p className="font-bold text-sm text-amber-950">Como usar esta aba</p>
+        <p className="font-bold text-sm text-amber-950">
+          {lockPartnerId ? "Como lançar para este parceiro" : "Como usar esta aba"}
+        </p>
         <ol className="list-decimal pl-4 space-y-1">
           <li>
-            Clique em <strong>Lançar comissão</strong> e escolha parceiro → projeto →
-            orçamento → %.
+            Clique em <strong>Lançar comissão</strong>
+            {lockPartnerId
+              ? " e escolha o projeto → orçamento → %."
+              : " e escolha parceiro → projeto → orçamento → %."}
           </li>
           <li>
             Quando pagar o parceiro, use <strong>Marcar paga</strong> na linha.
@@ -158,6 +167,12 @@ export default function PartnerCommissionsTab({
           <li>
             Para imprimir ou guardar o documento, use{" "}
             <strong>Emitir comprovante</strong> (só uso interno — não envie ao cliente).
+            {lockPartnerId ? (
+              <>
+                {" "}
+                Depois ele aparece na aba <strong>Comprovantes</strong>.
+              </>
+            ) : null}
           </li>
         </ol>
       </div>
@@ -168,7 +183,11 @@ export default function PartnerCommissionsTab({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filtrar por nome do parceiro, cliente ou orçamento…"
+            placeholder={
+              lockPartnerId
+                ? "Filtrar por cliente ou orçamento…"
+                : "Filtrar por nome do parceiro, cliente ou orçamento…"
+            }
             className="w-full h-10 pl-9 rounded-md border border-border bg-card text-sm px-3"
           />
         </div>
@@ -184,7 +203,7 @@ export default function PartnerCommissionsTab({
           <option value="PAGA">Já pagas</option>
           <option value="CANCELADA">Canceladas</option>
         </select>
-        {partnerFilter && (
+        {partnerFilter && !lockPartnerId && (
           <Button
             type="button"
             variant="ghost"
@@ -218,9 +237,9 @@ export default function PartnerCommissionsTab({
             Nenhuma comissão nesta lista
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Se o filtro estiver ativo, limpe a busca ou o status. Para o primeiro lançamento:
-            confirme que o parceiro está no projeto e que o orçamento já foi aprovado; depois
-            use o botão abaixo.
+            {lockPartnerId
+              ? "Confirme que este parceiro está no projeto do CRM e que o orçamento já foi aprovado. Depois use o botão abaixo."
+              : "Se o filtro estiver ativo, limpe a busca ou o status. Para o primeiro lançamento: confirme que o parceiro está no projeto e que o orçamento já foi aprovado; depois use o botão abaixo."}
           </p>
           {canManage && (
             <Button
@@ -239,7 +258,7 @@ export default function PartnerCommissionsTab({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-left text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3">Parceiro</th>
+                  {!lockPartnerId && <th className="px-4 py-3">Parceiro</th>}
                   <th className="px-4 py-3">Projeto</th>
                   <th className="px-4 py-3">%</th>
                   <th className="px-4 py-3">Base</th>
@@ -252,7 +271,16 @@ export default function PartnerCommissionsTab({
               <tbody>
                 {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border/60 last:border-0">
-                    <td className="px-4 py-3 font-semibold text-foreground">{c.partner_nome}</td>
+                    {!lockPartnerId && (
+                      <td className="px-4 py-3 font-semibold text-foreground">
+                        <Link
+                          href={`/parceiros/${c.partner_id}`}
+                          className="hover:text-primary hover:underline"
+                        >
+                          {c.partner_nome}
+                        </Link>
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <Link
                         href={`/crm?project=${c.project_id}`}
@@ -349,7 +377,9 @@ export default function PartnerCommissionsTab({
           setCommissions((prev) => [c, ...prev]);
           showSuccess(
             "Comissão lançada",
-            `Próximo passo: quando pagar ${c.partner_nome}, use “Marcar paga”. Para imprimir, use “Emitir comprovante”.`
+            lockPartnerId
+              ? `Próximo passo: quando pagar, use “Marcar paga”. Para o documento, use “Emitir comprovante” — ele fica na aba Comprovantes.`
+              : `Próximo passo: quando pagar ${c.partner_nome}, use “Marcar paga”. Para imprimir, use “Emitir comprovante”.`
           );
         }}
       />
