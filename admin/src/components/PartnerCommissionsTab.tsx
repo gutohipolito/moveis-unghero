@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
+  Pencil,
   Percent,
   Plus,
   Search,
@@ -19,6 +20,7 @@ import {
   type PartnerCommissionDTO,
 } from "@/app/actions/partnerCommissions";
 import PartnerCommissionDialog from "@/components/PartnerCommissionDialog";
+import PartnerCommissionEditDialog from "@/components/PartnerCommissionEditDialog";
 import PartnerCommissionReceiptIssueDialog from "@/components/PartnerCommissionReceiptIssueDialog";
 import { formatCurrencyBRL } from "@/lib/currencyExtenso";
 import { toISODateBR } from "@/lib/brazilDate";
@@ -63,6 +65,7 @@ export default function PartnerCommissionsTab({
   const [partnerFilter, setPartnerFilter] = useState(initialPartnerId || "");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editCommission, setEditCommission] = useState<PartnerCommissionDTO | null>(null);
   const [issueCommission, setIssueCommission] = useState<PartnerCommissionDTO | null>(null);
 
   const reload = useCallback(async () => {
@@ -318,6 +321,20 @@ export default function PartnerCommissionsTab({
                     <td className="px-4 py-3">
                       {canManage && c.status !== "CANCELADA" && (
                         <div className="flex justify-end flex-wrap gap-1">
+                          {(c.status === "PENDENTE" || c.status === "AGENDADA") && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-[10px] font-bold cursor-pointer gap-1"
+                              disabled={busyId === c.id}
+                              onClick={() => setEditCommission(c)}
+                              title="Corrigir percentual ou atualizar base"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Editar
+                            </Button>
+                          )}
                           {c.status !== "PAGA" && (
                             <Button
                               type="button"
@@ -355,8 +372,10 @@ export default function PartnerCommissionsTab({
                               className="h-7 text-[10px] font-bold cursor-pointer gap-1 text-rose-600"
                               disabled={busyId === c.id}
                               onClick={() => handleCancel(c)}
+                              title="Cancelar lançamento"
                             >
                               <Ban className="h-3 w-3" />
+                              Cancelar
                             </Button>
                           )}
                         </div>
@@ -382,6 +401,18 @@ export default function PartnerCommissionsTab({
               ? `Próximo passo: quando pagar, use “Marcar paga”. Para o documento do parceiro, use “Emitir comprovante” (com a NF).`
               : `Próximo passo: quando pagar ${c.partner_nome}, use “Marcar paga”. Para enviar o documento, use “Emitir comprovante”.`
           );
+        }}
+      />
+
+      <PartnerCommissionEditDialog
+        open={editCommission !== null}
+        commission={editCommission}
+        onClose={() => setEditCommission(null)}
+        confirmAction={confirmAction}
+        showSuccess={showSuccess}
+        showError={showError}
+        onUpdated={(c) => {
+          setCommissions((prev) => prev.map((x) => (x.id === c.id ? c : x)));
         }}
       />
 

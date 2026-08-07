@@ -30,6 +30,7 @@ import {
   Plus,
   Receipt,
 } from "lucide-react";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface ClienteFinanceTabProps {
   clientId: string;
@@ -48,6 +49,8 @@ export default function ClienteFinanceTab({
   onPaymentsChange,
   onGoToProjects,
 }: ClienteFinanceTabProps) {
+  const dialog = useActionDialog();
+  const { confirmAction, showError } = dialog;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -80,10 +83,24 @@ export default function ClienteFinanceTab({
   }
 
   async function handleMarkPaid(payment: Payment) {
-    setPayingId(payment.id);
-    await payInstallment(payment.projectId, payment.id);
-    await refreshPayments();
-    setPayingId(null);
+    confirmAction({
+      title: "Registrar pagamento desta parcela?",
+      message: `Confirma o recebimento de ${payment.valor.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      })} (${payment.descricao})?`,
+      confirmLabel: "Sim, registrar",
+      onConfirm: async () => {
+        setPayingId(payment.id);
+        const res = await payInstallment(payment.projectId, payment.id);
+        setPayingId(null);
+        if (!res.success) {
+          showError("Não foi possível registrar", res.error || "Tente novamente.");
+          return;
+        }
+        await refreshPayments();
+      },
+    });
   }
 
   function openAvulsoReceipt() {
@@ -381,6 +398,8 @@ export default function ClienteFinanceTab({
         prefill={receiptPrefill}
         onIssued={() => void refreshReceipts()}
       />
+
+      <ActionDialogHost dialog={dialog} />
     </>
   );
 }

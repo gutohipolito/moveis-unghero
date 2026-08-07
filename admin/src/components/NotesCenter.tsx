@@ -11,6 +11,7 @@ import {
 } from "@/app/actions/operatorWorkspace";
 import { getWorkspaceLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface NotesCenterProps {
   companyId: string;
@@ -25,6 +26,8 @@ export default function NotesCenter({
   isOpen,
   onOpenChange,
 }: NotesCenterProps) {
+  const dialog = useActionDialog();
+  const { confirmAction } = dialog;
   const [internalOpen, setInternalOpen] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
   const [draft, setDraft] = useState("");
@@ -100,11 +103,18 @@ export default function NotesCenter({
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => {
-      const result = await deleteOperatorNote(id);
-      if (result.success) {
-        setNotes((prev) => prev.filter((n) => n.id !== id));
-      }
+    confirmAction({
+      title: "Excluir esta anotação?",
+      message: "A nota será removida permanentemente.",
+      confirmLabel: "Sim, excluir",
+      onConfirm: () => {
+        startTransition(async () => {
+          const result = await deleteOperatorNote(id);
+          if (result.success) {
+            setNotes((prev) => prev.filter((n) => n.id !== id));
+          }
+        });
+      },
     });
   }
 
@@ -125,6 +135,7 @@ export default function NotesCenter({
   }
 
   return (
+    <>
     <div className="relative" ref={panelRef}>
       <button
         type="button"
@@ -225,5 +236,7 @@ export default function NotesCenter({
         </div>
       )}
     </div>
+      <ActionDialogHost dialog={dialog} />
+    </>
   );
 }

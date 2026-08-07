@@ -559,6 +559,8 @@ export async function createPartnerCommission(input: {
 export async function updatePartnerCommission(input: {
   id: string;
   percentual?: number;
+  /** Recalcula base_valor a partir das aprovações atuais do orçamento. */
+  refreshBase?: boolean;
   data_pagamento_prevista?: string | null;
   data_pagamento_efetiva?: string | null;
   observacoes?: string | null;
@@ -576,7 +578,15 @@ export async function updatePartnerCommission(input: {
     return { success: false as const, error: "Comissão cancelada não pode ser editada." };
   }
 
+  if (existing.status === "PAGA" && input.status !== "CANCELADA") {
+    return {
+      success: false as const,
+      error: "Comissão já paga não pode ser editada. Cancele e lance novamente se necessário.",
+    };
+  }
+
   const data: Prisma.PartnerCommissionUpdateInput = {};
+  const editable = existing.status === "PENDENTE" || existing.status === "AGENDADA";
 
   if (input.status === "CANCELADA") {
     data.status = "CANCELADA";
@@ -585,28 +595,43 @@ export async function updatePartnerCommission(input: {
     data.data_pagamento_efetiva = input.data_pagamento_efetiva
       ? new Date(`${input.data_pagamento_efetiva}T12:00:00`)
       : existing.data_pagamento_efetiva ?? new Date();
-  } else if (
-    (existing.status === "PENDENTE" || existing.status === "AGENDADA") &&
-    input.percentual !== undefined
-  ) {
-    const percentual = Number(input.percentual);
-    if (!Number.isFinite(percentual) || percentual <= 0 || percentual > 100) {
-      return { success: false as const, error: "Percentual inválido." };
+  } else if (editable) {
+    let base = toNumber(existing.base_valor);
+
+    if (input.refreshBase) {
+      const approvals = await prisma.quoteApproval.findMany({
+        where: { quote_id: existing.quote_id },
+        select: { valor_aprovado: true },
+      });
+      base = roundMoney(
+        approvals.reduce((sum, a) => sum + toNumber(a.valor_aprovado), 0)
+      );
+      if (base <= 0) {
+        return {
+          success: false as const,
+          error: "Orçamento sem valor aprovado para atualizar a base.",
+        };
+      }
+      data.base_valor = base;
     }
-    const base = toNumber(existing.base_valor);
-    data.percentual = percentual;
-    data.valor_comissao = roundMoney((base * percentual) / 100);
+
+    if (input.percentual !== undefined) {
+      const percentual = Number(input.percentual);
+      if (!Number.isFinite(percentual) || percentual <= 0 || percentual > 100) {
+        return { success: false as const, error: "Percentual inválido." };
+      }
+      data.percentual = percentual;
+      data.valor_comissao = roundMoney((base * percentual) / 100);
+    } else if (input.refreshBase) {
+      data.valor_comissao = roundMoney((base * toNumber(existing.percentual)) / 100);
+    }
   }
 
-  if (input.data_pagamento_prevista !== undefined) {
+  if (input.data_pagamento_prevista !== undefined && editable) {
     data.data_pagamento_prevista = input.data_pagamento_prevista
       ? new Date(`${input.data_pagamento_prevista}T12:00:00`)
       : null;
-    if (
-      existing.status !== "PAGA" &&
-      input.status !== "PAGA" &&
-      input.status !== "CANCELADA"
-    ) {
+    if (input.status !== "PAGA" && input.status !== "CANCELADA") {
       data.status = input.data_pagamento_prevista ? "AGENDADA" : "PENDENTE";
     }
   }
@@ -617,7 +642,7 @@ export async function updatePartnerCommission(input: {
       : null;
   }
 
-  if (input.observacoes !== undefined) {
+  if (input.observacoes !== undefined && editable) {
     data.observacoes = input.observacoes?.trim() || null;
   }
 

@@ -18,6 +18,7 @@ import {
 } from "@/app/actions/operatorWorkspace";
 import { getWorkspaceLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
 interface RemindersCenterProps {
   companyId: string;
@@ -32,6 +33,8 @@ export default function RemindersCenter({
   isOpen,
   onOpenChange,
 }: RemindersCenterProps) {
+  const dialog = useActionDialog();
+  const { confirmAction } = dialog;
   const [internalOpen, setInternalOpen] = useState(false);
   const [reminders, setReminders] = useState(initialReminders);
   const [title, setTitle] = useState("");
@@ -172,11 +175,18 @@ export default function RemindersCenter({
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => {
-      const result = await deleteOperatorReminder(id);
-      if (result.success) {
-        setReminders((prev) => prev.filter((r) => r.id !== id));
-      }
+    confirmAction({
+      title: "Excluir este lembrete?",
+      message: "O lembrete será removido permanentemente.",
+      confirmLabel: "Sim, excluir",
+      onConfirm: () => {
+        startTransition(async () => {
+          const result = await deleteOperatorReminder(id);
+          if (result.success) {
+            setReminders((prev) => prev.filter((r) => r.id !== id));
+          }
+        });
+      },
     });
   }
 
@@ -184,6 +194,7 @@ export default function RemindersCenter({
   const doneReminders = reminders.filter((r) => r.done);
 
   return (
+    <>
     <div className="relative" ref={panelRef}>
       <button
         type="button"
@@ -326,5 +337,7 @@ export default function RemindersCenter({
         </div>
       )}
     </div>
+      <ActionDialogHost dialog={dialog} />
+    </>
   );
 }
