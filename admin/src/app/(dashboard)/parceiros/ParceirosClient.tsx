@@ -111,15 +111,15 @@ const PartnerCard = ({
     <div
       key={p.id}
       onClick={() => onViewDetails(p)}
-      className="partner-card group/card h-full cursor-pointer"
+      className="partner-card partner-card-interactive group/card"
     >
       <div className="partner-card-accent" />
 
-      <div className="p-5 flex flex-col gap-4 flex-1">
-        <div className="flex items-start gap-4">
+      <div className="p-5 flex flex-col gap-3.5 flex-1">
+        <div className="flex items-start gap-3.5">
           <div
             onClick={(e) => e.stopPropagation()}
-            className="partner-card-avatar relative group/avatar h-16 w-auto min-w-16 max-w-28"
+            className="partner-card-avatar relative group/avatar h-16 w-auto min-w-16 max-w-28 shrink-0"
           >
             {p.fotoUrl ? (
               <img
@@ -176,24 +176,53 @@ const PartnerCard = ({
           </div>
 
           <div className="min-w-0 flex-1 pt-0.5">
-            <h3
-              className={`font-display font-bold text-foreground text-sm leading-tight tracking-tight truncate group-hover/card:text-primary transition-colors ${privacyMode && !hideValues ? "blur-[6px] select-none" : ""}`}
-            >
-              {p.nome}
-            </h3>
+            <div className="flex items-start gap-2">
+              <h3
+                className={`min-w-0 flex-1 font-display font-bold text-foreground text-sm leading-tight tracking-tight truncate group-hover/card:text-primary transition-colors ${privacyMode && !hideValues ? "blur-[6px] select-none" : ""}`}
+              >
+                {p.nome}
+              </h3>
+              {canManage && (
+                <div className="flex items-center gap-0.5 shrink-0 -mt-0.5" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(p)}
+                    title="Editar cadastro"
+                    className="p-1.5 rounded-lg text-muted-foreground/70 hover:text-primary hover:bg-white/80 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(p)}
+                    title="Excluir parceiro"
+                    className="p-1.5 rounded-lg text-muted-foreground/70 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5 min-h-[1.375rem]">
               <span className="partner-card-badge text-[9px] px-2 py-0.5">
                 <Icon className="h-2.5 w-2.5" />
                 {getPartnerRoleLabel(p.tipo, p.nome)}
               </span>
 
-              {p.cidade && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-muted-foreground bg-white/70 px-2 py-0.5 rounded-full border border-border/60">
-                  <MapPin className="h-2.5 w-2.5 text-muted-foreground/70" />
-                  {p.cidade}
-                </span>
-              )}
+              <span
+                className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                  p.cidade
+                    ? "text-muted-foreground bg-white/70 border-border/60"
+                    : "invisible border-transparent"
+                }`}
+                aria-hidden={!p.cidade}
+              >
+                <MapPin className="h-2.5 w-2.5 text-muted-foreground/70" />
+                {p.cidade || "—"}
+              </span>
             </div>
+
             <p
               className={`mt-1.5 text-[10px] font-semibold text-muted-foreground truncate min-h-[1.25rem] ${
                 registroLabel ? "" : "invisible"
@@ -203,27 +232,6 @@ const PartnerCard = ({
               {registroLabel || "\u00A0"}
             </p>
           </div>
-
-          {canManage && (
-            <div className="flex items-center gap-1 shrink-0 -mt-0.5" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => openEdit(p)}
-                title="Editar cadastro"
-                className="p-2 rounded-xl border border-border/70 bg-white/90 text-muted-foreground hover:text-primary hover:border-primary/35 hover:bg-white transition-colors cursor-pointer"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(p)}
-                title="Excluir parceiro"
-                className="p-2 rounded-xl border border-border/70 bg-white/90 text-muted-foreground hover:text-red-650 hover:bg-red-50 hover:border-red-100 transition-colors cursor-pointer"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
         </div>
 
         <div
