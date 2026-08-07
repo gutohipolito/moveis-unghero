@@ -808,17 +808,6 @@ export default function QuotePrintDocument({
                   ) : null}
                 </div>
               ) : null}
-
-              {quote.observacoes?.trim() ? (
-                <section className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-4 py-3 space-y-1.5">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">
-                    Observações
-                  </h4>
-                  <p className="text-[10px] text-neutral-700 leading-relaxed whitespace-pre-line">
-                    {quote.observacoes.trim()}
-                  </p>
-                </section>
-              ) : null}
             </div>
 
             {!isPaged ? (
