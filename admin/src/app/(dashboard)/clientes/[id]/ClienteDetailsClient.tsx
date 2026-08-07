@@ -21,13 +21,13 @@ import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
 import { formatClientEmailDisplay, hasRealClientEmail } from "@/lib/clientMatch";
 import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
-import { formatPhoneDisplay } from "@/lib/phone";
 import {
   ArrowLeft,
   Phone,
   Mail,
   MapPin,
   FileText,
+  MessageCircle,
   Clock,
   User,
   CreditCard,
@@ -39,13 +39,15 @@ import {
   Pencil,
   Home,
   Truck,
+  Check,
+  Loader2,
+  X,
 } from "lucide-react";
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
 import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import ClienteContactsSection from "@/components/clientes/ClienteContactsSection";
 import { ClientConsentChip } from "@/components/clientes/ClientConsentCard";
-import ClienteInlineEditPanel from "@/components/clientes/ClienteInlineEditPanel";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import {
   resolveClientConsent,
@@ -55,7 +57,14 @@ import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients } from "@/lib/permissions";
 import type { Origin } from "@/app/actions/kanban";
+import type { TipoPessoa } from "@/lib/clientDocument";
 import type { ClientWizardData } from "../ClientWizard";
+import { formatPhoneInput, PHONE_PLACEHOLDER, formatPhoneDisplay } from "@/lib/phone";
+import { normalizeBairro, normalizeCidade } from "@/lib/address";
+import { fetchViaCep } from "@/lib/viaCep";
+import CityField from "@/components/forms/CityField";
+import BairroField from "@/components/forms/BairroField";
+import { labelOrigin, labelStatus } from "@/lib/navLabels";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -134,6 +143,32 @@ const TIPO_IMOVEL_LABELS: Record<string, string> = {
   OUTRO: "Outro",
 };
 
+const TIPO_IMOVEL_OPTIONS = [
+  { value: "CASA", label: "Casa Residencial" },
+  { value: "APARTAMENTO", label: "Apartamento" },
+  { value: "COMERCIAL", label: "Comercial / Escritório" },
+  { value: "SOBRADO", label: "Sobrado / Triplex" },
+  { value: "OUTRO", label: "Outro" },
+];
+
+const STATUS_OPTIONS = ["LEAD", "EM_CONTATO", "NEGOCIACAO", "APROVADO", "INATIVO"];
+const ORIGIN_OPTIONS: Origin[] = [
+  "SITE",
+  "INSTAGRAM",
+  "INDICACAO",
+  "GOOGLE",
+  "WHATSAPP",
+  "FACEBOOK",
+  "FORMULARIO",
+];
+
+const INPLACE_FIELD =
+  "w-full min-w-0 h-8 border border-border bg-white rounded-[var(--radius-sm)] text-xs px-2.5 font-semibold text-foreground outline-none focus:ring-1 focus:ring-primary";
+const INPLACE_SELECT =
+  "h-8 border border-border bg-white rounded-[var(--radius-sm)] text-[11px] font-bold px-2 outline-none focus:ring-1 focus:ring-primary cursor-pointer";
+const FIELD_LABEL =
+  "text-[10px] font-bold uppercase tracking-wide text-muted-foreground";
+
 function formatCepDisplay(cep: string | undefined) {
   const digits = (cep || "").replace(/\D/g, "").slice(0, 8);
   if (digits.length !== 8) return cep?.trim() || "";
@@ -189,6 +224,8 @@ export default function ClienteDetailsClient({
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
   const [isEditing, setIsEditing] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
+  const [editDraft, setEditDraft] = useState<ClientWizardData | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<
@@ -311,6 +348,7 @@ export default function ClienteDetailsClient({
 
   const submitUpdate = async (form: ClientWizardData) => {
     setEditSaving(true);
+    setEditError(null);
     const data = {
       nome: form.nome,
       email: form.email,
@@ -341,6 +379,7 @@ export default function ClienteDetailsClient({
       }));
       setNotesValue(stripConsentFromObservacoes(form.observacoes ?? ""));
       setIsEditing(false);
+      setEditDraft(null);
       showSuccess("Cliente atualizado", `As informações de ${form.nome} foram salvas.`);
       await syncClientDetails();
       setEditSaving(false);
@@ -348,66 +387,202 @@ export default function ClienteDetailsClient({
     }
     const errMsg =
       res.error || "Ocorreu um erro ao atualizar o cliente. Tente novamente.";
+    setEditError(errMsg);
     showError("Não foi possível salvar", errMsg);
     setEditSaving(false);
     return { success: false, error: errMsg };
   };
 
+  const startEditing = () => {
+    const initial = clientToWizardData(client);
+    setEditDraft({
+      tipo_pessoa: (initial.tipo_pessoa as TipoPessoa) || "PF",
+      documento: initial.documento || "",
+      nome: initial.nome || "",
+      email: initial.email || "",
+      telefone: initial.telefone || "",
+      cep: initial.cep || "",
+      endereco: initial.endereco || "",
+      numero: initial.numero || "",
+      bairro: initial.bairro || "",
+      cidade: initial.cidade || "",
+      uf: initial.uf || "",
+      tipo_imovel: initial.tipo_imovel || "CASA",
+      origem: (initial.origem as Origin) || "INSTAGRAM",
+      status: initial.status || "LEAD",
+      observacoes: initial.observacoes || "",
+      obs_imovel: initial.obs_imovel || "",
+      obs_entrega: initial.obs_entrega || "",
+    });
+    setEditError(null);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    if (editSaving) return;
+    setIsEditing(false);
+    setEditDraft(null);
+    setEditError(null);
+  };
+
+  const setDraft = <K extends keyof ClientWizardData>(key: K, value: ClientWizardData[K]) => {
+    setEditDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const fetchAddressByCep = async (cepValue: string) => {
+    const addr = await fetchViaCep(cepValue);
+    if (!addr) return;
+    const { cidade } = normalizeCidade(addr.localidade);
+    setEditDraft((prev) =>
+      prev
+        ? {
+            ...prev,
+            endereco: addr.logradouro || prev.endereco,
+            bairro: normalizeBairro(addr.bairro || prev.bairro, cidade) || prev.bairro,
+            cidade: cidade || prev.cidade,
+            uf: addr.uf || prev.uf,
+          }
+        : prev
+    );
+  };
+
+  const handleSaveInline = async () => {
+    if (!editDraft) return;
+    if (!editDraft.nome.trim() || !editDraft.telefone.trim()) {
+      setEditError("Preencha o nome e o telefone/WhatsApp.");
+      return;
+    }
+    await submitUpdate(editDraft);
+  };
+
   const profileCard = (
-      <Card className={`p-5 sm:p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"}`}>
+      <Card className={`p-5 sm:p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"} ${isEditing ? "ring-1 ring-primary/25" : ""}`}>
         <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
           <div className="min-w-0 flex-1 space-y-2">
-            <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
+            {isEditing && editDraft ? (
+              <Input
+                value={editDraft.nome}
+                onChange={(e) => setDraft("nome", e.target.value)}
+                className="text-xl font-black h-11 rounded-[var(--radius-sm)]"
+                aria-label="Nome do cliente"
+              />
+            ) : (
+              <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
+            )}
 
-            {!isOpsLimited && docInfo.documento ? (
+            {!isOpsLimited && (isEditing && editDraft ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={editDraft.tipo_pessoa}
+                  onChange={(e) => setDraft("tipo_pessoa", e.target.value as TipoPessoa)}
+                  className={INPLACE_SELECT}
+                >
+                  <option value="PF">Pessoa Física</option>
+                  <option value="PJ">Pessoa Jurídica</option>
+                </select>
+                <Input
+                  value={editDraft.documento}
+                  onChange={(e) => setDraft("documento", e.target.value)}
+                  placeholder={editDraft.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}
+                  className={`${INPLACE_FIELD} max-w-[11rem]`}
+                />
+              </div>
+            ) : docInfo.documento ? (
               <p className="text-xs font-semibold text-slate-500 select-none">
                 {docInfo.tipo_pessoa === "PF" ? "CPF" : "CNPJ"}:{" "}
                 {sensitiveHidden ? maskDocument(docInfo.documento) : docInfo.documento}
               </p>
-            ) : null}
+            ) : null)}
 
             {canManage ? (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-medium">
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-                  {ORIGIN_LABELS[client.origem] || client.origem}
-                </span>
-                {client.partnerNome ? (
-                  <span className="inline-flex items-center gap-1.5 min-w-0">
-                    <User className="h-3.5 w-3.5 text-primary shrink-0" />
-                    {client.partner_id ? (
-                      <Link
-                        href={`/parceiros/${client.partner_id}`}
-                        className="text-primary hover:underline font-semibold truncate"
-                      >
-                        {client.partnerNome}
-                      </Link>
-                    ) : (
-                      <span className="truncate">{client.partnerNome}</span>
-                    )}
+              isEditing && editDraft ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={editDraft.origem}
+                    onChange={(e) => setDraft("origem", e.target.value as Origin)}
+                    className={INPLACE_SELECT}
+                  >
+                    {ORIGIN_OPTIONS.map((o) => (
+                      <option key={o} value={o}>
+                        {labelOrigin(o)}
+                      </option>
+                    ))}
+                  </select>
+                  {client.partnerNome ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium min-w-0">
+                      <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {client.partner_id ? (
+                        <Link
+                          href={`/parceiros/${client.partner_id}`}
+                          className="text-primary hover:underline font-semibold truncate"
+                        >
+                          {client.partnerNome}
+                        </Link>
+                      ) : (
+                        <span className="truncate">{client.partnerNome}</span>
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-medium">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                    {ORIGIN_LABELS[client.origem] || client.origem}
                   </span>
-                ) : null}
-              </div>
+                  {client.partnerNome ? (
+                    <span className="inline-flex items-center gap-1.5 min-w-0">
+                      <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {client.partner_id ? (
+                        <Link
+                          href={`/parceiros/${client.partner_id}`}
+                          className="text-primary hover:underline font-semibold truncate"
+                        >
+                          {client.partnerNome}
+                        </Link>
+                      ) : (
+                        <span className="truncate">{client.partnerNome}</span>
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+              )
             ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:justify-end">
             {!isFactoryRole ? (
-              <>
-                <span
-                  className={`${META_CHIP} ${
-                    STATUS_COLORS[client.status] || "bg-slate-50 text-slate-700 border-slate-200"
+              isEditing && editDraft ? (
+                <select
+                  value={editDraft.status}
+                  onChange={(e) => setDraft("status", e.target.value)}
+                  className={`${INPLACE_SELECT} ${
+                    STATUS_COLORS[editDraft.status] || "bg-slate-50 text-slate-700 border-slate-200"
                   }`}
                 >
-                  {STATUS_LABELS[client.status] || client.status}
-                </span>
-                <span className={`${META_CHIP} bg-slate-50 text-slate-700 border-slate-200`}>
-                  {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
-                </span>
-              </>
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {labelStatus(s)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  <span
+                    className={`${META_CHIP} ${
+                      STATUS_COLORS[client.status] || "bg-slate-50 text-slate-700 border-slate-200"
+                    }`}
+                  >
+                    {STATUS_LABELS[client.status] || client.status}
+                  </span>
+                  <span className={`${META_CHIP} bg-slate-50 text-slate-700 border-slate-200`}>
+                    {docInfo.tipo_pessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+                  </span>
+                </>
+              )
             ) : null}
 
-            {!isOpsLimited ? (
+            {!isOpsLimited && !isEditing ? (
               <ClientConsentChip
                 consent={resolveClientConsent({
                   lgpd_aceite: client.lgpd_aceite,
@@ -421,35 +596,85 @@ export default function ClienteDetailsClient({
             {canManage && !isEditing ? (
               <Button
                 type="button"
-                className="text-xs font-bold gap-1.5 h-8 px-4 rounded-[var(--radius-sm)] btn-metallic shadow-sm"
-                onClick={() => setIsEditing(true)}
+                variant="outline"
+                className="text-xs font-bold gap-1.5 h-8 px-3.5 rounded-[var(--radius-sm)]"
+                onClick={startEditing}
               >
                 <Pencil className="h-3.5 w-3.5" /> Editar
               </Button>
             ) : null}
 
             {canManage && isEditing ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="text-xs font-bold h-8 px-3.5 rounded-[var(--radius-sm)]"
-                disabled={editSaving}
-                onClick={() => setIsEditing(false)}
-              >
-                Fechar edição
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-xs font-bold gap-1.5 h-8 px-3 rounded-[var(--radius-sm)]"
+                  disabled={editSaving}
+                  onClick={cancelEditing}
+                >
+                  <X className="h-3.5 w-3.5" /> Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  className="text-xs font-bold gap-1.5 h-8 px-3.5 rounded-[var(--radius-sm)] btn-metallic"
+                  disabled={editSaving}
+                  onClick={() => void handleSaveInline()}
+                >
+                  {editSaving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                  {editSaving ? "Salvando…" : "Salvar"}
+                </Button>
+              </>
+            ) : null}
+
+            {!hideClientContact ? (
+              whatsappUrl ? (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white rounded-[var(--radius-sm)] h-8 px-3.5 inline-flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                </a>
+              ) : (
+                <span
+                  className={`${META_CHIP} bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed`}
+                  title="Revele os dados sensíveis (olho) para abrir o WhatsApp"
+                >
+                  <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
+                </span>
+              )
             ) : null}
           </div>
         </div>
 
+        {editError ? (
+          <p className="text-xs font-medium text-rose-600">{editError}</p>
+        ) : null}
+
         {!isFactoryRole ? (
           <>
             {!hideClientContact ? (
-              <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border/40 pt-3 text-sm">
-                <div className="inline-flex items-center gap-2 min-w-0">
-                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  {sensitiveHidden ? (
-                    <span className="font-semibold text-foreground select-none tracking-wide">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-border/40 pt-3 text-sm">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
+                  {isEditing && editDraft ? (
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className={FIELD_LABEL}>Telefone / WhatsApp</p>
+                      <Input
+                        value={editDraft.telefone}
+                        placeholder={PHONE_PLACEHOLDER}
+                        onChange={(e) => setDraft("telefone", formatPhoneInput(e.target.value))}
+                        className={INPLACE_FIELD}
+                      />
+                    </div>
+                  ) : sensitiveHidden ? (
+                    <span className="font-semibold text-foreground select-none tracking-wide mt-0.5">
                       {maskPhone(client.telefone)}
                     </span>
                   ) : whatsappUrl ? (
@@ -457,20 +682,30 @@ export default function ClienteDetailsClient({
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-semibold text-emerald-700 hover:underline"
+                      className="font-semibold text-emerald-700 hover:underline mt-0.5"
                     >
                       {formatPhoneDisplay(client.telefone)}
                     </a>
                   ) : (
-                    <span className="font-semibold text-foreground">
+                    <span className="font-semibold text-foreground mt-0.5">
                       {formatPhoneDisplay(client.telefone) || "—"}
                     </span>
                   )}
                 </div>
-                <div className="inline-flex items-center gap-2 min-w-0">
-                  <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  {sensitiveHidden ? (
-                    <span className="font-semibold text-foreground select-none break-all">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
+                  {isEditing && editDraft ? (
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className={FIELD_LABEL}>E-mail</p>
+                      <Input
+                        type="email"
+                        value={editDraft.email}
+                        onChange={(e) => setDraft("email", e.target.value)}
+                        className={INPLACE_FIELD}
+                      />
+                    </div>
+                  ) : sensitiveHidden ? (
+                    <span className="font-semibold text-foreground select-none break-all mt-0.5">
                       {hasRealClientEmail(client.email)
                         ? maskEmail(client.email)
                         : formatClientEmailDisplay(client.email)}
@@ -478,12 +713,12 @@ export default function ClienteDetailsClient({
                   ) : hasRealClientEmail(client.email) ? (
                     <a
                       href={`mailto:${client.email}`}
-                      className="font-semibold text-primary hover:underline break-all"
+                      className="font-semibold text-primary hover:underline break-all mt-0.5"
                     >
                       {formatClientEmailDisplay(client.email)}
                     </a>
                   ) : (
-                    <span className="font-semibold text-muted-foreground break-all">
+                    <span className="font-semibold text-muted-foreground break-all mt-0.5">
                       {formatClientEmailDisplay(client.email)}
                     </span>
                   )}
@@ -491,31 +726,101 @@ export default function ClienteDetailsClient({
               </div>
             ) : null}
 
-            <div className="border-t border-border/40 pt-3 space-y-2">
+            <div className="border-t border-border/40 pt-3 space-y-3">
               <div className="flex items-start gap-2 text-sm">
                 <Home className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    Tipo de imóvel
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    {imovelLabel || "Não informado"}
-                  </p>
-                  {client.obs_imovel?.trim() ? (
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      {client.obs_imovel.trim()}
-                    </p>
-                  ) : null}
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className={FIELD_LABEL}>Tipo de imóvel</p>
+                  {isEditing && editDraft ? (
+                    <>
+                      <select
+                        value={editDraft.tipo_imovel}
+                        onChange={(e) => setDraft("tipo_imovel", e.target.value)}
+                        className={`${INPLACE_SELECT} w-full max-w-xs`}
+                      >
+                        {TIPO_IMOVEL_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <textarea
+                        value={editDraft.obs_imovel}
+                        onChange={(e) => setDraft("obs_imovel", e.target.value)}
+                        placeholder="Observações do imóvel"
+                        rows={2}
+                        className={`${INPLACE_FIELD} h-auto py-2 resize-y`}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-foreground">
+                        {imovelLabel || "Não informado"}
+                      </p>
+                      {client.obs_imovel?.trim() ? (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {client.obs_imovel.trim()}
+                        </p>
+                      ) : null}
+                    </>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-start gap-2 text-sm">
                 <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    Endereço
-                  </p>
-                  {hasAddress ? (
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className={FIELD_LABEL}>Endereço</p>
+                  {isEditing && editDraft ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-[1fr_4.5rem] gap-2 max-w-lg">
+                        <Input
+                          value={editDraft.cep}
+                          placeholder="CEP"
+                          onChange={(e) => {
+                            const cep = e.target.value.replace(/\D/g, "").slice(0, 8);
+                            setDraft("cep", cep);
+                            if (cep.length === 8) void fetchAddressByCep(cep);
+                          }}
+                          className={INPLACE_FIELD}
+                        />
+                        <Input
+                          value={editDraft.numero}
+                          placeholder="Nº"
+                          onChange={(e) => setDraft("numero", e.target.value)}
+                          className={INPLACE_FIELD}
+                        />
+                      </div>
+                      <Input
+                        value={editDraft.endereco}
+                        placeholder="Logradouro"
+                        onChange={(e) => setDraft("endereco", e.target.value)}
+                        className={`${INPLACE_FIELD} max-w-lg`}
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_4rem] gap-2 max-w-lg">
+                        <BairroField
+                          value={editDraft.bairro}
+                          cidade={editDraft.cidade}
+                          onChange={(bairro) => setDraft("bairro", bairro)}
+                          className={INPLACE_FIELD}
+                          placeholder="Bairro"
+                        />
+                        <CityField
+                          value={editDraft.cidade}
+                          onChange={(cidade) => setDraft("cidade", cidade)}
+                          selectClassName={INPLACE_FIELD}
+                          inputClassName={INPLACE_FIELD}
+                        />
+                        <Input
+                          value={editDraft.uf}
+                          maxLength={2}
+                          placeholder="UF"
+                          onChange={(e) => setDraft("uf", e.target.value.toUpperCase())}
+                          className={INPLACE_FIELD}
+                        />
+                      </div>
+                    </div>
+                  ) : hasAddress ? (
                     <div className="space-y-0.5">
                       {addressLines.street ? (
                         <p className="font-semibold text-foreground">{addressLines.street}</p>
@@ -539,16 +844,24 @@ export default function ClienteDetailsClient({
                 </div>
               </div>
 
-              {client.obs_entrega?.trim() ? (
+              {(isEditing && editDraft) || client.obs_entrega?.trim() ? (
                 <div className="flex items-start gap-2 text-sm">
                   <Truck className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                      Entrega
-                    </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {client.obs_entrega.trim()}
-                    </p>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className={FIELD_LABEL}>Entrega</p>
+                    {isEditing && editDraft ? (
+                      <textarea
+                        value={editDraft.obs_entrega}
+                        onChange={(e) => setDraft("obs_entrega", e.target.value)}
+                        placeholder="Observações de entrega"
+                        rows={2}
+                        className={`${INPLACE_FIELD} h-auto py-2 resize-y max-w-lg`}
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {client.obs_entrega?.trim()}
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -935,27 +1248,8 @@ export default function ClienteDetailsClient({
         <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
       </div>
 
-      {isEditing && canManage ? (
-        <div className="lg:grid lg:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)] gap-6 items-start">
-          <ClienteInlineEditPanel
-            key={`edit-${client.id}`}
-            className="lg:sticky lg:top-20"
-            initial={clientToWizardData(client)}
-            saving={editSaving}
-            onCancel={() => setIsEditing(false)}
-            onSubmit={submitUpdate}
-          />
-          <div className="space-y-6 min-w-0">
-            {profileCard}
-            {tabsBlock}
-          </div>
-        </div>
-      ) : (
-        <>
-          {profileCard}
-          {tabsBlock}
-        </>
-      )}
+      {profileCard}
+      {tabsBlock}
 
       <ActionDialogHost dialog={dialog} />
     </div>
