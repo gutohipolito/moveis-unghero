@@ -17,6 +17,7 @@ import {
 
 export type NotificationType =
   | "follow_up"
+  | "card_note"
   | "sla_due"
   | "invoice_pending"
   | "new_briefing"
@@ -41,6 +42,7 @@ export interface AppNotification {
     clientName?: string;
     daysSinceContact?: number;
     quoteId?: string;
+    authorName?: string;
   };
 }
 
@@ -93,6 +95,41 @@ export function buildFollowUpNotifications(projects: NotificationProject[]): App
     }
     return (b.meta?.daysSinceContact ?? 0) - (a.meta?.daysSinceContact ?? 0);
   });
+}
+
+export type CardNoteNotificationInput = {
+  id: string;
+  clientName: string;
+  obs_updated_at: Date;
+  obs_updated_by_name: string | null;
+};
+
+/** Observação nova no card do funil — aviso importante para o time comercial. */
+export function buildCardNoteNotifications(
+  projects: CardNoteNotificationInput[]
+): AppNotification[] {
+  return projects
+    .map((project) => {
+      const author = project.obs_updated_by_name?.trim() || "Um colega";
+      return {
+        id: `card-note-${project.id}-${project.obs_updated_at.getTime()}`,
+        type: "card_note" as const,
+        priority: "high" as const,
+        title: "Nova observação no funil",
+        message: `${author} atualizou as observações de ${project.clientName}.`,
+        href: `/crm?nota=${project.id}`,
+        createdAt: project.obs_updated_at.toISOString(),
+        meta: {
+          projectId: project.id,
+          clientName: project.clientName,
+          authorName: author,
+        },
+      };
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 }
 
 export function buildSlaNotifications(
@@ -340,6 +377,7 @@ export function isStickyReminderNotification(_notification: AppNotification): bo
 export type InAppToastAccent =
   | "briefing"
   | "follow_up"
+  | "card_note"
   | "sla"
   | "invoice"
   | "payment"
@@ -356,6 +394,8 @@ export function getInAppToastMeta(notification: AppNotification): {
       return { actionLabel: "Abrir", accent: "briefing" };
     case "follow_up":
       return { actionLabel: "Abrir", accent: "follow_up" };
+    case "card_note":
+      return { actionLabel: "Ver card", accent: "card_note" };
     case "sla_due":
       return { actionLabel: "Abrir", accent: "sla" };
     case "invoice_pending":

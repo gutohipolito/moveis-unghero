@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
+import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, markProjectNoteSeenAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
 import { updateProjectDetails } from "@/app/actions/project";
 import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
@@ -100,8 +100,13 @@ interface Project {
   status_geral: string;
   ultimo_contato_em?: string | null;
   createdAt?: string | null;
+  updatedAt?: string | null;
   motivo_perda?: string | null;
   observacoes?: string | null;
+  obs_updated_at?: string | null;
+  obs_updated_by_name?: string | null;
+  /** Observação nova ainda não aberta por este usuário. */
+  hasUnreadNote?: boolean;
   stage_entered_at?: string | null;
   conf_tecnica_resp1_id?: string | null;
   conf_tecnica_resp1Nome?: string | null;
@@ -193,6 +198,22 @@ const FUNNEL_COLUMNS: { id: ProjectStatus; title: string }[] = [
   { id: "CONFERENCIA_TECNICA", title: "Conf. Técnica" },
   { id: "PRODUCAO", title: "Produção" },
 ];
+
+function sortProjectsForFunnel<T extends {
+  hasUnreadNote?: boolean;
+  obs_updated_at?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    if (Boolean(a.hasUnreadNote) !== Boolean(b.hasUnreadNote)) {
+      return a.hasUnreadNote ? -1 : 1;
+    }
+    const aBump = a.obs_updated_at || a.updatedAt || a.createdAt || "";
+    const bBump = b.obs_updated_at || b.updatedAt || b.createdAt || "";
+    return bBump.localeCompare(aBump);
+  });
+}
 
 /** Avanço rápido: próxima etapa segue a ordem visual das colunas do funil. */
 function getNextFunnelStatus(
@@ -605,7 +626,7 @@ export default function KanbanBoard({
   const syncCrm = useCallback(async () => {
     const result = await getCrmLiveSnapshot(companyId);
     if (result.success && result.projects) {
-      setProjects(result.projects as Project[]);
+      setProjects(sortProjectsForFunnel(result.projects as Project[]));
     }
   }, [companyId]);
 
@@ -749,7 +770,34 @@ export default function KanbanBoard({
       obs_entrega: project.client.obs_entrega || ""
     });
     setIsEditLeadOpen(true);
+
+    if (project.hasUnreadNote && !isOpsLimited) {
+      setProjects((prev) =>
+        prev.map((p) => (p.id === project.id ? { ...p, hasUnreadNote: false } : p))
+      );
+      void markProjectNoteSeenAction(project.id);
+    }
   };
+
+  // Deep-link da notificação: /crm?nota={projectId}
+  useEffect(() => {
+    if (typeof window === "undefined" || isEditLeadOpen) return;
+    const params = new URLSearchParams(window.location.search);
+    const noteId = params.get("nota");
+    if (!noteId) return;
+    const target = projects.find((p) => p.id === noteId);
+    if (!target) return;
+    openEditModal(target);
+    params.delete("nota");
+    const next = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`
+    );
+    // openEditModal é estável o suficiente para o deep-link único
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects, isEditLeadOpen]);
 
   const promptConfTecnicaWhatsApp = (project: Project) => {
     setConfTecnicaWhatsApp({
@@ -782,21 +830,29 @@ export default function KanbanBoard({
     const result = await updateProjectCommercialAction(editingProjectId, data);
 
     if (result.success) {
-      setProjects(projects.map(p => {
-        if (p.id === editingProjectId) {
+      const obsUpdatedAt =
+        "obsUpdatedAt" in result && result.obsUpdatedAt
+          ? result.obsUpdatedAt
+          : null;
+      setProjects((prev) => {
+        const next = prev.map((p) => {
+          if (p.id !== editingProjectId) return p;
           return {
             ...p,
             valor_previsto: isOpsLimited ? p.valor_previsto : data.valor_previsto,
             status_geral: data.status_geral,
             observacoes: data.observacoes,
+            hasUnreadNote: false,
+            obs_updated_at: obsUpdatedAt || p.obs_updated_at,
+            updatedAt: new Date().toISOString(),
             stage_entered_at:
               data.status_geral !== p.status_geral
                 ? new Date().toISOString()
                 : p.stage_entered_at,
           };
-        }
-        return p;
-      }));
+        });
+        return sortProjectsForFunnel(next);
+      });
       setIsEditLeadOpen(false);
       resetLeadForm();
       showSuccess(
@@ -1226,7 +1282,7 @@ export default function KanbanBoard({
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(project)}
-        className={`group kanban-card kanban-card-stage overflow-hidden border ${
+        className={`group kanban-card kanban-card-stage overflow-hidden border relative ${
           !isFactoryRole && project.client.tipo_pessoa === "PJ" ? "border-indigo-500/50 shadow-xs ring-1 ring-indigo-50" : theme.cardBorder
         } ${theme.cardShadow} ${theme.cardHover} ${
           canDragCard
@@ -1235,9 +1291,25 @@ export default function KanbanBoard({
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
         } ${followLevel === "ok" || isOpsLimited ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${
+          project.hasUnreadNote && !isOpsLimited
+            ? "bg-sky-50/90 border-sky-300/80 ring-1 ring-sky-200/70 shadow-[0_0_0_1px_rgba(125,211,252,0.35)]"
+            : ""
+        } ${
           project.status_geral === "PRODUCAO" ? "opacity-45 grayscale-[30%] bg-slate-50/70 border-slate-300" : ""
         }`}
       >
+        {project.hasUnreadNote && !isOpsLimited ? (
+          <span
+            className="absolute -top-1.5 -right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-white shadow-md ring-2 ring-white"
+            title={
+              project.obs_updated_by_name
+                ? `Nova observação de ${project.obs_updated_by_name}`
+                : "Nova observação no card"
+            }
+          >
+            <BellRing className="h-3 w-3" aria-hidden />
+          </span>
+        ) : null}
         <div className="space-y-[var(--space-2)]">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1.5">
@@ -1879,7 +1951,9 @@ export default function KanbanBoard({
       <div className="flex-1 min-h-0 overflow-x-auto pb-4 custom-scrollbar select-none">
         <div className="flex gap-4 items-stretch h-full min-w-max pb-2 print:flex-col print:h-auto print:min-w-0 print:gap-6">
         {funnelColumns.map((col) => {
-          const colProjects = projects.filter((p) => p.status_geral === col.id);
+          const colProjects = sortProjectsForFunnel(
+            projects.filter((p) => p.status_geral === col.id)
+          );
           const colSum = colProjects.reduce((acc, curr) => acc + curr.valor_previsto, 0);
           const isOver = dragOverColumn === col.id;
           const theme = getStageTheme(col.id);

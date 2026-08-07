@@ -16,6 +16,9 @@ export const CRM_PROJECT_SELECT = {
   updatedAt: true,
   motivo_perda: true,
   observacoes: true,
+  obs_updated_at: true,
+  obs_updated_by_id: true,
+  obs_updated_by_name: true,
   conf_tecnica_resp1_id: true,
   conf_tecnica_resp2_id: true,
   conf_tecnica_resp1: { select: { id: true, name: true } },
@@ -95,20 +98,35 @@ export const CRM_PROJECT_SELECT = {
 export async function fetchCrmProjects(companyId: string) {
   const auth = await getAuthContext();
   const opsLimited = isOpsLimitedRole(auth?.cargo);
+  const viewerId = auth?.userId ?? null;
 
-  const projectsResult = await prisma.project
-    .findMany({
-      where: {
-        client: { company_id: companyId },
-        OR: [{ quotes: { some: {} } }, { briefing: { isNot: null } }],
-        ...(opsLimited ? { status_geral: { in: [...OPS_CRM_STATUSES] } } : {}),
-      },
-      select: CRM_PROJECT_SELECT,
-    })
-    .catch((error) => {
-      console.warn("Conexão ao banco falhou no carregamento do CRM.", error);
-      return [];
-    });
+  const [projectsResult, noteReads] = await Promise.all([
+    prisma.project
+      .findMany({
+        where: {
+          client: { company_id: companyId },
+          OR: [{ quotes: { some: {} } }, { briefing: { isNot: null } }],
+          ...(opsLimited ? { status_geral: { in: [...OPS_CRM_STATUSES] } } : {}),
+        },
+        select: CRM_PROJECT_SELECT,
+      })
+      .catch((error) => {
+        console.warn("Conexão ao banco falhou no carregamento do CRM.", error);
+        return [];
+      }),
+    viewerId && !opsLimited
+      ? prisma.projectNoteRead
+          .findMany({
+            where: { user_id: viewerId },
+            select: { project_id: true, seen_at: true },
+          })
+          .catch(() => [] as { project_id: string; seen_at: Date }[])
+      : Promise.resolve([] as { project_id: string; seen_at: Date }[]),
+  ]);
+
+  const seenByProject = new Map(
+    noteReads.map((r) => [r.project_id, r.seen_at] as const)
+  );
 
   const mapped = projectsResult.map((project) => {
     const timeline = project.timeline
@@ -139,6 +157,18 @@ export async function fetchCrmProjects(companyId: string) {
       ? toQuoteViewStats(sharedOpenQuote)
       : null;
 
+    const obsUpdatedAt = project.obs_updated_at
+      ? new Date(project.obs_updated_at).toISOString()
+      : null;
+    const seenAt = seenByProject.get(project.id);
+    const hasUnreadNote = Boolean(
+      !opsLimited &&
+        viewerId &&
+        project.obs_updated_at &&
+        project.obs_updated_by_id !== viewerId &&
+        (!seenAt || seenAt < project.obs_updated_at)
+    );
+
     return {
       id: project.id,
       valor_previsto: Number(project.valor_previsto),
@@ -150,6 +180,9 @@ export async function fetchCrmProjects(companyId: string) {
       updatedAt: project.updatedAt ? new Date(project.updatedAt).toISOString() : null,
       motivo_perda: project.motivo_perda || null,
       observacoes: project.observacoes || null,
+      obs_updated_at: obsUpdatedAt,
+      obs_updated_by_name: project.obs_updated_by_name || null,
+      hasUnreadNote,
       conf_tecnica_resp1_id: project.conf_tecnica_resp1_id || null,
       conf_tecnica_resp1Nome: project.conf_tecnica_resp1?.name || null,
       conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
@@ -172,6 +205,16 @@ export async function fetchCrmProjects(companyId: string) {
           }
         : null,
     };
+  });
+
+  // Cards com observação não lida sobem; depois por atividade recente da observação / update.
+  mapped.sort((a, b) => {
+    if (a.hasUnreadNote !== b.hasUnreadNote) {
+      return a.hasUnreadNote ? -1 : 1;
+    }
+    const aBump = a.obs_updated_at || a.updatedAt || a.createdAt || "";
+    const bBump = b.obs_updated_at || b.updatedAt || b.createdAt || "";
+    return bBump.localeCompare(aBump);
   });
 
   const redacted = maybeRedactForRole(mapped, auth?.cargo);

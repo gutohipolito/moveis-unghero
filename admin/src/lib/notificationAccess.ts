@@ -15,7 +15,7 @@ export const NOTIFICATION_CLEARED_IDS_PREF = "notificationClearedIds";
  * Projetista, Fábrica e Viewer não recebem estas alertas.
  */
 const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
-  "follow_up",
+  "card_note",
   "new_briefing",
   "quote_stale",
   "lead_no_quote",
@@ -23,7 +23,7 @@ const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
 ]);
 
 const MODULE_BY_TYPE: Partial<Record<NotificationType, string>> = {
-  follow_up: "crm",
+  card_note: "crm",
   new_briefing: "crm",
   sla_due: "factory",
   supply_ticket: "chamados",

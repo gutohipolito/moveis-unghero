@@ -572,6 +572,15 @@ export async function updateProjectCommercialAction(
     const newValor = opsLimited ? oldValor : data.valor_previsto;
     const newStatus = data.status_geral;
     const newObs = data.observacoes || "";
+    const obsChanged = oldObs !== newObs;
+
+    const actor = obsChanged
+      ? await prisma.user.findUnique({
+          where: { id: actorUserId },
+          select: { name: true },
+        })
+      : null;
+    const now = new Date();
 
     await prisma.$transaction(async (tx) => {
       await tx.project.update({
@@ -580,8 +589,32 @@ export async function updateProjectCommercialAction(
           valor_previsto: newValor,
           status_geral: newStatus,
           observacoes: newObs,
+          ...(obsChanged
+            ? {
+                obs_updated_at: now,
+                obs_updated_by_id: actorUserId,
+                obs_updated_by_name: actor?.name || "Colega",
+              }
+            : {}),
         },
       });
+
+      if (obsChanged) {
+        await tx.projectNoteRead.upsert({
+          where: {
+            project_id_user_id: {
+              project_id: projectId,
+              user_id: actorUserId,
+            },
+          },
+          create: {
+            project_id: projectId,
+            user_id: actorUserId,
+            seen_at: now,
+          },
+          update: { seen_at: now },
+        });
+      }
 
       if (oldStatus !== newStatus) {
         await tx.timeline.create({
@@ -607,7 +640,7 @@ export async function updateProjectCommercialAction(
         });
       }
 
-      if (oldObs !== newObs) {
+      if (obsChanged) {
         await tx.timeline.create({
           data: {
             project_id: projectId,
@@ -635,13 +668,66 @@ export async function updateProjectCommercialAction(
       }
     });
 
+    if (obsChanged) {
+      const { invalidateCompanyNotifications } = await import(
+        "@/lib/fetchCompanyNotifications"
+      );
+      invalidateCompanyNotifications(auth.companyId);
+    }
+
     revalidateCrmPaths();
     if (newStatus === "PRODUCAO" || newStatus === "INSTALACAO") {
       revalidatePath("/factory");
     }
-    return { success: true };
+    return {
+      success: true,
+      obsUpdated: obsChanged,
+      obsUpdatedAt: obsChanged ? now.toISOString() : null,
+    };
   } catch (error) {
     console.error("Erro ao atualizar projeto comercial:", error);
     return { success: false, error: "Não foi possível salvar as alterações comerciais." };
+  }
+}
+
+/** Marca a observação do card como vista para o usuário atual (remove destaque). */
+export async function markProjectNoteSeenAction(projectId: string) {
+  const auth = await getModuleAccess("crm");
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado" };
+  }
+  if (isOpsLimitedRole(auth.cargo) || auth.cargo === "VIEWER") {
+    return { success: true as const };
+  }
+
+  try {
+    await requireProjectInCompany(projectId, auth.companyId);
+  } catch (error) {
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  try {
+    const now = new Date();
+    await prisma.projectNoteRead.upsert({
+      where: {
+        project_id_user_id: {
+          project_id: projectId,
+          user_id: auth.userId,
+        },
+      },
+      create: {
+        project_id: projectId,
+        user_id: auth.userId,
+        seen_at: now,
+      },
+      update: { seen_at: now },
+    });
+    return { success: true as const };
+  } catch (error) {
+    console.error("Erro ao marcar observação como vista:", error);
+    return { success: false as const, error: "Não foi possível atualizar a leitura." };
   }
 }

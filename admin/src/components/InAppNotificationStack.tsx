@@ -6,6 +6,7 @@ import {
   Clock,
   FileWarning,
   PhoneCall,
+  BellRing,
   Receipt,
   Wallet,
   PackageOpen,
@@ -32,6 +33,7 @@ interface InAppNotificationStackProps {
 const TOAST_ICONS: Partial<Record<NotificationType, LucideIcon>> = {
   new_briefing: ClipboardList,
   follow_up: PhoneCall,
+  card_note: BellRing,
   sla_due: Clock,
   invoice_pending: Receipt,
   installment_due: Wallet,

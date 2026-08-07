@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { fetchCompanyNotifications } from "@/lib/fetchCompanyNotifications";
+import {
+  fetchCompanyNotifications,
+  fetchUnreadCardNoteNotifications,
+} from "@/lib/fetchCompanyNotifications";
+import { mergeNotifications } from "@/lib/notifications";
 import { buildPushPayload, sendWebPush } from "@/lib/webPush";
 import { getCompanyPermissions } from "@/lib/moduleAccess";
 import {
@@ -29,6 +33,7 @@ export async function deliverPendingPushNotifications(): Promise<{
     include: {
       user: {
         select: {
+          id: true,
           company_id: true,
           cargo: true,
           preferences: true,
@@ -69,8 +74,16 @@ export async function deliverPendingPushNotifications(): Promise<{
       );
     }
 
+    const cardNotes = await fetchUnreadCardNoteNotifications(
+      companyId,
+      sub.user.id,
+      role
+    );
     const notifications = filterNotificationsForAccess(
-      notificationsByCompanyRole.get(cacheKey) ?? [],
+      mergeNotifications(
+        cardNotes,
+        notificationsByCompanyRole.get(cacheKey) ?? []
+      ),
       permissionsByCompany.get(companyId),
       role,
       readServerClearedNotificationIds(sub.user.preferences)

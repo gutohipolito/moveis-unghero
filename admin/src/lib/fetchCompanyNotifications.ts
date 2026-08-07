@@ -1,6 +1,5 @@
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
 import {
-  buildFollowUpNotifications,
   buildInvoiceNotifications,
   buildSlaNotifications,
   buildBriefingNotifications,
@@ -8,11 +7,14 @@ import {
   buildQuoteStaleNotifications,
   buildLeadNoQuoteNotifications,
   buildQuoteExpiringNotifications,
+  buildCardNoteNotifications,
   mergeNotifications,
   type AppNotification,
 } from "@/lib/notifications";
 import { buildInstallmentDueNotifications } from "@/lib/installmentDueAlerts";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
+import { isOpsLimitedRole } from "@/lib/permissions";
+import type { Role } from "@prisma/client";
 
 const NOTIF_TTL_MS = 30_000;
 type NotifCacheEntry = { at: number; data: AppNotification[] };
@@ -75,7 +77,6 @@ export async function fetchCompanyNotifications(
   expiringUntil.setDate(expiringUntil.getDate() + 2);
 
   const [
-    projects,
     slaAlerts,
     invoicePending,
     briefings,
@@ -84,19 +85,6 @@ export async function fetchCompanyNotifications(
     projectsWithoutQuote,
     expiringQuotes,
   ] = await Promise.all([
-    prisma.project.findMany({
-      where: {
-        status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
-        client: { company_id: companyId },
-      },
-      select: {
-        id: true,
-        status_geral: true,
-        ultimo_contato_em: true,
-        createdAt: true,
-        client: { select: { nome: true } },
-      },
-    }),
     getSlaAlertProjects(companyId),
     getInvoicePendingProjects(companyId),
     prisma.leadBriefing.findMany({
@@ -188,16 +176,6 @@ export async function fetchCompanyNotifications(
     }),
   ]);
 
-  const followUp = buildFollowUpNotifications(
-    projects.map((p) => ({
-      id: p.id,
-      status_geral: p.status_geral,
-      ultimo_contato_em: p.ultimo_contato_em,
-      createdAt: p.createdAt,
-      client: p.client,
-    }))
-  );
-
   const slaNotifications = buildSlaNotifications(
     slaAlerts.map((s) => ({
       ...s,
@@ -272,7 +250,6 @@ export async function fetchCompanyNotifications(
   );
 
   const merged = mergeNotifications(
-    followUp,
     slaNotifications,
     invoiceNotifications,
     briefingNotifications,
@@ -285,4 +262,59 @@ export async function fetchCompanyNotifications(
 
   notifCache.set(cacheKey, { at: Date.now(), data: merged });
   return merged;
+}
+
+/** Observações de card não lidas — por usuário (fora do cache compartilhado). */
+export async function fetchUnreadCardNoteNotifications(
+  companyId: string,
+  userId: string,
+  viewerRole?: Role | string
+): Promise<AppNotification[]> {
+  if (isDatabaseOffline()) return [];
+  if (viewerRole && isOpsLimitedRole(viewerRole as Role)) return [];
+  if (viewerRole === "VIEWER") return [];
+
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const projects = await prisma.project.findMany({
+    where: {
+      client: { company_id: companyId },
+      obs_updated_at: { not: null, gte: since },
+      OR: [
+        { obs_updated_by_id: null },
+        { obs_updated_by_id: { not: userId } },
+      ],
+      status_geral: {
+        in: ["LEAD", "ORCAMENTO", "NEGOCIACAO", "APROVADO", "CONFERENCIA_TECNICA"],
+      },
+    },
+    select: {
+      id: true,
+      obs_updated_at: true,
+      obs_updated_by_name: true,
+      client: { select: { nome: true } },
+      noteReads: {
+        where: { user_id: userId },
+        select: { seen_at: true },
+        take: 1,
+      },
+    },
+    orderBy: { obs_updated_at: "desc" },
+    take: 40,
+  });
+
+  const unread = projects.filter((p) => {
+    if (!p.obs_updated_at) return false;
+    const seenAt = p.noteReads[0]?.seen_at;
+    return !seenAt || seenAt < p.obs_updated_at;
+  });
+
+  return buildCardNoteNotifications(
+    unread.map((p) => ({
+      id: p.id,
+      clientName: p.client.nome,
+      obs_updated_at: p.obs_updated_at!,
+      obs_updated_by_name: p.obs_updated_by_name,
+    }))
+  );
 }

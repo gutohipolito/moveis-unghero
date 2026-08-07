@@ -103,6 +103,8 @@ model User {
   quoteItemPriceHistory QuoteItemPriceHistory[] @relation("QuoteItemPriceHistoryAuthor")
   emailOutboundLogs     EmailOutboundLog[] @relation("EmailOutboundSender")
   partnerCommissionsCreated PartnerCommission[] @relation("PartnerCommissionCreator")
+  projectsObsUpdated        Project[]           @relation("ProjectObsUpdater")
+  projectNoteReads          ProjectNoteRead[]
 }
 
 enum Role {
@@ -303,6 +305,12 @@ model Project {
   partner_id            String?
   partner               ProfessionalPartner? @relation("PartnerProjects", fields: [partner_id], references: [id])
   observacoes           String?
+  /** Última atualização das observações da negociação (para bump + alerta no funil). */
+  obs_updated_at        DateTime?
+  obs_updated_by_id     String?
+  obs_updated_by        User?         @relation("ProjectObsUpdater", fields: [obs_updated_by_id], references: [id], onDelete: SetNull)
+  obs_updated_by_name   String?
+  noteReads             ProjectNoteRead[]
   slaState              ProjectSlaState?
   briefing              LeadBriefing?
   attachments           ClientAttachment[] @relation("ProjectAttachments")
@@ -320,6 +328,21 @@ model Project {
   @@index([responsavel_id])
   @@index([conf_tecnica_resp1_id])
   @@index([conf_tecnica_resp2_id])
+  @@index([obs_updated_at])
+}
+
+/** Leitura por usuário das observações do card (some o destaque ao abrir). */
+model ProjectNoteRead {
+  id         String   @id @default(uuid())
+  project_id String
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  seen_at    DateTime @default(now())
+
+  @@unique([project_id, user_id])
+  @@index([user_id])
+  @@index([project_id])
 }
 
 /** Notas deixadas pelo parceiro no projeto (visível no portal e no CRM). */

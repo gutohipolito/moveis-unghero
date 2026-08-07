@@ -3489,6 +3489,10 @@ button.partner-card:hover,
   background: hsl(0 72% 52%);
 }
 
+.in-app-toast[data-accent="card_note"] .in-app-toast-icon-badge {
+  background: hsl(199 78% 46%);
+}
+
 .in-app-toast[data-accent="sla"] .in-app-toast-icon-badge {
   background: hsl(262 55% 58%);
 }

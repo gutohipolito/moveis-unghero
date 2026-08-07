@@ -1,9 +1,11 @@
-"use server";
-
 import {
   type AppNotification,
+  mergeNotifications,
 } from "@/lib/notifications";
-import { fetchCompanyNotifications } from "@/lib/fetchCompanyNotifications";
+import {
+  fetchCompanyNotifications,
+  fetchUnreadCardNoteNotifications,
+} from "@/lib/fetchCompanyNotifications";
 import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
 import { isDatabaseOffline, prisma } from "@/lib/prisma";
 import { getCompanyPermissions } from "@/lib/moduleAccess";
@@ -31,8 +33,9 @@ export async function getNotifications(companyId: string): Promise<{
   }
 
   try {
-    const [notifications, permissions, user] = await Promise.all([
+    const [notifications, cardNotes, permissions, user] = await Promise.all([
       fetchCompanyNotifications(companyId, auth.cargo),
+      fetchUnreadCardNoteNotifications(companyId, auth.userId, auth.cargo),
       getCompanyPermissions(companyId),
       prisma.user.findUnique({
         where: { id: auth.userId },
@@ -40,7 +43,7 @@ export async function getNotifications(companyId: string): Promise<{
       }),
     ]);
     const filtered = filterNotificationsForAccess(
-      notifications,
+      mergeNotifications(cardNotes, notifications),
       permissions,
       auth.cargo,
       readServerClearedNotificationIds(user?.preferences)
