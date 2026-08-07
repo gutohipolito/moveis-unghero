@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Percent } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   createPartnerCommission,
   listEligibleCommissionProjects,
@@ -32,6 +33,12 @@ type EligibleProject = {
   }[];
 };
 
+const fieldBase =
+  "w-full h-10 rounded-lg border px-3 text-sm font-semibold transition-colors";
+const fieldActive = "border-border bg-card text-foreground cursor-pointer";
+const fieldLocked =
+  "border-stone-400/50 bg-stone-500/25 text-stone-500 cursor-not-allowed opacity-90 dark:bg-stone-700/50 dark:text-stone-400";
+
 export default function PartnerCommissionDialog({
   open,
   onClose,
@@ -58,6 +65,9 @@ export default function PartnerCommissionDialog({
     setPercentual("5");
     setDataPrevista("");
     setObservacoes("");
+    setPartnerId("");
+    setProjectId("");
+    setQuoteId("");
     void (async () => {
       const res = await listEligibleCommissionProjects(initialPartnerId || undefined);
       if (cancelled) return;
@@ -70,15 +80,20 @@ export default function PartnerCommissionDialog({
       }
       setPartners(res.partners);
       setProjects(res.projects);
-      const firstPartner =
-        (initialPartnerId && res.partners.some((p) => p.id === initialPartnerId)
-          ? initialPartnerId
-          : res.partners[0]?.id) || "";
-      setPartnerId(firstPartner);
-      const partnerProjects = res.projects.filter((p) => p.partner_id === firstPartner);
-      const firstProject = partnerProjects[0]?.id || "";
-      setProjectId(firstProject);
-      setQuoteId(partnerProjects[0]?.quotes[0]?.id || "");
+
+      // Só pré-seleciona se veio filtro explícito do operador
+      if (
+        initialPartnerId &&
+        res.partners.some((p) => p.id === initialPartnerId)
+      ) {
+        setPartnerId(initialPartnerId);
+        const partnerProjects = res.projects.filter(
+          (p) => p.partner_id === initialPartnerId
+        );
+        const firstProject = partnerProjects[0]?.id || "";
+        setProjectId(firstProject);
+        setQuoteId(partnerProjects[0]?.quotes[0]?.id || "");
+      }
     })();
     return () => {
       cancelled = true;
@@ -86,7 +101,7 @@ export default function PartnerCommissionDialog({
   }, [open, initialPartnerId]);
 
   const partnerProjects = useMemo(
-    () => projects.filter((p) => p.partner_id === partnerId),
+    () => (partnerId ? projects.filter((p) => p.partner_id === partnerId) : []),
     [projects, partnerId]
   );
 
@@ -100,8 +115,8 @@ export default function PartnerCommissionDialog({
     [selectedProject, quoteId]
   );
 
-  const partnerName =
-    partners.find((p) => p.id === partnerId)?.nome || "Parceiro";
+  const partnerSelected = Boolean(partnerId);
+  const projectSelected = Boolean(projectId && selectedProject);
 
   const pct = Number(percentual.replace(",", "."));
   const valorEstimado =
@@ -111,6 +126,11 @@ export default function PartnerCommissionDialog({
 
   const handlePartnerChange = (id: string) => {
     setPartnerId(id);
+    if (!id) {
+      setProjectId("");
+      setQuoteId("");
+      return;
+    }
     const nextProjects = projects.filter((p) => p.partner_id === id);
     const nextProject = nextProjects[0]?.id || "";
     setProjectId(nextProject);
@@ -124,12 +144,16 @@ export default function PartnerCommissionDialog({
   };
 
   const handleSubmit = async () => {
+    if (!partnerId) {
+      setError("1º passo: escolha o parceiro.");
+      return;
+    }
     if (!projectId || !quoteId) {
-      setError("Selecione parceiro, projeto e orçamento aprovado.");
+      setError("Escolha o projeto e o orçamento aprovado deste parceiro.");
       return;
     }
     if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
-      setError("Informe um percentual válido (0–100).");
+      setError("Digite o percentual da comissão (ex.: 5).");
       return;
     }
     setSaving(true);
@@ -150,18 +174,20 @@ export default function PartnerCommissionDialog({
     onClose();
   };
 
-  const empty = !loading && (partners.length === 0 || projects.length === 0);
+  const empty = !loading && partners.length === 0;
 
   return (
     <Dialog isOpen={open} onClose={onClose} className="max-w-md w-full">
       <div className="space-y-4 p-5">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <h2 className="text-lg font-black text-foreground flex items-center gap-2">
             <Percent className="h-5 w-5 text-amber-600" />
-            Nova comissão
+            Lançar comissão
           </h2>
-          <p className="text-xs text-muted-foreground">
-            Uso interno em Projetistas e Arquitetos. Não aparece no orçamento do cliente.
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Siga a ordem: <strong>parceiro → projeto → orçamento → %</strong>. O valor é
+            calculado sobre o orçamento já aprovado. Este registro é só interno — o cliente
+            não vê.
           </p>
         </div>
 
@@ -170,121 +196,241 @@ export default function PartnerCommissionDialog({
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : empty ? (
-          <p className="text-sm text-muted-foreground py-4">
-            Nenhum projeto elegível: é preciso parceiro vinculado e orçamento com valor
-            aprovado (sem comissão ativa).
-          </p>
+          <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2 text-sm text-muted-foreground leading-relaxed">
+            <p className="font-semibold text-foreground">Ainda não dá para lançar</p>
+            <ol className="list-decimal pl-4 space-y-1 text-xs">
+              <li>No CRM, vincule o parceiro ao projeto.</li>
+              <li>Aprove o orçamento (com valor).</li>
+              <li>Volte aqui e clique em “Lançar comissão”.</li>
+            </ol>
+          </div>
         ) : (
           <>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Parceiro
+                1. Parceiro
               </label>
               <select
                 value={partnerId}
                 onChange={(e) => handlePartnerChange(e.target.value)}
-                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm font-semibold cursor-pointer"
+                className={cn(fieldBase, fieldActive)}
               >
+                <option value="">Selecione o parceiro…</option>
                 {partners.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nome}
                   </option>
                 ))}
               </select>
+              <p className="text-[10px] text-muted-foreground">
+                Quem vai receber a comissão deste trabalho.
+              </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Projeto / cliente
+              <label
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  partnerSelected ? "text-muted-foreground" : "text-stone-500"
+                )}
+              >
+                2. Projeto / cliente
               </label>
               <select
                 value={projectId}
                 onChange={(e) => handleProjectChange(e.target.value)}
-                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm font-semibold cursor-pointer"
-                disabled={partnerProjects.length === 0}
+                className={cn(
+                  fieldBase,
+                  partnerSelected ? fieldActive : fieldLocked
+                )}
+                disabled={!partnerSelected}
               >
-                {partnerProjects.length === 0 ? (
-                  <option value="">Nenhum projeto elegível</option>
+                {!partnerSelected ? (
+                  <option value="">Selecione o parceiro primeiro…</option>
+                ) : partnerProjects.length === 0 ? (
+                  <option value="">
+                    Este parceiro não tem projeto com orçamento aprovado
+                  </option>
                 ) : (
-                  partnerProjects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.cliente_nome}
-                    </option>
-                  ))
+                  <>
+                    <option value="">Selecione o projeto…</option>
+                    {partnerProjects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.cliente_nome}
+                      </option>
+                    ))}
+                  </>
                 )}
               </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Orçamento (base aprovada)
-              </label>
-              <select
-                value={quoteId}
-                onChange={(e) => setQuoteId(e.target.value)}
-                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm font-semibold cursor-pointer"
-                disabled={!selectedProject}
-              >
-                {(selectedProject?.quotes || []).map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.codigo || `v${q.versao}`} · {formatCurrencyBRL(q.base_valor)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Percentual (%)
-                </label>
-                <div className="relative">
-                  <Percent className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    value={percentual}
-                    onChange={(e) => setPercentual(e.target.value)}
-                    className="pl-8 h-10"
-                    inputMode="decimal"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Pagamento previsto
-                </label>
-                <Input
-                  type="date"
-                  value={dataPrevista}
-                  onChange={(e) => setDataPrevista(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border/70 bg-muted/30 p-3 space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Valor da comissão · {partnerName}
-              </p>
-              <p className="text-lg font-display font-bold tabular-nums text-foreground">
-                {formatCurrencyBRL(valorEstimado)}
-              </p>
-              {selectedQuote && (
-                <p className="text-[11px] text-muted-foreground">
-                  Sobre {formatCurrencyBRL(selectedQuote.base_valor)} aprovados
+              {!partnerSelected && (
+                <p className="text-[10px] text-stone-500">
+                  Liberado depois que você escolher o parceiro.
                 </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Observações
+              <label
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  projectSelected ? "text-muted-foreground" : "text-stone-500"
+                )}
+              >
+                3. Orçamento aprovado (base de cálculo)
+              </label>
+              <select
+                value={quoteId}
+                onChange={(e) => setQuoteId(e.target.value)}
+                className={cn(
+                  fieldBase,
+                  projectSelected ? fieldActive : fieldLocked
+                )}
+                disabled={!projectSelected}
+              >
+                {!projectSelected ? (
+                  <option value="">Selecione o projeto primeiro…</option>
+                ) : (
+                  <>
+                    <option value="">Selecione o orçamento…</option>
+                    {(selectedProject?.quotes || []).map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.codigo || `v${q.versao}`} · {formatCurrencyBRL(q.base_valor)}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              {!projectSelected ? (
+                <p className="text-[10px] text-stone-500">
+                  Liberado depois que você escolher o projeto.
+                </p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">
+                  Use o valor aprovado — é a base do %.
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider",
+                    quoteId ? "text-muted-foreground" : "text-stone-500"
+                  )}
+                >
+                  4. Percentual (%)
+                </label>
+                <div className="relative">
+                  <Percent
+                    className={cn(
+                      "absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5",
+                      quoteId ? "text-muted-foreground" : "text-stone-500"
+                    )}
+                  />
+                  <Input
+                    value={percentual}
+                    onChange={(e) => setPercentual(e.target.value)}
+                    className={cn(
+                      "pl-8 h-10",
+                      !quoteId &&
+                        "bg-stone-500/25 border-stone-400/50 text-stone-500 cursor-not-allowed"
+                    )}
+                    inputMode="decimal"
+                    disabled={!quoteId}
+                    placeholder="Ex.: 5"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider",
+                    quoteId ? "text-muted-foreground" : "text-stone-500"
+                  )}
+                >
+                  Quando pagar (opcional)
+                </label>
+                <Input
+                  type="date"
+                  value={dataPrevista}
+                  onChange={(e) => setDataPrevista(e.target.value)}
+                  className={cn(
+                    "h-10",
+                    !quoteId &&
+                      "bg-stone-500/25 border-stone-400/50 text-stone-500 cursor-not-allowed"
+                  )}
+                  disabled={!quoteId}
+                />
+              </div>
+            </div>
+            {!quoteId && (
+              <p className="text-[10px] text-stone-500 -mt-2">
+                Percentual e data liberam após escolher o orçamento.
+              </p>
+            )}
+
+            <div
+              className={cn(
+                "rounded-xl border p-3 space-y-1",
+                quoteId
+                  ? "border-border/70 bg-muted/30"
+                  : "border-stone-400/40 bg-stone-500/15"
+              )}
+            >
+              <p
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  quoteId ? "text-muted-foreground" : "text-stone-500"
+                )}
+              >
+                Valor que o parceiro recebe
+              </p>
+              <p
+                className={cn(
+                  "text-lg font-display font-bold tabular-nums",
+                  quoteId ? "text-foreground" : "text-stone-500"
+                )}
+              >
+                {quoteId ? formatCurrencyBRL(valorEstimado) : "—"}
+              </p>
+              {selectedQuote ? (
+                <p className="text-[11px] text-muted-foreground">
+                  {percentual || "0"}% de {formatCurrencyBRL(selectedQuote.base_valor)}{" "}
+                  (orçamento aprovado)
+                </p>
+              ) : (
+                <p className="text-[11px] text-stone-500">
+                  Aparece automaticamente quando o % e o orçamento estiverem preenchidos.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  quoteId ? "text-muted-foreground" : "text-stone-500"
+                )}
+              >
+                Observação interna (opcional)
               </label>
               <textarea
                 value={observacoes}
                 onChange={(e) => setObservacoes(e.target.value)}
                 rows={2}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm resize-none"
-                placeholder="Opcional — só uso interno"
+                disabled={!quoteId}
+                className={cn(
+                  "w-full rounded-lg border px-3 py-2 text-sm resize-none",
+                  quoteId
+                    ? "border-border bg-card"
+                    : "border-stone-400/50 bg-stone-500/25 text-stone-500 cursor-not-allowed"
+                )}
+                placeholder={
+                  quoteId
+                    ? "Ex.: pagar após montagem / acordo verbal"
+                    : "Disponível após escolher o orçamento"
+                }
               />
             </div>
           </>

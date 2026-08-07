@@ -90,9 +90,9 @@ export default function PartnerCommissionsTab({
 
   const handleMarkPaid = (c: PartnerCommissionDTO) => {
     confirmAction({
-      title: "Marcar comissão como paga?",
-      message: `${formatCurrencyBRL(c.valor_comissao)} · ${c.partner_nome}`,
-      confirmLabel: "Confirmar pagamento",
+      title: "Confirmar que a comissão foi paga?",
+      message: `Marque como paga só depois de transferir ${formatCurrencyBRL(c.valor_comissao)} para ${c.partner_nome}. A data de hoje será registrada.`,
+      confirmLabel: "Sim, já paguei",
       onConfirm: async () => {
         setBusyId(c.id);
         const res = await updatePartnerCommission({
@@ -102,30 +102,31 @@ export default function PartnerCommissionsTab({
         });
         setBusyId(null);
         if (!res.success) {
-          showError("Erro", res.error);
+          showError("Não foi possível marcar como paga", res.error);
           return;
         }
         setCommissions((prev) => prev.map((x) => (x.id === c.id ? res.commission : x)));
-        showSuccess("Comissão paga", "Status atualizado.");
+        showSuccess("Comissão marcada como paga", "A data do pagamento ficou registrada.");
       },
     });
   };
 
   const handleCancel = (c: PartnerCommissionDTO) => {
     confirmAction({
-      title: "Cancelar esta comissão?",
-      message: "O histórico é preservado.",
-      confirmLabel: "Cancelar comissão",
+      title: "Cancelar este lançamento?",
+      message:
+        "Use se o % foi lançado errado ou o acordo mudou. O registro fica no histórico e você poderá lançar de novo para o mesmo orçamento.",
+      confirmLabel: "Sim, cancelar lançamento",
       onConfirm: async () => {
         setBusyId(c.id);
         const res = await updatePartnerCommission({ id: c.id, status: "CANCELADA" });
         setBusyId(null);
         if (!res.success) {
-          showError("Erro", res.error);
+          showError("Não foi possível cancelar", res.error);
           return;
         }
         setCommissions((prev) => prev.map((x) => (x.id === c.id ? res.commission : x)));
-        showSuccess("Comissão cancelada", "Registro mantido no histórico.");
+        showSuccess("Lançamento cancelado", "Você já pode criar uma nova comissão se precisar.");
       },
     });
   };
@@ -135,7 +136,7 @@ export default function PartnerCommissionsTab({
     const res = await issuePartnerCommissionReceipt(c.id);
     setBusyId(null);
     if (!res.success) {
-      showError("Erro ao emitir", res.error);
+      showError("Não foi possível abrir o comprovante", res.error);
       return;
     }
     await reload();
@@ -144,10 +145,21 @@ export default function PartnerCommissionsTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3 text-xs text-amber-950/80 leading-relaxed">
-        <strong className="font-bold">Tudo de comissão fica aqui.</strong> Lance o %, marque
-        como paga e emita o comprovante interno — sem misturar com o CRM ou o orçamento do
-        cliente.
+      <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3.5 text-xs text-amber-950/85 leading-relaxed space-y-2">
+        <p className="font-bold text-sm text-amber-950">Como usar esta aba</p>
+        <ol className="list-decimal pl-4 space-y-1">
+          <li>
+            Clique em <strong>Lançar comissão</strong> e escolha parceiro → projeto →
+            orçamento → %.
+          </li>
+          <li>
+            Quando pagar o parceiro, use <strong>Marcar paga</strong> na linha.
+          </li>
+          <li>
+            Para imprimir ou guardar o documento, use{" "}
+            <strong>Emitir comprovante</strong> (só uso interno — não envie ao cliente).
+          </li>
+        </ol>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
@@ -156,7 +168,7 @@ export default function PartnerCommissionsTab({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar parceiro, cliente ou orçamento..."
+            placeholder="Filtrar por nome do parceiro, cliente ou orçamento…"
             className="w-full h-10 pl-9 rounded-md border border-border bg-card text-sm px-3"
           />
         </div>
@@ -164,12 +176,13 @@ export default function PartnerCommissionsTab({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as PartnerCommissionStatus | "ALL")}
           className="h-10 px-3 rounded-md border border-border bg-card text-sm cursor-pointer"
+          title="Filtrar por status do pagamento"
         >
           <option value="ALL">Todos os status</option>
-          <option value="PENDENTE">Pendente</option>
-          <option value="AGENDADA">Agendada</option>
-          <option value="PAGA">Paga</option>
-          <option value="CANCELADA">Cancelada</option>
+          <option value="PENDENTE">A pagar (pendente)</option>
+          <option value="AGENDADA">Com data prevista</option>
+          <option value="PAGA">Já pagas</option>
+          <option value="CANCELADA">Canceladas</option>
         </select>
         {partnerFilter && (
           <Button
@@ -179,7 +192,7 @@ export default function PartnerCommissionsTab({
             className="cursor-pointer text-xs font-bold"
             onClick={() => setPartnerFilter("")}
           >
-            Limpar filtro de parceiro
+            Ver todos os parceiros
           </Button>
         )}
         {canManage && (
@@ -189,7 +202,7 @@ export default function PartnerCommissionsTab({
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="h-4 w-4" />
-            Nova comissão
+            Lançar comissão
           </Button>
         )}
       </div>
@@ -199,10 +212,15 @@ export default function PartnerCommissionsTab({
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center space-y-3">
+        <div className="rounded-xl border border-border bg-card p-10 text-center space-y-3 max-w-lg mx-auto">
           <Percent className="h-8 w-8 text-muted-foreground/50 mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            Nenhuma comissão encontrada.
+          <p className="text-sm font-semibold text-foreground">
+            Nenhuma comissão nesta lista
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Se o filtro estiver ativo, limpe a busca ou o status. Para o primeiro lançamento:
+            confirme que o parceiro está no projeto e que o orçamento já foi aprovado; depois
+            use o botão abaixo.
           </p>
           {canManage && (
             <Button
@@ -211,7 +229,7 @@ export default function PartnerCommissionsTab({
               onClick={() => setCreateOpen(true)}
             >
               <Plus className="h-4 w-4" />
-              Nova comissão
+              Lançar comissão
             </Button>
           )}
         </div>
@@ -277,7 +295,7 @@ export default function PartnerCommissionsTab({
                               onClick={() => handleMarkPaid(c)}
                             >
                               <CheckCircle2 className="h-3 w-3" />
-                              Paga
+                              Marcar paga
                             </Button>
                           )}
                           <Button
@@ -287,13 +305,18 @@ export default function PartnerCommissionsTab({
                             className="h-7 text-[10px] font-bold cursor-pointer gap-1"
                             disabled={busyId === c.id}
                             onClick={() => void handleIssue(c)}
+                            title={
+                              c.receipt_id
+                                ? "Abrir o comprovante para imprimir"
+                                : "Gerar comprovante interno para imprimir"
+                            }
                           >
                             {busyId === c.id ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
                               <FileText className="h-3 w-3" />
                             )}
-                            {c.receipt_id ? "Ver PDF" : "Emitir comprovante"}
+                            {c.receipt_id ? "Abrir comprovante" : "Emitir comprovante"}
                           </Button>
                           {c.status !== "PAGA" && (
                             <Button
@@ -326,7 +349,7 @@ export default function PartnerCommissionsTab({
           setCommissions((prev) => [c, ...prev]);
           showSuccess(
             "Comissão lançada",
-            `${c.partner_nome} · ${c.percentual}% · ${formatCurrencyBRL(c.valor_comissao)}`
+            `Próximo passo: quando pagar ${c.partner_nome}, use “Marcar paga”. Para imprimir, use “Emitir comprovante”.`
           );
         }}
       />

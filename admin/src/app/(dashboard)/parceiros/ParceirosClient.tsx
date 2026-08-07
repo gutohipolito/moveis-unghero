@@ -764,8 +764,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   title="Parceiros externos"
                   items={[
                     "Cadastre arquitetos e projetistas que indicam clientes.",
-                    "Vincule um parceiro a um orçamento para dar o devido crédito.",
-                    "Acompanhe indicações e desempenho de cada parceiro.",
+                    "No CRM, vincule o parceiro ao projeto do cliente.",
+                    "Na aba Comissões: lance o %, marque como pago e emita o comprovante interno.",
                     "Parceiros com e-mail e telefone acessam o portal em moveisunghero.com.br/parceiro/login.",
                     "O olho de valores no topo do painel também oculta nomes em apresentações (fotos ficam visíveis).",
                   ]}
@@ -773,7 +773,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </InfoTooltip>
             </div>
             <p className="text-xs text-muted-foreground">
-              Cadastre parceiros profissionais — arquitetos, projetistas, decoradores e engenheiros — que indicam clientes ou co-projetam com a marcenaria.
+              Cadastro dos profissionais e, na aba Comissões, o controle do que a Unghero deve
+              pagar a cada um.
             </p>
             <div className="flex gap-1.5 pt-3">
               <button
@@ -1280,14 +1281,14 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                     <div className="partner-card-metric p-4 space-y-2 mt-3">
                       <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
                         <Percent className="h-3 w-3" />
-                        Comissões (interno)
+                        Comissões a pagar / pagas
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground font-semibold">Pendente</span>
+                        <span className="text-muted-foreground font-semibold">Ainda a pagar</span>
                         <PrivacyMoney value={commissionTotals.pendente} as="span" className="font-bold tabular-nums" />
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground font-semibold">Pago</span>
+                        <span className="text-muted-foreground font-semibold">Já pagas</span>
                         <PrivacyMoney value={commissionTotals.pago} as="span" className="font-bold tabular-nums" />
                       </div>
                       <button
@@ -1299,7 +1300,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                           setViewingPartner(null);
                         }}
                       >
-                        Abrir aba Comissões (lançar / emitir) →
+                        Ir para Comissões deste parceiro →
                       </button>
                     </div>
                   )}

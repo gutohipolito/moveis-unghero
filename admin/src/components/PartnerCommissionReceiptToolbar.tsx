@@ -22,9 +22,9 @@ export default function PartnerCommissionReceiptToolbar({
           Voltar
         </Link>
         <div className="min-w-0">
-          <p className="text-sm font-bold truncate">Comprovante de comissão Nº {numeroLabel}</p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Uso interno · sem link público
+          <p className="text-sm font-bold truncate">Comprovante Nº {numeroLabel}</p>
+          <p className="text-[10px] font-semibold text-muted-foreground">
+            Documento interno — use Imprimir / PDF para salvar. Não envie ao cliente.
           </p>
         </div>
       </div>
