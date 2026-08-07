@@ -31,6 +31,9 @@ export function commissionReceiptPrintStylesCss() {
         margin: 0 !important;
         border-radius: 0 !important;
       }
+      .commission-logo-black {
+        filter: invert(1) brightness(0.25) !important;
+      }
     }
     .commission-sheet {
       width: 210mm;
@@ -73,9 +76,9 @@ export default function PartnerCommissionReceiptPrint({
   const roleLabel = getPartnerRoleLabel(receipt.parceiro_tipo, receipt.parceiro_nome);
   const numeroLabel = String(receipt.numero).padStart(4, "0");
   const logoSrc = `${assetBase}/logo.png`;
-  const orcamento =
-    receipt.orcamento_codigo ||
-    (receipt.orcamento_versao != null ? `v${receipt.orcamento_versao}` : "—");
+  const orcamentoCodigo =
+    receipt.orcamento_codigo?.trim() ||
+    (receipt.orcamento_versao != null ? `v${receipt.orcamento_versao}` : null);
   const emitidoEm = formatContractDateLong(new Date(receipt.createdAt));
 
   return (
@@ -84,41 +87,35 @@ export default function PartnerCommissionReceiptPrint({
       {topBar}
       <div className="commission-sheet">
         <div className="commission-inner">
-          <header className="flex items-start justify-between gap-6 border-b border-neutral-200 pb-5">
-            <div className="flex items-center gap-3.5 min-w-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={logoSrc}
-                alt="Móveis Unghero"
-                className="h-14 w-auto object-contain shrink-0"
-              />
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">
-                  {f.name}
-                </p>
-                <h1 className="text-[22px] font-black tracking-tight text-neutral-950 mt-0.5 leading-tight">
-                  Comprovante de comissão
-                </h1>
-                <p className="text-[11px] text-neutral-500 mt-0.5">
-                  CNPJ {f.cnpj}
-                </p>
-              </div>
-            </div>
-            <div className="text-right space-y-1 shrink-0">
-              <p className="text-sm font-black text-neutral-900 tabular-nums">
+          {/* Header: logo preto | título + Nº */}
+          <header className="flex items-center justify-between gap-6 border-b border-neutral-200 pb-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoSrc}
+              alt="Móveis Unghero"
+              className="commission-logo-black h-12 w-auto object-contain shrink-0 invert brightness-[0.25]"
+            />
+            <div className="text-right space-y-0.5 shrink-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">
+                Comprovante de comissão
+              </p>
+              <p className="text-2xl font-black text-neutral-950 tabular-nums tracking-tight leading-none">
                 Nº {numeroLabel}
               </p>
-              <p className="text-[10px] text-neutral-500">Emitido em {emitidoEm}</p>
+              <p className="text-[10px] text-neutral-500 pt-0.5">Emitido em {emitidoEm}</p>
             </div>
           </header>
 
-          <section className="mt-6 grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 space-y-1.5">
+          {/* Partes */}
+          <section className="mt-6 grid grid-cols-2 gap-5">
+            <div className="space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500">
                 Beneficiário
               </p>
-              <p className="text-base font-bold text-neutral-950">{receipt.parceiro_nome}</p>
-              <p className="text-xs text-neutral-600 font-medium">{roleLabel}</p>
+              <p className="text-[17px] font-bold text-neutral-950 leading-snug">
+                {receipt.parceiro_nome}
+              </p>
+              <p className="text-xs text-neutral-600">{roleLabel}</p>
               {receipt.parceiro_registro && (
                 <p className="text-xs text-neutral-600">{receipt.parceiro_registro}</p>
               )}
@@ -126,89 +123,89 @@ export default function PartnerCommissionReceiptPrint({
                 <p className="text-xs text-neutral-600">{receipt.parceiro_escritorio}</p>
               )}
             </div>
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-3.5 space-y-1.5">
+            <div className="space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500">
-                Projeto de referência
+                Orçamento / projeto
               </p>
-              <p className="text-base font-bold text-neutral-950">{receipt.cliente_nome}</p>
-              {receipt.projeto_ref && (
-                <p className="text-xs text-neutral-600">{receipt.projeto_ref}</p>
+              {orcamentoCodigo ? (
+                <p className="text-[17px] font-bold text-neutral-950 tabular-nums leading-snug">
+                  {orcamentoCodigo}
+                </p>
+              ) : (
+                <p className="text-[17px] font-bold text-neutral-950 leading-snug">—</p>
               )}
-              <p className="text-xs text-neutral-600">Orçamento {orcamento}</p>
+              <p className="text-xs text-neutral-600">
+                Cliente: <span className="font-semibold text-neutral-800">{receipt.cliente_nome}</span>
+              </p>
             </div>
           </section>
 
-          <section className="mt-5 rounded-xl border border-neutral-200 overflow-hidden">
-            <div className="bg-neutral-950 text-white px-4 py-2.5">
-              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-neutral-300">
-                Valores da comissão
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-4 px-4 py-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+          {/* Valores */}
+          <section className="mt-6 border border-neutral-200 rounded-xl overflow-hidden">
+            <div className="grid grid-cols-3 divide-x divide-neutral-200">
+              <div className="px-4 py-3.5">
+                <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">
                   Base aprovada
                 </p>
-                <p className="text-lg font-bold tabular-nums text-neutral-950 mt-1">
+                <p className="text-base font-bold tabular-nums text-neutral-950 mt-1">
                   {formatCurrencyBRL(receipt.base_valor)}
                 </p>
               </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <div className="px-4 py-3.5">
+                <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">
                   Percentual
                 </p>
-                <p className="text-lg font-bold tabular-nums text-neutral-950 mt-1">
+                <p className="text-base font-bold tabular-nums text-neutral-950 mt-1">
                   {receipt.percentual}%
                 </p>
               </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <div className="px-4 py-3.5 bg-neutral-50">
+                <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">
                   Valor pago
                 </p>
-                <p className="text-xl font-black tabular-nums text-neutral-950 mt-1">
+                <p className="text-lg font-black tabular-nums text-neutral-950 mt-1">
                   {formatCurrencyBRL(receipt.valor_comissao)}
                 </p>
               </div>
             </div>
-            <p className="px-4 pb-4 text-[11px] text-neutral-600 italic leading-relaxed border-t border-neutral-100 pt-3">
+            <p className="px-4 py-2.5 text-[11px] text-neutral-600 italic border-t border-neutral-100">
               ({currencyToExtenso(receipt.valor_comissao)})
             </p>
           </section>
 
-          <section className="mt-5 grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-neutral-800 bg-neutral-950 text-white px-4 py-3.5 space-y-1">
-              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-400">
+          {/* NF + datas */}
+          <section className="mt-5 grid grid-cols-3 gap-3">
+            <div className="rounded-lg border border-neutral-200 px-3.5 py-3 col-span-1">
+              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
                 Nota fiscal
               </p>
-              <p className="text-lg font-black tabular-nums tracking-tight">
+              <p className="text-base font-black tabular-nums text-neutral-950 mt-1">
                 {receipt.nota_fiscal_numero || "—"}
               </p>
-              <p className="text-[11px] text-neutral-300">
-                Emitida em {formatDateSafe(receipt.nota_fiscal_emitida_em)}
+              <p className="text-[10px] text-neutral-500 mt-0.5">
+                {formatDateSafe(receipt.nota_fiscal_emitida_em)}
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-2">
-              <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
-                  Pagamento previsto
-                </p>
-                <p className="text-sm font-semibold text-neutral-800 mt-0.5">
-                  {formatDateSafe(receipt.data_pagamento_prevista)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
-                  Pagamento efetivo
-                </p>
-                <p className="text-sm font-semibold text-neutral-800 mt-0.5">
-                  {formatDateSafe(receipt.data_pagamento_efetiva)}
-                </p>
-              </div>
+            <div className="rounded-lg border border-neutral-200 px-3.5 py-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+                Pag. previsto
+              </p>
+              <p className="text-sm font-semibold text-neutral-800 mt-1">
+                {formatDateSafe(receipt.data_pagamento_prevista)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-neutral-200 px-3.5 py-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+                Pag. efetivo
+              </p>
+              <p className="text-sm font-semibold text-neutral-800 mt-1">
+                {formatDateSafe(receipt.data_pagamento_efetiva)}
+              </p>
             </div>
           </section>
 
           {receipt.observacoes && (
-            <section className="mt-5 rounded-xl border border-neutral-200 bg-neutral-50/70 px-4 py-3">
+            <section className="mt-5">
               <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500 mb-1">
                 Observações
               </p>
@@ -218,12 +215,18 @@ export default function PartnerCommissionReceiptPrint({
             </section>
           )}
 
-          <section className="mt-6 space-y-3 text-[11px] leading-relaxed text-neutral-600">
+          {/* Texto legal — CNPJ aqui */}
+          <section className="mt-7 space-y-2.5 text-[11px] leading-relaxed text-neutral-600">
             <p>
               <strong>{f.name}</strong>, inscrita no CNPJ sob o nº <strong>{f.cnpj}</strong>, com
               sede na {f.street}, {f.neighborhood}, {f.city}, declara ter efetuado o pagamento da
               comissão acima descrita ao beneficiário identificado neste documento, no valor de{" "}
               <strong>{formatCurrencyBRL(receipt.valor_comissao)}</strong>
+              {orcamentoCodigo ? (
+                <>
+                  , referente ao orçamento <strong>{orcamentoCodigo}</strong>
+                </>
+              ) : null}
               {receipt.nota_fiscal_numero ? (
                 <>
                   , conforme Nota Fiscal nº <strong>{receipt.nota_fiscal_numero}</strong>
@@ -239,12 +242,13 @@ export default function PartnerCommissionReceiptPrint({
               substitui a Nota Fiscal de Serviço ou documento fiscal próprio do beneficiário,
               quando exigido pela legislação vigente.
             </p>
-            <p className="pt-2 text-center text-[13px] font-bold uppercase tracking-wide text-neutral-900">
+            <p className="pt-3 text-center text-[13px] font-bold uppercase tracking-wide text-neutral-900">
               Farroupilha — RS, {emitidoEm}
             </p>
           </section>
 
-          <div className="mt-10 flex justify-center">
+          {/* Assinatura — CNPJ abaixo */}
+          <div className="mt-12 flex justify-center">
             <div className="text-center flex flex-col w-[240px]">
               <div className="h-[48px] flex items-end justify-center pb-1">
                 <p
@@ -269,6 +273,7 @@ export default function PartnerCommissionReceiptPrint({
             </div>
           </div>
 
+          {/* Footer — CNPJ aqui */}
           <footer className="mt-auto pt-8 border-t border-neutral-200 text-[10px] text-neutral-600">
             <div className="flex flex-row items-end justify-between gap-4">
               <div className="space-y-0.5 min-w-0">
