@@ -2477,7 +2477,7 @@ button.partner-card:hover,
   border-radius: calc(var(--radius) - 4px);
   flex-shrink: 0;
   color: hsl(var(--sidebar-muted));
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, background 0.2s var(--ease-out);
 }
 
 .sidebar-nav-link-active {
@@ -2489,7 +2489,6 @@ button.partner-card:hover,
     transparent 100%
   ) !important;
   color: hsl(var(--sidebar-foreground)) !important;
-  box-shadow: inset 3px 0 0 hsl(var(--sidebar-accent));
 }
 
 .sidebar-nav-link-active:hover {
@@ -2504,6 +2503,7 @@ button.partner-card:hover,
 
 .sidebar-nav-link-active .sidebar-nav-icon {
   color: hsl(var(--sidebar-accent)) !important;
+  background: hsl(var(--sidebar-accent) / 0.16);
 }
 
 .sidebar-nav-badge {
