@@ -77,8 +77,8 @@ export default function ParceiroDetailsClient({
   const searchParams = useSearchParams();
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
-  const { privacyMode, privacyLocked, isReadOnly } = usePrivacy();
-  const { isOpsLimited, role } = usePermissions();
+  const { privacyMode, privacyLocked } = usePrivacy();
+  const { isOpsLimited, role, isReadOnly } = usePermissions();
   const sensitive = useSensitiveDisplay();
   const canManage = canManageParceiros(role);
 
