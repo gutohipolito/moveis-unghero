@@ -24,12 +24,37 @@ export function commissionReceiptPrintStylesCss() {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         width: 210mm !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
       }
       .no-print { display: none !important; }
+      .commission-print-root {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        min-height: 0 !important;
+      }
       .commission-sheet {
         box-shadow: none !important;
         margin: 0 !important;
         border-radius: 0 !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        min-height: 297mm !important;
+        max-height: 297mm !important;
+        overflow: hidden !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .commission-inner {
+        padding: 11mm 14mm 10mm !important;
+        min-height: 297mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        box-sizing: border-box !important;
       }
       .commission-logo-black {
         filter: invert(1) brightness(0.25) !important;
@@ -45,7 +70,7 @@ export function commissionReceiptPrintStylesCss() {
       box-shadow: 0 8px 40px rgba(24, 16, 8, 0.12);
     }
     .commission-inner {
-      padding: 16mm 18mm 14mm;
+      padding: 12mm 14mm 10mm;
       display: flex;
       flex-direction: column;
       min-height: 297mm;
@@ -80,137 +105,131 @@ export default function PartnerCommissionReceiptPrint({
   const emitidoEm = formatContractDateLong(new Date(receipt.createdAt));
 
   return (
-    <>
+    <div className="commission-print-root">
       <style dangerouslySetInnerHTML={{ __html: commissionReceiptPrintStylesCss() }} />
       {topBar}
       <div className="commission-sheet">
         <div className="commission-inner">
-          {/* Header: logo preto | título + Nº */}
-          <header className="flex items-center justify-between gap-6 border-b border-neutral-200 pb-5">
+          <header className="flex items-center justify-between gap-4 border-b border-neutral-200 pb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={logoSrc}
               alt="Móveis Unghero"
-              className="commission-logo-black h-12 w-auto object-contain shrink-0 invert brightness-[0.25]"
+              className="commission-logo-black h-9 w-auto object-contain shrink-0 invert brightness-[0.25]"
             />
-            <div className="text-right space-y-0.5 shrink-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+            <div className="text-right shrink-0 leading-tight">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
                 Comprovante de comissão
               </p>
-              <p className="text-sm font-medium text-neutral-600 tabular-nums tracking-tight">
+              <p className="text-xs font-medium text-neutral-600 tabular-nums mt-0.5">
                 Nº {numeroLabel}
               </p>
-              <p className="text-[10px] text-neutral-500 pt-0.5">Emitido em {emitidoEm}</p>
+              <p className="text-[9px] text-neutral-500 mt-0.5">Emitido em {emitidoEm}</p>
             </div>
           </header>
 
-          {/* Partes */}
-          <section className="mt-6 grid grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500">
+          <section className="mt-4 grid grid-cols-2 gap-4">
+            <div className="space-y-0.5">
+              <p className="text-[8px] font-black uppercase tracking-[0.14em] text-neutral-500">
                 Beneficiário
               </p>
-              <p className="text-[17px] font-bold text-neutral-950 leading-snug">
+              <p className="text-[15px] font-bold text-neutral-950 leading-snug">
                 {receipt.parceiro_nome}
               </p>
-              <p className="text-xs text-neutral-600">{roleLabel}</p>
+              <p className="text-[11px] text-neutral-600">{roleLabel}</p>
               {receipt.parceiro_registro && (
-                <p className="text-xs text-neutral-600">{receipt.parceiro_registro}</p>
+                <p className="text-[11px] text-neutral-600">{receipt.parceiro_registro}</p>
               )}
               {receipt.parceiro_escritorio && (
-                <p className="text-xs text-neutral-600">{receipt.parceiro_escritorio}</p>
+                <p className="text-[11px] text-neutral-600">{receipt.parceiro_escritorio}</p>
               )}
             </div>
-            <div className="space-y-1.5">
-              <p className="text-sm font-bold text-neutral-950">
-                Orçamento aprovado
-              </p>
-              <p className="text-[17px] font-medium text-neutral-800 tabular-nums leading-snug tracking-tight">
+            <div className="space-y-0.5">
+              <p className="text-[13px] font-bold text-neutral-950">Orçamento aprovado</p>
+              <p className="text-[15px] font-medium text-neutral-800 tabular-nums tracking-tight">
                 {orcamentoCodigo || "—"}
               </p>
-              <p className="text-xs text-neutral-600">
-                Cliente: <span className="font-semibold text-neutral-800">{receipt.cliente_nome}</span>
+              <p className="text-[11px] text-neutral-600">
+                Cliente:{" "}
+                <span className="font-semibold text-neutral-800">{receipt.cliente_nome}</span>
               </p>
             </div>
           </section>
 
-          {/* Valores */}
-          <section className="mt-6 border border-neutral-200 rounded-xl overflow-hidden">
+          <section className="mt-3.5 border border-neutral-200 rounded-lg overflow-hidden">
             <div className="grid grid-cols-3 divide-x divide-neutral-200">
-              <div className="px-4 py-3.5">
-                <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">
+              <div className="px-3 py-2.5">
+                <p className="text-[8px] font-black uppercase tracking-wider text-neutral-500">
                   Base aprovada
                 </p>
-                <p className="text-base font-bold tabular-nums text-neutral-950 mt-1">
+                <p className="text-sm font-bold tabular-nums text-neutral-950 mt-0.5">
                   {formatCurrencyBRL(receipt.base_valor)}
                 </p>
               </div>
-              <div className="px-4 py-3.5">
-                <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">
+              <div className="px-3 py-2.5">
+                <p className="text-[8px] font-black uppercase tracking-wider text-neutral-500">
                   Percentual
                 </p>
-                <p className="text-base font-bold tabular-nums text-neutral-950 mt-1">
+                <p className="text-sm font-bold tabular-nums text-neutral-950 mt-0.5">
                   {receipt.percentual}%
                 </p>
               </div>
-              <div className="px-4 py-3.5 bg-neutral-50">
-                <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">
+              <div className="px-3 py-2.5 bg-neutral-50">
+                <p className="text-[8px] font-black uppercase tracking-wider text-neutral-500">
                   Valor pago
                 </p>
-                <p className="text-lg font-black tabular-nums text-neutral-950 mt-1">
+                <p className="text-base font-black tabular-nums text-neutral-950 mt-0.5">
                   {formatCurrencyBRL(receipt.valor_comissao)}
                 </p>
               </div>
             </div>
-            <p className="px-4 py-2.5 text-[11px] text-neutral-600 italic border-t border-neutral-100">
+            <p className="px-3 py-1.5 text-[10px] text-neutral-600 italic border-t border-neutral-100">
               ({currencyToExtenso(receipt.valor_comissao)})
             </p>
           </section>
 
-          {/* NF + datas */}
-          <section className="mt-5 grid grid-cols-3 gap-3">
-            <div className="rounded-lg border border-neutral-200 px-3.5 py-3 col-span-1">
-              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+          <section className="mt-3 grid grid-cols-3 gap-2">
+            <div className="rounded-md border border-neutral-200 px-2.5 py-2">
+              <p className="text-[8px] font-black uppercase tracking-widest text-neutral-500">
                 Nota fiscal
               </p>
-              <p className="text-base font-black tabular-nums text-neutral-950 mt-1">
+              <p className="text-sm font-black tabular-nums text-neutral-950 mt-0.5">
                 {receipt.nota_fiscal_numero || "—"}
               </p>
-              <p className="text-[10px] text-neutral-500 mt-0.5">
+              <p className="text-[9px] text-neutral-500">
                 {formatDateSafe(receipt.nota_fiscal_emitida_em)}
               </p>
             </div>
-            <div className="rounded-lg border border-neutral-200 px-3.5 py-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+            <div className="rounded-md border border-neutral-200 px-2.5 py-2">
+              <p className="text-[8px] font-black uppercase tracking-widest text-neutral-500">
                 Pag. previsto
               </p>
-              <p className="text-sm font-semibold text-neutral-800 mt-1">
+              <p className="text-xs font-semibold text-neutral-800 mt-0.5">
                 {formatDateSafe(receipt.data_pagamento_prevista)}
               </p>
             </div>
-            <div className="rounded-lg border border-neutral-200 px-3.5 py-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+            <div className="rounded-md border border-neutral-200 px-2.5 py-2">
+              <p className="text-[8px] font-black uppercase tracking-widest text-neutral-500">
                 Pag. efetivo
               </p>
-              <p className="text-sm font-semibold text-neutral-800 mt-1">
+              <p className="text-xs font-semibold text-neutral-800 mt-0.5">
                 {formatDateSafe(receipt.data_pagamento_efetiva)}
               </p>
             </div>
           </section>
 
-          {receipt.observacoes && (
-            <section className="mt-5">
-              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-neutral-500 mb-1">
+          {receipt.observacoes ? (
+            <section className="mt-3">
+              <p className="text-[8px] font-black uppercase tracking-[0.14em] text-neutral-500 mb-0.5">
                 Observações
               </p>
-              <p className="text-[12px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-[11px] text-neutral-700 whitespace-pre-wrap leading-snug line-clamp-3">
                 {receipt.observacoes}
               </p>
             </section>
-          )}
+          ) : null}
 
-          {/* Texto legal — CNPJ aqui */}
-          <section className="mt-7 space-y-2.5 text-[11px] leading-relaxed text-neutral-600">
+          <section className="mt-4 space-y-1.5 text-[10px] leading-snug text-neutral-600">
             <p>
               <strong>{f.name}</strong>, inscrita no CNPJ sob o nº <strong>{f.cnpj}</strong>, com
               sede na {f.street}, {f.neighborhood}, {f.city}, declara ter efetuado o pagamento da
@@ -236,51 +255,49 @@ export default function PartnerCommissionReceiptPrint({
               substitui a Nota Fiscal de Serviço ou documento fiscal próprio do beneficiário,
               quando exigido pela legislação vigente.
             </p>
-            <p className="pt-3 text-center text-[13px] font-bold uppercase tracking-wide text-neutral-900">
+            <p className="pt-2 text-center text-xs font-bold uppercase tracking-wide text-neutral-900">
               Farroupilha — RS, {emitidoEm}
             </p>
           </section>
 
-          {/* Assinatura — CNPJ abaixo */}
-          <div className="mt-12 flex justify-center">
-            <div className="text-center flex flex-col w-[240px]">
-              <div className="h-[48px] flex items-end justify-center pb-1">
+          <div className="mt-6 flex justify-center">
+            <div className="text-center flex flex-col w-[220px]">
+              <div className="h-[36px] flex items-end justify-center pb-0.5">
                 <p
-                  className="text-[32px] leading-none text-neutral-900"
+                  className="text-[26px] leading-none text-neutral-900"
                   style={{ fontFamily: '"CladenirSignature", cursive' }}
                 >
                   Mareli Unghero
                 </p>
               </div>
               <div className="border-t border-neutral-800 mx-2" />
-              <div className="space-y-0.5 pt-1.5">
-                <p className="text-[10px] font-black uppercase tracking-widest">
+              <div className="space-y-0 pt-1">
+                <p className="text-[9px] font-black uppercase tracking-widest">
                   Mareli Unghero
                 </p>
-                <p className="text-[9px] text-neutral-500 uppercase tracking-wide">
+                <p className="text-[8px] text-neutral-500 uppercase tracking-wide">
                   Financeiro
                 </p>
-                <p className="text-[9px] text-neutral-400">
+                <p className="text-[8px] text-neutral-400">
                   {f.name} — CNPJ {f.cnpj}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Footer — CNPJ aqui */}
-          <footer className="mt-auto pt-8 border-t border-neutral-200 text-[10px] text-neutral-600">
-            <div className="flex flex-row items-end justify-between gap-4">
-              <div className="space-y-0.5 min-w-0">
+          <footer className="mt-auto pt-4 border-t border-neutral-200 text-[9px] text-neutral-600 leading-snug">
+            <div className="flex flex-row items-end justify-between gap-3">
+              <div className="min-w-0">
                 <p className="font-bold text-neutral-800">{f.name}</p>
                 <p>CNPJ {f.cnpj}</p>
                 <p>
                   {f.street} — {f.neighborhood} — {f.city}
                 </p>
               </div>
-              <div className="text-right space-y-0.5 shrink-0">
-                <p className="inline-flex items-center justify-end gap-1.5">
+              <div className="text-right shrink-0">
+                <p className="inline-flex items-center justify-end gap-1">
                   <Phone className="h-2.5 w-2.5 shrink-0 text-neutral-500" aria-hidden />
-                  <span className="tabular-nums leading-none">{f.whatsapp}</span>
+                  <span className="tabular-nums">{f.whatsapp}</span>
                 </p>
                 <p>{f.email}</p>
                 <p>{f.site}</p>
@@ -289,6 +306,6 @@ export default function PartnerCommissionReceiptPrint({
           </footer>
         </div>
       </div>
-    </>
+    </div>
   );
 }

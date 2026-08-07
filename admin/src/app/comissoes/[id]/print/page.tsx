@@ -34,7 +34,7 @@ export default async function PartnerCommissionPrintPage({ params }: PrintPagePr
   const receipt = res.receipt;
 
   return (
-    <div className="min-h-screen bg-stone-200/80 py-0 sm:py-6">
+    <div className="min-h-screen bg-stone-200/80 print:bg-white print:min-h-0 py-0 sm:py-6 print:py-0">
       <PartnerCommissionReceiptPrint
         receipt={receipt}
         topBar={
