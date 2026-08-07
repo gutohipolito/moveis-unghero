@@ -58,6 +58,7 @@ export interface CreateQuoteInput {
   observacoes?: string;
   template_tipo?: string;
   partnerId?: string | null;
+  solicitanteId?: string | null;
   items: {
     descricao: string;
     quantidade: number;
@@ -92,6 +93,28 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
       select: { id: true },
     });
     partnerId = partner?.id ?? null;
+  }
+
+  let solicitanteId: string | null = null;
+  let solicitanteNome: string | null = null;
+  let solicitanteArea: string | null = null;
+  if (data.solicitanteId) {
+    const contact = await prisma.clientContact.findFirst({
+      where: {
+        id: data.solicitanteId,
+        client: {
+          company_id: auth.companyId,
+          tipo_pessoa: "PJ",
+          projects: { some: { id: projectId } },
+        },
+      },
+      select: { id: true, nome: true, area: true },
+    });
+    if (contact) {
+      solicitanteId = contact.id;
+      solicitanteNome = contact.nome;
+      solicitanteArea = contact.area;
+    }
   }
 
   // Valida produtos do mostruário vinculados às linhas.
@@ -152,6 +175,9 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           validade: parseISODateOnlyBrazil(data.validade),
           observacoes: data.observacoes || "",
           partner_id: partnerId,
+          solicitante_id: solicitanteId,
+          solicitante_nome: solicitanteNome,
+          solicitante_area: solicitanteArea,
         }
       });
 
@@ -259,6 +285,7 @@ export type UpdateQuoteInput = {
   observacoes?: string;
   template_tipo?: string;
   partnerId?: string | null;
+  solicitanteId?: string | null;
   items: Array<{
     id?: string;
     descricao: string;
@@ -301,6 +328,28 @@ export async function updateExistingQuote(
       select: { id: true },
     });
     partnerId = partner?.id ?? null;
+  }
+
+  let solicitanteId: string | null = null;
+  let solicitanteNome: string | null = null;
+  let solicitanteArea: string | null = null;
+  if (data.solicitanteId) {
+    const contact = await prisma.clientContact.findFirst({
+      where: {
+        id: data.solicitanteId,
+        client: {
+          company_id: auth.companyId,
+          tipo_pessoa: "PJ",
+          projects: { some: { id: projectId } },
+        },
+      },
+      select: { id: true, nome: true, area: true },
+    });
+    if (contact) {
+      solicitanteId = contact.id;
+      solicitanteNome = contact.nome;
+      solicitanteArea = contact.area;
+    }
   }
 
   const showcaseIds = Array.from(
@@ -525,6 +574,9 @@ export async function updateExistingQuote(
           validade: parseISODateOnlyBrazil(data.validade),
           observacoes: data.observacoes || "",
           partner_id: partnerId,
+          solicitante_id: solicitanteId,
+          solicitante_nome: solicitanteNome,
+          solicitante_area: solicitanteArea,
           valores_atualizados_em: new Date(),
         },
       });
@@ -596,6 +648,9 @@ export async function getQuoteForEdit(quoteId: string) {
         validade: true,
         observacoes: true,
         partner_id: true,
+        solicitante_id: true,
+        solicitante_nome: true,
+        solicitante_area: true,
         items: {
           orderBy: { id: "asc" },
           select: {
@@ -637,6 +692,9 @@ export async function getQuoteForEdit(quoteId: string) {
         validade: quote.validade.toISOString(),
         observacoes: quote.observacoes || "",
         partner_id: quote.partner_id,
+        solicitante_id: quote.solicitante_id,
+        solicitante_nome: quote.solicitante_nome,
+        solicitante_area: quote.solicitante_area,
         items: quote.items.map((item) => ({
           id: item.id,
           descricao: item.descricao,
@@ -1645,4 +1703,75 @@ export async function getProjectBriefingAction(projectId: string) {
   }
 }
 
+
+export async function getProjectSolicitanteOptions(projectId: string) {
+  const auth = await getModuleAccess("quotes");
+  if (!auth) {
+    return {
+      success: false as const,
+      error: "Não autenticado",
+      clientId: null as string | null,
+      tipoPessoa: null as "PF" | "PJ" | null,
+      contacts: [] as Array<{
+        id: string;
+        nome: string;
+        area: string | null;
+        principal: boolean;
+      }>,
+    };
+  }
+
+  try {
+    const project = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        client: { company_id: auth.companyId },
+      },
+      select: {
+        client: {
+          select: {
+            id: true,
+            tipo_pessoa: true,
+            contacts: {
+              orderBy: [{ principal: "desc" }, { nome: "asc" }],
+              select: {
+                id: true,
+                nome: true,
+                area: true,
+                principal: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      return {
+        success: false as const,
+        error: "Projeto não encontrado",
+        clientId: null,
+        tipoPessoa: null,
+        contacts: [],
+      };
+    }
+
+    const tipoPessoa = (project.client.tipo_pessoa === "PJ" ? "PJ" : "PF") as "PF" | "PJ";
+    return {
+      success: true as const,
+      clientId: project.client.id,
+      tipoPessoa,
+      contacts: tipoPessoa === "PJ" ? project.client.contacts : [],
+    };
+  } catch (error) {
+    console.error("Erro na Server Action getProjectSolicitanteOptions:", error);
+    return {
+      success: false as const,
+      error: "Erro ao carregar representantes",
+      clientId: null,
+      tipoPessoa: null,
+      contacts: [],
+    };
+  }
+}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { createQuote, updateExistingQuote, getProjectBriefingAction, type ItemType } from "@/app/actions/quotes";
+import { createQuote, updateExistingQuote, getProjectBriefingAction, getProjectSolicitanteOptions, type ItemType } from "@/app/actions/quotes";
 import { getInventoryAndSuppliers, deductInventoryAction, type InventoryItem } from "@/app/actions/estoque";
 import { listShowcaseProducts, type ShowcaseProductDTO } from "@/app/actions/produtos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -65,6 +65,7 @@ export type QuoteBuilderEditingQuote = {
   validade: string;
   observacoes?: string | null;
   partner_id?: string | null;
+  solicitante_id?: string | null;
   items: Array<{
     id: string;
     descricao: string;
@@ -121,6 +122,11 @@ export default function QuoteBuilder({
   const [globalDetails, setGlobalDetails] = useState<string[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [partnerId, setPartnerId] = useState<string>("");
+  const [clientTipoPessoa, setClientTipoPessoa] = useState<"PF" | "PJ" | null>(null);
+  const [solicitantes, setSolicitantes] = useState<
+    Array<{ id: string; nome: string; area: string | null; principal: boolean }>
+  >([]);
+  const [solicitanteId, setSolicitanteId] = useState<string>("");
   const [baixarEstoque, setBaixarEstoque] = useState(true);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -140,6 +146,7 @@ export default function QuoteBuilder({
     setValidade(toISODateBR(editingQuote.validade));
     setDesconto(Number(editingQuote.desconto) || 0);
     setPartnerId(editingQuote.partner_id || "");
+    setSolicitanteId(editingQuote.solicitante_id || "");
     setBaixarEstoque(false);
     setItems(
       editingQuote.items.map((item) => {
@@ -213,6 +220,24 @@ export default function QuoteBuilder({
     }
     loadPartners();
   }, [companyId]);
+
+  useEffect(() => {
+    async function loadSolicitantes() {
+      const res = await getProjectSolicitanteOptions(projectId);
+      if (!res.success) {
+        setClientTipoPessoa(null);
+        setSolicitantes([]);
+        return;
+      }
+      setClientTipoPessoa(res.tipoPessoa);
+      setSolicitantes(res.contacts);
+      if (!editingQuote?.solicitante_id) {
+        const principal = res.contacts.find((c) => c.principal);
+        if (principal) setSolicitanteId(principal.id);
+      }
+    }
+    loadSolicitantes();
+  }, [projectId, editingQuote?.solicitante_id]);
 
   useEffect(() => {
     async function loadPresets() {
@@ -479,6 +504,7 @@ export default function QuoteBuilder({
       observacoes,
       template_tipo: templateTipo,
       partnerId: partnerId || null,
+      solicitanteId: clientTipoPessoa === "PJ" ? solicitanteId || null : null,
       items: currentItems.map((item) => ({
         id: item.id,
         descricao: item.descricao,
@@ -696,6 +722,36 @@ export default function QuoteBuilder({
               Aparece de forma discreta no PDF do orçamento.
             </p>
           </div>
+          {clientTipoPessoa === "PJ" ? (
+            <div className="sm:col-span-2 space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground block">
+                Solicitante / Representante (recomendado)
+              </label>
+              <Select
+                value={solicitanteId}
+                onChange={(e) => setSolicitanteId(e.target.value)}
+                className="h-10"
+              >
+                <option value="">Sem solicitante informado</option>
+                {solicitantes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                    {c.area ? ` — ${c.area}` : ""}
+                    {c.principal ? " (principal)" : ""}
+                  </option>
+                ))}
+              </Select>
+              {solicitantes.length === 0 ? (
+                <p className="text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1.5 leading-snug">
+                  Cadastre representantes na ficha do cliente PJ para selecioná-los aqui.
+                </p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">
+                  No PDF: Cliente continua sendo a empresa; o solicitante aparece abaixo.
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {/* Bloco 2: Tabela Dinâmica de Itens */}

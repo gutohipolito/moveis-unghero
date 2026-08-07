@@ -71,6 +71,8 @@ export async function loadPublicQuoteByShareCode(code: string) {
     valor_final: Number(dbQuote.valor_final),
     observacoes: dbQuote.observacoes,
     partner: dbQuote.partner,
+    solicitante_nome: dbQuote.solicitante_nome,
+    solicitante_area: dbQuote.solicitante_area,
     approvedTotal: summary.approvedTotal,
     pendingTotal: summary.pendingTotal,
     rejectedTotal: summary.rejectedTotal,

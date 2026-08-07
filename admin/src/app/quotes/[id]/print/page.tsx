@@ -37,6 +37,8 @@ type LoadedPrintQuote = {
     registro_profissional: string | null;
     fotoUrl: string | null;
   } | null;
+  solicitante_nome?: string | null;
+  solicitante_area?: string | null;
   project: {
     client: {
       nome: string;
@@ -140,6 +142,8 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         validade: dbQuote.validade,
         pdfPublicUrl,
         partner: dbQuote.partner,
+        solicitante_nome: dbQuote.solicitante_nome,
+        solicitante_area: dbQuote.solicitante_area,
         project: dbQuote.project,
         approvedTotal: summary.approvedTotal,
         pendingTotal: summary.pendingTotal,

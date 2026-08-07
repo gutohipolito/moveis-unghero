@@ -76,6 +76,8 @@ export type QuotePrintData = {
   observacoes?: string | null;
   items: QuotePrintItem[];
   partner: QuotePrintPartner;
+  solicitante_nome?: string | null;
+  solicitante_area?: string | null;
   approvedTotal?: number;
   pendingTotal?: number;
   rejectedTotal?: number;
@@ -568,6 +570,13 @@ export default function QuotePrintDocument({
                   Cliente
                 </span>
                 <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
+                {quote.solicitante_nome ? (
+                  <p className="text-xs text-neutral-700">
+                    <span className="font-semibold text-neutral-700">Solicitante:</span>{" "}
+                    {quote.solicitante_nome}
+                    {quote.solicitante_area ? ` (${quote.solicitante_area})` : ""}
+                  </p>
+                ) : null}
                 <div className="text-xs text-neutral-600 space-y-0.5">
                   <p>
                     <span className="font-semibold text-neutral-700">Cidade:</span> {client.cidade}

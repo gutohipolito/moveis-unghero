@@ -40,7 +40,9 @@ import {
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
 import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
+import ClienteContactsSection from "@/components/clientes/ClienteContactsSection";
 import ClientConsentCard from "@/components/clientes/ClientConsentCard";
+import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import {
   resolveClientConsent,
   stripConsentFromObservacoes,
@@ -164,6 +166,8 @@ export default function ClienteDetailsClient({
     enabled: !isSubmittingNote,
   });
 
+  const dialog = useActionDialog();
+  const { showSuccess, showError, confirmAction } = dialog;
   const docInfo = resolveClientDocument(client);
   const { sensitiveHidden } = usePrivacy();
   const sensitive = useSensitiveDisplay();
@@ -472,6 +476,7 @@ export default function ClienteDetailsClient({
 
           {/* ABA: VISÃO GERAL — resumo rápido */}
           {activeTab === "overview" && (
+            <>
             <Card className="p-5 glass-card space-y-4">
               <h3 className="text-base font-bold text-foreground">Resumo do cliente</h3>
               <div className={`grid grid-cols-2 ${isOpsLimited ? "sm:grid-cols-2" : "sm:grid-cols-4"} gap-3`}>
@@ -509,6 +514,17 @@ export default function ClienteDetailsClient({
                 </div>
               ) : null}
             </Card>
+
+            {docInfo.tipo_pessoa === "PJ" && !isOpsLimited && (
+              <ClienteContactsSection
+                clientId={client.id}
+                canManage={canManage}
+                showSuccess={showSuccess}
+                showError={showError}
+                confirmAction={confirmAction}
+              />
+            )}
+            </>
           )}
 
           {/* ABA: PROJETOS */}
@@ -700,6 +716,7 @@ export default function ClienteDetailsClient({
 
       </div>
 
+      <ActionDialogHost dialog={dialog} />
     </div>
   );
 }

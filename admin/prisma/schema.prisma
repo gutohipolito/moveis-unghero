@@ -190,10 +190,30 @@ model Client {
   attachments  ClientAttachment[]
   contracts    Contract[]
   paymentReceipts PaymentReceipt[]
+  contacts     ClientContact[]
 
   @@index([company_id, telefone_digits])
   @@index([company_id, updatedAt])
   @@index([partner_id, partner_attributed_at])
+}
+
+/** Contato/representante de cliente PJ (CNPJ). */
+model ClientContact {
+  id         String   @id @default(uuid())
+  client_id  String
+  client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  nome       String
+  area       String?
+  telefone   String?
+  email      String?
+  principal  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  quotesAsSolicitante Quote[] @relation("QuoteSolicitante")
+
+  @@index([client_id])
+  @@index([client_id, principal])
 }
 
 enum Origin {
@@ -456,6 +476,10 @@ model Quote {
   valores_atualizados_em DateTime?
   partner_id  String?
   partner     ProfessionalPartner? @relation("PartnerQuotes", fields: [partner_id], references: [id], onDelete: SetNull)
+  solicitante_id    String?
+  solicitante       ClientContact? @relation("QuoteSolicitante", fields: [solicitante_id], references: [id], onDelete: SetNull)
+  solicitante_nome  String?
+  solicitante_area  String?
   items       QuoteItem[]
   approvals   QuoteApproval[]
   views       QuoteView[]
@@ -466,6 +490,7 @@ model Quote {
   @@unique([codigo])
   @@index([project_id])
   @@index([partner_id])
+  @@index([solicitante_id])
   @@index([template_tipo])
   @@index([createdAt])
   @@index([updatedAt])
