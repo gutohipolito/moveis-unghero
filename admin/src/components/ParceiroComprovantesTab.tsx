@@ -41,8 +41,8 @@ export default function ParceiroComprovantesTab({ partnerId }: { partnerId: stri
             Comprovantes emitidos
           </h4>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Histórico interno deste parceiro. Abra para imprimir ou salvar em PDF. Não envie ao
-            cliente.
+            Histórico dos documentos enviados (ou prontos para enviar) a este parceiro. Abra para
+            imprimir, WhatsApp ou e-mail.
           </p>
         </div>
         {!loading ? (
@@ -65,7 +65,7 @@ export default function ParceiroComprovantesTab({ partnerId }: { partnerId: stri
           </p>
           <p className="text-[11px] text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Na aba Comissões, use <strong>Emitir comprovante</strong> na linha do lançamento
-            depois de registrar o %. O documento fica salvo aqui para reabrir quando precisar.
+            (informe a NF). O documento fica salvo aqui para reabrir e enviar ao parceiro.
           </p>
         </div>
       ) : (
@@ -98,6 +98,9 @@ export default function ParceiroComprovantesTab({ partnerId }: { partnerId: stri
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       Emitido em{" "}
                       {new Date(receipt.createdAt).toLocaleDateString("pt-BR")}
+                      {receipt.nota_fiscal_numero
+                        ? ` · NF ${receipt.nota_fiscal_numero}`
+                        : ""}
                       {receipt.commission_status
                         ? ` · Comissão ${STATUS_LABEL[receipt.commission_status] ?? receipt.commission_status}`
                         : ""}

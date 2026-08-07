@@ -1250,7 +1250,7 @@ model PartnerCommission {
   @@index([createdAt])
 }
 
-/** Comprovante interno de comissão (sem share público). */
+/** Comprovante de comissão enviado ao parceiro. */
 model PartnerCommissionReceipt {
   id                       String             @id @default(uuid())
   company_id               String
@@ -1263,6 +1263,8 @@ model PartnerCommissionReceipt {
   parceiro_tipo            String
   parceiro_registro        String?
   parceiro_escritorio      String?
+  parceiro_email           String?
+  parceiro_telefone        String?
   cliente_nome             String
   projeto_ref              String?
   orcamento_codigo         String?
@@ -1273,6 +1275,9 @@ model PartnerCommissionReceipt {
   valor_comissao           Decimal            @db.Decimal(12, 2)
   data_pagamento_prevista  DateTime?
   data_pagamento_efetiva   DateTime?
+
+  nota_fiscal_numero       String?
+  nota_fiscal_emitida_em   DateTime?
 
   emitido_por_id           String?
   emitido_por_nome         String?

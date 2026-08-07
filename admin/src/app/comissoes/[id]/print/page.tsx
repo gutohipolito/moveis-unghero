@@ -31,19 +31,26 @@ export default async function PartnerCommissionPrintPage({ params }: PrintPagePr
   if (!scoped) notFound();
 
   const numeroLabel = String(res.receipt.numero).padStart(4, "0");
+  const receipt = res.receipt;
 
   return (
     <div className="min-h-screen bg-stone-200/80 py-0 sm:py-6">
       <PartnerCommissionReceiptPrint
-        receipt={res.receipt}
+        receipt={receipt}
         topBar={
           <PartnerCommissionReceiptToolbar
+            receiptId={receipt.id}
+            numeroLabel={numeroLabel}
+            partnerName={receipt.parceiro_nome}
+            partnerPhone={receipt.parceiro_telefone}
+            partnerEmail={receipt.parceiro_email}
+            valor={receipt.valor_comissao}
+            nfNumero={receipt.nota_fiscal_numero}
             backHref={
               res.partnerId
                 ? `/parceiros/${res.partnerId}?tab=comprovantes`
                 : "/parceiros"
             }
-            numeroLabel={numeroLabel}
           />
         }
       />

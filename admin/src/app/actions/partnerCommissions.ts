@@ -71,6 +71,8 @@ export type PartnerCommissionReceiptDTO = {
   parceiro_tipo: string;
   parceiro_registro: string | null;
   parceiro_escritorio: string | null;
+  parceiro_email: string | null;
+  parceiro_telefone: string | null;
   cliente_nome: string;
   projeto_ref: string | null;
   orcamento_codigo: string | null;
@@ -80,6 +82,8 @@ export type PartnerCommissionReceiptDTO = {
   valor_comissao: number;
   data_pagamento_prevista: string | null;
   data_pagamento_efetiva: string | null;
+  nota_fiscal_numero: string | null;
+  nota_fiscal_emitida_em: string | null;
   emitido_por_nome: string | null;
   observacoes: string | null;
   createdAt: string;
@@ -93,6 +97,8 @@ function mapReceiptRow(row: {
   parceiro_tipo: string;
   parceiro_registro: string | null;
   parceiro_escritorio: string | null;
+  parceiro_email?: string | null;
+  parceiro_telefone?: string | null;
   cliente_nome: string;
   projeto_ref: string | null;
   orcamento_codigo: string | null;
@@ -102,6 +108,8 @@ function mapReceiptRow(row: {
   valor_comissao: Prisma.Decimal | number;
   data_pagamento_prevista: Date | null;
   data_pagamento_efetiva: Date | null;
+  nota_fiscal_numero?: string | null;
+  nota_fiscal_emitida_em?: Date | null;
   emitido_por_nome: string | null;
   observacoes: string | null;
   createdAt: Date;
@@ -117,6 +125,8 @@ function mapReceiptRow(row: {
     parceiro_tipo: row.parceiro_tipo,
     parceiro_registro: row.parceiro_registro,
     parceiro_escritorio: row.parceiro_escritorio,
+    parceiro_email: row.parceiro_email ?? null,
+    parceiro_telefone: row.parceiro_telefone ?? null,
     cliente_nome: row.cliente_nome,
     projeto_ref: row.projeto_ref,
     orcamento_codigo: row.orcamento_codigo,
@@ -129,6 +139,10 @@ function mapReceiptRow(row: {
       : null,
     data_pagamento_efetiva: row.data_pagamento_efetiva
       ? toISODateBR(row.data_pagamento_efetiva)
+      : null,
+    nota_fiscal_numero: row.nota_fiscal_numero ?? null,
+    nota_fiscal_emitida_em: row.nota_fiscal_emitida_em
+      ? toISODateBR(row.nota_fiscal_emitida_em)
       : null,
     emitido_por_nome: row.emitido_por_nome,
     observacoes: row.observacoes,
@@ -612,17 +626,38 @@ export async function updatePartnerCommission(input: {
   return { success: true as const, commission: mapCommission(row) };
 }
 
-export async function issuePartnerCommissionReceipt(commissionId: string) {
+export async function issuePartnerCommissionReceipt(input: {
+  commissionId: string;
+  nota_fiscal_numero: string;
+  nota_fiscal_emitida_em: string;
+}) {
   const auth = await requireCommissionWrite();
   if (!auth) return { success: false as const, error: "Sem permissão para emitir comprovante." };
 
+  const nfNumero = input.nota_fiscal_numero.trim();
+  const nfData = input.nota_fiscal_emitida_em.trim();
+  if (!nfNumero) {
+    return { success: false as const, error: "Informe o número da nota fiscal." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nfData)) {
+    return { success: false as const, error: "Informe a data de emissão da nota fiscal." };
+  }
+
   const commission = await prisma.partnerCommission.findFirst({
-    where: { id: commissionId, company_id: auth.companyId },
+    where: { id: input.commissionId, company_id: auth.companyId },
     include: {
       partner: true,
       project: { include: { client: { select: { nome: true } } } },
       quote: { select: { codigo: true, versao: true } },
-      receipts: { select: { id: true, numero: true }, orderBy: { createdAt: "desc" }, take: 1 },
+      receipts: {
+        select: {
+          id: true,
+          numero: true,
+          parceiro_email: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
   });
 
@@ -637,6 +672,9 @@ export async function issuePartnerCommissionReceipt(commissionId: string) {
       receiptId: commission.receipts[0].id,
       numero: commission.receipts[0].numero,
       reused: true as const,
+      partnerEmail:
+        commission.receipts[0].parceiro_email || commission.partner.email || null,
+      partnerNome: commission.partner.nome,
     };
   }
 
@@ -666,6 +704,8 @@ export async function issuePartnerCommissionReceipt(commissionId: string) {
       parceiro_tipo: commission.partner.tipo,
       parceiro_registro: registro,
       parceiro_escritorio: commission.partner.escritorio,
+      parceiro_email: commission.partner.email,
+      parceiro_telefone: commission.partner.telefone,
       cliente_nome: commission.project.client.nome,
       projeto_ref: `Projeto · ${commission.project.client.nome}`,
       orcamento_codigo: commission.quote.codigo,
@@ -675,6 +715,8 @@ export async function issuePartnerCommissionReceipt(commissionId: string) {
       valor_comissao: commission.valor_comissao,
       data_pagamento_prevista: commission.data_pagamento_prevista,
       data_pagamento_efetiva: commission.data_pagamento_efetiva,
+      nota_fiscal_numero: nfNumero,
+      nota_fiscal_emitida_em: new Date(`${nfData}T12:00:00`),
       emitido_por_id: auth.userId,
       emitido_por_nome: emitidoPor?.name || null,
       observacoes: commission.observacoes,
@@ -690,6 +732,8 @@ export async function issuePartnerCommissionReceipt(commissionId: string) {
     receiptId: receipt.id,
     numero: receipt.numero,
     reused: false as const,
+    partnerEmail: commission.partner.email || null,
+    partnerNome: commission.partner.nome,
   };
 }
 

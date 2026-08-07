@@ -770,3 +770,188 @@ export async function sendReceiptByEmail(input: {
     };
   }
 }
+
+async function preparePartnerCommissionEmailContent(
+  receiptId: string,
+  companyId: string
+) {
+  const receipt = await prisma.partnerCommissionReceipt.findFirst({
+    where: { id: receiptId, company_id: companyId },
+    include: {
+      commission: { select: { project_id: true, partner_id: true } },
+    },
+  });
+  if (!receipt) return null;
+
+  const { formatCurrencyBRL } = await import("@/lib/currencyExtenso");
+  const { getFirstName } = await import("@/lib/google-review");
+  const { formatContractDateLong } = await import("@/lib/contractTemplates");
+
+  const firstName = getFirstName(receipt.parceiro_nome);
+  const valorLabel = formatCurrencyBRL(Number(receipt.valor_comissao));
+  const numeroLabel = String(receipt.numero).padStart(4, "0");
+  const nfNumero = receipt.nota_fiscal_numero || "—";
+  const nfData = receipt.nota_fiscal_emitida_em
+    ? formatContractDateLong(receipt.nota_fiscal_emitida_em)
+    : "—";
+  const orcamento =
+    receipt.orcamento_codigo ||
+    (receipt.orcamento_versao != null ? `v${receipt.orcamento_versao}` : "—");
+
+  const subject = `Comprovante de comissão Nº ${numeroLabel} — ${valorLabel}`;
+  const body = [
+    `Olá ${firstName}, tudo bem?`,
+    "",
+    `Segue o comprovante de pagamento da sua comissão Nº ${numeroLabel} emitido pela Móveis Unghero.`,
+    "",
+    `Valor: ${valorLabel}`,
+    `Percentual: ${Number(receipt.percentual)}% sobre a base aprovada do projeto.`,
+    `Projeto / cliente de referência: ${receipt.cliente_nome}`,
+    `Orçamento: ${orcamento}`,
+    `Nota fiscal: ${nfNumero} (emitida em ${nfData})`,
+    "",
+    "Este e-mail confirma o pagamento da comissão conforme a nota fiscal referida.",
+    "Guarde este comprovante para seus registros.",
+    "",
+    "Qualquer dúvida, estamos à disposição.",
+    "Financeiro — Móveis Unghero",
+  ].join("\n");
+
+  return {
+    receipt,
+    subject,
+    body,
+    defaultTo: receipt.parceiro_email || null,
+    partnerId: receipt.commission.partner_id,
+    projectId: receipt.commission.project_id,
+  };
+}
+
+export async function previewPartnerCommissionReceiptByEmail(receiptId: string) {
+  const auth =
+    (await getWriteAccess("parceiros")) || (await getWriteAccess("financeiro"));
+  if (!auth || isReadOnlyRole(auth.cargo)) {
+    return { success: false as const, error: "Sem permissão para enviar comprovante." };
+  }
+
+  const prepared = await preparePartnerCommissionEmailContent(
+    receiptId,
+    auth.companyId
+  );
+  if (!prepared) {
+    return { success: false as const, error: "Comprovante não encontrado." };
+  }
+
+  const loaded = await resolveReceiptOutboundMailbox(auth.companyId);
+  const composed = composeDocumentEmail({
+    subjectTemplate: prepared.subject,
+    bodyTemplate: prepared.body,
+    vars: {
+      cliente_nome: prepared.receipt.parceiro_nome,
+      cliente_primeiro_nome: "",
+      link: "",
+    },
+    signature: loaded?.mailbox.signature_text,
+  });
+
+  return {
+    success: true as const,
+    to: (prepared.defaultTo || "").trim().toLowerCase(),
+    subject: composed.subject,
+    html: composed.html,
+    text: composed.text,
+    from: loaded?.mailbox.address || null,
+  };
+}
+
+export async function sendPartnerCommissionReceiptByEmail(input: {
+  receiptId: string;
+  to?: string;
+}) {
+  const auth =
+    (await getWriteAccess("parceiros")) || (await getWriteAccess("financeiro"));
+  if (!auth || isReadOnlyRole(auth.cargo)) {
+    return { success: false as const, error: "Sem permissão para enviar comprovante." };
+  }
+
+  const prepared = await preparePartnerCommissionEmailContent(
+    input.receiptId,
+    auth.companyId
+  );
+  if (!prepared) {
+    return { success: false as const, error: "Comprovante não encontrado." };
+  }
+
+  const to = (input.to || prepared.defaultTo || "").trim().toLowerCase();
+  if (!to || !to.includes("@")) {
+    return {
+      success: false as const,
+      error: "Parceiro sem e-mail cadastrado. Informe o destinatário.",
+    };
+  }
+
+  const loaded = await resolveReceiptOutboundMailbox(auth.companyId);
+  if (!loaded) {
+    return {
+      success: false as const,
+      error:
+        "Configure uma caixa Documentos (noreply) ou Financeiro ativa em E-mails → Configurar caixas.",
+    };
+  }
+
+  const replyTo = await resolveAtendimentoReplyTo(loaded.auth.companyId);
+  const composed = composeDocumentEmail({
+    subjectTemplate: prepared.subject,
+    bodyTemplate: prepared.body,
+    vars: {
+      cliente_nome: prepared.receipt.parceiro_nome,
+      cliente_primeiro_nome: "",
+      link: "",
+    },
+    signature: loaded.mailbox.signature_text,
+  });
+
+  try {
+    await sendSmtpEmail(
+      {
+        host: loaded.mailbox.smtp_host,
+        port: loaded.mailbox.smtp_port,
+        user: loaded.mailbox.address,
+        pass: loaded.password,
+      },
+      {
+        fromAddress: loaded.mailbox.address,
+        fromName: loaded.mailbox.display_name,
+        to,
+        subject: composed.subject,
+        text: composed.text,
+        html: composed.html,
+        replyTo,
+      }
+    );
+
+    const actorId = await ensureActorUserId();
+    await prisma.emailOutboundLog.create({
+      data: {
+        company_id: loaded.auth.companyId,
+        mailbox_id: loaded.mailbox.id,
+        project_id: prepared.projectId,
+        to_address: to,
+        subject: composed.subject,
+        status: "SENT",
+        sent_by_id: actorId,
+      },
+    });
+
+    revalidatePath("/parceiros");
+    revalidatePath(`/parceiros/${prepared.partnerId}`);
+    return { success: true as const, to };
+  } catch (error) {
+    console.error("sendPartnerCommissionReceiptByEmail:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : "Falha ao enviar comprovante.",
+    };
+  }
+}

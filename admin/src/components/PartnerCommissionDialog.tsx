@@ -186,8 +186,8 @@ export default function PartnerCommissionDialog({
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Siga a ordem: <strong>parceiro → projeto → orçamento → %</strong>. O valor é
-            calculado sobre o orçamento já aprovado. Este registro é só interno — o cliente
-            não vê.
+            calculado sobre o orçamento já aprovado. O cliente não vê este lançamento; o
+            comprovante formal (com NF) é o que você envia ao parceiro.
           </p>
         </div>
 

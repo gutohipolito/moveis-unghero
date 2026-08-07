@@ -13,12 +13,12 @@ import {
   Search,
 } from "lucide-react";
 import {
-  issuePartnerCommissionReceipt,
   listPartnerCommissions,
   updatePartnerCommission,
   type PartnerCommissionDTO,
 } from "@/app/actions/partnerCommissions";
 import PartnerCommissionDialog from "@/components/PartnerCommissionDialog";
+import PartnerCommissionReceiptIssueDialog from "@/components/PartnerCommissionReceiptIssueDialog";
 import { formatCurrencyBRL } from "@/lib/currencyExtenso";
 import { toISODateBR } from "@/lib/brazilDate";
 import type { PartnerCommissionStatus } from "@prisma/client";
@@ -62,6 +62,7 @@ export default function PartnerCommissionsTab({
   const [partnerFilter, setPartnerFilter] = useState(initialPartnerId || "");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [issueCommission, setIssueCommission] = useState<PartnerCommissionDTO | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -136,16 +137,12 @@ export default function PartnerCommissionsTab({
     });
   };
 
-  const handleIssue = async (c: PartnerCommissionDTO) => {
-    setBusyId(c.id);
-    const res = await issuePartnerCommissionReceipt(c.id);
-    setBusyId(null);
-    if (!res.success) {
-      showError("Não foi possível abrir o comprovante", res.error);
+  const handleIssueClick = (c: PartnerCommissionDTO) => {
+    if (c.receipt_id) {
+      window.open(`/comissoes/${c.receipt_id}/print`, "_blank", "noopener,noreferrer");
       return;
     }
-    await reload();
-    window.open(`/comissoes/${res.receiptId}/print`, "_blank", "noopener,noreferrer");
+    setIssueCommission(c);
   };
 
   return (
@@ -165,12 +162,12 @@ export default function PartnerCommissionsTab({
             Quando pagar o parceiro, use <strong>Marcar paga</strong> na linha.
           </li>
           <li>
-            Para imprimir ou guardar o documento, use{" "}
-            <strong>Emitir comprovante</strong> (só uso interno — não envie ao cliente).
+            Para enviar o documento ao parceiro, use <strong>Emitir comprovante</strong>{" "}
+            (informe a NF e, se quiser, envie por e-mail).
             {lockPartnerId ? (
               <>
                 {" "}
-                Depois ele aparece na aba <strong>Comprovantes</strong>.
+                Depois ele fica na aba <strong>Comprovantes</strong>.
               </>
             ) : null}
           </li>
@@ -332,18 +329,14 @@ export default function PartnerCommissionsTab({
                             variant="ghost"
                             className="h-7 text-[10px] font-bold cursor-pointer gap-1"
                             disabled={busyId === c.id}
-                            onClick={() => void handleIssue(c)}
+                            onClick={() => handleIssueClick(c)}
                             title={
                               c.receipt_id
-                                ? "Abrir o comprovante para imprimir"
-                                : "Gerar comprovante interno para imprimir"
+                                ? "Abrir o comprovante para imprimir ou enviar"
+                                : "Gerar comprovante com NF para enviar ao parceiro"
                             }
                           >
-                            {busyId === c.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <FileText className="h-3 w-3" />
-                            )}
+                            <FileText className="h-3 w-3" />
                             {c.receipt_id ? "Abrir comprovante" : "Emitir comprovante"}
                           </Button>
                           {c.status !== "PAGA" && (
@@ -378,9 +371,20 @@ export default function PartnerCommissionsTab({
           showSuccess(
             "Comissão lançada",
             lockPartnerId
-              ? `Próximo passo: quando pagar, use “Marcar paga”. Para o documento, use “Emitir comprovante” — ele fica na aba Comprovantes.`
-              : `Próximo passo: quando pagar ${c.partner_nome}, use “Marcar paga”. Para imprimir, use “Emitir comprovante”.`
+              ? `Próximo passo: quando pagar, use “Marcar paga”. Para o documento do parceiro, use “Emitir comprovante” (com a NF).`
+              : `Próximo passo: quando pagar ${c.partner_nome}, use “Marcar paga”. Para enviar o documento, use “Emitir comprovante”.`
           );
+        }}
+      />
+
+      <PartnerCommissionReceiptIssueDialog
+        open={issueCommission !== null}
+        commission={issueCommission}
+        onClose={() => setIssueCommission(null)}
+        showSuccess={showSuccess}
+        onIssued={(receiptId) => {
+          void reload();
+          window.open(`/comissoes/${receiptId}/print`, "_blank", "noopener,noreferrer");
         }}
       />
     </div>

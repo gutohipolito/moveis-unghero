@@ -321,8 +321,8 @@ export default function ParceiroDetailsClient({
                 Quando pagar o parceiro, marque como paga na mesma aba.
               </li>
               <li>
-                Em <strong>Comprovantes</strong>, reabra os documentos internos já emitidos
-                para imprimir ou guardar em PDF.
+                Em <strong>Comprovantes</strong>, reabra os documentos já emitidos para imprimir
+                ou enviar ao parceiro.
               </li>
             </ol>
             {!hidePartnerValues && (
