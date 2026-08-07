@@ -21,6 +21,10 @@ import {
   partnerRegistroLabel,
 } from "@/lib/partnerTypes";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import PartnerCommissionsTab from "@/components/PartnerCommissionsTab";
+import {
+  getPartnerCommissionTotals,
+} from "@/app/actions/partnerCommissions";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -54,7 +58,8 @@ import {
   ExternalLink,
   Globe,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Percent,
 } from "lucide-react";
 
 interface ParceirosClientProps {
@@ -376,6 +381,9 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     : privacyLocked || isReadOnly || privacyMode;
   const hidePartnerValues = isOpsLimited;
   const [viewingPartner, setViewingPartner] = useState<ParceiroDTO | null>(null);
+  const [pageTab, setPageTab] = useState<"cadastro" | "comissoes">("cadastro");
+  const [commissionFilterPartnerId, setCommissionFilterPartnerId] = useState<string | null>(null);
+  const [commissionTotals, setCommissionTotals] = useState<{ pendente: number; pago: number } | null>(null);
   const [isPortalPickerOpen, setIsPortalPickerOpen] = useState(false);
   const [portalSearch, setPortalSearch] = useState("");
   const [portalEnteringId, setPortalEnteringId] = useState<string | null>(null);
@@ -389,6 +397,26 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     }
     loadColabs();
   }, [companyId]);
+
+  React.useEffect(() => {
+    if (!viewingPartner) {
+      setCommissionTotals(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const res = await getPartnerCommissionTotals(viewingPartner.id);
+      if (cancelled) return;
+      if (res.success) {
+        setCommissionTotals({ pendente: res.pendente, pago: res.pago });
+      } else {
+        setCommissionTotals(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewingPartner]);
 
   const handleViewProject = async (projectId: string) => {
     setActiveProjectId(projectId);
@@ -747,10 +775,35 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             <p className="text-xs text-muted-foreground">
               Cadastre parceiros profissionais — arquitetos, projetistas, decoradores e engenheiros — que indicam clientes ou co-projetam com a marcenaria.
             </p>
+            <div className="flex gap-1.5 pt-3">
+              <button
+                type="button"
+                onClick={() => setPageTab("cadastro")}
+                className={`h-9 px-3.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  pageTab === "cadastro"
+                    ? "bg-foreground text-background"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                Cadastro
+              </button>
+              <button
+                type="button"
+                onClick={() => setPageTab("comissoes")}
+                className={`h-9 px-3.5 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
+                  pageTab === "comissoes"
+                    ? "bg-foreground text-background"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <Percent className="h-3.5 w-3.5" />
+                Comissões
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-auto">
-            {isAdmin && (
+            {isAdmin && pageTab === "cadastro" && (
               <Button
                 type="button"
                 variant="outline"
@@ -761,7 +814,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 Ver portal
               </Button>
             )}
-            {canManagePartners && (
+            {canManagePartners && pageTab === "cadastro" && (
               <Button
                 onClick={openCreate}
                 className="font-bold btn-metallic gap-2 h-10 px-4"
@@ -773,6 +826,16 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
           </div>
         </div>
 
+        {pageTab === "comissoes" ? (
+          <PartnerCommissionsTab
+            initialPartnerId={commissionFilterPartnerId}
+            canManage={canManagePartners}
+            showSuccess={showSuccess}
+            showError={showError}
+            confirmAction={confirmAction}
+          />
+        ) : (
+          <>
         {/* Barra de Filtros e Busca */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1 max-w-md">
@@ -823,6 +886,8 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               />
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 
@@ -1211,6 +1276,33 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       </div>
                     )}
                   </div>
+                  {!hidePartnerValues && commissionTotals && (
+                    <div className="partner-card-metric p-4 space-y-2 mt-3">
+                      <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                        <Percent className="h-3 w-3" />
+                        Comissões (interno)
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground font-semibold">Pendente</span>
+                        <PrivacyMoney value={commissionTotals.pendente} as="span" className="font-bold tabular-nums" />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground font-semibold">Pago</span>
+                        <PrivacyMoney value={commissionTotals.pago} as="span" className="font-bold tabular-nums" />
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[10px] font-bold text-primary hover:underline cursor-pointer mt-1"
+                        onClick={() => {
+                          setCommissionFilterPartnerId(p.id);
+                          setPageTab("comissoes");
+                          setViewingPartner(null);
+                        }}
+                      >
+                        Ver na aba Comissões →
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

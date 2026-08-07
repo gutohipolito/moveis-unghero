@@ -43,6 +43,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
+import { canManageParceiros } from "@/lib/permissions";
+import PartnerCommissionPanel from "@/components/PartnerCommissionPanel";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
@@ -1126,6 +1128,15 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider block">Observações do Projeto:</span>
                       <p className="text-slate-700 font-medium whitespace-pre-wrap">{project.observacoes}</p>
                     </div>
+                  )}
+
+                  {!isOpsLimited && (
+                    <PartnerCommissionPanel
+                      projectId={project.id}
+                      partnerId={project.partner_id}
+                      partnerName={project.partner?.nome}
+                      canManage={canManageParceiros(role)}
+                    />
                   )}
 
                   {partnerContributions &&
