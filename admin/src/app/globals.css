@@ -2503,7 +2503,6 @@ button.partner-card:hover,
 
 .sidebar-nav-link-active .sidebar-nav-icon {
   color: hsl(var(--sidebar-accent)) !important;
-  background: hsl(var(--sidebar-accent) / 0.16);
 }
 
 .sidebar-nav-badge {
