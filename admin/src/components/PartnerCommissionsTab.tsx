@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
+  Percent,
+  Plus,
   Search,
 } from "lucide-react";
 import {
@@ -16,6 +18,7 @@ import {
   updatePartnerCommission,
   type PartnerCommissionDTO,
 } from "@/app/actions/partnerCommissions";
+import PartnerCommissionDialog from "@/components/PartnerCommissionDialog";
 import { formatCurrencyBRL } from "@/lib/currencyExtenso";
 import { toISODateBR } from "@/lib/brazilDate";
 import type { PartnerCommissionStatus } from "@prisma/client";
@@ -55,6 +58,7 @@ export default function PartnerCommissionsTab({
   const [search, setSearch] = useState("");
   const [partnerFilter, setPartnerFilter] = useState(initialPartnerId || "");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -140,6 +144,12 @@ export default function PartnerCommissionsTab({
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3 text-xs text-amber-950/80 leading-relaxed">
+        <strong className="font-bold">Tudo de comissão fica aqui.</strong> Lance o %, marque
+        como paga e emita o comprovante interno — sem misturar com o CRM ou o orçamento do
+        cliente.
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -172,6 +182,16 @@ export default function PartnerCommissionsTab({
             Limpar filtro de parceiro
           </Button>
         )}
+        {canManage && (
+          <Button
+            type="button"
+            className="font-bold gap-2 h-10 px-4 cursor-pointer shrink-0"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Nova comissão
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -179,10 +199,21 @@ export default function PartnerCommissionsTab({
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
+        <div className="rounded-xl border border-border bg-card p-10 text-center space-y-3">
+          <Percent className="h-8 w-8 text-muted-foreground/50 mx-auto" />
           <p className="text-sm text-muted-foreground">
-            Nenhuma comissão encontrada. Lance pelo projeto após aprovar o orçamento.
+            Nenhuma comissão encontrada.
           </p>
+          {canManage && (
+            <Button
+              type="button"
+              className="font-bold gap-2 cursor-pointer"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Nova comissão
+            </Button>
+          )}
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden bg-card">
@@ -262,7 +293,7 @@ export default function PartnerCommissionsTab({
                             ) : (
                               <FileText className="h-3 w-3" />
                             )}
-                            {c.receipt_id ? "PDF" : "Emitir"}
+                            {c.receipt_id ? "Ver PDF" : "Emitir comprovante"}
                           </Button>
                           {c.status !== "PAGA" && (
                             <Button
@@ -286,6 +317,19 @@ export default function PartnerCommissionsTab({
           </div>
         </div>
       )}
+
+      <PartnerCommissionDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        initialPartnerId={partnerFilter || null}
+        onCreated={(c) => {
+          setCommissions((prev) => [c, ...prev]);
+          showSuccess(
+            "Comissão lançada",
+            `${c.partner_nome} · ${c.percentual}% · ${formatCurrencyBRL(c.valor_comissao)}`
+          );
+        }}
+      />
     </div>
   );
 }

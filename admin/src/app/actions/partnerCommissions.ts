@@ -178,6 +178,93 @@ export async function getApprovedQuoteBase(
   };
 }
 
+/** Projetos do parceiro com orçamento aprovado elegíveis para comissão. */
+export async function listEligibleCommissionProjects(partnerId?: string) {
+  const auth = await requireCommissionRead();
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado.", partners: [], projects: [] };
+  }
+
+  const partners = await prisma.professionalPartner.findMany({
+    where: {
+      company_id: auth.companyId,
+      ativo: true,
+      ...(partnerId ? { id: partnerId } : {}),
+    },
+    select: { id: true, nome: true, tipo: true },
+    orderBy: { nome: "asc" },
+  });
+
+  const projects = await prisma.project.findMany({
+    where: {
+      client: { company_id: auth.companyId },
+      partner_id: partnerId
+        ? partnerId
+        : { in: partners.map((p) => p.id) },
+      quotes: {
+        some: {
+          OR: [{ aprovado_em: { not: null } }, { approvals: { some: {} } }],
+        },
+      },
+    },
+    select: {
+      id: true,
+      partner_id: true,
+      client: { select: { nome: true } },
+      quotes: {
+        where: {
+          OR: [{ aprovado_em: { not: null } }, { approvals: { some: {} } }],
+        },
+        select: {
+          id: true,
+          codigo: true,
+          versao: true,
+          approvals: { select: { valor_aprovado: true } },
+          partnerCommissions: {
+            where: { status: { not: "CANCELADA" } },
+            select: { id: true },
+            take: 1,
+          },
+        },
+        orderBy: [{ aprovado_em: "desc" }, { updatedAt: "desc" }],
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 150,
+  });
+
+  const mapped = projects
+    .map((p) => {
+      const quotes = p.quotes
+        .map((q) => {
+          const base = roundMoney(
+            q.approvals.reduce((sum, a) => sum + toNumber(a.valor_aprovado), 0)
+          );
+          return {
+            id: q.id,
+            codigo: q.codigo,
+            versao: q.versao,
+            base_valor: base,
+            hasActiveCommission: q.partnerCommissions.length > 0,
+          };
+        })
+        .filter((q) => q.base_valor > 0 && !q.hasActiveCommission);
+      return {
+        id: p.id,
+        partner_id: p.partner_id!,
+        cliente_nome: p.client.nome,
+        quotes,
+      };
+    })
+    .filter((p) => p.quotes.length > 0);
+
+  return {
+    success: true as const,
+    partners,
+    projects: mapped,
+  };
+}
+
 /** Orçamentos aprovados do projeto (para escolher a base). */
 export async function listApprovedQuotesForProject(projectId: string) {
   const auth = await requireCommissionRead();

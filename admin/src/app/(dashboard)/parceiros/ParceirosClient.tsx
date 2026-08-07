@@ -1299,7 +1299,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                           setViewingPartner(null);
                         }}
                       >
-                        Ver na aba Comissões →
+                        Abrir aba Comissões (lançar / emitir) →
                       </button>
                     </div>
                   )}
