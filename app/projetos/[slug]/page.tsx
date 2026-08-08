@@ -154,11 +154,11 @@ export default async function ProjetoDetailPage({ params }: Params) {
                 fontSize: '1.2rem',
                 flexShrink: 0
               }}>
-                FU
+                MU
               </div>
               <div>
                 <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '1rem' }}>
-                  Executado por <Link href="/nossos-especialistas" className="hover-underline" style={{ color: 'var(--accent)' }}>Família Unghero</Link>
+                  Executado por <Link href="/nossos-especialistas" className="hover-underline" style={{ color: 'var(--accent)' }}>Móveis Unghero</Link>
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontFamily: 'var(--font-secondary)', marginTop: '4px', lineHeight: '1.5' }}>
                   Este projeto foi integralmente fabricado em nossa sede própria em Farroupilha-RS com usinagem milimétrica de alto padrão e instalação dedicada.

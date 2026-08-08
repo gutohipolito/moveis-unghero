@@ -17,8 +17,8 @@
   "cnpj": "13.415.510/0001-71",
   "foundingDate": "2006",
   "founder": {
-    "@type": "Person",
-    "name": "Família Unghero"
+    "@type": "Organization",
+    "name": "Móveis Unghero"
   },
   "address": {
     "@type": "PostalAddress",

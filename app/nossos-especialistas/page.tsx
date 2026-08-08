@@ -7,7 +7,7 @@ export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: 'Nossos Especialistas em Marcenaria | Móveis Unghero',
-  description: 'Conheça a Família Unghero e a equipe de artesãos e designers por trás dos móveis sob medida de alto padrão produzidos em Farroupilha-RS há mais de 20 anos.',
+  description: 'Conheça a Móveis Unghero e a equipe de artesãos e designers por trás dos móveis sob medida de alto padrão produzidos em Farroupilha-RS há mais de 20 anos.',
   alternates: {
     canonical: '/nossos-especialistas',
   },
@@ -24,16 +24,11 @@ export default function NossosEspecialistasPage() {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
     "mainEntity": {
-      "@type": "Person",
-      "name": "Família Unghero",
+      "@type": "Organization",
+      "name": "Móveis Unghero",
       "image": "https://moveisunghero.com.br/images/cozinha-apartamento.jpg",
-      "description": "Marceneiros e designers fundadores da Móveis Unghero, especialistas em marcenaria artesanal de alta precisão e móveis sob medida na Serra Gaúcha desde 2006.",
-      "jobTitle": "Mestres Marceneiros & Designers",
-      "worksFor": {
-        "@type": "HomeAndConstructionBusiness",
-        "name": "Móveis Unghero",
-        "url": "https://moveisunghero.com.br"
-      },
+      "description": "Marceneiros e designers da Móveis Unghero, especialistas em marcenaria artesanal de alta precisão e móveis sob medida na Serra Gaúcha desde 2006.",
+      "url": "https://moveisunghero.com.br",
       "knowsAbout": [
         "Marcenaria sob Medida",
         "Design de Interiores",
@@ -69,7 +64,7 @@ export default function NossosEspecialistasPage() {
           {/* Apresentação Principal E-E-A-T */}
           <div style={{ maxWidth: '800px', width: '100%' }}>
             <p style={{ fontSize: '1.2rem', lineHeight: '1.8', marginBottom: '32px', color: 'var(--text-main)' }}>
-              A <strong>Móveis Unghero</strong> é conduzida pela <strong>Família Unghero</strong>, unindo gerações dedicadas à arte da marcenaria sob medida. Longe da linguagem impessoal de grandes indústrias de modulados, cada projeto que entra em nossa fábrica recebe supervisão técnica detalhada e atenção artesanal direta.
+              A <strong>Móveis Unghero</strong> une gerações dedicadas à arte da marcenaria sob medida. Longe da linguagem impessoal de grandes indústrias de modulados, cada projeto que entra em nossa fábrica recebe supervisão técnica detalhada e atenção artesanal direta.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', margin: '40px 0' }}>

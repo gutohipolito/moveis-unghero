@@ -78,8 +78,8 @@ export default async function BlogPostPage({ params }: Params) {
     "datePublished": data.date,
     "dateModified": data.date,
     "author": {
-      "@type": "Person",
-      "name": "Família Unghero",
+      "@type": "Organization",
+      "name": "Móveis Unghero",
       "url": "https://moveisunghero.com.br/nossos-especialistas"
     },
     "publisher": {
@@ -169,11 +169,11 @@ export default async function BlogPostPage({ params }: Params) {
                 fontSize: '1.2rem',
                 flexShrink: 0
               }}>
-                FU
+                MU
               </div>
               <div>
                 <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '1rem' }}>
-                  Escrito por <Link href="/nossos-especialistas" className="hover-underline" style={{ color: 'var(--accent)' }}>Família Unghero</Link>
+                  Escrito por <Link href="/nossos-especialistas" className="hover-underline" style={{ color: 'var(--accent)' }}>Móveis Unghero</Link>
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontFamily: 'var(--font-secondary)', marginTop: '4px', lineHeight: '1.5' }}>
                   Mestres marceneiros e designers especialistas na fabricação própria de móveis sob medida na Serra Gaúcha há mais de 20 anos.
