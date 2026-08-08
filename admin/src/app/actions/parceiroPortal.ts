@@ -276,6 +276,28 @@ async function requirePartnerSession() {
   return partnerId;
 }
 
+export async function loadPartnerProjectDetailAction(projectId: string) {
+  const partnerId = await requirePartnerSession();
+  if (!partnerId) {
+    return { success: false as const, error: "Sessão expirada. Faça login novamente." };
+  }
+  if (!projectId?.trim()) {
+    return { success: false as const, error: "Projeto inválido." };
+  }
+
+  try {
+    const { loadPartnerProjectDetail } = await import("@/lib/partnerPortal");
+    const project = await loadPartnerProjectDetail(partnerId, projectId);
+    if (!project) {
+      return { success: false as const, error: "Projeto não encontrado." };
+    }
+    return { success: true as const, project };
+  } catch (error) {
+    console.error("loadPartnerProjectDetailAction:", error);
+    return { success: false as const, error: "Não foi possível carregar o projeto." };
+  }
+}
+
 export async function addPartnerProjectNoteAction(projectId: string, body: string) {
   const partnerId = await requirePartnerSession();
   if (!partnerId) {

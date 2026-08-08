@@ -814,10 +814,15 @@ button.partner-card:hover,
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-brand-sub,
-.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-footer-legal,
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-page-desc,
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-page-kicker {
   color: var(--parceiro-light-muted);
+}
+
+/* Logo é branco + alpha — no tema claro precisa escurecer */
+.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-brand-logo {
+  filter: brightness(0);
+  opacity: 0.9;
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-page-title,
@@ -1008,7 +1013,21 @@ button.partner-card:hover,
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-footer {
+  background: hsl(40 28% 97% / 0.92);
   border-top-color: hsl(32 14% 72% / 0.85);
+}
+
+.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-footer-legal {
+  color: hsl(24 12% 34% / 0.88);
+}
+
+.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-footer-product,
+.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-footer-copy {
+  color: var(--parceiro-light-muted);
+}
+
+.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-footer-brand {
+  color: hsl(210 16% 28%);
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .partner-card {

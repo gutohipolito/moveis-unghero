@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
 import { MapPin, Users } from "lucide-react";
 import { HighlightAnimatedIcon, LibraryIcon } from "@/components/icons";
 import type { PartnerPortalData, PartnerPortalProject } from "@/lib/partnerPortal";
 import { partnerProjectValueVisible } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
+import ParceiroProjetoModal from "@/app/parceiro/projetos/ParceiroProjetoModal";
 import { cn } from "@/lib/utils";
 
 const PROJECT_STEPS = [
@@ -40,15 +40,22 @@ function matchesFilter(project: PartnerPortalProject, filter: StatusFilter) {
   return project.status_geral !== "PERDIDO" && project.status_geral !== "FINALIZADO";
 }
 
-function ProjectCard({ project }: { project: PartnerPortalProject }) {
+function ProjectCard({
+  project,
+  onOpen,
+}: {
+  project: PartnerPortalProject;
+  onOpen: (id: string) => void;
+}) {
   const current = stepIndex(project.status_geral);
   const isLost = project.status_geral === "PERDIDO";
   const stageLabel = PROJECT_STEPS[current]?.label ?? project.status_geral;
 
   return (
-    <Link
-      href={`/parceiro/projetos/${project.id}`}
-      className="parceiro-project-card block no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(210_10%_68%/0.45)]"
+    <button
+      type="button"
+      onClick={() => onOpen(project.id)}
+      className="parceiro-project-card block w-full text-left no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(210_10%_68%/0.45)]"
     >
       <div className="parceiro-project-card-sheen" aria-hidden />
       <div className="parceiro-project-card-body">
@@ -105,7 +112,7 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
           </p>
         )}
       </div>
-    </Link>
+    </button>
   );
 }
 
@@ -120,6 +127,7 @@ export default function ParceiroProjetosClient({
 }: ParceiroProjetosClientProps) {
   const [filter, setFilter] = useState<StatusFilter>("ATIVOS");
   const [groupByClient, setGroupByClient] = useState(false);
+  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => partner.projects.filter((p) => matchesFilter(p, filter)),
@@ -181,7 +189,10 @@ export default function ParceiroProjetosClient({
           <button
             type="button"
             onClick={() => setGroupByClient((v) => !v)}
-            className={cn("parceiro-filter-chip inline-flex items-center gap-1.5 self-start", groupByClient && "is-active")}
+            className={cn(
+              "parceiro-filter-chip inline-flex items-center gap-1.5 self-start",
+              groupByClient && "is-active"
+            )}
           >
             <Users className="h-3.5 w-3.5" />
             Por cliente
@@ -215,7 +226,11 @@ export default function ParceiroProjetosClient({
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   {group.projects.map((project) => (
-                    <ProjectCard key={project.id} project={project} />
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onOpen={setOpenProjectId}
+                    />
                   ))}
                 </div>
               </section>
@@ -224,11 +239,20 @@ export default function ParceiroProjetosClient({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {filtered.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onOpen={setOpenProjectId}
+              />
             ))}
           </div>
         )}
       </div>
+
+      <ParceiroProjetoModal
+        projectId={openProjectId}
+        onClose={() => setOpenProjectId(null)}
+      />
     </ParceiroPortalShell>
   );
 }
