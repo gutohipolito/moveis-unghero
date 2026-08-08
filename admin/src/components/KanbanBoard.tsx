@@ -38,6 +38,7 @@ import KanbanCardQuoteViews from "@/components/KanbanCardQuoteViews";
 import HoverTooltip from "@/components/ui/HoverTooltip";
 import { labelOrigin } from "@/lib/navLabels";
 import { formatQuoteViewLabel, toQuoteViewStats } from "@/lib/quoteViewTracking";
+import { DEMO_FORCE_UNREAD_NOTES } from "@/lib/crmUnreadNoteDemo";
 import {
   formatStageEntryLabel,
   shouldShowStageEntryDate,
@@ -771,7 +772,7 @@ export default function KanbanBoard({
     });
     setIsEditLeadOpen(true);
 
-    if (project.hasUnreadNote && !isOpsLimited) {
+    if (project.hasUnreadNote && !isOpsLimited && !DEMO_FORCE_UNREAD_NOTES) {
       setProjects((prev) =>
         prev.map((p) => (p.id === project.id ? { ...p, hasUnreadNote: false } : p))
       );
@@ -842,7 +843,7 @@ export default function KanbanBoard({
             valor_previsto: isOpsLimited ? p.valor_previsto : data.valor_previsto,
             status_geral: data.status_geral,
             observacoes: data.observacoes,
-            hasUnreadNote: false,
+            hasUnreadNote: DEMO_FORCE_UNREAD_NOTES ? true : false,
             obs_updated_at: obsUpdatedAt || p.obs_updated_at,
             updatedAt: new Date().toISOString(),
             stage_entered_at:
@@ -1777,6 +1778,14 @@ export default function KanbanBoard({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col space-y-[var(--space-3)] overflow-hidden">
+      {DEMO_FORCE_UNREAD_NOTES && !isOpsLimited ? (
+        <div className="shrink-0 print:hidden rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          <strong className="font-bold">Demo ativo:</strong> destaque de observação
+          forçado em todos os cards (sino + fundo azul + topo da coluna). Abrir o card
+          não limpa. Desligar em{" "}
+          <code className="font-mono text-[11px]">crmUnreadNoteDemo.ts</code>.
+        </div>
+      ) : null}
       <div className="shrink-0 print:hidden">
         <PageHeader
           title="Funil Comercial"
