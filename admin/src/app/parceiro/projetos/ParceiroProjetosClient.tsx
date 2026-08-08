@@ -7,6 +7,7 @@ import type { PartnerPortalData, PartnerPortalProject } from "@/lib/partnerPorta
 import { partnerProjectValueVisible } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import ParceiroProjetoModal from "@/app/parceiro/projetos/ParceiroProjetoModal";
+import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { cn } from "@/lib/utils";
 
 const PROJECT_STEPS = [
@@ -163,10 +164,22 @@ export default function ParceiroProjetosClient({
       <div className="space-y-6">
         <div>
           <p className="parceiro-page-kicker">Acompanhe</p>
-          <h1 className="parceiro-page-title">
-            {partner.projects.length} projeto
-            {partner.projects.length === 1 ? "" : "s"}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="parceiro-page-title">
+              {partner.projects.length} projeto
+              {partner.projects.length === 1 ? "" : "s"}
+            </h1>
+            <InfoTooltip label="Sobre projetos">
+              <TooltipBody
+                title="Projetos no portal"
+                items={[
+                  "Toque em um card para ver detalhes, PDFs, arquivos e notas",
+                  "O valor comercial só aparece depois da aprovação do orçamento",
+                  "Arquivos e notas ficam visíveis também para a equipe Unghero",
+                ]}
+              />
+            </InfoTooltip>
+          </div>
           <p className="parceiro-page-desc">
             Status e arquivos dos trabalhos vinculados a você. O valor
             comercial aparece a partir da aprovação do orçamento.

@@ -51,12 +51,12 @@ export default function ParceiroProjetoModal({ projectId, onClose }: Props) {
     <Dialog
       isOpen={Boolean(projectId)}
       onClose={onClose}
-      className="parceiro-info-modal max-w-2xl w-full"
+      className="parceiro-info-modal parceiro-projeto-modal max-w-2xl w-full"
       backdropClassName="parceiro-info-modal-backdrop"
-      bodyClassName="max-h-[min(92svh,880px)] overflow-y-auto"
+      bodyClassName="parceiro-projeto-modal-body"
     >
       {loading && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-500">
+        <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-500">
           <Loader2 className="h-6 w-6 animate-spin" />
           <p className="text-sm font-medium">Carregando projeto…</p>
         </div>
@@ -76,7 +76,12 @@ export default function ParceiroProjetoModal({ projectId, onClose }: Props) {
       )}
 
       {!loading && project && (
-        <ParceiroProjetoDetailView key={project.id} project={project} showHeader />
+        <ParceiroProjetoDetailView
+          key={project.id}
+          project={project}
+          showHeader
+          compact
+        />
       )}
     </Dialog>
   );

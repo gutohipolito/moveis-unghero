@@ -25,6 +25,8 @@ import {
   deletePartnerProjectFileAction,
   deletePartnerProjectNoteAction,
 } from "@/app/actions/parceiroPortal";
+import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
+import HoverTooltip from "@/components/ui/HoverTooltip";
 import { cn } from "@/lib/utils";
 
 const PROJECT_STEPS = [
@@ -64,15 +66,25 @@ function formatBytes(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const TAB_HINTS: Record<TabId, string> = {
+  resumo: "Etapa, contato do cliente e ambientes do projeto.",
+  orcamentos: "PDFs de orçamento disponíveis para consulta.",
+  arquivos: "Envie plantas e referências — a Unghero vê no CRM.",
+  notas: "Observações visíveis para a equipe Unghero.",
+};
+
 type Props = {
   project: PartnerProjectDetail;
   /** Compact header for modal; page can pass false and render its own title. */
   showHeader?: boolean;
+  /** Layout com chrome fixo + scroll nas abas (modal). */
+  compact?: boolean;
 };
 
 export default function ParceiroProjetoDetailView({
   project: initial,
   showHeader = true,
+  compact = false,
 }: Props) {
   const [tab, setTab] = useState<TabId>("resumo");
   const [notes, setNotes] = useState<PartnerProjectNoteDTO[]>(initial.notes);
@@ -158,14 +170,29 @@ export default function ParceiroProjetoDetailView({
     });
   }
 
-  return (
-    <div className="space-y-5">
+  const valueVisible = partnerProjectValueVisible(initial.status_geral);
+
+  const chrome = (
+    <>
       {showHeader && (
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pr-8">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-              Projeto
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Projeto
+              </p>
+              <InfoTooltip label="Sobre este projeto">
+                <TooltipBody
+                  title="O que você encontra aqui"
+                  items={[
+                    "Resumo com etapa, contato e ambientes",
+                    "PDFs de orçamento quando disponíveis",
+                    "Arquivos e notas compartilhados com a Unghero",
+                    "O valor comercial aparece a partir da aprovação do orçamento",
+                  ]}
+                />
+              </InfoTooltip>
+            </div>
             <h3 className="text-lg font-display font-bold text-slate-900 tracking-tight truncate">
               {initial.client.nome}
             </h3>
@@ -174,18 +201,21 @@ export default function ParceiroProjetoDetailView({
               {initial.client.cidade || "Cidade não informada"}
             </p>
           </div>
-          <p
-            className="text-base font-display font-semibold tabular-nums text-slate-700 shrink-0"
-            title={
-              partnerProjectValueVisible(initial.status_geral)
-                ? undefined
-                : "Valor liberado após aprovação do orçamento"
+          <HoverTooltip
+            content={
+              valueVisible
+                ? "Valor previsto do projeto"
+                : "O valor é liberado quando o orçamento é aprovado"
             }
+            side="bottom"
+            delayMs={120}
           >
-            {partnerProjectValueVisible(initial.status_geral)
-              ? moneyFmt.format(initial.valor_previsto)
-              : "Após aprovação"}
-          </p>
+            <p className="text-base font-display font-semibold tabular-nums text-slate-700 shrink-0 cursor-default">
+              {valueVisible
+                ? moneyFmt.format(initial.valor_previsto)
+                : "Após aprovação"}
+            </p>
+          </HoverTooltip>
         </div>
       )}
 
@@ -198,9 +228,8 @@ export default function ParceiroProjetoDetailView({
       <div className="flex flex-wrap gap-1.5">
         {tabs.map((t) => {
           const Icon = t.icon;
-          return (
+          const chip = (
             <button
-              key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
@@ -213,26 +242,41 @@ export default function ParceiroProjetoDetailView({
               {typeof t.count === "number" && t.count > 0 ? ` · ${t.count}` : ""}
             </button>
           );
+          return (
+            <HoverTooltip key={t.id} content={TAB_HINTS[t.id]} side="bottom" delayMs={220}>
+              {chip}
+            </HoverTooltip>
+          );
         })}
       </div>
+    </>
+  );
 
+  const body = (
+    <>
       {tab === "resumo" && (
-        <div className="parceiro-panel p-5 sm:p-6 space-y-5">
+        <div className={cn("parceiro-panel space-y-4", !compact && "p-5 sm:p-6 space-y-5")}>
           {isLost ? (
             <p className="text-sm font-medium text-rose-700">Projeto perdido</p>
           ) : (
             <div className="space-y-2">
               <div className="flex gap-1 max-w-md">
                 {PROJECT_STEPS.map((step, idx) => (
-                  <div
+                  <HoverTooltip
                     key={step.id}
-                    title={step.label}
-                    className={`h-1 flex-1 rounded-full ${
-                      idx <= current
-                        ? "bg-[linear-gradient(90deg,hsl(0_0%_78%),hsl(210_8%_58%))]"
-                        : "bg-stone-200"
-                    }`}
-                  />
+                    content={step.label}
+                    side="top"
+                    delayMs={100}
+                    className="min-w-0 flex-1"
+                  >
+                    <div
+                      className={`h-1 w-full rounded-full ${
+                        idx <= current
+                          ? "bg-[linear-gradient(90deg,hsl(0_0%_78%),hsl(210_8%_58%))]"
+                          : "bg-stone-200"
+                      }`}
+                    />
+                  </HoverTooltip>
                 ))}
               </div>
               <p className="text-sm text-stone-600">
@@ -295,7 +339,7 @@ export default function ParceiroProjetoDetailView({
       {tab === "orcamentos" && (
         <div className="space-y-3">
           {initial.quotes.filter((q) => q.publicUrl).length === 0 ? (
-            <div className="parceiro-panel p-8 text-center">
+            <div className={cn("parceiro-panel text-center", compact ? "p-6" : "p-8")}>
               <p className="text-sm text-stone-600 font-medium">
                 Nenhum orçamento em PDF disponível ainda.
               </p>
@@ -331,7 +375,7 @@ export default function ParceiroProjetoDetailView({
 
       {tab === "arquivos" && (
         <div className="space-y-3">
-          <div className="parceiro-panel p-5 space-y-3">
+          <div className={cn("parceiro-panel space-y-3", !compact && "p-5")}>
             <p className="text-sm text-stone-600">
               Envie plantas e referências — a equipe Unghero também vê no CRM.
             </p>
@@ -398,13 +442,13 @@ export default function ParceiroProjetoDetailView({
 
       {tab === "notas" && (
         <div className="space-y-3">
-          <div className="parceiro-panel p-5 space-y-3">
+          <div className={cn("parceiro-panel space-y-3", !compact && "p-5")}>
             <textarea
               value={noteBody}
               onChange={(e) => setNoteBody(e.target.value.slice(0, 4000))}
-              rows={4}
+              rows={compact ? 3 : 4}
               placeholder="Observação para a equipe Unghero..."
-              className="w-full border border-stone-200 bg-white rounded-xl text-sm p-3.5 focus:outline-none focus:ring-1 focus:ring-stone-400 font-medium text-stone-900 placeholder:text-stone-400"
+              className="w-full border border-stone-200 bg-white rounded-xl text-sm p-3.5 focus:outline-none focus:ring-1 focus:ring-stone-400 font-medium text-slate-900 placeholder:text-stone-400"
             />
             <button
               type="button"
@@ -448,6 +492,22 @@ export default function ParceiroProjetoDetailView({
           )}
         </div>
       )}
+    </>
+  );
+
+  if (compact) {
+    return (
+      <div className="parceiro-projeto-detail">
+        <div className="parceiro-projeto-detail-chrome">{chrome}</div>
+        <div className="parceiro-projeto-detail-scroll">{body}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {chrome}
+      {body}
     </div>
   );
 }
