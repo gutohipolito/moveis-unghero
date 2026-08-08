@@ -590,7 +590,7 @@ export default function ClienteDetailsClient({
             >
               <option value="overview">Visão Geral</option>
               <option value="projects">Projetos ({projects.length})</option>
-              <option value="documents">Fotos do cliente ({attachments.length})</option>
+              <option value="documents">Casa &amp; docs ({attachments.length})</option>
               {!isOpsLimited && <option value="finance">Financeiro</option>}
               {!isOpsLimited && (
                 <option value="timeline">Linha do Tempo (atividades)</option>
@@ -613,7 +613,7 @@ export default function ClienteDetailsClient({
                   },
                   {
                     id: "documents" as const,
-                    label: "Fotos do cliente",
+                    label: "Casa & docs",
                     icon: ImageIcon,
                     count: attachments.length,
                   },

@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import {
   Camera,
   FileText,
+  Home,
   ImageIcon,
   Loader2,
   Trash2,
   Upload,
-  UserRound,
 } from "lucide-react";
 import {
   type ClientAttachmentDTO,
@@ -127,25 +127,26 @@ export default function ClienteDocumentsTab({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                <UserRound className="h-4.5 w-4.5 text-primary" />
-                Fotos & documentos do cliente
+                <Home className="h-4.5 w-4.5 text-primary" />
+                Casa, acesso & documentos
               </h3>
               <InfoTooltip label="Sobre esta aba">
                 <TooltipBody
-                  title="Somente do cliente"
+                  title="Do cliente — útil para o montador"
                   items={[
-                    "Arquivos desta aba pertencem ao cadastro do cliente (visita, contrato geral, documentos pessoais).",
-                    "Fotos e anexos de obra/projeto não aparecem aqui — ficam dentro de cada projeto (ambientes, galeria).",
-                    "Assim o operador não mistura material do cliente com material do projeto.",
+                    "Fotos da casa, fachada, portão, vagas, escadas e passagens — para a equipe saber onde é e como chegar.",
+                    "Documentos do cliente (contrato, identidade, etc.).",
+                    "Não misture com fotos de ambientes da obra: essas ficam dentro de cada projeto.",
                   ]}
                 />
               </InfoTooltip>
             </div>
             <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed max-w-xl">
-              Material do{" "}
-              <span className="font-semibold text-foreground">cliente</span>, não dos
-              projetos. Para fotos de medição, obra ou ambientes, abra o{" "}
-              <span className="font-semibold text-foreground">projeto</span> correspondente.
+              Registre{" "}
+              <span className="font-semibold text-foreground">como chegar e acessar a casa</span>{" "}
+              (fachada, entrada, dificuldade de passagem) e documentos do cliente. Fotos de
+              medição/ambientes da obra ficam no{" "}
+              <span className="font-semibold text-foreground">projeto</span>.
             </p>
           </div>
           <span className="text-xs font-bold text-muted-foreground bg-slate-100 px-2.5 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1.5">
@@ -154,7 +155,7 @@ export default function ClienteDocumentsTab({
               <TooltipBody
                 title="Contagem"
                 items={[
-                  "Inclui só anexos sem vínculo com projeto.",
+                  "Só arquivos do cliente (casa, acesso e documentos).",
                   "Arquivos ligados a um projeto não entram neste número.",
                 ]}
               />
@@ -162,9 +163,10 @@ export default function ClienteDocumentsTab({
           </span>
         </div>
 
-        <div className="rounded-[var(--radius-md)] border border-amber-200/80 bg-amber-50/60 px-3 py-2.5 text-[11px] text-amber-950/90 leading-relaxed">
-          <span className="font-bold">Atenção:</span> nada do que está nos projetos aparece
-          nesta lista. Use a aba Projetos → ficha do projeto para fotos e arquivos da obra.
+        <div className="rounded-[var(--radius-md)] border border-sky-200/80 bg-sky-50/70 px-3 py-2.5 text-[11px] text-sky-950/90 leading-relaxed">
+          <span className="font-bold">Para o montador:</span> priorize fotos da fachada, número da
+          casa, portão, estacionamento e trechos apertados. Assim a equipe reconhece o local e se
+          prepara para a entrega/instalação.
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -199,12 +201,13 @@ export default function ClienteDocumentsTab({
               <Camera className="h-4 w-4" />
               Tirar foto
             </Button>
-            <InfoTooltip label="Foto do cliente">
+            <InfoTooltip label="Foto de acesso">
               <TooltipBody
-                title="Câmera nesta aba"
+                title="O que fotografar"
                 items={[
-                  "A foto fica salva no cliente (ex.: fachada, documento, visita comercial).",
-                  "Para registro por ambiente da obra, use a galeria dentro do projeto.",
+                  "Fachada e número da casa, portão, vaga, escadas, corredores apertados.",
+                  "Ajuda o montador a achar o endereço e planejar a entrada dos módulos.",
+                  "Fotos dos ambientes (cozinha, quarto…) ficam na galeria do projeto.",
                 ]}
               />
             </InfoTooltip>
@@ -247,14 +250,15 @@ export default function ClienteDocumentsTab({
         <div className="flex items-center gap-1.5">
           <h4 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
             <ImageIcon className="h-4 w-4 text-primary" />
-            Fotos do cliente
+            Fotos da casa e do acesso
           </h4>
-          <InfoTooltip label="Fotos do cliente">
+          <InfoTooltip label="Fotos da casa e do acesso">
             <TooltipBody
-              title="O que entra aqui"
+              title="Para a equipe de montagem"
               items={[
-                "Imagens gerais do cliente ou da visita comercial.",
-                "Fotos de ambientes da obra ficam no projeto, não nesta galeria.",
+                "Fachada, número, portão, vaga, escadas, elevador e passagens estreitas.",
+                "Objetivo: achar a casa e saber se a entrada é fácil ou difícil.",
+                "Fotos dos ambientes (cozinha, quarto…) ficam no projeto.",
               ]}
             />
           </InfoTooltip>
@@ -262,8 +266,8 @@ export default function ClienteDocumentsTab({
 
         {photos.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl">
-            Nenhuma foto do cliente ainda. Use &quot;Tirar foto&quot; ou envie imagens
-            relacionadas ao cadastro — não às obras.
+            Nenhuma foto de acesso ainda. Tire fotos da fachada e das passagens para o montador
+            reconhecer a casa.
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
