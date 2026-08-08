@@ -13,11 +13,9 @@ import {
   MapPin,
   MessageCircle,
   Phone,
-  Sparkles,
 } from "lucide-react";
 import type { ProjectStatus } from "@/app/actions/kanban";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import {
@@ -83,19 +81,9 @@ const STATUS_OPTIONS: { id: ProjectStatus; title: string }[] = [
   { id: "PRODUCAO", title: "Produção" },
 ];
 
-const STAGE_TIPS: Record<string, string> = {
-  LEAD: "Qualifique o interesse, entenda os ambientes e sugira uma visita ou medição.",
-  ORCAMENTO: "Apresente a proposta com clareza e marque uma conversa para tirar dúvidas.",
-  NEGOCIACAO: "Foque em prazo, condições e próximo passo concreto para fechar.",
-  CONFERENCIA_TECNICA: "Valide acessos, medidas e restrições da obra. Envie o WhatsApp pedindo datas para a visita.",
-  APROVADO: "Confirme memorial e alinhamentos finais com o cliente.",
-  PRODUCAO: "Mantenha o cliente informado sobre o andamento da fabricação.",
-};
-
 interface KanbanNegotiationPanelProps {
   project: NegotiationProject;
   leadForm: NegotiationLeadForm;
-  setLeadForm: React.Dispatch<React.SetStateAction<any>>;
   editingStatusGeral: ProjectStatus;
   setEditingStatusGeral: (status: ProjectStatus) => void;
   editingObservacoes: string;
@@ -134,7 +122,6 @@ function formatAbsoluteDate(iso: string | null | undefined) {
 export default function KanbanNegotiationPanel({
   project,
   leadForm,
-  setLeadForm,
   editingStatusGeral,
   setEditingStatusGeral,
   editingObservacoes,
@@ -178,8 +165,6 @@ export default function KanbanNegotiationPanel({
   const stageTitle =
     STATUS_OPTIONS.find((o) => o.id === editingStatusGeral)?.title ||
     editingStatusGeral;
-
-  const tip = STAGE_TIPS[editingStatusGeral] || STAGE_TIPS.NEGOCIACAO;
 
   const statusSelectOptions = useMemo(() => {
     const opts = [...STATUS_OPTIONS];
@@ -416,63 +401,35 @@ export default function KanbanNegotiationPanel({
           </div>
         </section>
 
-        {/* Tip */}
-        <div className="rounded-2xl border border-slate-200/70 bg-white/60 px-3.5 py-3 flex gap-2.5">
-          <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-[12px] text-slate-700 leading-relaxed font-medium">{tip}</p>
-        </div>
-
-        {/* Valor editável + observações */}
-        {!isReadOnly || leadForm.valor_previsto ? (
-          <div className="grid grid-cols-1 gap-3">
-            {!isReadOnly ? (
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                  Ajustar valor previsto (R$)
-                </label>
-                <Input
-                  type="number"
-                  value={leadForm.valor_previsto}
-                  onChange={(e) =>
-                    setLeadForm((prev: NegotiationLeadForm) => ({
-                      ...prev,
-                      valor_previsto: e.target.value,
-                    }))
-                  }
-                  className="h-10 text-sm font-bold bg-white border-slate-200"
-                />
-              </div>
+        {/* Observações */}
+        <div>
+          <label
+            className={cn(
+              "text-[10px] font-bold uppercase tracking-wider block mb-1.5",
+              highlightObservacoes ? "text-sky-700" : "text-slate-400"
+            )}
+          >
+            Observações da negociação
+            {highlightObservacoes ? (
+              <span className="ml-1.5 normal-case tracking-normal font-semibold text-sky-600">
+                · nova
+              </span>
             ) : null}
-            <div>
-              <label
-                className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider block mb-1.5",
-                  highlightObservacoes ? "text-sky-700" : "text-slate-400"
-                )}
-              >
-                Observações da negociação
-                {highlightObservacoes ? (
-                  <span className="ml-1.5 normal-case tracking-normal font-semibold text-sky-600">
-                    · nova
-                  </span>
-                ) : null}
-              </label>
-              <textarea
-                value={editingObservacoes}
-                onChange={(e) => setEditingObservacoes(e.target.value)}
-                rows={2}
-                disabled={isReadOnly}
-                placeholder="Anotações rápidas para a próxima conversa…"
-                className={cn(
-                  "w-full p-3 text-xs bg-white rounded-xl outline-none font-medium resize-none leading-relaxed disabled:opacity-60 border",
-                  highlightObservacoes
-                    ? "border-sky-400 ring-2 ring-sky-200/70 focus:ring-sky-400/50"
-                    : "border-slate-200 focus:ring-1 focus:ring-amber-500/40"
-                )}
-              />
-            </div>
-          </div>
-        ) : null}
+          </label>
+          <textarea
+            value={editingObservacoes}
+            onChange={(e) => setEditingObservacoes(e.target.value)}
+            rows={2}
+            disabled={isReadOnly}
+            placeholder="Anotações rápidas para a próxima conversa…"
+            className={cn(
+              "w-full p-3 text-xs bg-white rounded-xl outline-none font-medium resize-none leading-relaxed disabled:opacity-60 border",
+              highlightObservacoes
+                ? "border-sky-400 ring-2 ring-sky-200/70 focus:ring-sky-400/50"
+                : "border-slate-200 focus:ring-1 focus:ring-amber-500/40"
+            )}
+          />
+        </div>
 
         {/* Timeline collapsed */}
         <div className="rounded-2xl border border-black/5 bg-white overflow-hidden">

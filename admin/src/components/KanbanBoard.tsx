@@ -2468,7 +2468,6 @@ export default function KanbanBoard({
                 <KanbanNegotiationPanel
                   project={currentProject}
                   leadForm={leadForm}
-                  setLeadForm={setLeadForm}
                   editingStatusGeral={editingStatusGeral}
                   setEditingStatusGeral={setEditingStatusGeral}
                   editingObservacoes={editingObservacoes}
