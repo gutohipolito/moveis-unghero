@@ -17,10 +17,27 @@ export type ParsedUserAgent = {
 };
 
 /** Extrai dispositivo e SO a partir do User-Agent (sem libs externas). */
-export function parseQuoteUserAgent(userAgent?: string | null): ParsedUserAgent {
+export function parseQuoteUserAgent(
+  userAgent?: string | null,
+  hints?: { mobile?: string | null; platform?: string | null }
+): ParsedUserAgent {
   const ua = userAgent?.trim() || "";
-  if (!ua) {
-    return { device: "Desktop", os: "Desconhecido", label: "Desktop · Desconhecido" };
+  const hintMobile = hints?.mobile?.trim() || "";
+  const hintPlatform = (hints?.platform?.trim() || "").replace(/"/g, "");
+
+  // Proxy antigo sem UA do visitante
+  if (!ua || /^MoveisUnghero-QuoteProxy\//i.test(ua)) {
+    if (hintMobile === "?1") {
+      const osFromHint = platformHintToOs(hintPlatform);
+      return {
+        device: "Mobile",
+        os: osFromHint,
+        label: `Mobile · ${osFromHint}`,
+      };
+    }
+    if (!ua) {
+      return { device: "Desktop", os: "Desconhecido", label: "Desktop · Desconhecido" };
+    }
   }
 
   const lower = ua.toLowerCase();
@@ -33,10 +50,22 @@ export function parseQuoteUserAgent(userAgent?: string | null): ParsedUserAgent 
   else if (/macintosh|mac os x/i.test(ua)) os = "macOS";
   else if (/linux/i.test(ua)) os = "Linux";
 
+  // Client Hint de plataforma (quando o UA está reduzido)
+  if (os === "Desconhecido" && hintPlatform) {
+    os = platformHintToOs(hintPlatform);
+  }
+
   let device: ParsedUserAgent["device"] = "Desktop";
-  if (/ipad|tablet|kindle|silk|(android(?!.*mobile))/i.test(ua)) {
+  if (hintMobile === "?1") {
+    device = "Mobile";
+  } else if (hintMobile === "?0") {
+    device = "Desktop";
+  } else if (/ipad|tablet|kindle|silk|(android(?!.*mobile))/i.test(ua)) {
     device = "Tablet";
-  } else if (/mobi|iphone|ipod|android.*mobile|windows phone|opera mini/i.test(ua) || lower.includes("mobile")) {
+  } else if (
+    /mobi|iphone|ipod|android.*mobile|windows phone|opera mini/i.test(ua) ||
+    lower.includes("mobile")
+  ) {
     device = "Mobile";
   }
 
@@ -49,6 +78,43 @@ export function parseQuoteUserAgent(userAgent?: string | null): ParsedUserAgent 
   const label = `${device} · ${os}`;
 
   return { device, os, label };
+}
+
+function platformHintToOs(platform: string): ParsedUserAgent["os"] {
+  const p = platform.toLowerCase();
+  if (p.includes("android")) return "Android";
+  if (p.includes("ios") || p.includes("iphone") || p.includes("ipad")) return "iOS";
+  if (p.includes("windows")) return "Windows";
+  if (p.includes("mac")) return "macOS";
+  if (p.includes("chrome")) return "Chrome OS";
+  if (p.includes("linux")) return "Linux";
+  return "Desconhecido";
+}
+
+/**
+ * Resolve o UA do visitante a partir dos headers da request
+ * (proxy HostGator encaminha X-Quote-Client-UA).
+ */
+export function resolveQuoteViewUserAgent(hdrs: {
+  get(name: string): string | null;
+}): {
+  userAgent: string | null;
+  hints: { mobile: string | null; platform: string | null };
+} {
+  const forwarded =
+    hdrs.get("x-quote-client-ua")?.trim() ||
+    hdrs.get("x-forwarded-user-agent")?.trim() ||
+    null;
+  const rawUa = hdrs.get("user-agent")?.trim() || null;
+  const isProxyUa = Boolean(rawUa && /^MoveisUnghero-QuoteProxy\//i.test(rawUa));
+
+  return {
+    userAgent: forwarded || (!isProxyUa ? rawUa : null) || rawUa,
+    hints: {
+      mobile: hdrs.get("sec-ch-ua-mobile"),
+      platform: hdrs.get("sec-ch-ua-platform"),
+    },
+  };
 }
 
 export type QuoteViewStats = {
@@ -132,11 +198,12 @@ function formatRelativeShort(iso: string): string {
 /** Registra abertura do link público. Ignora falhas para não quebrar a página do cliente. */
 export async function recordQuotePublicView(
   quoteId: string,
-  userAgent?: string | null
+  userAgent?: string | null,
+  hints?: { mobile?: string | null; platform?: string | null }
 ): Promise<void> {
   try {
     const isPreview = isQuoteLinkPreviewAgent(userAgent);
-    const parsed = parseQuoteUserAgent(userAgent);
+    const parsed = parseQuoteUserAgent(userAgent, hints);
     const now = new Date();
 
     await prisma.$transaction([

@@ -8,7 +8,7 @@ import { getFirstName } from "@/lib/google-review";
 import { loadPublicQuoteByShareCode } from "@/lib/quotePublicShare";
 import { isQuoteShareUnlocked } from "@/lib/quoteShareAccess";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
-import { recordQuotePublicView } from "@/lib/quoteViewTracking";
+import { recordQuotePublicView, resolveQuoteViewUserAgent } from "@/lib/quoteViewTracking";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +52,8 @@ export default async function PublicQuotePage({ params }: PublicQuotePageProps) 
   }
 
   const hdrs = await headers();
-  await recordQuotePublicView(data.quoteId, hdrs.get("user-agent"));
+  const { userAgent, hints } = resolveQuoteViewUserAgent(hdrs);
+  await recordQuotePublicView(data.quoteId, userAgent, hints);
 
   return (
     <QuotePrintDocument

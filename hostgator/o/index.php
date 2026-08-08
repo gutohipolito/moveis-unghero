@@ -13,6 +13,44 @@
 const QUOTE_ADMIN_BASE = 'https://admin.moveisunghero.com.br';
 const QUOTE_UNLOCK_COOKIE_PREFIX = 'qo_';
 const QUOTE_UNLOCK_MAX_AGE = 60 * 60 * 24 * 14;
+const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.5';
+
+/**
+ * UA do visitante (celular/desktop) — sem isso o admin registra tudo como Desktop.
+ * Remove CR/LF para evitar injeção de cabeçalho.
+ */
+function quote_client_user_agent(): string
+{
+    $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    $ua = preg_replace('/[\r\n]+/', ' ', $ua) ?? '';
+    $ua = trim($ua);
+    if ($ua === '' || strlen($ua) > 500) {
+        return QUOTE_PROXY_UA;
+    }
+    return $ua;
+}
+
+/** Cabeçalhos comuns do proxy: UA real + identificação do proxy. */
+function quote_proxy_headers(array $extra = []): array
+{
+    $clientUa = quote_client_user_agent();
+    $headers = [
+        'User-Agent: ' . $clientUa,
+        'X-Quote-Proxy: ' . QUOTE_PROXY_UA,
+        'X-Quote-Client-UA: ' . $clientUa,
+    ];
+
+    $chMobile = (string) ($_SERVER['HTTP_SEC_CH_UA_MOBILE'] ?? '');
+    $chPlatform = (string) ($_SERVER['HTTP_SEC_CH_UA_PLATFORM'] ?? '');
+    if ($chMobile !== '') {
+        $headers[] = 'Sec-CH-UA-Mobile: ' . preg_replace('/[\r\n]+/', '', $chMobile);
+    }
+    if ($chPlatform !== '') {
+        $headers[] = 'Sec-CH-UA-Platform: ' . preg_replace('/[\r\n]+/', '', $chPlatform);
+    }
+
+    return array_merge($headers, $extra);
+}
 
 function quote_share_code(): ?string
 {
@@ -38,10 +76,11 @@ function quote_cookie_name(string $code): string
 function quote_http_json(string $url, string $method = 'GET', ?array $body = null, array $extraHeaders = []): array
 {
     $ch = curl_init($url);
-    $headers = array_merge([
-        'Accept: application/json',
-        'User-Agent: MoveisUnghero-QuoteProxy/1.4',
-    ], $extraHeaders);
+    $headers = array_merge(
+        ['Accept: application/json'],
+        quote_proxy_headers($extraHeaders)
+    );
+
     $opts = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
@@ -253,10 +292,10 @@ if ($requiresPin) {
 $source = QUOTE_ADMIN_BASE . '/o/' . rawurlencode($code);
 
 $ch = curl_init($source);
-$fetchHeaders = [
-    'Accept: text/html,application/xhtml+xml',
-    'User-Agent: MoveisUnghero-QuoteProxy/1.4',
-];
+$fetchHeaders = array_merge(
+    ['Accept: text/html,application/xhtml+xml'],
+    quote_proxy_headers()
+);
 if ($requiresPin && $unlockToken !== '') {
     $fetchHeaders[] = 'X-Quote-Share-Unlock: ' . $unlockToken;
 }
