@@ -56,3 +56,15 @@ export function quoteCommercialLabel(summary: ReturnType<typeof summarizeQuoteIt
   }
   return "Em aberto";
 }
+
+/**
+ * "Vencido" só quando a validade passou e ainda não houve nenhuma aprovação.
+ * Com item aprovado, o status comercial passa a ser parcial/aprovado — o operador
+ * atualiza valores se precisar ao reabrir o projeto.
+ */
+export function isQuoteCommerciallyExpired(
+  validadePast: boolean,
+  summary: Pick<ReturnType<typeof summarizeQuoteItems>, "hasApproved" | "hasPending">
+): boolean {
+  return validadePast && !summary.hasApproved && summary.hasPending;
+}

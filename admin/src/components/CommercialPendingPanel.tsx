@@ -12,13 +12,7 @@ import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePermissions } from "@/context/PermissionsContext";
-
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(val);
-}
+import { isQuoteCommerciallyExpired } from "@/lib/quoteApproval";
 
 function isExpired(dateInput: string) {
   return toISODateBR(dateInput) < toISODateBR();
@@ -86,12 +80,22 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {quotes.map((q) => {
           const expired = isExpired(q.validade);
+          const isPartial = q.approvedCount > 0;
+          const commerciallyExpired = isQuoteCommerciallyExpired(expired, {
+            hasApproved: isPartial,
+            hasPending: q.pendingCount > 0,
+          });
+
+          const cardTone = isPartial
+            ? "border-amber-300 bg-amber-500/10"
+            : commerciallyExpired
+              ? "border-rose-300 bg-rose-500/10"
+              : "border-amber-200 bg-white";
+
           return (
             <div
               key={q.id}
-              className={`rounded-[var(--radius-md)] border bg-white p-4 shadow-xs space-y-3 ${
-                expired ? "border-rose-300" : "border-amber-200"
-              }`}
+              className={`rounded-[var(--radius-md)] border p-4 shadow-xs space-y-3 ${cardTone}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -101,23 +105,19 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
                     {q.project.status_geral.replace(/_/g, " ")}
                   </p>
                 </div>
-                <span
-                  className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                    expired
-                      ? "bg-rose-100 text-rose-700"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {expired ? (
-                    <>
-                      <AlertTriangle className="h-3 w-3" /> Vencido
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="h-3 w-3" /> Pendente
-                    </>
-                  )}
-                </span>
+                {isPartial ? (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900">
+                    Aprovação parcial
+                  </span>
+                ) : commerciallyExpired ? (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                    <AlertTriangle className="h-3 w-3" /> Vencido
+                  </span>
+                ) : (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                    <Clock className="h-3 w-3" /> Pendente
+                  </span>
+                )}
               </div>
 
               <div className="text-sm space-y-1">
@@ -129,12 +129,14 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
                   <span className="text-muted-foreground">Ainda pendente</span>
                   <strong className="text-amber-800"><PrivacyMoney value={q.pendingTotal} /></strong>
                 </div>
-                <div className="flex justify-between text-xs pt-1">
-                  <span className="text-muted-foreground">Validade</span>
-                  <span className={expired ? "text-rose-700 font-semibold" : ""}>
-                    {formatDateBR(q.validade)}
-                  </span>
-                </div>
+                {!isPartial ? (
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-muted-foreground">Validade</span>
+                    <span className={commerciallyExpired ? "text-rose-700 font-semibold" : ""}>
+                      {formatDateBR(q.validade)}
+                    </span>
+                  </div>
+                ) : null}
               </div>
 
               <ul className="text-xs text-muted-foreground space-y-0.5 max-h-20 overflow-y-auto">
@@ -148,24 +150,28 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
               </ul>
 
               <div className="flex flex-wrap gap-2 pt-1">
-                <Button
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
-                  onClick={() => setApprovalQuote(q)}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                  Registrar aprovação
-                </Button>
-                <Link href={`/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`}>
+                {!isReadOnly ? (
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="border-amber-300 text-amber-800 h-8"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
+                    onClick={() => setApprovalQuote(q)}
                   >
-                    <PencilLine className="h-3.5 w-3.5 mr-1.5" />
-                    Editar proposta
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                    Registrar aprovação
                   </Button>
-                </Link>
+                ) : null}
+                {!isReadOnly ? (
+                  <Link href={`/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-300 text-amber-800 h-8"
+                    >
+                      <PencilLine className="h-3.5 w-3.5 mr-1.5" />
+                      Editar proposta
+                    </Button>
+                  </Link>
+                ) : null}
                 <Link href={`/quotes/${q.id}/print`} target="_blank">
                   <Button size="sm" variant="outline" className="h-8">
                     <Printer className="h-3.5 w-3.5" />

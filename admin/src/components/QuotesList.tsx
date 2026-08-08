@@ -49,7 +49,11 @@ import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
+import {
+  summarizeQuoteItems,
+  quoteCommercialLabel,
+  isQuoteCommerciallyExpired,
+} from "@/lib/quoteApproval";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
@@ -348,13 +352,14 @@ export default function QuotesList({
         status: i.status,
       }))
     );
+    const commerciallyExpired = isQuoteCommerciallyExpired(expired, summary);
     const matchesStatus =
       filterStatus === "ALL" ||
       (filterStatus === "APPROVED" &&
         (summary.isFullyApproved || (Boolean(q.aprovado_em) && !summary.hasPending))) ||
       (filterStatus === "PARTIAL" && summary.isPartiallyApproved) ||
-      (filterStatus === "ACTIVE" && !expired && summary.hasPending) ||
-      (filterStatus === "EXPIRED" && expired && summary.hasPending);
+      (filterStatus === "ACTIVE" && !commerciallyExpired && summary.hasPending && !summary.hasApproved) ||
+      (filterStatus === "EXPIRED" && commerciallyExpired);
 
     const createdKey = q.createdAt ? toISODateBR(q.createdAt) : "";
     const matchesCreatedFrom = !createdFrom || (createdKey !== "" && createdKey >= createdFrom);
@@ -391,7 +396,7 @@ export default function QuotesList({
         );
         if (summary.isFullyApproved || (Boolean(q.aprovado_em) && !summary.hasPending)) return 4;
         if (summary.isPartiallyApproved) return 3;
-        if (isExpired(q.validade)) return 1;
+        if (isQuoteCommerciallyExpired(isExpired(q.validade), summary)) return 1;
         return 2;
       };
       valA = getStatusPriority(a);
@@ -757,15 +762,25 @@ export default function QuotesList({
                   const isFullyApproved =
                     summary.isFullyApproved || (Boolean(q.aprovado_em) && !hasPending);
                   const statusLabel = quoteCommercialLabel(summary);
-                  // Validade só importa enquanto ainda há o que aprovar.
-                  const rowExpired = expired && hasPending && !isFullyApproved;
-                  const nearDanger = hasPending && !expired && daysLeft <= 3;
-                  const nearWarning = hasPending && !expired && daysLeft > 3 && daysLeft <= 7;
+                  // Vencido só sem nenhuma aprovação; parcial não herda "vencido".
+                  const rowExpired = isQuoteCommerciallyExpired(expired, summary);
+                  const nearDanger =
+                    hasPending && !summary.hasApproved && !expired && daysLeft <= 3;
+                  const nearWarning =
+                    hasPending && !summary.hasApproved && !expired && daysLeft > 3 && daysLeft <= 7;
 
                   let dateClass = "text-slate-600";
                   if (rowExpired) dateClass = "text-rose-700 font-bold";
                   else if (nearDanger) dateClass = "text-rose-600 font-bold";
                   else if (nearWarning) dateClass = "text-amber-600 font-bold";
+
+                  const rowTone = isFullyApproved
+                    ? "bg-emerald-500/10"
+                    : isPartial
+                      ? "bg-amber-500/10"
+                      : rowExpired
+                        ? "bg-rose-500/10"
+                        : undefined;
 
                   const rowActions: RowActionItem[] = [];
                   if (!isReadOnly && hasPending) {
@@ -833,7 +848,7 @@ export default function QuotesList({
                   return (
                     <tr
                       key={q.id}
-                      className={rowExpired ? "bg-rose-500/10" : undefined}
+                      className={rowTone}
                       style={{ WebkitTapHighlightColor: "transparent" }}
                     >
                       <td className="py-3 px-3 text-sm font-medium text-slate-700 whitespace-nowrap">
@@ -860,8 +875,8 @@ export default function QuotesList({
                           {q.project.client.bairro || "Não informado"}
                         </span>
                       </td>
-                      <td className={`py-3 px-3 text-sm whitespace-nowrap ${!hasPending || isFullyApproved ? "text-slate-400" : dateClass}`}>
-                        {!hasPending || isFullyApproved ? (
+                      <td className={`py-3 px-3 text-sm whitespace-nowrap ${!hasPending || isFullyApproved || isPartial ? "text-slate-400" : dateClass}`}>
+                        {!hasPending || isFullyApproved || isPartial ? (
                           <span className="text-slate-400">—</span>
                         ) : (
                           <span className="inline-flex items-center gap-1">
@@ -881,28 +896,22 @@ export default function QuotesList({
                       </td>
                       <td className="py-3 px-3 text-sm min-w-0 whitespace-nowrap">
                         {isFullyApproved ? (
-                          <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-700 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                          <span className="inline-flex items-center gap-1 bg-emerald-600/15 text-emerald-800 px-2 py-0.5 rounded-full text-[11px] font-bold">
                             ✓ Aprovado
                           </span>
                         ) : isPartial ? (
                           <span className="inline-flex flex-col items-start gap-0.5 min-w-0">
-                            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-900 px-2 py-0.5 rounded-full text-[11px] font-bold">
                               {statusLabel}
                             </span>
-                            <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                            <span className="text-[10px] text-amber-900/70 inline-flex items-center gap-1">
                               <PrivacyMoney value={summary.approvedTotal} /> aprov.
-                              {rowExpired ? (
-                                <span className="text-rose-600 font-semibold">· pend. vencido</span>
-                              ) : (
-                                <>
-                                  {" "}
-                                  · <PrivacyMoney value={summary.pendingTotal} /> pend.
-                                </>
-                              )}
+                              {" "}
+                              · <PrivacyMoney value={summary.pendingTotal} /> pend.
                             </span>
                           </span>
-                        ) : expired ? (
-                          <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded-full text-[11px] font-medium">
+                        ) : rowExpired ? (
+                          <span className="inline-flex items-center gap-1 bg-rose-500/15 text-rose-700 px-2 py-0.5 rounded-full text-[11px] font-medium">
                             <AlertTriangle className="h-3 w-3 shrink-0" />
                             Vencido
                           </span>

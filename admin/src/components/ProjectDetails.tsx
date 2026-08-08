@@ -26,7 +26,11 @@ import type { QuoteBuilderEditingQuote } from "@/components/QuoteBuilder";
 import type { ReceiptIssuePrefill } from "@/components/finance/ReceiptIssueDialog";
 import type { ConfTecnicaWhatsAppTarget } from "@/components/ConfTecnicaWhatsAppDialog";
 import type { EnvironmentGalleryTarget } from "@/components/EnvironmentGalleryModal";
-import { summarizeQuoteItems, quoteCommercialLabel } from "@/lib/quoteApproval";
+import {
+  summarizeQuoteItems,
+  quoteCommercialLabel,
+  isQuoteCommerciallyExpired,
+} from "@/lib/quoteApproval";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import SlaRadar from "@/components/SlaRadar";
 import ClientConsentCard from "@/components/clientes/ClientConsentCard";
@@ -1789,6 +1793,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       const isPartial = summary.isPartiallyApproved;
                       const hasPending = summary.hasPending;
                       const statusLabel = quoteCommercialLabel(summary);
+                      const commerciallyExpired = isQuoteCommerciallyExpired(
+                        toISODateBR(q.validade) < toISODateBR(),
+                        summary
+                      );
                       const isApproving = approvingQuoteId === q.id;
                       const viewStats = toQuoteViewStats(q);
                       const viewLabel = formatQuoteViewLabel(viewStats);
@@ -1801,7 +1809,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             ? "border-2 border-emerald-500 bg-emerald-50/60 shadow-sm shadow-emerald-500/10"
                             : isPartial
                               ? "border-2 border-amber-400 bg-amber-50/50"
-                              : "hover:bg-slate-100"
+                              : commerciallyExpired
+                                ? "border-2 border-rose-400 bg-rose-50/60"
+                                : "hover:bg-slate-100"
                         }`}
                       >
                         <div className="space-y-1.5 flex-1">
@@ -1819,6 +1829,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             ) : isPartial ? (
                               <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-white">
                                 {statusLabel}
+                              </span>
+                            ) : commerciallyExpired ? (
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-rose-600 text-white">
+                                Vencido
                               </span>
                             ) : (
                               <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-semibold">
