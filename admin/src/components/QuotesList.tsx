@@ -58,12 +58,26 @@ import {
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
 const STATUS_FILTER_OPTIONS = [
-  { value: "ALL", label: "Todos" },
-  { value: "ACTIVE", label: "Ativos" },
-  { value: "EXPIRED", label: "Vencidos" },
-  { value: "APPROVED", label: "Aprovados" },
-  { value: "PARTIAL", label: "Parciais" },
+  { value: "ALL", label: "Todos", tone: "slate" },
+  { value: "ACTIVE", label: "Ativos", tone: "slate" },
+  { value: "EXPIRED", label: "Vencidos", tone: "rose" },
+  { value: "APPROVED", label: "Aprovados", tone: "emerald" },
+  { value: "PARTIAL", label: "Parciais", tone: "amber" },
 ] as const;
+
+const FILTER_TONE_ACTIVE: Record<(typeof STATUS_FILTER_OPTIONS)[number]["tone"], string> = {
+  slate: "btn-filter-slate",
+  emerald: "btn-filter-emerald",
+  rose: "btn-filter-rose",
+  amber: "btn-filter-amber",
+};
+
+const FILTER_TONE_IDLE: Record<(typeof STATUS_FILTER_OPTIONS)[number]["tone"], string> = {
+  slate: "btn-filter-idle-slate",
+  emerald: "btn-filter-idle-emerald",
+  rose: "btn-filter-idle-rose",
+  amber: "btn-filter-idle-amber",
+};
 
 const SORT_OPTIONS = [
   { key: "client", label: "Cliente" },
@@ -481,69 +495,73 @@ export default function QuotesList({
           />
         </div>
 
-        {/* Mobile: status / ordenar / datas em controles compactos */}
+        {/* Mobile: status em botões + ordenar / datas compactos */}
         <div className="md:hidden space-y-2.5">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1 min-w-0">
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                Status
-              </label>
-              <Select
-                value={filterStatus}
-                onChange={(e) =>
-                  setFilterStatus(
-                    e.target.value as "ALL" | "ACTIVE" | "EXPIRED" | "APPROVED" | "PARTIAL"
-                  )
-                }
-                className="h-10 bg-slate-50 border-slate-200"
-              >
-                {STATUS_FILTER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="space-y-1 min-w-0">
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                Organizar
-              </label>
-              <div className="flex gap-1.5 min-w-0">
-                <div className="min-w-0 flex-1">
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => {
-                      const next = e.target.value as typeof sortBy;
-                      setSortBy(next);
-                      setSortOrder("asc");
-                    }}
-                    className="h-10 bg-slate-50 border-slate-200"
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Status
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_FILTER_OPTIONS.map((opt) => {
+                const active = filterStatus === opt.value;
+                return (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      active
+                        ? FILTER_TONE_ACTIVE[opt.tone]
+                        : FILTER_TONE_IDLE[opt.tone]
+                    }
+                    onClick={() => setFilterStatus(opt.value)}
                   >
-                    {SORT_OPTIONS.map((opt) => (
-                      <option key={opt.key} value={opt.key}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 w-10 shrink-0 px-0 border-slate-200"
-                  title={
-                    sortOrder === "asc" ? "Ordem crescente" : "Ordem decrescente"
-                  }
-                  onClick={() =>
-                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
-                  }
+                    {opt.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="space-y-1 min-w-0">
+            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Organizar
+            </label>
+            <div className="flex gap-1.5 min-w-0">
+              <div className="min-w-0 flex-1">
+                <Select
+                  value={sortBy}
+                  onChange={(e) => {
+                    const next = e.target.value as typeof sortBy;
+                    setSortBy(next);
+                    setSortOrder("asc");
+                  }}
+                  className="h-10 bg-slate-50 border-slate-200"
                 >
-                  {sortOrder === "asc" ? (
-                    <ArrowUpAZ className="h-4 w-4" />
-                  ) : (
-                    <ArrowDownZA className="h-4 w-4" />
-                  )}
-                </Button>
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 w-10 shrink-0 px-0 border-slate-200"
+                title={
+                  sortOrder === "asc" ? "Ordem crescente" : "Ordem decrescente"
+                }
+                onClick={() =>
+                  setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+                }
+              >
+                {sortOrder === "asc" ? (
+                  <ArrowUpAZ className="h-4 w-4" />
+                ) : (
+                  <ArrowDownZA className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
 
@@ -616,28 +634,17 @@ export default function QuotesList({
           <div className="flex flex-wrap gap-2">
             {STATUS_FILTER_OPTIONS.map((opt) => {
               const active = filterStatus === opt.value;
-              const activeClass =
-                opt.value === "ALL"
-                  ? "bg-slate-800 hover:bg-slate-700 text-white"
-                  : opt.value === "ACTIVE"
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : opt.value === "EXPIRED"
-                      ? "bg-rose-600 hover:bg-rose-700 text-white"
-                      : opt.value === "APPROVED"
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                        : "bg-amber-600 hover:bg-amber-700 text-white";
-              const idleClass =
-                opt.value === "APPROVED"
-                  ? "border-slate-200 text-indigo-600 hover:bg-indigo-50"
-                  : opt.value === "PARTIAL"
-                    ? "border-slate-200 text-amber-700 hover:bg-amber-50"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50";
               return (
                 <Button
                   key={opt.value}
-                  variant={active ? "default" : "outline"}
-                  className={active ? activeClass : idleClass}
+                  type="button"
+                  variant="ghost"
                   size="sm"
+                  className={
+                    active
+                      ? FILTER_TONE_ACTIVE[opt.tone]
+                      : FILTER_TONE_IDLE[opt.tone]
+                  }
                   onClick={() => setFilterStatus(opt.value)}
                 >
                   {opt.label}
