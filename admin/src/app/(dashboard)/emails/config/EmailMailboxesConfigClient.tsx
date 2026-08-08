@@ -332,7 +332,7 @@ export default function EmailMailboxesConfigClient({
                 value={form.displayName}
                 onChange={(e) => setForm({ ...form, displayName: e.target.value })}
                 className="h-9"
-                placeholder="Comercial Unghero"
+                placeholder="Comercial Móveis Unghero"
               />
             </div>
             <div className="sm:col-span-2">
@@ -407,7 +407,7 @@ export default function EmailMailboxesConfigClient({
                     })
                   }
                 >
-                  Usar modelo Unghero
+                  Usar modelo Móveis Unghero
                 </button>
               </div>
               {form.signatureText ? (
@@ -425,7 +425,7 @@ export default function EmailMailboxesConfigClient({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground rounded-md border border-dashed border-border/60 px-3 py-4">
-                  Nenhuma assinatura. Clique em <span className="font-medium text-foreground">Usar modelo Unghero</span> para aplicar o layout com logo e ícones.
+                  Nenhuma assinatura. Clique em <span className="font-medium text-foreground">Usar modelo Móveis Unghero</span> para aplicar o layout com logo e ícones.
                 </p>
               )}
               <details className="text-xs">

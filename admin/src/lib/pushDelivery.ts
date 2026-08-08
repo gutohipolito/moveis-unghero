@@ -141,7 +141,7 @@ export async function sendTestPushToUser(userId: string): Promise<boolean> {
       type: "info",
       priority: "normal",
       title: "Push mobile ativo",
-      message: "Você receberá alertas do Móveis Unghero mesmo com o app fechado.",
+      message: "Você receberá alertas da Móveis Unghero mesmo com o app fechado.",
       href: "/",
       createdAt: new Date().toISOString(),
     },

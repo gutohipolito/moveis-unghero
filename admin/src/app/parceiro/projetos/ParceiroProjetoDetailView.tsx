@@ -69,8 +69,8 @@ function formatBytes(bytes: number | null) {
 const TAB_HINTS: Record<TabId, string> = {
   resumo: "Etapa, contato do cliente e ambientes do projeto.",
   orcamentos: "PDFs de orçamento disponíveis para consulta.",
-  arquivos: "Envie plantas e referências — a Unghero vê no CRM.",
-  notas: "Observações visíveis para a equipe Unghero.",
+  arquivos: "Envie plantas e referências — a Móveis Unghero vê no CRM.",
+  notas: "Observações visíveis para a equipe da Móveis Unghero.",
 };
 
 type Props = {
@@ -187,7 +187,7 @@ export default function ParceiroProjetoDetailView({
                   items={[
                     "Resumo com etapa, contato e ambientes",
                     "PDFs de orçamento quando disponíveis",
-                    "Arquivos e notas compartilhados com a Unghero",
+                    "Arquivos e notas compartilhados com a Móveis Unghero",
                     "O valor comercial aparece a partir da aprovação do orçamento",
                   ]}
                 />
@@ -377,7 +377,7 @@ export default function ParceiroProjetoDetailView({
         <div className="space-y-3">
           <div className={cn("parceiro-panel space-y-3", !compact && "p-5")}>
             <p className="text-sm text-stone-600">
-              Envie plantas e referências — a equipe Unghero também vê no CRM.
+              Envie plantas e referências — a equipe da Móveis Unghero também vê no CRM.
             </p>
             <input
               ref={fileRef}
@@ -447,7 +447,7 @@ export default function ParceiroProjetoDetailView({
               value={noteBody}
               onChange={(e) => setNoteBody(e.target.value.slice(0, 4000))}
               rows={compact ? 3 : 4}
-              placeholder="Observação para a equipe Unghero..."
+              placeholder="Observação para a equipe da Móveis Unghero..."
               className="w-full border border-stone-200 bg-white rounded-xl text-sm p-3.5 focus:outline-none focus:ring-1 focus:ring-stone-400 font-medium text-slate-900 placeholder:text-stone-400"
             />
             <button

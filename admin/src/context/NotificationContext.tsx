@@ -488,7 +488,7 @@ export function NotificationProvider({
         type: "info",
         priority: "normal",
         title: "Alertas ativos",
-        message: "Você receberá avisos do Móveis Unghero neste navegador.",
+        message: "Você receberá avisos da Móveis Unghero neste navegador.",
         href: "/crm",
         createdAt: new Date().toISOString(),
       },

@@ -175,7 +175,7 @@ export default function ParceiroProjetosClient({
                 items={[
                   "Toque em um card para ver detalhes, PDFs, arquivos e notas",
                   "O valor comercial só aparece depois da aprovação do orçamento",
-                  "Arquivos e notas ficam visíveis também para a equipe Unghero",
+                  "Arquivos e notas ficam visíveis também para a equipe da Móveis Unghero",
                 ]}
               />
             </InfoTooltip>
@@ -221,7 +221,7 @@ export default function ParceiroProjetosClient({
               Nenhum projeto ainda
             </h2>
             <p className="text-sm text-slate-600 mt-2 max-w-md mx-auto leading-relaxed">
-              Quando um cliente usar seu link de indicação ou a Unghero vincular um projeto, ele
+              Quando um cliente usar seu link de indicação ou a Móveis Unghero vincular um projeto, ele
               aparece aqui.
             </p>
           </div>

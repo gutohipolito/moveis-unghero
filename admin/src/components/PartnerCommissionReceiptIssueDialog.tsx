@@ -139,7 +139,7 @@ export default function PartnerCommissionReceiptIssueDialog({
         {step === "nf" && (
           <>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Informe a nota fiscal da Unghero referente a este pagamento de comissão. Os dados
+              Informe a nota fiscal da Móveis Unghero referente a este pagamento de comissão. Os dados
               entram no documento enviado ao parceiro.
             </p>
             <div className="space-y-3">

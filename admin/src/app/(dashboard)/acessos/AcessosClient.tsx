@@ -532,7 +532,7 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
                 required
                 value={form.titulo}
                 onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
-                placeholder="Ex.: HostGator, Gmail Unghero…"
+                placeholder="Ex.: HostGator, Gmail Móveis Unghero…"
               />
             </Field>
 

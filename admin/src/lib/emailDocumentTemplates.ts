@@ -220,7 +220,7 @@ export function buildReceiptEmailVars(input: {
   };
 }
 
-/** Template salvo da empresa ou padrão Unghero. */
+/** Template salvo da empresa ou padrão Móveis Unghero. */
 export async function loadCompanyDocumentTemplate(
   companyId: string,
   type: EmailDocumentTemplateType

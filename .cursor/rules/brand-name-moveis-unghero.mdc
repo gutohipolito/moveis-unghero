@@ -1,0 +1,27 @@
+---
+description: Nome oficial da empresa — sempre "Móveis Unghero"
+alwaysApply: true
+---
+
+# Nome da empresa
+
+O nome oficial da empresa é **Móveis Unghero**.
+
+## Obrigatório
+
+- Em qualquer texto voltado ao usuário (UI, tooltips, e-mails, WhatsApp, placeholders, metadados, rodapés, alt de logo), use **Móveis Unghero**.
+- Não use formas abreviadas como "Unghero", "a Unghero", "equipe Unghero", "modelo Unghero" quando a referência for à empresa.
+- Prefira formulações completas: "a Móveis Unghero", "equipe da Móveis Unghero", "modelo Móveis Unghero".
+
+## Exceções (não alterar)
+
+- Nomes de pessoas (ex.: Mareli Unghero, Cladenir Unghero)
+- "Família Unghero" quando for o conceito editorial/site institucional
+- Identificadores técnicos (User-Agent, nomes de função/variável, chaves internas) já existentes
+
+## Exemplos
+
+- Errado: "Observação para a equipe Unghero"
+- Certo: "Observação para a equipe da Móveis Unghero"
+- Errado: "aguarde a Unghero vincular"
+- Certo: "aguarde a Móveis Unghero vincular"
