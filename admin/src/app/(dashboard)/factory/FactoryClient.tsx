@@ -536,15 +536,15 @@ export default function FactoryClient({
                     toggleStackExpand(options.stackKey!);
                   }}
                   className={cn(
-                    "rounded-md transition-all cursor-pointer",
-                    compactBoard ? "p-1 min-h-9 min-w-9 inline-flex items-center justify-center" : "p-1.5",
+                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center",
+                    compactBoard ? "p-0.5 h-6 w-6" : "p-1.5",
                     clientColor.soft,
                     clientColor.text,
                     `hover:ring-1 ${clientColor.ring}`
                   )}
                   title="Expandir ou recolher pilha"
                 >
-                  <Layers className={compactBoard ? "h-3.5 w-3.5" : "h-3.5 w-3.5"} />
+                  <Layers className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
                 </button>
               )}
               <button
@@ -555,8 +555,8 @@ export default function FactoryClient({
                   toggleCardCollapse(item.id);
                 }}
                 className={cn(
-                  "rounded-md transition-all cursor-pointer",
-                  compactBoard ? "p-1 min-h-9 min-w-9 inline-flex items-center justify-center" : "p-1.5",
+                  "rounded-md transition-all cursor-pointer inline-flex items-center justify-center",
+                  compactBoard ? "p-0.5 h-6 w-6" : "p-1.5",
                   clientColor.soft,
                   clientColor.text,
                   `hover:ring-1 ${clientColor.ring}`
@@ -564,9 +564,9 @@ export default function FactoryClient({
                 title={isCollapsed ? "Expandir card" : "Recolher card"}
               >
                 {isCollapsed ? (
-                  <ChevronDown className="h-3.5 w-3.5" />
+                  <ChevronDown className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
                 ) : (
-                  <ChevronUp className="h-3.5 w-3.5" />
+                  <ChevronUp className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
                 )}
               </button>
 
@@ -579,15 +579,15 @@ export default function FactoryClient({
                     handleMoveRight(item);
                   }}
                   className={cn(
-                    "rounded-md transition-all cursor-pointer",
-                    compactBoard ? "p-1 min-h-9 min-w-9 inline-flex items-center justify-center" : "p-1.5",
+                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center",
+                    compactBoard ? "p-0.5 h-6 w-6" : "p-1.5",
                     clientColor.soft,
                     clientColor.text,
                     `hover:ring-1 ${clientColor.ring}`
                   )}
                   title="Avançar etapa de produção"
                 >
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
                 </button>
               )}
             </div>
@@ -785,13 +785,16 @@ export default function FactoryClient({
                     <button
                       type="button"
                       onClick={() => toggleColumnCollapse(col.id, colItemIds)}
-                      className="p-1 min-h-9 min-w-9 inline-flex items-center justify-center rounded-md bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-md bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
+                        compactBoard ? "h-6 w-6 p-0.5" : "h-7 w-7 p-1"
+                      )}
                       title={allColCollapsed ? "Expandir todos os cards" : "Recolher todos os cards"}
                     >
                       {allColCollapsed ? (
-                        <ChevronsUpDown className="h-3.5 w-3.5" />
+                        <ChevronsUpDown className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
                       ) : (
-                        <ChevronsDownUp className="h-3.5 w-3.5" />
+                        <ChevronsDownUp className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
                       )}
                     </button>
                   )}
