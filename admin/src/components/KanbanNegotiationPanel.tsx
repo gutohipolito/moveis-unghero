@@ -116,6 +116,8 @@ interface KanbanNegotiationPanelProps {
   whatsappHref: string | null;
   /** Sem abas no topo: reserva espaço sob o X de fechar no mobile. */
   reserveCloseSpace?: boolean;
+  /** Destaca o campo de observações (ex.: observação não lida). */
+  highlightObservacoes?: boolean;
 }
 
 function formatAbsoluteDate(iso: string | null | undefined) {
@@ -152,6 +154,7 @@ export default function KanbanNegotiationPanel({
   displayEmail,
   whatsappHref,
   reserveCloseSpace = false,
+  highlightObservacoes = false,
 }: KanbanNegotiationPanelProps) {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const sensitive = useSensitiveDisplay();
@@ -441,8 +444,18 @@ export default function KanbanNegotiationPanel({
               </div>
             ) : null}
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+              <label
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider block mb-1.5",
+                  highlightObservacoes ? "text-sky-700" : "text-slate-400"
+                )}
+              >
                 Observações da negociação
+                {highlightObservacoes ? (
+                  <span className="ml-1.5 normal-case tracking-normal font-semibold text-sky-600">
+                    · nova
+                  </span>
+                ) : null}
               </label>
               <textarea
                 value={editingObservacoes}
@@ -450,7 +463,12 @@ export default function KanbanNegotiationPanel({
                 rows={2}
                 disabled={isReadOnly}
                 placeholder="Anotações rápidas para a próxima conversa…"
-                className="w-full p-3 text-xs bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-amber-500/40 outline-none font-medium resize-none leading-relaxed disabled:opacity-60"
+                className={cn(
+                  "w-full p-3 text-xs bg-white rounded-xl outline-none font-medium resize-none leading-relaxed disabled:opacity-60 border",
+                  highlightObservacoes
+                    ? "border-sky-400 ring-2 ring-sky-200/70 focus:ring-sky-400/50"
+                    : "border-slate-200 focus:ring-1 focus:ring-amber-500/40"
+                )}
               />
             </div>
           </div>

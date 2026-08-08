@@ -1276,9 +1276,14 @@ export default function KanbanBoard({
     const canDragCard =
       canMoveCards && boardView === "funil" && !isMobile;
 
+    const showUnreadNote = Boolean(project.hasUnreadNote && !isOpsLimited);
+
     return (
       <div
         key={project.id}
+        className={showUnreadNote ? "kanban-card-unread-wrap" : undefined}
+      >
+      <div
         draggable={canDragCard}
         onDragStart={(e) => handleDragStart(e, project.id)}
         onDragEnd={handleDragEnd}
@@ -1292,25 +1297,13 @@ export default function KanbanBoard({
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
         } ${followLevel === "ok" || isOpsLimited ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${
-          project.hasUnreadNote && !isOpsLimited
-            ? "bg-sky-50/90 border-sky-300/80 ring-1 ring-sky-200/70 shadow-[0_0_0_1px_rgba(125,211,252,0.35)]"
+          showUnreadNote
+            ? "bg-sky-50/90 border-sky-400 ring-1 ring-sky-300/60"
             : ""
         } ${
           project.status_geral === "PRODUCAO" ? "opacity-45 grayscale-[30%] bg-slate-50/70 border-slate-300" : ""
         }`}
       >
-        {project.hasUnreadNote && !isOpsLimited ? (
-          <span
-            className="absolute -top-1.5 -right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-white shadow-md ring-2 ring-white"
-            title={
-              project.obs_updated_by_name
-                ? `Nova observação de ${project.obs_updated_by_name}`
-                : "Nova observação no card"
-            }
-          >
-            <BellRing className="h-3 w-3" aria-hidden />
-          </span>
-        ) : null}
         <div className="space-y-[var(--space-2)]">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1.5">
@@ -1354,7 +1347,7 @@ export default function KanbanBoard({
               ) : null}
             </div>
 
-            <div className="flex items-start gap-1.5 shrink-0">
+            <div className="flex items-start gap-1 shrink-0">
               {(project.conf_tecnica_resp1Nome || project.conf_tecnica_resp2Nome) &&
                 (project.status_geral === "APROVADO" ||
                   project.status_geral === "CONFERENCIA_TECNICA" ||
@@ -1384,6 +1377,19 @@ export default function KanbanBoard({
                     )}
                   </div>
                 )}
+              {showUnreadNote ? (
+                <span
+                  className="inline-flex p-1.5 rounded-md bg-sky-100 text-sky-700 border border-sky-300 shrink-0"
+                  title={
+                    project.obs_updated_by_name
+                      ? `Nova observação de ${project.obs_updated_by_name}`
+                      : "Nova observação no card"
+                  }
+                  aria-label="Nova observação"
+                >
+                  <BellRing className="h-3.5 w-3.5" aria-hidden />
+                </span>
+              ) : null}
               <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
@@ -1772,6 +1778,7 @@ export default function KanbanBoard({
             </div>
           </div>
         </div>
+      </div>
       </div>
     );
   };
@@ -2485,6 +2492,7 @@ export default function KanbanBoard({
                   followUpSla={followUpSla}
                   loading={loading}
                   isReadOnly={isReadOnly}
+                  highlightObservacoes={Boolean(currentProject.hasUnreadNote)}
                   displayPhone={sensitive.phone(leadForm.telefone)}
                   displayEmail={sensitive.email(leadForm.email)}
                   whatsappHref={sensitive.whatsappHref(currentProject.client.telefone)}

@@ -4110,6 +4110,35 @@ button.partner-card:hover,
     box-shadow var(--motion-fast) var(--ease-out);
 }
 
+/* Destaque sutil de observação não lida — sonar fora do overflow do card */
+.kanban-card-unread-wrap {
+  border-radius: var(--radius-md);
+  animation: kanban-unread-sonar 2.6s ease-in-out infinite;
+}
+
+@keyframes kanban-unread-sonar {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 hsl(199 89% 48% / 0.28),
+      0 0 0 1px hsl(199 89% 70% / 0.35);
+  }
+  55% {
+    box-shadow:
+      0 0 0 7px hsl(199 89% 48% / 0),
+      0 0 14px 1px hsl(199 89% 55% / 0.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kanban-card-unread-wrap {
+    animation: none;
+    box-shadow:
+      0 0 0 2px hsl(199 89% 70% / 0.45),
+      0 0 10px hsl(199 89% 55% / 0.12);
+  }
+}
+
 .kanban-card-stage {
   border-width: 1px;
   border-style: solid;
