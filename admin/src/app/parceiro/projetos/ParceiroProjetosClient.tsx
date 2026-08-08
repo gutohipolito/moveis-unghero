@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MapPin, Users } from "lucide-react";
 import { HighlightAnimatedIcon, LibraryIcon } from "@/components/icons";
 import type { PartnerPortalData, PartnerPortalProject } from "@/lib/partnerPortal";
+import { partnerProjectValueVisible } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { cn } from "@/lib/utils";
 
@@ -61,8 +62,17 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
               <span className="truncate">{project.client.cidade || "Cidade não informada"}</span>
             </p>
           </div>
-          <p className="text-sm font-display font-semibold tabular-nums shrink-0 text-[hsl(210_12%_78%)]">
-            {moneyFmt.format(project.valor_previsto)}
+          <p
+            className="text-sm font-display font-semibold tabular-nums shrink-0 text-[hsl(210_12%_78%)]"
+            title={
+              partnerProjectValueVisible(project.status_geral)
+                ? undefined
+                : "Valor liberado após aprovação do orçamento"
+            }
+          >
+            {partnerProjectValueVisible(project.status_geral)
+              ? moneyFmt.format(project.valor_previsto)
+              : "Após aprovação"}
           </p>
         </div>
 
@@ -150,7 +160,8 @@ export default function ParceiroProjetosClient({
             {partner.projects.length === 1 ? "" : "s"}
           </h1>
           <p className="parceiro-page-desc">
-            Status, valores e arquivos dos trabalhos vinculados a você.
+            Status e arquivos dos trabalhos vinculados a você. O valor
+            comercial aparece a partir da aprovação do orçamento.
           </p>
         </div>
 

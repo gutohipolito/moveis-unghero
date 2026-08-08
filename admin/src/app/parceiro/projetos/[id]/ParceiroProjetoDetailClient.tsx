@@ -22,6 +22,7 @@ import type {
   PartnerProjectFileDTO,
   PartnerProjectNoteDTO,
 } from "@/lib/partnerPortal";
+import { partnerProjectValueVisible } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import {
   addPartnerProjectNoteAction,
@@ -183,8 +184,17 @@ export default function ParceiroProjetoDetailClient({
                 {initial.client.cidade || "Cidade não informada"}
               </p>
             </div>
-            <p className="text-lg font-display font-semibold tabular-nums text-[hsl(210_12%_78%)]">
-              {moneyFmt.format(initial.valor_previsto)}
+            <p
+              className="text-lg font-display font-semibold tabular-nums text-[hsl(210_12%_78%)]"
+              title={
+                partnerProjectValueVisible(initial.status_geral)
+                  ? undefined
+                  : "Valor liberado após aprovação do orçamento"
+              }
+            >
+              {partnerProjectValueVisible(initial.status_geral)
+                ? moneyFmt.format(initial.valor_previsto)
+                : "Após aprovação"}
             </p>
           </div>
         </div>

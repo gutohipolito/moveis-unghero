@@ -15,6 +15,20 @@ function partnerProductImagePath(productId: string, index: number) {
   return `/api/parceiro/produto-imagem?productId=${encodeURIComponent(productId)}&i=${index}`;
 }
 
+/**
+ * Valor comercial no portal do arquiteto: só a partir da aprovação
+ * (não precisa esperar chão de fábrica).
+ */
+export function partnerProjectValueVisible(status: string): boolean {
+  return (
+    status === "APROVADO" ||
+    status === "CONFERENCIA_TECNICA" ||
+    status === "PRODUCAO" ||
+    status === "INSTALACAO" ||
+    status === "FINALIZADO"
+  );
+}
+
 export interface PartnerPortalProject {
   id: string;
   valor_previsto: number;
