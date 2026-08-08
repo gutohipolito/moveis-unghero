@@ -271,7 +271,7 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
       bodyClassName="max-h-[min(90svh,820px)] overflow-y-auto"
     >
       <div className="space-y-5 pr-0.5">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 pr-12">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
               Perfil

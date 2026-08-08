@@ -10,6 +10,7 @@ import {
   LogOut,
   Mail,
   Monitor,
+  Settings2,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -40,7 +41,7 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-function PartnerNotificationSettings() {
+export function PartnerNotificationSettings() {
   const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFS);
   const [permission, setPermission] = useState<BrowserPermission>("default");
   const [browserSupported, setBrowserSupported] = useState(false);
@@ -207,11 +208,13 @@ function PartnerNotificationSettings() {
 
 type Props = {
   partner: PartnerPortalData;
+  onOpenProfile: () => void;
   onOpenSettings: () => void;
 };
 
 export default function ParceiroUserMenu({
   partner,
+  onOpenProfile,
   onOpenSettings,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -304,18 +307,18 @@ export default function ParceiroUserMenu({
             </div>
           </div>
 
-          <div className="dashboard-user-menu-settings">
-            <PartnerNotificationSettings />
-          </div>
-
-          <div className="flex items-center gap-2 border-t border-border bg-muted/20 px-3 py-2">
-            <BellRing className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">
-              Preferências salvas neste dispositivo.
-            </p>
-          </div>
-
           <div className="p-2">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenProfile();
+              }}
+              className="dashboard-user-menu-item w-full rounded-lg"
+            >
+              <IdCard className="h-4 w-4" />
+              Meu perfil
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -324,7 +327,7 @@ export default function ParceiroUserMenu({
               }}
               className="dashboard-user-menu-item w-full rounded-lg"
             >
-              <IdCard className="h-4 w-4" />
+              <Settings2 className="h-4 w-4" />
               Configurações
             </button>
             <div

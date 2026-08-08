@@ -10,6 +10,14 @@ import { compressImageFile } from "@/lib/imageCompression";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
+import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
+import {
+  applyPartnerUiPrefsToElement,
+  DEFAULT_PARTNER_UI_PREFS,
+  loadPartnerUiPrefs,
+  savePartnerUiPrefs,
+  type PartnerUiPrefs,
+} from "@/lib/partnerUiPrefs";
 
 const NAV = [
   { href: "/parceiro/painel", label: "Início", icon: LayoutDashboard },
@@ -158,12 +166,31 @@ export default function ParceiroPortalShell({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [uiPrefs, setUiPrefs] = useState<PartnerUiPrefs>(DEFAULT_PARTNER_UI_PREFS);
+  const shellRef = useRef<HTMLDivElement>(null);
 
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
 
   useEffect(() => {
     setPartner(initialPartner);
   }, [initialPartner]);
+
+  useEffect(() => {
+    const loaded = loadPartnerUiPrefs(partner.id);
+    setUiPrefs(loaded);
+    applyPartnerUiPrefsToElement(shellRef.current, loaded);
+  }, [partner.id]);
+
+  useEffect(() => {
+    applyPartnerUiPrefsToElement(shellRef.current, uiPrefs);
+  }, [uiPrefs]);
+
+  const handleUiPrefsChange = (next: PartnerUiPrefs) => {
+    setUiPrefs(next);
+    savePartnerUiPrefs(partner.id, next);
+    applyPartnerUiPrefsToElement(shellRef.current, next);
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -197,7 +224,11 @@ export default function ParceiroPortalShell({
 
   return (
     <ParceiroShellUiContext.Provider value={shellUi}>
-    <div className="parceiro-portal-shell">
+    <div
+      ref={shellRef}
+      className="parceiro-portal-shell"
+      data-parceiro-theme={uiPrefs.theme}
+    >
       {isAdminPreview && (
         <div className="parceiro-portal-admin-banner">
           <div className="parceiro-portal-admin-banner-inner">
@@ -238,7 +269,8 @@ export default function ParceiroPortalShell({
           <div className="parceiro-portal-header-user">
             <ParceiroUserMenu
               partner={partner}
-              onOpenSettings={() => setInfoOpen(true)}
+              onOpenProfile={() => setInfoOpen(true)}
+              onOpenSettings={() => setSettingsOpen(true)}
             />
           </div>
         </div>
@@ -320,6 +352,12 @@ export default function ParceiroPortalShell({
           setPartner((prev) => ({ ...prev, ...profile }));
           onPartnerChange?.(profile);
         }}
+      />
+      <ParceiroSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        prefs={uiPrefs}
+        onChange={handleUiPrefsChange}
       />
     </div>
     </ParceiroShellUiContext.Provider>
