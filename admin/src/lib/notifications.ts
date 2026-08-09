@@ -1,12 +1,5 @@
 import type { ProjectStatus } from "@/app/actions/kanban";
-import {
-  FOLLOW_UP_ALERT_DAYS,
-  FOLLOW_UP_LOSS_DAYS,
-  getDaysSinceContact,
-  getFollowUpLevel,
-  needsFollowUp,
-  type FollowUpInput,
-} from "@/lib/followUp";
+import { type FollowUpInput } from "@/lib/followUp";
 import {
   type ProjectSlaView,
   getStageConfig,
@@ -51,50 +44,9 @@ export interface NotificationProject extends FollowUpInput {
   client: { nome: string };
 }
 
-export function buildFollowUpNotifications(projects: NotificationProject[]): AppNotification[] {
-  const items: AppNotification[] = [];
-
-  for (const project of projects) {
-    if (!needsFollowUp(project.status_geral)) continue;
-
-    const level = getFollowUpLevel(project);
-    if (level === "ok") continue;
-
-    const days = getDaysSinceContact(project);
-    const isUrgent = level === "alert" || level === "loss";
-
-    items.push({
-      id: `follow-up-${project.id}`,
-      type: "follow_up",
-      priority: isUrgent ? "high" : "normal",
-      title:
-        level === "loss"
-          ? "Lead elegível para perdas"
-          : isUrgent
-            ? "Retomar contato urgente"
-            : "Lembrete de follow-up",
-      message:
-        level === "loss"
-          ? `${project.client.nome} está há ${days} dias sem retorno (SLA de perdas: ${FOLLOW_UP_LOSS_DAYS}d).`
-          : isUrgent
-            ? `${project.client.nome} está há ${days} dias sem resposta (limite: ${FOLLOW_UP_ALERT_DAYS}d).`
-            : `${project.client.nome} — último contato há ${days} dias.`,
-      href: `/crm?alerta=${project.id}`,
-      createdAt: new Date().toISOString(),
-      meta: {
-        projectId: project.id,
-        clientName: project.client.nome,
-        daysSinceContact: days,
-      },
-    });
-  }
-
-  return items.sort((a, b) => {
-    if (a.priority !== b.priority) {
-      return a.priority === "high" ? -1 : 1;
-    }
-    return (b.meta?.daysSinceContact ?? 0) - (a.meta?.daysSinceContact ?? 0);
-  });
+export function buildFollowUpNotifications(_projects: NotificationProject[]): AppNotification[] {
+  // Desativado no sino — follow-up visual permanece no CRM.
+  return [];
 }
 
 export type CardNoteNotificationInput = {
@@ -236,9 +188,10 @@ export function buildSupplyTicketNotifications(
   }));
 }
 
-/** Orçamento compartilhado há dias, ainda sem aprovação completa. */
+/** Orçamento compartilhado há dias, ainda sem aprovação completa.
+ * Desativado no sino (ruído de follow-up); mantido só se algum fluxo legado chamar. */
 export function buildQuoteStaleNotifications(
-  quotes: {
+  _quotes: {
     id: string;
     project_id: string;
     codigo?: string | null;
@@ -247,72 +200,23 @@ export function buildQuoteStaleNotifications(
     pendingCount: number;
     viewCount?: number;
   }[],
-  minDays = 3
+  _minDays = 3
 ): AppNotification[] {
-  const MS_DAY = 24 * 60 * 60 * 1000;
-  return quotes
-    .map((q) => {
-      const days = Math.floor((Date.now() - q.pdf_shared_at.getTime()) / MS_DAY);
-      if (days < minDays || q.pendingCount <= 0) return null;
-      const code = q.codigo?.trim() || "proposta";
-      const neverOpened = (q.viewCount ?? 0) <= 0;
-      return {
-        id: `quote-stale-${q.id}`,
-        type: "quote_stale" as const,
-        priority: days >= 7 || neverOpened ? ("high" as const) : ("normal" as const),
-        title: neverOpened
-          ? "Proposta enviada e não aberta"
-          : days >= 7
-            ? "Proposta parada há uma semana"
-            : "Retomar proposta enviada",
-        message: neverOpened
-          ? `${q.clientName} — ${code} enviada há ${days} dias e o cliente ainda não abriu o link.`
-          : `${q.clientName} — ${code} enviada há ${days} dias, ainda sem fechamento.`,
-        href: `/projects/${q.project_id}?tab=quotes`,
-        createdAt: q.pdf_shared_at.toISOString(),
-        meta: {
-          projectId: q.project_id,
-          clientName: q.clientName,
-          quoteId: q.id,
-          daysSinceContact: days,
-        },
-      };
-    })
-    .filter((n): n is NonNullable<typeof n> => Boolean(n));
+  return [];
 }
 
-/** Lead/projeto comercial sem nenhum orçamento após alguns dias. */
+/** Lead/projeto comercial sem nenhum orçamento após alguns dias.
+ * Desativado no sino (ruído de follow-up); mantido só se algum fluxo legado chamar. */
 export function buildLeadNoQuoteNotifications(
-  projects: {
+  _projects: {
     id: string;
     createdAt: Date;
     clientName: string;
     quoteCount: number;
   }[],
-  minDays = 3
+  _minDays = 3
 ): AppNotification[] {
-  const MS_DAY = 24 * 60 * 60 * 1000;
-  return projects
-    .map((p) => {
-      if (p.quoteCount > 0) return null;
-      const days = Math.floor((Date.now() - p.createdAt.getTime()) / MS_DAY);
-      if (days < minDays) return null;
-      return {
-        id: `lead-no-quote-${p.id}`,
-        type: "lead_no_quote" as const,
-        priority: days >= 7 ? ("high" as const) : ("normal" as const),
-        title: "Cliente sem orçamento",
-        message: `${p.clientName} está cadastrado há ${days} dias e ainda não tem proposta.`,
-        href: `/projects/${p.id}?tab=quotes`,
-        createdAt: p.createdAt.toISOString(),
-        meta: {
-          projectId: p.id,
-          clientName: p.clientName,
-          daysSinceContact: days,
-        },
-      };
-    })
-    .filter((n): n is NonNullable<typeof n> => Boolean(n));
+  return [];
 }
 
 /** Validade da proposta acabando com itens ainda pendentes. */

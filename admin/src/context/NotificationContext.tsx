@@ -508,10 +508,10 @@ export function NotificationProvider({
     const demo: InAppToast = {
       id,
       toastKey: id,
-      type: "quote_stale",
+      type: "card_note",
       priority: "high",
-      title: "Proposta parada há uma semana",
-      message: "Cliente Exemplo — DFCS-230726 enviada há 8 dias, ainda sem fechamento.",
+      title: "Nova observação no funil",
+      message: "Um colega atualizou as observações de Cliente Exemplo.",
       href: "/crm",
       createdAt: new Date().toISOString(),
     };

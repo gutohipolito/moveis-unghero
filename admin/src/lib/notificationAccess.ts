@@ -13,15 +13,21 @@ export const NOTIFICATION_CLEARED_IDS_PREF = "notificationClearedIds";
 /**
  * Funil comercial — Comercial, Financeiro e Diretoria.
  * Projetista, Fábrica e Viewer não recebem estas alertas.
- * (follow_up permanece no filtro por defesa — não é mais gerado no sino.)
  */
 const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
-  "follow_up",
   "card_note",
   "new_briefing",
+  "quote_expiring",
+]);
+
+/**
+ * Lembretes de follow-up comercial — não vão ao sino/toast/push.
+ * Continuam existindo no CRM (SLA visual); aqui só geram ruído.
+ */
+const SUPPRESSED_FOLLOW_UP_TYPES = new Set<NotificationType>([
+  "follow_up",
   "quote_stale",
   "lead_no_quote",
-  "quote_expiring",
 ]);
 
 const MODULE_BY_TYPE: Partial<Record<NotificationType, string>> = {
@@ -77,7 +83,10 @@ export function filterNotificationsForAccess(
   return notifications.filter((notification) => {
     if (cleared.has(notification.id)) return false;
 
-    // Follow-up, contato e funil comercial não vão para fábrica/projetista.
+    // Follow-up / proposta parada / lead sem orçamento: fora do sino.
+    if (SUPPRESSED_FOLLOW_UP_TYPES.has(notification.type)) return false;
+
+    // Funil comercial não vai para fábrica/projetista.
     if (isOpsLimitedRole(role) && isCommercialFunnelNotification(notification)) {
       return false;
     }

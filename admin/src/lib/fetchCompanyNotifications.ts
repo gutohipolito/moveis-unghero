@@ -4,8 +4,6 @@ import {
   buildSlaNotifications,
   buildBriefingNotifications,
   buildSupplyTicketNotifications,
-  buildQuoteStaleNotifications,
-  buildLeadNoQuoteNotifications,
   buildQuoteExpiringNotifications,
   buildCardNoteNotifications,
   mergeNotifications,
@@ -39,9 +37,10 @@ export async function fetchCompanyNotifications(
     return [];
   }
 
-  // As notificações são derivadas (follow-up, SLA, parcelas) e não precisam ser
-  // recalculadas a cada navegação. Um TTL curto evita ~6 consultas por página,
-  // enquanto o live-sync mantém o cliente atualizado.
+  // Notificações derivadas (SLA, parcelas, vencimento de proposta, etc.).
+  // Follow-up comercial (proposta parada / lead sem orçamento) ficou de fora
+  // do sino de propósito — evita ruído e o operador ignorar o que importa.
+  // TTL curto evita várias consultas por navegação; live-sync atualiza o cliente.
   const cacheKey = `${companyId}:${viewerRole ?? ""}`;
   const cached = notifCache.get(cacheKey);
   if (cached && Date.now() - cached.at < NOTIF_TTL_MS) {
@@ -70,8 +69,6 @@ export async function fetchCompanyNotifications(
       : [];
 
   const commercialStatuses = ["LEAD", "ORCAMENTO", "NEGOCIACAO", "CONFERENCIA_TECNICA"] as const;
-  const staleSharedBefore = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  const leadMinAge = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   const expiringUntil = new Date();
   expiringUntil.setHours(23, 59, 59, 999);
   expiringUntil.setDate(expiringUntil.getDate() + 2);
@@ -81,8 +78,6 @@ export async function fetchCompanyNotifications(
     invoicePending,
     briefings,
     pendingInstallments,
-    sharedQuotes,
-    projectsWithoutQuote,
     expiringQuotes,
   ] = await Promise.all([
     getSlaAlertProjects(companyId),
@@ -114,44 +109,6 @@ export async function fetchCompanyNotifications(
         },
       },
       orderBy: { data_vencimento: "asc" },
-    }),
-    prisma.quote.findMany({
-      where: {
-        pdf_shared_at: { not: null, lte: staleSharedBefore },
-        aprovado_em: null,
-        project: {
-          status_geral: { in: [...commercialStatuses] },
-          client: { company_id: companyId },
-        },
-        items: { some: { status: "PENDENTE" } },
-      },
-      select: {
-        id: true,
-        project_id: true,
-        codigo: true,
-        pdf_shared_at: true,
-        pdf_view_count: true,
-        project: { select: { client: { select: { nome: true } } } },
-        _count: { select: { items: { where: { status: "PENDENTE" } } } },
-      },
-      orderBy: { pdf_shared_at: "asc" },
-      take: 40,
-    }),
-    prisma.project.findMany({
-      where: {
-        status_geral: { in: ["LEAD", "ORCAMENTO"] },
-        createdAt: { lte: leadMinAge },
-        client: { company_id: companyId },
-        quotes: { none: {} },
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        client: { select: { nome: true } },
-        _count: { select: { quotes: true } },
-      },
-      orderBy: { createdAt: "asc" },
-      take: 40,
     }),
     prisma.quote.findMany({
       where: {
@@ -215,29 +172,6 @@ export async function fetchCompanyNotifications(
     }))
   );
 
-  const quoteStaleNotifications = buildQuoteStaleNotifications(
-    sharedQuotes
-      .filter((q): q is typeof q & { pdf_shared_at: Date } => Boolean(q.pdf_shared_at))
-      .map((q) => ({
-        id: q.id,
-        project_id: q.project_id,
-        codigo: q.codigo,
-        pdf_shared_at: q.pdf_shared_at,
-        clientName: q.project.client.nome,
-        pendingCount: q._count.items,
-        viewCount: q.pdf_view_count ?? 0,
-      }))
-  );
-
-  const leadNoQuoteNotifications = buildLeadNoQuoteNotifications(
-    projectsWithoutQuote.map((p) => ({
-      id: p.id,
-      createdAt: p.createdAt,
-      clientName: p.client.nome,
-      quoteCount: p._count.quotes,
-    }))
-  );
-
   const quoteExpiringNotifications = buildQuoteExpiringNotifications(
     expiringQuotes.map((q) => ({
       id: q.id,
@@ -255,8 +189,6 @@ export async function fetchCompanyNotifications(
     briefingNotifications,
     installmentNotifications,
     supplyNotifications,
-    quoteStaleNotifications,
-    leadNoQuoteNotifications,
     quoteExpiringNotifications
   );
 
