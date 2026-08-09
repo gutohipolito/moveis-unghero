@@ -209,7 +209,14 @@ export function NotificationProvider({
 
       if (summaryOnly && undelivered.length > 1) {
         const urgent = undelivered.filter((n) => n.priority === "high").length;
-        await showBrowserNotificationSummary(undelivered.length, urgent, { playSound });
+        await showBrowserNotificationSummary(undelivered.length, urgent, {
+          playSound,
+          samples: undelivered.slice(0, 3).map((n) => ({
+            title: n.title,
+            message: n.message,
+            href: n.href,
+          })),
+        });
         undelivered.forEach((n) => markNotificationDelivered(n.id, deliveredRef.current));
         return;
       }

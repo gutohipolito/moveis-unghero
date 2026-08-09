@@ -5,7 +5,6 @@ import { buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import {
   buildBriefingEvents,
-  buildFollowUpEvent,
   buildProductionStartEvent,
   buildSlaEvent,
   type DerivedAgendaEvent,
@@ -171,13 +170,14 @@ export async function fetchAgendaEvents(companyId: string) {
 }
 
 /**
- * Eventos derivados (somente-leitura) da agenda: formulários recebidos, prazos de
- * orçamento, follow-ups parados, prazos de SLA de produção e marcos de início de produção.
+ * Eventos derivados (somente-leitura) da agenda: formulários recebidos,
+ * prazos de SLA de produção e marcos de início de produção.
  * A fonte de verdade permanece nos modelos originais (LeadBriefing/Project/ProjectSlaState).
  */
 export async function fetchAgendaDerivedEvents(companyId: string): Promise<DerivedAgendaEvent[]> {
   try {
-    const [briefings, followUpProjects, slaStates, productionStates] = await Promise.all([
+    // Follow-up comercial não entra mais na agenda (só indicadores no CRM).
+    const [briefings, slaStates, productionStates] = await Promise.all([
       prisma.leadBriefing.findMany({
         where: { project: { client: { company_id: companyId } } },
         select: {
@@ -189,19 +189,6 @@ export async function fetchAgendaDerivedEvents(companyId: string): Promise<Deriv
               client: { select: { nome: true } },
             },
           },
-        },
-      }),
-      prisma.project.findMany({
-        where: {
-          client: { company_id: companyId },
-          status_geral: { in: ["LEAD", "ORCAMENTO", "NEGOCIACAO"] },
-        },
-        select: {
-          id: true,
-          status_geral: true,
-          ultimo_contato_em: true,
-          createdAt: true,
-          client: { select: { nome: true } },
         },
       }),
       getCompanySlaStates(companyId),
@@ -236,17 +223,6 @@ export async function fetchAgendaDerivedEvents(companyId: string): Promise<Deriv
           projectStatus: briefing.project.status_geral,
         })
       );
-    }
-
-    for (const project of followUpProjects) {
-      const event = buildFollowUpEvent({
-        projectId: project.id,
-        clientName: project.client?.nome || "Cliente",
-        status_geral: project.status_geral,
-        ultimo_contato_em: project.ultimo_contato_em,
-        createdAt: project.createdAt,
-      });
-      if (event) events.push(event);
     }
 
     for (const sla of slaStates) {

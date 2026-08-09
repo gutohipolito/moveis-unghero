@@ -124,7 +124,11 @@ export async function showBrowserNotification(
 export async function showBrowserNotificationSummary(
   count: number,
   urgentCount: number,
-  options?: { playSound?: boolean }
+  options?: {
+    playSound?: boolean;
+    /** Exemplos reais (título/mensagem) — evita texto genérico de follow-up. */
+    samples?: Array<{ title: string; message: string; href?: string }>;
+  }
 ): Promise<boolean> {
   if (!isBrowserNotificationSupported() || Notification.permission !== "granted") {
     return false;
@@ -135,28 +139,35 @@ export async function showBrowserNotificationSummary(
     playNotificationChime({ urgent: urgentCount > 0 });
   }
 
+  const sample = options?.samples?.[0];
   const title =
     urgentCount > 0
       ? `${urgentCount} alerta${urgentCount !== 1 ? "s" : ""} urgente${urgentCount !== 1 ? "s" : ""}`
-      : `${count} lembrete${count !== 1 ? "s" : ""} no painel`;
+      : `${count} alerta${count !== 1 ? "s" : ""} no painel`;
 
   const body =
-    urgentCount > 0
-      ? "Leads sem resposta há mais de 7 dias — retome o contato no funil comercial."
-      : "Confira os follow-ups pendentes no funil comercial.";
+    sample?.message ||
+    sample?.title ||
+    (count > 1
+      ? "Há novos avisos no painel da Móveis Unghero."
+      : "Há um novo aviso no painel da Móveis Unghero.");
+
+  const href = sample?.href || "/";
 
   const payload: NotificationOptions = {
     body,
     icon: getNotificationIconUrl(),
     tag: "mu-notification-summary",
     silent: !playSound,
-    data: { href: "/crm", notificationId: "mu-notification-summary" },
+    data: { href, notificationId: "mu-notification-summary" },
   };
 
   const viaSw = await showViaServiceWorker(title, payload);
   if (viaSw) return true;
 
-  return showViaConstructor(title, payload, () => {
-    window.location.href = "/crm";
-  }) !== null;
+  return (
+    showViaConstructor(title, payload, () => {
+      window.location.href = href;
+    }) !== null
+  );
 }

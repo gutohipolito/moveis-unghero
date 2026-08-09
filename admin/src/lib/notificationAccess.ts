@@ -11,10 +11,12 @@ import {
 export const NOTIFICATION_CLEARED_IDS_PREF = "notificationClearedIds";
 
 /**
- * Funil comercial / follow-up — Comercial, Financeiro e Diretoria.
+ * Funil comercial — Comercial, Financeiro e Diretoria.
  * Projetista, Fábrica e Viewer não recebem estas alertas.
+ * (follow_up permanece no filtro por defesa — não é mais gerado no sino.)
  */
 const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
+  "follow_up",
   "card_note",
   "new_briefing",
   "quote_stale",
@@ -23,6 +25,7 @@ const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
 ]);
 
 const MODULE_BY_TYPE: Partial<Record<NotificationType, string>> = {
+  follow_up: "crm",
   card_note: "crm",
   new_briefing: "crm",
   sla_due: "factory",
