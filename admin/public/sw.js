@@ -1,4 +1,4 @@
-const CACHE_VERSION = "mu-admin-v8";
+const CACHE_VERSION = "mu-admin-v9";
 
 self.addEventListener("push", (event) => {
   let payload = {
@@ -73,6 +73,14 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
+function offlineFallback() {
+  return new Response("Offline", {
+    status: 503,
+    statusText: "Service Unavailable",
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
@@ -88,14 +96,18 @@ self.addEventListener("fetch", (event) => {
   // Só usa o cache da própria URL como último recurso offline.
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request).catch(async () => {
+        const cached = await caches.match(event.request);
+        return cached || offlineFallback();
+      })
     );
     return;
   }
 
   event.respondWith(
-    fetch(event.request).catch(() =>
-      caches.match(event.request).then((cached) => cached || Response.error())
-    )
+    fetch(event.request).catch(async () => {
+      const cached = await caches.match(event.request);
+      return cached || offlineFallback();
+    })
   );
 });

@@ -28,21 +28,25 @@ export default function InfoTooltip({
 
   const reposition = useCallback(() => {
     const btn = btnRef.current;
-    if (!btn) return;
+    const panel = panelRef.current;
+    if (!btn || !panel) return;
     const rect = btn.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      setCoords(null);
+      return;
+    }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const width = Math.min(MAX_WIDTH, vw - MARGIN * 2);
+    const panelH = panel.offsetHeight;
+    if (panelH < 4) return;
 
-    // Horizontal: alinha à esquerda do botão, mas nunca ultrapassa a viewport.
     let left = rect.left;
     left = Math.min(left, vw - width - MARGIN);
     left = Math.max(MARGIN, left);
 
-    // Vertical: abaixo do botão; se não couber, coloca acima.
-    const panelH = panelRef.current?.offsetHeight ?? 0;
     let top = rect.bottom + GAP;
-    if (panelH && top + panelH > vh - MARGIN) {
+    if (top + panelH > vh - MARGIN) {
       const above = rect.top - GAP - panelH;
       if (above >= MARGIN) top = above;
       else top = Math.max(MARGIN, vh - panelH - MARGIN);
@@ -52,13 +56,14 @@ export default function InfoTooltip({
   }, []);
 
   useLayoutEffect(() => {
-    if (open) reposition();
+    if (!open) return;
+    reposition();
+    const id = window.requestAnimationFrame(() => reposition());
+    return () => window.cancelAnimationFrame(id);
   }, [open, reposition]);
 
   useEffect(() => {
     if (!open) return;
-    // Segunda passada após medir a altura real do painel.
-    reposition();
 
     const onDocDown = (e: MouseEvent) => {
       if (
@@ -67,8 +72,14 @@ export default function InfoTooltip({
       )
         return;
       setOpen(false);
+      setCoords(null);
     };
-    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setCoords(null);
+      }
+    };
     const onScroll = () => reposition();
 
     document.addEventListener("mousedown", onDocDown);
@@ -88,13 +99,21 @@ export default function InfoTooltip({
       ref={wrapRef}
       className={`relative inline-flex ${className}`}
       onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseLeave={() => {
+        setOpen(false);
+        setCoords(null);
+      }}
     >
       <button
         ref={btnRef}
         type="button"
         aria-label={label}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() =>
+          setOpen((o) => {
+            if (o) setCoords(null);
+            return !o;
+          })
+        }
         className="inline-flex items-center justify-center h-6 w-6 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
       >
         <Info className="h-4 w-4" />
@@ -106,10 +125,11 @@ export default function InfoTooltip({
           role="tooltip"
           style={{
             position: "fixed",
-            top: coords?.top ?? -9999,
-            left: coords?.left ?? -9999,
+            top: coords?.top ?? 0,
+            left: coords?.left ?? 0,
             width: coords?.width ?? MAX_WIDTH,
-            visibility: coords ? "visible" : "hidden",
+            opacity: coords ? 1 : 0,
+            pointerEvents: coords ? "auto" : "none",
           }}
           className="z-[200] rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-xl shadow-slate-900/10 normal-case"
         >

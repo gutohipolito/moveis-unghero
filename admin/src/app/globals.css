@@ -2048,52 +2048,22 @@ button.partner-card:hover,
   box-shadow: inset 0 -1px 0 hsl(var(--parceiro-accent, 210 12% 55%) / 0.85);
 }
 
-/* Modal de projeto: altura justa ao conteúdo, teto baixo, scroll só no corpo das abas */
+/* Modal de projeto: altura = conteúdo, teto pela viewport; um único scroll */
 .parceiro-projeto-modal {
-  max-height: min(78svh, 36rem) !important;
-  height: auto !important;
+  max-height: min(85svh, 40rem) !important;
+  height: fit-content !important;
 }
 
 .parceiro-projeto-modal .modal-panel-body,
 .parceiro-projeto-modal-body {
-  display: flex;
-  flex-direction: column;
-  flex: 0 1 auto;
-  overflow: hidden;
-  padding: 0.85rem 1rem 1rem;
-  max-height: min(
-    calc(78svh - 2rem),
-    34rem
-  );
-}
-
-.parceiro-projeto-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-height: 0;
-  width: 100%;
-}
-
-.parceiro-projeto-detail-chrome {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.parceiro-projeto-detail-scroll {
-  flex: 0 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+  display: block !important;
+  flex: none !important;
+  max-height: min(calc(85svh - 2.5rem), 38rem) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   overscroll-behavior: contain;
+  padding: 0.85rem 1rem 1rem !important;
   -webkit-overflow-scrolling: touch;
-  max-height: min(48svh, 22rem);
-  padding-right: 0.15rem;
-}
-
-.parceiro-projeto-detail-scroll .parceiro-panel {
-  padding: 1rem 1.1rem;
 }
 
 .parceiro-info-section-rule {

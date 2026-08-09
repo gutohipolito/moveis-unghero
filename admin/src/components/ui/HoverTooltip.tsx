@@ -68,12 +68,19 @@ export default function HoverTooltip({
 
   const reposition = useCallback(() => {
     const anchor = wrapRef.current;
-    if (!anchor) return;
+    const panel = panelRef.current;
+    if (!anchor || !panel) return;
     const rect = anchor.getBoundingClientRect();
+    // Âncora fora da tela / desmontando — não mostra tooltip “solto”
+    if (rect.width === 0 && rect.height === 0) {
+      setCoords(null);
+      return;
+    }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const width = Math.min(MAX_WIDTH, vw - MARGIN * 2);
-    const panelH = panelRef.current?.offsetHeight ?? 0;
+    const panelH = panel.offsetHeight;
+    if (panelH < 4) return;
 
     let left = rect.left + rect.width / 2 - width / 2;
     left = Math.min(left, vw - width - MARGIN);
@@ -86,7 +93,7 @@ export default function HoverTooltip({
     if (placement === "top" && top < MARGIN) {
       placement = "bottom";
       top = rect.bottom + GAP;
-    } else if (placement === "bottom" && panelH && top + panelH > vh - MARGIN) {
+    } else if (placement === "bottom" && top + panelH > vh - MARGIN) {
       const above = rect.top - GAP - panelH;
       if (above >= MARGIN) {
         placement = "top";
@@ -109,12 +116,14 @@ export default function HoverTooltip({
   }, [close]);
 
   useLayoutEffect(() => {
-    if (open) reposition();
+    if (!open) return;
+    reposition();
+    const id = window.requestAnimationFrame(() => reposition());
+    return () => window.cancelAnimationFrame(id);
   }, [open, reposition, content]);
 
   useEffect(() => {
     if (!open) return;
-    reposition();
     const onScroll = () => reposition();
     window.addEventListener("resize", reposition);
     window.addEventListener("scroll", onScroll, true);
@@ -143,15 +152,10 @@ export default function HoverTooltip({
         close();
       }}
       onPointerDown={() => {
-        // Tap/click: fecha imediatamente (evita sticky hover no iOS/Android)
+        // Clique/tap: nunca deixa tooltip preso após interação
         close();
       }}
-      onFocus={() => {
-        if (!hoverOkRef.current) return;
-        setOpen(true);
-      }}
-      onBlur={() => close()}
-      aria-describedby={open ? tooltipId : undefined}
+      aria-describedby={open && coords ? tooltipId : undefined}
     >
       {children}
       {open &&
@@ -163,12 +167,13 @@ export default function HoverTooltip({
             role="tooltip"
             style={{
               position: "fixed",
-              top: coords?.top ?? -9999,
-              left: coords?.left ?? -9999,
+              top: coords?.top ?? 0,
+              left: coords?.left ?? 0,
               width: coords?.width ?? MAX_WIDTH,
-              visibility: coords ? "visible" : "hidden",
+              opacity: coords ? 1 : 0,
+              pointerEvents: "none",
             }}
-            className="z-[300] pointer-events-none rounded-xl border border-border bg-card px-3 py-2 text-left shadow-lg shadow-slate-900/12 animate-in fade-in zoom-in-95 duration-150"
+            className="z-[300] rounded-xl border border-border bg-card px-3 py-2 text-left shadow-lg shadow-slate-900/12"
           >
             <div className="text-[11px] leading-relaxed font-medium text-foreground/90">
               {content}
