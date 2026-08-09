@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Camera,
   FileText,
+  Building2,
   Home,
   ImageIcon,
   Loader2,
@@ -27,6 +28,8 @@ interface ClienteDocumentsTabProps {
   clientId: string;
   attachments: ClientAttachmentDTO[];
   onAttachmentsChange: (attachments: ClientAttachmentDTO[]) => void;
+  /** PF usa “casa”; PJ usa “empresa” no copy de acesso. */
+  tipoPessoa?: "PF" | "PJ";
 }
 
 async function uploadClientFile(clientId: string, file: File) {
@@ -61,6 +64,7 @@ export default function ClienteDocumentsTab({
   clientId,
   attachments,
   onAttachmentsChange,
+  tipoPessoa = "PF",
 }: ClienteDocumentsTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +73,11 @@ export default function ClienteDocumentsTab({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const isPj = tipoPessoa === "PJ";
+  const placeNoun = isPj ? "empresa" : "casa";
+  const placeNounCap = isPj ? "Empresa" : "Casa";
+  const PlaceIcon = isPj ? Building2 : Home;
 
   /** Só anexos do cliente (sem vínculo com projeto). */
   const clientOnly = useMemo(
@@ -128,14 +137,18 @@ export default function ClienteDocumentsTab({
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 <Home className="h-4.5 w-4.5 text-primary" />
-                Casa, acesso & documentos
+                {placeNounCap}, acesso & documentos
               </h3>
               <InfoTooltip label="Sobre esta aba">
                 <TooltipBody
                   title="Do cliente — útil para o montador"
                   items={[
-                    "Fotos da casa, fachada, portão, vagas, escadas e passagens — para a equipe saber onde é e como chegar.",
-                    "Documentos do cliente (contrato, identidade, etc.).",
+                    isPj
+                      ? "Fotos da empresa, fachada, entrada de carga, vagas, elevador e passagens — para a equipe saber onde é e como chegar."
+                      : "Fotos da casa, fachada, portão, vagas, escadas e passagens — para a equipe saber onde é e como chegar.",
+                    isPj
+                      ? "Documentos da empresa (contrato, CNPJ, etc.)."
+                      : "Documentos do cliente (contrato, identidade, etc.).",
                     "Não misture com fotos de ambientes da obra: essas ficam dentro de cada projeto.",
                   ]}
                 />
@@ -143,7 +156,9 @@ export default function ClienteDocumentsTab({
             </div>
             <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed max-w-xl">
               Registre{" "}
-              <span className="font-semibold text-foreground">como chegar e acessar a casa</span>{" "}
+              <span className="font-semibold text-foreground">
+                como chegar e acessar a {placeNoun}
+              </span>{" "}
               (fachada, entrada, dificuldade de passagem) e documentos do cliente. Fotos de
               medição/ambientes da obra ficam no{" "}
               <span className="font-semibold text-foreground">projeto</span>.
@@ -155,7 +170,7 @@ export default function ClienteDocumentsTab({
               <TooltipBody
                 title="Contagem"
                 items={[
-                  "Só arquivos do cliente (casa, acesso e documentos).",
+                  `Só arquivos do cliente (${placeNoun}, acesso e documentos).`,
                   "Arquivos ligados a um projeto não entram neste número.",
                 ]}
               />
@@ -164,9 +179,12 @@ export default function ClienteDocumentsTab({
         </div>
 
         <div className="rounded-[var(--radius-md)] border border-sky-200/80 bg-sky-50/70 px-3 py-2.5 text-[11px] text-sky-950/90 leading-relaxed">
-          <span className="font-bold">Para o montador:</span> priorize fotos da fachada, número da
-          casa, portão, estacionamento e trechos apertados. Assim a equipe reconhece o local e se
-          prepara para a entrega/instalação.
+          <span className="font-bold">Para o montador:</span> priorize fotos da fachada,{" "}
+          {isPj
+            ? "identificação da empresa, entrada de carga, estacionamento"
+            : "número da casa, portão, estacionamento"}{" "}
+          e trechos apertados. Assim a equipe reconhece o local e se prepara para a
+          entrega/instalação.
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -205,7 +223,9 @@ export default function ClienteDocumentsTab({
               <TooltipBody
                 title="O que fotografar"
                 items={[
-                  "Fachada e número da casa, portão, vaga, escadas, corredores apertados.",
+                  isPj
+                    ? "Fachada e identificação da empresa, entrada de carga, vaga, elevador, corredores apertados."
+                    : "Fachada e número da casa, portão, vaga, escadas, corredores apertados.",
                   "Ajuda o montador a achar o endereço e planejar a entrada dos módulos.",
                   "Fotos dos ambientes (cozinha, quarto…) ficam na galeria do projeto.",
                 ]}
@@ -250,14 +270,16 @@ export default function ClienteDocumentsTab({
         <div className="flex items-center gap-1.5">
           <h4 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
             <ImageIcon className="h-4 w-4 text-primary" />
-            Fotos da casa e do acesso
+            Fotos da {placeNoun} e do acesso
           </h4>
-          <InfoTooltip label="Fotos da casa e do acesso">
+          <InfoTooltip label={`Fotos da ${placeNoun} e do acesso`}>
             <TooltipBody
               title="Para a equipe de montagem"
               items={[
-                "Fachada, número, portão, vaga, escadas, elevador e passagens estreitas.",
-                "Objetivo: achar a casa e saber se a entrada é fácil ou difícil.",
+                isPj
+                  ? "Fachada, identificação, entrada de carga, vaga, elevador e passagens estreitas."
+                  : "Fachada, número, portão, vaga, escadas, elevador e passagens estreitas.",
+                `Objetivo: achar a ${placeNoun} e saber se a entrada é fácil ou difícil.`,
                 "Fotos dos ambientes (cozinha, quarto…) ficam no projeto.",
               ]}
             />
@@ -267,7 +289,7 @@ export default function ClienteDocumentsTab({
         {photos.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl">
             Nenhuma foto de acesso ainda. Tire fotos da fachada e das passagens para o montador
-            reconhecer a casa.
+            reconhecer a {placeNoun}.
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
