@@ -136,7 +136,7 @@ export default function ClienteDocumentsTab({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                <Home className="h-4.5 w-4.5 text-primary" />
+                <PlaceIcon className="h-4.5 w-4.5 text-primary" />
                 {placeNounCap}, acesso & documentos
               </h3>
               <InfoTooltip label="Sobre esta aba">
