@@ -82,13 +82,13 @@ const inputClass =
 export default function SettingsPage() {
   const { isAdmin } = usePermissions();
 
-  const [razaoSocial, setRazaoSocial] = useState(COMPANY_DEFAULTS.razaoSocial);
-  const [cnpj, setCnpj] = useState(COMPANY_DEFAULTS.cnpj);
-  const [telefone, setTelefone] = useState(COMPANY_DEFAULTS.telefone);
-  const [email, setEmail] = useState(COMPANY_DEFAULTS.email);
-  const [endereco, setEndereco] = useState(COMPANY_DEFAULTS.endereco);
-  const [cep, setCep] = useState(COMPANY_DEFAULTS.cep);
-  const [site, setSite] = useState(COMPANY_DEFAULTS.site);
+  const [razaoSocial, setRazaoSocial] = useState(String(COMPANY_DEFAULTS.razaoSocial));
+  const [cnpj, setCnpj] = useState(String(COMPANY_DEFAULTS.cnpj));
+  const [telefone, setTelefone] = useState(String(COMPANY_DEFAULTS.telefone));
+  const [email, setEmail] = useState(String(COMPANY_DEFAULTS.email));
+  const [endereco, setEndereco] = useState(String(COMPANY_DEFAULTS.endereco));
+  const [cep, setCep] = useState(String(COMPANY_DEFAULTS.cep));
+  const [site, setSite] = useState(String(COMPANY_DEFAULTS.site));
 
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
