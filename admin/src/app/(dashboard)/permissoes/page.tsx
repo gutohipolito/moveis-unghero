@@ -30,9 +30,9 @@ export default async function PermissoesPage() {
           <TooltipBody
             title="Controle de acesso"
             items={[
-              "Marque quais módulos cada cargo pode abrir no menu.",
+              "Escolha um cargo e marque as áreas que ele pode abrir.",
               "Quem não tem acesso a um módulo não o vê e é bloqueado ao tentar entrar.",
-              "A Diretoria (admin) sempre tem acesso total e não pode ser restringida.",
+              "A Diretoria sempre tem acesso total e não pode ser restringida.",
               "As mudanças valem para todos os usuários daquele cargo.",
             ]}
           />
