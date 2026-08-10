@@ -466,6 +466,54 @@ export async function updateParceiroProfileAction(data: PartnerProfileUpdateInpu
   }
 }
 
+/**
+ * Parceiro autoriza (ou não) aparecer com nome/foto no PDF do orçamento.
+ * O vínculo no CRM permanece; só o card público some quando false.
+ */
+export async function updateParceiroQuoteVisibilityAction(showOnQuote: boolean) {
+  const partnerId = await requirePartnerSession();
+  if (!partnerId) {
+    return { success: false as const, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  try {
+    const existing = await prisma.professionalPartner.findFirst({
+      where: { id: partnerId, ativo: true },
+      select: { id: true, quote_card_mode: true },
+    });
+    if (!existing) {
+      return { success: false as const, error: "Parceiro não encontrado." };
+    }
+
+    const nextMode = showOnQuote
+      ? existing.quote_card_mode === "UNVERIFIED"
+        ? "UNVERIFIED"
+        : "VERIFIED"
+      : "HIDDEN";
+
+    const updated = await prisma.professionalPartner.update({
+      where: { id: partnerId },
+      data: { quote_card_mode: nextMode },
+      select: { quote_card_mode: true },
+    });
+
+    revalidatePath("/parceiro/painel");
+    revalidatePath("/parceiros");
+    revalidatePath(`/parceiros/${partnerId}`);
+
+    return {
+      success: true as const,
+      showOnQuote: updated.quote_card_mode !== "HIDDEN",
+    };
+  } catch (error) {
+    console.error("Falha ao atualizar visibilidade no orçamento:", error);
+    return {
+      success: false as const,
+      error: "Não foi possível salvar a preferência.",
+    };
+  }
+}
+
 const NOTE_MAX = 4000;
 
 async function requirePartnerSession() {

@@ -63,6 +63,11 @@ export interface PartnerPortalData {
   escritorio: string | null;
   registro_profissional: string | null;
   portfolioUrl: string | null;
+  /**
+   * Se false (`quote_card_mode = HIDDEN`), o card do parceiro não entra no PDF
+   * do orçamento — o vínculo CRM/comissão permanece no back-end.
+   */
+  showOnQuote: boolean;
   /** Só mostra a aba Comissões quando há ao menos um lançamento. */
   hasCommissions: boolean;
   projects: PartnerPortalProject[];
@@ -171,6 +176,7 @@ export async function loadPartnerPortalData(
       escritorio: true,
       registro_profissional: true,
       portfolioUrl: true,
+      quote_card_mode: true,
       ativo: true,
     },
   });
@@ -231,6 +237,7 @@ export async function loadPartnerPortalData(
     escritorio: partner.escritorio,
     registro_profissional: partner.registro_profissional,
     portfolioUrl: partner.portfolioUrl,
+    showOnQuote: partner.quote_card_mode !== "HIDDEN",
     hasCommissions: commissionCount > 0,
     projects: projects.map((project) => {
       const visible = partnerProjectValueVisible(project.status_geral);

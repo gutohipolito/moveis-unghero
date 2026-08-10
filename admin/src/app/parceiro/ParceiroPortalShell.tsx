@@ -3,14 +3,14 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, Loader2, LayoutDashboard, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
+import { Camera, LayoutDashboard, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
-import { compressImageFile } from "@/lib/imageCompression";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
+import ParceiroAvatarModal from "./painel/ParceiroAvatarModal";
 import { exitPartnerAdminPreview } from "@/app/actions/parceiroPortal";
 import {
   applyPartnerUiPrefsToElement,
@@ -163,12 +163,10 @@ export default function ParceiroPortalShell({
   onPartnerChange,
 }: ParceiroPortalShellProps) {
   const pathname = usePathname();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [partner, setPartner] = useState(initialPartner);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const [uiPrefs, setUiPrefs] = useState<PartnerUiPrefs>(DEFAULT_PARTNER_UI_PREFS);
   const shellRef = useRef<HTMLDivElement>(null);
 
@@ -192,32 +190,6 @@ export default function ParceiroPortalShell({
     setUiPrefs(next);
     savePartnerUiPrefs(partner.id, next);
     applyPartnerUiPrefsToElement(shellRef.current, next);
-  };
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const compressed = await compressImageFile(file, { maxDimension: 1200, quality: 0.85 });
-      const form = new FormData();
-      form.append("file", compressed);
-      const res = await fetch("/api/parceiro/avatar", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.fotoUrl) {
-        setUploadError(data.error || "Não foi possível atualizar a foto.");
-        return;
-      }
-      setPartner((prev) => ({ ...prev, fotoUrl: data.fotoUrl }));
-      onFotoUrlChange?.(data.fotoUrl);
-    } catch {
-      setUploadError("Falha de conexão ao enviar a foto.");
-    } finally {
-      setUploading(false);
-    }
   };
 
   const shellUi: ShellUi = {
@@ -304,27 +276,13 @@ export default function ParceiroPortalShell({
                 </div>
                 <button
                   type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
+                  onClick={() => setAvatarOpen(true)}
                   className="parceiro-portal-avatar-edit"
                   title="Alterar foto"
                 >
-                  {uploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Camera className="h-4 w-4" />
-                      <span>Alterar foto</span>
-                    </>
-                  )}
+                  <Camera className="h-4 w-4" />
+                  <span>Alterar foto</span>
                 </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => void handleAvatarChange(e)}
-                />
               </div>
 
               <div className="min-w-0 flex-1 text-center sm:text-left space-y-1.5">
@@ -333,9 +291,6 @@ export default function ParceiroPortalShell({
                 <p className="parceiro-portal-hero-copy">
                   Seu espaço com a Móveis Unghero.
                 </p>
-                {uploadError && (
-                  <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
-                )}
               </div>
             </div>
           </section>
@@ -366,6 +321,21 @@ export default function ParceiroPortalShell({
         onClose={() => setSettingsOpen(false)}
         prefs={uiPrefs}
         onChange={handleUiPrefsChange}
+        showOnQuote={partner.showOnQuote}
+        onShowOnQuoteChange={(show) => {
+          setPartner((prev) => ({ ...prev, showOnQuote: show }));
+          onPartnerChange?.({ showOnQuote: show });
+        }}
+      />
+      <ParceiroAvatarModal
+        open={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        currentFotoUrl={partner.fotoUrl}
+        partnerName={partner.nome}
+        onUploaded={(fotoUrl) => {
+          setPartner((prev) => ({ ...prev, fotoUrl }));
+          onFotoUrlChange?.(fotoUrl);
+        }}
       />
     </div>
     </ParceiroShellUiContext.Provider>
