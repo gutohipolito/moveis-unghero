@@ -112,8 +112,7 @@ export default function ParceiroSettingsModal({
                 <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                   Se desligado, seu nome e foto{" "}
                   <strong className="font-semibold text-slate-700">não entram</strong> no
-                  PDF enviado ao cliente. O vínculo com o projeto continua só no sistema
-                  da Móveis Unghero (CRM e comissões).
+                  PDF enviado ao cliente.
                 </p>
               </div>
               <button
