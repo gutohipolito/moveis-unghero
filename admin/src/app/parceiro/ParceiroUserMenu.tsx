@@ -104,7 +104,8 @@ export function PartnerNotificationSettings() {
             Notificações
           </p>
           <p className="text-[10px] text-muted-foreground mt-0.5">
-            Ative alertas do portal neste dispositivo.
+            E-mails de status e comissão vão para o e-mail do cadastro. Abaixo:
+            alertas opcionais neste dispositivo.
           </p>
         </div>
         <BellRing className="h-4 w-4 text-primary shrink-0 mt-0.5" />

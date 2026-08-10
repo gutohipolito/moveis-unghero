@@ -742,6 +742,12 @@ export async function approveQuote(
   }
 
   try {
+    const projectBefore = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status_geral: true },
+    });
+    const oldStatus = projectBefore?.status_geral ?? "";
+
     const quote = await prisma.quote.findFirst({
       where: { id: quoteId, project_id: projectId },
       select: {
@@ -933,6 +939,16 @@ export async function approveQuote(
     revalidatePath("/factory");
     revalidatePath("/crm");
     revalidatePath("/quotes");
+    if (oldStatus !== "APROVADO") {
+      const { schedulePartnerProjectStatusAlert } = await import(
+        "@/lib/partnerAlertEmail"
+      );
+      schedulePartnerProjectStatusAlert({
+        projectId,
+        oldStatus,
+        newStatus: "APROVADO",
+      });
+    }
     return {
       success: true,
       createdEnvironments: createdNames,

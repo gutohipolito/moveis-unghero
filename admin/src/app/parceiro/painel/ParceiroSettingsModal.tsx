@@ -62,7 +62,7 @@ export default function ParceiroSettingsModal({
             Configurações
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tema, cor de destaque e notificações neste dispositivo.
+            Tema, cor de destaque e preferências de alerta neste dispositivo.
           </p>
         </div>
 

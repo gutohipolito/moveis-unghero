@@ -110,6 +110,16 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
     if (newStatus === "PRODUCAO" || newStatus === "INSTALACAO") {
       revalidatePath("/factory");
     }
+    if (oldStatus !== newStatus) {
+      const { schedulePartnerProjectStatusAlert } = await import(
+        "@/lib/partnerAlertEmail"
+      );
+      schedulePartnerProjectStatusAlert({
+        projectId,
+        oldStatus,
+        newStatus,
+      });
+    }
     return { success: true };
   } catch (error) {
     console.warn("Falha ao atualizar status no banco:", error);
@@ -180,6 +190,11 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
     const actorUserId = auth.userId;
 
     const motivoStr = motivo?.trim() || "";
+    const current = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status_geral: true },
+    });
+    const oldStatus = current?.status_geral ?? "NEGOCIACAO";
 
     await prisma.$transaction(async (tx) => {
       await tx.project.update({
@@ -201,6 +216,16 @@ export async function markProjectAsLost(projectId: string, motivo?: string) {
     });
 
     revalidateCrmPaths();
+    {
+      const { schedulePartnerProjectStatusAlert } = await import(
+        "@/lib/partnerAlertEmail"
+      );
+      schedulePartnerProjectStatusAlert({
+        projectId,
+        oldStatus,
+        newStatus: "PERDIDO",
+      });
+    }
     return { success: true };
   } catch (error) {
     console.warn("Falha ao marcar perda:", error);
@@ -678,6 +703,16 @@ export async function updateProjectCommercialAction(
     revalidateCrmPaths();
     if (newStatus === "PRODUCAO" || newStatus === "INSTALACAO") {
       revalidatePath("/factory");
+    }
+    if (oldStatus !== newStatus) {
+      const { schedulePartnerProjectStatusAlert } = await import(
+        "@/lib/partnerAlertEmail"
+      );
+      schedulePartnerProjectStatusAlert({
+        projectId,
+        oldStatus,
+        newStatus,
+      });
     }
     return {
       success: true,

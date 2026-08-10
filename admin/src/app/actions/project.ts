@@ -66,11 +66,27 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
   }
 
   try {
+    const current = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status_geral: true },
+    });
+    const oldStatus = current?.status_geral ?? "";
+
     await prisma.project.update({
       where: { id: projectId },
       data: { status_geral: newStatus as any }
     });
     revalidatePath(`/projects/${projectId}`);
+    if (oldStatus !== newStatus) {
+      const { schedulePartnerProjectStatusAlert } = await import(
+        "@/lib/partnerAlertEmail"
+      );
+      schedulePartnerProjectStatusAlert({
+        projectId,
+        oldStatus,
+        newStatus,
+      });
+    }
     return { success: true };
   } catch (error) {
     console.warn("Simulação de alteração do status geral do projeto:", error);

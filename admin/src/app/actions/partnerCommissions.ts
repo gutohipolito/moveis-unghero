@@ -646,6 +646,9 @@ export async function updatePartnerCommission(input: {
     data.observacoes = input.observacoes?.trim() || null;
   }
 
+  const becamePaid =
+    input.status === "PAGA" && existing.status !== "PAGA";
+
   const row = await prisma.partnerCommission.update({
     where: { id: existing.id },
     data,
@@ -654,6 +657,15 @@ export async function updatePartnerCommission(input: {
 
   revalidatePath("/parceiros");
   revalidatePath(`/parceiros/${existing.partner_id}`);
+  if (becamePaid) {
+    const { schedulePartnerCommissionPaidAlert } = await import(
+      "@/lib/partnerAlertEmail"
+    );
+    schedulePartnerCommissionPaidAlert({
+      companyId: auth.companyId,
+      commissionId: row.id,
+    });
+  }
   return { success: true as const, commission: mapCommission(row) };
 }
 
