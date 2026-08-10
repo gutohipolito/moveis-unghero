@@ -251,7 +251,10 @@ export default function ParceiroPortalShell({
           </div>
 
           <nav className="parceiro-portal-nav" aria-label="Menu do portal">
-            {NAV.map((item) => {
+            {NAV.filter(
+              (item) =>
+                item.href !== "/parceiro/comissoes" || partner.hasCommissions
+            ).map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
