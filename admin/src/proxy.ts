@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { parseClientSessionToken } from "@/lib/clientSession";
 import { parsePartnerSessionToken } from "@/lib/partnerSession";
-import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { checkRateLimitAsync, getRequestIp } from "@/lib/rateLimit";
 
 const PUBLIC_PATHS = new Set([
   "/login",
@@ -131,7 +131,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthSignIn(pathname, request.method)) {
-    const result = checkRateLimit(`signin:${ip}`, LOGIN_RATE);
+    const result = await checkRateLimitAsync(`signin:${ip}`, LOGIN_RATE);
     if (!result.ok) {
       return rateLimitedJson(
         `Muitas tentativas de login. Aguarde ${result.retryAfterSec}s e tente novamente.`,
@@ -142,7 +142,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith("/api/o/")) {
-    const result = checkRateLimit(`quote-unlock:${ip}`, SHARE_RATE);
+    const result = await checkRateLimitAsync(`quote-unlock:${ip}`, SHARE_RATE);
     if (!result.ok) {
       return rateLimitedJson(
         `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,
@@ -153,7 +153,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPublicSharePath(pathname)) {
-    const result = checkRateLimit(`share:${ip}`, SHARE_RATE);
+    const result = await checkRateLimitAsync(`share:${ip}`, SHARE_RATE);
     if (!result.ok) {
       return new NextResponse("Muitas requisições. Tente novamente em breve.", {
         status: 429,
@@ -163,7 +163,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPublicFormPath(pathname) && request.method === "POST") {
-    const result = checkRateLimit(`public-form:${ip}`, PUBLIC_FORM_RATE);
+    const result = await checkRateLimitAsync(`public-form:${ip}`, PUBLIC_FORM_RATE);
     if (!result.ok) {
       return rateLimitedJson(
         `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,

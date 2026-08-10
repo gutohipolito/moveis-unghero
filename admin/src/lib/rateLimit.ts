@@ -1,8 +1,9 @@
 /**
- * Rate limit em memória (por isolate na Vercel).
- * Com UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN, checkRateLimitAsync
- * usa contador compartilhado entre isolates (login/OTP do parceiro).
+ * Rate limit: memória por isolate; com Upstash Redis (env), contador compartilhado.
  */
+
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 type RateBucket = {
   count: number;
@@ -11,6 +12,7 @@ type RateBucket = {
 
 const globalStore = globalThis as unknown as {
   __muRateLimit?: Map<string, RateBucket>;
+  __muUpstashLimiters?: Map<string, Ratelimit>;
 };
 
 function store() {
@@ -57,65 +59,75 @@ export function checkRateLimit(
 }
 
 function upstashConfigured() {
-  return Boolean(
-    process.env.UPSTASH_REDIS_REST_URL?.trim() &&
-      process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
+  return Boolean(getUpstashUrl() && getUpstashToken());
+}
+
+function getUpstashUrl() {
+  return (
+    process.env.UPSTASH_REDIS_REST_URL?.trim() ||
+    process.env.KV_REST_API_URL?.trim() ||
+    ""
   );
 }
 
+function getUpstashToken() {
+  return (
+    process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
+    process.env.KV_REST_API_TOKEN?.trim() ||
+    ""
+  );
+}
+
+function getUpstashLimiter(limit: number, windowMs: number): Ratelimit | null {
+  if (!upstashConfigured()) return null;
+
+  if (!globalStore.__muUpstashLimiters) {
+    globalStore.__muUpstashLimiters = new Map();
+  }
+
+  const cacheKey = `${limit}:${windowMs}`;
+  const cached = globalStore.__muUpstashLimiters.get(cacheKey);
+  if (cached) return cached;
+
+  const windowSec = Math.max(1, Math.ceil(windowMs / 1000));
+  const limiter = new Ratelimit({
+    redis: new Redis({
+      url: getUpstashUrl(),
+      token: getUpstashToken(),
+    }),
+    limiter: Ratelimit.fixedWindow(limit, `${windowSec} s`),
+    prefix: "mu:rl",
+    analytics: false,
+  });
+  globalStore.__muUpstashLimiters.set(cacheKey, limiter);
+  return limiter;
+}
+
 /**
- * Rate limit distribuído via Upstash REST quando configurado;
+ * Rate limit distribuído via Upstash quando configurado;
  * caso contrário, mesma lógica em memória.
  */
 export async function checkRateLimitAsync(
   key: string,
   options: { limit: number; windowMs: number }
 ): Promise<RateLimitResult> {
-  if (!upstashConfigured()) {
+  const limiter = getUpstashLimiter(options.limit, options.windowMs);
+  if (!limiter) {
     return checkRateLimit(key, options);
   }
 
-  const url = process.env.UPSTASH_REDIS_REST_URL!.replace(/\/$/, "");
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN!;
-  const redisKey = `mu:rl:${key}`;
-  const windowSec = Math.max(1, Math.ceil(options.windowMs / 1000));
-
   try {
-    const res = await fetch(`${url}/pipeline`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([
-        ["INCR", redisKey],
-        ["EXPIRE", redisKey, windowSec, "NX"],
-        ["TTL", redisKey],
-      ]),
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      console.warn("Upstash rate limit HTTP", res.status);
-      return checkRateLimit(key, options);
+    const result = await limiter.limit(key);
+    if (!result.success) {
+      const retryAfterSec = Math.max(
+        1,
+        Math.ceil((result.reset - Date.now()) / 1000)
+      );
+      return { ok: false, remaining: 0, retryAfterSec };
     }
-
-    const data = (await res.json()) as Array<{ result?: number | string }>;
-    const count = Number(data[0]?.result ?? 0);
-    const ttlRaw = Number(data[2]?.result ?? windowSec);
-    const ttl = Number.isFinite(ttlRaw) && ttlRaw > 0 ? ttlRaw : windowSec;
-
-    if (count > options.limit) {
-      return {
-        ok: false,
-        remaining: 0,
-        retryAfterSec: Math.max(1, Math.ceil(ttl)),
-      };
-    }
-
     return {
       ok: true,
-      remaining: Math.max(0, options.limit - count),
+      remaining: result.remaining,
       retryAfterSec: 0,
     };
   } catch (error) {

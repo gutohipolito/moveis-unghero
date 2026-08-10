@@ -221,7 +221,10 @@ export async function loadPartnerPortalData(
     tipo: partner.tipo,
     email: partner.email,
     telefone: partner.telefone,
-    fotoUrl: partner.fotoUrl,
+    fotoUrl:
+      partner.fotoUrl && partner.fotoUrl.includes("blob.vercel-storage.com")
+        ? "/api/parceiro/avatar"
+        : partner.fotoUrl,
     cidade: partner.cidade,
     cep: partner.cep,
     endereco: partner.endereco,
