@@ -97,6 +97,10 @@ export interface PartnerPortalCatalog {
   downloadPath: string;
 }
 
+function partnerProjectFileProxyUrl(projectId: string, fileId: string) {
+  return `/api/parceiro/projetos/${encodeURIComponent(projectId)}/arquivos/${encodeURIComponent(fileId)}`;
+}
+
 function partnerCatalogDownloadPath(catalogId: string) {
   return `/api/parceiro/catalogo-arquivo?id=${encodeURIComponent(catalogId)}`;
 }
@@ -689,7 +693,7 @@ export async function loadPartnerProjectDetail(
       id: f.id,
       nome: f.nome,
       mime_type: f.mime_type,
-      url: f.url,
+      url: partnerProjectFileProxyUrl(project.id, f.id),
       size_bytes: f.size_bytes,
       partnerId: f.partner_id,
       partnerNome: f.partner.nome,

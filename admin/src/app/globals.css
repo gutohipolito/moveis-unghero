@@ -801,9 +801,9 @@ button.partner-card:hover,
 
 /* Tema claro do portal (preferência do parceiro) */
 .parceiro-portal-shell[data-parceiro-theme="light"] {
-  --parceiro-light-ink: #1c1410;
-  --parceiro-light-muted: hsl(24 12% 32%);
-  --parceiro-light-faint: hsl(24 10% 42%);
+  --parceiro-light-ink: #14100c;
+  --parceiro-light-muted: hsl(24 16% 26%);
+  --parceiro-light-faint: hsl(24 12% 34%);
   background: linear-gradient(165deg, #f7f3ec 0%, #efe8dc 48%, #e7dfd2 100%);
   color: var(--parceiro-light-ink);
 }
@@ -831,7 +831,7 @@ button.partner-card:hover,
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-nav-link {
-  color: hsl(24 14% 26% / 0.82);
+  color: hsl(24 16% 22% / 0.88);
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-portal-nav-link:hover {
@@ -1110,6 +1110,11 @@ button.partner-card:hover,
   text-underline-offset: 2px;
   color: #fff;
   font-weight: 700;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
 }
 
 .parceiro-portal-header {

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline, setDatabaseOffline } from "@/lib/prisma";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
-import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
+import { checkRateLimit, checkRateLimitAsync, getRequestIp } from "@/lib/rateLimit";
 import {
   createPartnerSessionToken,
   createPartnerPendingLoginToken,
@@ -30,7 +30,8 @@ import {
 const ADMIN_PREVIEW_COOKIE = "parceiro-admin-preview";
 const PARTNER_LOGIN_PENDING_COOKIE = "parceiro-login-pending";
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24;
-const ADMIN_SESSION_MAX_AGE_SEC = 60 * 60 * 4;
+/** Preview da Diretoria: curto de propósito (45 min). */
+const ADMIN_SESSION_MAX_AGE_SEC = 45 * 60;
 
 function cleanPhone(phone: string) {
   return phone.replace(/\D/g, "");
@@ -99,7 +100,7 @@ export async function loginParceiro(data: { email: string; telefone: string }) {
   const isProduction = process.env.NODE_ENV === "production";
 
   const ip = getRequestIp(headerStore);
-  const rate = checkRateLimit(`parceiro-login:${ip}:${emailLimpo}`, {
+  const rate = await checkRateLimitAsync(`parceiro-login:${ip}:${emailLimpo}`, {
     limit: 5,
     windowMs: 15 * 60 * 1000,
   });
@@ -220,7 +221,7 @@ export async function confirmParceiroLoginOtp(data: { code: string }) {
   );
 
   const ip = getRequestIp(headerStore);
-  const rate = checkRateLimit(`parceiro-otp:${ip}:${pendingId ?? "none"}`, {
+  const rate = await checkRateLimitAsync(`parceiro-otp:${ip}:${pendingId ?? "none"}`, {
     limit: 8,
     windowMs: 15 * 60 * 1000,
   });
@@ -343,9 +344,33 @@ export async function logoutParceiro() {
   redirect(wasAdminPreview ? "/parceiros" : "/parceiro/login");
 }
 
+/** Sai do preview e limpa a sessão do portal (volta ao CRM de parceiros). */
+export async function exitPartnerAdminPreview() {
+  const cookieStore = await cookies();
+  cookieStore.delete("parceiro-session");
+  cookieStore.delete(ADMIN_PREVIEW_COOKIE);
+  cookieStore.delete(PARTNER_LOGIN_PENDING_COOKIE);
+  redirect("/parceiros");
+}
+
+/**
+ * Preview da Diretoria só vale com cookie + sessão ADMIN ativa.
+ * Cookie órfão (staff deslogado) encerra a impersonação.
+ */
 export async function isPartnerAdminPreview(): Promise<boolean> {
   const cookieStore = await cookies();
-  return cookieStore.get(ADMIN_PREVIEW_COOKIE)?.value === "1";
+  if (cookieStore.get(ADMIN_PREVIEW_COOKIE)?.value !== "1") {
+    return false;
+  }
+
+  const auth = await getAuthContext();
+  if (!auth || auth.cargo !== "ADMIN") {
+    cookieStore.delete(ADMIN_PREVIEW_COOKIE);
+    cookieStore.delete("parceiro-session");
+    return false;
+  }
+
+  return true;
 }
 
 export type PartnerProfileUpdateInput = {
@@ -567,10 +592,19 @@ export async function deletePartnerProjectFileAction(fileId: string) {
 
   const file = await prisma.partnerProjectFile.findFirst({
     where: { id: fileId, partner_id: partnerId },
-    select: { id: true, project_id: true },
+    select: { id: true, project_id: true, url: true },
   });
   if (!file) {
     return { success: false as const, error: "Arquivo não encontrado." };
+  }
+
+  if (process.env.BLOB_READ_WRITE_TOKEN && file.url.includes("blob.vercel-storage.com")) {
+    try {
+      const { del } = await import("@vercel/blob");
+      await del(file.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    } catch (error) {
+      console.warn("Falha ao remover blob do arquivo do parceiro:", error);
+    }
   }
 
   await prisma.partnerProjectFile.delete({ where: { id: file.id } });

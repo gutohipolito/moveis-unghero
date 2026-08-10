@@ -76,18 +76,6 @@ export default function ParceiroSettingsModal({
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
-              variant={draft.theme === "dark" ? "default" : "outline"}
-              className={cn(
-                "font-bold gap-1.5 h-11",
-                draft.theme === "dark" && "btn-metallic border-none"
-              )}
-              onClick={() => setTheme("dark")}
-            >
-              <Moon className="h-4 w-4" />
-              Escuro
-            </Button>
-            <Button
-              type="button"
               variant={draft.theme === "light" ? "default" : "outline"}
               className={cn(
                 "font-bold gap-1.5 h-11",
@@ -97,6 +85,18 @@ export default function ParceiroSettingsModal({
             >
               <Sun className="h-4 w-4" />
               Claro
+            </Button>
+            <Button
+              type="button"
+              variant={draft.theme === "dark" ? "default" : "outline"}
+              className={cn(
+                "font-bold gap-1.5 h-11",
+                draft.theme === "dark" && "btn-metallic border-none"
+              )}
+              onClick={() => setTheme("dark")}
+            >
+              <Moon className="h-4 w-4" />
+              Escuro
             </Button>
           </div>
         </section>

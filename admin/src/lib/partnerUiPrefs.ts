@@ -13,7 +13,7 @@ export type PartnerUiPrefs = {
 };
 
 export const DEFAULT_PARTNER_UI_PREFS: PartnerUiPrefs = {
-  theme: "dark",
+  theme: "light",
   accent: "silver",
 };
 
@@ -77,7 +77,11 @@ export function applyPartnerUiPrefsToElement(
   el: HTMLElement | null,
   prefs: PartnerUiPrefs
 ): void {
-  const accent = getPartnerAccentHsl(prefs.accent);
+  let accent = getPartnerAccentHsl(prefs.accent);
+  // Prata clara no fundo claro perde contraste — escurece um pouco.
+  if (prefs.theme === "light" && prefs.accent === "silver") {
+    accent = "210 10% 38%";
+  }
   const targets = [el, typeof document !== "undefined" ? document.documentElement : null].filter(
     Boolean
   ) as HTMLElement[];

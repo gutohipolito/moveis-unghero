@@ -149,7 +149,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         id: created.id,
         nome: created.nome,
         mime_type: created.mime_type,
-        url: created.url,
+        url: `/api/parceiro/projetos/${encodeURIComponent(projectId)}/arquivos/${encodeURIComponent(created.id)}`,
         size_bytes: created.size_bytes,
         partnerId: created.partner_id,
         partnerNome: created.partner.nome,

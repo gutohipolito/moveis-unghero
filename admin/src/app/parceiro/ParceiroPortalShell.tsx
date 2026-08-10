@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
+import { exitPartnerAdminPreview } from "@/app/actions/parceiroPortal";
 import {
   applyPartnerUiPrefsToElement,
   DEFAULT_PARTNER_UI_PREFS,
@@ -234,11 +235,14 @@ export default function ParceiroPortalShell({
         <div className="parceiro-portal-admin-banner">
           <div className="parceiro-portal-admin-banner-inner">
             <span>
-              Visualização da Diretoria — portal como <strong>{partner.nome}</strong>.
+              Visualização da Diretoria — portal como <strong>{partner.nome}</strong>
+              {" "}(expira em 45 min).
             </span>
-            <Link href="/parceiros" className="parceiro-portal-admin-banner-link">
-              Voltar ao admin
-            </Link>
+            <form action={exitPartnerAdminPreview}>
+              <button type="submit" className="parceiro-portal-admin-banner-link">
+                Voltar ao admin
+              </button>
+            </form>
           </div>
         </div>
       )}
