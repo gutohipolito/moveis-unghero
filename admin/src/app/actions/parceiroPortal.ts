@@ -8,8 +8,15 @@ import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import {
   createPartnerSessionToken,
+  createPartnerPendingLoginToken,
+  parsePartnerPendingLoginToken,
   parsePartnerSessionToken,
 } from "@/lib/partnerSession";
+import {
+  generatePartnerLoginOtp,
+  verifyPartnerLoginOtp,
+} from "@/lib/partnerLoginOtp";
+import { sendPartnerLoginOtpEmail } from "@/lib/partnerLoginEmail";
 import { getAuthContext } from "@/lib/auth-guard";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
@@ -21,11 +28,69 @@ import {
 } from "@/lib/portfolioUrls";
 
 const ADMIN_PREVIEW_COOKIE = "parceiro-admin-preview";
+const PARTNER_LOGIN_PENDING_COOKIE = "parceiro-login-pending";
+const SESSION_MAX_AGE_SEC = 60 * 60 * 24;
+const ADMIN_SESSION_MAX_AGE_SEC = 60 * 60 * 4;
 
 function cleanPhone(phone: string) {
   return phone.replace(/\D/g, "");
 }
 
+function phonesMatch(stored: string | null | undefined, inputDigits: string) {
+  if (!stored) return false;
+  const storedDigits = cleanPhone(stored);
+  if (storedDigits.length < 8 || inputDigits.length < 8) return false;
+  const tail = inputDigits.slice(-8);
+  return storedDigits.endsWith(tail) || inputDigits.endsWith(storedDigits.slice(-8));
+}
+
+type PartnerLoginMatch = {
+  id: string;
+  nome: string;
+  email: string | null;
+  telefone: string | null;
+  ativo: boolean;
+};
+
+async function findPartnerLoginCandidate(
+  companyId: string,
+  emailLimpo: string,
+  phoneDigits: string
+): Promise<
+  | { kind: "ok"; partner: PartnerLoginMatch }
+  | { kind: "pending" }
+  | { kind: "incomplete" }
+  | { kind: "none" }
+> {
+  const byEmail = await prisma.professionalPartner.findMany({
+    where: {
+      company_id: companyId,
+      email: { equals: emailLimpo, mode: "insensitive" },
+    },
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      telefone: true,
+      ativo: true,
+    },
+    take: 10,
+  });
+
+  const matched = byEmail.filter((p) => phonesMatch(p.telefone, phoneDigits));
+  if (matched.length === 0) {
+    if (byEmail.length > 0 && byEmail.every((p) => !p.telefone)) {
+      return { kind: "incomplete" };
+    }
+    return { kind: "none" };
+  }
+
+  const active = matched.find((p) => p.ativo);
+  if (active) return { kind: "ok", partner: active };
+  return { kind: "pending" };
+}
+
+/** Etapa 1: valida e-mail + telefone e envia código por e-mail. */
 export async function loginParceiro(data: { email: string; telefone: string }) {
   const cookieStore = await cookies();
   const headerStore = await headers();
@@ -40,74 +105,177 @@ export async function loginParceiro(data: { email: string; telefone: string }) {
   });
   if (!rate.ok) {
     return {
-      success: false,
+      success: false as const,
       error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
     };
   }
 
   if (!emailLimpo || !emailLimpo.includes("@")) {
-    return { success: false, error: "Informe um e-mail válido." };
+    return { success: false as const, error: "Informe um e-mail válido." };
   }
   if (phoneDigits.length < 8) {
-    return { success: false, error: "Informe um telefone válido com DDD." };
+    return { success: false as const, error: "Informe um telefone válido com DDD." };
   }
 
   if (isDatabaseOffline()) {
-    return { success: false, error: "Serviço temporariamente indisponível. Tente novamente." };
+    return {
+      success: false as const,
+      error: "Serviço temporariamente indisponível. Tente novamente.",
+    };
   }
 
   try {
     const companyId = resolvePublicCompanyId();
-    const partners = await prisma.professionalPartner.findMany({
-      where: {
-        company_id: companyId,
-        ativo: true,
-        email: { equals: emailLimpo, mode: "insensitive" },
-      },
-      select: {
-        id: true,
-        email: true,
-        telefone: true,
-      },
-      take: 10,
-    });
+    const found = await findPartnerLoginCandidate(companyId, emailLimpo, phoneDigits);
 
-    const phoneTail = phoneDigits.slice(-8);
-    const partner = partners.find((p) => {
-      if (!p.telefone) return false;
-      const stored = cleanPhone(p.telefone);
-      return stored.endsWith(phoneTail) || phoneDigits.endsWith(stored.slice(-8));
-    });
-
-    if (!partner) {
-      const emailMatchedWithoutPhone =
-        partners.length > 0 && partners.every((p) => !p.telefone);
-      if (emailMatchedWithoutPhone) {
-        return {
-          success: false,
-          error:
-            "Cadastro incompleto para o portal. Peça à Móveis Unghero para confirmar e-mail e telefone.",
-        };
-      }
+    if (found.kind === "pending") {
       return {
-        success: false,
+        success: false as const,
+        error:
+          "Seu cadastro ainda está em análise. A Móveis Unghero libera o portal após a aprovação.",
+      };
+    }
+    if (found.kind === "incomplete") {
+      return {
+        success: false as const,
+        error:
+          "Cadastro incompleto para o portal. Peça à Móveis Unghero para confirmar e-mail e telefone.",
+      };
+    }
+    if (found.kind === "none") {
+      return {
+        success: false as const,
         error: "Parceiro não encontrado ou dados inválidos.",
       };
     }
 
+    const partner = found.partner;
+    if (!partner.email) {
+      return {
+        success: false as const,
+        error:
+          "Cadastro incompleto para o portal. Peça à Móveis Unghero para confirmar o e-mail.",
+      };
+    }
+
+    const code = generatePartnerLoginOtp(partner.id);
+    const mailed = await sendPartnerLoginOtpEmail({
+      companyId,
+      nome: partner.nome,
+      email: partner.email,
+      code,
+    });
+
+    if (!mailed.sent) {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`[parceiro-login-otp] ${partner.id} → ${code}`);
+      }
+      return {
+        success: false as const,
+        error:
+          mailed.error ||
+          "Não foi possível enviar o código por e-mail. Tente novamente ou fale com a Móveis Unghero.",
+      };
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[parceiro-login-otp] enviado para ${partner.email}`);
+    }
+
+    cookieStore.delete("parceiro-session");
     cookieStore.delete(ADMIN_PREVIEW_COOKIE);
-    cookieStore.set("parceiro-session", createPartnerSessionToken(partner.id), {
+    cookieStore.set(
+      PARTNER_LOGIN_PENDING_COOKIE,
+      createPartnerPendingLoginToken(partner.id, 10 * 60),
+      {
       path: "/",
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24,
+      maxAge: 10 * 60,
     });
-    return { success: true };
+
+    return {
+      success: true as const,
+      needsOtp: true as const,
+      emailHint: partner.email.replace(/(.{2}).+(@.+)/, "$1***$2"),
+    };
   } catch (error) {
     console.warn("Banco offline no login de parceiro.", error);
     setDatabaseOffline(true);
-    return { success: false, error: "Serviço temporariamente indisponível. Tente novamente." };
+    return {
+      success: false as const,
+      error: "Serviço temporariamente indisponível. Tente novamente.",
+    };
+  }
+}
+
+/** Etapa 2: confere o código enviado por e-mail e abre a sessão. */
+export async function confirmParceiroLoginOtp(data: { code: string }) {
+  const cookieStore = await cookies();
+  const headerStore = await headers();
+  const isProduction = process.env.NODE_ENV === "production";
+  const pendingId = parsePartnerPendingLoginToken(
+    cookieStore.get(PARTNER_LOGIN_PENDING_COOKIE)?.value
+  );
+
+  const ip = getRequestIp(headerStore);
+  const rate = checkRateLimit(`parceiro-otp:${ip}:${pendingId ?? "none"}`, {
+    limit: 8,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.ok) {
+    return {
+      success: false as const,
+      error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente novamente.`,
+    };
+  }
+
+  if (!pendingId) {
+    return {
+      success: false as const,
+      error: "Sessão de login expirou. Informe e-mail e telefone novamente.",
+    };
+  }
+
+  const code = data.code?.trim() || "";
+  if (!verifyPartnerLoginOtp(pendingId, code)) {
+    return { success: false as const, error: "Código inválido ou expirado." };
+  }
+
+  try {
+    const partner = await prisma.professionalPartner.findFirst({
+      where: { id: pendingId, ativo: true },
+      select: { id: true },
+    });
+    if (!partner) {
+      cookieStore.delete(PARTNER_LOGIN_PENDING_COOKIE);
+      return {
+        success: false as const,
+        error: "Parceiro não encontrado ou inativo.",
+      };
+    }
+
+    cookieStore.delete(PARTNER_LOGIN_PENDING_COOKIE);
+    cookieStore.delete(ADMIN_PREVIEW_COOKIE);
+    cookieStore.set(
+      "parceiro-session",
+      createPartnerSessionToken(partner.id, SESSION_MAX_AGE_SEC),
+      {
+        path: "/",
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+        maxAge: SESSION_MAX_AGE_SEC,
+      }
+    );
+    return { success: true as const };
+  } catch (error) {
+    console.warn("Falha ao confirmar OTP do parceiro.", error);
+    return {
+      success: false as const,
+      error: "Não foi possível concluir o login. Tente novamente.",
+    };
   }
 }
 
@@ -139,19 +307,24 @@ export async function adminEnterPartnerPortal(partnerId: string) {
 
     const isProduction = process.env.NODE_ENV === "production";
     const cookieStore = await cookies();
-    cookieStore.set("parceiro-session", createPartnerSessionToken(partner.id), {
-      path: "/",
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 4,
-    });
+    cookieStore.delete(PARTNER_LOGIN_PENDING_COOKIE);
+    cookieStore.set(
+      "parceiro-session",
+      createPartnerSessionToken(partner.id, ADMIN_SESSION_MAX_AGE_SEC),
+      {
+        path: "/",
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+        maxAge: ADMIN_SESSION_MAX_AGE_SEC,
+      }
+    );
     cookieStore.set(ADMIN_PREVIEW_COOKIE, "1", {
       path: "/",
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      maxAge: 60 * 60 * 4,
+      maxAge: ADMIN_SESSION_MAX_AGE_SEC,
     });
 
     return { success: true };
@@ -166,6 +339,7 @@ export async function logoutParceiro() {
   const wasAdminPreview = cookieStore.get(ADMIN_PREVIEW_COOKIE)?.value === "1";
   cookieStore.delete("parceiro-session");
   cookieStore.delete(ADMIN_PREVIEW_COOKIE);
+  cookieStore.delete(PARTNER_LOGIN_PENDING_COOKIE);
   redirect(wasAdminPreview ? "/parceiros" : "/parceiro/login");
 }
 

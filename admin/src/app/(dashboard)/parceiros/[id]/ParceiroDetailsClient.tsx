@@ -16,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 import type { ParceiroDTO } from "@/app/actions/parceiros";
+import { updateParceiro } from "@/app/actions/parceiros";
 import {
   getPartnerCommissionTotals,
 } from "@/app/actions/partnerCommissions";
@@ -84,8 +85,9 @@ export default function ParceiroDetailsClient({
   const sensitive = useSensitiveDisplay();
   const canManage = canManageParceiros(role);
 
-  const [parceiro] = useState(initialParceiro);
+  const [parceiro, setParceiro] = useState(initialParceiro);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const [togglingAccess, setTogglingAccess] = useState(false);
   const [commissionTotals, setCommissionTotals] = useState<{
     pendente: number;
     pago: number;
@@ -127,6 +129,37 @@ export default function ParceiroDetailsClient({
       cancelled = true;
     };
   }, [parceiro.id]);
+
+  async function handleTogglePortalAccess() {
+    if (!canManage) return;
+    const next = !parceiro.ativo;
+    confirmAction({
+      title: next ? "Liberar portal?" : "Suspender portal?",
+      message: next
+        ? `${parceiro.nome} poderá entrar em /parceiro com e-mail, telefone e código por e-mail.`
+        : `${parceiro.nome} deixará de acessar o portal até nova liberação.`,
+      confirmLabel: next ? "Liberar acesso" : "Suspender",
+      onConfirm: async () => {
+        setTogglingAccess(true);
+        try {
+          const res = await updateParceiro(parceiro.id, { ativo: next });
+          if (!res.success) {
+            showError("Não foi possível atualizar", res.error || "Tente novamente.");
+            return;
+          }
+          setParceiro((prev) => ({ ...prev, ativo: next }));
+          showSuccess(
+            next ? "Portal liberado" : "Portal suspenso",
+            next
+              ? "O parceiro já pode solicitar o código de acesso."
+              : "O login do parceiro fica bloqueado."
+          );
+        } finally {
+          setTogglingAccess(false);
+        }
+      },
+    });
+  }
 
   const style = PARTNER_TYPE_STYLES[parceiro.tipo];
   const Icon = style.icon;
@@ -206,9 +239,23 @@ export default function ParceiroDetailsClient({
                 {parceiro.nome}
               </h1>
               {!parceiro.ativo && (
-                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
-                  Inativo
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                  Aguardando aprovação
                 </span>
+              )}
+              {canManage && (
+                <button
+                  type="button"
+                  disabled={togglingAccess}
+                  onClick={() => handleTogglePortalAccess()}
+                  className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-border bg-white hover:bg-slate-50 text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {togglingAccess
+                    ? "Atualizando…"
+                    : parceiro.ativo
+                      ? "Suspender portal"
+                      : "Liberar portal"}
+                </button>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">

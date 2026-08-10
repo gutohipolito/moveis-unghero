@@ -92,23 +92,29 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   let fileUrl = "";
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    fileUrl = `https://example.invalid/partner-file-${Date.now()}.${ext}`;
-  } else {
-    try {
-      const pathname = `partners/${ownership.companyId}/${partnerId}/projects/${projectId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const blob = await put(pathname, file, {
-        access: "public",
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: mimeType,
-      });
-      fileUrl = blob.url;
-    } catch (error) {
-      console.error("Upload arquivo parceiro:", error);
-      return NextResponse.json(
-        { success: false, error: "Falha ao salvar o arquivo." },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Upload indisponível no momento. Tente novamente mais tarde.",
+      },
+      { status: 503 }
+    );
+  }
+
+  try {
+    const pathname = `partners/${ownership.companyId}/${partnerId}/projects/${projectId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const blob = await put(pathname, file, {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: mimeType,
+    });
+    fileUrl = blob.url;
+  } catch (error) {
+    console.error("Upload arquivo parceiro:", error);
+    return NextResponse.json(
+      { success: false, error: "Falha ao salvar o arquivo." },
+      { status: 500 }
+    );
   }
 
   try {

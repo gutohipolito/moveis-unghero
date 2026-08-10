@@ -161,25 +161,26 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       }
     }
     if (step === 3) {
-      if (!telefone.trim() && !email.trim()) {
-        setError("Por favor, preencha pelo menos um meio de contato (WhatsApp ou E-mail).");
+      if (!telefone.trim()) {
+        setError("Informe um WhatsApp/telefone com DDD (obrigatório).");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      if (telefone.trim()) {
-        if (!isValidBrPhoneDigits(telefone)) {
-          setError("Por favor, insira um WhatsApp/Telefone válido com DDD (fixo ou celular).");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          return;
-        }
+      if (!isValidBrPhoneDigits(telefone)) {
+        setError("Por favor, insira um WhatsApp/Telefone válido com DDD (fixo ou celular).");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
       }
-      if (email.trim()) {
-        const emailError = validateOptionalEmail(email);
-        if (emailError) {
-          setError(emailError);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          return;
-        }
+      if (!email.trim()) {
+        setError("Informe um e-mail válido (obrigatório para o portal).");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      const emailError = validateOptionalEmail(email);
+      if (emailError) {
+        setError(emailError);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
       }
     }
     if (step === 4) {
@@ -246,19 +247,17 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    if (!telefone.trim() && !email.trim()) {
-      setError("Por favor, preencha pelo menos um contato (WhatsApp ou E-mail) para podermos retornar.");
+    if (!telefone.trim() || !isValidBrPhoneDigits(telefone)) {
+      setError("Informe um WhatsApp/telefone válido com DDD (obrigatório).");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    if (telefone.trim()) {
-      if (!isValidBrPhoneDigits(telefone)) {
-        setError("Por favor, insira um WhatsApp/Telefone válido com DDD (fixo ou celular).");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
+    if (!email.trim()) {
+      setError("Informe um e-mail válido (obrigatório para o portal).");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
-    if (email.trim()) {
+    {
       const emailError = validateOptionalEmail(email);
       if (emailError) {
         setError(emailError);
@@ -345,15 +344,16 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             </h2>
             <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
               Obrigado pelo interesse em fazer parceria com a Móveis Unghero.
-              Nossa equipe analisará seu perfil e entrará em contato em breve para alinharmos os detalhes.
+              Nossa equipe analisará seu perfil e, após a aprovação, liberará o
+              acesso ao portal. Entraremos em contato em breve.
             </p>
           </div>
 
           <a
-            href="/parceiro/login"
+            href="/"
             className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-bold btn-metallic"
           >
-            Já sou parceiro? Acessar painel
+            Voltar ao site
           </a>
 
           <div className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-3.5 shadow-inner">

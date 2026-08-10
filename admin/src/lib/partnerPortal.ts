@@ -212,23 +212,26 @@ export async function loadPartnerPortalData(
     escritorio: partner.escritorio,
     registro_profissional: partner.registro_profissional,
     portfolioUrl: partner.portfolioUrl,
-    projects: projects.map((project) => ({
-      id: project.id,
-      valor_previsto: Number(project.valor_previsto),
-      status_geral: project.status_geral,
-      updatedAt: project.updatedAt.toISOString(),
-      client: {
-        id: project.client.id,
-        nome: project.client.nome,
-        cidade: project.client.cidade,
-      },
-      environments: project.environments.map((env) => ({
-        id: env.id,
-        nome: env.nome,
-        tipo: env.tipo,
-        status: env.status,
-      })),
-    })),
+    projects: projects.map((project) => {
+      const visible = partnerProjectValueVisible(project.status_geral);
+      return {
+        id: project.id,
+        valor_previsto: visible ? Number(project.valor_previsto) : 0,
+        status_geral: project.status_geral,
+        updatedAt: project.updatedAt.toISOString(),
+        client: {
+          id: project.client.id,
+          nome: project.client.nome,
+          cidade: project.client.cidade,
+        },
+        environments: project.environments.map((env) => ({
+          id: env.id,
+          nome: env.nome,
+          tipo: env.tipo,
+          status: env.status,
+        })),
+      };
+    }),
   };
 }
 
@@ -621,9 +624,11 @@ export async function loadPartnerProjectDetail(
 
   if (!project) return null;
 
+  const valueVisible = partnerProjectValueVisible(project.status_geral);
+
   return {
     id: project.id,
-    valor_previsto: Number(project.valor_previsto),
+    valor_previsto: valueVisible ? Number(project.valor_previsto) : 0,
     status_geral: project.status_geral,
     updatedAt: project.updatedAt.toISOString(),
     data_entrega_prevista: project.data_entrega_prevista?.toISOString() ?? null,
@@ -638,19 +643,21 @@ export async function loadPartnerProjectDetail(
       id: q.id,
       versao: q.versao,
       codigo: q.codigo,
-      subtotal: Number(q.subtotal),
-      desconto: Number(q.desconto),
-      valor_final: Number(q.valor_final),
+      subtotal: valueVisible ? Number(q.subtotal) : 0,
+      desconto: valueVisible ? Number(q.desconto) : 0,
+      valor_final: valueVisible ? Number(q.valor_final) : 0,
       validade: q.validade.toISOString(),
       aprovado_em: q.aprovado_em?.toISOString() ?? null,
-      publicUrl: q.pdf_share_code
-        ? buildQuotePdfShortUrl(q.pdf_share_code)
-        : q.pdf_share_url,
+      publicUrl: valueVisible
+        ? q.pdf_share_code
+          ? buildQuotePdfShortUrl(q.pdf_share_code)
+          : q.pdf_share_url
+        : null,
       items: q.items.map((item) => ({
         id: item.id,
         descricao: item.descricao,
         quantidade: item.quantidade,
-        valor_total: Number(item.valor_total),
+        valor_total: valueVisible ? Number(item.valor_total) : 0,
         status: item.status,
       })),
     })),

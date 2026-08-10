@@ -80,7 +80,9 @@ export function buildSignupConfirmationEmail(options: {
 
   const followUp = isBriefing
     ? `Nossa equipe analisará o pedido e entrará em contato quando for o momento.`
-    : `Nossa equipe poderá entrar em contato quando for necessário.`;
+    : options.kind === "parceiro"
+      ? `Nossa equipe analisará seu perfil. O acesso ao portal do parceiro só é liberado após a aprovação.`
+      : `Nossa equipe poderá entrar em contato quando for necessário.`;
 
   const whatsappHref = buildWhatsAppHref(options.kind);
   const whatsappLabel = `WhatsApp ${WHATSAPP_DISPLAY}`;

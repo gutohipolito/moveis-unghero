@@ -40,20 +40,26 @@ export async function POST(request: NextRequest) {
 
   let fileUrl = "";
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    fileUrl = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=512&h=512&q=80&t=${Date.now()}`;
-  } else {
-    try {
-      const pathname = `partners/${partner.company_id}/${partner.id}/avatar/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const blob = await put(pathname, file, {
-        access: "public",
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: mimeType,
-      });
-      fileUrl = blob.url;
-    } catch (error) {
-      console.error("Upload avatar parceiro:", error);
-      return NextResponse.json({ success: false, error: "Falha ao salvar a imagem." }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Upload indisponível no momento. Tente novamente mais tarde.",
+      },
+      { status: 503 }
+    );
+  }
+
+  try {
+    const pathname = `partners/${partner.company_id}/${partner.id}/avatar/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const blob = await put(pathname, file, {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: mimeType,
+    });
+    fileUrl = blob.url;
+  } catch (error) {
+    console.error("Upload avatar parceiro:", error);
+    return NextResponse.json({ success: false, error: "Falha ao salvar a imagem." }, { status: 500 });
   }
 
   try {

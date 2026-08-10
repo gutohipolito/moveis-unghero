@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { loginParceiro } from "@/app/actions/parceiroPortal";
+import { loginParceiro, confirmParceiroLoginOtp } from "@/app/actions/parceiroPortal";
 import LoginFormParceiro from "./LoginFormParceiro";
 import ParceiroLoginBackground from "./ParceiroLoginBackground";
 import ParceiroLoginBadgeIcon from "./ParceiroLoginBadgeIcon";
@@ -38,12 +38,15 @@ export default function ParceiroLoginPage() {
               </span>
               <h1 className="parceiro-login-title">Acessar seu painel</h1>
               <p className="parceiro-login-subtitle">
-                Use o e-mail e o telefone do seu cadastro para acompanhar os projetos
-                vinculados a você.
+                Informe e-mail e telefone do cadastro. Enviaremos um código de
+                acesso para o e-mail.
               </p>
             </div>
 
-            <LoginFormParceiro loginAction={loginParceiro} />
+            <LoginFormParceiro
+              loginAction={loginParceiro}
+              confirmOtpAction={confirmParceiroLoginOtp}
+            />
           </div>
         </div>
 

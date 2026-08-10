@@ -186,6 +186,11 @@ const PartnerCard = ({
               >
                 {p.nome}
               </h3>
+              {!p.ativo && (
+                <span className="shrink-0 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                  Aguardando
+                </span>
+              )}
               {canManage && (
                 <div className="flex items-center gap-0.5 shrink-0 -mt-0.5" onClick={(e) => e.stopPropagation()}>
                   <button
@@ -365,6 +370,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [parceiros, setParceiros] = useState<ParceiroDTO[]>(initialParceiros);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ACTIVE" | "PENDING" | "ALL">("ACTIVE");
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ParceiroDTO | null>(null);
@@ -554,6 +560,11 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     setIsCreateOpen(true);
   };
 
+  const pendingCount = useMemo(
+    () => parceiros.filter((p) => !p.ativo).length,
+    [parceiros]
+  );
+
   const filtered = useMemo(() => {
     return parceiros.filter((p) => {
       const q = search.toLowerCase();
@@ -564,9 +575,13 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         (p.cidade?.toLowerCase().includes(q) ?? false) ||
         (p.registro_profissional?.toLowerCase().includes(q) ?? false);
       const matchesTipo = filterTipo === "ALL" || p.tipo === filterTipo;
-      return matchesSearch && matchesTipo && p.ativo;
+      const matchesStatus =
+        filterStatus === "ALL" ||
+        (filterStatus === "ACTIVE" && p.ativo) ||
+        (filterStatus === "PENDING" && !p.ativo);
+      return matchesSearch && matchesTipo && matchesStatus;
     });
-  }, [parceiros, search, filterTipo]);
+  }, [parceiros, search, filterTipo, filterStatus]);
 
   const portalCandidates = useMemo(() => {
     const q = portalSearch.trim().toLowerCase();
@@ -840,6 +855,19 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 {PARTNER_TYPE_STYLES[t].label}
               </option>
             ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) =>
+              setFilterStatus(e.target.value as "ACTIVE" | "PENDING" | "ALL")
+            }
+            className="h-10 px-3 rounded-md border border-border bg-card text-sm cursor-pointer"
+          >
+            <option value="ACTIVE">Ativos no portal</option>
+            <option value="PENDING">
+              Aguardando aprovação{pendingCount > 0 ? ` (${pendingCount})` : ""}
+            </option>
+            <option value="ALL">Todos</option>
           </select>
         </div>
 

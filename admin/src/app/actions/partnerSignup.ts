@@ -70,13 +70,13 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
     const email = emailRaw ? normalizeEmailInput(emailRaw) : null;
     const phoneDigits = telefone ? cleanPhone(telefone) : "";
 
-    if (!telefone && !email) {
-      return { success: false, error: "Informe telefone ou e-mail para contato." };
+    if (!email) {
+      return { success: false, error: "Informe um e-mail válido para contato e acesso ao portal." };
     }
-    if (telefone && !isValidBrPhoneDigits(telefone)) {
+    if (!telefone || !isValidBrPhoneDigits(telefone)) {
       return {
         success: false,
-        error: "Informe um telefone válido com DDD (fixo ou celular).",
+        error: "Informe um WhatsApp/telefone válido com DDD (obrigatório para o portal).",
       };
     }
 
@@ -143,7 +143,8 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
         lgpd_aceite_em: new Date(),
         cadastro_canal: "PORTAL_PUBLICO",
         quote_card_mode: "VERIFIED",
-        ativo: true,
+        // Portal só libera após a equipe ativar no CRM.
+        ativo: false,
       },
     });
 
