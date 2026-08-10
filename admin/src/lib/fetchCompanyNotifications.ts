@@ -3,6 +3,7 @@ import {
   buildInvoiceNotifications,
   buildSlaNotifications,
   buildBriefingNotifications,
+  buildPartnerSignupNotifications,
   buildSupplyTicketNotifications,
   buildQuoteExpiringNotifications,
   buildCardNoteNotifications,
@@ -77,6 +78,7 @@ export async function fetchCompanyNotifications(
     slaAlerts,
     invoicePending,
     briefings,
+    pendingPartners,
     pendingInstallments,
     expiringQuotes,
   ] = await Promise.all([
@@ -98,6 +100,24 @@ export async function fetchCompanyNotifications(
       },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.professionalPartner
+      .findMany({
+        where: {
+          company_id: companyId,
+          ativo: false,
+          cadastro_canal: "PORTAL_PUBLICO",
+          createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        },
+        select: {
+          id: true,
+          nome: true,
+          tipo: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 40,
+      })
+      .catch(() => []),
     prisma.installment.findMany({
       where: {
         status: { in: ["PENDENTE", "ATRASADO"] },
@@ -146,6 +166,8 @@ export async function fetchCompanyNotifications(
 
   const briefingNotifications = buildBriefingNotifications(briefings);
 
+  const partnerSignupNotifications = buildPartnerSignupNotifications(pendingPartners);
+
   const installmentNotifications = buildInstallmentDueNotifications(
     pendingInstallments.map((inst) => ({
       id: inst.id,
@@ -187,6 +209,7 @@ export async function fetchCompanyNotifications(
     slaNotifications,
     invoiceNotifications,
     briefingNotifications,
+    partnerSignupNotifications,
     installmentNotifications,
     supplyNotifications,
     quoteExpiringNotifications

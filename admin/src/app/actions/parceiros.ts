@@ -356,6 +356,12 @@ export async function updateParceiro(
 
     revalidatePath("/parceiros");
     revalidatePath(`/parceiros/${id}`);
+    if (data.ativo !== undefined) {
+      const { invalidateCompanyNotifications } = await import(
+        "@/lib/fetchCompanyNotifications"
+      );
+      invalidateCompanyNotifications(auth.companyId);
+    }
     return { success: true, parceiro: parceiro as unknown as ParceiroDTO };
   } catch (error: unknown) {
     console.error("Erro ao atualizar parceiro:", error);

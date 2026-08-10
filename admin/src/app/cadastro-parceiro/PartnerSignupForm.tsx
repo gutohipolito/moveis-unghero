@@ -25,7 +25,7 @@ import {
   PARTNER_TYPE_STYLES,
 } from "@/lib/partnerTypes";
 import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
-import { FORM_FIELD_LIMITS } from "@/lib/brDocuments";
+import { FORM_FIELD_LIMITS, validatePartnerRegistro } from "@/lib/brDocuments";
 import { validateOptionalEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
@@ -56,6 +56,20 @@ const selectClass =
   "w-full h-11 rounded-md border border-border/70 bg-white/90 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 cursor-pointer";
 const textareaClass =
   "w-full rounded-md border border-border/70 bg-white/90 px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 resize-none";
+
+function FieldCounter({ value, max }: { value: string; max: number }) {
+  const len = value.length;
+  return (
+    <p
+      className={cn(
+        "text-[10px] tabular-nums text-right",
+        len >= max ? "text-amber-700 font-semibold" : "text-muted-foreground"
+      )}
+    >
+      {len}/{max}
+    </p>
+  );
+}
 
 export default function PartnerSignupForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
@@ -182,13 +196,9 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      if (tipo === "ARQUITETO" && !registroProfissional.trim()) {
-        setError("Por favor, informe o seu CAU para prosseguir.");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
-      if (tipo === "ENGENHEIRO" && !registroProfissional.trim()) {
-        setError("Por favor, informe o seu CREA para prosseguir.");
+      const registroError = validatePartnerRegistro(tipo, registroProfissional);
+      if (registroError) {
+        setError(registroError);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -274,15 +284,13 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    if (tipo === "ARQUITETO" && !registroProfissional.trim()) {
-      setError("Por favor, informe o seu CAU.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    if (tipo === "ENGENHEIRO" && !registroProfissional.trim()) {
-      setError("Por favor, informe o seu CREA.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+    {
+      const registroError = validatePartnerRegistro(tipo, registroProfissional);
+      if (registroError) {
+        setError(registroError);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
     }
     if (!telefone.trim() || !isValidBrPhoneDigits(telefone)) {
       setError("Informe um WhatsApp/telefone válido com DDD (obrigatório).");
@@ -541,6 +549,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   className={cn(inputClass, "pl-10")}
                 />
               </div>
+              <FieldCounter value={nome} max={FORM_FIELD_LIMITS.nome} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -562,6 +571,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     className={cn(inputClass, "pl-10")}
                   />
                 </div>
+                <FieldCounter value={escritorio} max={FORM_FIELD_LIMITS.escritorio} />
               </div>
 
               <div className="space-y-1.5">
@@ -605,7 +615,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     tipo === "ARQUITETO"
                       ? "Ex: A123456-7"
                       : tipo === "ENGENHEIRO"
-                        ? "Ex: 123.456-D"
+                        ? "Ex: 123456-D"
                         : "CAU, CREA ou ABD (se houver)"
                   }
                   value={registroProfissional}
@@ -617,6 +627,19 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   maxLength={FORM_FIELD_LIMITS.registroProfissional}
                   className={cn(inputClass, "pl-10")}
                   required={tipo === "ARQUITETO" || tipo === "ENGENHEIRO"}
+                />
+              </div>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {tipo === "ARQUITETO"
+                    ? "Formato CAU: letra + números (ex.: A123456-7)."
+                    : tipo === "ENGENHEIRO"
+                      ? "Informe o CREA completo, com sufixo se houver."
+                      : "Opcional — informe se tiver conselho de classe."}
+                </p>
+                <FieldCounter
+                  value={registroProfissional}
+                  max={FORM_FIELD_LIMITS.registroProfissional}
                 />
               </div>
             </div>
@@ -707,10 +730,14 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 type="url"
                 placeholder="https://instagram.com/seu_perfil"
                 value={portfolioUrl}
-                onChange={(e) => setPortfolioUrl(e.target.value)}
+                onChange={(e) =>
+                  setPortfolioUrl(e.target.value.slice(0, FORM_FIELD_LIMITS.portfolioUrl))
+                }
+                maxLength={FORM_FIELD_LIMITS.portfolioUrl}
                 className={cn(inputClass, "pl-10")}
               />
             </div>
+            <FieldCounter value={portfolioUrl} max={FORM_FIELD_LIMITS.portfolioUrl} />
           </div>
 
           {navRow}
@@ -739,11 +766,15 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   id="parceiro-signup-obs"
                   placeholder="Ex: políticas de indicação, RT, envio de projetos técnicos…"
                   value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
+                  onChange={(e) =>
+                    setObservacoes(e.target.value.slice(0, FORM_FIELD_LIMITS.observacoes))
+                  }
+                  maxLength={FORM_FIELD_LIMITS.observacoes}
                   rows={3}
                   className={cn(textareaClass, "pl-10")}
                 />
               </div>
+              <FieldCounter value={observacoes} max={FORM_FIELD_LIMITS.observacoes} />
             </div>
 
             <div className="space-y-2">

@@ -10,8 +10,9 @@ import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { sendSignupConfirmationEmail } from "@/lib/signupConfirmationEmail";
 import { headers } from "next/headers";
 import { isValidBrPhoneDigits } from "@/lib/phone";
-import { FORM_FIELD_LIMITS, truncateField } from "@/lib/brDocuments";
+import { FORM_FIELD_LIMITS, truncateField, validatePartnerRegistro, normalizeRegistroProfissional } from "@/lib/brDocuments";
 import { normalizeEmailInput, validateOptionalEmail } from "@/lib/email";
+import { invalidateCompanyNotifications } from "@/lib/fetchCompanyNotifications";
 
 export interface PartnerSignupData {
   nome: string;
@@ -87,6 +88,14 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
       };
     }
 
+    const registroError = validatePartnerRegistro(
+      data.tipo,
+      data.registro_profissional || ""
+    );
+    if (registroError) {
+      return { success: false, error: registroError };
+    }
+
     const companyId = resolvePublicCompanyId();
 
     const orConditions: { email?: { equals: string; mode: "insensitive" }; telefone?: { contains: string } }[] = [];
@@ -127,7 +136,7 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
           ? capitalizeText(truncateField(data.escritorio, FORM_FIELD_LIMITS.escritorio))
           : null,
         registro_profissional: data.registro_profissional?.trim()
-          ? truncateField(data.registro_profissional, FORM_FIELD_LIMITS.registroProfissional)
+          ? normalizeRegistroProfissional(data.registro_profissional)
           : null,
         portfolioUrl: data.portfolio_url?.trim()
           ? truncateField(data.portfolio_url, FORM_FIELD_LIMITS.portfolioUrl)
@@ -150,6 +159,7 @@ export async function submitPublicPartnerSignupAction(data: PartnerSignupData) {
 
     revalidatePath("/parceiros");
     revalidatePath("/marketing/formularios");
+    invalidateCompanyNotifications(companyId);
 
     void sendSignupConfirmationEmail({
       companyId,

@@ -4319,6 +4319,10 @@ button.partner-card:hover,
   background: hsl(var(--primary));
 }
 
+.in-app-toast[data-accent="partner"] .in-app-toast-icon-badge {
+  background: hsl(152 55% 36%);
+}
+
 .in-app-toast[data-accent="follow_up"] .in-app-toast-icon-badge {
   background: hsl(0 72% 52%);
 }

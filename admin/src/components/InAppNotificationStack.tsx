@@ -32,6 +32,7 @@ interface InAppNotificationStackProps {
 
 const TOAST_ICONS: Partial<Record<NotificationType, LucideIcon>> = {
   new_briefing: ClipboardList,
+  new_partner_signup: UserRound,
   follow_up: PhoneCall,
   card_note: BellRing,
   sla_due: Clock,

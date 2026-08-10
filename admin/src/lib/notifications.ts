@@ -14,6 +14,7 @@ export type NotificationType =
   | "sla_due"
   | "invoice_pending"
   | "new_briefing"
+  | "new_partner_signup"
   | "installment_due"
   | "supply_ticket"
   | "quote_stale"
@@ -168,6 +169,28 @@ export function buildBriefingNotifications(
   }));
 }
 
+export function buildPartnerSignupNotifications(
+  partners: {
+    id: string;
+    nome: string;
+    tipo: string;
+    createdAt: Date;
+  }[]
+): AppNotification[] {
+  return partners.map((p) => ({
+    id: `partner-signup-${p.id}`,
+    type: "new_partner_signup" as const,
+    priority: "high" as const,
+    title: "Novo cadastro de parceiro",
+    message: `${p.nome} aguarda aprovação no portal.`,
+    href: `/parceiros?status=PENDING&partner=${encodeURIComponent(p.id)}`,
+    createdAt: p.createdAt.toISOString(),
+    meta: {
+      clientName: p.nome,
+    },
+  }));
+}
+
 export function buildSupplyTicketNotifications(
   tickets: {
     id: string;
@@ -280,6 +303,7 @@ export function isStickyReminderNotification(_notification: AppNotification): bo
 
 export type InAppToastAccent =
   | "briefing"
+  | "partner"
   | "follow_up"
   | "card_note"
   | "sla"
@@ -296,6 +320,8 @@ export function getInAppToastMeta(notification: AppNotification): {
   switch (notification.type) {
     case "new_briefing":
       return { actionLabel: "Abrir", accent: "briefing" };
+    case "new_partner_signup":
+      return { actionLabel: "Aprovar", accent: "partner" };
     case "follow_up":
       return { actionLabel: "Abrir", accent: "follow_up" };
     case "card_note":

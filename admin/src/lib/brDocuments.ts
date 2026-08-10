@@ -129,3 +129,64 @@ export function validateOptionalCep(cep: string): string | null {
 export function truncateField(value: string, max: number): string {
   return value.trim().slice(0, max);
 }
+
+/** Remove espaços extras e uppercasa o registro profissional. */
+export function normalizeRegistroProfissional(value: string): string {
+  return value
+    .trim()
+    .replace(/\s+/g, "")
+    .toUpperCase()
+    .slice(0, FORM_FIELD_LIMITS.registroProfissional);
+}
+
+/**
+ * CAU típico: letra opcional + 4–7 dígitos + hífen opcional + 1 dígito
+ * (ex.: A123456-7, 123456-0). Sem dígito verificador oficial público.
+ */
+export function isValidCau(value: string): boolean {
+  const n = normalizeRegistroProfissional(value);
+  if (n.length < 5 || n.length > FORM_FIELD_LIMITS.registroProfissional) return false;
+  return /^[A-Z]?\d{4,7}-?\d$/i.test(n);
+}
+
+/**
+ * CREA típico: sequência numérica com hífen/ponto/sufixo (ex.: 123456-D, 12.3456-D).
+ */
+export function isValidCrea(value: string): boolean {
+  const n = normalizeRegistroProfissional(value);
+  if (n.length < 5 || n.length > FORM_FIELD_LIMITS.registroProfissional) return false;
+  const compact = n.replace(/[.\-/]/g, "");
+  if (compact.length < 5) return false;
+  return /^[\dA-Z.\-/]+$/i.test(n) && /\d{4,}/.test(compact);
+}
+
+/** Valida registro conforme tipo; vazio só é erro quando obrigatório. */
+export function validatePartnerRegistro(
+  tipo: "ARQUITETO" | "ENGENHEIRO" | string,
+  value: string,
+  opts?: { required?: boolean }
+): string | null {
+  const raw = value.trim();
+  const required =
+    opts?.required ?? (tipo === "ARQUITETO" || tipo === "ENGENHEIRO");
+
+  if (!raw) {
+    if (!required) return null;
+    if (tipo === "ARQUITETO") return "Informe o registro CAU (ex.: A123456-7).";
+    if (tipo === "ENGENHEIRO") return "Informe o registro CREA (ex.: 123456-D).";
+    return "Informe o registro profissional.";
+  }
+
+  if (tipo === "ARQUITETO" && !isValidCau(raw)) {
+    return "CAU inválido. Use o formato A123456-7 (letra + números).";
+  }
+  if (tipo === "ENGENHEIRO" && !isValidCrea(raw)) {
+    return "CREA inválido. Informe o número completo (ex.: 123456-D).";
+  }
+
+  if (raw.length > FORM_FIELD_LIMITS.registroProfissional) {
+    return `Registro deve ter no máximo ${FORM_FIELD_LIMITS.registroProfissional} caracteres.`;
+  }
+
+  return null;
+}

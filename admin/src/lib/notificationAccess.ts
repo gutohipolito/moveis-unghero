@@ -17,6 +17,7 @@ export const NOTIFICATION_CLEARED_IDS_PREF = "notificationClearedIds";
 const COMMERCIAL_FUNNEL_TYPES = new Set<NotificationType>([
   "card_note",
   "new_briefing",
+  "new_partner_signup",
   "quote_expiring",
 ]);
 
@@ -34,6 +35,7 @@ const MODULE_BY_TYPE: Partial<Record<NotificationType, string>> = {
   follow_up: "crm",
   card_note: "crm",
   new_briefing: "crm",
+  new_partner_signup: "parceiros",
   sla_due: "factory",
   supply_ticket: "chamados",
   installment_due: "financeiro",

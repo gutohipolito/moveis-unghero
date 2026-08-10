@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { PartnerType, type PartnerQuoteCardMode } from "@prisma/client";
 import {
@@ -59,6 +59,7 @@ import {
   ChevronDown,
   ChevronUp,
   Percent,
+  CheckCircle2,
 } from "lucide-react";
 
 interface ParceirosClientProps {
@@ -80,12 +81,14 @@ interface PartnerCardProps {
   hideValues?: boolean;
   canManage?: boolean;
   uploadingId: string | null;
+  approvingId: string | null;
   handleUploadImage: (id: string, file: File, type: "avatar" | "galeria") => void;
   handleDeleteImage: (id: string, imageUrl: string, isAvatar: boolean) => void;
   handleViewProject: (projectId: string) => void;
   openEdit: (p: ParceiroDTO) => void;
   handleDelete: (p: ParceiroDTO) => void;
   onViewDetails: (p: ParceiroDTO) => void;
+  onApprove: (p: ParceiroDTO) => void;
 }
 
 const PartnerCard = ({
@@ -94,12 +97,14 @@ const PartnerCard = ({
   hideValues = false,
   canManage = true,
   uploadingId,
+  approvingId,
   handleUploadImage,
   handleDeleteImage,
   handleViewProject,
   openEdit,
   handleDelete,
   onViewDetails,
+  onApprove,
 }: PartnerCardProps) => {
   const style = PARTNER_TYPE_STYLES[p.tipo];
   const Icon = style.icon;
@@ -281,7 +286,19 @@ const PartnerCard = ({
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-auto space-y-2" onClick={(e) => e.stopPropagation()}>
+          {!p.ativo && canManage && (
+            <button
+              type="button"
+              disabled={approvingId === p.id}
+              onClick={() => onApprove(p)}
+              className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-md text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {approvingId === p.id ? "Aprovando…" : "Aprovar"}
+            </button>
+          )}
+          <div className="grid grid-cols-3 gap-2">
           {p.telefone ? (
             sensitive.whatsappHref(p.telefone) ? (
               <a
@@ -353,6 +370,7 @@ const PartnerCard = ({
               <span className="text-[9px] font-bold">Portfólio</span>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
@@ -371,7 +389,16 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<"ACTIVE" | "PENDING" | "ALL">("ACTIVE");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (status === "PENDING" || status === "ACTIVE" || status === "ALL") {
+      setFilterStatus(status);
+    }
+  }, [searchParams]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ParceiroDTO | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
@@ -665,6 +692,26 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     resetForm();
   };
 
+  const handleApprove = async (target: ParceiroDTO) => {
+    if (target.ativo || approvingId) return;
+    setApprovingId(target.id);
+    try {
+      const res = await updateParceiro(target.id, { ativo: true });
+      if (res.success && res.parceiro) {
+        setParceiros((prev) =>
+          prev.map((p) => (p.id === target.id ? { ...p, ...res.parceiro!, ativo: true } : p))
+        );
+        showSuccess("Parceiro aprovado", `${target.nome} já pode acessar o portal.`);
+      } else {
+        showError("Erro ao aprovar", res.error || "Não foi possível aprovar o parceiro.");
+      }
+    } catch {
+      showError("Erro ao aprovar", "Não foi possível aprovar o parceiro.");
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
   const handleDelete = (target: ParceiroDTO) => {
     confirmAction({
       title: "Remover parceiro?",
@@ -812,6 +859,16 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 Ver portal
               </Button>
             )}
+            {canManagePartners && pageTab === "cadastro" && pendingCount > 0 && (
+              <Button
+                type="button"
+                onClick={() => setFilterStatus("PENDING")}
+                className="font-bold gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent shadow-sm"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Aprovar ({pendingCount})
+              </Button>
+            )}
             {canManagePartners && pageTab === "cadastro" && (
               <Button
                 onClick={openCreate}
@@ -887,12 +944,14 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                 hideValues={hidePartnerValues}
                 canManage={canManagePartners}
                 uploadingId={uploadingId}
+                approvingId={approvingId}
                 handleUploadImage={handleUploadImage}
                 handleDeleteImage={handleDeleteImage}
                 handleViewProject={handleViewProject}
                 openEdit={openEdit}
                 handleDelete={handleDelete}
                 onViewDetails={(p) => router.push(`/parceiros/${p.id}`)}
+                onApprove={handleApprove}
               />
             ))}
           </div>
