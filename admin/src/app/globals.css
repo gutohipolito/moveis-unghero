@@ -1244,6 +1244,17 @@ button.partner-card:hover,
   object-fit: contain;
 }
 
+.parceiro-portal-brand-link {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.35rem;
+  outline-offset: 3px;
+}
+
+.parceiro-portal-brand-link:focus-visible {
+  outline: 2px solid hsl(var(--parceiro-accent) / 0.7);
+}
+
 @media (min-width: 768px) {
   .parceiro-portal-brand-logo {
     height: 2.35rem;
@@ -1371,9 +1382,9 @@ button.partner-card:hover,
 .parceiro-user-trigger {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
   min-height: 2.75rem;
-  padding: 0.3rem 0.55rem 0.3rem 0.3rem;
+  padding: 0.4rem 0.65rem 0.4rem 0.75rem;
   border-radius: 0.875rem;
   border: 1px solid hsl(40 20% 100% / 0.14);
   background: hsl(0 0% 100% / 0.06);

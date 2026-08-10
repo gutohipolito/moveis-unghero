@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, LayoutDashboard, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
+import { Camera, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,6 @@ import {
 } from "@/lib/partnerUiPrefs";
 
 const NAV = [
-  { href: "/parceiro/painel", label: "Início", shortLabel: "Início", icon: LayoutDashboard },
   { href: "/parceiro/projetos", label: "Projetos", shortLabel: "Projetos", icon: FolderKanban },
   { href: "/parceiro/produtos", label: "Produtos", shortLabel: "Produtos", icon: Package },
   { href: "/parceiro/clientes", label: "Clientes", shortLabel: "Clientes", icon: Users },
@@ -222,7 +221,9 @@ export default function ParceiroPortalShell({
       <header className="parceiro-portal-header">
         <div className="parceiro-portal-header-inner">
           <div className="parceiro-portal-brand">
-            <img src="/logo.png" alt="Móveis Unghero" className="parceiro-portal-brand-logo" />
+            <Link href="/parceiro/painel" className="parceiro-portal-brand-link" aria-label="Ir para o início">
+              <img src="/logo.png" alt="Móveis Unghero" className="parceiro-portal-brand-logo" />
+            </Link>
             <p className="parceiro-portal-brand-sub">Portal do parceiro</p>
           </div>
 
