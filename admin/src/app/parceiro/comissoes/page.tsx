@@ -37,6 +37,10 @@ export default async function ParceiroComissoesPage() {
   const bundle = await loadPartnerCommissions(partner.id);
   const isAdminPreview = await isPartnerAdminPreview();
 
+  if (!partner.hasCommissions) {
+    redirect("/parceiro/painel");
+  }
+
   return (
     <ParceiroComissoesClient
       partner={partner}

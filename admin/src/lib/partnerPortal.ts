@@ -63,6 +63,8 @@ export interface PartnerPortalData {
   escritorio: string | null;
   registro_profissional: string | null;
   portfolioUrl: string | null;
+  /** Só mostra a aba Comissões quando há ao menos um lançamento. */
+  hasCommissions: boolean;
   projects: PartnerPortalProject[];
 }
 
@@ -173,32 +175,40 @@ export async function loadPartnerPortalData(
 
   await backfillProjectPartnerFromClients(partnerId);
 
-  const projects = await prisma.project.findMany({
-    where: partnerOwnedProjectsWhere(partnerId),
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      valor_previsto: true,
-      status_geral: true,
-      updatedAt: true,
-      client: {
-        select: {
-          id: true,
-          nome: true,
-          cidade: true,
+  const [projects, commissionCount] = await Promise.all([
+    prisma.project.findMany({
+      where: partnerOwnedProjectsWhere(partnerId),
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        valor_previsto: true,
+        status_geral: true,
+        updatedAt: true,
+        client: {
+          select: {
+            id: true,
+            nome: true,
+            cidade: true,
+          },
+        },
+        environments: {
+          orderBy: { nome: "asc" },
+          select: {
+            id: true,
+            nome: true,
+            tipo: true,
+            status: true,
+          },
         },
       },
-      environments: {
-        orderBy: { nome: "asc" },
-        select: {
-          id: true,
-          nome: true,
-          tipo: true,
-          status: true,
-        },
+    }),
+    prisma.partnerCommission.count({
+      where: {
+        partner_id: partnerId,
+        company_id: partner.company_id,
       },
-    },
-  });
+    }),
+  ]);
 
   return {
     id: partner.id,
@@ -214,6 +224,7 @@ export async function loadPartnerPortalData(
     escritorio: partner.escritorio,
     registro_profissional: partner.registro_profissional,
     portfolioUrl: partner.portfolioUrl,
+    hasCommissions: commissionCount > 0,
     projects: projects.map((project) => {
       const visible = partnerProjectValueVisible(project.status_geral);
       return {
