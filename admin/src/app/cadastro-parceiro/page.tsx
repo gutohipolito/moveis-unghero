@@ -1,6 +1,8 @@
 import React from "react";
+import Link from "next/link";
 import PartnerSignupForm from "./PartnerSignupForm";
 import FormLgpdNotice from "@/components/forms/FormLgpdNotice";
+import ParceiroLoginBackground from "@/app/parceiro/login/ParceiroLoginBackground";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const metadata = publicPageMetadata({
@@ -11,40 +13,50 @@ export const metadata = publicPageMetadata({
 
 export default function CadastroParceiroPage() {
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col justify-between relative w-full max-w-full overflow-x-hidden text-slate-100">
-      <div
-        className="absolute inset-0 z-0 bg-[url('/partner_signup_bg.png')] bg-cover bg-center opacity-15 pointer-events-none"
-        style={{ filter: "brightness(0.20) contrast(1.15) grayscale(0.2)" }}
-      />
+    <div className="parceiro-login-shell parceiro-login-shell--scroll">
+      <ParceiroLoginBackground />
 
-      <div className="w-full flex justify-center pt-8 pb-4 md:pt-12 md:pb-6 z-10 shrink-0">
-        <img src="/logo.png" alt="Móveis Unghero" className="h-10 w-auto object-contain" />
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4 pb-12 z-10 w-full max-w-2xl mx-auto">
-        <div className="text-center mb-6 space-y-2">
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-100">
-            Seja Nosso Parceiro
-          </h1>
-          <p className="text-xs md:text-sm text-slate-400 max-w-lg mx-auto">
-            Arquitetos, designers e projetistas: cadastre-se para indicar clientes e co-projetar com a
-            Móveis Unghero.
-          </p>
+      <div className="parceiro-login-content parceiro-login-content--wide animate-in fade-in duration-500">
+        <div className="parceiro-login-brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Móveis Unghero"
+            className="parceiro-login-logo"
+          />
+          <span className="parceiro-login-eyebrow">
+            Portal do Parceiro — Arquitetos & Projetistas
+          </span>
         </div>
-        <PartnerSignupForm />
-        <FormLgpdNotice purpose="avaliar a parceria profissional e manter contato comercial" />
-      </div>
 
-      <footer className="w-full border-t border-slate-900/60 bg-slate-950/80 backdrop-blur-sm py-6 text-center text-xs font-bold text-slate-500 z-10 shrink-0">
-        <p>
+        <div className="parceiro-login-card">
+          <div className="parceiro-login-card-accent" />
+          <div className="parceiro-login-card-body">
+            <div className="mb-5">
+              <span className="parceiro-login-badge">Cadastro de parceiro</span>
+              <h1 className="parceiro-login-title">Seja nosso parceiro</h1>
+              <p className="parceiro-login-subtitle">
+                Cadastre-se para indicar clientes e co-projetar com a Móveis
+                Unghero. Após a aprovação, liberamos o acesso ao portal.
+              </p>
+            </div>
+
+            <PartnerSignupForm />
+
+            <FormLgpdNotice
+              className="mt-5 !text-muted-foreground"
+              purpose="avaliar a parceria profissional e manter contato comercial"
+            />
+          </div>
+        </div>
+
+        <p className="parceiro-login-footer">
           Já é parceiro?{" "}
-          <a href="/parceiro/login" className="text-amber-400/90 hover:text-amber-300 font-bold underline-offset-2 hover:underline">
+          <Link href="/parceiro/login" className="parceiro-login-footer-link">
             Acessar painel
-          </a>
+          </Link>
         </p>
-        <p className="mt-3">© {new Date().getFullYear()} Móveis Unghero — Todos os direitos reservados.</p>
-        <p className="text-[10px] font-semibold text-slate-600 mt-1">Farroupilha · RS · desde 2006</p>
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

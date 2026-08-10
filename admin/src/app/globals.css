@@ -721,6 +721,24 @@ button.partner-card:hover,
   gap: 1.5rem;
 }
 
+.parceiro-login-content--wide {
+  max-width: 32rem;
+}
+
+.parceiro-login-shell--scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-items: flex-start;
+  padding-top: max(1.25rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-height: 880px) {
+  .parceiro-login-shell--scroll {
+    align-items: center;
+  }
+}
+
 .parceiro-login-brand {
   display: flex;
   flex-direction: column;

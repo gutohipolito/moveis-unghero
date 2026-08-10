@@ -1,25 +1,29 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { PartnerType } from "@prisma/client";
-import { 
-  CheckCircle, 
-  Loader2, 
-  Send, 
-  ArrowLeft, 
-  ArrowRight, 
-  AlertTriangle, 
-  User, 
-  Briefcase, 
-  MapPin, 
-  Smartphone, 
-  Mail, 
-  Link as LinkIcon, 
+import {
+  CheckCircle,
+  Loader2,
+  Send,
+  ArrowLeft,
+  ArrowRight,
+  User,
+  Briefcase,
+  MapPin,
+  Smartphone,
+  Mail,
+  Link as LinkIcon,
   Handshake,
-  Award
+  Award,
 } from "lucide-react";
 import { submitPublicPartnerSignupAction } from "@/app/actions/partnerSignup";
-import { PARTNER_ORIGEM_OPTIONS, PARTNER_SIGNUP_TYPES, PARTNER_TYPE_STYLES } from "@/lib/partnerTypes";
+import {
+  PARTNER_ORIGEM_OPTIONS,
+  PARTNER_SIGNUP_TYPES,
+  PARTNER_TYPE_STYLES,
+} from "@/lib/partnerTypes";
 import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { FORM_FIELD_LIMITS } from "@/lib/brDocuments";
 import { validateOptionalEmail } from "@/lib/email";
@@ -30,10 +34,28 @@ import {
   PARTNER_LGPD_CHECKBOX_LABEL,
   PARTNER_MARKETING_CHECKBOX_LABEL,
 } from "@/lib/consentCopy";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const TOTAL_STEPS = 5;
 
-const STEP_LABELS = ["Especialidade", "Identidade", "Contato", "Portfólio", "Parceria"] as const;
+const STEP_LABELS = [
+  "Especialidade",
+  "Identidade",
+  "Contato",
+  "Portfólio",
+  "Parceria",
+] as const;
+
+const labelClass =
+  "text-[10px] font-bold text-muted-foreground block uppercase tracking-wider";
+const inputClass =
+  "h-11 bg-white/90 border-border/70 focus-visible:ring-primary/30";
+const selectClass =
+  "w-full h-11 rounded-md border border-border/70 bg-white/90 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 cursor-pointer";
+const textareaClass =
+  "w-full rounded-md border border-border/70 bg-white/90 px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 resize-none";
 
 export default function PartnerSignupForm({ companyId }: { companyId?: string }) {
   const [step, setStep] = useState(1);
@@ -62,7 +84,6 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     }
   }, [error]);
 
-  // Carregar rascunho do localStorage na montagem (client-side)
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("moveis_unghero_partner_draft");
@@ -89,7 +110,6 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     }
   }, []);
 
-  // Salvar rascunho no localStorage
   useEffect(() => {
     if (isLoaded && typeof window !== "undefined") {
       const draft = {
@@ -107,7 +127,20 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       };
       localStorage.setItem("moveis_unghero_partner_draft_v2", JSON.stringify(draft));
     }
-  }, [isLoaded, step, nome, tipo, telefone, email, cidade, escritorio, portfolioUrl, observacoes, registroProfissional, origem]);
+  }, [
+    isLoaded,
+    step,
+    nome,
+    tipo,
+    telefone,
+    email,
+    cidade,
+    escritorio,
+    portfolioUrl,
+    observacoes,
+    registroProfissional,
+    origem,
+  ]);
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTelefone(formatPhoneInput(e.target.value));
@@ -138,7 +171,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      const nameParts = cleanNome.split(/\s+/).filter(part => part.length > 0);
+      const nameParts = cleanNome.split(/\s+/).filter((part) => part.length > 0);
       if (nameParts.length < 2) {
         setError("Por favor, informe seu nome e sobrenome (nome completo).");
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -193,12 +226,16 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         try {
           const parsedUrl = new URL(testValue);
           if (!parsedUrl.hostname.includes(".")) {
-            setError("Por favor, insira um link ou URL válido para o seu portfólio (ex: https://instagram.com/seu_perfil).");
+            setError(
+              "Por favor, insira um link ou URL válido para o seu portfólio (ex: https://instagram.com/seu_perfil)."
+            );
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }
-        } catch (e) {
-          setError("Por favor, insira um link ou URL válido para o seu portfólio (ex: https://instagram.com/seu_perfil).");
+        } catch {
+          setError(
+            "Por favor, insira um link ou URL válido para o seu portfólio (ex: https://instagram.com/seu_perfil)."
+          );
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
@@ -226,7 +263,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    const nameParts = cleanNome.split(/\s+/).filter(part => part.length > 0);
+    const nameParts = cleanNome.split(/\s+/).filter((part) => part.length > 0);
     if (nameParts.length < 2) {
       setError("Por favor, informe seu nome e sobrenome (nome completo).");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -278,7 +315,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
-      } catch (e) {
+      } catch {
         setError("Por favor, insira um link ou URL de portfólio válido.");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
@@ -331,57 +368,79 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
   const handleFormKeyDown = preventEnterSubmit;
 
+  const navRow = (
+    <div className="flex items-center justify-between gap-3 pt-1">
+      {step > 1 ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={prevStep}
+          disabled={loading}
+          className="h-11 font-bold gap-1.5 border-border/70 bg-white/80"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+      ) : (
+        <span />
+      )}
+      {step < TOTAL_STEPS ? (
+        <Button
+          type="button"
+          onClick={nextStep}
+          className="h-11 font-bold btn-metallic gap-1.5 ml-auto"
+        >
+          Continuar
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      ) : null}
+    </div>
+  );
+
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-6 partner-container">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-sm text-center py-12 px-6 space-y-8 animate-in fade-in duration-500 flex flex-col items-center">
-          <div className="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full mx-auto">
-            <CheckCircle className="h-14 w-14 animate-bounce" />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Cadastro enviado!
-            </h2>
-            <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-              Obrigado pelo interesse em fazer parceria com a Móveis Unghero.
-              Nossa equipe analisará seu perfil e, após a aprovação, liberará o
-              acesso ao portal. Entraremos em contato em breve.
-            </p>
-          </div>
+      <div className="space-y-5 text-center animate-in fade-in duration-500">
+        <div className="inline-flex p-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700">
+          <CheckCircle className="h-10 w-10" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="parceiro-login-title">Cadastro enviado!</h2>
+          <p className="parceiro-login-subtitle mx-auto max-w-sm">
+            Obrigado pelo interesse em fazer parceria com a Móveis Unghero. Nossa
+            equipe analisará seu perfil e, após a aprovação, liberará o acesso ao
+            portal.
+          </p>
+        </div>
 
-          <a
-            href="/"
-            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-bold btn-metallic"
-          >
-            Voltar ao site
-          </a>
+        <Link
+          href="/parceiro/login"
+          className="inline-flex w-full h-11 items-center justify-center rounded-md text-sm font-bold btn-metallic"
+        >
+          Ir para o login
+        </Link>
 
-          <div className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl w-full max-w-sm mx-auto space-y-3.5 shadow-inner">
-            <p className="text-xs font-bold text-slate-800 uppercase tracking-widest text-center">Canais Oficiais</p>
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <a 
-                href="https://www.instagram.com/moveisunghero/" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="flex flex-col items-center justify-center p-4 aspect-square bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-pink-600 shrink-0">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                </svg>
-                <span>Instagram</span>
-              </a>
-              <a 
-                href="https://wa.me/5554999971050" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="flex flex-col items-center justify-center p-4 aspect-square bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 transition-all gap-2 shadow-sm hover:scale-[1.02] cursor-pointer"
-              >
-                <Smartphone className="h-6 w-6 text-emerald-600 shrink-0" />
-                <span>WhatsApp</span>
-              </a>
-            </div>
+        <div className="rounded-xl border border-border/60 bg-slate-50/80 p-3.5 space-y-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Canais oficiais
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href="https://www.instagram.com/moveisunghero/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 h-10 rounded-lg border border-border/70 bg-white/90 text-xs font-bold text-foreground hover:bg-white transition-colors"
+            >
+              Instagram
+            </a>
+            <a
+              href="https://wa.me/5554999971050"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 h-10 rounded-lg border border-border/70 bg-white/90 text-xs font-bold text-foreground hover:bg-white transition-colors"
+            >
+              <Smartphone className="h-3.5 w-3.5 text-emerald-600" />
+              WhatsApp
+            </a>
           </div>
         </div>
       </div>
@@ -389,414 +448,408 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   }
 
   return (
-    <div className="w-full partner-container">
-      <form
-        onSubmit={handleSubmit}
-        onKeyDown={handleFormKeyDown}
-        className="bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-300 text-slate-800 overflow-hidden"
-      >
-        <FormProgressBar
-          step={step}
-          totalSteps={TOTAL_STEPS}
-          tone="amber"
-          stepLabel={`Etapa ${step} de ${TOTAL_STEPS} · ${STEP_LABELS[step - 1]}`}
-          className="border-b border-slate-100 bg-slate-50/50"
-        />
+    <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="space-y-5">
+      <FormProgressBar
+        step={step}
+        totalSteps={TOTAL_STEPS}
+        tone="slate"
+        stepLabel={`Etapa ${step} de ${TOTAL_STEPS} · ${STEP_LABELS[step - 1]}`}
+        className="rounded-xl border border-border/50 bg-slate-50/70 overflow-hidden -mx-0"
+      />
 
-        <div className="p-6 md:p-8">
-        {error && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
-            <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
-            <span className="flex-1 text-left">{error}</span>
-            <button 
-              type="button" 
-              onClick={() => setError(null)} 
-              className="text-rose-450 hover:text-rose-600 font-extrabold text-sm ml-1 cursor-pointer leading-none"
-            >
-              ×
-            </button>
+      {error ? (
+        <div
+          role="alert"
+          className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20 animate-in fade-in duration-200"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {step === 1 && (
+        <div className="space-y-5 animate-in fade-in duration-300">
+          <div>
+            <h2 className="text-sm font-bold text-foreground tracking-tight">
+              Qual a sua especialidade?
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              Selecione sua principal área de atuação.
+            </p>
           </div>
-        )}
 
-        {/* PASSO 1: ESPECIALIDADE PROFISSIONAL */}
-        {step === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Qual a sua especialidade profissional?</h2>
-              <p className="text-xs text-slate-500 font-semibold font-medium">Selecione sua principal área de atuação para personalizarmos a parceria.</p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {PARTNER_SIGNUP_TYPES.map((t) => {
-                const isSelected = tipo === t;
-                const style = PARTNER_TYPE_STYLES[t];
-                const Icon = style.icon;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => handleSelectTipo(t)}
-                    className={`p-4 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[110px] gap-2.5 ${
-                      isSelected 
-                        ? "border-primary bg-primary text-primary-foreground font-bold shadow-sm" 
-                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-350"
-                    }`}
-                  >
-                    <span className={`p-2.5 rounded-xl transition-all ${
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {PARTNER_SIGNUP_TYPES.map((t) => {
+              const isSelected = tipo === t;
+              const style = PARTNER_TYPE_STYLES[t];
+              const Icon = style.icon;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => handleSelectTipo(t)}
+                  className={cn(
+                    "p-3.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[6.5rem] gap-2",
+                    isSelected
+                      ? "border-primary/50 bg-primary text-primary-foreground shadow-sm"
+                      : "border-border/70 bg-white/90 text-foreground hover:border-border"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "p-2 rounded-lg transition-all",
                       isSelected ? "bg-white/15 text-white" : `${style.bg} ${style.text}`
-                    }`}>
-                      <Icon className="h-5 w-5 shrink-0" />
-                    </span>
-                    <span className="text-xs font-bold leading-tight">{style.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                key="btn-next-step1"
-                type="button"
-                onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
-              >
-                Continuar <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                  </span>
+                  <span className="text-[11px] font-bold leading-tight">{style.label}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        {/* PASSO 2: IDENTIFICAÇÃO E ATUAÇÃO */}
-        {step === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          {navRow}
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-5 animate-in fade-in duration-300">
+          <div>
+            <h2 className="text-sm font-bold text-foreground tracking-tight">
+              Quem é você e onde atua?
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              Queremos conhecer você e seu escritório.
+            </p>
+          </div>
+
+          <div className="space-y-4">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Quem é você e onde atua?</h2>
-              <p className="text-xs text-slate-500 font-semibold font-medium">Queremos conhecer você e seu escritório de projetos.</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Nome Completo *
-                </label>
-                <input
+              <label htmlFor="parceiro-signup-nome" className={labelClass}>
+                Nome completo *
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="parceiro-signup-nome"
                   required
                   type="text"
                   placeholder="Seu nome completo"
                   value={nome}
                   onChange={(e) => setNome(e.target.value.slice(0, FORM_FIELD_LIMITS.nome))}
                   maxLength={FORM_FIELD_LIMITS.nome}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
+                  className={cn(inputClass, "pl-10")}
                 />
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Briefcase className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Escritório / Studio (Opcional)
-                  </label>
-                  <input
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="parceiro-signup-escritorio" className={labelClass}>
+                  Escritório / studio
+                </label>
+                <div className="relative">
+                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="parceiro-signup-escritorio"
                     type="text"
-                    placeholder="Nome do seu studio de design/arquitetura"
+                    placeholder="Nome do studio (opcional)"
                     value={escritorio}
-                    onChange={(e) => setEscritorio(e.target.value.slice(0, FORM_FIELD_LIMITS.escritorio))}
+                    onChange={(e) =>
+                      setEscritorio(e.target.value.slice(0, FORM_FIELD_LIMITS.escritorio))
+                    }
                     maxLength={FORM_FIELD_LIMITS.escritorio}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
+                    className={cn(inputClass, "pl-10")}
                   />
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Cidade de atuação principal *
-                  </label>
+              <div className="space-y-1.5">
+                <label htmlFor="parceiro-signup-cidade" className={labelClass}>
+                  Cidade de atuação *
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                   <select
+                    id="parceiro-signup-cidade"
                     required
                     value={cidade}
                     onChange={(e) => setCidade(e.target.value)}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900 cursor-pointer"
+                    className={cn(selectClass, "pl-10")}
                   >
-                    <option value="" className="text-slate-400">Selecione...</option>
+                    <option value="">Selecione...</option>
                     {CIDADES_SERRA_GAUCHA.map((c) => (
-                      <option key={c} value={c} className="text-slate-900 font-semibold">
+                      <option key={c} value={c}>
                         {c}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
+            </div>
 
-              {/* Registro do Conselho de Classe (CAU, CREA, etc.) */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-100 mt-2">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Award className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  {tipo === "ARQUITETO" ? "Registro CAU *" : tipo === "ENGENHEIRO" ? "Registro CREA *" : "Registro Profissional / Conselho de Classe (CAU, CREA, ABD) (Opcional)"}
-                </label>
-                <input
+            <div className="space-y-1.5">
+              <label htmlFor="parceiro-signup-registro" className={labelClass}>
+                {tipo === "ARQUITETO"
+                  ? "Registro CAU *"
+                  : tipo === "ENGENHEIRO"
+                    ? "Registro CREA *"
+                    : "Registro profissional (opcional)"}
+              </label>
+              <div className="relative">
+                <Award className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="parceiro-signup-registro"
                   type="text"
-                  placeholder={tipo === "ARQUITETO" ? "Ex: A123456-7" : tipo === "ENGENHEIRO" ? "Ex: 123.456-D" : "Ex: CAU, CREA ou ABD (se houver)"}
+                  placeholder={
+                    tipo === "ARQUITETO"
+                      ? "Ex: A123456-7"
+                      : tipo === "ENGENHEIRO"
+                        ? "Ex: 123.456-D"
+                        : "CAU, CREA ou ABD (se houver)"
+                  }
                   value={registroProfissional}
-                  onChange={(e) => setRegistroProfissional(e.target.value.slice(0, FORM_FIELD_LIMITS.registroProfissional))}
+                  onChange={(e) =>
+                    setRegistroProfissional(
+                      e.target.value.slice(0, FORM_FIELD_LIMITS.registroProfissional)
+                    )
+                  }
                   maxLength={FORM_FIELD_LIMITS.registroProfissional}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
+                  className={cn(inputClass, "pl-10")}
                   required={tipo === "ARQUITETO" || tipo === "ENGENHEIRO"}
                 />
               </div>
             </div>
-
-            <div className="flex justify-between pt-2">
-              <button
-                key="btn-back-step2"
-                type="button"
-                onClick={prevStep}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
-              >
-                <ArrowLeft className="h-4 w-4" /> Voltar
-              </button>
-              <button
-                key="btn-next-step2"
-                type="button"
-                onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
-              >
-                Continuar <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
           </div>
-        )}
 
-        {/* PASSO 3: CONTATOS */}
-        {step === 3 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="space-y-1.5 text-center">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Como podemos falar com você?</h2>
-              <p className="text-xs text-slate-500 font-semibold font-medium">Informe seus contatos comerciais para retornarmos.</p>
-            </div>
+          {navRow}
+        </div>
+      )}
 
-            <div className="space-y-4 border border-slate-100 rounded-xl p-5 bg-slate-50/50">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <Smartphone className="h-3.5 w-3.5 text-slate-400 shrink-0" /> WhatsApp / Telefone *
-                  </label>
-                  <input
-                    required
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder={PHONE_PLACEHOLDER}
-                    value={telefone}
-                    onChange={handleTelefoneChange}
-                    maxLength={16}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
-                  />
-                  <p className="text-[10px] text-slate-400">Celular ou fixo com DDD</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" /> E-mail comercial *
-                  </label>
-                  <input
-                    required
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    placeholder="arquiteto@exemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value.slice(0, FORM_FIELD_LIMITS.email))}
-                    maxLength={FORM_FIELD_LIMITS.email}
-                    className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between pt-2">
-              <button
-                key="btn-back-step3"
-                type="button"
-                onClick={prevStep}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
-              >
-                <ArrowLeft className="h-4 w-4" /> Voltar
-              </button>
-              <button
-                key="btn-next-step3"
-                type="button"
-                onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
-              >
-                Continuar <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+      {step === 3 && (
+        <div className="space-y-5 animate-in fade-in duration-300">
+          <div>
+            <h2 className="text-sm font-bold text-foreground tracking-tight">
+              Como falamos com você?
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              Contatos comerciais para retorno e acesso ao portal.
+            </p>
           </div>
-        )}
 
-        {/* PASSO 4: PRESENÇA DIGITAL E PORTFÓLIO */}
-        {step === 4 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-4">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Seu Portfólio ou Perfil Digital</h2>
-              <p className="text-xs text-slate-500 font-semibold font-medium">Compartilhe um link para podermos conhecer um pouco mais de seus trabalhos e projetos.</p>
+              <label htmlFor="parceiro-signup-telefone" className={labelClass}>
+                WhatsApp / telefone *
+              </label>
+              <div className="relative">
+                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="parceiro-signup-telefone"
+                  required
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder={PHONE_PLACEHOLDER}
+                  value={telefone}
+                  onChange={handleTelefoneChange}
+                  maxLength={16}
+                  className={cn(inputClass, "pl-10")}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Celular ou fixo com DDD</p>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <LinkIcon className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Instagram Profissional ou Site/Behance
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://instagram.com/seu_perfil ou portfolio"
-                  value={portfolioUrl}
-                  onChange={(e) => setPortfolioUrl(e.target.value)}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold text-slate-900"
+            <div className="space-y-1.5">
+              <label htmlFor="parceiro-signup-email" className={labelClass}>
+                E-mail comercial *
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="parceiro-signup-email"
+                  required
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="arquiteto@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value.slice(0, FORM_FIELD_LIMITS.email))}
+                  maxLength={FORM_FIELD_LIMITS.email}
+                  className={cn(inputClass, "pl-10")}
                 />
               </div>
             </div>
+          </div>
 
-            <div className="flex justify-between pt-2">
-              <button
-                key="btn-back-step4"
-                type="button"
-                onClick={prevStep}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
-              >
-                <ArrowLeft className="h-4 w-4" /> Voltar
-              </button>
-              <button
-                key="btn-next-step4"
-                type="button"
-                onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-all"
-              >
-                Continuar <ArrowRight className="h-4 w-4" />
-              </button>
+          {navRow}
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="space-y-5 animate-in fade-in duration-300">
+          <div>
+            <h2 className="text-sm font-bold text-foreground tracking-tight">
+              Portfólio ou perfil digital
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              Compartilhe um link para conhecermos seus trabalhos (opcional).
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="parceiro-signup-portfolio" className={labelClass}>
+              Instagram, site ou Behance
+            </label>
+            <div className="relative">
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="parceiro-signup-portfolio"
+                type="url"
+                placeholder="https://instagram.com/seu_perfil"
+                value={portfolioUrl}
+                onChange={(e) => setPortfolioUrl(e.target.value)}
+                className={cn(inputClass, "pl-10")}
+              />
             </div>
           </div>
-        )}
 
-        {/* PASSO 5: EXPECTATIVAS E OBSERVAÇÕES */}
-        {step === 5 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          {navRow}
+        </div>
+      )}
+
+      {step === 5 && (
+        <div className="space-y-5 animate-in fade-in duration-300">
+          <div>
+            <h2 className="text-sm font-bold text-foreground tracking-tight">
+              Sobre a parceria
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              Expectativas e como conheceu a Móveis Unghero.
+            </p>
+          </div>
+
+          <div className="space-y-4">
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900 leading-tight">Sobre a Parceria</h2>
-              <p className="text-xs text-slate-500 font-semibold font-medium">Conte-nos um pouco sobre suas expectativas e como nos conheceu.</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Handshake className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Como podemos atuar juntos? (Opcional)
-                </label>
+              <label htmlFor="parceiro-signup-obs" className={labelClass}>
+                Como podemos atuar juntos?
+              </label>
+              <div className="relative">
+                <Handshake className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <textarea
-                  placeholder="Ex: Gostaria de saber mais sobre as políticas de indicação e RT para designers, ou como enviar projetos técnicos."
+                  id="parceiro-signup-obs"
+                  placeholder="Ex: políticas de indicação, RT, envio de projetos técnicos…"
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}
-                  rows={4}
-                  className="w-full border border-slate-200 bg-white rounded-xl text-xs p-3.5 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:border-slate-800 font-semibold resize-none text-slate-900"
+                  rows={3}
+                  className={cn(textareaClass, "pl-10")}
                 />
               </div>
+            </div>
 
-              <div className="space-y-2.5">
-                <label className="text-xs font-bold text-slate-700">Como conheceu nossa empresa? *</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {PARTNER_ORIGEM_OPTIONS.map((option) => {
-                    const selected = origem === option;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => setOrigem(option)}
-                        className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-xs font-bold transition-all cursor-pointer ${
+            <div className="space-y-2">
+              <p className={labelClass}>Como conheceu nossa empresa? *</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {PARTNER_ORIGEM_OPTIONS.map((option) => {
+                  const selected = origem === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setOrigem(option)}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-xs font-semibold transition-all cursor-pointer",
+                        selected
+                          ? "border-primary/45 bg-primary/5 text-foreground"
+                          : "border-border/70 bg-white/90 text-muted-foreground hover:border-border hover:text-foreground"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
                           selected
-                            ? "border-amber-500 bg-amber-50 text-amber-900"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                        }`}
+                            ? "border-primary bg-primary"
+                            : "border-border bg-white"
+                        )}
+                        aria-hidden
                       >
-                        <span
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                            selected ? "border-amber-600 bg-amber-600" : "border-slate-300 bg-white"
-                          }`}
-                          aria-hidden
-                        >
-                          {selected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
-                        </span>
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-3 border-t border-slate-200">
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={aceitaLgpd}
-                    onChange={(e) => setAceitaLgpd(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 cursor-pointer"
-                    required
-                  />
-                  <span className="text-[11px] font-semibold text-slate-700 leading-relaxed">
-                    {PARTNER_LGPD_CHECKBOX_LABEL}
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={aceitaMarketing}
-                    onChange={(e) => setAceitaMarketing(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 cursor-pointer"
-                  />
-                  <span className="text-[11px] font-semibold text-slate-600 leading-relaxed">
-                    {PARTNER_MARKETING_CHECKBOX_LABEL}
-                  </span>
-                </label>
+                        {selected ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                        ) : null}
+                      </span>
+                      {option}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex justify-between pt-2">
-              <button
-                key="btn-back-step5"
-                type="button"
-                onClick={prevStep}
-                disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer transition-all"
-              >
-                <ArrowLeft className="h-4 w-4" /> Voltar
-              </button>
-              <button
-                key="btn-submit-partner"
-                type="submit"
-                disabled={loading || !submitUnlocked || !aceitaLgpd}
-                title={
-                  !aceitaLgpd
-                    ? "Aceite o tratamento de dados (LGPD) para enviar"
-                    : !submitUnlocked
-                      ? "Aguarde um instante para enviar"
-                      : undefined
-                }
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-md cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Enviando...
-                  </>
-                ) : !submitUnlocked ? (
-                  "Aguarde..."
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    Enviar Cadastro
-                  </>
-                )}
-              </button>
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={aceitaLgpd}
+                  onChange={(e) => setAceitaLgpd(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
+                  required
+                />
+                <span className="text-[11px] font-medium text-foreground leading-relaxed">
+                  {PARTNER_LGPD_CHECKBOX_LABEL}
+                </span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={aceitaMarketing}
+                  onChange={(e) => setAceitaMarketing(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
+                />
+                <span className="text-[11px] font-medium text-muted-foreground leading-relaxed">
+                  {PARTNER_MARKETING_CHECKBOX_LABEL}
+                </span>
+              </label>
             </div>
           </div>
-        )}
+
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={prevStep}
+              disabled={loading}
+              className="h-11 font-bold gap-1.5 border-border/70 bg-white/80"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || !submitUnlocked || !aceitaLgpd}
+              title={
+                !aceitaLgpd
+                  ? "Aceite o tratamento de dados (LGPD) para enviar"
+                  : !submitUnlocked
+                    ? "Aguarde um instante para enviar"
+                    : undefined
+              }
+              className="h-11 font-bold btn-metallic gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enviando…
+                </>
+              ) : !submitUnlocked ? (
+                "Aguarde…"
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Enviar cadastro
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-      </form>
-    </div>
+      )}
+    </form>
   );
 }
