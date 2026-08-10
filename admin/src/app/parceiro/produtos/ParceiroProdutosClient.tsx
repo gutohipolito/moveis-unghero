@@ -235,7 +235,7 @@ export default function ParceiroProdutosClient({
           </p>
         </div>
 
-        <div className="flex gap-1.5 w-fit">
+        <div className="parceiro-chip-scroll w-full sm:w-fit">
           <button
             type="button"
             onClick={() => switchSection("produtos")}
@@ -293,17 +293,15 @@ export default function ParceiroProdutosClient({
             </div>
 
             {section === "produtos" && categories.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar por categoria">
                 <button
                   type="button"
                   onClick={() => {
                     setFilterCategory("ALL");
                     setPage(1);
                   }}
-                  className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                    filterCategory === "ALL"
-                      ? "bg-white text-slate-900 border-white"
-                      : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
+                  className={`parceiro-filter-chip ${
+                    filterCategory === "ALL" ? "is-active" : ""
                   }`}
                 >
                   Todas
@@ -316,10 +314,8 @@ export default function ParceiroProdutosClient({
                       setFilterCategory(cat);
                       setPage(1);
                     }}
-                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                      filterCategory === cat
-                        ? "bg-white text-slate-900 border-white"
-                        : "bg-white/10 text-white/80 border-white/20 hover:bg-white/15"
+                    className={`parceiro-filter-chip ${
+                      filterCategory === cat ? "is-active" : ""
                     }`}
                   >
                     {cat}

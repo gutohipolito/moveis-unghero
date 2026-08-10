@@ -123,7 +123,7 @@ export default function ParceiroComissoesClient({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar comissões">
           {(
             [
               { id: "all" as const, label: `Todas · ${commissions.length}` },
@@ -210,7 +210,7 @@ export default function ParceiroComissoesClient({
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href={`/parceiro/projetos/${c.project_id}`}
-                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors"
+                      className="inline-flex items-center gap-1.5 min-h-10 h-10 sm:h-9 px-3.5 rounded-xl text-xs sm:text-[11px] font-bold border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors"
                     >
                       Ver projeto
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -220,7 +220,7 @@ export default function ParceiroComissoesClient({
                         href={`/parceiro/comissoes/${c.receipt_id}/print`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                        className="inline-flex items-center gap-1.5 min-h-10 h-10 sm:h-9 px-3.5 rounded-xl text-xs sm:text-[11px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                       >
                         <FileText className="h-3.5 w-3.5" />
                         Comprovante

@@ -21,12 +21,12 @@ import {
 } from "@/lib/partnerUiPrefs";
 
 const NAV = [
-  { href: "/parceiro/painel", label: "Início", icon: LayoutDashboard },
-  { href: "/parceiro/projetos", label: "Projetos", icon: FolderKanban },
-  { href: "/parceiro/produtos", label: "Produtos", icon: Package },
-  { href: "/parceiro/clientes", label: "Clientes", icon: Users },
-  { href: "/parceiro/comissoes", label: "Comissões", icon: Wallet },
-  { href: "/parceiro/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/parceiro/painel", label: "Início", shortLabel: "Início", icon: LayoutDashboard },
+  { href: "/parceiro/projetos", label: "Projetos", shortLabel: "Projetos", icon: FolderKanban },
+  { href: "/parceiro/produtos", label: "Produtos", shortLabel: "Produtos", icon: Package },
+  { href: "/parceiro/clientes", label: "Clientes", shortLabel: "Clientes", icon: Users },
+  { href: "/parceiro/comissoes", label: "Comissões", shortLabel: "Comiss.", icon: Wallet },
+  { href: "/parceiro/marketing", label: "Marketing", shortLabel: "Mkt", icon: Megaphone },
 ] as const;
 
 type ShellUi = { openInfo: () => void };
@@ -226,7 +226,7 @@ export default function ParceiroPortalShell({
             <p className="parceiro-portal-brand-sub">Portal do parceiro</p>
           </div>
 
-          <nav className="parceiro-portal-nav" aria-label="Menu do portal">
+          <nav className="parceiro-portal-nav parceiro-portal-nav--top" aria-label="Menu do portal">
             {NAV.filter(
               (item) =>
                 item.href !== "/parceiro/comissoes" || partner.hasCommissions
@@ -237,9 +237,11 @@ export default function ParceiroPortalShell({
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-label={item.label}
+                  title={item.label}
                   className={cn("parceiro-portal-nav-link", active && "is-active")}
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <Icon className="h-4 w-4 shrink-0" />
                   <span className="parceiro-portal-nav-label">{item.label}</span>
                 </Link>
               );
@@ -259,7 +261,7 @@ export default function ParceiroPortalShell({
       <main className="parceiro-portal-main">
         {showHeroPhoto && (
           <section className="parceiro-portal-hero">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 p-5 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 p-4 sm:p-6">
               <div className="relative group/avatar mx-auto sm:mx-0">
                 <div className="parceiro-portal-avatar-lg">
                   {partner.fotoUrl ? (
@@ -298,6 +300,28 @@ export default function ParceiroPortalShell({
 
         {children}
       </main>
+
+      <nav className="parceiro-portal-nav-bottom" aria-label="Menu principal">
+        {NAV.filter(
+          (item) =>
+            item.href !== "/parceiro/comissoes" || partner.hasCommissions
+        ).map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
+              className={cn("parceiro-portal-nav-bottom-link", active && "is-active")}
+            >
+              <Icon className="h-5 w-5 shrink-0" aria-hidden />
+              <span>{item.shortLabel}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <footer className="parceiro-portal-footer">
         <div className="parceiro-portal-footer-inner">

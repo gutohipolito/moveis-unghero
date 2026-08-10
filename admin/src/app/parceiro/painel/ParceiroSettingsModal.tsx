@@ -123,15 +123,15 @@ export default function ParceiroSettingsModal({
                 disabled={pending}
                 onClick={() => toggleQuoteVisibility(!quoteVisible)}
                 className={cn(
-                  "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors",
+                  "relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors touch-manipulation",
                   quoteVisible ? "bg-primary" : "bg-slate-300",
                   pending && "opacity-60"
                 )}
               >
                 <span
                   className={cn(
-                    "inline-block h-5 w-5 transform rounded-full bg-white shadow transition",
-                    quoteVisible ? "translate-x-6" : "translate-x-1"
+                    "inline-block h-6 w-6 transform rounded-full bg-white shadow transition",
+                    quoteVisible ? "translate-x-7" : "translate-x-1"
                   )}
                 />
               </button>

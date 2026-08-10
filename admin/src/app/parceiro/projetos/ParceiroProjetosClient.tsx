@@ -187,7 +187,7 @@ export default function ParceiroProjetosClient({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar projetos">
             {filters.map((f) => (
               <button
                 key={f.id}

@@ -136,7 +136,7 @@ export function PartnerNotificationSettings() {
                   <button
                     type="button"
                     onClick={() => void testBrowser()}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground"
+                    className="inline-flex items-center gap-1.5 min-h-9 rounded-md bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground"
                   >
                     {testState === "ok" ? (
                       <>
@@ -151,7 +151,7 @@ export function PartnerNotificationSettings() {
                   <button
                     type="button"
                     onClick={disableBrowser}
-                    className="inline-flex items-center rounded-md border border-border px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground"
+                    className="inline-flex items-center min-h-9 rounded-md border border-border px-3 py-2 text-[11px] font-bold text-muted-foreground"
                   >
                     Desativar
                   </button>
@@ -161,7 +161,7 @@ export function PartnerNotificationSettings() {
                   type="button"
                   onClick={() => void enableBrowser()}
                   disabled={enabling || blocked}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 min-h-9 rounded-md bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground disabled:opacity-50"
                 >
                   {enabling ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                   {blocked ? "Bloqueado" : "Ativar"}
@@ -189,7 +189,7 @@ export function PartnerNotificationSettings() {
             aria-checked={prefs.sound}
             onClick={() => updatePrefs({ ...prefs, sound: !prefs.sound })}
             className={cn(
-              "relative h-6 w-10 shrink-0 rounded-full border transition-colors",
+              "relative h-8 w-14 shrink-0 rounded-full border transition-colors touch-manipulation",
               prefs.sound
                 ? "border-primary/40 bg-primary"
                 : "border-border bg-muted"
@@ -197,8 +197,8 @@ export function PartnerNotificationSettings() {
           >
             <span
               className={cn(
-                "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                prefs.sound && "translate-x-4"
+                "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform",
+                prefs.sound && "translate-x-5"
               )}
             />
           </button>

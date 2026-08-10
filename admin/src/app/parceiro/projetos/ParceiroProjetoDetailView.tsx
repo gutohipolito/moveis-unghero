@@ -411,7 +411,7 @@ export default function ParceiroProjetoDetailView({
                       type="button"
                       disabled={pending}
                       onClick={() => removeFile(file.id)}
-                      className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50"
+                      className="inline-flex items-center justify-center min-h-10 min-w-10 p-2.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50"
                       title="Excluir"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -465,7 +465,7 @@ export default function ParceiroProjetoDetailView({
                         type="button"
                         disabled={pending}
                         onClick={() => removeNote(note.id)}
-                        className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                        className="inline-flex items-center justify-center min-h-10 min-w-10 p-2.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
                         title="Excluir"
                       >
                         <Trash2 className="h-4 w-4" />

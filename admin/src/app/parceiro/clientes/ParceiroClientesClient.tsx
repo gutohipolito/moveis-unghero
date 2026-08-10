@@ -78,7 +78,7 @@ export default function ParceiroClientesClient({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar clientes">
           <button
             type="button"
             onClick={() => setTab("all")}
