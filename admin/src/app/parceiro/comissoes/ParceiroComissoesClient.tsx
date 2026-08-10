@@ -37,15 +37,15 @@ function formatDate(iso: string | null) {
 
 function statusClass(status: PartnerCommissionStatus) {
   if (status === "PAGA") {
-    return "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
+    return "bg-emerald-100 text-emerald-800 border-emerald-200";
   }
   if (status === "AGENDADA") {
-    return "bg-sky-500/15 text-sky-300 border-sky-500/25";
+    return "bg-sky-100 text-sky-800 border-sky-200";
   }
   if (status === "CANCELADA") {
-    return "bg-slate-500/15 text-slate-400 border-slate-500/25";
+    return "bg-slate-100 text-slate-600 border-slate-200";
   }
-  return "bg-amber-500/15 text-amber-300 border-amber-500/25";
+  return "bg-amber-100 text-amber-900 border-amber-200";
 }
 
 interface ParceiroComissoesClientProps {
@@ -105,19 +105,19 @@ export default function ParceiroComissoesClient({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="partner-card p-4">
             <div className="partner-card-accent" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-white/50">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               A receber
             </p>
-            <p className="mt-1 text-xl font-black text-amber-300 tabular-nums">
+            <p className="mt-1 text-xl font-black text-amber-800 tabular-nums">
               {formatMoney(pendente)}
             </p>
           </div>
           <div className="partner-card p-4">
             <div className="partner-card-accent" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-white/50">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Já pago
             </p>
-            <p className="mt-1 text-xl font-black text-emerald-300 tabular-nums">
+            <p className="mt-1 text-xl font-black text-emerald-800 tabular-nums">
               {formatMoney(pago)}
             </p>
           </div>
@@ -152,11 +152,11 @@ export default function ParceiroComissoesClient({
         {filtered.length === 0 ? (
           <div className="partner-card p-10 text-center space-y-3">
             <div className="partner-card-accent" />
-            <Wallet className="h-8 w-8 mx-auto text-white/35" />
-            <p className="text-sm font-semibold text-white/80">
+            <Wallet className="h-8 w-8 mx-auto text-slate-400" />
+            <p className="text-sm font-semibold text-slate-900">
               Nenhuma comissão neste filtro
             </p>
-            <p className="text-xs text-white/45 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
               Quando a equipe lançar uma comissão vinculada a um projeto seu, ela
               aparece aqui.
             </p>
@@ -168,10 +168,10 @@ export default function ParceiroComissoesClient({
                 <div className="partner-card-accent" />
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-white truncate">
+                    <p className="text-sm font-bold text-slate-900 truncate">
                       {c.cliente_nome}
                     </p>
-                    <p className="text-[11px] text-white/50 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       {c.orcamento_codigo || "Orçamento"}
                       {c.orcamento_versao ? ` · v${c.orcamento_versao}` : ""}
                       {" · "}
@@ -193,13 +193,13 @@ export default function ParceiroComissoesClient({
 
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Valor
                     </p>
-                    <p className="text-lg font-black text-white tabular-nums">
+                    <p className="text-lg font-black text-slate-900 tabular-nums">
                       {formatMoney(c.valor_comissao)}
                     </p>
-                    <p className="text-[11px] text-white/45 mt-1">
+                    <p className="text-[11px] text-slate-500 mt-1">
                       Previsto: {formatDate(c.data_pagamento_prevista)}
                       {c.data_pagamento_efetiva
                         ? ` · Pago em ${formatDate(c.data_pagamento_efetiva)}`
@@ -210,7 +210,7 @@ export default function ParceiroComissoesClient({
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href={`/parceiro/projetos/${c.project_id}`}
-                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold border border-white/15 text-white/80 hover:bg-white/5 transition-colors"
+                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors"
                     >
                       Ver projeto
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -220,7 +220,7 @@ export default function ParceiroComissoesClient({
                         href={`/parceiro/comissoes/${c.receipt_id}/print`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold bg-white text-slate-900 hover:bg-white/90 transition-colors"
+                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                       >
                         <FileText className="h-3.5 w-3.5" />
                         Comprovante
