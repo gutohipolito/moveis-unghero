@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { PartnerType, ProjectStatus } from "@prisma/client";
+import type { PartnerType, ProjectStatus, PartnerCommissionStatus } from "@prisma/client";
 import {
   ensureCatalogShareCode,
   resolveCatalogPublicUrl,
@@ -10,6 +10,8 @@ import {
   partnerOwnedProjectsWhere,
 } from "@/lib/partnerAttribution";
 import { buildQuotePdfShortUrl } from "@/lib/quotePdfShare";
+import { toISODateBR } from "@/lib/brazilDate";
+import type { PartnerCommissionReceiptDTO } from "@/app/actions/partnerCommissions";
 
 function partnerProductImagePath(productId: string, index: number) {
   return `/api/parceiro/produto-imagem?productId=${encodeURIComponent(productId)}&i=${index}`;
@@ -726,5 +728,196 @@ export async function loadPartnerContributionsForProject(projectId: string): Pro
       partnerNome: f.partner.nome,
       createdAt: f.createdAt.toISOString(),
     })),
+  };
+}
+
+export type PartnerPortalCommission = {
+  id: string;
+  project_id: string;
+  cliente_nome: string;
+  orcamento_codigo: string | null;
+  orcamento_versao: number;
+  percentual: number;
+  base_valor: number;
+  valor_comissao: number;
+  status: PartnerCommissionStatus;
+  data_pagamento_prevista: string | null;
+  data_pagamento_efetiva: string | null;
+  receipt_id: string | null;
+  receipt_numero: number | null;
+  createdAt: string;
+};
+
+export type PartnerPortalCommissionsBundle = {
+  commissions: PartnerPortalCommission[];
+  pendente: number;
+  pago: number;
+};
+
+function roundMoney(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+/** Comissões do parceiro logado — somente leitura, sem observações internas. */
+export async function loadPartnerCommissions(
+  partnerId: string
+): Promise<PartnerPortalCommissionsBundle> {
+  const partner = await prisma.professionalPartner.findFirst({
+    where: { id: partnerId, ativo: true },
+    select: { id: true, company_id: true },
+  });
+  if (!partner) {
+    return { commissions: [], pendente: 0, pago: 0 };
+  }
+
+  const rows = await prisma.partnerCommission.findMany({
+    where: {
+      partner_id: partner.id,
+      company_id: partner.company_id,
+    },
+    orderBy: [{ createdAt: "desc" }],
+    select: {
+      id: true,
+      project_id: true,
+      quote_id: true,
+      percentual: true,
+      base_valor: true,
+      valor_comissao: true,
+      status: true,
+      data_pagamento_prevista: true,
+      data_pagamento_efetiva: true,
+      createdAt: true,
+      project: { select: { client: { select: { nome: true } } } },
+      quote: { select: { id: true, codigo: true, versao: true } },
+      receipts: {
+        select: { id: true, numero: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  let pendente = 0;
+  let pago = 0;
+  const commissions: PartnerPortalCommission[] = rows.map((row) => {
+    const valor = Number(row.valor_comissao);
+    if (row.status === "PAGA") pago += valor;
+    else if (row.status === "PENDENTE" || row.status === "AGENDADA") pendente += valor;
+
+    const codigo =
+      row.quote.codigo?.trim()?.toUpperCase() ||
+      (row.quote.id || row.quote_id
+        ? `ORC-${(row.quote.id || row.quote_id).substring(0, 5).toUpperCase()}`
+        : null);
+    const latest = row.receipts[0] ?? null;
+
+    return {
+      id: row.id,
+      project_id: row.project_id,
+      cliente_nome: row.project.client.nome,
+      orcamento_codigo: codigo,
+      orcamento_versao: row.quote.versao,
+      percentual: Number(row.percentual),
+      base_valor: Number(row.base_valor),
+      valor_comissao: valor,
+      status: row.status,
+      data_pagamento_prevista: row.data_pagamento_prevista
+        ? toISODateBR(row.data_pagamento_prevista)
+        : null,
+      data_pagamento_efetiva: row.data_pagamento_efetiva
+        ? toISODateBR(row.data_pagamento_efetiva)
+        : null,
+      receipt_id: latest?.id ?? null,
+      receipt_numero: latest?.numero ?? null,
+      createdAt: row.createdAt.toISOString(),
+    };
+  });
+
+  return {
+    commissions,
+    pendente: roundMoney(pendente),
+    pago: roundMoney(pago),
+  };
+}
+
+/** Comprovante emitido — só se pertencer ao parceiro da sessão. */
+export async function loadPartnerCommissionReceiptForPartner(
+  partnerId: string,
+  receiptId: string
+): Promise<PartnerCommissionReceiptDTO | null> {
+  const partner = await prisma.professionalPartner.findFirst({
+    where: { id: partnerId, ativo: true },
+    select: { id: true, company_id: true },
+  });
+  if (!partner) return null;
+
+  const row = await prisma.partnerCommissionReceipt.findFirst({
+    where: {
+      id: receiptId,
+      company_id: partner.company_id,
+      commission: { partner_id: partner.id },
+    },
+    select: {
+      id: true,
+      numero: true,
+      commission_id: true,
+      parceiro_nome: true,
+      parceiro_tipo: true,
+      parceiro_registro: true,
+      parceiro_escritorio: true,
+      parceiro_email: true,
+      parceiro_telefone: true,
+      cliente_nome: true,
+      projeto_ref: true,
+      orcamento_codigo: true,
+      orcamento_versao: true,
+      percentual: true,
+      base_valor: true,
+      valor_comissao: true,
+      data_pagamento_prevista: true,
+      data_pagamento_efetiva: true,
+      nota_fiscal_numero: true,
+      nota_fiscal_emitida_em: true,
+      emitido_por_nome: true,
+      observacoes: true,
+      createdAt: true,
+      commission: { select: { status: true, project_id: true } },
+    },
+  });
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    numero: row.numero,
+    commission_id: row.commission_id,
+    commission_status: row.commission?.status,
+    project_id: row.commission?.project_id ?? null,
+    parceiro_nome: row.parceiro_nome,
+    parceiro_tipo: row.parceiro_tipo,
+    parceiro_registro: row.parceiro_registro,
+    parceiro_escritorio: row.parceiro_escritorio,
+    parceiro_email: row.parceiro_email ?? null,
+    parceiro_telefone: row.parceiro_telefone ?? null,
+    cliente_nome: row.cliente_nome,
+    projeto_ref: row.projeto_ref,
+    orcamento_codigo: row.orcamento_codigo,
+    orcamento_versao: row.orcamento_versao,
+    percentual: Number(row.percentual),
+    base_valor: Number(row.base_valor),
+    valor_comissao: Number(row.valor_comissao),
+    data_pagamento_prevista: row.data_pagamento_prevista
+      ? toISODateBR(row.data_pagamento_prevista)
+      : null,
+    data_pagamento_efetiva: row.data_pagamento_efetiva
+      ? toISODateBR(row.data_pagamento_efetiva)
+      : null,
+    nota_fiscal_numero: row.nota_fiscal_numero ?? null,
+    nota_fiscal_emitida_em: row.nota_fiscal_emitida_em
+      ? toISODateBR(row.nota_fiscal_emitida_em)
+      : null,
+    emitido_por_nome: row.emitido_por_nome,
+    observacoes: row.observacoes,
+    createdAt: row.createdAt.toISOString(),
   };
 }

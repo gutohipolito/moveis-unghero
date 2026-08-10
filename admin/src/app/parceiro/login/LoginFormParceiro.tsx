@@ -132,15 +132,14 @@ export default function LoginFormParceiro({
           type="submit"
           disabled={loading}
           className="w-full h-11 font-bold btn-metallic gap-2"
-          onMouseEnter={submitIcon.onMouseEnter}
-          onMouseLeave={submitIcon.onMouseLeave}
+          {...submitIcon.hoverHandlers}
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <>
               Entrar
-              <ArrowNarrowRightIcon triggerRef={submitIcon.triggerRef} className="h-4 w-4" />
+              <ArrowNarrowRightIcon ref={submitIcon.iconRef} className="h-4 w-4" />
             </>
           )}
         </Button>
@@ -223,15 +222,14 @@ export default function LoginFormParceiro({
         type="submit"
         disabled={loading}
         className="w-full h-11 font-bold btn-metallic gap-2"
-        onMouseEnter={submitIcon.onMouseEnter}
-        onMouseLeave={submitIcon.onMouseLeave}
+        {...submitIcon.hoverHandlers}
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <>
             Continuar
-            <ArrowNarrowRightIcon triggerRef={submitIcon.triggerRef} className="h-4 w-4" />
+            <ArrowNarrowRightIcon ref={submitIcon.iconRef} className="h-4 w-4" />
           </>
         )}
       </Button>

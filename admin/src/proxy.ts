@@ -202,6 +202,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/parceiro/painel") ||
     pathname.startsWith("/parceiro/produtos") ||
     pathname.startsWith("/parceiro/clientes") ||
+    pathname.startsWith("/parceiro/comissoes") ||
     pathname.startsWith("/parceiro/marketing") ||
     pathname.startsWith("/parceiro/projetos")
   ) {
@@ -264,6 +265,8 @@ export const config = {
     "/parceiro/produtos/:path*",
     "/parceiro/clientes",
     "/parceiro/clientes/:path*",
+    "/parceiro/comissoes",
+    "/parceiro/comissoes/:path*",
     "/parceiro/marketing",
     "/parceiro/marketing/:path*",
     "/parceiro/projetos",
