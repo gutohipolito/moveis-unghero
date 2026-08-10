@@ -19,6 +19,7 @@ $allowedPrefixes = [
     'clientes',
     'marketing',
     'projetos',
+    'comissoes',
 ];
 
 $ok = $path === '';
@@ -40,7 +41,17 @@ if (!$ok) {
 }
 
 $adminPath = $path === '' ? 'login' : $path;
+$query = $_SERVER['QUERY_STRING'] ?? '';
+// Remove path=... do query string interno do rewrite
+if ($query !== '') {
+    parse_str($query, $qs);
+    unset($qs['path']);
+    $query = http_build_query($qs);
+}
 $src = 'https://admin.moveisunghero.com.br/parceiro/' . $adminPath;
+if ($query !== '') {
+    $src .= '?' . $query;
+}
 $safeSrc = htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
 <!DOCTYPE html>
@@ -52,7 +63,7 @@ $safeSrc = htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
   <title>Portal do Parceiro | Móveis Unghero</title>
   <link rel="icon" href="https://admin.moveisunghero.com.br/favicon.ico" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #020617; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #120e0c; }
     body { overflow: hidden; }
     #portal-frame {
       position: fixed; inset: 0; width: 100%; height: 100%;
@@ -61,7 +72,7 @@ $safeSrc = htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     #loading {
       position: fixed; inset: 0; z-index: -1;
       display: flex; align-items: center; justify-content: center;
-      background: #020617;
+      background: #120e0c;
     }
     .spin {
       width: 40px; height: 40px; border-radius: 50%;
@@ -79,5 +90,21 @@ $safeSrc = htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     title="Portal do Parceiro — Móveis Unghero"
     allow="clipboard-write"
   ></iframe>
+  <script>
+    (function () {
+      var ADMIN = 'https://admin.moveisunghero.com.br';
+      var BASE = '/parceiro';
+      window.addEventListener('message', function (event) {
+        if (event.origin !== ADMIN) return;
+        var data = event.data;
+        if (!data || data.type !== 'unghero-parceiro-nav') return;
+        var path = String(data.path || '');
+        if (path.indexOf('/parceiro') !== 0) return;
+        var next = path.replace(/^\/parceiro/, BASE) || BASE + '/login';
+        if (next === location.pathname + location.search) return;
+        history.replaceState(null, '', next);
+      });
+    })();
+  </script>
 </body>
 </html>

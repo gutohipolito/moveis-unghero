@@ -12,6 +12,7 @@ import {
   parsePartnerPendingLoginToken,
   parsePartnerSessionToken,
 } from "@/lib/partnerSession";
+import { partnerCookieOptions } from "@/lib/partnerCookieOptions";
 import {
   generatePartnerLoginOtp,
   verifyPartnerLoginOtp,
@@ -97,7 +98,6 @@ export async function loginParceiro(data: { email: string; telefone: string }) {
   const headerStore = await headers();
   const emailLimpo = data.email.trim().toLowerCase();
   const phoneDigits = cleanPhone(data.telefone);
-  const isProduction = process.env.NODE_ENV === "production";
 
   const ip = getRequestIp(headerStore);
   const rate = await checkRateLimitAsync(`parceiro-login:${ip}:${emailLimpo}`, {
@@ -188,13 +188,8 @@ export async function loginParceiro(data: { email: string; telefone: string }) {
     cookieStore.set(
       PARTNER_LOGIN_PENDING_COOKIE,
       createPartnerPendingLoginToken(partner.id, 10 * 60),
-      {
-      path: "/",
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: 10 * 60,
-    });
+      partnerCookieOptions(10 * 60)
+    );
 
     return {
       success: true as const,
@@ -215,7 +210,6 @@ export async function loginParceiro(data: { email: string; telefone: string }) {
 export async function confirmParceiroLoginOtp(data: { code: string }) {
   const cookieStore = await cookies();
   const headerStore = await headers();
-  const isProduction = process.env.NODE_ENV === "production";
   const pendingId = parsePartnerPendingLoginToken(
     cookieStore.get(PARTNER_LOGIN_PENDING_COOKIE)?.value
   );
@@ -262,13 +256,7 @@ export async function confirmParceiroLoginOtp(data: { code: string }) {
     cookieStore.set(
       "parceiro-session",
       createPartnerSessionToken(partner.id, SESSION_MAX_AGE_SEC),
-      {
-        path: "/",
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "lax",
-        maxAge: SESSION_MAX_AGE_SEC,
-      }
+      partnerCookieOptions(SESSION_MAX_AGE_SEC)
     );
     return { success: true as const };
   } catch (error) {
@@ -306,27 +294,18 @@ export async function adminEnterPartnerPortal(partnerId: string) {
       return { success: false, error: "Parceiro não encontrado ou inativo." };
     }
 
-    const isProduction = process.env.NODE_ENV === "production";
     const cookieStore = await cookies();
     cookieStore.delete(PARTNER_LOGIN_PENDING_COOKIE);
     cookieStore.set(
       "parceiro-session",
       createPartnerSessionToken(partner.id, ADMIN_SESSION_MAX_AGE_SEC),
-      {
-        path: "/",
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "lax",
-        maxAge: ADMIN_SESSION_MAX_AGE_SEC,
-      }
+      partnerCookieOptions(ADMIN_SESSION_MAX_AGE_SEC)
     );
-    cookieStore.set(ADMIN_PREVIEW_COOKIE, "1", {
-      path: "/",
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: ADMIN_SESSION_MAX_AGE_SEC,
-    });
+    cookieStore.set(
+      ADMIN_PREVIEW_COOKIE,
+      "1",
+      partnerCookieOptions(ADMIN_SESSION_MAX_AGE_SEC)
+    );
 
     return { success: true };
   } catch (error) {

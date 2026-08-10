@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ParceiroPublicFrameSync from "./ParceiroPublicFrameSync";
 
 export const metadata: Metadata = {
   title: "Portal Parceiro - Móveis Unghero",
@@ -17,5 +18,10 @@ export default function ParceiroLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <ParceiroPublicFrameSync />
+      {children}
+    </>
+  );
 }
