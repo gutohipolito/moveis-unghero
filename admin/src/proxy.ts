@@ -48,6 +48,8 @@ const LOGIN_RATE = { limit: 8, windowMs: 15 * 60 * 1000 };
 /** Links públicos compartilháveis: freia enumeração de códigos. */
 const SHARE_RATE = { limit: 60, windowMs: 15 * 60 * 1000 };
 
+const PUBLIC_SITE = "https://moveisunghero.com.br";
+
 /** Forms públicos (quando passam pelo proxy). */
 const PUBLIC_FORM_RATE = { limit: 20, windowMs: 60 * 60 * 1000 };
 
@@ -118,8 +120,20 @@ function rateLimitedJson(message: string, retryAfterSec: number, limit: number) 
 }
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
   const ip = getRequestIp(request.headers);
+
+  // URL canônica do portal: moveisunghero.com.br/parceiro/...
+  // Só redireciona navegação top-level no host admin.*; iframe/RSC ficam no admin.
+  const host = (request.headers.get("host") || "").toLowerCase();
+  const dest = (request.headers.get("sec-fetch-dest") || "").toLowerCase();
+  if (
+    host === "admin.moveisunghero.com.br" &&
+    pathname.startsWith("/parceiro") &&
+    dest === "document"
+  ) {
+    return NextResponse.redirect(`${PUBLIC_SITE}${pathname}${search}`, 308);
+  }
 
   // Fecha cadastro público de operadores via Better Auth.
   // Criação de colaborador usa auth.api.signUpEmail no servidor (não passa pelo proxy).
@@ -258,6 +272,7 @@ export const config = {
     "/sem-acesso",
     "/cliente/login",
     "/cliente/dashboard/:path*",
+    "/parceiro",
     "/parceiro/login",
     "/parceiro/painel",
     "/parceiro/painel/:path*",
