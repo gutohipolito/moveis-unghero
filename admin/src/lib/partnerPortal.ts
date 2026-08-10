@@ -459,6 +459,7 @@ export function formatPartnerClientAddress(
 export interface PartnerProjectNoteDTO {
   id: string;
   body: string;
+  partnerId: string;
   partnerNome: string;
   createdAt: string;
 }
@@ -469,6 +470,7 @@ export interface PartnerProjectFileDTO {
   mime_type: string;
   url: string;
   size_bytes: number | null;
+  partnerId: string;
   partnerNome: string;
   createdAt: string;
 }
@@ -616,6 +618,7 @@ export async function loadPartnerProjectDetail(
         select: {
           id: true,
           body: true,
+          partner_id: true,
           createdAt: true,
           partner: { select: { nome: true } },
         },
@@ -628,6 +631,7 @@ export async function loadPartnerProjectDetail(
           mime_type: true,
           url: true,
           size_bytes: true,
+          partner_id: true,
           createdAt: true,
           partner: { select: { nome: true } },
         },
@@ -677,6 +681,7 @@ export async function loadPartnerProjectDetail(
     notes: project.partnerNotes.map((n) => ({
       id: n.id,
       body: n.body,
+      partnerId: n.partner_id,
       partnerNome: n.partner.nome,
       createdAt: n.createdAt.toISOString(),
     })),
@@ -686,6 +691,7 @@ export async function loadPartnerProjectDetail(
       mime_type: f.mime_type,
       url: f.url,
       size_bytes: f.size_bytes,
+      partnerId: f.partner_id,
       partnerNome: f.partner.nome,
       createdAt: f.createdAt.toISOString(),
     })),
@@ -704,6 +710,7 @@ export async function loadPartnerContributionsForProject(projectId: string): Pro
       select: {
         id: true,
         body: true,
+        partner_id: true,
         createdAt: true,
         partner: { select: { nome: true } },
       },
@@ -717,6 +724,7 @@ export async function loadPartnerContributionsForProject(projectId: string): Pro
         mime_type: true,
         url: true,
         size_bytes: true,
+        partner_id: true,
         createdAt: true,
         partner: { select: { nome: true } },
       },
@@ -727,6 +735,7 @@ export async function loadPartnerContributionsForProject(projectId: string): Pro
     notes: notes.map((n) => ({
       id: n.id,
       body: n.body,
+      partnerId: n.partner_id,
       partnerNome: n.partner.nome,
       createdAt: n.createdAt.toISOString(),
     })),
@@ -736,6 +745,7 @@ export async function loadPartnerContributionsForProject(projectId: string): Pro
       mime_type: f.mime_type,
       url: f.url,
       size_bytes: f.size_bytes,
+      partnerId: f.partner_id,
       partnerNome: f.partner.nome,
       createdAt: f.createdAt.toISOString(),
     })),

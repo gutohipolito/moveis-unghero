@@ -9,10 +9,15 @@ import ParceiroProjetoDetailView from "@/app/parceiro/projetos/ParceiroProjetoDe
 
 type Props = {
   projectId: string | null;
+  currentPartnerId: string;
   onClose: () => void;
 };
 
-export default function ParceiroProjetoModal({ projectId, onClose }: Props) {
+export default function ParceiroProjetoModal({
+  projectId,
+  currentPartnerId,
+  onClose,
+}: Props) {
   const [project, setProject] = useState<PartnerProjectDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,6 +84,7 @@ export default function ParceiroProjetoModal({ projectId, onClose }: Props) {
         <ParceiroProjetoDetailView
           key={project.id}
           project={project}
+          currentPartnerId={currentPartnerId}
           showHeader
           compact
         />

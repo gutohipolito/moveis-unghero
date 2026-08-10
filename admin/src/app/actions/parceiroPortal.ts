@@ -514,6 +514,7 @@ export async function addPartnerProjectNoteAction(projectId: string, body: strin
       select: {
         id: true,
         body: true,
+        partner_id: true,
         createdAt: true,
         partner: { select: { nome: true } },
       },
@@ -527,6 +528,7 @@ export async function addPartnerProjectNoteAction(projectId: string, body: strin
       note: {
         id: note.id,
         body: note.body,
+        partnerId: note.partner_id,
         partnerNome: note.partner.nome,
         createdAt: note.createdAt.toISOString(),
       },

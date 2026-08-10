@@ -264,6 +264,7 @@ export default function ParceiroProjetosClient({
 
       <ParceiroProjetoModal
         projectId={openProjectId}
+        currentPartnerId={partner.id}
         onClose={() => setOpenProjectId(null)}
       />
     </ParceiroPortalShell>

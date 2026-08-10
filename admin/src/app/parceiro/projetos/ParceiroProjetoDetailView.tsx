@@ -67,6 +67,8 @@ function formatBytes(bytes: number | null) {
 
 type Props = {
   project: PartnerProjectDetail;
+  /** Partner session id — only own notes/files show delete. */
+  currentPartnerId?: string;
   /** Compact header for modal; page can pass false and render its own title. */
   showHeader?: boolean;
   /** Layout compacto para modal (menos padding). */
@@ -75,6 +77,7 @@ type Props = {
 
 export default function ParceiroProjetoDetailView({
   project: initial,
+  currentPartnerId,
   showHeader = true,
   compact = false,
 }: Props) {
@@ -399,19 +402,21 @@ export default function ParceiroProjetoDetailView({
                       {file.nome}
                     </a>
                     <p className="text-[11px] text-stone-500 mt-0.5">
-                      {dateFmt.format(new Date(file.createdAt))}
+                      {file.partnerNome} · {dateFmt.format(new Date(file.createdAt))}
                       {file.size_bytes ? ` · ${formatBytes(file.size_bytes)}` : ""}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => removeFile(file.id)}
-                    className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50"
-                    title="Excluir"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {currentPartnerId && file.partnerId === currentPartnerId ? (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => removeFile(file.id)}
+                      className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50"
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -455,15 +460,17 @@ export default function ParceiroProjetoDetailView({
                         {note.body}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => removeNote(note.id)}
-                      className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {currentPartnerId && note.partnerId === currentPartnerId ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => removeNote(note.id)}
+                        className="p-2 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : null}
                   </div>
                 </li>
               ))}

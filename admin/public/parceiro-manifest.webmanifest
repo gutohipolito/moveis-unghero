@@ -1,0 +1,56 @@
+{
+  "id": "/parceiro",
+  "name": "Portal Parceiro - Móveis Unghero",
+  "short_name": "Parceiro MU",
+  "description": "Portal do parceiro da Móveis Unghero — projetos, clientes e marketing",
+  "start_url": "/parceiro/painel",
+  "scope": "/parceiro",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "background_color": "#1a1612",
+  "theme_color": "#d9a007",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-mu-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-mu.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-mu.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Projetos",
+      "short_name": "Projetos",
+      "url": "/parceiro/projetos",
+      "icons": [{ "src": "/icon-mu-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Clientes",
+      "short_name": "Clientes",
+      "url": "/parceiro/clientes",
+      "icons": [{ "src": "/icon-mu-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Marketing",
+      "short_name": "Marketing",
+      "url": "/parceiro/marketing",
+      "icons": [{ "src": "/icon-mu-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

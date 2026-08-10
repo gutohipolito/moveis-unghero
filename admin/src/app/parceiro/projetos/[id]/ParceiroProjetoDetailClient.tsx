@@ -59,7 +59,11 @@ export default function ParceiroProjetoDetailClient({
           </div>
         </div>
 
-        <ParceiroProjetoDetailView project={project} showHeader={false} />
+        <ParceiroProjetoDetailView
+          project={project}
+          currentPartnerId={partner.id}
+          showHeader={false}
+        />
       </div>
     </ParceiroPortalShell>
   );

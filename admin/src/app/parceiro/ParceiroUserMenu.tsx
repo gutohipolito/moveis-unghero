@@ -32,6 +32,7 @@ import {
 } from "@/lib/notificationChannels";
 import { cn } from "@/lib/utils";
 import { DownloadIcon, useAnimatedIconHover } from "@/components/icons";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -219,9 +220,16 @@ export default function ParceiroUserMenu({
   onOpenSettings,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
+  const [isIos, setIsIos] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const installIcon = useAnimatedIconHover();
+  const { canInstall, isInstalled, installing, install } = usePwaInstall();
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
+
+  useEffect(() => {
+    setIsIos(/iPad|iPhone|iPod/.test(navigator.userAgent));
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -331,15 +339,50 @@ export default function ParceiroUserMenu({
               <Settings2 className="h-4 w-4" />
               Configurações
             </button>
-            <div
-              className="parceiro-user-menu-soon"
-              aria-disabled="true"
-              {...installIcon.hoverHandlers}
-            >
-              <DownloadIcon ref={installIcon.iconRef} size={16} className="shrink-0 opacity-55" />
-              <span className="flex-1">Instalar aplicativo</span>
-              <span className="parceiro-soon-sticker">Em breve</span>
-            </div>
+            {isInstalled ? (
+              <div className="parceiro-user-menu-soon" aria-disabled="true">
+                <Monitor className="h-4 w-4 shrink-0 opacity-55" />
+                <span className="flex-1">App instalado</span>
+              </div>
+            ) : canInstall ? (
+              <button
+                type="button"
+                disabled={installing}
+                onClick={() => {
+                  void install().then(() => setMenuOpen(false));
+                }}
+                className="dashboard-user-menu-item w-full rounded-lg"
+                {...installIcon.hoverHandlers}
+              >
+                <DownloadIcon ref={installIcon.iconRef} size={16} />
+                {installing ? "Instalando..." : "Instalar aplicativo"}
+              </button>
+            ) : isIos ? (
+              <button
+                type="button"
+                onClick={() => setIosHint((v) => !v)}
+                className="dashboard-user-menu-item w-full rounded-lg"
+                {...installIcon.hoverHandlers}
+              >
+                <DownloadIcon ref={installIcon.iconRef} size={16} />
+                <span className="flex-1 text-left">Instalar aplicativo</span>
+              </button>
+            ) : (
+              <div
+                className="parceiro-user-menu-soon"
+                aria-disabled="true"
+                {...installIcon.hoverHandlers}
+              >
+                <DownloadIcon ref={installIcon.iconRef} size={16} className="shrink-0 opacity-55" />
+                <span className="flex-1">Instalar aplicativo</span>
+                <span className="parceiro-soon-sticker">Indisponível</span>
+              </div>
+            )}
+            {iosHint && !isInstalled && !canInstall ? (
+              <p className="px-3 pb-2 text-[11px] leading-snug text-muted-foreground">
+                No Safari: toque em Compartilhar e depois em &quot;Adicionar à Tela de Início&quot;.
+              </p>
+            ) : null}
             <form action={logoutParceiro}>
               <button
                 type="submit"
