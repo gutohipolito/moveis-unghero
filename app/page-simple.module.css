@@ -1,28 +1,28 @@
 .page {
-  padding: calc(var(--header-height) + 2rem) 0 4.5rem;
-  background: var(--paper);
+  padding: 5.5rem 1.25rem 4rem;
+  background: #000;
+  color: #e1e0cc;
 }
 
 .frame {
   width: 100%;
-  max-width: var(--frame);
+  max-width: 72rem;
   margin: 0 auto;
-  padding: 0 var(--pad);
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .header {
-  max-width: 22ch;
-  margin-bottom: 0.5rem;
+  max-width: 24ch;
+  margin-bottom: 1rem;
 }
 
 .kicker {
   font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--mute);
+  color: var(--cream);
   margin-bottom: 0.85rem;
 }
 
@@ -31,89 +31,77 @@
   font-size: clamp(2.6rem, 6vw, 4.2rem);
   font-style: italic;
   line-height: 0.95;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   margin-bottom: 1rem;
+  color: #e1e0cc;
 }
 
 .lead {
-  color: var(--mute);
-  font-size: 1.02rem;
-  line-height: 1.55;
+  color: rgba(225, 224, 204, 0.55);
+  font-size: 1rem;
+  line-height: 1.5;
   max-width: 36rem;
 }
 
 .steps {
   list-style: none;
   display: grid;
-  gap: 1rem;
+  gap: 0.65rem;
 }
 
 .step {
   display: grid;
-  grid-template-columns: 4.5rem 1fr;
+  grid-template-columns: 4rem 1fr;
   gap: 1rem;
-  background: var(--paper-dim);
-  padding: clamp(1.25rem, 3vw, 1.75rem);
+  background: #101010;
+  border-radius: 1rem;
+  padding: 1.35rem 1.25rem;
 }
 
 .index {
   font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--mute);
-  padding-top: 0.45rem;
+  letter-spacing: 0.12em;
+  color: rgba(225, 224, 204, 0.4);
+  padding-top: 0.4rem;
 }
 
 .stepTitle {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: 1.7rem;
   font-style: italic;
-  line-height: 1;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.35rem;
 }
 
 .stepText {
-  color: var(--mute);
+  color: #9ca3af;
   max-width: 34rem;
 }
 
 .callout {
-  background: var(--ink);
-  color: var(--paper);
-  padding: clamp(1.5rem, 3.5vw, 2.25rem);
+  background: #101010;
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  color: #e1e0cc;
 }
 
 .calloutTitle {
   font-family: var(--font-display);
-  font-size: clamp(1.45rem, 2.8vw, 1.9rem);
   font-style: italic;
-  margin-bottom: 0.75rem;
+  font-size: 1.55rem;
+  margin-bottom: 0.65rem;
 }
 
 .callout p,
 .note,
 .prose {
-  line-height: 1.6;
+  line-height: 1.55;
   max-width: 38rem;
+  color: #9ca3af;
 }
 
-.callout p {
-  opacity: 0.78;
-}
-
-.callout a {
-  color: var(--paper);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.note {
-  color: var(--mute);
-  padding: 0.5rem 0 0;
-}
-
+.callout a,
 .note a {
-  color: var(--ink);
+  color: var(--cream);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -121,38 +109,40 @@
 .prose {
   display: grid;
   gap: 1rem;
-  color: var(--mute);
-  font-size: 1.05rem;
-  background: var(--paper-dim);
-  padding: clamp(1.5rem, 3.5vw, 2.25rem);
+  background: #101010;
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  font-size: 1.02rem;
 }
 
 .figure {
   position: relative;
   aspect-ratio: 21 / 9;
   overflow: hidden;
-  background: var(--paper-dim);
+  border-radius: 1rem;
+  background: #161616;
 }
 
 .form {
   max-width: 28rem;
   display: grid;
-  gap: 1.25rem;
-  background: var(--paper-dim);
-  padding: clamp(1.5rem, 3.5vw, 2.25rem);
+  gap: 1.15rem;
+  background: #101010;
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
 }
 
 .field {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .field label {
   font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--mute);
+  color: rgba(225, 224, 204, 0.45);
 }
 
 .field input,
@@ -160,13 +150,18 @@
 .field select {
   width: 100%;
   border: 0;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid rgba(225, 224, 204, 0.25);
   background: transparent;
-  color: var(--ink);
+  color: #e1e0cc;
   font: inherit;
-  font-size: 1.02rem;
-  padding: 0.6rem 0;
+  font-size: 1rem;
+  padding: 0.55rem 0;
   border-radius: 0;
+}
+
+.field option {
+  background: #101010;
+  color: #e1e0cc;
 }
 
 .field textarea {
@@ -174,47 +169,40 @@
   resize: vertical;
 }
 
-.field input:focus,
-.field textarea:focus,
-.field select:focus {
-  outline: none;
-  border-bottom-width: 2px;
-}
-
 .submit {
   justify-self: start;
   margin-top: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--cream);
+  color: #000;
   border: 0;
-  border-bottom: 1px solid var(--ink);
-  padding: 0.3rem 0;
+  border-radius: 999px;
+  padding: 0.7rem 1.15rem;
+  font-weight: 600;
+  font-size: 0.88rem;
   cursor: pointer;
-  color: var(--ink);
   font-family: inherit;
 }
 
 .hint {
-  font-size: 0.85rem;
-  color: var(--mute);
+  font-size: 0.82rem;
+  color: #6b7280;
 }
 
 .contactList {
   display: grid;
-  gap: 0.45rem;
-  color: var(--mute);
+  gap: 0.4rem;
+  color: #9ca3af;
+  background: #101010;
+  border-radius: 1rem;
+  padding: 1.25rem 1.4rem;
   font-size: 0.95rem;
-  background: var(--paper-dim);
-  padding: 1.35rem 1.5rem;
 }
 
 .contactList a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--cream);
 }
 
 @media (max-width: 640px) {
@@ -224,6 +212,5 @@
 
   .step {
     grid-template-columns: 1fr;
-    gap: 0.35rem;
   }
 }

@@ -21,10 +21,7 @@ export default function Footer() {
           </a>
         </nav>
         <p className={styles.meta}>
-          {SITE.address}
-          <span aria-hidden> · </span>
-          CNPJ 13.415.510/0001-71
-          <span aria-hidden> · </span>© {year}
+          {SITE.address} · CNPJ 13.415.510/0001-71 · © {year}
         </p>
       </div>
     </footer>

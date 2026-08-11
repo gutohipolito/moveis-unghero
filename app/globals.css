@@ -1,13 +1,14 @@
 :root {
-  --ink: #121110;
-  --paper: #f2f1ef;
-  --paper-dim: #e8e6e2;
-  --mute: #6f6b66;
-  --line: rgba(18, 17, 16, 0.1);
-  --frame: 1180px;
-  --header-height: 4.75rem;
+  --bg: #000000;
+  --bg-card: #101010;
+  --bg-feature: #212121;
+  --cream: #dedbc8;
+  --cream-text: #e1e0cc;
+  --mute: #9a978c;
+  --header-height: 4.5rem;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --pad: clamp(1.25rem, 3.5vw, 2.5rem);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
 }
 
 * {
@@ -21,11 +22,10 @@ html {
 }
 
 body {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--cream-text);
   font-family: var(--font-body);
-  font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -35,51 +35,40 @@ a {
   text-decoration: none;
 }
 
-img {
+img,
+video {
   display: block;
   max-width: 100%;
-  height: auto;
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--cream);
+  color: #000;
 }
 
-.frame {
-  width: 100%;
-  max-width: var(--frame);
-  margin: 0 auto;
-  padding: 0 var(--pad);
+.noise-overlay,
+.bg-noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-@keyframes rise {
+.noise-overlay {
+  opacity: 0.7;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.bg-noise {
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes ken {
   from {
-    opacity: 0;
-    transform: translateY(1rem);
+    transform: scale(1.08);
   }
   to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.anim-rise {
-  animation: rise 1s var(--ease) both;
-}
-
-.anim-rise-2 {
-  animation: rise 1s var(--ease) 0.14s both;
-}
-
-.anim-rise-3 {
-  animation: rise 1s var(--ease) 0.26s both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .anim-rise,
-  .anim-rise-2,
-  .anim-rise-3 {
-    animation: none;
+    transform: scale(1);
   }
 }
