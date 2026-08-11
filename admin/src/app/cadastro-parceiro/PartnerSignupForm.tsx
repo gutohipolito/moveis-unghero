@@ -25,7 +25,13 @@ import {
   PARTNER_TYPE_STYLES,
 } from "@/lib/partnerTypes";
 import { formatPhoneInput, isValidBrPhoneDigits, PHONE_PLACEHOLDER } from "@/lib/phone";
-import { FORM_FIELD_LIMITS, validatePartnerRegistro } from "@/lib/brDocuments";
+import {
+  FORM_FIELD_LIMITS,
+  formatRegistroProfissionalInput,
+  registroProfissionalMaxLength,
+  registroProfissionalPlaceholder,
+  validatePartnerRegistro,
+} from "@/lib/brDocuments";
 import { validateOptionalEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
@@ -57,17 +63,27 @@ const selectClass =
 const textareaClass =
   "w-full min-w-0 max-w-full rounded-md border border-border/70 bg-white/90 px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 resize-none";
 
-function FieldCounter({ value, max }: { value: string; max: number }) {
+function FieldCounter({
+  value,
+  max,
+  className,
+}: {
+  value: string;
+  max: number;
+  className?: string;
+}) {
   const len = value.length;
   return (
-    <p
+    <span
+      aria-hidden
       className={cn(
-        "text-[10px] tabular-nums text-right",
-        len >= max ? "text-amber-700 font-semibold" : "text-muted-foreground"
+        "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black tabular-nums tracking-wide",
+        len >= max ? "text-amber-700" : "text-muted-foreground/80",
+        className
       )}
     >
       {len}/{max}
-    </p>
+    </span>
   );
 }
 
@@ -160,8 +176,15 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
     setTelefone(formatPhoneInput(e.target.value));
   };
 
+  const handleRegistroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRegistroProfissional(formatRegistroProfissionalInput(tipo, e.target.value));
+  };
+
   const handleSelectTipo = (value: PartnerType) => {
     setTipo(value);
+    if (registroProfissional) {
+      setRegistroProfissional(formatRegistroProfissionalInput(value, registroProfissional));
+    }
     autoAdvance(2);
   };
 
@@ -552,10 +575,10 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   value={nome}
                   onChange={(e) => setNome(e.target.value.slice(0, FORM_FIELD_LIMITS.nome))}
                   maxLength={FORM_FIELD_LIMITS.nome}
-                  className={cn(inputClass, "pl-10")}
+                  className={cn(inputClass, "pl-10 pr-14")}
                 />
+                <FieldCounter value={nome} max={FORM_FIELD_LIMITS.nome} />
               </div>
-              <FieldCounter value={nome} max={FORM_FIELD_LIMITS.nome} />
             </div>
 
             <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
@@ -574,10 +597,10 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                       setEscritorio(e.target.value.slice(0, FORM_FIELD_LIMITS.escritorio))
                     }
                     maxLength={FORM_FIELD_LIMITS.escritorio}
-                    className={cn(inputClass, "pl-10")}
+                    className={cn(inputClass, "pl-10 pr-14")}
                   />
+                  <FieldCounter value={escritorio} max={FORM_FIELD_LIMITS.escritorio} />
                 </div>
-                <FieldCounter value={escritorio} max={FORM_FIELD_LIMITS.escritorio} />
               </div>
 
               <div className="space-y-1.5">
@@ -617,37 +640,26 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 <Input
                   id="parceiro-signup-registro"
                   type="text"
-                  placeholder={
-                    tipo === "ARQUITETO"
-                      ? "Ex: A123456-7"
-                      : tipo === "ENGENHEIRO"
-                        ? "Ex: 123456-D"
-                        : "CAU, CREA ou ABD (se houver)"
-                  }
+                  autoCapitalize="characters"
+                  placeholder={registroProfissionalPlaceholder(tipo)}
                   value={registroProfissional}
-                  onChange={(e) =>
-                    setRegistroProfissional(
-                      e.target.value.slice(0, FORM_FIELD_LIMITS.registroProfissional)
-                    )
-                  }
-                  maxLength={FORM_FIELD_LIMITS.registroProfissional}
-                  className={cn(inputClass, "pl-10")}
+                  onChange={handleRegistroChange}
+                  maxLength={registroProfissionalMaxLength(tipo)}
+                  className={cn(inputClass, "pl-10 pr-14 tracking-wide")}
                   required={tipo === "ARQUITETO" || tipo === "ENGENHEIRO"}
                 />
-              </div>
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {tipo === "ARQUITETO"
-                    ? "Formato CAU: letra + números (ex.: A123456-7)."
-                    : tipo === "ENGENHEIRO"
-                      ? "Informe o CREA completo, com sufixo se houver."
-                      : "Opcional — informe se tiver conselho de classe."}
-                </p>
                 <FieldCounter
                   value={registroProfissional}
-                  max={FORM_FIELD_LIMITS.registroProfissional}
+                  max={registroProfissionalMaxLength(tipo)}
                 />
               </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {tipo === "ARQUITETO"
+                  ? "CAU nacional: letra + 6 dígitos (ex.: A000000)."
+                  : tipo === "ENGENHEIRO"
+                    ? "CREA: número com sufixo da categoria (ex.: 000000-D)."
+                    : "Opcional — informe se tiver conselho de classe."}
+              </p>
             </div>
           </div>
 
@@ -740,10 +752,10 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   setPortfolioUrl(e.target.value.slice(0, FORM_FIELD_LIMITS.portfolioUrl))
                 }
                 maxLength={FORM_FIELD_LIMITS.portfolioUrl}
-                className={cn(inputClass, "pl-10")}
+                className={cn(inputClass, "pl-10 pr-16")}
               />
+              <FieldCounter value={portfolioUrl} max={FORM_FIELD_LIMITS.portfolioUrl} />
             </div>
-            <FieldCounter value={portfolioUrl} max={FORM_FIELD_LIMITS.portfolioUrl} />
           </div>
 
           {navRow}
@@ -777,10 +789,14 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   }
                   maxLength={FORM_FIELD_LIMITS.observacoes}
                   rows={3}
-                  className={cn(textareaClass, "pl-10")}
+                  className={cn(textareaClass, "pl-10 pr-16 pb-6")}
+                />
+                <FieldCounter
+                  value={observacoes}
+                  max={FORM_FIELD_LIMITS.observacoes}
+                  className="top-auto bottom-2 translate-y-0"
                 />
               </div>
-              <FieldCounter value={observacoes} max={FORM_FIELD_LIMITS.observacoes} />
             </div>
 
             <div className="space-y-2">

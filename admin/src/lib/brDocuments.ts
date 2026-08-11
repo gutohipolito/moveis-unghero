@@ -3,6 +3,12 @@
 export const CPF_PLACEHOLDER = "xxx.xxx.xxx-xx";
 export const CNPJ_PLACEHOLDER = "xx.xxx.xxx/xxxx-xx";
 export const CEP_PLACEHOLDER = "xxxxx-xxx";
+/** CAU nacional: letra + 6 dígitos (ex.: A123456). Aceita DV opcional A123456-7. */
+export const CAU_PLACEHOLDER = "A000000";
+/** CREA típico com sufixo de categoria (ex.: 123456-D). */
+export const CREA_PLACEHOLDER = "000000-D";
+export const CAU_MAX_LENGTH = 9; // A123456-7
+export const CREA_MAX_LENGTH = 16;
 
 export const FORM_FIELD_LIMITS = {
   nome: 120,
@@ -140,12 +146,77 @@ export function normalizeRegistroProfissional(value: string): string {
 }
 
 /**
- * CAU típico: letra opcional + 4–7 dígitos + hífen opcional + 1 dígito
- * (ex.: A123456-7, 123456-0). Sem dígito verificador oficial público.
+ * Máscara progressiva do CAU: letra + até 6 dígitos; 7º dígito vira DV com hífen.
+ * Ex.: A → A1 → A123456 → A123456-7
+ * Se o usuário digitar só números, prefixa "A" (padrão nacional).
+ */
+export function formatCauInput(value: string): string {
+  const upper = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let letter = "";
+  let digits = "";
+  for (const ch of upper) {
+    if (!letter && /[A-Z]/.test(ch)) {
+      letter = ch;
+      continue;
+    }
+    if (/\d/.test(ch) && digits.length < 7) digits += ch;
+  }
+  if (!digits && !letter) return "";
+  if (!letter && digits) letter = "A";
+  if (digits.length <= 6) return `${letter}${digits}`;
+  return `${letter}${digits.slice(0, 6)}-${digits.slice(6)}`;
+}
+
+/**
+ * Máscara progressiva do CREA: dígitos + sufixo opcional (letra) com hífen.
+ * Ex.: 123456 → 123456-D
+ */
+export function formatCreaInput(value: string): string {
+  const upper = value.toUpperCase().replace(/[^0-9A-Z.\-/]/g, "");
+  const digits = upper.replace(/\D/g, "").slice(0, 10);
+  const suffixMatch = upper.match(/[A-Z](?!.*[A-Z])/);
+  const suffix = suffixMatch?.[0] ?? "";
+  if (!digits && !suffix) return "";
+  if (!suffix) return digits.slice(0, CREA_MAX_LENGTH);
+  if (!digits) return suffix;
+  return `${digits}-${suffix}`.slice(0, CREA_MAX_LENGTH);
+}
+
+export function formatRegistroProfissionalInput(
+  tipo: "ARQUITETO" | "ENGENHEIRO" | string,
+  value: string
+): string {
+  if (tipo === "ARQUITETO") return formatCauInput(value);
+  if (tipo === "ENGENHEIRO") return formatCreaInput(value);
+  return value
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .slice(0, FORM_FIELD_LIMITS.registroProfissional);
+}
+
+export function registroProfissionalMaxLength(
+  tipo: "ARQUITETO" | "ENGENHEIRO" | string
+): number {
+  if (tipo === "ARQUITETO") return CAU_MAX_LENGTH;
+  if (tipo === "ENGENHEIRO") return CREA_MAX_LENGTH;
+  return FORM_FIELD_LIMITS.registroProfissional;
+}
+
+export function registroProfissionalPlaceholder(
+  tipo: "ARQUITETO" | "ENGENHEIRO" | string
+): string {
+  if (tipo === "ARQUITETO") return CAU_PLACEHOLDER;
+  if (tipo === "ENGENHEIRO") return CREA_PLACEHOLDER;
+  return "CAU, CREA ou ABD (se houver)";
+}
+
+/**
+ * CAU nacional: A + 6 dígitos. Aceita legado com DV (A123456-7 / 123456-0).
  */
 export function isValidCau(value: string): boolean {
   const n = normalizeRegistroProfissional(value);
-  if (n.length < 5 || n.length > FORM_FIELD_LIMITS.registroProfissional) return false;
+  if (n.length < 5 || n.length > CAU_MAX_LENGTH) return false;
+  if (/^[A-Z]\d{6}$/.test(n)) return true;
   return /^[A-Z]?\d{4,7}-?\d$/i.test(n);
 }
 
@@ -154,7 +225,7 @@ export function isValidCau(value: string): boolean {
  */
 export function isValidCrea(value: string): boolean {
   const n = normalizeRegistroProfissional(value);
-  if (n.length < 5 || n.length > FORM_FIELD_LIMITS.registroProfissional) return false;
+  if (n.length < 5 || n.length > CREA_MAX_LENGTH) return false;
   const compact = n.replace(/[.\-/]/g, "");
   if (compact.length < 5) return false;
   return /^[\dA-Z.\-/]+$/i.test(n) && /\d{4,}/.test(compact);
@@ -172,20 +243,21 @@ export function validatePartnerRegistro(
 
   if (!raw) {
     if (!required) return null;
-    if (tipo === "ARQUITETO") return "Informe o registro CAU (ex.: A123456-7).";
-    if (tipo === "ENGENHEIRO") return "Informe o registro CREA (ex.: 123456-D).";
+      if (tipo === "ARQUITETO") return `Informe o registro CAU (ex.: ${CAU_PLACEHOLDER}).`;
+    if (tipo === "ENGENHEIRO") return `Informe o registro CREA (ex.: ${CREA_PLACEHOLDER}).`;
     return "Informe o registro profissional.";
   }
 
   if (tipo === "ARQUITETO" && !isValidCau(raw)) {
-    return "CAU inválido. Use o formato A123456-7 (letra + números).";
+    return `CAU inválido. Use o formato ${CAU_PLACEHOLDER} (letra + 6 dígitos).`;
   }
   if (tipo === "ENGENHEIRO" && !isValidCrea(raw)) {
-    return "CREA inválido. Informe o número completo (ex.: 123456-D).";
+    return `CREA inválido. Informe o número completo (ex.: ${CREA_PLACEHOLDER}).`;
   }
 
-  if (raw.length > FORM_FIELD_LIMITS.registroProfissional) {
-    return `Registro deve ter no máximo ${FORM_FIELD_LIMITS.registroProfissional} caracteres.`;
+  const maxLen = registroProfissionalMaxLength(tipo);
+  if (raw.length > maxLen) {
+    return `Registro deve ter no máximo ${maxLen} caracteres.`;
   }
 
   return null;
