@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { SITE, buildContactWhatsAppUrl } from "@/lib/site";
 import styles from "./Header.module.css";
 
@@ -14,25 +14,15 @@ const NAV = [
 ] as const;
 
 export default function Header() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [overDark, setOverDark] = useState(false);
-
-  const darkHeroRoute =
-    pathname === "/" || Boolean(pathname?.match(/^\/projetos\/[^/]+$/));
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => {
-      if (!darkHeroRoute) {
-        setOverDark(false);
-        return;
-      }
-      setOverDark(window.scrollY < window.innerHeight * 0.7);
-    };
+    const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [darkHeroRoute]);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -42,15 +32,22 @@ export default function Header() {
   }, [open]);
 
   return (
-    <header
-      className={`${styles.header} ${overDark && !open ? styles.onDark : styles.onPaper} ${
-        open ? styles.open : ""
-      }`}
-    >
+    <header className={`${styles.header} ${scrolled || open ? styles.solid : ""} ${open ? styles.open : ""}`}>
       <div className={styles.bar}>
-        <Link href="/" className={styles.brand} onClick={() => setOpen(false)}>
-          <span className={styles.brandSmall}>Móveis</span>
-          <span className={styles.brandLarge}>Unghero</span>
+        <Link
+          href="/"
+          className={styles.logoLink}
+          aria-label={`${SITE.name} — início`}
+          onClick={() => setOpen(false)}
+        >
+          <Image
+            src="/images/logo.png"
+            alt="Móveis Unghero"
+            width={148}
+            height={56}
+            className={styles.logo}
+            priority
+          />
         </Link>
 
         <nav className={styles.nav} aria-label="Principal">
@@ -75,12 +72,11 @@ export default function Header() {
 
       <div className={`${styles.drawer} ${open ? styles.drawerOpen : ""}`} hidden={!open}>
         <nav className={styles.drawerNav}>
-          {NAV.map((item, i) => (
+          {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={styles.drawerLink}
-              style={{ animationDelay: `${0.05 + i * 0.06}s` }}
               onClick={() => setOpen(false)}
             >
               {item.label}
@@ -95,7 +91,6 @@ export default function Header() {
           >
             Conversar
           </a>
-          <p className={styles.drawerNote}>{SITE.tagline}</p>
         </nav>
       </div>
     </header>

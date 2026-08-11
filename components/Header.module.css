@@ -2,7 +2,16 @@
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 100;
-  mix-blend-mode: normal;
+  background: transparent;
+  transition: background 0.35s var(--ease), border-color 0.35s var(--ease);
+  border-bottom: 1px solid transparent;
+}
+
+.solid {
+  background: rgba(242, 241, 239, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: var(--line);
 }
 
 .bar {
@@ -10,55 +19,37 @@
   align-items: center;
   justify-content: space-between;
   height: var(--header-height);
+  max-width: var(--frame);
+  margin: 0 auto;
   padding: 0 var(--pad);
+  width: 100%;
 }
 
-.brand {
+.logoLink {
   display: flex;
-  flex-direction: column;
-  line-height: 1;
-  gap: 0.15rem;
+  align-items: center;
+  line-height: 0;
   z-index: 2;
 }
 
-.brandSmall {
-  font-family: var(--font-body);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-}
-
-.brandLarge {
-  font-family: var(--font-display);
-  font-size: 1.65rem;
-  font-style: italic;
-  letter-spacing: -0.02em;
-}
-
-.onDark .brand,
-.onDark .link,
-.onDark .toggle {
-  color: #f2f1ef;
-}
-
-.onPaper .brand,
-.onPaper .link,
-.onPaper .toggle {
-  color: var(--ink);
+.logo {
+  width: auto;
+  height: 2.35rem;
+  object-fit: contain;
 }
 
 .nav {
   display: flex;
-  gap: 2rem;
+  gap: 2.25rem;
 }
 
 .link {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  opacity: 0.72;
+  color: var(--ink);
+  opacity: 0.55;
   transition: opacity 0.25s var(--ease);
 }
 
@@ -75,6 +66,7 @@
   cursor: pointer;
   position: relative;
   z-index: 2;
+  color: var(--ink);
 }
 
 .toggle span {
@@ -117,12 +109,15 @@
     display: block;
   }
 
+  .logo {
+    height: 2rem;
+  }
+
   .drawer {
     display: block;
     position: fixed;
     inset: 0;
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--paper);
     padding: calc(var(--header-height) + 2rem) var(--pad) 2rem;
     opacity: 0;
     pointer-events: none;
@@ -137,38 +132,29 @@
   .drawerNav {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    max-width: var(--frame);
+    margin: 0 auto;
   }
 
   .drawerLink {
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 12vw, 4rem);
+    font-size: clamp(2.4rem, 11vw, 3.6rem);
     font-style: italic;
     line-height: 1.05;
-    opacity: 0;
-    transform: translateY(12px);
-    animation: none;
-  }
-
-  .drawerOpen .drawerLink {
-    animation: rise 0.7s var(--ease) both;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding: 0.55rem 0;
   }
 
   .drawerCta {
-    margin-top: 2.5rem;
-    font-size: 0.85rem;
+    margin-top: 2rem;
+    font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    border-bottom: 1px solid currentColor;
+    border-bottom: 1px solid var(--ink);
     align-self: flex-start;
     padding-bottom: 0.25rem;
-  }
-
-  .drawerNote {
-    margin-top: 2rem;
-    max-width: 18rem;
-    color: rgba(242, 241, 239, 0.45);
-    font-size: 0.95rem;
   }
 }

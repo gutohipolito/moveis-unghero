@@ -1,12 +1,13 @@
 :root {
-  --ink: #0a0a0a;
+  --ink: #121110;
   --paper: #f2f1ef;
-  --paper-dim: #e4e2de;
-  --mute: #6b6864;
-  --line: rgba(10, 10, 10, 0.12);
-  --header-height: 4.5rem;
+  --paper-dim: #e8e6e2;
+  --mute: #6f6b66;
+  --line: rgba(18, 17, 16, 0.1);
+  --frame: 1180px;
+  --header-height: 4.75rem;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --pad: clamp(1.25rem, 4vw, 3.5rem);
+  --pad: clamp(1.25rem, 3.5vw, 2.5rem);
 }
 
 * {
@@ -45,21 +46,17 @@ img {
   color: var(--paper);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+.frame {
+  width: 100%;
+  max-width: var(--frame);
+  margin: 0 auto;
+  padding: 0 var(--pad);
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(1.25rem);
+    transform: translateY(1rem);
   }
   to {
     opacity: 1;
@@ -67,25 +64,16 @@ img {
   }
 }
 
-@keyframes drift {
-  from {
-    transform: scale(1.08);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-
 .anim-rise {
-  animation: rise 1.1s var(--ease) both;
+  animation: rise 1s var(--ease) both;
 }
 
 .anim-rise-2 {
-  animation: rise 1.1s var(--ease) 0.18s both;
+  animation: rise 1s var(--ease) 0.14s both;
 }
 
 .anim-rise-3 {
-  animation: rise 1.1s var(--ease) 0.32s both;
+  animation: rise 1s var(--ease) 0.26s both;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -4,99 +4,95 @@ import { getFeaturedCases, getAllCases } from "@/lib/cases";
 import { SITE, buildContactWhatsAppUrl } from "@/lib/site";
 import styles from "./page.module.css";
 
+const CONCEPTS = [
+  "Residência completa — uma linguagem do social ao íntimo",
+  "Espaços comerciais com identidade coerente",
+  "Poucos projetos por vez, acabamento e prazo honestos",
+] as const;
+
 export default function HomePage() {
   const featured = getFeaturedCases(3);
   const all = getAllCases();
-  const chapters = featured.length ? featured : all.slice(0, 3);
-  const heroSrc = chapters[0]?.cover || "/images/cases/casa-sg/cover.jpg";
-  const endSrc =
-    all.find((c) => c.slug === "administrativo-reggla")?.cover ||
-    "/images/cases/administrativo-reggla/cover.jpg";
+  const cards = featured.length ? featured : all.slice(0, 3);
+  const heroSrc = cards[0]?.cover || "/images/cases/casa-sg/cover.jpg";
 
   return (
-    <>
-      <section className={styles.hero} aria-label="Móveis Unghero">
-        <div className={styles.media}>
-          <Image
-            src={heroSrc}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-          />
-          <div className={styles.veil} aria-hidden />
-        </div>
-        <div className={styles.copy}>
-          <h1 className={`${styles.brand} anim-rise`}>
-            <em>Móveis</em>
-            Unghero
-          </h1>
-          <p className={`${styles.line} anim-rise-2`}>{SITE.headline}</p>
-          <Link href="/projetos" className={`${styles.cta} anim-rise-3`}>
-            Ver a obra
-          </Link>
-        </div>
-      </section>
+    <div className={styles.shell}>
+      <div className={styles.frame}>
+        <section className={styles.hero} aria-label="Introdução">
+          <div className={`${styles.heroMedia} anim-rise`}>
+            <Image
+              src={heroSrc}
+              alt="Projeto de marcenaria integral"
+              fill
+              priority
+              sizes="(max-width: 900px) 100vw, 65vw"
+            />
+          </div>
+          <div className={`${styles.heroCopy} anim-rise-2`}>
+            <p className={styles.kicker}>Farroupilha · Serra Gaúcha</p>
+            <h1 className={styles.heroTitle}>{SITE.headline}</h1>
+            <p className={styles.heroLead}>{SITE.support}</p>
+            <Link href="/projetos" className={styles.cta}>
+              Ver projetos
+            </Link>
+          </div>
+        </section>
 
-      <section className={styles.manifesto} aria-label="Posicionamento">
-        <p className={styles.manifestoText}>{SITE.manifesto}</p>
-      </section>
+        <section className={styles.manifesto} aria-label="Posicionamento">
+          <div className={styles.boxLabel}>Posição</div>
+          <div className={styles.boxBody}>
+            <p>{SITE.manifesto}</p>
+          </div>
+        </section>
 
-      <section className={styles.chapters} aria-label="Projetos em destaque">
-        {chapters.map((item, i) => (
-          <Link key={item.slug} href={`/projetos/${item.slug}`} className={styles.chapter}>
-            <div className={styles.chapterMedia}>
-              <Image
-                src={item.cover}
-                alt=""
-                fill
-                sizes="100vw"
-                style={{ objectFit: "cover" }}
-              />
-              <div className={styles.chapterVeil} aria-hidden />
-            </div>
-            <div className={styles.chapterBody}>
-              <p className={styles.index}>
-                {String(i + 1).padStart(2, "0")} —{" "}
-                {item.type === "corporativo" ? "Corporativo" : "Residencial"}
-              </p>
-              <h2 className={styles.chapterTitle}>{item.title}</h2>
-              <p className={styles.chapterMeta}>
-                {item.location}
-                {item.ambientes?.length ? ` · ${item.ambientes.length} ambientes` : ""}
-              </p>
-              <span className={styles.chapterLink}>Abrir ensaio</span>
-            </div>
-          </Link>
-        ))}
-      </section>
+        <section className={styles.concepts} aria-label="Conceitos">
+          {CONCEPTS.map((text, i) => (
+            <article key={text} className={styles.concept}>
+              <p className={styles.conceptIndex}>{String(i + 1).padStart(2, "0")}</p>
+              <p className={styles.conceptText}>{text}</p>
+            </article>
+          ))}
+        </section>
 
-      <section className={styles.filter} aria-label="Filtro de demanda">
-        <p className={styles.filterLabel}>Escopo</p>
-        <p className={styles.filterText}>{SITE.filterLine}</p>
-        <Link href="/processo" className={styles.filterLink}>
-          Como trabalhamos
-        </Link>
-      </section>
-
-      <section className={styles.end} aria-label="Contato">
-        <div className={styles.endMedia}>
-          <Image src={endSrc} alt="" fill sizes="100vw" style={{ objectFit: "cover" }} />
-          <div className={styles.endVeil} aria-hidden />
+        <div className={styles.projectsHead}>
+          <h2>Seleção</h2>
+          <Link href="/projetos">Todos</Link>
         </div>
-        <div className={styles.endCopy}>
-          <h2 className={styles.endTitle}>Vamos falar do seu projeto?</h2>
-          <a
-            href={buildContactWhatsAppUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.endCta}
-          >
-            Conversar
-          </a>
-        </div>
-      </section>
-    </>
+
+        <section className={styles.projectGrid} aria-label="Projetos">
+          {cards.map((item) => (
+            <Link key={item.slug} href={`/projetos/${item.slug}`} className={styles.projectCard}>
+              <div className={styles.projectVisual}>
+                <Image
+                  src={item.cover}
+                  alt={item.title}
+                  fill
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                />
+              </div>
+              <div className={styles.projectMeta}>
+                <p className={styles.projectType}>
+                  {item.type === "corporativo" ? "Corporativo" : "Residencial"}
+                </p>
+                <h3 className={styles.projectTitle}>{item.title}</h3>
+              </div>
+            </Link>
+          ))}
+        </section>
+
+        <section className={styles.filterRow} aria-label="Escopo">
+          <div className={styles.filterText}>
+            <p>{SITE.filterLine}</p>
+          </div>
+          <div className={styles.filterCta}>
+            <span>Próximo passo</span>
+            <a href={buildContactWhatsAppUrl()} target="_blank" rel="noopener noreferrer">
+              Conversar sobre o projeto
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
