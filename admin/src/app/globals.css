@@ -4247,8 +4247,8 @@ button.partner-card:hover,
   pointer-events: auto;
   position: relative;
   width: 100%;
-  max-width: 100%;
   min-width: 0;
+  /* max-width fica no Dialog (max-w-xl etc.) — um max-width aqui cobria o Tailwind. */
   /* svh (small viewport) é estável no mobile: não recalcula quando a barra
      do navegador some/aparece ao rolar, evitando o modal "sambando". */
   max-height: min(
