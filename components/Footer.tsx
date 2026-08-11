@@ -7,52 +7,29 @@ export default function Footer() {
 
   return (
     <footer className={styles.footer}>
-      <div className={`container ${styles.grid}`}>
-        <div className={styles.brand}>
-          <p className={styles.brandName}>
-            <span className={styles.brandMark}>Móveis</span> Unghero
-          </p>
-          <p className={styles.tagline}>{SITE.tagline}</p>
-        </div>
-
-        <nav className={styles.col} aria-label="Rodapé">
-          <p className={styles.colTitle}>Site</p>
+      <div className={styles.row}>
+        <p className={styles.wordmark}>
+          Unghero<span>{SITE.years}</span>
+        </p>
+        <nav className={styles.links} aria-label="Rodapé">
           <Link href="/projetos">Projetos</Link>
           <Link href="/processo">Processo</Link>
           <Link href="/sobre">Sobre</Link>
           <Link href="/contato">Contato</Link>
-        </nav>
-
-        <div className={styles.col}>
-          <p className={styles.colTitle}>Contato</p>
           <a href={buildContactWhatsAppUrl()} target="_blank" rel="noopener noreferrer">
-            {SITE.whatsappDisplay}
+            WhatsApp
           </a>
-          <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
-          <p className={styles.address}>{SITE.address}</p>
-          <a
-            href={SITE.partnerPortal}
-            className={styles.partner}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Portal do parceiro
-          </a>
-        </div>
+        </nav>
       </div>
-
-      <div className={`container ${styles.bottom}`}>
+      <div className={styles.meta}>
         <p>
-          © {year} {SITE.name}. CNPJ 13.415.510/0001-71.
+          {SITE.address}
+          <br />
+          CNPJ 13.415.510/0001-71 · © {year}
         </p>
-        <div className={styles.socials}>
-          <a href="https://www.instagram.com/moveisunghero/" target="_blank" rel="noopener noreferrer">
-            Instagram
-          </a>
-          <a href="https://www.facebook.com/mvunghero" target="_blank" rel="noopener noreferrer">
-            Facebook
-          </a>
-        </div>
+        <a href={SITE.partnerPortal} target="_blank" rel="noopener noreferrer">
+          Parceiros
+        </a>
       </div>
     </footer>
   );

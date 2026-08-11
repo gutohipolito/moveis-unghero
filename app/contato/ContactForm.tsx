@@ -21,7 +21,7 @@ export default function ContactForm() {
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <div className={styles.field}>
-        <label htmlFor="nome">Seu nome</label>
+        <label htmlFor="nome">Nome</label>
         <input
           id="nome"
           name="nome"
@@ -32,7 +32,7 @@ export default function ContactForm() {
         />
       </div>
       <div className={styles.field}>
-        <label htmlFor="tipo">Tipo de projeto</label>
+        <label htmlFor="tipo">Tipo</label>
         <select id="tipo" name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
           <option value="residencial">Residência / apartamento</option>
           <option value="corporativo">Empresa / comercial</option>
@@ -43,18 +43,16 @@ export default function ContactForm() {
         <textarea
           id="ambientes"
           name="ambientes"
-          placeholder="Ex.: cozinha, living, 2 dormitórios e closet"
+          placeholder="Ex.: cozinha, living, dois dormitórios, closet"
           value={ambientes}
           onChange={(e) => setAmbientes(e.target.value)}
           required
         />
       </div>
-      <button type="submit" className="btn btn-primary">
+      <button type="submit" className={styles.submit}>
         Abrir WhatsApp
       </button>
-      <p className={styles.hint}>
-        A pergunta de escopo nos ajuda a saber se o projeto é integral — o nosso foco.
-      </p>
+      <p className={styles.hint}>A pergunta de escopo é o filtro. Projetos integrais primeiro.</p>
     </form>
   );
 }

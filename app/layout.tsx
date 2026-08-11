@@ -1,36 +1,36 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
+import { Instrument_Serif, Syne } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import WhatsAppButton from "@/components/WhatsAppButton";
 import localBusinessSchema from "@/schemas/localbusiness.json";
 import { SITE } from "@/lib/site";
 
-const display = Cormorant_Garamond({
+const display = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400"],
+  style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
 });
 
-const sans = Source_Sans_3({
+const body = Syne({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-secondary",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-body",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE.name} | Marcenaria sob medida em Farroupilha`,
-    template: `%s | ${SITE.name}`,
+    default: `${SITE.name}`,
+    template: `%s — ${SITE.name}`,
   },
-  description: SITE.support,
+  description: SITE.manifesto,
   metadataBase: new URL("https://moveisunghero.com.br"),
   alternates: { canonical: "/" },
   openGraph: {
-    title: `${SITE.name} | Residências e empresas inteiras`,
+    title: SITE.name,
     description: SITE.tagline,
     url: "https://moveisunghero.com.br",
     siteName: SITE.name,
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#120e0a",
+  themeColor: "#f2f1ef",
   width: "device-width",
   initialScale: 1,
 };
@@ -50,7 +50,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${sans.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
       <head>
         <script
           type="application/ld+json"
@@ -61,7 +61,6 @@ export default function RootLayout({
         <Header />
         <main id="main-content">{children}</main>
         <Footer />
-        <WhatsAppButton />
       </body>
     </html>
   );

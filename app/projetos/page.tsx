@@ -8,8 +8,7 @@ export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "Projetos",
-  description:
-    "Residências e empresas completas — portfólio de marcenaria integrada da Móveis Unghero.",
+  description: "Ensaios de residências e empresas integrais — Móveis Unghero.",
   alternates: { canonical: "/projetos" },
 };
 
@@ -18,37 +17,38 @@ export default function ProjetosPage() {
 
   return (
     <div className={styles.page}>
-      <div className="container">
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>Portfólio</p>
-          <h1 className={styles.title}>Projetos integrais</h1>
-          <p className={styles.lead}>
-            Só publicamos obras em que a marcenaria percorre a residência ou o espaço comercial como
-            um todo — não cômodos isolados.
-          </p>
-        </header>
+      <header className={styles.header}>
+        <p className={styles.kicker}>Portfólio</p>
+        <h1 className={styles.title}>A obra completa</h1>
+        <p className={styles.lead}>
+          Só publicamos projetos em que a marcenaria atravessa o espaço — residência ou empresa —
+          como uma linguagem só.
+        </p>
+      </header>
 
-        <div className={styles.grid}>
-          {cases.map((item) => (
-            <Link key={item.slug} href={`/projetos/${item.slug}`} className={styles.card}>
+      <div className={styles.grid}>
+        {cases.map((item) => (
+          <Link key={item.slug} href={`/projetos/${item.slug}`} className={styles.card}>
+            <div className={styles.visual}>
               <Image
                 src={item.cover}
-                alt={item.title}
+                alt=""
                 fill
-                sizes="(max-width: 700px) 100vw, 50vw"
+                sizes="(max-width: 800px) 100vw, 55vw"
                 style={{ objectFit: "cover" }}
               />
-              <div className={styles.meta}>
-                <p className={styles.type}>
-                  {item.type === "corporativo" ? "Corporativo" : "Residencial"}
-                  {item.location ? ` · ${item.location}` : ""}
-                </p>
-                <h2 className={styles.cardTitle}>{item.title}</h2>
-                <p className={styles.cardDesc}>{item.description}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+            </div>
+            <div className={styles.body}>
+              <p className={styles.type}>
+                {item.type === "corporativo" ? "Corporativo" : "Residencial"}
+                {item.location ? ` · ${item.location}` : ""}
+              </p>
+              <h2 className={styles.cardTitle}>{item.title}</h2>
+              <p className={styles.cardDesc}>{item.description}</p>
+              <span className={styles.more}>Ensaio</span>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

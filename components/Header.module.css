@@ -1,143 +1,174 @@
 .header {
   position: fixed;
   inset: 0 0 auto 0;
-  z-index: 1000;
-  height: var(--header-height);
-  transition: background 0.35s ease, border-color 0.35s ease, backdrop-filter 0.35s ease;
-  border-bottom: 1px solid transparent;
+  z-index: 100;
+  mix-blend-mode: normal;
 }
 
-.headerSolid {
-  background: rgba(18, 14, 10, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
-
-.inner {
+.bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
+  height: var(--header-height);
+  padding: 0 var(--pad);
 }
 
-.logo {
+.brand {
   display: flex;
   flex-direction: column;
-  line-height: 1.05;
-  gap: 1px;
+  line-height: 1;
+  gap: 0.15rem;
+  z-index: 2;
 }
 
-.logoMark {
-  font-family: var(--font-secondary);
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+.brandSmall {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(245, 240, 232, 0.7);
 }
 
-.logoName {
+.brandLarge {
   font-family: var(--font-display);
-  font-size: 1.55rem;
-  font-weight: 500;
+  font-size: 1.65rem;
+  font-style: italic;
   letter-spacing: -0.02em;
-  color: var(--text-main);
+}
+
+.onDark .brand,
+.onDark .link,
+.onDark .toggle {
+  color: #f2f1ef;
+}
+
+.onPaper .brand,
+.onPaper .link,
+.onPaper .toggle {
+  color: var(--ink);
 }
 
 .nav {
   display: flex;
-  align-items: center;
-  gap: 1.75rem;
+  gap: 2rem;
 }
 
-.navLink {
-  font-family: var(--font-secondary);
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: rgba(245, 240, 232, 0.78);
-}
-
-.navLink:hover {
-  color: var(--text-main);
-}
-
-.cta {
-  font-family: var(--font-secondary);
-  font-size: 0.85rem;
+.link {
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #1a1208;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  transition: opacity 0.25s var(--ease);
 }
 
-.cta:hover {
-  background: var(--accent-light);
+.link:hover {
+  opacity: 1;
 }
 
-.menuBtn {
+.toggle {
   display: none;
-  background: none;
+  width: 2rem;
+  height: 1.25rem;
   border: 0;
-  color: var(--text-main);
-  padding: 0.35rem;
+  background: transparent;
   cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 
-.mobilePanel {
+.toggle span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: currentColor;
+  transition: transform 0.35s var(--ease), top 0.35s var(--ease);
+}
+
+.toggle span:first-child {
+  top: 0.35rem;
+}
+
+.toggle span:last-child {
+  top: 0.85rem;
+}
+
+.open .toggle span:first-child {
+  top: 0.6rem;
+  transform: rotate(45deg);
+}
+
+.open .toggle span:last-child {
+  top: 0.6rem;
+  transform: rotate(-45deg);
+}
+
+.drawer {
   display: none;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 860px) {
   .nav {
     display: none;
   }
 
-  .menuBtn {
-    display: inline-flex;
+  .toggle {
+    display: block;
   }
 
-  .mobilePanel {
+  .drawer {
     display: block;
     position: fixed;
-    inset: var(--header-height) 0 0 0;
-    background: rgba(14, 11, 8, 0.97);
-    padding: 1.5rem 1.5rem 2rem;
+    inset: 0;
+    background: var(--ink);
+    color: var(--paper);
+    padding: calc(var(--header-height) + 2rem) var(--pad) 2rem;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-6px);
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity 0.35s var(--ease);
   }
 
-  .mobilePanelOpen {
+  .drawerOpen {
     opacity: 1;
     pointer-events: auto;
-    transform: none;
   }
 
-  .mobileNav {
+  .drawerNav {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .mobileLink {
+  .drawerLink {
     font-family: var(--font-display);
-    font-size: 1.75rem;
-    padding: 0.65rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    color: var(--text-main);
+    font-size: clamp(2.5rem, 12vw, 4rem);
+    font-style: italic;
+    line-height: 1.05;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: none;
   }
 
-  .mobileCta {
-    margin-top: 1.5rem;
-    text-align: center;
-    font-family: var(--font-secondary);
-    font-weight: 600;
-    padding: 0.9rem 1.2rem;
-    border-radius: 999px;
-    background: var(--accent);
-    color: #1a1208;
+  .drawerOpen .drawerLink {
+    animation: rise 0.7s var(--ease) both;
+  }
+
+  .drawerCta {
+    margin-top: 2.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-bottom: 1px solid currentColor;
+    align-self: flex-start;
+    padding-bottom: 0.25rem;
+  }
+
+  .drawerNote {
+    margin-top: 2rem;
+    max-width: 18rem;
+    color: rgba(242, 241, 239, 0.45);
+    font-size: 0.95rem;
   }
 }

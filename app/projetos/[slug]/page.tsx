@@ -37,20 +37,20 @@ export default async function CasePage({ params }: Props) {
   return (
     <article className={styles.page}>
       <header className={styles.hero}>
-        <div className={styles.heroMedia}>
+        <div className={styles.media}>
           <Image
             src={item.cover}
-            alt={item.title}
+            alt=""
             fill
             priority
             sizes="100vw"
             style={{ objectFit: "cover" }}
           />
-          <div className={styles.heroShade} />
+          <div className={styles.veil} aria-hidden />
         </div>
-        <div className={`container ${styles.heroContent}`}>
+        <div className={styles.body}>
           <Link href="/projetos" className={styles.back}>
-            ← Projetos
+            Projetos
           </Link>
           <p className={styles.type}>
             {item.type === "corporativo" ? "Corporativo" : "Residencial"}
@@ -60,10 +60,10 @@ export default async function CasePage({ params }: Props) {
         </div>
       </header>
 
-      <div className={`container ${styles.body}`}>
+      <div className={styles.content}>
         <p className={styles.intro}>{item.content.trim() || item.description}</p>
         {item.ambientes.length > 0 ? (
-          <div className={styles.ambientes} aria-label="Ambientes do projeto">
+          <div className={styles.chips}>
             {item.ambientes.map((a) => (
               <span key={a} className={styles.chip}>
                 {a}
@@ -71,15 +71,14 @@ export default async function CasePage({ params }: Props) {
             ))}
           </div>
         ) : null}
-
         <div className={styles.gallery}>
           {item.gallery.map((src, i) => (
             <div key={`${src}-${i}`} className={styles.shot}>
               <Image
                 src={src}
-                alt={`${item.title} — foto ${i + 1}`}
+                alt={`${item.title} ${i + 1}`}
                 fill
-                sizes="(max-width: 800px) 100vw, 80vw"
+                sizes="(max-width: 900px) 100vw, 50vw"
                 style={{ objectFit: "cover" }}
               />
             </div>

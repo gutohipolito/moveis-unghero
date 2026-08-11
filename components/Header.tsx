@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { SITE, buildContactWhatsAppUrl } from "@/lib/site";
 import styles from "./Header.module.css";
 
@@ -14,15 +14,25 @@ const NAV = [
 ] as const;
 
 export default function Header() {
-  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [overDark, setOverDark] = useState(false);
+
+  const darkHeroRoute =
+    pathname === "/" || Boolean(pathname?.match(/^\/projetos\/[^/]+$/));
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      if (!darkHeroRoute) {
+        setOverDark(false);
+        return;
+      }
+      setOverDark(window.scrollY < window.innerHeight * 0.7);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [darkHeroRoute]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -33,58 +43,44 @@ export default function Header() {
 
   return (
     <header
-      className={`${styles.header} ${scrolled || open ? styles.headerSolid : ""}`}
+      className={`${styles.header} ${overDark && !open ? styles.onDark : styles.onPaper} ${
+        open ? styles.open : ""
+      }`}
     >
-      <div className={`container ${styles.inner}`}>
-        <Link
-          href="/"
-          className={styles.logo}
-          aria-label={`${SITE.name} — início`}
-          onClick={() => setOpen(false)}
-        >
-          <span className={styles.logoMark}>Móveis</span>
-          <span className={styles.logoName}>Unghero</span>
+      <div className={styles.bar}>
+        <Link href="/" className={styles.brand} onClick={() => setOpen(false)}>
+          <span className={styles.brandSmall}>Móveis</span>
+          <span className={styles.brandLarge}>Unghero</span>
         </Link>
 
         <nav className={styles.nav} aria-label="Principal">
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className={styles.navLink}>
+            <Link key={item.href} href={item.href} className={styles.link}>
               {item.label}
             </Link>
           ))}
-          <a
-            href={buildContactWhatsAppUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.cta}
-          >
-            Conversar
-          </a>
         </nav>
 
         <button
           type="button"
-          className={styles.menuBtn}
+          className={styles.toggle}
           aria-expanded={open}
-          aria-controls="mobile-nav"
-          aria-label={open ? "Fechar menu" : "Abrir menu"}
+          aria-label={open ? "Fechar" : "Menu"}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? <X size={22} /> : <Menu size={22} />}
+          <span />
+          <span />
         </button>
       </div>
 
-      <div
-        id="mobile-nav"
-        className={`${styles.mobilePanel} ${open ? styles.mobilePanelOpen : ""}`}
-        hidden={!open}
-      >
-        <nav className={styles.mobileNav} aria-label="Mobile">
-          {NAV.map((item) => (
+      <div className={`${styles.drawer} ${open ? styles.drawerOpen : ""}`} hidden={!open}>
+        <nav className={styles.drawerNav}>
+          {NAV.map((item, i) => (
             <Link
               key={item.href}
               href={item.href}
-              className={styles.mobileLink}
+              className={styles.drawerLink}
+              style={{ animationDelay: `${0.05 + i * 0.06}s` }}
               onClick={() => setOpen(false)}
             >
               {item.label}
@@ -92,13 +88,14 @@ export default function Header() {
           ))}
           <a
             href={buildContactWhatsAppUrl()}
+            className={styles.drawerCta}
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.mobileCta}
             onClick={() => setOpen(false)}
           >
-            Conversar sobre o projeto
+            Conversar
           </a>
+          <p className={styles.drawerNote}>{SITE.tagline}</p>
         </nav>
       </div>
     </header>
