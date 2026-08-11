@@ -36,7 +36,8 @@ export const viewport: Viewport = {
   themeColor: "#d9a007",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Zoom liberado: o A4 do orçamento/recibo precisa de pinch no mobile.
+  // Zoom indesejado ao focar input já é evitado por font-size 16px em globals.css.
   viewportFit: "cover",
 };
 

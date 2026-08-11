@@ -175,21 +175,23 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
       emissaoLabel={formattedDataEmissao}
       validadeLabel={formattedValidade}
       topBar={
-        <div className="print:hidden sticky top-0 bg-neutral-900 text-white p-4 flex items-center justify-between shadow-md z-50">
-          <Link
-            href={`/projects/${quote.project_id || "proj-1"}`}
-            className="inline-flex items-center text-sm text-neutral-300 hover:text-white transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
-          </Link>
-          <QuotePrintToolbar
-            quoteId={quote.id}
-            clientName={client.nome}
-            clientPhone={client.telefone}
-            clientEmail={client.email}
-            validade={formattedValidade}
-            initialPdfShareUrl={quote.pdfPublicUrl}
-          />
+        <div className="print:hidden sticky top-0 z-50 bg-neutral-900 text-white shadow-md">
+          <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
+            <Link
+              href={`/projects/${quote.project_id || "proj-1"}`}
+              className="inline-flex shrink-0 items-center text-sm text-neutral-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para o Projeto
+            </Link>
+            <QuotePrintToolbar
+              quoteId={quote.id}
+              clientName={client.nome}
+              clientPhone={client.telefone}
+              clientEmail={client.email}
+              validade={formattedValidade}
+              initialPdfShareUrl={quote.pdfPublicUrl}
+            />
+          </div>
         </div>
       }
     />

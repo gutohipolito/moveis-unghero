@@ -199,8 +199,8 @@ export default function QuotePrintToolbar({
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="min-w-0 w-full flex flex-col gap-1.5 sm:w-auto sm:items-end">
+      <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-none pb-0.5 -mx-0.5 px-0.5 sm:flex-wrap sm:justify-end sm:overflow-visible">
         <Button
           type="button"
           onClick={handleWhatsApp}
@@ -210,10 +210,17 @@ export default function QuotePrintToolbar({
               ? "Enviar proposta pelo WhatsApp com link do orçamento"
               : "Cliente sem telefone cadastrado"
           }
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
+          className="shrink-0 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-          {busy ? "Preparando..." : "Enviar no WhatsApp"}
+          <span className="whitespace-nowrap">
+            {busy ? "Preparando..." : (
+              <>
+                <span className="sm:hidden">WhatsApp</span>
+                <span className="hidden sm:inline">Enviar no WhatsApp</span>
+              </>
+            )}
+          </span>
         </Button>
 
         <Button
@@ -221,10 +228,17 @@ export default function QuotePrintToolbar({
           onClick={() => void openEmailPreview()}
           disabled={anyBusy}
           title="Pré-visualizar e enviar proposta por e-mail"
-          className="flex items-center gap-2 bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
+          className="shrink-0 flex items-center gap-2 bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
           {emailBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-          {emailBusy ? "Preparando..." : "Enviar por e-mail"}
+          <span className="whitespace-nowrap">
+            {emailBusy ? "Preparando..." : (
+              <>
+                <span className="sm:hidden">E-mail</span>
+                <span className="hidden sm:inline">Enviar por e-mail</span>
+              </>
+            )}
+          </span>
         </Button>
 
         <Button
@@ -236,14 +250,16 @@ export default function QuotePrintToolbar({
               ? "Baixar PDF protegido com a senha dos 4 últimos dígitos do celular"
               : "Cadastre o telefone do cliente para baixar o PDF com senha"
           }
-          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
+          className="shrink-0 flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer active:scale-100"
         >
           {pdfBusy ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Download className="h-4 w-4" />
           )}
-          {pdfBusy ? "Gerando PDF..." : "Baixar PDF"}
+          <span className="whitespace-nowrap">
+            {pdfBusy ? "Gerando..." : "Baixar PDF"}
+          </span>
         </Button>
 
         <Button
@@ -252,13 +268,13 @@ export default function QuotePrintToolbar({
           disabled={anyBusy}
           title="Abrir diálogo de impressão"
           variant="outline"
-          className="flex items-center gap-2 border-neutral-500 text-neutral-200 hover:bg-neutral-800 disabled:opacity-60 text-sm font-semibold px-3 py-2 rounded-lg transition-colors cursor-pointer"
+          className="shrink-0 flex items-center gap-2 border-neutral-500 text-neutral-200 hover:bg-neutral-800 disabled:opacity-60 text-sm font-semibold px-3 py-2 rounded-lg transition-colors cursor-pointer"
         >
           <Printer className="h-4 w-4" />
-          Imprimir
+          <span className="whitespace-nowrap">Imprimir</span>
         </Button>
       </div>
-      <p className="max-w-[380px] text-right text-[10px] text-neutral-400 leading-snug">
+      <p className="text-left sm:text-right sm:max-w-[380px] text-[10px] text-neutral-400 leading-snug">
         {emailReady
           ? "E-mail: prévia antes de enviar. Baixar PDF: senha = 4 últimos dígitos do celular."
           : "Cliente sem e-mail — você pode informar o destinatário na prévia. PDF: senha = 4 últimos dígitos."}

@@ -5,10 +5,17 @@ export default function QuotePublicPrintBar() {
   return (
     <div className="print:hidden sticky top-0 z-50 bg-neutral-900 text-white shadow-md">
       <div className="flex items-center justify-between gap-3 p-3">
-        <p className="text-sm text-neutral-300 font-medium">Orçamento Móveis Unghero</p>
+        <div className="min-w-0">
+          <p className="text-sm text-neutral-300 font-medium truncate">
+            Orçamento Móveis Unghero
+          </p>
+          <p className="mt-0.5 text-[10px] text-neutral-500 leading-snug sm:hidden">
+            Folha A4 — use pinch para ampliar
+          </p>
+        </div>
         <PublicPrintButton label="Salvar PDF" />
       </div>
-      <p className="px-3 pb-2.5 text-[11px] text-neutral-400 leading-snug">
+      <p className="hidden sm:block px-3 pb-2.5 text-[11px] text-neutral-400 leading-snug">
         Na impressão: papel <span className="text-neutral-200">A4</span>, margens{" "}
         <span className="text-neutral-200">Nenhuma</span>, escala{" "}
         <span className="text-neutral-200">100%</span> e desmarque{" "}

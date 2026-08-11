@@ -231,6 +231,8 @@ export function quotePrintStylesCss() {
       .print-shell {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        /* Garante pinch-zoom sobre a folha A4 no mobile */
+        touch-action: pan-x pan-y pinch-zoom;
       }
       .print-shell-inner {
         width: max-content;
@@ -238,6 +240,11 @@ export function quotePrintStylesCss() {
         margin: 0 auto;
         padding: 24px;
         box-sizing: border-box;
+      }
+      @media (max-width: 640px) {
+        .print-shell-inner {
+          padding: 12px;
+        }
       }
       .print-page {
         width: 210mm !important;
