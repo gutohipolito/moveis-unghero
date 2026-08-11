@@ -3716,12 +3716,17 @@ button.partner-card:hover,
   padding-left: var(--dashboard-main-pad-x);
   padding-right: var(--dashboard-main-pad-x);
   /* padding-bottom fica em .dashboard-main-mobile (nav mobile / pad desktop) */
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .dashboard-main-stack {
   display: flex;
   flex-direction: column;
   gap: var(--dashboard-stack-gap);
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (min-width: 640px) and (max-width: 767.98px) {
@@ -4122,6 +4127,8 @@ button.partner-card:hover,
   pointer-events: auto;
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   /* svh (small viewport) é estável no mobile: não recalcula quando a barra
      do navegador some/aparece ao rolar, evitando o modal "sambando". */
   max-height: min(
@@ -4142,6 +4149,8 @@ button.partner-card:hover,
   color: hsl(var(--card-foreground));
   box-shadow: 0 24px 48px hsl(24 14% 14% / 0.18);
   animation: modal-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Evita formulários largos estourarem a página no desktop */
+  overflow-x: hidden;
 }
 
 .modal-panel-wide {
@@ -4188,7 +4197,9 @@ button.partner-card:hover,
 
 .modal-panel-body {
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow-x: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1rem 1.25rem 1.25rem;

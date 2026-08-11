@@ -124,7 +124,7 @@ export default function ClienteEditWideForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 min-w-0">
         <section className="space-y-3 rounded-[var(--radius-md)] border border-border/70 bg-slate-50/40 p-3.5">
           <p className={sectionTitle}>Identificação</p>
           <div className="grid grid-cols-2 gap-2">
@@ -212,8 +212,8 @@ export default function ClienteEditWideForm({
               className={fieldClass}
             />
           </label>
-          <div className="grid grid-cols-[1fr_4.5rem] gap-2">
-            <label>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_4.5rem] gap-2 min-w-0">
+            <label className="min-w-0">
               <span className={labelClass}>CEP</span>
               <Input
                 value={data.cep}
@@ -234,7 +234,7 @@ export default function ClienteEditWideForm({
               />
             </label>
           </div>
-          <label className="block">
+          <label className="block min-w-0">
             <span className={labelClass}>Logradouro</span>
             <Input
               value={data.endereco}
@@ -242,7 +242,7 @@ export default function ClienteEditWideForm({
               className={fieldClass}
             />
           </label>
-          <div className="grid grid-cols-[1fr_1fr_3.5rem] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_3.5rem] gap-2 min-w-0">
             <label className="min-w-0">
               <span className={labelClass}>Bairro</span>
               <BairroField

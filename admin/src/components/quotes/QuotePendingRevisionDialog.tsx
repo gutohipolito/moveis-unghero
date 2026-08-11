@@ -249,7 +249,7 @@ export default function QuotePendingRevisionDialog({
                     placeholder="Ex.: Torre de forno, ilha, nicho"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="text-[11px] text-muted-foreground">Qtd</label>
                     <Input

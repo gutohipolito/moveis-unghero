@@ -1051,7 +1051,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Bloco de Logo e CNPJ por primeiro */}
-            <div className="flex gap-4 items-center p-3 border border-border/85 bg-slate-50/50 rounded-xl">
+            <div className="flex gap-4 items-center p-3 border border-border/85 bg-slate-50/50 rounded-xl min-w-0">
               {/* Logo / Avatar do Parceiro */}
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Logo / Foto</label>
@@ -1090,7 +1090,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
               </div>
 
               {/* Busca de CNPJ */}
-              <div className="flex-1 space-y-1">
+              <div className="min-w-0 flex-1 space-y-1">
                 <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground/75" />
                   CNPJ do Parceiro
@@ -1100,7 +1100,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                   placeholder="00.000.000/0001-00"
                   value={cnpj}
                   onChange={(e) => handleCnpjChange(e.target.value)}
-                  className="font-semibold text-xs"
+                  className="font-semibold text-xs min-w-0 w-full"
                 />
                 {formError && (
                   <p className="text-[10px] text-rose-500 font-bold leading-tight mt-1 animate-in fade-in duration-200">

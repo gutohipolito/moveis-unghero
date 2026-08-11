@@ -809,16 +809,16 @@ export default function QuoteBuilder({
           </div>
 
           {/* Visualização em Tabela para Desktop / Tablet (hidden md:block) */}
-          <div className="hidden md:block overflow-x-auto overflow-y-visible">
-            <table className="w-full text-sm text-left border-collapse">
+          <div className="hidden md:block min-w-0 max-w-full overflow-x-auto overflow-y-visible">
+            <table className="w-full min-w-0 text-sm text-left border-collapse table-fixed">
               <thead>
                 <tr className="border-b border-border/40 bg-black/5 text-muted-foreground text-xs font-semibold uppercase">
-                  <th className="p-3 w-[38%]">Descrição do Insumo / Serviço</th>
-                  <th className="p-3 w-44 min-w-[11rem]">Categoria</th>
-                  <th className="p-3 w-20 text-center">Qtd</th>
-                  <th className="p-3 w-40">Valor / Precificação</th>
-                  <th className="p-3 w-32">Total</th>
-                  <th className="p-3 w-12"></th>
+                  <th className="p-3 w-[36%]">Descrição do Insumo / Serviço</th>
+                  <th className="p-3 w-[18%]">Categoria</th>
+                  <th className="p-3 w-[10%] text-center">Qtd</th>
+                  <th className="p-3 w-[18%]">Valor / Precificação</th>
+                  <th className="p-3 w-[12%]">Total</th>
+                  <th className="p-3 w-[6%]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20">
@@ -928,12 +928,12 @@ export default function QuoteBuilder({
                             </div>
                           )}
                         </td>
-                        <td className="p-3 min-w-[11rem]">
+                        <td className="p-3 min-w-0">
                           <Select
                             disabled={isStockItem || isLocked}
                             value={item.tipo_custo}
                             onChange={(e) => handleUpdateItem(item.id, "tipo_custo", e.target.value as ItemType)}
-                            className="h-9 py-1 px-2 text-xs bg-white border border-slate-200 focus:ring-1 focus:ring-[hsl(28_85%_45%)] rounded-lg transition-all cursor-pointer font-semibold text-slate-700 disabled:opacity-60 w-full min-w-[10.5rem]"
+                            className="h-9 py-1 px-2 text-xs bg-white border border-slate-200 focus:ring-1 focus:ring-[hsl(28_85%_45%)] rounded-lg transition-all cursor-pointer font-semibold text-slate-700 disabled:opacity-60 w-full min-w-0 max-w-full"
                           >
                             <option value="MOVEIS_MDF">MDF/Marcenaria</option>
                             <option value="FERRAGENS_ESPECIAIS">Ferragens Esp.</option>

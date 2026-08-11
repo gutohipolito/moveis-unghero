@@ -36,8 +36,8 @@ export function Dialog({
       showClose={showClose}
       closeOnBackdrop={closeOnBackdrop}
       fullscreen={fullscreen}
-      panelClassName={cn(!fullscreen && "w-full max-w-xl", className)}
-      bodyClassName={bodyClassName}
+      panelClassName={cn(!fullscreen && "w-full max-w-xl min-w-0", className)}
+      bodyClassName={cn("min-w-0", bodyClassName)}
       viewportClassName={viewportClassName}
       closeClassName={closeClassName}
       backdropClassName={backdropClassName}

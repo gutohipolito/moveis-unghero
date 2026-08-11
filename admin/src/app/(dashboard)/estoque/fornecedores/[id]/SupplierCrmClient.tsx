@@ -711,7 +711,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                     <Input value={nomeFantasia} onChange={e => setNomeFantasia(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">CNPJ</label>
                     <Input value={cnpj} onChange={e => setCnpj(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -732,7 +732,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">Site</label>
                     <Input value={site} onChange={e => setSite(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -746,7 +746,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                     <Input value={linkedin} onChange={e => setLinkedin(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">Ano Fundação</label>
                     <Input type="number" value={anoFundacao} onChange={e => setAnoFundacao(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -865,7 +865,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                     <Input value={contatoCargo} onChange={e => setContatoCargo(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">E-mail</label>
                     <Input value={email} onChange={e => setEmail(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -889,7 +889,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                     <Input value={contatoTelefoneSecundario} onChange={e => setContatoTelefoneSecundario(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 border-t border-border/20 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border-t border-border/20 pt-2">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">CEP</label>
                     <Input value={contatoCep} onChange={e => setContatoCep(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -1037,7 +1037,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">Catálogo Link</label>
                     <Input value={produtosLinkCatalogoOnline} onChange={e => setProdutosLinkCatalogoOnline(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -1176,7 +1176,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500 block">Desconto Marceneiro</label>
                     <div className="flex gap-2 pt-1">
@@ -1200,7 +1200,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 border-t border-border/20 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border-t border-border/20 pt-2">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500">Pedido Mínimo</label>
                     <Input value={comercialPedidoMinimo} onChange={e => setComercialPedidoMinimo(e.target.value)} className="h-8 border-border bg-slate-50 text-slate-800" />
@@ -1326,7 +1326,7 @@ export default function SupplierCrmClient({ supplier, companyId, currentUser }: 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 border-t border-border/20 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border-t border-border/20 pt-2">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500 block">Frota Própria</label>
                     <div className="flex gap-2 pt-1">
