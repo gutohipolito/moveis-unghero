@@ -663,12 +663,16 @@ button.partner-card:hover,
 /* ─── Portal do parceiro — login ─── */
 .parceiro-login-shell {
   position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: hidden;
   color: hsl(var(--foreground));
   background: #120e0c;
 }
@@ -678,6 +682,7 @@ button.partner-card:hover,
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .parceiro-login-video {
@@ -688,7 +693,9 @@ button.partner-card:hover,
   object-fit: cover;
   opacity: 0.38;
   filter: saturate(0.85) brightness(0.72);
+  /* Zoom sutil; o clip fica em .parceiro-login-bg */
   transform: scale(1.04);
+  transform-origin: center;
 }
 
 .parceiro-login-video-static {
@@ -715,18 +722,19 @@ button.partner-card:hover,
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 26rem;
+  max-width: min(26rem, 100%);
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
 .parceiro-login-content--wide {
-  max-width: 32rem;
+  max-width: min(32rem, 100%);
 }
 
 .parceiro-login-shell--scroll {
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   align-items: flex-start;
   padding-top: max(1.25rem, env(safe-area-inset-top, 0px));
@@ -755,15 +763,21 @@ button.partner-card:hover,
 }
 
 .parceiro-login-eyebrow {
+  max-width: 100%;
+  padding-inline: 0.5rem;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: hsl(40 20% 78% / 0.75);
+  overflow-wrap: anywhere;
 }
 
 .parceiro-login-card {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   border-radius: 1.25rem;
   border: 1px solid hsl(36 28% 78% / 0.28);
@@ -795,6 +809,9 @@ button.partner-card:hover,
 }
 
 .parceiro-login-card-body {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
   padding: 1.75rem 1.5rem 1.5rem;
 }
 

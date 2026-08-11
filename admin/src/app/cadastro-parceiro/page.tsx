@@ -32,10 +32,10 @@ export default function CadastroParceiroPage() {
         <div className="parceiro-login-card">
           <div className="parceiro-login-card-accent" />
           <div className="parceiro-login-card-body">
-            <div className="mb-5">
+            <div className="mb-5 min-w-0">
               <span className="parceiro-login-badge">Cadastro de parceiro</span>
               <h1 className="parceiro-login-title">Seja nosso parceiro</h1>
-              <p className="parceiro-login-subtitle">
+              <p className="parceiro-login-subtitle break-words">
                 Cadastre-se para indicar clientes e co-projetar com a Móveis
                 Unghero. Após a aprovação, liberamos o acesso ao portal.
               </p>

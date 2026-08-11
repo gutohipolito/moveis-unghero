@@ -51,11 +51,11 @@ const STEP_LABELS = [
 const labelClass =
   "text-[10px] font-bold text-muted-foreground block uppercase tracking-wider";
 const inputClass =
-  "h-11 bg-white/90 border-border/70 focus-visible:ring-primary/30";
+  "h-11 min-w-0 bg-white/90 border-border/70 focus-visible:ring-primary/30";
 const selectClass =
-  "w-full h-11 rounded-md border border-border/70 bg-white/90 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 cursor-pointer";
+  "w-full min-w-0 max-w-full h-11 rounded-md border border-border/70 bg-white/90 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 cursor-pointer";
 const textareaClass =
-  "w-full rounded-md border border-border/70 bg-white/90 px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 resize-none";
+  "w-full min-w-0 max-w-full rounded-md border border-border/70 bg-white/90 px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 resize-none";
 
 function FieldCounter({ value, max }: { value: string; max: number }) {
   const len = value.length;
@@ -377,16 +377,16 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   const handleFormKeyDown = preventEnterSubmit;
 
   const navRow = (
-    <div className="flex items-center justify-between gap-3 pt-1">
+    <div className="flex min-w-0 w-full items-center justify-between gap-3 pt-1">
       {step > 1 ? (
         <Button
           type="button"
           variant="outline"
           onClick={prevStep}
           disabled={loading}
-          className="h-11 font-bold gap-1.5 border-border/70 bg-white/80"
+          className="h-11 min-w-0 font-bold gap-1.5 border-border/70 bg-white/80"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 shrink-0" />
           Voltar
         </Button>
       ) : (
@@ -396,10 +396,10 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
         <Button
           type="button"
           onClick={nextStep}
-          className="h-11 font-bold btn-metallic gap-1.5 ml-auto"
+          className="h-11 min-w-0 font-bold btn-metallic gap-1.5 ml-auto"
         >
           Continuar
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4 shrink-0" />
         </Button>
       ) : null}
     </div>
@@ -456,13 +456,17 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
   }
 
   return (
-    <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="space-y-5">
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={handleFormKeyDown}
+      className="min-w-0 w-full max-w-full space-y-5 overflow-x-clip"
+    >
       <FormProgressBar
         step={step}
         totalSteps={TOTAL_STEPS}
         tone="slate"
         stepLabel={`Etapa ${step} de ${TOTAL_STEPS} · ${STEP_LABELS[step - 1]}`}
-        className="rounded-xl border border-border/50 bg-slate-50/70 overflow-hidden -mx-0"
+        className="min-w-0 rounded-xl border border-border/50 bg-slate-50/70 overflow-hidden"
       />
 
       {error ? (
@@ -485,7 +489,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="grid min-w-0 grid-cols-2 sm:grid-cols-3 gap-2.5">
             {PARTNER_SIGNUP_TYPES.map((t) => {
               const isSelected = tipo === t;
               const style = PARTNER_TYPE_STYLES[t];
@@ -496,7 +500,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   type="button"
                   onClick={() => handleSelectTipo(t)}
                   className={cn(
-                    "p-3.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[6.5rem] gap-2",
+                    "min-w-0 w-full p-3 sm:p-3.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[6.5rem] gap-2",
                     isSelected
                       ? "border-primary/50 bg-primary text-primary-foreground shadow-sm"
                       : "border-border/70 bg-white/90 text-foreground hover:border-border"
@@ -504,13 +508,15 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 >
                   <span
                     className={cn(
-                      "p-2 rounded-lg transition-all",
+                      "p-2 rounded-lg transition-all shrink-0",
                       isSelected ? "bg-white/15 text-white" : `${style.bg} ${style.text}`
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                   </span>
-                  <span className="text-[11px] font-bold leading-tight">{style.label}</span>
+                  <span className="text-[11px] font-bold leading-tight break-words px-0.5">
+                    {style.label}
+                  </span>
                 </button>
               );
             })}
@@ -536,7 +542,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <label htmlFor="parceiro-signup-nome" className={labelClass}>
                 Nome completo *
               </label>
-              <div className="relative">
+              <div className="relative min-w-0">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   id="parceiro-signup-nome"
@@ -552,12 +558,12 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <FieldCounter value={nome} max={FORM_FIELD_LIMITS.nome} />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label htmlFor="parceiro-signup-escritorio" className={labelClass}>
                   Escritório / studio
                 </label>
-                <div className="relative">
+                <div className="relative min-w-0">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="parceiro-signup-escritorio"
@@ -578,7 +584,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                 <label htmlFor="parceiro-signup-cidade" className={labelClass}>
                   Cidade de atuação *
                 </label>
-                <div className="relative">
+                <div className="relative min-w-0">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                   <select
                     id="parceiro-signup-cidade"
@@ -606,7 +612,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     ? "Registro CREA *"
                     : "Registro profissional (opcional)"}
               </label>
-              <div className="relative">
+              <div className="relative min-w-0">
                 <Award className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   id="parceiro-signup-registro"
@@ -665,7 +671,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <label htmlFor="parceiro-signup-telefone" className={labelClass}>
                 WhatsApp / telefone *
               </label>
-              <div className="relative">
+              <div className="relative min-w-0">
                 <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   id="parceiro-signup-telefone"
@@ -686,7 +692,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <label htmlFor="parceiro-signup-email" className={labelClass}>
                 E-mail comercial *
               </label>
-              <div className="relative">
+              <div className="relative min-w-0">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   id="parceiro-signup-email"
@@ -723,7 +729,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             <label htmlFor="parceiro-signup-portfolio" className={labelClass}>
               Instagram, site ou Behance
             </label>
-            <div className="relative">
+            <div className="relative min-w-0">
               <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 id="parceiro-signup-portfolio"
@@ -760,7 +766,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
               <label htmlFor="parceiro-signup-obs" className={labelClass}>
                 Como podemos atuar juntos?
               </label>
-              <div className="relative">
+              <div className="relative min-w-0">
                 <Handshake className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <textarea
                   id="parceiro-signup-obs"
@@ -779,7 +785,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
 
             <div className="space-y-2">
               <p className={labelClass}>Como conheceu nossa empresa? *</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-2">
                 {PARTNER_ORIGEM_OPTIONS.map((option) => {
                   const selected = origem === option;
                   return (
@@ -788,7 +794,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                       type="button"
                       onClick={() => setOrigem(option)}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-xs font-semibold transition-all cursor-pointer",
+                        "flex min-w-0 w-full items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-xs font-semibold transition-all cursor-pointer",
                         selected
                           ? "border-primary/45 bg-primary/5 text-foreground"
                           : "border-border/70 bg-white/90 text-muted-foreground hover:border-border hover:text-foreground"
@@ -807,7 +813,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                           <span className="h-1.5 w-1.5 rounded-full bg-white" />
                         ) : null}
                       </span>
-                      {option}
+                      <span className="min-w-0 break-words">{option}</span>
                     </button>
                   );
                 })}
@@ -815,7 +821,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
             </div>
 
             <div className="space-y-3 pt-2 border-t border-border/50">
-              <label className="flex items-start gap-3 cursor-pointer select-none">
+              <label className="flex min-w-0 items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={aceitaLgpd}
@@ -823,33 +829,33 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
                   required
                 />
-                <span className="text-[11px] font-medium text-foreground leading-relaxed">
+                <span className="min-w-0 text-[11px] font-medium text-foreground leading-relaxed break-words">
                   {PARTNER_LGPD_CHECKBOX_LABEL}
                 </span>
               </label>
-              <label className="flex items-start gap-3 cursor-pointer select-none">
+              <label className="flex min-w-0 items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={aceitaMarketing}
                   onChange={(e) => setAceitaMarketing(e.target.checked)}
                   className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/30 cursor-pointer"
                 />
-                <span className="text-[11px] font-medium text-muted-foreground leading-relaxed">
+                <span className="min-w-0 text-[11px] font-medium text-muted-foreground leading-relaxed break-words">
                   {PARTNER_MARKETING_CHECKBOX_LABEL}
                 </span>
               </label>
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 pt-1">
+          <div className="flex min-w-0 w-full flex-wrap items-center justify-between gap-3 pt-1">
             <Button
               type="button"
               variant="outline"
               onClick={prevStep}
               disabled={loading}
-              className="h-11 font-bold gap-1.5 border-border/70 bg-white/80"
+              className="h-11 min-w-0 font-bold gap-1.5 border-border/70 bg-white/80"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 shrink-0" />
               Voltar
             </Button>
             <Button
@@ -862,7 +868,7 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                     ? "Aguarde um instante para enviar"
                     : undefined
               }
-              className="h-11 font-bold btn-metallic gap-2"
+              className="h-11 min-w-0 font-bold btn-metallic gap-2"
             >
               {loading ? (
                 <>

@@ -43,14 +43,18 @@ export default function FormProgressBar({
   const label = stepLabel ?? `Etapa ${step} de ${totalSteps}`;
 
   return (
-    <div className={`w-full ${className}`}>
-      <div className={`flex items-center justify-between gap-3 px-5 pt-3.5 pb-2 ${LABEL[tone]}`}>
-        <p className="text-[10px] font-black uppercase tracking-widest truncate">{label}</p>
+    <div className={`w-full min-w-0 max-w-full ${className}`}>
+      <div
+        className={`flex min-w-0 items-center justify-between gap-3 px-3.5 sm:px-5 pt-3.5 pb-2 ${LABEL[tone]}`}
+      >
+        <p className="min-w-0 text-[10px] font-black uppercase tracking-widest truncate">
+          {label}
+        </p>
         <p className="text-[10px] font-black tabular-nums shrink-0">{percent}%</p>
       </div>
-      <div className={`h-1.5 w-full ${TRACK[tone]}`}>
+      <div className={`h-1.5 w-full max-w-full ${TRACK[tone]}`}>
         <div
-          className={`h-full transition-all duration-500 ease-out ${FILL[tone]}`}
+          className={`h-full max-w-full transition-all duration-500 ease-out ${FILL[tone]}`}
           style={{ width: `${percent}%` }}
         />
       </div>

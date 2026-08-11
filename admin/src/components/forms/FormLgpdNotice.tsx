@@ -13,7 +13,7 @@ export default function FormLgpdNotice({
 }: FormLgpdNoticeProps) {
   return (
     <p
-      className={`mt-6 text-[10px] font-medium text-slate-500 leading-relaxed text-center max-w-md mx-auto ${className}`}
+      className={`mt-6 min-w-0 w-full max-w-[min(28rem,100%)] text-[10px] font-medium text-slate-500 leading-relaxed text-center mx-auto break-words ${className}`}
     >
       De acordo com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018), as informações
       enviadas neste formulário serão tratadas com confidencialidade e utilizadas apenas para{" "}
