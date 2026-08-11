@@ -10,7 +10,6 @@ export default function HomePage() {
     cover: c.cover,
     type: c.type,
   }));
-  const heroSrc = cases[0]?.cover || "/images/cases/casa-sg/cover.jpg";
 
-  return <HomeCinematic heroSrc={heroSrc} cases={cases} />;
+  return <HomeCinematic cases={cases} />;
 }

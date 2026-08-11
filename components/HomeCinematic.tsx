@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import WordsPullUp from "@/components/motion/WordsPullUp";
 import WordsPullUpMultiStyle from "@/components/motion/WordsPullUpMultiStyle";
 import ScrollRevealText from "@/components/motion/ScrollRevealText";
@@ -22,7 +22,6 @@ type CaseCard = {
 };
 
 type Props = {
-  heroSrc: string;
   cases: CaseCard[];
 };
 
@@ -42,33 +41,51 @@ function FeatureCard({
     <motion.div
       ref={ref}
       className={className}
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={inView ? { opacity: 1, scale: 1 } : undefined}
-      transition={{ duration: 0.7, delay: index * 0.12, ease: EASE_CARD }}
+      transition={{ duration: 0.65, delay: index * 0.1, ease: EASE_CARD }}
     >
       {children}
     </motion.div>
   );
 }
 
-export default function HomeCinematic({ heroSrc, cases }: Props) {
+export default function HomeCinematic({ cases }: Props) {
+  const [reduceMotion, setReduceMotion] = useState(false);
   const videoCase = cases[0];
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduceMotion(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   return (
     <>
       <section className={styles.heroSection}>
         <div className={styles.heroShell}>
           <div className={styles.heroMedia}>
-            <Image
-              src={heroSrc}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className={styles.heroImg}
-            />
-            <div className="noise-overlay" aria-hidden />
-            <div className={styles.heroGradient} aria-hidden />
+            {!reduceMotion ? (
+              <video
+                className={styles.heroVideo}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster="/images/factory-bg.png"
+              >
+                <source src="/videos/parceiro-login-bg.mp4" type="video/mp4" />
+              </video>
+            ) : (
+              <div
+                className={styles.heroVideoStatic}
+                style={{ backgroundImage: "url(/images/factory-bg.png)" }}
+              />
+            )}
+            <div className={styles.heroOverlay} aria-hidden />
           </div>
 
           <div className={styles.heroContent}>
@@ -88,10 +105,10 @@ export default function HomeCinematic({ heroSrc, cases }: Props) {
                   className={styles.heroDesc}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.9, delay: 0.5, ease: EASE }}
+                  transition={{ duration: 0.9, delay: 0.45, ease: EASE }}
                 >
                   Marcenaria sob medida em Farroupilha. Residências e empresas inteiras — uma
-                  linguagem do primeiro ao último ambiente. Poucos projetos por vez.
+                  linguagem do primeiro ao último ambiente.
                 </motion.p>
 
                 <motion.a
@@ -101,7 +118,7 @@ export default function HomeCinematic({ heroSrc, cases }: Props) {
                   className={styles.cta}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.9, delay: 0.7, ease: EASE }}
+                  transition={{ duration: 0.9, delay: 0.65, ease: EASE }}
                 >
                   <span>Conversar sobre o projeto</span>
                   <span className={styles.ctaIcon}>
@@ -114,7 +131,7 @@ export default function HomeCinematic({ heroSrc, cases }: Props) {
         </div>
       </section>
 
-      <section className={styles.about} id="historia">
+      <section className={styles.about}>
         <div className={styles.aboutCard}>
           <p className={styles.aboutLabel}>Marcenaria sob medida</p>
           <WordsPullUpMultiStyle
@@ -132,7 +149,6 @@ export default function HomeCinematic({ heroSrc, cases }: Props) {
       </section>
 
       <section className={styles.features}>
-        <div className="bg-noise" aria-hidden />
         <div className={styles.featuresInner}>
           <WordsPullUpMultiStyle
             className={styles.featuresHead}
@@ -153,7 +169,7 @@ export default function HomeCinematic({ heroSrc, cases }: Props) {
               {videoCase ? (
                 <Link href={`/projetos/${videoCase.slug}`} className={styles.featureVideoLink}>
                   <Image src={videoCase.cover} alt={videoCase.title} fill sizes="25vw" />
-                  <span className={styles.featureVideoLabel}>Sua residência completa.</span>
+                  <span className={styles.featureVideoLabel}>Residência completa.</span>
                 </Link>
               ) : null}
             </FeatureCard>

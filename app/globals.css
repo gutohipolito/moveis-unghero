@@ -5,10 +5,8 @@
   --cream: #dedbc8;
   --cream-text: #e1e0cc;
   --mute: #9a978c;
-  --header-height: 4.5rem;
+  --header-height: 4.75rem;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
 }
 
 * {
@@ -24,10 +22,17 @@ html {
 body {
   background: var(--bg);
   color: var(--cream-text);
-  font-family: var(--font-body);
+  font-family: var(--font-body), system-ui, sans-serif;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
 }
 
 a {
@@ -44,31 +49,4 @@ video {
 ::selection {
   background: var(--cream);
   color: #000;
-}
-
-.noise-overlay,
-.bg-noise {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.noise-overlay {
-  opacity: 0.7;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-.bg-noise {
-  opacity: 0.15;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-@keyframes ken {
-  from {
-    transform: scale(1.08);
-  }
-  to {
-    transform: scale(1);
-  }
 }
