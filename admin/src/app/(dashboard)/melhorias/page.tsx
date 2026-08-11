@@ -21,6 +21,7 @@ export default async function MelhoriasPage() {
             title="Como funciona"
             items={[
               "Qualquer colaborador pode sugerir melhorias pelo botão flutuante (lâmpada).",
+              "Parceiros enviam pelo portal (só envio, sem ver a lista), com limite de 3 por hora.",
               "As sugestões aparecem aqui em lista, das mais recentes para as antigas.",
               "Clique no círculo à esquerda para marcar como concluída (ou reabrir).",
               "O autor ou a Diretoria pode remover uma sugestão.",

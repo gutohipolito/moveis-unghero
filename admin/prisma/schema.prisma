@@ -281,6 +281,7 @@ model ProfessionalPartner {
   projectNotes           PartnerProjectNote[]
   projectFiles           PartnerProjectFile[]
   commissions            PartnerCommission[]
+  suggestions            Suggestion[]
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 }
@@ -740,8 +741,10 @@ model Suggestion {
   titulo      String
   descricao   String?
   status      SuggestionStatus  @default(ABERTA)
-  created_by  String
-  author      User              @relation("SuggestionAuthor", fields: [created_by], references: [id])
+  created_by  String?
+  author      User?             @relation("SuggestionAuthor", fields: [created_by], references: [id])
+  partner_id  String?
+  partner     ProfessionalPartner? @relation(fields: [partner_id], references: [id], onDelete: SetNull)
   done_by     String?
   resolver    User?             @relation("SuggestionResolver", fields: [done_by], references: [id])
   createdAt   DateTime          @default(now())
@@ -749,6 +752,7 @@ model Suggestion {
   doneAt      DateTime?
 
   @@index([company_id, status])
+  @@index([partner_id, createdAt])
 }
 
 model Task {

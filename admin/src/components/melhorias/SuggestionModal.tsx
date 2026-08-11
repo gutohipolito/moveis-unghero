@@ -4,16 +4,30 @@ import { useState } from "react";
 import { Lightbulb, Loader2, Check } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { createSuggestion } from "@/app/actions/suggestions";
+import {
+  createSuggestion,
+  type SuggestionResult,
+} from "@/app/actions/suggestions";
 import type { SuggestionDTO } from "@/lib/suggestions";
 
 interface SuggestionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated?: (suggestion: SuggestionDTO) => void;
+  submitAction?: (input: {
+    titulo: string;
+    descricao?: string | null;
+  }) => Promise<SuggestionResult>;
+  audience?: "staff" | "partner";
 }
 
-export default function SuggestionModal({ isOpen, onClose, onCreated }: SuggestionModalProps) {
+export default function SuggestionModal({
+  isOpen,
+  onClose,
+  onCreated,
+  submitAction = createSuggestion,
+  audience = "staff",
+}: SuggestionModalProps) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [saving, setSaving] = useState(false);
@@ -42,7 +56,7 @@ export default function SuggestionModal({ isOpen, onClose, onCreated }: Suggesti
     }
     setSaving(true);
     setError(null);
-    const res = await createSuggestion({ titulo, descricao });
+    const res = await submitAction({ titulo, descricao });
     setSaving(false);
     if (!res.success) {
       setError(res.error);
@@ -61,7 +75,11 @@ export default function SuggestionModal({ isOpen, onClose, onCreated }: Suggesti
             <Check className="h-6 w-6 text-emerald-600" />
           </div>
           <p className="text-sm font-bold text-slate-700">Sugestão enviada!</p>
-          <p className="text-xs text-slate-500">Obrigado por ajudar a melhorar o sistema.</p>
+          <p className="text-xs text-slate-500">
+            {audience === "partner"
+              ? "Obrigado por ajudar a melhorar o portal."
+              : "Obrigado por ajudar a melhorar o sistema."}
+          </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,7 +92,9 @@ export default function SuggestionModal({ isOpen, onClose, onCreated }: Suggesti
                 Sugerir melhoria
               </h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Tem uma ideia para deixar o sistema melhor? Conte para a gente.
+                {audience === "partner"
+                  ? "Tem uma ideia para melhorar o portal? Envie para a equipe da Móveis Unghero. Limite de 3 envios por hora."
+                  : "Tem uma ideia para deixar o sistema melhor? Conte para a gente."}
               </p>
             </div>
           </div>

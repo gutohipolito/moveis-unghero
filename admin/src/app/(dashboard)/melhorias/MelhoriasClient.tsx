@@ -162,9 +162,16 @@ export default function MelhoriasClient({
                       {s.descricao}
                     </p>
                   )}
-                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium">
-                    {s.authorName} · {formatDate(s.createdAt)}
-                    {done && s.resolverName ? ` · concluída por ${s.resolverName}` : ""}
+                  <p className="text-[11px] text-slate-400 mt-1.5 font-medium flex flex-wrap items-center gap-1.5">
+                    {s.fromPartner ? (
+                      <span className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                        Portal
+                      </span>
+                    ) : null}
+                    <span>
+                      {s.authorName} · {formatDate(s.createdAt)}
+                      {done && s.resolverName ? ` · concluída por ${s.resolverName}` : ""}
+                    </span>
                   </p>
                 </div>
 

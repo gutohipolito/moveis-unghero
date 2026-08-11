@@ -9,6 +9,7 @@ import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroBetaBanner from "./ParceiroBetaBanner";
+import SuggestionFab from "@/components/melhorias/SuggestionFab";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
 import ParceiroAvatarModal from "./painel/ParceiroAvatarModal";
@@ -305,6 +306,8 @@ export default function ParceiroPortalShell({
 
         {children}
       </main>
+
+      <SuggestionFab audience="partner" />
 
       <nav className="parceiro-portal-nav-bottom" aria-label="Menu principal">
         {NAV.filter(

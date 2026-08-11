@@ -1429,6 +1429,25 @@ button.partner-card:hover,
 }
 
 /* Bottom tab bar — mobile first */
+.parceiro-portal-shell .suggestion-fab {
+  z-index: 35;
+  right: 1rem;
+  bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .parceiro-portal-shell .suggestion-fab {
+    right: 1.5rem;
+    bottom: 2.5rem;
+  }
+}
+
+@media print {
+  .parceiro-portal-shell .suggestion-fab {
+    display: none !important;
+  }
+}
+
 .parceiro-portal-nav-bottom {
   position: fixed;
   left: 0;

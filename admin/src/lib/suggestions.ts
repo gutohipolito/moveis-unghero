@@ -7,6 +7,7 @@ export interface SuggestionDTO {
   status: SuggestionStatus;
   authorId: string;
   authorName: string;
+  fromPartner: boolean;
   resolverName: string | null;
   createdAt: string;
   doneAt: string | null;
