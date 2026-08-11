@@ -1,0 +1,114 @@
+.page {
+  padding-bottom: 4rem;
+}
+
+.hero {
+  position: relative;
+  min-height: 72svh;
+  display: flex;
+  align-items: flex-end;
+  padding: calc(var(--header-height) + 2rem) 0 3rem;
+  overflow: hidden;
+}
+
+.heroMedia {
+  position: absolute;
+  inset: 0;
+}
+
+.heroShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 14, 10, 0.25), rgba(18, 14, 10, 0.9));
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 40rem;
+}
+
+.back {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: rgba(245, 240, 232, 0.65);
+  margin-bottom: 1rem;
+}
+
+.back:hover {
+  color: var(--accent);
+}
+
+.type {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-weight: 500;
+  line-height: 1.05;
+  margin-bottom: 0.75rem;
+}
+
+.location {
+  color: rgba(245, 240, 232, 0.7);
+}
+
+.body {
+  padding: 3.5rem 0;
+}
+
+.intro {
+  max-width: 42rem;
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  line-height: 1.65;
+}
+
+.ambientes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 3rem;
+}
+
+.chip {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(245, 240, 232, 0.8);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.shot {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.shot:first-child {
+  aspect-ratio: 16 / 9;
+}
+
+@media (min-width: 800px) {
+  .gallery {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+
+  .shot:first-child {
+    grid-column: 1 / -1;
+  }
+}

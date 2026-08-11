@@ -1,16 +1,23 @@
 ---
 title: "Casa SG"
-description: "Projeto residencial completo de alto padrão com marcenaria integrada em salas, quartos e cozinha."
-category: "projetos"
+description: "Residência completa com marcenaria integrada em cozinha, estar, dormitórios e closet — uma só linguagem do social ao íntimo."
 slug: "casa-sg"
-image: "/images/projeto-casa-sg.jpg"
+type: "residencial"
+featured: true
+order: 1
+location: "Serra Gaúcha — RS"
+cover: "/images/cases/casa-sg/cover.jpg"
+gallery:
+  - "/images/cases/casa-sg/cover.jpg"
+  - "/images/cases/casa-sg/01-cozinha.jpeg"
+  - "/images/cases/casa-sg/02-sala.jpg"
+  - "/images/cases/casa-sg/03-dormitorio.jpg"
+  - "/images/cases/casa-sg/04-closet.jpg"
+ambientes:
+  - Cozinha gourmet
+  - Sala de estar
+  - Dormitório
+  - Closet
 ---
 
-# Projeto Residencial Casa SG
-
-O projeto da Casa SG consistiu no desenvolvimento de marcenaria sob medida completa para uma residência de alto padrão localizada em [Caxias do Sul](/cidades/caxias-do-sul). Integramos os ambientes de convivência social e de repouso sob uma mesma identidade de design e acabamentos.
-
-## Soluções do Projeto
-- **[Cozinha Gourmet](/ambientes/cozinhas/gourmet)**: Integração de tampos de pedra com MDF melamínico escuro e puxadores cava usinados de alta precisão.
-- **Painel de TV na [Sala de Estar](/ambientes/salas)**: Painéis inteiros de MDF amadeirado com portas ocultas de acesso à área íntima.
-- **[Dormitório de Casal](/ambientes/dormitorios)**: Cabeceira estofada integrada com mesas de cabeceira suspensas e [closet](/ambientes/closets) sob medida anexo.
+Residência de alto padrão em que a marcenaria percorre a casa como um sistema: cozinha gourmet com tampos de pedra e MDF escuro, painéis de estar com portas ocultas, dormitório com cabeceira integrada e closet sob medida — mesma identidade do social ao íntimo.
