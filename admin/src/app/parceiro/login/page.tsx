@@ -4,6 +4,7 @@ import { loginParceiro, confirmParceiroLoginOtp } from "@/app/actions/parceiroPo
 import LoginFormParceiro from "./LoginFormParceiro";
 import ParceiroLoginBackground from "./ParceiroLoginBackground";
 import ParceiroLoginBadgeIcon from "./ParceiroLoginBadgeIcon";
+import ParceiroBetaBanner from "@/app/parceiro/ParceiroBetaBanner";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const metadata = publicPageMetadata({
@@ -14,6 +15,7 @@ export const metadata = publicPageMetadata({
 export default function ParceiroLoginPage() {
   return (
     <div className="parceiro-login-shell">
+      <ParceiroBetaBanner />
       <ParceiroLoginBackground />
 
       <div className="parceiro-login-content animate-in fade-in duration-500">

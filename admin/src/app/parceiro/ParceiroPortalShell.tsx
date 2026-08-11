@@ -8,6 +8,7 @@ import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
+import ParceiroBetaBanner from "./ParceiroBetaBanner";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
 import ParceiroAvatarModal from "./painel/ParceiroAvatarModal";
@@ -202,23 +203,25 @@ export default function ParceiroPortalShell({
       className="parceiro-portal-shell"
       data-parceiro-theme={uiPrefs.theme}
     >
-      {isAdminPreview && (
-        <div className="parceiro-portal-admin-banner">
-          <div className="parceiro-portal-admin-banner-inner">
-            <span>
-              Visualização da Diretoria — portal como <strong>{partner.nome}</strong>
-              {" "}(expira em 45 min).
-            </span>
-            <form action={exitPartnerAdminPreview}>
-              <button type="submit" className="parceiro-portal-admin-banner-link">
-                Voltar ao admin
-              </button>
-            </form>
+      <div className="parceiro-portal-chrome">
+        <ParceiroBetaBanner />
+        {isAdminPreview && (
+          <div className="parceiro-portal-admin-banner">
+            <div className="parceiro-portal-admin-banner-inner">
+              <span>
+                Visualização da Diretoria — portal como <strong>{partner.nome}</strong>
+                {" "}(expira em 45 min).
+              </span>
+              <form action={exitPartnerAdminPreview}>
+                <button type="submit" className="parceiro-portal-admin-banner-link">
+                  Voltar ao admin
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <header className="parceiro-portal-header">
+        <header className="parceiro-portal-header">
         <div className="parceiro-portal-header-inner">
           <div className="parceiro-portal-brand">
             <Link href="/parceiro/painel" className="parceiro-portal-brand-link" aria-label="Ir para o início">
@@ -257,7 +260,8 @@ export default function ParceiroPortalShell({
             />
           </div>
         </div>
-      </header>
+        </header>
+      </div>
 
       <main className="parceiro-portal-main">
         {showHeroPhoto && (
@@ -327,7 +331,7 @@ export default function ParceiroPortalShell({
       <footer className="parceiro-portal-footer">
         <div className="parceiro-portal-footer-inner">
           <p className="parceiro-portal-footer-legal">
-            © {new Date().getFullYear()} Móveis Unghero
+            © {new Date().getFullYear()} Móveis Unghero · Portal em fase de testes
           </p>
         </div>
       </footer>
