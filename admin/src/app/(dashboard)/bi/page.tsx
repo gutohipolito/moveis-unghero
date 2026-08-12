@@ -1,12 +1,20 @@
+import dynamic from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
 import { getAuthContext } from "@/lib/auth-guard";
 import { fetchFactoryBoard } from "@/lib/factoryBoard";
-import BiClient from "./BiClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
+
+const BiClient = dynamic(() => import("./BiClient"), {
+  loading: () => (
+    <div className="flex flex-1 min-h-[12rem] items-center justify-center rounded-xl border border-border/60 bg-card/40 text-sm text-muted-foreground">
+      Carregando relatórios…
+    </div>
+  ),
+});
 
 export default async function BIPage() {
   await guardModule("bi");

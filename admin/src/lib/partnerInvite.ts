@@ -15,11 +15,6 @@ export function getPartnerPublicBaseUrl() {
   return "https://moveisunghero.com.br";
 }
 
-/** @deprecated use getPartnerPublicBaseUrl */
-export function getPartnerInviteBaseUrl() {
-  return getPartnerPublicBaseUrl();
-}
-
 export function buildPartnerInviteUrl(code: string) {
   return `${getPartnerPublicBaseUrl()}${PARTNER_INVITE_SHORT_PATH}/${code}`;
 }

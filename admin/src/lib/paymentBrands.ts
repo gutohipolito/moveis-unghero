@@ -34,10 +34,3 @@ export function receiptPaymentBrands(
   }
 }
 
-/** @deprecated use receiptPaymentBrands */
-export function receiptPaymentBrand(
-  method: string | null | undefined
-): ReceiptPaymentBrand | null {
-  return receiptPaymentBrands(method)[0] ?? null;
-}
-

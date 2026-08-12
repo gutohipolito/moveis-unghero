@@ -1,10 +1,18 @@
+import dynamic from "next/dynamic";
 import { getUserPreferences } from "@/app/actions/preferences";
 import { guardModule } from "@/lib/moduleAccess";
 import { fetchCrmProjects } from "@/lib/crmProjects";
 import { getSessionCompanyId } from "@/lib/session";
 import { CRM_FOLLOW_UP_SLA_PREF_KEY, resolveFollowUpSla } from "@/lib/crmFollowUpPrefs";
 import type { FollowUpSlaConfig } from "@/lib/followUp";
-import KanbanBoard from "@/components/KanbanBoard";
+
+const KanbanBoard = dynamic(() => import("@/components/KanbanBoard"), {
+  loading: () => (
+    <div className="flex flex-1 min-h-[12rem] items-center justify-center rounded-xl border border-border/60 bg-card/40 text-sm text-muted-foreground">
+      Carregando funil…
+    </div>
+  ),
+});
 
 export default async function CRMPage() {
   await guardModule("crm");

@@ -71,16 +71,6 @@ export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey
   }
 }
 
-/** @deprecated use listMailboxFolder */
-export async function listMailboxInbox(mailboxId: string) {
-  const res = await listMailboxFolder(mailboxId, "inbox");
-  return {
-    success: res.success,
-    error: "error" in res ? res.error : undefined,
-    data: res.data,
-  };
-}
-
 export async function getMailboxMessage(
   mailboxId: string,
   uid: number,

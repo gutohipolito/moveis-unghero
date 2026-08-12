@@ -6,8 +6,6 @@ import { toQuoteViewStats, type QuoteViewStats } from "@/lib/quoteViewTracking";
 import { isOpsLimitedRole } from "@/lib/permissions";
 import { OPS_CRM_STATUSES } from "@/lib/crmOpsAccess";
 import { maybeRedactForRole } from "@/lib/viewerRedact";
-import { DEMO_FORCE_UNREAD_NOTES } from "@/lib/crmUnreadNoteDemo";
-
 export const CRM_PROJECT_SELECT = {
   id: true,
   valor_previsto: true,
@@ -162,15 +160,13 @@ export async function fetchCrmProjects(companyId: string) {
       ? new Date(project.obs_updated_at).toISOString()
       : null;
     const seenAt = seenByProject.get(project.id);
-    const hasUnreadNote = DEMO_FORCE_UNREAD_NOTES
-      ? !opsLimited
-      : Boolean(
-          !opsLimited &&
-            viewerId &&
-            project.obs_updated_at &&
-            project.obs_updated_by_id !== viewerId &&
-            (!seenAt || seenAt < project.obs_updated_at)
-        );
+    const hasUnreadNote = Boolean(
+      !opsLimited &&
+        viewerId &&
+        project.obs_updated_at &&
+        project.obs_updated_by_id !== viewerId &&
+        (!seenAt || seenAt < project.obs_updated_at)
+    );
 
     return {
       id: project.id,

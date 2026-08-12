@@ -330,15 +330,6 @@ export async function listFolderMessages(
   }
 }
 
-/** @deprecated use listFolderMessages — mantido para compatibilidade */
-export async function listInboxMessages(
-  config: ImapConnectionConfig,
-  options?: { limit?: number }
-): Promise<EmailListItem[]> {
-  const res = await listFolderMessages(config, "inbox", options);
-  return res.items;
-}
-
 export async function fetchFolderMessage(
   config: ImapConnectionConfig,
   folderPath: string,

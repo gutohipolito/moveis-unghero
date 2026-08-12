@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { 
   Search, 
   Trash2, 
@@ -43,9 +44,6 @@ import { getQuotesLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { getClients } from "@/app/actions/cliente";
-import QuoteBuilder from "@/components/QuoteBuilder";
-import QuoteItemPresetsManager from "@/components/quotes/QuoteItemPresetsManager";
-import QuoteApprovalDialog from "@/components/quotes/QuoteApprovalDialog";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -54,6 +52,25 @@ import {
   quoteCommercialLabel,
   isQuoteCommerciallyExpired,
 } from "@/lib/quoteApproval";
+
+const QuoteBuilder = dynamic(() => import("@/components/QuoteBuilder"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[10rem] items-center justify-center text-sm text-muted-foreground">
+      Carregando editor…
+    </div>
+  ),
+});
+
+const QuoteItemPresetsManager = dynamic(
+  () => import("@/components/quotes/QuoteItemPresetsManager"),
+  { ssr: false }
+);
+
+const QuoteApprovalDialog = dynamic(
+  () => import("@/components/quotes/QuoteApprovalDialog"),
+  { ssr: false }
+);
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
@@ -732,7 +749,7 @@ export default function QuotesList({
       {/* Lista de Orçamentos */}
       <div className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto overscroll-x-contain -mx-px">
-          <table className="w-full min-w-[720px] text-left border-collapse">
+          <table className="w-full min-w-[640px] md:min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">COD</th>

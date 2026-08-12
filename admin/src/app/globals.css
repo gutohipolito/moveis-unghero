@@ -2519,7 +2519,7 @@ button.partner-card:hover,
   display: block !important;
   flex: none !important;
   max-height: min(calc(85svh - 2.5rem), 38rem) !important;
-  overflow-x: hidden !important;
+  overflow-x: clip !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
   padding: 0.85rem 1rem 1rem !important;
@@ -3639,8 +3639,8 @@ button.partner-card:hover,
   bottom: 0;
   left: 0;
   z-index: 100;
-  width: min(19rem, 88vw);
-  max-width: 100vw;
+  width: min(19rem, 88%);
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -3858,10 +3858,6 @@ button.partner-card:hover,
 @media (min-width: 768px) {
   .mobile-bottom-nav {
     display: none !important;
-  }
-
-  .pwa-install-banner {
-    display: none;
   }
 
   .dashboard-main-mobile {
@@ -5292,66 +5288,6 @@ body.viewer-privacy-lock .privacy-value {
 
 .login-submit-btn:hover svg {
   transform: none;
-}
-
-.pwa-install-banner {
-  margin: 0 1rem 0.75rem;
-  padding-top: env(safe-area-inset-top, 0);
-}
-
-@media (min-width: 768px) {
-  .pwa-install-banner {
-    margin: 0 1.5rem 0.75rem;
-  }
-}
-
-.pwa-install-banner-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid hsl(var(--primary) / 0.25);
-  border-radius: var(--radius);
-  background: hsl(var(--primary) / 0.08);
-}
-
-.pwa-install-banner-action {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.5rem 0.875rem;
-  border-radius: calc(var(--radius) - 2px);
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.pwa-install-banner-action:hover:not(:disabled) {
-  background: hsl(var(--primary) / 0.9);
-}
-
-.pwa-install-banner-action:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.pwa-install-banner-dismiss {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: calc(var(--radius) - 2px);
-  color: hsl(var(--muted-foreground));
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s;
-}
-
-.pwa-install-banner-dismiss:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--muted) / 0.6);
 }
 
 @media (display-mode: standalone),

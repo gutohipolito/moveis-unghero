@@ -8,10 +8,6 @@ export const QUOTE_TEMPLATE_LABELS: Record<QuoteTemplateId, string> = {
   COMPARATIVO: "Proposta Comparativa",
 };
 
-/** @deprecated Use QUOTE_TEMPLATE_IDS / labels; kept for older imports */
-export const QUOTE_TEMPLATE_ID = "BASICO" as const;
-export const QUOTE_TEMPLATE_LABEL = QUOTE_TEMPLATE_LABELS.BASICO;
-
 export interface QuoteTemplateItem {
   descricao: string;
   quantidade: number;
@@ -44,8 +40,6 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     comparative: true,
   },
 };
-
-export const QUOTE_TEMPLATE_BASICO = QUOTE_TEMPLATES.BASICO;
 
 export function isQuoteTemplateId(value: unknown): value is QuoteTemplateId {
   return typeof value === "string" && (QUOTE_TEMPLATE_IDS as readonly string[]).includes(value);

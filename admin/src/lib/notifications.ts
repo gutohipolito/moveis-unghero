@@ -1,5 +1,4 @@
 import type { ProjectStatus } from "@/app/actions/kanban";
-import { type FollowUpInput } from "@/lib/followUp";
 import {
   type ProjectSlaView,
   getStageConfig,
@@ -38,16 +37,6 @@ export interface AppNotification {
     quoteId?: string;
     authorName?: string;
   };
-}
-
-export interface NotificationProject extends FollowUpInput {
-  id: string;
-  client: { nome: string };
-}
-
-export function buildFollowUpNotifications(_projects: NotificationProject[]): AppNotification[] {
-  // Desativado no sino — follow-up visual permanece no CRM.
-  return [];
 }
 
 export type CardNoteNotificationInput = {
@@ -290,15 +279,6 @@ export function buildQuoteExpiringNotifications(
 /** Alertas visuais no painel (toast) — só críticos (priority high). */
 export function isInAppToastNotification(notification: AppNotification): boolean {
   return notification.priority === "high";
-}
-
-/**
- * Lembretes que reapareciam a cada abertura do painel.
- * Desativado: a janela só dispara para alertas críticos novos;
- * o restante continua no centro de notificações (sino).
- */
-export function isStickyReminderNotification(_notification: AppNotification): boolean {
-  return false;
 }
 
 export type InAppToastAccent =
