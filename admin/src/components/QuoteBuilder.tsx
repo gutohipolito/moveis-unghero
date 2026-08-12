@@ -26,7 +26,7 @@ import {
 import { Dialog } from "@/components/ui/dialog";
 import { getParceiros } from "@/app/actions/parceiros";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
-import { addCalendarDaysISO, toISODateBR } from "@/lib/brazilDate";
+import { defaultQuoteValidadeISO, QUOTE_VALIDITY_DAYS, toISODateBR } from "@/lib/brazilDate";
 import { getPricingTextWarning } from "@/lib/quoteItems";
 import {
   resolvePartnerQuoteCardAppearance,
@@ -113,10 +113,7 @@ export default function QuoteBuilder({
   const isEditing = Boolean(editingQuote?.id);
   const [templateTipo, setTemplateTipo] = useState<QuoteTemplateId>("BASICO");
   const [observacoes, setObservacoes] = useState("");
-  const [validade, setValidade] = useState(() => {
-    // Validade padrão: 15 dias a partir de hoje (calendário de São Paulo)
-    return addCalendarDaysISO(toISODateBR(), 15);
-  });
+  const [validade, setValidade] = useState(() => defaultQuoteValidadeISO());
   const [items, setItems] = useState<QuoteItemInput[]>([]);
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -648,7 +645,7 @@ export default function QuoteBuilder({
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Data de Validade da Proposta
+              Validade da proposta
             </label>
             <Input
               type="date"
@@ -656,6 +653,10 @@ export default function QuoteBuilder({
               value={validade}
               onChange={(e) => setValidade(e.target.value)}
             />
+            <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+              Padrão: {QUOTE_VALIDITY_DAYS} dias a partir da emissão (criação do
+              orçamento).
+            </p>
           </div>
           <div className="sm:col-span-2 space-y-2">
             <label className="text-xs font-semibold text-muted-foreground block">

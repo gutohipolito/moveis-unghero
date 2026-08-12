@@ -18,7 +18,7 @@ import {
 import { upsertEnvironmentsFromApprovedItems } from "@/lib/syncEnvironmentsFromQuotes";
 import { inferEnvironmentTypeFromName } from "@/lib/environmentFromQuote";
 import { ADMIN_EMAIL } from "@/lib/constants";
-import { parseISODateOnlyBrazil } from "@/lib/brazilDate";
+import { parseISODateOnlyBrazil, defaultQuoteValidadeISO } from "@/lib/brazilDate";
 import {
   computeApprovalValue,
   suggestProportionalDiscount,
@@ -172,7 +172,9 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
           subtotal: data.subtotal,
           desconto: data.desconto,
           valor_final: data.valor_final,
-          validade: parseISODateOnlyBrazil(data.validade),
+          validade: parseISODateOnlyBrazil(
+            data.validade?.trim() || defaultQuoteValidadeISO()
+          ),
           observacoes: data.observacoes || "",
           partner_id: partnerId,
           solicitante_id: solicitanteId,

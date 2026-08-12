@@ -90,7 +90,7 @@ export async function loadPublicQuoteByShareCode(code: string) {
     bairro: rawClient.bairro,
   };
   const validadeLabel = formatDateBR(dbQuote.validade);
-  const emissaoLabel = formatDateBR(dbQuote.pdf_shared_at ?? new Date());
+  const emissaoLabel = formatDateBR(dbQuote.createdAt);
   const requiresPin = Boolean(getPhoneLastFourDigits(rawClient.telefone || ""));
 
   return {

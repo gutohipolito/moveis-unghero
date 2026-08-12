@@ -1,6 +1,9 @@
 /** Fuso oficial da operação (Farroupilha / Serra Gaúcha). */
 export const BRAZIL_TIMEZONE = "America/Sao_Paulo";
 
+/** Validade padrão da proposta comercial a partir da emissão. */
+export const QUOTE_VALIDITY_DAYS = 15;
+
 /** Formata data no calendário brasileiro (evita dia errado em servidores UTC). */
 export function formatDateBR(date: Date | string | number = new Date()) {
   return new Date(date).toLocaleDateString("pt-BR", {
@@ -29,6 +32,13 @@ export function addCalendarDaysISO(isoDate: string, days: number) {
   const m = String(utc.getUTCMonth() + 1).padStart(2, "0");
   const d = String(utc.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+/** Validade padrão: emissão + QUOTE_VALIDITY_DAYS (calendário BR). */
+export function defaultQuoteValidadeISO(
+  emissao: Date | string | number = new Date()
+) {
+  return addCalendarDaysISO(toISODateBR(emissao), QUOTE_VALIDITY_DAYS);
 }
 
 /**

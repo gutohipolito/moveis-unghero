@@ -25,6 +25,7 @@ type LoadedPrintQuote = {
   valor_final: number;
   observacoes: string | null;
   validade: Date;
+  createdAt: Date;
   pdfPublicUrl: string | null;
   approvedTotal?: number;
   pendingTotal?: number;
@@ -143,6 +144,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         valor_final: Number(dbQuote.valor_final),
         observacoes: dbQuote.observacoes,
         validade: dbQuote.validade,
+        createdAt: dbQuote.createdAt,
         pdfPublicUrl,
         partner: toPartnerQuotePrintPayload(dbQuote.partner),
         solicitante_nome: dbQuote.solicitante_nome,
@@ -166,7 +168,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
 
   const client = quote.project.client;
   const formattedValidade = formatDateBR(quote.validade);
-  const formattedDataEmissao = formatDateBR();
+  const formattedDataEmissao = formatDateBR(quote.createdAt);
 
   return (
     <QuotePrintDocument
