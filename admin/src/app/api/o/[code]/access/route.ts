@@ -21,35 +21,53 @@ export async function GET(
     );
   }
 
-  const quote = await prisma.quote.findFirst({
-    where: { pdf_share_code: code },
-    select: {
-      project: {
-        select: {
-          client: { select: { telefone: true, nome: true } },
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: { pdf_share_code: code },
+      select: {
+        project: {
+          select: {
+            client: { select: { telefone: true, nome: true } },
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!quote) {
+    if (!quote) {
+      return NextResponse.json(
+        { exists: false, requiresPin: false, unlocked: false },
+        { status: 404 }
+      );
+    }
+
+    const requiresPin = Boolean(
+      getPhoneLastFourDigits(quote.project.client.telefone || "")
+    );
+    const firstName =
+      quote.project.client.nome.trim().split(/\s+/)[0] ||
+      quote.project.client.nome;
+
+    const headerToken = request.headers.get(QUOTE_SHARE_UNLOCK_HEADER);
+    const unlocked =
+      !requiresPin || isValidQuoteShareUnlockToken(code, headerToken);
+
+    return NextResponse.json({
+      exists: true,
+      requiresPin,
+      unlocked,
+      clientFirstName: firstName,
+    });
+  } catch (error) {
+    console.error("quote share access:", error);
     return NextResponse.json(
-      { exists: false, requiresPin: false, unlocked: false },
-      { status: 404 }
+      {
+        exists: false,
+        requiresPin: false,
+        unlocked: false,
+        temporary: true,
+        error: "Serviço temporariamente indisponível.",
+      },
+      { status: 503 }
     );
   }
-
-  const requiresPin = Boolean(getPhoneLastFourDigits(quote.project.client.telefone || ""));
-  const firstName =
-    quote.project.client.nome.trim().split(/\s+/)[0] || quote.project.client.nome;
-
-  const headerToken = request.headers.get(QUOTE_SHARE_UNLOCK_HEADER);
-  const unlocked = !requiresPin || isValidQuoteShareUnlockToken(code, headerToken);
-
-  return NextResponse.json({
-    exists: true,
-    requiresPin,
-    unlocked,
-    clientFirstName: firstName,
-  });
 }

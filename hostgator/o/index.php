@@ -13,7 +13,7 @@
 const QUOTE_ADMIN_BASE = 'https://admin.moveisunghero.com.br';
 const QUOTE_UNLOCK_COOKIE_PREFIX = 'qo_';
 const QUOTE_UNLOCK_MAX_AGE = 60 * 60 * 24 * 14;
-const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.5';
+const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.6';
 
 /**
  * UA do visitante (celular/desktop) — sem isso o admin registra tudo como Desktop.
@@ -230,16 +230,26 @@ $access = quote_http_json(
     null,
     $accessHeaders
 );
-if (($access['status'] ?? 0) === 404 || empty($access['data']['exists'])) {
+
+$accessStatus = (int) ($access['status'] ?? 0);
+$accessExists = !empty($access['data']['exists']);
+
+// 404 real: código inválido / orçamento sem link.
+if ($accessStatus === 404 || ($access['ok'] && !$accessExists)) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Orçamento não encontrado ou link expirado.';
     exit;
 }
-if (!$access['ok']) {
-    http_response_code(502);
+
+// Falha transitória (banco/API/rede): não confundir com link inválido.
+if (!$access['ok'] || !$accessExists) {
+    http_response_code($accessStatus >= 500 ? $accessStatus : 502);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Não foi possível abrir o orçamento.';
+    echo 'Não foi possível abrir o orçamento no momento. Tente novamente em instantes.';
+    if (!empty($access['error'])) {
+        error_log('quote share access: ' . $access['error']);
+    }
     exit;
 }
 
@@ -321,11 +331,13 @@ if ($response === false || $httpCode !== 200) {
     header('Content-Type: text/plain; charset=utf-8');
     if ($httpCode === 404) {
         echo 'Orçamento não encontrado ou link expirado.';
+    } elseif ($httpCode >= 500 || $httpCode === 0) {
+        echo 'Não foi possível abrir o orçamento no momento. Tente novamente em instantes.';
     } else {
         echo 'Não foi possível abrir o orçamento.';
-        if ($curlError !== '') {
-            error_log('quote share proxy: ' . $curlError);
-        }
+    }
+    if ($curlError !== '') {
+        error_log('quote share proxy: ' . $curlError);
     }
     exit;
 }
