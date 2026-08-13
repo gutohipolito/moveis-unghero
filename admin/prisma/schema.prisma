@@ -636,6 +636,8 @@ model File {
   url               String
   versao            Int      @default(1)
   aprovado_producao Boolean  @default(false)
+
+  @@index([project_id])
 }
 
 enum FileType {
@@ -830,6 +832,9 @@ model Timeline {
   acao              String
   data              DateTime @default(now())
   interno_sotamente Boolean  @default(true)
+
+  @@index([project_id, data])
+  @@index([user_id])
 }
 
 model TimeCard {
