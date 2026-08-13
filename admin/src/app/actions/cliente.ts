@@ -17,7 +17,10 @@ import {
   requireClientInCompany,
 } from "@/lib/auth-guard";
 import { createClientSessionToken } from "@/lib/clientSession";
-import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
+import {
+  resolveClientFolders,
+  type ClientAttachmentDTO,
+} from "@/lib/clientAttachments";
 import { labelProjectStatus } from "@/lib/navLabels";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
@@ -1298,6 +1301,7 @@ async function loadClientAttachments(clientId: string): Promise<ClientAttachment
     mime_type: row.mime_type,
     url: row.url,
     tipo: row.tipo,
+    folder: row.folder || "Residência",
     size_bytes: row.size_bytes,
     createdAt: row.createdAt.toISOString(),
     uploaded_by: row.uploaded_by?.name ?? null,
@@ -1393,6 +1397,7 @@ export async function getClientDetailsAction(clientId: string) {
       ? { activities: [] as Activity[], payments: [] as Payment[], earliestProjectAt: null as Date | null }
       : await loadClientActivitiesAndPayments(clientId);
     const attachments = await loadClientAttachments(clientId);
+    const attachmentFolders = resolveClientFolders(client.attachment_folders, attachments);
 
     const cadastroEm = client.createdAt ?? earliestProjectAt;
     const originLabels: Record<string, string> = {
@@ -1436,6 +1441,7 @@ export async function getClientDetailsAction(clientId: string) {
       activities: activitiesWithRegistration,
       payments: maybeRedactForRole(payments, auth.cargo),
       attachments,
+      attachmentFolders,
     };
   } catch (e) {
     console.warn("Erro ao carregar detalhes do cliente:", e);

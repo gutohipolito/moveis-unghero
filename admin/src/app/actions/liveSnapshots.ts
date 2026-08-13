@@ -513,6 +513,7 @@ export async function getClientDetailsLiveSnapshot(clientId: string) {
       activities: result.activities,
       payments: result.payments,
       attachments: result.attachments ?? [],
+      attachmentFolders: result.attachmentFolders ?? [],
       version,
     };
   } catch (error) {

@@ -26,6 +26,7 @@ export default async function ClienteDetailsPage({ params }: RouteParams) {
       initialActivities={res.activities}
       initialPayments={res.payments}
       initialAttachments={res.attachments ?? []}
+      initialAttachmentFolders={res.attachmentFolders ?? ["Residência", "Documentos"]}
       companyId={companyId}
     />
   );

@@ -95,6 +95,7 @@ interface ClienteDetailsClientProps {
   initialActivities: Activity[];
   initialPayments: Payment[];
   initialAttachments: ClientAttachmentDTO[];
+  initialAttachmentFolders?: string[];
   companyId: string;
 }
 
@@ -180,6 +181,7 @@ export default function ClienteDetailsClient({
   initialActivities,
   initialPayments,
   initialAttachments,
+  initialAttachmentFolders = ["Residência", "Documentos"],
   companyId,
 }: ClienteDetailsClientProps) {
   const [client, setClient] = useState<ClientDetails>(initialClient);
@@ -189,6 +191,7 @@ export default function ClienteDetailsClient({
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [attachments, setAttachments] = useState<ClientAttachmentDTO[]>(initialAttachments);
+  const [attachmentFolders, setAttachmentFolders] = useState<string[]>(initialAttachmentFolders);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
 
@@ -230,6 +233,7 @@ export default function ClienteDetailsClient({
       if (result.activities) setActivities(result.activities);
       if (result.payments) setPayments(result.payments);
       if (result.attachments) setAttachments(result.attachments);
+      if (result.attachmentFolders) setAttachmentFolders(result.attachmentFolders);
       if (result.client.projects) {
         setProjects(result.client.projects as ClientProjectSummary[]);
       }
@@ -742,8 +746,13 @@ export default function ClienteDetailsClient({
             <ClienteDocumentsTab
               clientId={client.id}
               attachments={attachments}
+              folders={attachmentFolders}
               onAttachmentsChange={setAttachments}
+              onFoldersChange={setAttachmentFolders}
+              canManage={canManage}
               tipoPessoa={docInfo.tipo_pessoa === "PJ" ? "PJ" : "PF"}
+              showError={showError}
+              confirmAction={confirmAction}
             />
           )}
 

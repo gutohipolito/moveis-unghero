@@ -181,6 +181,8 @@ model Client {
   tipo_imovel  String?   // Casa, Apartamento, Comercial, etc.
   obs_imovel   String?   // Observações do imóvel/obra
   obs_entrega  String?   // Restrições/observações de entrega
+  /** Pastas extras da aba Imagens (Residência e Documentos existem sempre). */
+  attachment_folders String[] @default([])
   lgpd_aceite       Boolean   @default(false)
   lgpd_aceite_em    DateTime?
   marketing_aceite  Boolean   @default(false)
@@ -666,6 +668,7 @@ model ClientAttachment {
   mime_type      String
   url            String
   tipo           ClientAttachmentType @default(FOTO)
+  folder         String               @default("Residência")
   size_bytes     Int?
   createdAt      DateTime             @default(now())
   uploaded_by_id String?

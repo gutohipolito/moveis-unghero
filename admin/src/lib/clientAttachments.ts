@@ -1,9 +1,17 @@
+export const CLIENT_FOLDER_RESIDENCIA = "Residência";
+export const CLIENT_FOLDER_DOCUMENTOS = "Documentos";
+export const CLIENT_DEFAULT_FOLDERS = [
+  CLIENT_FOLDER_RESIDENCIA,
+  CLIENT_FOLDER_DOCUMENTOS,
+] as const;
+
 export type ClientAttachmentDTO = {
   id: string;
   nome: string;
   mime_type: string;
   url: string;
   tipo: "FOTO" | "DOCUMENTO";
+  folder: string;
   size_bytes: number | null;
   createdAt: string;
   uploaded_by: string | null;
@@ -33,4 +41,35 @@ export function formatAttachmentSize(bytes: number | null) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function normalizeClientFolderName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").slice(0, 60);
+}
+
+export function isDefaultClientFolder(name: string): boolean {
+  return CLIENT_DEFAULT_FOLDERS.some(
+    (folder) => folder.toLowerCase() === name.trim().toLowerCase()
+  );
+}
+
+export function resolveClientFolders(
+  stored: string[] | null | undefined,
+  attachments: { folder?: string | null }[]
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of [
+    ...CLIENT_DEFAULT_FOLDERS,
+    ...(stored || []),
+    ...attachments.map((item) => item.folder || ""),
+  ]) {
+    const name = normalizeClientFolderName(raw);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out;
 }
