@@ -1,15 +1,16 @@
 /**
  * Aplica migrations no build de produção da Vercel.
  * Preview/dev não tocam o banco (evita PR aplicar DDL em produção cedo demais).
- * Prefere URL unpooled da Neon — migrate precisa de advisory lock, que o pooler não dá.
  *
- * Retry em P1002: cold start do Neon ou lock residual de outro migrate (ex.: apply local
- * segundos antes do deploy) costuma liberar em poucos segundos.
+ * Na Vercel (iad1 → Neon sa-east-1) reescrever a URL para o endpoint direto trava no
+ * advisory lock (P1002). Ficamos no pooler + PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK —
+ * padrão Neon quando o unpooled não é confiável no build.
+ * Fora da Vercel, preferimos a URL direta (com lock).
  */
 import { spawnSync } from "node:child_process";
 
-const MAX_ATTEMPTS = 4;
-const RETRY_BASE_MS = 5_000;
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_MS = 4_000;
 
 function toDirectUrl(url: string) {
   return url.replace(/-pooler\./g, ".");
@@ -21,6 +22,7 @@ function sleep(ms: number) {
 
 const vercelEnv = process.env.VERCEL_ENV;
 const force = process.env.PRISMA_MIGRATE_ON_BUILD === "1";
+const onVercel = Boolean(process.env.VERCEL);
 
 if (!force && vercelEnv !== "production") {
   console.log(
@@ -29,17 +31,24 @@ if (!force && vercelEnv !== "production") {
   process.exit(0);
 }
 
-const source =
-  process.env.DATABASE_URL_UNPOOLED ||
-  process.env.DIRECT_DATABASE_URL ||
-  process.env.DATABASE_URL;
+const env: NodeJS.ProcessEnv = { ...process.env };
 
-if (!source) {
-  console.error("[prisma] DATABASE_URL ausente — migrate deploy abortado.");
-  process.exit(1);
+if (onVercel) {
+  // Não stripar -pooler: a conexão direta da Vercel ao Neon falha no advisory lock.
+  env.PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK = "1";
+  console.log("[prisma] migrate via pooler (advisory lock desligado)");
+} else {
+  const source =
+    process.env.DATABASE_URL_UNPOOLED ||
+    process.env.DIRECT_DATABASE_URL ||
+    process.env.DATABASE_URL;
+  if (source) {
+    env.DATABASE_URL = toDirectUrl(source);
+    console.log("[prisma] migrate via conexão direta");
+  } else {
+    console.log("[prisma] migrate (DATABASE_URL do ambiente / .env do Prisma)");
+  }
 }
-
-const env = { ...process.env, DATABASE_URL: toDirectUrl(source) };
 
 for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
   console.log(`[prisma] migrate deploy (tentativa ${attempt}/${MAX_ATTEMPTS})`);
@@ -53,8 +62,7 @@ for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     process.exit(0);
   }
 
-  const retryable = attempt < MAX_ATTEMPTS;
-  if (!retryable) {
+  if (attempt >= MAX_ATTEMPTS) {
     process.exit(result.status ?? 1);
   }
 
