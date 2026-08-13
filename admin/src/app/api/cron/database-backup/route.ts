@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { reencryptStoredVaultSecrets } from "@/lib/accessVaultRotate";
 import { runDailyDatabaseBackup } from "@/lib/neonBackup";
 
 export const dynamic = "force-dynamic";
@@ -35,8 +36,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    let vault: { updated: number; skipped: boolean } | undefined;
+    try {
+      vault = await reencryptStoredVaultSecrets();
+    } catch (error) {
+      console.error("Falha ao re-criptografar o cofre:", error);
+    }
+
     const result = await runDailyDatabaseBackup();
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ success: true, vault, ...result });
   } catch (error) {
     console.error("Falha no backup diário:", error);
     return NextResponse.json(

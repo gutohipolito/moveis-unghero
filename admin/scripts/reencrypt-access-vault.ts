@@ -1,12 +1,11 @@
 /**
  * Re-criptografa senhas do cofre e das caixas de e-mail para ACCESS_VAULT_SECRET.
- * Uso (na pasta admin/): npx tsx scripts/reencrypt-access-vault.ts
+ * Preferir rodar em produção (lá estão os secrets reais):
+ *   npx vercel crons run /api/cron/database-backup
+ *
+ * Local só funciona com DATABASE_URL + BETTER_AUTH_SECRET + ACCESS_VAULT_SECRET reais.
  */
-import { loadEnvConfig } from "@next/env";
-import { PrismaClient } from "@prisma/client";
-import { reencryptVaultSecretIfNeeded } from "../src/lib/accessVaultCrypto";
-
-loadEnvConfig(process.cwd());
+import { reencryptStoredVaultSecrets } from "../src/lib/accessVaultRotate";
 
 async function main() {
   if (!process.env.ACCESS_VAULT_SECRET?.trim()) {
@@ -16,42 +15,11 @@ async function main() {
     throw new Error("BETTER_AUTH_SECRET é necessário para ler os registros legados.");
   }
 
-  const prisma = new PrismaClient();
-  let updated = 0;
-
-  try {
-    const credentials = await prisma.accessCredential.findMany({
-      where: { senha_enc: { not: null } },
-      select: { id: true, senha_enc: true },
-    });
-    for (const row of credentials) {
-      if (!row.senha_enc) continue;
-      const next = reencryptVaultSecretIfNeeded(row.senha_enc);
-      if (!next) continue;
-      await prisma.accessCredential.update({
-        where: { id: row.id },
-        data: { senha_enc: next },
-      });
-      updated += 1;
-    }
-
-    const mailboxes = await prisma.emailMailbox.findMany({
-      select: { id: true, password_enc: true },
-    });
-    for (const row of mailboxes) {
-      const next = reencryptVaultSecretIfNeeded(row.password_enc);
-      if (!next) continue;
-      await prisma.emailMailbox.update({
-        where: { id: row.id },
-        data: { password_enc: next },
-      });
-      updated += 1;
-    }
-
-    console.log(`Cofre re-criptografado. Registros atualizados: ${updated}.`);
-  } finally {
-    await prisma.$disconnect();
+  const result = await reencryptStoredVaultSecrets();
+  if (result.skipped) {
+    throw new Error("Defina ACCESS_VAULT_SECRET antes de re-criptografar.");
   }
+  console.log(`Cofre re-criptografado. Registros atualizados: ${result.updated}.`);
 }
 
 main().catch((error) => {
