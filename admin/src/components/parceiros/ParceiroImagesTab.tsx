@@ -32,9 +32,9 @@ type GridCols = 3 | 4 | 5;
 
 const PREFS_KEY = "mu-partner-images-view";
 const GRID_COL_CLASS: Record<GridCols, string> = {
-  3: "grid-cols-3",
-  4: "grid-cols-3 sm:grid-cols-4",
-  5: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5",
+  3: "grid-cols-2 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+  5: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
 };
 
 function fileNameFromUrl(url: string) {
@@ -386,7 +386,7 @@ export default function ParceiroImagesTab({
     }
 
     return (
-      <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-3`}>
+      <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-3 min-w-0`}>
         {items.map((item) => (
           <div
             key={item.url}
@@ -408,7 +408,7 @@ export default function ParceiroImagesTab({
                 type="button"
                 disabled={busy}
                 onClick={() => deleteImage(item.url)}
-                className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/65 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/65 text-white opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
                 title="Excluir foto"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -481,24 +481,25 @@ export default function ParceiroImagesTab({
 
   if (openFolder) {
     return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className="space-y-4 min-w-0">
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="flex items-start gap-2 min-w-0">
             <button
               type="button"
               onClick={() => setOpenFolder(null)}
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-colors cursor-pointer"
+              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-colors cursor-pointer shrink-0"
+              aria-label="Voltar às pastas"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="text-sm font-bold text-foreground truncate">{openFolder}</h3>
               <p className="text-[11px] text-muted-foreground">
                 {folderImages.length} foto{folderImages.length === 1 ? "" : "s"}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
               <button
                 type="button"
@@ -510,7 +511,7 @@ export default function ParceiroImagesTab({
                 }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
-                Grade
+                <span className="hidden sm:inline">Grade</span>
               </button>
               <button
                 type="button"
@@ -522,7 +523,7 @@ export default function ParceiroImagesTab({
                 }`}
               >
                 <List className="h-3.5 w-3.5" />
-                Lista
+                <span className="hidden sm:inline">Lista</span>
               </button>
             </div>
             {photoMode === "grid" && (
@@ -559,14 +560,15 @@ export default function ParceiroImagesTab({
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
                   title="Selecione várias fotos de uma vez. Elas são otimizadas e convertidas para WebP."
-                  className="text-xs font-bold gap-1.5 btn-metallic h-9"
+                  className="text-xs font-bold gap-1.5 btn-metallic h-9 flex-1 sm:flex-none"
                 >
                   {busy ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Upload className="h-3.5 w-3.5" />
                   )}
-                  Adicionar fotos
+                  <span className="sm:hidden">Adicionar</span>
+                  <span className="hidden sm:inline">Adicionar fotos</span>
                 </Button>
               </>
             )}
@@ -576,23 +578,23 @@ export default function ParceiroImagesTab({
           <p className="text-[11px] text-muted-foreground">{uploadProgress}</p>
         ) : null}
 
-        <Card className="p-4 glass-card">{renderPhotos(folderImages)}</Card>
+        <Card className="p-3 sm:p-4 glass-card">{renderPhotos(folderImages)}</Card>
         {previewModal}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+    <div className="space-y-4 min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
           <h3 className="text-sm font-bold text-foreground">Imagens</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             Pastas para organizar fotos do escritório e das obras.
             {totalImages > 0 ? ` ${totalImages} foto${totalImages === 1 ? "" : "s"} no total.` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
             <button
               type="button"
@@ -644,7 +646,7 @@ export default function ParceiroImagesTab({
               variant="outline"
               disabled={busy}
               onClick={() => setCreatingFolder(true)}
-              className="text-xs font-bold gap-1.5 h-9"
+              className="text-xs font-bold gap-1.5 h-9 w-full sm:w-auto"
             >
               <FolderPlus className="h-3.5 w-3.5" />
               Nova pasta
@@ -697,7 +699,7 @@ export default function ParceiroImagesTab({
 
       {renameBar}
 
-      <Card className="p-5 glass-card">
+      <Card className="p-3 sm:p-5 glass-card overflow-hidden">
         {gallery.folders.length === 0 ? (
           <div className="py-14 text-center text-sm text-muted-foreground">
             Nenhuma pasta ainda.
@@ -736,7 +738,7 @@ export default function ParceiroImagesTab({
             })}
           </div>
         ) : (
-          <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-x-4 gap-y-6`}>
+          <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-x-3 sm:gap-x-4 gap-y-5 sm:gap-y-6 min-w-0`}>
             {gallery.folders.map((folder) => {
               const imgs = imagesInFolder(gallery, folder);
               return (
@@ -754,7 +756,7 @@ export default function ParceiroImagesTab({
                       {imgs.length} item{imgs.length === 1 ? "" : "s"}
                     </span>
                   </button>
-                  <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-0 right-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     {folderActions(folder)}
                   </div>
                 </div>

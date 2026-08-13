@@ -23,6 +23,7 @@ import {
   CLIENT_ATTACHMENT_ACCEPT,
   CLIENT_ATTACHMENT_MAX_BYTES,
   CLIENT_DEFAULT_FOLDERS,
+  CLIENT_FOLDER_RESIDENCIA,
   formatAttachmentSize,
   isDefaultClientFolder,
   isImageMime,
@@ -39,9 +40,9 @@ type GridCols = 3 | 4 | 5;
 
 const PREFS_KEY = "mu-client-images-view";
 const GRID_COL_CLASS: Record<GridCols, string> = {
-  3: "grid-cols-3",
-  4: "grid-cols-3 sm:grid-cols-4",
-  5: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5",
+  3: "grid-cols-2 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+  5: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
 };
 
 interface ClienteDocumentsTabProps {
@@ -399,7 +400,7 @@ export default function ClienteDocumentsTab({
     }
 
     return (
-      <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-3`}>
+      <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-3 min-w-0`}>
         {items.map((item) => (
           <div
             key={item.id}
@@ -435,7 +436,7 @@ export default function ClienteDocumentsTab({
                 type="button"
                 disabled={busy}
                 onClick={() => deleteFile(item)}
-                className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/65 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/65 text-white opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
                 title="Excluir"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -507,25 +508,37 @@ export default function ClienteDocumentsTab({
     ) : null;
 
   if (openFolder) {
+    const isResidencia = openFolder === CLIENT_FOLDER_RESIDENCIA;
     return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className="space-y-4 min-w-0">
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="flex items-start gap-2 min-w-0">
             <button
               type="button"
               onClick={() => setOpenFolder(null)}
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-colors cursor-pointer"
+              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-colors cursor-pointer shrink-0"
+              aria-label="Voltar às pastas"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="text-sm font-bold text-foreground truncate">{openFolder}</h3>
               <p className="text-[11px] text-muted-foreground">
                 {folderFiles.length} arquivo{folderFiles.length === 1 ? "" : "s"} · envio só nesta pasta
               </p>
+              {isResidencia ? (
+                <div className="mt-2 rounded-[var(--radius-md)] border border-sky-200/80 bg-sky-50/70 px-3 py-2.5 text-[11px] text-sky-950/90 leading-relaxed">
+                  <span className="font-bold">Tip:</span> priorize fotos da fachada,{" "}
+                  {isPj
+                    ? "identificação da empresa, entrada de carga, estacionamento"
+                    : "número da casa, portão, vaga"}{" "}
+                  e trechos apertados (escada, corredor, elevador). Assim o montador reconhece o local e
+                  se prepara para a entrega.
+                </div>
+              ) : null}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
               <button
                 type="button"
@@ -537,7 +550,7 @@ export default function ClienteDocumentsTab({
                 }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
-                Grade
+                <span className="hidden sm:inline">Grade</span>
               </button>
               <button
                 type="button"
@@ -549,7 +562,7 @@ export default function ClienteDocumentsTab({
                 }`}
               >
                 <List className="h-3.5 w-3.5" />
-                Lista
+                <span className="hidden sm:inline">Lista</span>
               </button>
             </div>
             {photoMode === "grid" && (
@@ -595,14 +608,15 @@ export default function ClienteDocumentsTab({
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
                   title="Selecione várias fotos ou PDFs. Imagens viram WebP."
-                  className="text-xs font-bold gap-1.5 h-9"
+                  className="text-xs font-bold gap-1.5 h-9 flex-1 sm:flex-none"
                 >
                   {busy ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Upload className="h-3.5 w-3.5" />
                   )}
-                  Adicionar arquivos
+                  <span className="sm:hidden">Adicionar</span>
+                  <span className="hidden sm:inline">Adicionar arquivos</span>
                 </Button>
                 <Button
                   type="button"
@@ -614,10 +628,10 @@ export default function ClienteDocumentsTab({
                       setCameraOpen(true);
                     }
                   }}
-                  className="text-xs font-bold gap-1.5 btn-metallic h-9"
+                  className="text-xs font-bold gap-1.5 btn-metallic h-9 flex-1 sm:flex-none"
                 >
                   <Camera className="h-3.5 w-3.5" />
-                  Tirar foto
+                  Foto
                 </Button>
               </>
             )}
@@ -632,7 +646,7 @@ export default function ClienteDocumentsTab({
           </p>
         )}
 
-        <Card className="p-4 glass-card">{renderFiles(folderFiles)}</Card>
+        <Card className="p-3 sm:p-4 glass-card">{renderFiles(folderFiles)}</Card>
         {previewModal}
         <ClienteCameraModal
           open={cameraOpen}
@@ -647,9 +661,9 @@ export default function ClienteDocumentsTab({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+    <div className="space-y-4 min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-foreground">Imagens</h3>
             <InfoTooltip label="Sobre esta aba">
@@ -671,7 +685,7 @@ export default function ClienteDocumentsTab({
               : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
             <button
               type="button"
@@ -723,7 +737,7 @@ export default function ClienteDocumentsTab({
               variant="outline"
               disabled={busy}
               onClick={() => setCreatingFolder(true)}
-              className="text-xs font-bold gap-1.5 h-9"
+              className="text-xs font-bold gap-1.5 h-9 w-full sm:w-auto"
             >
               <FolderPlus className="h-3.5 w-3.5" />
               Nova pasta
@@ -776,7 +790,7 @@ export default function ClienteDocumentsTab({
 
       {renameBar}
 
-      <Card className="p-5 glass-card">
+      <Card className="p-3 sm:p-5 glass-card overflow-hidden">
         {browseMode === "list" ? (
           <div className="divide-y divide-border/60">
             {folderList.map((folder) => {
@@ -811,7 +825,7 @@ export default function ClienteDocumentsTab({
             })}
           </div>
         ) : (
-          <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-x-4 gap-y-6`}>
+          <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-x-3 sm:gap-x-4 gap-y-5 sm:gap-y-6 min-w-0`}>
             {folderList.map((folder) => {
               const count = clientOnly.filter((item) => item.folder === folder).length;
               return (
@@ -829,7 +843,7 @@ export default function ClienteDocumentsTab({
                       {count} item{count === 1 ? "" : "s"}
                     </span>
                   </button>
-                  <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-0 right-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     {folderActions(folder)}
                   </div>
                 </div>
