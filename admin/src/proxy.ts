@@ -12,7 +12,7 @@ const PUBLIC_PATHS = new Set([
   "/cadastro-parceiro",
 ]);
 
-const PUBLIC_PREFIXES = ["/api/auth", "/api/o/", "/api/public/"];
+const PUBLIC_PREFIXES = ["/api/auth", "/api/o/", "/api/r/", "/api/public/"];
 
 const PROTECTED_PREFIXES = [
   "/bi",
@@ -47,6 +47,9 @@ const LOGIN_RATE = { limit: 8, windowMs: 15 * 60 * 1000 };
 
 /** Links públicos compartilháveis: freia enumeração de códigos. */
 const SHARE_RATE = { limit: 60, windowMs: 15 * 60 * 1000 };
+
+/** Unlock de PIN (orçamento/recibo): teto grosso por IP; o bloqueio por código está na rota. */
+const SHARE_UNLOCK_IP_RATE = { limit: 20, windowMs: 15 * 60 * 1000 };
 
 const PUBLIC_SITE = "https://moveisunghero.com.br";
 
@@ -155,7 +158,21 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/api/o/")) {
+  if (
+    request.method === "POST" &&
+    /^\/api\/(o|r)\/[^/]+\/unlock$/.test(pathname)
+  ) {
+    const result = await checkRateLimitAsync(`share-pin-proxy:${ip}`, SHARE_UNLOCK_IP_RATE);
+    if (!result.ok) {
+      return rateLimitedJson(
+        `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        result.retryAfterSec,
+        SHARE_UNLOCK_IP_RATE.limit
+      );
+    }
+  }
+
+  if (pathname.startsWith("/api/o/") || pathname.startsWith("/api/r/")) {
     const result = await checkRateLimitAsync(`quote-unlock:${ip}`, SHARE_RATE);
     if (!result.ok) {
       return rateLimitedJson(
@@ -244,6 +261,7 @@ export const config = {
     "/api/auth/:path*",
     "/api/public/:path*",
     "/api/o/:path*",
+    "/api/r/:path*",
     "/bi/:path*",
     "/marketing/:path*",
     "/avaliar",

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPhoneLastFourDigits } from "@/lib/phone";
 import {
+  checkSharePinCodeLimit,
+  pinsMatch,
+  sharePinLockedResponse,
+} from "@/lib/sharePinUnlock";
+import {
   createReceiptShareUnlockToken,
   RECEIPT_SHARE_UNLOCK_MAX_AGE_SEC,
   receiptShareUnlockCookieName,
@@ -33,6 +38,11 @@ export async function POST(
     );
   }
 
+  const limited = await checkSharePinCodeLimit("receipt", code);
+  if (!limited.ok) {
+    return sharePinLockedResponse(limited.retryAfterSec);
+  }
+
   const receipt = await prisma.paymentReceipt.findFirst({
     where: { share_code: code },
     select: {
@@ -52,7 +62,7 @@ export async function POST(
     );
   }
 
-  if (pin !== expected) {
+  if (!pinsMatch(pin, expected)) {
     return NextResponse.json({ success: false, error: "Senha incorreta." }, { status: 401 });
   }
 
