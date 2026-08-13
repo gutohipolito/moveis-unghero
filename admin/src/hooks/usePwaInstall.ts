@@ -32,6 +32,8 @@ export function usePwaInstall() {
     if (dismissed || isStandaloneDisplay()) return;
 
     const onBeforeInstall = (e: Event) => {
+      // Guarda o evento para o botão "Instalar" do header. O Chrome loga um aviso
+      // ("Banner not shown") — é esperado, não é falha da página.
       e.preventDefault();
       deferredPromptRef.current = e as BeforeInstallPromptEvent;
       setCanInstall(true);

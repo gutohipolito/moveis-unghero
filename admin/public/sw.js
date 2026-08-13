@@ -1,4 +1,4 @@
-const CACHE_VERSION = "mu-admin-v9";
+const CACHE_VERSION = "mu-admin-v10";
 
 self.addEventListener("push", (event) => {
   let payload = {
@@ -36,7 +36,7 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_VERSION).then((cache) =>
-      cache.addAll(["/", "/pwa-icon/192", "/pwa-icon/512"]).catch(() => undefined)
+      cache.addAll(["/pwa-icon/192", "/pwa-icon/512"]).catch(() => undefined)
     )
   );
 });
@@ -73,6 +73,22 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
+function isNextManagedRequest(request, url) {
+  if (url.pathname.startsWith("/api/")) return true;
+  if (url.pathname.startsWith("/_next/")) return true;
+  if (url.pathname.startsWith("/quotes/")) return true;
+  if (url.searchParams.has("_rsc")) return true;
+  if (request.headers.get("RSC") === "1") return true;
+  if (request.headers.get("Next-Router-Prefetch")) return true;
+  if (request.headers.get("Next-Router-State-Tree")) return true;
+  if (request.headers.get("Next-Url")) return true;
+  return false;
+}
+
+function isPwaIcon(url) {
+  return url.pathname.startsWith("/pwa-icon/") || url.pathname.startsWith("/icon-mu");
+}
+
 function offlineFallback() {
   return new Response("Offline", {
     status: 503,
@@ -86,26 +102,31 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
-  // Deixa o navegador gerenciar assets Next, páginas dinâmicas e PDF
-  if (url.pathname.startsWith("/_next/")) return;
-  if (url.pathname.startsWith("/quotes/")) return;
+  // Prefetch RSC / chunks / API: o Next aborta essas requests — não virar 503 no console.
+  if (isNextManagedRequest(event.request, url)) return;
 
-  // Navegações: SEMPRE rede. Não servir uma página em cache no lugar de outra
-  // (isso causava "voltar de tela" no mobile quando a rede oscilava).
-  // Só usa o cache da própria URL como último recurso offline.
-  if (event.request.mode === "navigate") {
+  if (isPwaIcon(url)) {
     event.respondWith(
-      fetch(event.request).catch(async () => {
-        const cached = await caches.match(event.request);
-        return cached || offlineFallback();
-      })
+      caches.match(event.request).then(
+        (cached) =>
+          cached ||
+          fetch(event.request).then((res) => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy));
+            }
+            return res;
+          })
+      )
     );
     return;
   }
 
+  if (event.request.mode !== "navigate") return;
+
   event.respondWith(
-    fetch(event.request).catch(async () => {
+    fetch(event.request).catch(async (err) => {
+      if (err && err.name === "AbortError") throw err;
       const cached = await caches.match(event.request);
       return cached || offlineFallback();
     })
