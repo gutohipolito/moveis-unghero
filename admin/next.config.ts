@@ -5,6 +5,22 @@ import { fileURLToPath } from "url";
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.join(appDir, "..");
 
+const EMBED_ANCESTORS =
+  "'self' https://moveisunghero.com.br https://www.moveisunghero.com.br";
+
+/**
+ * CSP de contenção sem script-src/style-src.
+ * Next.js (hidratação), o script inline de privacidade do dashboard e os
+ * <style> de impressão/e-mail quebram com script-src/style-src sem nonce.
+ * Com 'unsafe-inline' a diretiva não conteria XSS — pior do que omitir.
+ */
+const BASE_CSP = [
+  `frame-ancestors ${EMBED_ANCESTORS}`,
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self'",
+].join("; ");
+
 const SECURITY_HEADERS = [
   // Painel interno: nunca indexar (mais forte que meta robots).
   { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
@@ -18,6 +34,7 @@ const SECURITY_HEADERS = [
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
+  { key: "Content-Security-Policy", value: BASE_CSP },
 ];
 
 const nextConfig: NextConfig = {
@@ -31,22 +48,11 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react"],
   },
   async headers() {
-    // Formulários públicos exibidos via iframe no site institucional
-    // (moveisunghero.com.br/cadastro, /orcamento, /cadastro-parceiro).
-    const frameAncestors =
-      "frame-ancestors 'self' https://moveisunghero.com.br https://www.moveisunghero.com.br";
-
     return [
       {
         source: "/:path*",
         headers: SECURITY_HEADERS,
       },
-      ...["/cadastro", "/briefing", "/cadastro-parceiro", "/cadastro-fornecedor", "/catalogos/:path*", "/parceiro", "/parceiro/:path*"].map(
-        (source) => ({
-          source,
-          headers: [{ key: "Content-Security-Policy", value: frameAncestors }],
-        })
-      ),
     ];
   },
 };
