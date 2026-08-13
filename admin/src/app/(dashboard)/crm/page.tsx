@@ -19,8 +19,8 @@ export default async function CRMPage() {
   const userCompanyId = await getSessionCompanyId();
 
   // Board first — colaboradores carregam no cliente (não bloqueiam o funil).
-  const [formattedProjects, preferences] = await Promise.all([
-    fetchCrmProjects(userCompanyId),
+  const [boardSnapshot, preferences] = await Promise.all([
+    fetchCrmProjects(userCompanyId, { scope: "active" }),
     getUserPreferences(),
   ]);
 
@@ -31,7 +31,8 @@ export default async function CRMPage() {
   return (
     <div className="md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:flex md:flex-col md:overflow-hidden space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
       <KanbanBoard
-        initialProjects={formattedProjects}
+        initialProjects={boardSnapshot.projects}
+        initialLostCount={boardSnapshot.lostCount}
         companyId={userCompanyId}
         initialFollowUpSla={initialFollowUpSla}
       />

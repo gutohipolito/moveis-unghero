@@ -12,7 +12,11 @@ import {
 } from "@/app/actions/operatorWorkspace";
 import { getMyTimeCards, getColaboradorMetrics } from "@/app/actions/ponto";
 import { getAuthContext } from "@/lib/auth-guard";
-import { fetchCrmProjects } from "@/lib/crmProjects";
+import {
+  fetchCrmProjectDetails,
+  fetchCrmProjects,
+  type CrmBoardQuery,
+} from "@/lib/crmProjects";
 import { fetchAgendaEvents, fetchFactoryBoard } from "@/lib/factoryBoard";
 import { buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
 import { prisma } from "@/lib/prisma";
@@ -26,24 +30,33 @@ async function assertCompanyAccess(companyId: string) {
   return auth;
 }
 
-export async function getCrmLiveSnapshot(companyId: string) {
+export async function getCrmLiveSnapshot(
+  companyId: string,
+  query: CrmBoardQuery = {}
+) {
   const auth = await assertCompanyAccess(companyId);
   if (!auth) return { success: false as const, error: "Não autenticado" };
 
   try {
-    const projects = await fetchCrmProjects(auth.companyId);
+    const snapshot = await fetchCrmProjects(auth.companyId, query);
     const version = buildLiveSnapshotVersion(
-      projects.map((project) => ({
+      snapshot.projects.map((project) => ({
         id: project.id,
         status: project.status_geral,
         updatedAt: project.updatedAt ?? "",
       }))
     );
-    return { success: true as const, projects, version };
+    return { success: true as const, ...snapshot, version };
   } catch (error) {
     console.warn("Falha ao sincronizar CRM:", error);
     return { success: false as const, error: "Não foi possível sincronizar o funil." };
   }
+}
+
+export async function getCrmProjectDetailsAction(projectId: string) {
+  const auth = await getAuthContext();
+  if (!auth) return { success: false as const, error: "Não autenticado" };
+  return fetchCrmProjectDetails(projectId);
 }
 
 export async function getFactoryLiveSnapshot(companyId: string) {

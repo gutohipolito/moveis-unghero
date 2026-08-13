@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { updateProjectStatus, createLead, updateProjectAction, markProjectContacted, markProjectAsLost, restoreProjectFromLoss, addProjectTimelineAction, updateProjectCommercialAction, markProjectNoteSeenAction, type ProjectStatus, type Origin } from "@/app/actions/kanban";
 import { updateProjectDetails } from "@/app/actions/project";
-import { getCrmLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { getCrmLiveSnapshot, getCrmProjectDetailsAction } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
 import { usePermissions } from "@/context/PermissionsContext";
 import { canMoveCrmCards } from "@/lib/permissions";
@@ -107,6 +107,8 @@ interface Project {
   obs_updated_by_name?: string | null;
   /** Observação nova ainda não aberta por este usuário. */
   hasUnreadNote?: boolean;
+  /** Briefing existe; o conteúdo completo só vem ao abrir o card. */
+  hasBriefing?: boolean;
   stage_entered_at?: string | null;
   conf_tecnica_resp1_id?: string | null;
   conf_tecnica_resp1Nome?: string | null;
@@ -184,6 +186,7 @@ interface Project {
 
 interface KanbanBoardProps {
   initialProjects: Project[];
+  initialLostCount?: number;
   companyId: string;
   initialFollowUpSla?: Partial<FollowUpSlaConfig> | null;
   /** Se omitido, carrega no cliente após o board pintar. */
@@ -213,6 +216,61 @@ function sortProjectsForFunnel<T extends {
     const bBump = b.obs_updated_at || b.updatedAt || b.createdAt || "";
     return bBump.localeCompare(aBump);
   });
+}
+
+function keepCrmCardDetails(previous: Project | undefined, incoming: Project): Project {
+  if (!previous) return incoming;
+  return {
+    ...incoming,
+    briefing: previous.briefing ?? incoming.briefing,
+    timeline:
+      previous.timeline && previous.timeline.length > 0
+        ? previous.timeline
+        : incoming.timeline,
+    hasBriefing: Boolean(previous.hasBriefing || incoming.hasBriefing || previous.briefing),
+  };
+}
+
+function mergeCrmBoard(
+  prev: Project[],
+  incoming: Project[],
+  removedIds: string[],
+  mode: "full" | "delta",
+  scope: "active" | "lost"
+): Project[] {
+  if (mode === "full" && scope === "lost") {
+    const active = prev.filter((p) => p.status_geral !== "PERDIDO");
+    const prevById = new Map(prev.map((p) => [p.id, p]));
+    return sortProjectsForFunnel([
+      ...active,
+      ...incoming.map((p) => keepCrmCardDetails(prevById.get(p.id), p)),
+    ]);
+  }
+
+  if (mode === "full") {
+    const prevById = new Map(prev.map((p) => [p.id, p]));
+    const nextActive = incoming.map((p) => keepCrmCardDetails(prevById.get(p.id), p));
+    const lost = prev.filter((p) => p.status_geral === "PERDIDO");
+    return sortProjectsForFunnel([...nextActive, ...lost]);
+  }
+
+  const removed = new Set(removedIds);
+  const byId = new Map(prev.map((p) => [p.id, p]));
+  for (const id of removed) {
+    const current = byId.get(id);
+    if (!current) continue;
+    if (scope === "lost") {
+      byId.delete(id);
+      continue;
+    }
+    if (current.status_geral !== "PERDIDO") {
+      byId.delete(id);
+    }
+  }
+  for (const project of incoming) {
+    byId.set(project.id, keepCrmCardDetails(byId.get(project.id), project));
+  }
+  return sortProjectsForFunnel([...byId.values()]);
 }
 
 /** Avanço rápido: próxima etapa segue a ordem visual das colunas do funil. */
@@ -540,6 +598,7 @@ function BoardViewMobileSwitch({
 
 export default function KanbanBoard({
   initialProjects,
+  initialLostCount = 0,
   companyId,
   colaboradores: initialColaboradores = [],
   initialFollowUpSla = null,
@@ -551,6 +610,8 @@ export default function KanbanBoard({
   const funnelColumns = isOpsLimited ? OPS_FUNNEL_COLUMNS : FUNNEL_COLUMNS;
   const sensitive = useSensitiveDisplay();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [lostCount, setLostCount] = useState(initialLostCount);
+  const [lostLoaded, setLostLoaded] = useState(false);
   const [colaboradores, setColaboradores] = useState(initialColaboradores);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -623,10 +684,39 @@ export default function KanbanBoard({
 
   const [loading, setLoading] = useState(false);
 
+  const projectsRef = useRef(projects);
+  projectsRef.current = projects;
+  const boardViewRef = useRef(boardView);
+  boardViewRef.current = boardView;
+
   const syncCrm = useCallback(async () => {
-    const result = await getCrmLiveSnapshot(companyId);
-    if (result.success && result.projects) {
-      setProjects(sortProjectsForFunnel(result.projects as Project[]));
+    const list = projectsRef.current;
+    const scope = boardViewRef.current === "perdas" ? "lost" : "active";
+    const scoped =
+      scope === "lost"
+        ? list.filter((p) => p.status_geral === "PERDIDO")
+        : list.filter((p) => p.status_geral !== "PERDIDO");
+    const since = scoped.reduce((max, project) => {
+      const stamp = project.updatedAt || "";
+      return stamp > max ? stamp : max;
+    }, "");
+    const result = await getCrmLiveSnapshot(companyId, {
+      scope,
+      since: since || null,
+      knownIds: scoped.map((project) => project.id),
+    });
+    if (!result.success) return;
+    setProjects((prev) =>
+      mergeCrmBoard(
+        prev,
+        result.projects as Project[],
+        result.removedIds,
+        result.mode,
+        scope
+      )
+    );
+    if (typeof result.lostCount === "number") {
+      setLostCount(result.lostCount);
     }
   }, [companyId]);
 
@@ -653,6 +743,26 @@ export default function KanbanBoard({
   useEffect(() => {
     if (boardView !== "funil") setBannersExpanded(false);
   }, [boardView]);
+
+  useEffect(() => {
+    if (boardView !== "perdas" || lostLoaded || isOpsLimited) return;
+    let cancelled = false;
+    setLostLoaded(true);
+    void (async () => {
+      const result = await getCrmLiveSnapshot(companyId, { scope: "lost" });
+      if (cancelled || !result.success) {
+        if (!cancelled) setLostLoaded(false);
+        return;
+      }
+      setProjects((prev) =>
+        mergeCrmBoard(prev, result.projects as Project[], [], "full", "lost")
+      );
+      setLostCount(result.lostCount);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardView, companyId, isOpsLimited, lostLoaded]);
 
   useEffect(() => {
     const local = loadFollowUpSlaLocal();
@@ -751,7 +861,7 @@ export default function KanbanBoard({
     setEditingStatusGeral(project.status_geral as ProjectStatus);
     setEditingObservacoes(project.observacoes || "");
     setEditingProjectTimeline(project.timeline || []);
-    setActiveModalTab(project.briefing ? "briefing" : "negociacao");
+    setActiveModalTab(project.briefing || project.hasBriefing ? "briefing" : "negociacao");
     setLeadForm({
       nome: project.client.nome,
       email: hasRealClientEmail(project.client.email) ? project.client.email : "",
@@ -777,6 +887,30 @@ export default function KanbanBoard({
       );
       void markProjectNoteSeenAction(project.id);
     }
+
+    const needsDetails =
+      (Boolean(project.hasBriefing) && !project.briefing) ||
+      !project.timeline ||
+      project.timeline.length === 0;
+    if (!needsDetails) return;
+
+    void (async () => {
+      const details = await getCrmProjectDetailsAction(project.id);
+      if (!details.success) return;
+      setEditingProjectTimeline(details.timeline);
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === project.id
+            ? {
+                ...p,
+                timeline: details.timeline,
+                briefing: details.briefing as Project["briefing"],
+                hasBriefing: Boolean(details.briefing || p.hasBriefing),
+              }
+            : p
+        )
+      );
+    })();
   };
 
   // Deep-link da notificação: /crm?nota={projectId}
@@ -1018,6 +1152,7 @@ export default function KanbanBoard({
             : p
         )
       );
+      setLostCount((count) => count + 1);
       setLossModalProject(null);
       setLossMotivo("");
       showSuccess("Lead marcado como perda", `${lossModalProject.client.nome} foi movido para Perdas.`);
@@ -1041,6 +1176,7 @@ export default function KanbanBoard({
         )
       );
       showSuccess("Lead reativado", `${project.client.nome} voltou para Prospecção.`);
+      setLostCount((count) => Math.max(0, count - 1));
       setBoardView("funil");
     } else {
       showError("Erro", "Não foi possível reativar o lead.");
@@ -1146,6 +1282,7 @@ export default function KanbanBoard({
               : p
           )
         );
+        setLostCount((count) => count + movedIds.length);
         showSuccess(
           "SLA de perdas aplicado",
           `${movedIds.length} lead(s) movido(s) automaticamente para Perdas.`
@@ -1851,7 +1988,7 @@ export default function KanbanBoard({
                 value={boardView}
                 onChange={setBoardView}
                 pendingCount={pendingCount}
-                lostCount={lostProjects.length}
+                lostCount={lostCount}
               />
             </div>
             <div className="hidden md:block">
@@ -1866,7 +2003,7 @@ export default function KanbanBoard({
                     label: "Pendências comerciais",
                     badge: pendingCount,
                   },
-                  { value: "perdas", label: "Perdas", badge: lostProjects.length },
+                  { value: "perdas", label: "Perdas", badge: lostCount },
                 ]}
               />
             </div>
@@ -1945,8 +2082,14 @@ export default function KanbanBoard({
           </p>
           {lostProjects.length === 0 ? (
             <div className="empty-state">
-              <p className="empty-state-title">Nenhuma perda registrada</p>
-              <p className="empty-state-desc">Leads marcados como perda aparecerão aqui.</p>
+              <p className="empty-state-title">
+                {lostCount > 0 ? "Carregando perdas…" : "Nenhuma perda registrada"}
+              </p>
+              <p className="empty-state-desc">
+                {lostCount > 0
+                  ? "Buscando os leads marcados como perda."
+                  : "Leads marcados como perda aparecerão aqui."}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -2088,7 +2231,9 @@ export default function KanbanBoard({
         {(() => {
           const currentProject = projects.find((p) => p.id === editingProjectId);
           if (!currentProject) return null;
-          const hasBriefing = !isOpsLimited && !!currentProject.briefing;
+          const hasBriefing =
+            !isOpsLimited &&
+            Boolean(currentProject.hasBriefing || currentProject.briefing);
           const canMarkLoss =
             !isOpsLimited &&
             COMMERCIAL_LOSS_STATUSES.includes(
@@ -2125,7 +2270,11 @@ export default function KanbanBoard({
                 </div>
               ) : null}
 
-              {activeModalTab === "briefing" && currentProject.briefing ? (
+              {activeModalTab === "briefing" && !currentProject.briefing ? (
+                <div className="p-8 flex items-center justify-center text-sm text-muted-foreground">
+                  Carregando briefing…
+                </div>
+              ) : activeModalTab === "briefing" && currentProject.briefing ? (
                 <div className="p-5 sm:p-6 bg-[#f8f7f5] flex-1 min-h-0 overflow-y-auto overscroll-contain">
 <div className="space-y-5 animate-in fade-in duration-200">
                   {/* Grid de duas colunas assimétricas para UX Copilot */}
