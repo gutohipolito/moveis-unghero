@@ -9,6 +9,7 @@ import {
   Clock,
   FileText,
   Globe,
+  ImageIcon,
   Layers,
   Mail,
   MapPin,
@@ -33,6 +34,7 @@ import {
 } from "@/app/actions/partnerCommissions";
 import PartnerCommissionsTab from "@/components/PartnerCommissionsTab";
 import ParceiroComprovantesTab from "@/components/ParceiroComprovantesTab";
+import ParceiroImagesTab from "@/components/parceiros/ParceiroImagesTab";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Card } from "@/components/ui/card";
 import HowToAccordion from "@/components/ui/HowToAccordion";
@@ -49,8 +51,16 @@ import {
 } from "@/lib/partnerTypes";
 import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
 import { primaryPortfolioUrl } from "@/lib/portfolioUrls";
+import { countPartnerImages } from "@/lib/partnerImages";
 
-type DetailTab = "overview" | "projects" | "comissoes" | "comprovantes" | "timeline" | "notas";
+type DetailTab =
+  | "overview"
+  | "projects"
+  | "imagens"
+  | "comissoes"
+  | "comprovantes"
+  | "timeline"
+  | "notas";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -126,6 +136,7 @@ export default function ParceiroDetailsClient({
     if (
       tab === "overview" ||
       tab === "projects" ||
+      tab === "imagens" ||
       tab === "comissoes" ||
       tab === "comprovantes" ||
       tab === "timeline" ||
@@ -250,9 +261,7 @@ export default function ParceiroDetailsClient({
     (sum, proj) => sum + Number(proj.valor_previsto || 0),
     0
   );
-  const imagesList = parceiro.imagens
-    ? parceiro.imagens.split(",").filter(Boolean)
-    : [];
+  const imagesCount = countPartnerImages(parceiro.imagens);
   const portfolio = primaryPortfolioUrl(parceiro.portfolioUrl);
 
   const notesPreview = (parceiro.observacoes ?? "").trim();
@@ -262,6 +271,11 @@ export default function ParceiroDetailsClient({
       id: "projects",
       label: `Projetos (${projectCount})`,
       icon: <Layers className="h-3.5 w-3.5" />,
+    },
+    {
+      id: "imagens",
+      label: imagesCount > 0 ? `Imagens (${imagesCount})` : "Imagens",
+      icon: <ImageIcon className="h-3.5 w-3.5" />,
     },
     {
       id: "comissoes",
@@ -483,6 +497,10 @@ export default function ParceiroDetailsClient({
                   visitas e follow-ups. Observações permanentes ficam em{" "}
                   <strong className="text-foreground">Notas</strong>.
                 </li>
+                <li>
+                  Em <strong className="text-foreground">Imagens</strong>, organize fotos por pastas
+                  (portfólio, obras, referências).
+                </li>
               </ol>
             </HowToAccordion>
             {!hidePartnerValues && (
@@ -534,32 +552,14 @@ export default function ParceiroDetailsClient({
                 Ver histórico de atividades →
               </button>
             )}
-
-            <div className="pt-2 border-t border-border/40 space-y-2">
-              <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                Galeria ({imagesList.length})
-              </h3>
-              {imagesList.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Sem fotos. Adicione pela lista de parceiros (ícone na card).
-                </p>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {imagesList.map((img, idx) => (
-                    <div
-                      key={img}
-                      className="aspect-square rounded-xl overflow-hidden border border-slate-100 bg-slate-50"
-                    >
-                      <img
-                        src={img}
-                        alt={`Foto ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab("imagens")}
+              className="text-[11px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Abrir imagens por pastas
+              {imagesCount > 0 ? ` (${imagesCount})` : ""} →
+            </button>
           </Card>
         </div>
       )}
@@ -607,6 +607,19 @@ export default function ParceiroDetailsClient({
             </div>
           )}
         </Card>
+      )}
+
+      {activeTab === "imagens" && (
+        <ParceiroImagesTab
+          partnerId={parceiro.id}
+          imagensRaw={parceiro.imagens}
+          canManage={canManage && !isReadOnly}
+          onImagensChange={(imagens) =>
+            setParceiro((prev) => ({ ...prev, imagens }))
+          }
+          showError={showError}
+          confirmAction={confirmAction}
+        />
       )}
 
       {activeTab === "comissoes" && !isOpsLimited && (

@@ -88,6 +88,16 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
  */
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    title: "Imagens do parceiro por pastas",
+    summary:
+      "A ficha de projetistas e arquitetos ganha aba Imagens no estilo Finder, para organizar fotos por pasta.",
+    items: [
+      "Pastas com ícone dourado e capa da primeira foto",
+      "Criar, renomear, excluir pastas e enviar várias fotos de uma vez",
+      "Compatível com a galeria antiga (CSV) — migra ao salvar",
+    ],
+  },
+  {
     title: "Origem do projetista e arquiteto",
     summary:
       "O cadastro de parceiros no painel passa a pedir a mesma origem do formulário público.",
