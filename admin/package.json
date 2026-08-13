@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && tsx scripts/prisma-migrate-deploy.ts && next build",
+    "db:migrate": "prisma migrate deploy",
     "start": "next start",
     "lint": "eslint",
     "generate-vapid": "tsx scripts/generate-vapid.ts",

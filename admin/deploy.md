@@ -72,16 +72,19 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 ---
 
-## 🛠️ Passo 1: Preparar o Banco de Dados (Neon PostgreSQL)
+## 🛠️ Passo 1: Banco de Dados (Neon PostgreSQL)
 
-1. Acesse o console do **Neon** (`https://neon.tech`).
-2. Vá nas configurações do seu banco e certifique-se de usar a connection string pooling.
-3. Se quiser rodar a estrutura do banco e injetar os dados de demonstração iniciais:
+O schema evolui **só** com Prisma Migrate. O build de produção na Vercel (`VERCEL_ENV=production`) roda `prisma migrate deploy` antes do `next build`. Preview não aplica DDL.
+
+1. Acesse o console do **Neon** (`https://neon.tech`) e use a connection string pooling em `DATABASE_URL`.
+2. Se a Neon/Vercel expuser `DATABASE_URL_UNPOOLED` (ou `DIRECT_DATABASE_URL`), o migrate usa essa URL — o pooler não aceita advisory lock.
+3. **Primeira vez / banco vazio:**
    ```bash
    cd admin
-   npx prisma db push
+   npx prisma migrate deploy
    npx prisma db seed
    ```
+4. **Mudança de schema:** `npx prisma migrate dev --name descricao_curta` (gera pasta em `prisma/migrations/`). Não rode SQL solto no Neon e não use `prisma db push` em produção.
 
 ---
 
