@@ -35,6 +35,7 @@ Durante a configuração do deploy na Vercel, você precisará adicionar as segu
 | :--- | :--- | :--- |
 | `DATABASE_URL` | URL de conexão segura com o Neon PostgreSQL (ex: `postgresql://neondb_owner:***@ep-***.aws.neon.tech/neondb?sslmode=require`) | Neon Console |
 | `BETTER_AUTH_SECRET` | Uma hash aleatória longa para assinar as sessões de login. | Gerado via terminal |
+| `ACCESS_VAULT_SECRET` | Chave **distinta** de `BETTER_AUTH_SECRET` para AES-256-GCM do cofre (senhas de acessos e caixas de e-mail). Sem ela, o cofre cai no segredo de sessão — evite. Depois de definir, rode `npm run reencrypt-vault`. | `openssl rand -hex 32` |
 | `BETTER_AUTH_URL` | URL de produção do seu admin: `https://admin.moveisunghero.com.br` | Domínio final |
 | `NEXT_PUBLIC_BETTER_AUTH_URL` | Mesma URL pública descrita acima: `https://admin.moveisunghero.com.br` | Domínio final |
 | `ADMIN_SETUP_SECRET` | Secret para criar o primeiro administrador via `/api/create-admin-prod` | Gerado via terminal |

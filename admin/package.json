@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "generate-vapid": "tsx scripts/generate-vapid.ts"
+    "generate-vapid": "tsx scripts/generate-vapid.ts",
+    "reencrypt-vault": "tsx scripts/reencrypt-access-vault.ts"
   },
   "dependencies": {
     "@google-analytics/data": "^6.1.0",
