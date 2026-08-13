@@ -5,15 +5,17 @@ import { getAuthContext } from "@/lib/auth-guard";
 import { canManageParceiros } from "@/lib/permissions";
 import {
   addPartnerFolder,
-  addPartnerImage,
+  addPartnerImages,
   parsePartnerGallery,
   removePartnerFolder,
   removePartnerImage,
   renamePartnerFolder,
   serializePartnerGallery,
 } from "@/lib/partnerImages";
+import sharp from "sharp";
 
 const PARTNER_IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const PARTNER_UPLOAD_MAX_FILES = 20;
 const PARTNER_IMAGE_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -21,6 +23,61 @@ const PARTNER_IMAGE_MIME_TYPES = new Set([
   "image/heic",
   "image/heif",
 ]);
+
+async function optimizePartnerImage(file: File): Promise<{
+  buffer: Buffer;
+  contentType: string;
+  ext: string;
+}> {
+  const input = Buffer.from(await file.arrayBuffer());
+  try {
+    const buffer = await sharp(input)
+      .rotate()
+      .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer();
+    return { buffer, contentType: "image/webp", ext: "webp" };
+  } catch (error) {
+    console.warn("Sharp não converteu a imagem; envia o original:", error);
+    const mimeType = file.type || "application/octet-stream";
+    const ext = file.name.includes(".")
+      ? file.name.split(".").pop() || "jpg"
+      : mimeType.split("/")[1] || "jpg";
+    return { buffer: input, contentType: mimeType, ext };
+  }
+}
+
+async function storePartnerImage(params: {
+  file: File;
+  companyId: string;
+  partnerId: string;
+  uploadType: string;
+}): Promise<string> {
+  const optimized = await optimizePartnerImage(params.file);
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    const mockupImages = [
+      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=800&q=80",
+    ];
+    if (params.uploadType === "avatar") {
+      return "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&h=256&q=80";
+    }
+    return mockupImages[Math.floor(Math.random() * mockupImages.length)];
+  }
+
+  const pathname = `partners/${params.companyId}/${params.partnerId}/${params.uploadType}/${Date.now()}-${crypto.randomUUID()}.${optimized.ext}`;
+  const blob = await put(pathname, optimized.buffer, {
+    access: "public",
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+    contentType: optimized.contentType,
+  });
+  return blob.url;
+}
 
 function denyWrite(cargo: string | null | undefined) {
   if (!canManageParceiros(cargo)) {
@@ -77,69 +134,45 @@ export async function POST(
     });
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
+  const files = formData
+    .getAll("file")
+    .filter((item): item is File => item instanceof File && item.size > 0);
+
+  if (files.length === 0) {
     return NextResponse.json({ success: false, error: "Arquivo inválido." }, { status: 400 });
   }
 
-  if (file.size > PARTNER_IMAGE_MAX_BYTES) {
+  if (files.length > PARTNER_UPLOAD_MAX_FILES) {
     return NextResponse.json(
-      { success: false, error: "Arquivo excede o limite de 10 MB." },
+      { success: false, error: `Envie no máximo ${PARTNER_UPLOAD_MAX_FILES} fotos por vez.` },
       { status: 400 }
     );
   }
 
-  const mimeType = file.type || "application/octet-stream";
-  if (!PARTNER_IMAGE_MIME_TYPES.has(mimeType)) {
-    return NextResponse.json(
-      { success: false, error: "Formato não suportado. Use JPG, PNG ou WEBP." },
-      { status: 400 }
-    );
-  }
-
-  const safeName = file.name.replace(/[^\w.\-() ]+/g, "_").slice(0, 120);
-  const ext = safeName.includes(".") ? safeName.split(".").pop() : mimeType.split("/")[1];
-
-  let fileUrl = "";
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    console.warn(
-      "BLOB_READ_WRITE_TOKEN não configurado. Utilizando fallback mockup para testes locais."
-    );
-    const mockupImages = [
-      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=800&q=80",
-    ];
-    if (uploadType === "avatar") {
-      fileUrl =
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&h=256&q=80";
-    } else {
-      fileUrl = mockupImages[Math.floor(Math.random() * mockupImages.length)];
-    }
-  } else {
-    try {
-      const pathname = `partners/${auth.companyId}/${partnerId}/${uploadType}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const blob = await put(pathname, file, {
-        access: "public",
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: mimeType,
-      });
-      fileUrl = blob.url;
-    } catch (error) {
-      console.error("Erro no upload para Vercel Blob:", error);
+  for (const file of files) {
+    if (file.size > PARTNER_IMAGE_MAX_BYTES) {
       return NextResponse.json(
-        { success: false, error: "Falha ao salvar no storage." },
-        { status: 500 }
+        { success: false, error: `"${file.name}" excede o limite de 10 MB.` },
+        { status: 400 }
+      );
+    }
+    const mimeType = file.type || "application/octet-stream";
+    if (!PARTNER_IMAGE_MIME_TYPES.has(mimeType)) {
+      return NextResponse.json(
+        { success: false, error: `"${file.name}" não é um formato suportado. Use JPG, PNG ou WEBP.` },
+        { status: 400 }
       );
     }
   }
 
   try {
     if (uploadType === "avatar") {
+      const fileUrl = await storePartnerImage({
+        file: files[0],
+        companyId: auth.companyId,
+        partnerId,
+        uploadType: "avatar",
+      });
       const updatedPartner = await prisma.professionalPartner.update({
         where: { id: partnerId },
         data: { fotoUrl: fileUrl },
@@ -148,7 +181,19 @@ export async function POST(
     }
 
     const folder = String(formData.get("folder") || "");
-    const gallery = addPartnerImage(parsePartnerGallery(partner.imagens), fileUrl, folder);
+    const urls: string[] = [];
+    for (const file of files) {
+      urls.push(
+        await storePartnerImage({
+          file,
+          companyId: auth.companyId,
+          partnerId,
+          uploadType: "galeria",
+        })
+      );
+    }
+
+    const gallery = addPartnerImages(parsePartnerGallery(partner.imagens), urls, folder);
     const updatedPartner = await prisma.professionalPartner.update({
       where: { id: partnerId },
       data: { imagens: serializePartnerGallery(gallery) },
@@ -157,7 +202,8 @@ export async function POST(
     return NextResponse.json({
       success: true,
       partner: updatedPartner,
-      fileUrl,
+      fileUrl: urls[0],
+      fileUrls: urls,
       gallery,
     });
   } catch (error) {

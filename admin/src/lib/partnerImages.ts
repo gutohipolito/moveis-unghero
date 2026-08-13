@@ -122,10 +122,20 @@ export function addPartnerImage(
   url: string,
   folder?: string
 ): PartnerGallery {
+  return addPartnerImages(gallery, [url], folder);
+}
+
+export function addPartnerImages(
+  gallery: PartnerGallery,
+  urls: string[],
+  folder?: string
+): PartnerGallery {
   const folderName = normalizeFolderName(folder || "") || PARTNER_DEFAULT_FOLDER;
+  const extra = urls.filter(Boolean).map((url) => ({ url, folder: folderName }));
+  if (extra.length === 0) return gallery;
   return {
     folders: uniqueFolders([...gallery.folders, folderName], gallery.images),
-    images: [...gallery.images, { url, folder: folderName }],
+    images: [...gallery.images, ...extra],
   };
 }
 

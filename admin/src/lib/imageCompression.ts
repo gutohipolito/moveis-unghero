@@ -46,7 +46,12 @@ export async function compressImageFile(
       canvas.toBlob((b) => resolve(b), "image/webp", quality)
     );
 
-    if (!blob || blob.size >= file.size) {
+    if (!blob) {
+      return file;
+    }
+
+    // Sempre preferir WebP quando o resultado não inflar demais (PNG/JPEG grandes caem bem).
+    if (blob.size > file.size * 1.15 && file.type === "image/webp") {
       return file;
     }
 

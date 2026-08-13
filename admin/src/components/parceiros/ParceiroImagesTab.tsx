@@ -28,13 +28,13 @@ import {
 
 type BrowseMode = "folders" | "list";
 type PhotoMode = "grid" | "list";
-type GridCols = 2 | 3 | 4;
+type GridCols = 3 | 4 | 5;
 
 const PREFS_KEY = "mu-partner-images-view";
 const GRID_COL_CLASS: Record<GridCols, string> = {
-  2: "grid-cols-2",
-  3: "grid-cols-2 sm:grid-cols-3",
-  4: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+  3: "grid-cols-3",
+  4: "grid-cols-3 sm:grid-cols-4",
+  5: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5",
 };
 
 function fileNameFromUrl(url: string) {
@@ -70,6 +70,7 @@ export default function ParceiroImagesTab({
 }: ParceiroImagesTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -95,7 +96,7 @@ export default function ParceiroImagesTab({
       if (saved.photoMode === "grid" || saved.photoMode === "list") {
         setPhotoMode(saved.photoMode);
       }
-      if (saved.gridCols === 2 || saved.gridCols === 3 || saved.gridCols === 4) {
+      if (saved.gridCols === 3 || saved.gridCols === 4 || saved.gridCols === 5) {
         setGridCols(saved.gridCols);
       }
     } catch {
@@ -224,32 +225,46 @@ export default function ParceiroImagesTab({
 
   async function uploadFiles(fileList: FileList | null) {
     if (!canManage || !openFolder || !fileList?.length) return;
+    const files = Array.from(fileList).slice(0, 20);
+    if (fileList.length > 20) {
+      showError(
+        "Muitas fotos",
+        "Envie no máximo 20 fotos por vez. As primeiras 20 serão enviadas agora."
+      );
+    }
     setBusy(true);
     try {
-      for (const file of Array.from(fileList)) {
+      const formData = new FormData();
+      formData.append("type", "galeria");
+      formData.append("folder", openFolder);
+      setUploadProgress(
+        files.length === 1 ? "Otimizando foto…" : `Otimizando ${files.length} fotos…`
+      );
+      for (const file of files) {
         const compressed = await compressImageFile(file, {
-          maxDimension: 1600,
-          quality: 0.82,
+          maxDimension: 1920,
+          quality: 0.8,
         });
-        const formData = new FormData();
-        formData.append("file", compressed, file.name);
-        formData.append("type", "galeria");
-        formData.append("folder", openFolder);
-        const res = await fetch(`/api/partners/${partnerId}/images`, {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          showError("Upload falhou", data.error || "Não foi possível enviar a foto.");
-          break;
-        }
-        applyPartner(data.partner, data.gallery);
+        formData.append("file", compressed, compressed.name);
       }
+      setUploadProgress(
+        files.length === 1 ? "Enviando foto…" : `Enviando ${files.length} fotos…`
+      );
+      const res = await fetch(`/api/partners/${partnerId}/images`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showError("Upload falhou", data.error || "Não foi possível enviar as fotos.");
+        return;
+      }
+      applyPartner(data.partner, data.gallery);
     } catch {
       showError("Erro de conexão", "Falha ao enviar as fotos.");
     } finally {
       setBusy(false);
+      setUploadProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -512,7 +527,7 @@ export default function ParceiroImagesTab({
             </div>
             {photoMode === "grid" && (
               <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
-                {([2, 3, 4] as GridCols[]).map((cols) => (
+                {([3, 4, 5] as GridCols[]).map((cols) => (
                   <button
                     key={cols}
                     type="button"
@@ -543,6 +558,7 @@ export default function ParceiroImagesTab({
                   type="button"
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
+                  title="Selecione várias fotos de uma vez. Elas são otimizadas e convertidas para WebP."
                   className="text-xs font-bold gap-1.5 btn-metallic h-9"
                 >
                   {busy ? (
@@ -556,6 +572,9 @@ export default function ParceiroImagesTab({
             )}
           </div>
         </div>
+        {uploadProgress ? (
+          <p className="text-[11px] text-muted-foreground">{uploadProgress}</p>
+        ) : null}
 
         <Card className="p-4 glass-card">{renderPhotos(folderImages)}</Card>
         {previewModal}
@@ -602,7 +621,7 @@ export default function ParceiroImagesTab({
           </div>
           {browseMode === "folders" && (
             <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
-              {([2, 3, 4] as GridCols[]).map((cols) => (
+              {([3, 4, 5] as GridCols[]).map((cols) => (
                 <button
                   key={cols}
                   type="button"
