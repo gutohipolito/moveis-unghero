@@ -26,7 +26,7 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
       "Aprovação parcial por item, múltiplos orçamentos aprovados e vínculo com arquitetos/parceiros",
       "Catálogo de produtos e mostruário visual, com catálogos em PDF/imagem",
       "Contratos em papel timbrado com templates editáveis",
-      "Parceiros (projetistas e arquitetos) com projetos, fotos e consulta de CNPJ",
+      "Parceiros (projetistas e arquitetos) com projetos, fotos, consulta de CNPJ e histórico comercial na ficha",
     ],
   },
   {
@@ -87,6 +87,16 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
  * Cada bloco é um “pacote” de entrega, não um commit isolado.
  */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    title: "Histórico do projetista e arquiteto",
+    summary:
+      "A ficha de parceiros passa a ter a mesma linha do tempo comercial da ficha de cliente.",
+    items: [
+      "Aba Linha do Tempo com assunto, detalhe, data e autor",
+      "Evento automático de cadastro e registro ao liberar ou suspender o portal",
+      "Aba Notas para observações permanentes, editáveis na própria ficha",
+    ],
+  },
   {
     title: "Endereços padronizados",
     summary:

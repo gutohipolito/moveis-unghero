@@ -3,7 +3,7 @@
 import { getClients, getClientDetailsAction } from "@/app/actions/cliente";
 import { getColaboradores } from "@/app/actions/colaboradores";
 import { getCatalogGroups, getCatalogItemsBySlug } from "@/app/actions/cadastros";
-import { getParceiros } from "@/app/actions/parceiros";
+import { getParceiroById, getParceiros } from "@/app/actions/parceiros";
 import { getInventoryAndSuppliers } from "@/app/actions/estoque";
 import { getQuotes } from "@/app/actions/quotes";
 import {
@@ -300,6 +300,46 @@ export async function getParceirosLiveSnapshot(companyId: string) {
   } catch (error) {
     console.warn("Falha ao sincronizar parceiros:", error);
     return { success: false as const, error: "Não foi possível sincronizar parceiros." };
+  }
+}
+
+export async function getParceiroDetailsLiveSnapshot(partnerId: string) {
+  const auth = await getAuthContext();
+  if (!auth) return { success: false as const, error: "Não autenticado" };
+
+  try {
+    const result = await getParceiroById(partnerId);
+    if (!result.success || !result.parceiro) {
+      return { success: false as const, error: result.error || "Parceiro não encontrado" };
+    }
+
+    const activities = result.activities ?? [];
+    const version = buildLiveSnapshotVersion([
+      {
+        id: result.parceiro.id,
+        nome: result.parceiro.nome,
+        ativo: result.parceiro.ativo ? 1 : 0,
+        observacoes: result.parceiro.observacoes ?? "",
+      },
+      ...activities.map((activity) => ({
+        kind: "activity",
+        id: activity.id,
+        data: activity.data,
+      })),
+    ]);
+
+    return {
+      success: true as const,
+      parceiro: {
+        ...result.parceiro,
+        createdAt: new Date(result.parceiro.createdAt),
+      },
+      activities,
+      version,
+    };
+  } catch (error) {
+    console.warn("Falha ao sincronizar ficha do parceiro:", error);
+    return { success: false as const, error: "Não foi possível sincronizar o parceiro." };
   }
 }
 

@@ -26,6 +26,7 @@ export default async function ParceiroDetailsPage({ params }: RouteParams) {
         ...res.parceiro,
         createdAt: new Date(res.parceiro.createdAt),
       }}
+      initialActivities={res.activities ?? []}
       companyId={companyId}
     />
   );

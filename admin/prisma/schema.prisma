@@ -105,6 +105,7 @@ model User {
   partnerCommissionsCreated PartnerCommission[] @relation("PartnerCommissionCreator")
   projectsObsUpdated        Project[]           @relation("ProjectObsUpdater")
   projectNoteReads          ProjectNoteRead[]
+  partnerTimeline           PartnerTimeline[]
 }
 
 enum Role {
@@ -282,6 +283,7 @@ model ProfessionalPartner {
   projectFiles           PartnerProjectFile[]
   commissions            PartnerCommission[]
   suggestions            Suggestion[]
+  timeline               PartnerTimeline[]
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 }
@@ -834,6 +836,20 @@ model Timeline {
   interno_sotamente Boolean  @default(true)
 
   @@index([project_id, data])
+  @@index([user_id])
+}
+
+/** Histórico comercial da ficha do projetista/arquiteto (não vai para o projeto do cliente). */
+model PartnerTimeline {
+  id         String              @id @default(uuid())
+  partner_id String
+  partner    ProfessionalPartner @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  user_id    String
+  user       User                @relation(fields: [user_id], references: [id])
+  acao       String
+  data       DateTime            @default(now())
+
+  @@index([partner_id, data])
   @@index([user_id])
 }
 

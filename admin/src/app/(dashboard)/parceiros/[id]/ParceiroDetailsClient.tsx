@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
+  Clock,
   FileText,
   Globe,
   Layers,
@@ -13,10 +14,20 @@ import {
   MapPin,
   Percent,
   Phone,
+  Send,
+  ShieldCheck,
   User,
 } from "lucide-react";
-import type { ParceiroDTO } from "@/app/actions/parceiros";
-import { updateParceiro } from "@/app/actions/parceiros";
+import type { ParceiroDTO, PartnerActivity } from "@/app/actions/parceiros";
+import {
+  addParceiroActivityAction,
+  updateParceiro,
+  updateParceiroObservacoesAction,
+} from "@/app/actions/parceiros";
+import { getParceiroDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { useLiveEntity } from "@/context/LiveSyncContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   getPartnerCommissionTotals,
 } from "@/app/actions/partnerCommissions";
@@ -38,7 +49,7 @@ import {
 import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
 import { primaryPortfolioUrl } from "@/lib/portfolioUrls";
 
-type DetailTab = "overview" | "projects" | "comissoes" | "comprovantes";
+type DetailTab = "overview" | "projects" | "comissoes" | "comprovantes" | "timeline" | "notas";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -71,11 +82,13 @@ function projectStatusClass(status: string) {
 
 interface ParceiroDetailsClientProps {
   initialParceiro: ParceiroDTO;
+  initialActivities: PartnerActivity[];
   companyId: string;
 }
 
 export default function ParceiroDetailsClient({
   initialParceiro,
+  initialActivities,
 }: ParceiroDetailsClientProps) {
   const searchParams = useSearchParams();
   const dialog = useActionDialog();
@@ -86,7 +99,16 @@ export default function ParceiroDetailsClient({
   const canManage = canManageParceiros(role);
 
   const [parceiro, setParceiro] = useState(initialParceiro);
+  const [activities, setActivities] = useState<PartnerActivity[]>(initialActivities);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [isSubmittingNote, setIsSubmittingNote] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [notesValue, setNotesValue] = useState(initialParceiro.observacoes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
   const [togglingAccess, setTogglingAccess] = useState(false);
   const [commissionTotals, setCommissionTotals] = useState<{
     pendente: number;
@@ -104,17 +126,38 @@ export default function ParceiroDetailsClient({
       tab === "overview" ||
       tab === "projects" ||
       tab === "comissoes" ||
-      tab === "comprovantes"
+      tab === "comprovantes" ||
+      tab === "timeline" ||
+      tab === "notas"
     ) {
       setActiveTab(tab);
     }
   }, [searchParams]);
 
   useEffect(() => {
-    if (isOpsLimited && (activeTab === "comissoes" || activeTab === "comprovantes")) {
+    if (
+      isOpsLimited &&
+      (activeTab === "comissoes" || activeTab === "comprovantes" || activeTab === "timeline")
+    ) {
       setActiveTab("overview");
     }
   }, [isOpsLimited, activeTab]);
+
+  const syncParceiroDetails = useCallback(async () => {
+    const result = await getParceiroDetailsLiveSnapshot(parceiro.id);
+    if (result.success && result.parceiro) {
+      setParceiro(result.parceiro);
+      if (result.activities) setActivities(result.activities);
+      if (typeof result.parceiro.observacoes === "string") {
+        setNotesValue(result.parceiro.observacoes);
+      }
+    }
+  }, [parceiro.id]);
+
+  useLiveEntity("parceiros", {
+    sync: syncParceiroDetails,
+    enabled: !isSubmittingNote && !savingNotes && !togglingAccess,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -148,6 +191,7 @@ export default function ParceiroDetailsClient({
             return;
           }
           setParceiro((prev) => ({ ...prev, ativo: next }));
+          void syncParceiroDetails();
           showSuccess(
             next ? "Portal liberado" : "Portal suspenso",
             next
@@ -159,6 +203,38 @@ export default function ParceiroDetailsClient({
         }
       },
     });
+  }
+
+  async function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canManage || isReadOnly || !newTitle.trim() || !newDesc.trim()) return;
+    setIsSubmittingNote(true);
+    setNoteError(null);
+    const res = await addParceiroActivityAction(parceiro.id, newTitle, newDesc);
+    if (res.success) {
+      setActivities((prev) => [res.activity, ...prev]);
+      setNewTitle("");
+      setNewDesc("");
+    } else {
+      setNoteError(res.error ?? "Não foi possível salvar a anotação.");
+    }
+    setIsSubmittingNote(false);
+  }
+
+  async function handleSaveNotes(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canManage || isReadOnly) return;
+    setSavingNotes(true);
+    setNotesError(null);
+    const res = await updateParceiroObservacoesAction(parceiro.id, notesValue);
+    if (!res.success) {
+      setNotesError(res.error ?? "Não foi possível salvar as notas.");
+      setSavingNotes(false);
+      return;
+    }
+    setParceiro((prev) => ({ ...prev, observacoes: notesValue.trim() || null }));
+    setNotesSaved(true);
+    setSavingNotes(false);
   }
 
   const style = PARTNER_TYPE_STYLES[parceiro.tipo];
@@ -178,6 +254,7 @@ export default function ParceiroDetailsClient({
     : [];
   const portfolio = primaryPortfolioUrl(parceiro.portfolioUrl);
 
+  const notesPreview = (parceiro.observacoes ?? "").trim();
   const tabs: { id: DetailTab; label: string; icon: React.ReactNode; hide?: boolean }[] = [
     { id: "overview", label: "Visão geral", icon: <User className="h-3.5 w-3.5" /> },
     {
@@ -197,6 +274,13 @@ export default function ParceiroDetailsClient({
       icon: <FileText className="h-3.5 w-3.5" />,
       hide: isOpsLimited,
     },
+    {
+      id: "timeline",
+      label: "Linha do Tempo",
+      icon: <Clock className="h-3.5 w-3.5" />,
+      hide: isOpsLimited,
+    },
+    { id: "notas", label: "Notas", icon: <FileText className="h-3.5 w-3.5" /> },
   ];
 
   return (
@@ -385,6 +469,11 @@ export default function ParceiroDetailsClient({
                   Em <strong className="text-foreground">Comprovantes</strong>, reabra os documentos
                   já emitidos para imprimir ou enviar ao parceiro.
                 </li>
+                <li>
+                  Na <strong className="text-foreground">Linha do Tempo</strong>, registre ligações,
+                  visitas e follow-ups. Observações permanentes ficam em{" "}
+                  <strong className="text-foreground">Notas</strong>.
+                </li>
               </ol>
             </HowToAccordion>
             {!hidePartnerValues && (
@@ -406,17 +495,35 @@ export default function ParceiroDetailsClient({
           </Card>
 
           <Card className="p-5 space-y-3">
-            <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-              Observações internas
-            </h3>
-            {parceiro.observacoes ? (
-              <p className="text-xs text-foreground/80 leading-relaxed italic bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                “{parceiro.observacoes}”
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                Observações internas
+              </h3>
+              <button
+                type="button"
+                onClick={() => setActiveTab("notas")}
+                className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+              >
+                Abrir notas
+              </button>
+            </div>
+            {notesPreview ? (
+              <p className="text-xs text-foreground/80 leading-relaxed italic bg-slate-50 border border-slate-100 rounded-xl p-3.5 line-clamp-4">
+                “{notesPreview}”
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Nenhuma observação cadastrada. Edite o parceiro na lista para incluir.
+                Sem observações permanentes. Eventos com data ficam na Linha do Tempo.
               </p>
+            )}
+            {!isOpsLimited && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("timeline")}
+                className="text-[11px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Ver histórico de atividades →
+              </button>
             )}
 
             <div className="pt-2 border-t border-border/40 space-y-2">
@@ -506,6 +613,197 @@ export default function ParceiroDetailsClient({
 
       {activeTab === "comprovantes" && !isOpsLimited && (
         <ParceiroComprovantesTab partnerId={parceiro.id} />
+      )}
+
+      {activeTab === "timeline" && !isOpsLimited && (
+        <div className="space-y-6">
+          <Card className="p-5 glass-card space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/40 pb-2">
+              <div>
+                <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                  Registrar atividade
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Histórico comercial com data e autor. Observações permanentes ficam em{" "}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("notas")}
+                    className="font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    Notas
+                  </button>
+                  .
+                </p>
+              </div>
+            </div>
+            {canManage && !isReadOnly ? (
+              <form onSubmit={handleAddNote} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground block">
+                    Assunto / Título
+                  </label>
+                  <Input
+                    required
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="border-border bg-slate-50 text-xs py-1"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground block">
+                    Detalhamento
+                  </label>
+                  <textarea
+                    required
+                    value={newDesc}
+                    onChange={(e) => setNewDesc(e.target.value)}
+                    className="w-full h-16 bg-slate-50 border border-border rounded-lg text-xs p-2 outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                {noteError && (
+                  <p className="text-xs text-red-600 font-medium">{noteError}</p>
+                )}
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={isSubmittingNote}
+                    className="text-xs font-bold gap-1.5 btn-metallic h-8 py-0"
+                  >
+                    <Send className="h-3 w-3" />{" "}
+                    {isSubmittingNote ? "Registrando..." : "Publicar no Histórico"}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Seu cargo só visualiza o histórico deste parceiro.
+              </p>
+            )}
+          </Card>
+
+          <Card className="p-5 glass-card space-y-4">
+            <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">
+              Histórico de atividades
+            </h3>
+            <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
+              {activities.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum evento registrado no histórico deste parceiro.
+                </p>
+              ) : (
+                activities.map((act) => {
+                  const isRegistration = act.tipo === "cadastro";
+                  return (
+                    <div key={act.id} className="relative group">
+                      <span
+                        className={`absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs transition-transform group-hover:scale-125 ${
+                          isRegistration ? "bg-emerald-500" : "bg-primary"
+                        }`}
+                      />
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <strong className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            {isRegistration ? (
+                              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                            ) : null}
+                            {act.titulo}
+                          </strong>
+                          <span className="text-[10px] font-semibold text-muted-foreground shrink-0 tabular-nums">
+                            {new Date(act.data).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        {act.descricao ? (
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {act.descricao}
+                          </p>
+                        ) : null}
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                            isRegistration
+                              ? "text-emerald-700 bg-emerald-50"
+                              : "text-primary/70 bg-primary/5"
+                          }`}
+                        >
+                          {isRegistration ? (
+                            <ShieldCheck className="h-2.5 w-2.5" />
+                          ) : (
+                            <User className="h-2.5 w-2.5" />
+                          )}
+                          {isRegistration
+                            ? "Registro automático"
+                            : `Registrado por: ${act.autor}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "notas" && (
+        <Card className="p-5 glass-card space-y-3">
+          <div className="flex items-center justify-between gap-3 border-b border-border/40 pb-2">
+            <h3 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <FileText className="h-4 w-4 text-primary" /> Observações permanentes
+            </h3>
+            {notesSaved && (
+              <span className="text-[11px] font-bold text-emerald-600">Salvo ✓</span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Preferências, contexto e combinados com o parceiro. Para eventos com data e autor,
+            use a{" "}
+            {!isOpsLimited ? (
+              <button
+                type="button"
+                onClick={() => setActiveTab("timeline")}
+                className="font-bold text-primary hover:underline cursor-pointer"
+              >
+                Linha do Tempo
+              </button>
+            ) : (
+              "Linha do Tempo"
+            )}
+            .
+          </p>
+          <form onSubmit={handleSaveNotes} className="space-y-3">
+            <textarea
+              value={notesValue}
+              onChange={(e) => {
+                setNotesValue(e.target.value);
+                setNotesSaved(false);
+              }}
+              disabled={!canManage || isReadOnly}
+              className="w-full min-h-40 bg-slate-50 border border-border rounded-xl text-sm p-3 outline-none focus:ring-1 focus:ring-primary leading-relaxed whitespace-pre-line disabled:opacity-70"
+            />
+            {notesError && (
+              <p className="text-xs text-red-600 font-medium">{notesError}</p>
+            )}
+            {canManage && !isReadOnly && (
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={
+                    savingNotes || notesValue === (parceiro.observacoes ?? "")
+                  }
+                  className="text-xs font-bold gap-1.5 btn-metallic"
+                >
+                  <Send className="h-3.5 w-3.5" />{" "}
+                  {savingNotes ? "Salvando..." : "Salvar notas"}
+                </Button>
+              </div>
+            )}
+          </form>
+        </Card>
       )}
 
       <ActionDialogHost dialog={dialog} />

@@ -121,12 +121,19 @@ async function fingerprintCatalog(companyId: string) {
 }
 
 async function fingerprintPartners(companyId: string) {
-  const agg = await prisma.professionalPartner.aggregate({
-    where: { company_id: companyId },
-    _count: true,
-    _max: { updatedAt: true },
-  });
-  return versionFromAgg(agg);
+  const [agg, timeline] = await Promise.all([
+    prisma.professionalPartner.aggregate({
+      where: { company_id: companyId },
+      _count: true,
+      _max: { updatedAt: true },
+    }),
+    prisma.partnerTimeline.aggregate({
+      where: { partner: { company_id: companyId } },
+      _count: true,
+      _max: { data: true },
+    }),
+  ]);
+  return `${versionFromAgg(agg)}|${timeline._count}:${timeline._max.data?.toISOString() ?? ""}`;
 }
 
 async function fingerprintColaboradores(companyId: string) {

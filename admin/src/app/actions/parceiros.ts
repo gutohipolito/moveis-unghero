@@ -3,12 +3,13 @@
 import { PartnerQuoteCardMode, PartnerType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma, isDatabaseOffline } from "@/lib/prisma";
-import { assertCompanyAccess, getAuthContext } from "@/lib/auth-guard";
+import { assertCompanyAccess } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
-import { canManageParceiros } from "@/lib/permissions";
+import { canManageParceiros, isOpsLimitedRole } from "@/lib/permissions";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
 import { maybeRedactForRole } from "@/lib/viewerRedact";
+import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 
 const QUOTE_CARD_MODES = new Set<PartnerQuoteCardMode>([
   "HIDDEN",
@@ -61,6 +62,15 @@ export interface ParceiroDTO {
     };
   }[];
   createdAt: Date;
+}
+
+export interface PartnerActivity {
+  id: string;
+  data: string;
+  titulo: string;
+  descricao: string;
+  autor: string;
+  tipo?: "cadastro" | "nota";
 }
 
 const parceiroDetailInclude = {
@@ -193,7 +203,14 @@ export async function getParceiroById(partnerId: string) {
 
     const mapped = mapParceiroRow(row);
     const [redacted] = maybeRedactForRole([mapped], auth.cargo);
-    return { success: true as const, parceiro: redacted ?? mapped };
+    const activities = isOpsLimitedRole(auth.cargo)
+      ? []
+      : await loadParceiroActivities(row.id, row.createdAt, row.tipo, row.origem, row.nome);
+    return {
+      success: true as const,
+      parceiro: redacted ?? mapped,
+      activities,
+    };
   } catch (error) {
     console.error("Erro ao buscar parceiro:", error);
     return { success: false as const, error: "Falha ao carregar parceiro.", parceiro: null };
@@ -356,11 +373,24 @@ export async function updateParceiro(
 
     revalidatePath("/parceiros");
     revalidatePath(`/parceiros/${id}`);
-    if (data.ativo !== undefined) {
+    if (data.ativo !== undefined && data.ativo !== existing.ativo) {
       const { invalidateCompanyNotifications } = await import(
         "@/lib/fetchCompanyNotifications"
       );
       invalidateCompanyNotifications(auth.companyId);
+      try {
+        await prisma.partnerTimeline.create({
+          data: {
+            partner_id: id,
+            user_id: auth.userId,
+            acao: data.ativo
+              ? "Portal liberado — Parceiro pode entrar em /parceiro com e-mail, telefone e código."
+              : "Portal suspenso — Login do parceiro bloqueado até nova liberação.",
+          },
+        });
+      } catch (error) {
+        console.warn("Falha ao registrar histórico de portal do parceiro:", error);
+      }
     }
     return { success: true, parceiro: parceiro as unknown as ParceiroDTO };
   } catch (error: unknown) {
@@ -396,4 +426,134 @@ export async function deleteParceiro(id: string) {
     console.error("Erro ao excluir parceiro:", error);
     return { success: false, error: error instanceof Error ? error.message : "Erro ao excluir." };
   }
+}
+
+function mapPartnerTimelineToActivity(entry: {
+  id: string;
+  data: Date;
+  acao: string;
+  user: { name: string };
+}): PartnerActivity {
+  const separator = " — ";
+  const idx = entry.acao.indexOf(separator);
+  if (idx === -1) {
+    return {
+      id: entry.id,
+      data: entry.data.toISOString(),
+      titulo: entry.acao,
+      descricao: "",
+      autor: entry.user.name,
+    };
+  }
+  return {
+    id: entry.id,
+    data: entry.data.toISOString(),
+    titulo: entry.acao.slice(0, idx),
+    descricao: entry.acao.slice(idx + separator.length),
+    autor: entry.user.name,
+  };
+}
+
+function buildParceiroRegistrationActivity(
+  partnerId: string,
+  cadastroEm: Date,
+  tipo: PartnerType,
+  origem: string | null,
+  nome: string
+): PartnerActivity {
+  const formatted = cadastroEm.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const papel = getPartnerRoleLabel(tipo, nome);
+  const origemLabel = origem?.trim() || "não informada";
+  return {
+    id: `registration-${partnerId}`,
+    data: cadastroEm.toISOString(),
+    titulo: "Cadastro criado",
+    descricao: `${papel} registrado na base em ${formatted}. Origem: ${origemLabel}.`,
+    autor: "Sistema",
+    tipo: "cadastro",
+  };
+}
+
+async function loadParceiroActivities(
+  partnerId: string,
+  createdAt: Date,
+  tipo: PartnerType,
+  origem: string | null,
+  nome: string
+): Promise<PartnerActivity[]> {
+  const entries = await prisma.partnerTimeline.findMany({
+    where: { partner_id: partnerId },
+    include: { user: { select: { name: true } } },
+    orderBy: { data: "desc" },
+  });
+  return [
+    ...entries.map(mapPartnerTimelineToActivity),
+    buildParceiroRegistrationActivity(partnerId, createdAt, tipo, origem, nome),
+  ];
+}
+
+export async function addParceiroActivityAction(
+  partnerId: string,
+  titulo: string,
+  descricao: string
+) {
+  const auth = await getWriteAccess("parceiros");
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado" };
+  }
+  if (isOpsLimitedRole(auth.cargo)) {
+    return { success: false as const, error: "Linha do tempo não disponível para este cargo." };
+  }
+  const denied = denyParceiroMutation(auth.cargo);
+  if (denied) return { success: false as const, error: denied };
+
+  if (isDatabaseOffline()) {
+    return { success: false as const, error: "Banco de dados indisponível." };
+  }
+
+  const title = titulo.trim();
+  const detail = descricao.trim();
+  if (!title || !detail) {
+    return { success: false as const, error: "Assunto e detalhamento são obrigatórios." };
+  }
+
+  const partner = await prisma.professionalPartner.findFirst({
+    where: { id: partnerId, company_id: auth.companyId },
+    select: { id: true },
+  });
+  if (!partner) {
+    return { success: false as const, error: "Parceiro não encontrado." };
+  }
+
+  try {
+    const entry = await prisma.partnerTimeline.create({
+      data: {
+        partner_id: partnerId,
+        user_id: auth.userId,
+        acao: `${title} — ${detail}`,
+      },
+      include: { user: { select: { name: true } } },
+    });
+    revalidatePath(`/parceiros/${partnerId}`);
+    return {
+      success: true as const,
+      activity: mapPartnerTimelineToActivity(entry),
+    };
+  } catch (error) {
+    console.error("Erro ao registrar atividade do parceiro:", error);
+    return { success: false as const, error: "Não foi possível salvar a atividade." };
+  }
+}
+
+export async function updateParceiroObservacoesAction(
+  partnerId: string,
+  observacoes: string
+) {
+  return updateParceiro(partnerId, { observacoes });
 }
