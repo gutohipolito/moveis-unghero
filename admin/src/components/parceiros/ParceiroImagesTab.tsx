@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   FolderPlus,
   ImageIcon,
+  LayoutGrid,
+  List,
   Loader2,
   Pencil,
   Trash2,
@@ -21,7 +23,28 @@ import {
   imagesInFolder,
   parsePartnerGallery,
   type PartnerGallery,
+  type PartnerImageItem,
 } from "@/lib/partnerImages";
+
+type BrowseMode = "folders" | "list";
+type PhotoMode = "grid" | "list";
+type GridCols = 2 | 3 | 4;
+
+const PREFS_KEY = "mu-partner-images-view";
+const GRID_COL_CLASS: Record<GridCols, string> = {
+  2: "grid-cols-2",
+  3: "grid-cols-2 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+};
+
+function fileNameFromUrl(url: string) {
+  try {
+    const last = decodeURIComponent(url.split("/").pop() || "foto");
+    return last.replace(/\?.*$/, "") || "foto";
+  } catch {
+    return "foto";
+  }
+}
 
 interface ParceiroImagesTabProps {
   partnerId: string;
@@ -53,6 +76,39 @@ export default function ParceiroImagesTab({
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [browseMode, setBrowseMode] = useState<BrowseMode>("folders");
+  const [photoMode, setPhotoMode] = useState<PhotoMode>("grid");
+  const [gridCols, setGridCols] = useState<GridCols>(3);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(PREFS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        browseMode?: BrowseMode;
+        photoMode?: PhotoMode;
+        gridCols?: GridCols;
+      };
+      if (saved.browseMode === "folders" || saved.browseMode === "list") {
+        setBrowseMode(saved.browseMode);
+      }
+      if (saved.photoMode === "grid" || saved.photoMode === "list") {
+        setPhotoMode(saved.photoMode);
+      }
+      if (saved.gridCols === 2 || saved.gridCols === 3 || saved.gridCols === 4) {
+        setGridCols(saved.gridCols);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PREFS_KEY,
+      JSON.stringify({ browseMode, photoMode, gridCols })
+    );
+  }, [browseMode, photoMode, gridCols]);
 
   const gallery = useMemo(() => parsePartnerGallery(imagensRaw), [imagensRaw]);
   const totalImages = countPartnerImages(imagensRaw);
@@ -226,6 +282,188 @@ export default function ParceiroImagesTab({
     });
   }
 
+  function folderActions(folder: string) {
+    if (!canManage) return null;
+    return (
+      <div className="flex gap-0.5 shrink-0">
+        <button
+          type="button"
+          title="Renomear"
+          onClick={(e) => {
+            e.stopPropagation();
+            setRenamingFolder(folder);
+            setRenameValue(folder);
+          }}
+          className="p-1.5 rounded-lg bg-white border border-border text-muted-foreground hover:text-foreground cursor-pointer shadow-xs"
+        >
+          <Pencil className="h-3 w-3" />
+        </button>
+        <button
+          type="button"
+          title="Excluir pasta"
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteFolder(folder);
+          }}
+          className="p-1.5 rounded-lg bg-white border border-border text-muted-foreground hover:text-rose-600 cursor-pointer shadow-xs"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+
+  function renderPhotos(items: PartnerImageItem[]) {
+    if (items.length === 0) {
+      return (
+        <div className="py-14 text-center space-y-2">
+          <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">Pasta vazia.</p>
+          {canManage ? (
+            <p className="text-xs text-muted-foreground">
+              Adicione fotos de projetos, renders ou referências.
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (photoMode === "list") {
+      return (
+        <div className="divide-y divide-border/60">
+          {items.map((item) => (
+            <div
+              key={item.url}
+              className="flex items-center gap-3 py-2 first:pt-0 last:pb-0"
+            >
+              <button
+                type="button"
+                onClick={() => setPreviewUrl(item.url)}
+                className="h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-border/60 bg-slate-50 cursor-pointer"
+              >
+                <img src={item.url} alt="" className="h-full w-full object-cover" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewUrl(item.url)}
+                className="min-w-0 flex-1 text-left cursor-pointer"
+              >
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {fileNameFromUrl(item.url)}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Foto</p>
+              </button>
+              {canManage && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => deleteImage(item.url)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 cursor-pointer"
+                  title="Excluir foto"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-3`}>
+        {items.map((item) => (
+          <div
+            key={item.url}
+            className="group relative aspect-square rounded-xl overflow-hidden border border-border/60 bg-slate-50"
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewUrl(item.url)}
+              className="absolute inset-0 cursor-pointer"
+            >
+              <img
+                src={item.url}
+                alt=""
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+            </button>
+            {canManage && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => deleteImage(item.url)}
+                className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/65 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                title="Excluir foto"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const previewModal = (
+    <ModalShell
+      open={Boolean(previewUrl)}
+      onClose={() => setPreviewUrl(null)}
+      panelClassName="max-w-4xl w-full bg-transparent border-none shadow-none"
+      bodyClassName="flex items-center justify-center p-0 min-h-[12rem]"
+    >
+      {previewUrl ? (
+        <img
+          src={previewUrl}
+          alt=""
+          className="max-h-[70vh] w-full object-contain rounded-lg bg-slate-950"
+        />
+      ) : null}
+    </ModalShell>
+  );
+
+  const renameBar =
+    renamingFolder && canManage ? (
+      <Card className="p-4 glass-card flex flex-col sm:flex-row gap-2 sm:items-end">
+        <div className="flex-1 space-y-1">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            Renomear pasta
+          </label>
+          <Input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void renameFolder(renamingFolder);
+              }
+            }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setRenamingFolder(null);
+              setRenameValue("");
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={busy || !renameValue.trim()}
+            onClick={() => void renameFolder(renamingFolder)}
+            className="btn-metallic"
+          >
+            Salvar
+          </Button>
+        </div>
+      </Card>
+    ) : null;
+
   if (openFolder) {
     return (
       <div className="space-y-4">
@@ -245,93 +483,82 @@ export default function ParceiroImagesTab({
               </p>
             </div>
           </div>
-          {canManage && (
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => void uploadFiles(e.target.files)}
-              />
-              <Button
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+              <button
                 type="button"
-                disabled={busy}
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs font-bold gap-1.5 btn-metallic h-9"
+                onClick={() => setPhotoMode("grid")}
+                className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[11px] font-bold cursor-pointer ${
+                  photoMode === "grid"
+                    ? "bg-white text-foreground shadow-xs"
+                    : "text-muted-foreground"
+                }`}
               >
-                {busy ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Upload className="h-3.5 w-3.5" />
-                )}
-                Adicionar fotos
-              </Button>
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Grade
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhotoMode("list")}
+                className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[11px] font-bold cursor-pointer ${
+                  photoMode === "list"
+                    ? "bg-white text-foreground shadow-xs"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+                Lista
+              </button>
             </div>
-          )}
+            {photoMode === "grid" && (
+              <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+                {([2, 3, 4] as GridCols[]).map((cols) => (
+                  <button
+                    key={cols}
+                    type="button"
+                    title={`${cols} por linha`}
+                    onClick={() => setGridCols(cols)}
+                    className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold tabular-nums cursor-pointer ${
+                      gridCols === cols
+                        ? "bg-white text-foreground shadow-xs"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {cols}
+                  </button>
+                ))}
+              </div>
+            )}
+            {canManage && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => void uploadFiles(e.target.files)}
+                />
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-bold gap-1.5 btn-metallic h-9"
+                >
+                  {busy ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  Adicionar fotos
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        <Card className="p-4 glass-card">
-          {folderImages.length === 0 ? (
-            <div className="py-14 text-center space-y-2">
-              <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">Pasta vazia.</p>
-              {canManage ? (
-                <p className="text-xs text-muted-foreground">
-                  Adicione fotos de projetos, renders ou referências.
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {folderImages.map((item) => (
-                <div
-                  key={item.url}
-                  className="group relative aspect-square rounded-xl overflow-hidden border border-border/60 bg-slate-50"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setPreviewUrl(item.url)}
-                    className="absolute inset-0 cursor-pointer"
-                  >
-                    <img
-                      src={item.url}
-                      alt=""
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  </button>
-                  {canManage && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => deleteImage(item.url)}
-                      className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/65 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      title="Excluir foto"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <ModalShell
-          open={Boolean(previewUrl)}
-          onClose={() => setPreviewUrl(null)}
-          panelClassName="max-w-4xl w-full bg-transparent border-none shadow-none"
-          bodyClassName="flex items-center justify-center p-0 min-h-[12rem]"
-        >
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt=""
-              className="max-h-[70vh] w-full object-contain rounded-lg bg-slate-950"
-            />
-          ) : null}
-        </ModalShell>
+        <Card className="p-4 glass-card">{renderPhotos(folderImages)}</Card>
+        {previewModal}
       </div>
     );
   }
@@ -340,24 +567,71 @@ export default function ParceiroImagesTab({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-foreground">Imagens por pastas</h3>
+          <h3 className="text-sm font-bold text-foreground">Imagens</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Organize fotos do escritório e das obras como no Finder.
+            Pastas para organizar fotos do escritório e das obras.
             {totalImages > 0 ? ` ${totalImages} foto${totalImages === 1 ? "" : "s"} no total.` : ""}
           </p>
         </div>
-        {canManage && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy}
-            onClick={() => setCreatingFolder(true)}
-            className="text-xs font-bold gap-1.5 h-9"
-          >
-            <FolderPlus className="h-3.5 w-3.5" />
-            Nova pasta
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setBrowseMode("folders")}
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[11px] font-bold cursor-pointer ${
+                browseMode === "folders"
+                  ? "bg-white text-foreground shadow-xs"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Pastas
+            </button>
+            <button
+              type="button"
+              onClick={() => setBrowseMode("list")}
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[11px] font-bold cursor-pointer ${
+                browseMode === "list"
+                  ? "bg-white text-foreground shadow-xs"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              Lista
+            </button>
+          </div>
+          {browseMode === "folders" && (
+            <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+              {([2, 3, 4] as GridCols[]).map((cols) => (
+                <button
+                  key={cols}
+                  type="button"
+                  title={`${cols} por linha`}
+                  onClick={() => setGridCols(cols)}
+                  className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold tabular-nums cursor-pointer ${
+                    gridCols === cols
+                      ? "bg-white text-foreground shadow-xs"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {cols}
+                </button>
+              ))}
+            </div>
+          )}
+          {canManage && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setCreatingFolder(true)}
+              className="text-xs font-bold gap-1.5 h-9"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+              Nova pasta
+            </Button>
+          )}
+        </div>
       </div>
 
       {creatingFolder && canManage && (
@@ -402,16 +676,50 @@ export default function ParceiroImagesTab({
         </Card>
       )}
 
+      {renameBar}
+
       <Card className="p-5 glass-card">
         {gallery.folders.length === 0 ? (
           <div className="py-14 text-center text-sm text-muted-foreground">
             Nenhuma pasta ainda.
           </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-6">
+        ) : browseMode === "list" ? (
+          <div className="divide-y divide-border/60">
             {gallery.folders.map((folder) => {
               const imgs = imagesInFolder(gallery, folder);
-              const cover = imgs[0]?.url ?? null;
+              return (
+                <div
+                  key={folder}
+                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0 group"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFolder(folder)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
+                  >
+                    <div className="h-10 w-10 shrink-0">
+                      <FinderFolderIcon />
+                    </div>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-foreground truncate">
+                        {folder}
+                      </span>
+                      <span className="block text-[10px] text-muted-foreground tabular-nums">
+                        {imgs.length} item{imgs.length === 1 ? "" : "s"}
+                      </span>
+                    </span>
+                  </button>
+                  <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    {folderActions(folder)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={`grid ${GRID_COL_CLASS[gridCols]} gap-x-4 gap-y-6`}>
+            {gallery.folders.map((folder) => {
+              const imgs = imagesInFolder(gallery, folder);
               return (
                 <div key={folder} className="group relative">
                   <button
@@ -419,7 +727,7 @@ export default function ParceiroImagesTab({
                     onClick={() => setOpenFolder(folder)}
                     className="w-full text-center cursor-pointer rounded-xl p-2 -m-2 hover:bg-slate-50/80 transition-colors"
                   >
-                    <FinderFolderIcon previewUrl={cover} />
+                    <FinderFolderIcon />
                     <span className="mt-2 block text-[12px] font-semibold text-foreground leading-snug line-clamp-2">
                       {folder}
                     </span>
@@ -427,76 +735,15 @@ export default function ParceiroImagesTab({
                       {imgs.length} item{imgs.length === 1 ? "" : "s"}
                     </span>
                   </button>
-                  {canManage && (
-                    <div className="absolute top-0 right-0 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        title="Renomear"
-                        onClick={() => {
-                          setRenamingFolder(folder);
-                          setRenameValue(folder);
-                        }}
-                        className="p-1.5 rounded-lg bg-white border border-border text-muted-foreground hover:text-foreground cursor-pointer shadow-xs"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Excluir pasta"
-                        onClick={() => deleteFolder(folder)}
-                        className="p-1.5 rounded-lg bg-white border border-border text-muted-foreground hover:text-rose-600 cursor-pointer shadow-xs"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {folderActions(folder)}
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </Card>
-
-      {renamingFolder && canManage && (
-        <Card className="p-4 glass-card flex flex-col sm:flex-row gap-2 sm:items-end">
-          <div className="flex-1 space-y-1">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              Renomear pasta
-            </label>
-            <Input
-              autoFocus
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void renameFolder(renamingFolder);
-                }
-              }}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setRenamingFolder(null);
-                setRenameValue("");
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              disabled={busy || !renameValue.trim()}
-              onClick={() => void renameFolder(renamingFolder)}
-              className="btn-metallic"
-            >
-              Salvar
-            </Button>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
