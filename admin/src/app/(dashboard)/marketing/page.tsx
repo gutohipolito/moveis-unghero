@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { guardModule } from "@/lib/moduleAccess";
-import { getClients } from "@/app/actions/cliente";
+import { getClientsForWhatsAppMessaging } from "@/app/actions/cliente";
 import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -26,7 +26,7 @@ export default async function MarketingPage() {
 
   const companyId = session?.user?.company_id || "mock-company-id";
   const [clientsResponse, mailboxesResponse] = await Promise.all([
-    getClients(companyId),
+    getClientsForWhatsAppMessaging(companyId),
     listEmailMailboxesForUser().catch(() => ({
       success: false as const,
       data: [] as Awaited<ReturnType<typeof listEmailMailboxesForUser>>["data"],

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import Link from "next/link";
 import { 
@@ -17,6 +17,7 @@ import {
   PlusCircle,
   UserPlus,
   Users,
+  Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,9 @@ import { Button } from "@/components/ui/button";
 import { 
   createClientAction, 
   updateClientAction, 
-  deleteClientAction, 
+  deleteClientAction,
+  getClientsPage,
+  type ClientsListFacets,
 } from "@/app/actions/cliente";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,7 +40,6 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Dialog } from "@/components/ui/dialog";
 import { formatPhoneDisplay } from "@/lib/phone";
 import { resolveClientLocation } from "@/lib/clientLocation";
-import { getClientsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { maskPhone, maskEmail, maskDocument } from "@/lib/maskSensitive";
@@ -110,6 +112,8 @@ interface Client {
 
 interface ClientesClientProps {
   initialClients: Client[];
+  initialTotal: number;
+  initialFacets: ClientsListFacets;
   companyId: string;
   initialPageSize?: number;
 }
@@ -141,8 +145,17 @@ function isNewClient(client: { createdAt?: string | null }, now: number) {
   return now - created <= NEW_CLIENT_WINDOW_MS;
 }
 
-export default function ClientesClient({ initialClients, companyId, initialPageSize = 20 }: ClientesClientProps) {
+export default function ClientesClient({
+  initialClients,
+  initialTotal,
+  initialFacets,
+  companyId,
+  initialPageSize = 20,
+}: ClientesClientProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [total, setTotal] = useState(initialTotal);
+  const [facets, setFacets] = useState<ClientsListFacets>(initialFacets);
+  const [listLoading, setListLoading] = useState(false);
   const { sensitiveHidden } = usePrivacy();
   const { role, isOpsLimited } = usePermissions();
   /** Marceneiro: lista só nome, bairro, cidade e projetos. */
@@ -154,6 +167,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
   const [filterCidade, setFilterCidade] = useState<string>("ALL");
   const [filterBairro, setFilterBairro] = useState<string>("ALL");
@@ -183,53 +197,88 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
   const [valorPrevisto, setValorPrevisto] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const syncClients = useCallback(async () => {
-    const result = await getClientsLiveSnapshot(companyId);
-    if (result.success && result.clients) {
+  const requestIdRef = useRef(0);
+  const skipInitialFetch = useRef(true);
+  const queryRef = useRef({
+    page,
+    pageSize,
+    search: debouncedSearch,
+    origin: filterOrigin,
+    cidade: filterCidade,
+    bairro: filterBairro,
+    tipo: activeTipoTab,
+    recency: filterRecency,
+  });
+  queryRef.current = {
+    page,
+    pageSize,
+    search: debouncedSearch,
+    origin: filterOrigin,
+    cidade: filterCidade,
+    bairro: filterBairro,
+    tipo: activeTipoTab,
+    recency: filterRecency,
+  };
+
+  const fetchList = useCallback(async () => {
+    const q = queryRef.current;
+    const id = ++requestIdRef.current;
+    setListLoading(true);
+    const result = await getClientsPage({
+      companyId,
+      page: q.page,
+      pageSize: q.pageSize,
+      search: q.search,
+      origin: q.origin,
+      cidade: q.cidade,
+      bairro: q.bairro,
+      tipo: q.tipo,
+      recency: q.recency,
+    });
+    if (id !== requestIdRef.current) return;
+    setListLoading(false);
+    if (result.success) {
       setClients(result.clients as Client[]);
+      setTotal(result.total);
+      setFacets(result.facets);
+      const lastPage = Math.max(1, Math.ceil(result.total / q.pageSize));
+      if (q.page > lastPage) setPage(lastPage);
     }
   }, [companyId]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const filtersKey = `${debouncedSearch}|${filterOrigin}|${filterCidade}|${filterBairro}|${activeTipoTab}|${filterRecency}|${pageSize}`;
+  const prevFiltersKey = useRef(filtersKey);
+
+  useEffect(() => {
+    const filtersChanged = prevFiltersKey.current !== filtersKey;
+    prevFiltersKey.current = filtersKey;
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
+    void fetchList();
+  }, [fetchList, filtersKey, page]);
+
   useLiveEntity("clients", {
-    sync: syncClients,
-    enabled: !loading && !isCreateOpen && !isEditOpen && !isProjectModalOpen,
+    sync: fetchList,
+    enabled: !loading && !listLoading && !isCreateOpen && !isEditOpen && !isProjectModalOpen,
+    skipInitialSync: true,
   });
 
   const now = Date.now();
-
-  const tipoCounts = useMemo(() => {
-    const counts = { todos: 0, PF: 0, PJ: 0 };
-    for (const c of clients) {
-      const doc = resolveClientDocument(c);
-      counts.todos++;
-      if (doc.tipo_pessoa === "PF") counts.PF++;
-      else counts.PJ++;
-    }
-    return counts;
-  }, [clients]);
-
-  const newClientsCount = useMemo(
-    () => clients.filter((c) => isNewClient(c, now)).length,
-    [clients, now]
-  );
-
-  const cidadeOptions = useMemo(() => {
-    const set = new Set(
-      clients.map((c) => resolveClientLocation(c).cidade).filter(Boolean)
-    );
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [clients]);
-
-  const bairroOptions = useMemo(() => {
-    const base =
-      filterCidade === "ALL"
-        ? clients
-        : clients.filter((c) => resolveClientLocation(c).cidade === filterCidade);
-    const set = new Set(
-      base.map((c) => resolveClientLocation(c).bairro).filter(Boolean)
-    );
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [clients, filterCidade]);
+  const tipoCounts = facets.tipoCounts;
+  const newClientsCount = facets.newClientsCount;
+  const cidadeOptions = facets.cidades;
+  const bairroOptions = facets.bairros;
 
   useEffect(() => {
     if (filterBairro !== "ALL" && !bairroOptions.includes(filterBairro)) {
@@ -237,60 +286,9 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     }
   }, [filterBairro, bairroOptions]);
 
-  const filteredClients = clients
-    .filter((c) => {
-      const doc = resolveClientDocument(c);
-      const location = resolveClientLocation(c);
-      const searchLower = search.toLowerCase();
-      const matchesSearch = isFactoryRole
-        ? c.nome.toLowerCase().includes(searchLower)
-        : hideClientContact
-          ? c.nome.toLowerCase().includes(searchLower) ||
-            location.cidade.toLowerCase().includes(searchLower) ||
-            location.bairro.toLowerCase().includes(searchLower)
-          : c.nome.toLowerCase().includes(searchLower) ||
-            c.email.toLowerCase().includes(searchLower) ||
-            c.telefone.includes(search) ||
-            location.cidade.toLowerCase().includes(searchLower) ||
-            location.bairro.toLowerCase().includes(searchLower) ||
-            (doc.cpf || "").includes(search) ||
-            (doc.cnpj || "").includes(search);
-      const matchesOrigin =
-        !canManage || filterOrigin === "ALL" || c.origem === filterOrigin;
-      const matchesCidade = filterCidade === "ALL" || location.cidade === filterCidade;
-      const matchesBairro = filterBairro === "ALL" || location.bairro === filterBairro;
-      const matchesTipo =
-        isFactoryRole ||
-        activeTipoTab === "todos" ||
-        doc.tipo_pessoa === activeTipoTab;
-      const matchesRecency = filterRecency === "all" || isNewClient(c, now);
-      return (
-        matchesSearch &&
-        matchesOrigin &&
-        matchesCidade &&
-        matchesBairro &&
-        matchesTipo &&
-        matchesRecency
-      );
-    })
-    .sort((a, b) => {
-      if (filterRecency !== "new") return 0;
-      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return tb - ta;
-    });
-
-  // Paginação: volta para a página 1 quando filtros/busca mudam
-  useEffect(() => {
-    setPage(1);
-  }, [search, filterOrigin, filterCidade, filterBairro, activeTipoTab, filterRecency]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredClients.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pagedClients = filteredClients.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const pagedClients = clients;
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
@@ -351,15 +349,9 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     setLoading(false);
 
     if (res.success && res.client) {
-      const newCli = {
-        id: res.client.id,
-        ...data,
-        createdAt: new Date().toISOString(),
-        projects: [],
-      };
-      setClients([newCli, ...clients]);
       setIsCreateOpen(false);
       showSuccess("Cliente cadastrado", `${form.nome} foi adicionado à base de clientes.`);
+      void fetchList();
       return { success: true };
     }
     const errMsg =
@@ -402,9 +394,9 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
     setLoading(false);
 
     if (res.success) {
-      setClients(clients.map((c) => (c.id === selectedClient.id ? { ...c, ...data } : c)));
       setIsEditOpen(false);
       showSuccess("Cliente atualizado", `As informações de ${form.nome} foram salvas.`);
+      void fetchList();
       return { success: true };
     }
     const errMsg =
@@ -422,8 +414,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       onConfirm: async () => {
         const res = await deleteClientAction(clientId);
         if (res.success) {
-          setClients(clients.filter(c => c.id !== clientId));
           showSuccess("Cliente excluído", `${clientName} foi removido da base de clientes.`);
+          void fetchList();
         } else {
           showError(
             "Não foi possível excluir",
@@ -461,23 +453,8 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
         "Projeto iniciado",
         `Novo projeto de R$ ${Number(valorPrevisto).toLocaleString("pt-BR")} foi adicionado ao Funil Comercial para ${selectedClient.nome}.`
       );
-      // Atualiza localmente a lista de projetos do cliente correspondente
-      const newProj: ProjectSummary = {
-        id: res.data?.project?.id || `proj-${Date.now()}`,
-        status_geral: "LEAD",
-        valor_previsto: Number(valorPrevisto),
-        quotes_count: 0,
-      };
-      setClients(clients.map(c => {
-        if (c.id === selectedClient.id) {
-          return {
-            ...c,
-            projects: [...(c.projects || []), newProj]
-          };
-        }
-        return c;
-      }));
       setIsProjectModalOpen(false);
+      void fetchList();
     } else {
       showError("Não foi possível criar o projeto", "Erro ao iniciar projeto no funil comercial.");
     }
@@ -694,7 +671,7 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
           <Users className="h-4 w-4 shrink-0 opacity-70" />
           Todos
           <span className="text-[10px] font-bold tabular-nums opacity-55">
-            ({clients.length})
+            ({tipoCounts.todos})
           </span>
         </button>
         <button
@@ -736,14 +713,19 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
       )}
 
       {/* Lista de clientes — cards no mobile, tabela no desktop */}
-      {filteredClients.length === 0 ? (
+      {total === 0 && !listLoading ? (
         <Card className="glass-card p-8">
           <p className="text-center text-sm text-muted-foreground">
             Nenhum cliente nesta aba com os filtros aplicados.
           </p>
         </Card>
+      ) : total === 0 && listLoading ? (
+        <Card className="glass-card p-8 flex items-center justify-center gap-2 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm">Carregando clientes...</span>
+        </Card>
       ) : (
-        <>
+        <div className={listLoading ? "relative opacity-60 pointer-events-none transition-opacity" : undefined}>
           <div className="md:hidden space-y-3">
             {pagedClients.map((client) => {
               const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
@@ -1019,13 +1001,13 @@ export default function ClientesClient({ initialClients, companyId, initialPageS
             <Pagination
               page={currentPage}
               pageSize={pageSize}
-              total={filteredClients.length}
+              total={total}
               pageSizeOptions={PAGE_SIZE_OPTIONS}
               onPageChange={setPage}
               onPageSizeChange={handlePageSizeChange}
               itemLabel="clientes"
             />
-        </>
+        </div>
       )}
 
       {/* ─── MODAL: CADASTRAR CLIENTE ─── */}

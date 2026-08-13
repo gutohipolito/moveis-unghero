@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import GoogleReviewLinkCard from "@/components/marketing/GoogleReviewLinkCard";
-import { getClientsLiveSnapshot } from "@/app/actions/liveSnapshots";
+import { getClientsForWhatsAppMessaging } from "@/app/actions/cliente";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
 import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
@@ -21,16 +21,9 @@ export default function MarketingReviewClients({
   const [clients, setClients] = useState(initialClients);
 
   const syncClients = useCallback(async () => {
-    const result = await getClientsLiveSnapshot(companyId);
+    const result = await getClientsForWhatsAppMessaging(companyId);
     if (result.success && result.clients) {
-      setClients(
-        result.clients.map((client) => ({
-          id: client.id,
-          nome: client.nome,
-          telefone: client.telefone,
-          email: client.email || "",
-        }))
-      );
+      setClients(result.clients);
     }
   }, [companyId]);
 

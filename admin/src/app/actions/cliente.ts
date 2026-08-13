@@ -22,9 +22,11 @@ import { labelProjectStatus } from "@/lib/navLabels";
 import { labelPaymentMethod } from "@/lib/paymentMethods";
 import { findExistingClient, resolveClientContactFields } from "@/lib/clientMatch";
 import { resolvePublicCompanyId } from "@/lib/publicCompany";
+import { resolveClientLocation } from "@/lib/clientLocation";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
-import { isOpsLimitedRole } from "@/lib/permissions";
+import { canManageClients, isOpsLimitedRole } from "@/lib/permissions";
+import type { Prisma } from "@prisma/client";
 import { maybeRedactForRole, maybeRedactForViewer } from "@/lib/viewerRedact";
 
 type Origin = 
@@ -330,7 +332,156 @@ export async function logoutCliente() {
 
 // ─── SERVER ACTIONS PARA GERENCIAMENTO DE CLIENTES / LEADS ───
 
-// 1. Listar Clientes
+const CLIENTS_PAGE_SIZES = [10, 20, 30, 50, 100] as const;
+const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const CLIENT_LIST_ORIGIN_VALUES = new Set<Origin>([
+  "SITE",
+  "INSTAGRAM",
+  "INDICACAO",
+  "GOOGLE",
+  "WHATSAPP",
+  "FACEBOOK",
+  "FORMULARIO",
+]);
+
+const EMPTY_CLIENT_FACETS = {
+  tipoCounts: { todos: 0, PF: 0, PJ: 0 },
+  newClientsCount: 0,
+  cidades: [] as string[],
+  bairros: [] as string[],
+};
+
+export type ClientsListQuery = {
+  companyId: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  origin?: string;
+  cidade?: string;
+  bairro?: string;
+  tipo?: "todos" | "PF" | "PJ";
+  recency?: "all" | "new";
+};
+
+export type ClientsListFacets = typeof EMPTY_CLIENT_FACETS;
+
+const CLIENT_LIST_PROJECT_SELECT = {
+  id: true,
+  status_geral: true,
+  valor_previsto: true,
+  _count: { select: { quotes: true } },
+} as const;
+
+function clientsListSearchMode(cargo: string | null | undefined): "full" | "location" | "name" {
+  if (cargo === "PRODUCAO") return "name";
+  if (isOpsLimitedRole(cargo)) return "location";
+  return "full";
+}
+
+function buildClientsListWhere(
+  query: ClientsListQuery,
+  cargo: string | null | undefined
+): Prisma.ClientWhereInput {
+  const and: Prisma.ClientWhereInput[] = [{ company_id: query.companyId }];
+  const search = (query.search || "").trim();
+  const searchMode = clientsListSearchMode(cargo);
+
+  if (search) {
+    const searchLower = search;
+    const digits = search.replace(/\D/g, "");
+    if (searchMode === "name") {
+      and.push({ nome: { contains: searchLower, mode: "insensitive" } });
+    } else if (searchMode === "location") {
+      and.push({
+        OR: [
+          { nome: { contains: searchLower, mode: "insensitive" } },
+          { cidade: { contains: searchLower, mode: "insensitive" } },
+          { bairro: { contains: searchLower, mode: "insensitive" } },
+        ],
+      });
+    } else {
+      const or: Prisma.ClientWhereInput[] = [
+        { nome: { contains: searchLower, mode: "insensitive" } },
+        { email: { contains: searchLower, mode: "insensitive" } },
+        { telefone: { contains: search } },
+        { cidade: { contains: searchLower, mode: "insensitive" } },
+        { bairro: { contains: searchLower, mode: "insensitive" } },
+      ];
+      if (digits) {
+        or.push({ telefone: { contains: digits } });
+        or.push({ cpf: { contains: digits } });
+        or.push({ cnpj: { contains: digits } });
+      }
+      and.push({ OR: or });
+    }
+  }
+
+  if (
+    canManageClients(cargo) &&
+    query.origin &&
+    query.origin !== "ALL" &&
+    CLIENT_LIST_ORIGIN_VALUES.has(query.origin as Origin)
+  ) {
+    and.push({ origem: query.origin as Origin });
+  }
+
+  const cidade = (query.cidade || "").trim();
+  if (cidade && cidade !== "ALL") {
+    and.push({
+      OR: [
+        { cidade: { equals: cidade, mode: "insensitive" } },
+        { cidade: { startsWith: `${cidade} - `, mode: "insensitive" } },
+        { cidade: { startsWith: `${cidade} – `, mode: "insensitive" } },
+        { cidade: { startsWith: `${cidade} · `, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  const bairro = (query.bairro || "").trim();
+  if (bairro && bairro !== "ALL") {
+    and.push({
+      OR: [
+        { bairro: { equals: bairro, mode: "insensitive" } },
+        { cidade: { endsWith: ` - ${bairro}`, mode: "insensitive" } },
+        { cidade: { endsWith: ` – ${bairro}`, mode: "insensitive" } },
+        { cidade: { endsWith: ` · ${bairro}`, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  if (cargo !== "PRODUCAO" && query.tipo === "PF") {
+    and.push({ tipo_pessoa: "PF" });
+  } else if (cargo !== "PRODUCAO" && query.tipo === "PJ") {
+    and.push({ tipo_pessoa: "PJ" });
+  }
+
+  if (query.recency === "new") {
+    and.push({
+      createdAt: { gte: new Date(Date.now() - NEW_CLIENT_WINDOW_MS) },
+    });
+  }
+
+  return { AND: and };
+}
+
+function uniqueSortedLocations(
+  rows: Array<{ cidade: string; bairro: string | null }>
+): { cidades: string[]; bairros: string[] } {
+  const cidades = new Set<string>();
+  const bairros = new Set<string>();
+  for (const row of rows) {
+    const location = resolveClientLocation(row);
+    if (location.cidade) cidades.add(location.cidade);
+    if (location.bairro) bairros.add(location.bairro);
+  }
+  const collator = (a: string, b: string) => a.localeCompare(b, "pt-BR");
+  return {
+    cidades: Array.from(cidades).sort(collator),
+    bairros: Array.from(bairros).sort(collator),
+  };
+}
+
+// 1. Listar Clientes (seletor / sync leves — sem projetos aninhados)
 export async function getClients(companyId: string) {
   const auth = await getModuleAccess("clientes");
   if (!auth) {
@@ -355,16 +506,6 @@ export async function getClients(companyId: string) {
 
     const clients = await prisma.client.findMany({
       where: { company_id: companyId },
-      include: {
-        projects: {
-          select: {
-            id: true,
-            status_geral: true,
-            valor_previsto: true,
-            _count: { select: { quotes: true } },
-          },
-        },
-      },
       orderBy: { nome: "asc" },
     });
 
@@ -382,6 +523,121 @@ export async function getClients(companyId: string) {
     console.warn("Falha de conexão na listagem de clientes.", error);
     setDatabaseOffline(true);
     return { success: false, error: "Erro de conexão ao banco de dados", clients: [] };
+  }
+}
+
+/** Listagem paginada da tela de clientes (filtros + facetas no servidor). */
+export async function getClientsPage(query: ClientsListQuery) {
+  const empty = {
+    success: false as const,
+    error: "Não autenticado",
+    clients: [] as ReturnType<typeof formatClientRecord>[],
+    total: 0,
+    page: 1,
+    pageSize: 20,
+    facets: EMPTY_CLIENT_FACETS,
+  };
+
+  const auth = await getModuleAccess("clientes");
+  if (!auth) return empty;
+
+  try {
+    assertCompanyAccess(auth, query.companyId);
+  } catch (error) {
+    return {
+      ...empty,
+      error: error instanceof Error ? error.message : "Acesso negado",
+    };
+  }
+
+  if (isDatabaseOffline()) {
+    return { ...empty, error: "Erro de conexão ao banco de dados" };
+  }
+
+  const pageSize = CLIENTS_PAGE_SIZES.includes(
+    (query.pageSize || 0) as (typeof CLIENTS_PAGE_SIZES)[number]
+  )
+    ? (query.pageSize as number)
+    : 20;
+  const page = Math.max(1, Math.floor(query.page || 1));
+  const where = buildClientsListWhere(query, auth.cargo);
+  const companyWhere: Prisma.ClientWhereInput = { company_id: query.companyId };
+  const cidadeFilter = Boolean(query.cidade && query.cidade !== "ALL");
+
+  try {
+    await migrateLegacyClientDocumentsIfNeeded();
+
+    const [clients, total, tipoGroups, newClientsCount, locationRows, bairroRows] =
+      await Promise.all([
+        prisma.client.findMany({
+          where,
+          include: { projects: { select: CLIENT_LIST_PROJECT_SELECT } },
+          orderBy:
+            query.recency === "new"
+              ? [{ createdAt: "desc" }, { nome: "asc" }]
+              : { nome: "asc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        prisma.client.count({ where }),
+        prisma.client.groupBy({
+          by: ["tipo_pessoa"],
+          where: companyWhere,
+          _count: { _all: true },
+        }),
+        prisma.client.count({
+          where: {
+            company_id: query.companyId,
+            createdAt: { gte: new Date(Date.now() - NEW_CLIENT_WINDOW_MS) },
+          },
+        }),
+        prisma.client.findMany({
+          where: companyWhere,
+          select: { cidade: true, bairro: true },
+          distinct: ["cidade", "bairro"],
+        }),
+        cidadeFilter
+          ? prisma.client.findMany({
+              where: buildClientsListWhere(
+                { companyId: query.companyId, cidade: query.cidade },
+                auth.cargo
+              ),
+              select: { cidade: true, bairro: true },
+              distinct: ["cidade", "bairro"],
+            })
+          : Promise.resolve(null),
+      ]);
+
+    const tipoCounts = { todos: 0, PF: 0, PJ: 0 };
+    for (const group of tipoGroups) {
+      tipoCounts.todos += group._count._all;
+      if (group.tipo_pessoa === "PF") tipoCounts.PF += group._count._all;
+      else tipoCounts.PJ += group._count._all;
+    }
+
+    const { cidades, bairros: allBairros } = uniqueSortedLocations(locationRows);
+    const bairros = bairroRows
+      ? uniqueSortedLocations(bairroRows).bairros
+      : allBairros;
+
+    return {
+      success: true as const,
+      clients: restrictClientListForOpsRole(
+        maybeRedactForRole(
+          clients.map((c) => formatClientRecord(c)),
+          auth.cargo
+        ),
+        auth.cargo
+      ),
+      total,
+      page,
+      pageSize,
+      facets: { tipoCounts, newClientsCount, cidades, bairros },
+    };
+  } catch (error) {
+    console.warn("Falha de conexão na listagem paginada de clientes.", error);
+    setDatabaseOffline(true);
+    return { ...empty, error: "Erro de conexão ao banco de dados" };
   }
 }
 
