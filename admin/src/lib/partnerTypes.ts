@@ -176,6 +176,23 @@ export const PARTNER_ORIGEM_OPTIONS = [
 
 export type PartnerOrigemOption = (typeof PARTNER_ORIGEM_OPTIONS)[number];
 
+/** Origem gravada quando o operador cadastra sem informar canal de marketing. */
+export const PARTNER_ORIGEM_PAINEL = "PAINEL";
+
+const PARTNER_ORIGEM_SET = new Set<string>(PARTNER_ORIGEM_OPTIONS);
+
+export function isPartnerOrigemOption(value: string): value is PartnerOrigemOption {
+  return PARTNER_ORIGEM_SET.has(value);
+}
+
+/** Rótulo de exibição (inclui legado PAINEL do cadastro pelo painel). */
+export function labelPartnerOrigem(origem: string | null | undefined): string {
+  const value = origem?.trim();
+  if (!value) return "Não informada";
+  if (value === PARTNER_ORIGEM_PAINEL) return "Painel";
+  return value;
+}
+
 export const PARTNER_TYPE_STYLES: Record<
   PartnerType,
   {

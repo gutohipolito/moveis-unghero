@@ -45,6 +45,7 @@ import {
   PARTNER_TYPE_STYLES,
   formatPartnerRegistro,
   getPartnerRoleLabel,
+  labelPartnerOrigem,
 } from "@/lib/partnerTypes";
 import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
 import { primaryPortfolioUrl } from "@/lib/portfolioUrls";
@@ -347,6 +348,14 @@ export default function ParceiroDetailsClient({
                 <Icon className="h-3 w-3" />
                 {getPartnerRoleLabel(parceiro.tipo, parceiro.nome)}
               </span>
+              {parceiro.origem ? (
+                <span
+                  className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-100"
+                  title="Origem do cadastro"
+                >
+                  Origem: {labelPartnerOrigem(parceiro.origem)}
+                </span>
+              ) : null}
               {parceiro.cidade && (
                 <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-muted-foreground bg-white/80 px-2.5 py-0.5 rounded-full border border-border/60">
                   <MapPin className="h-3 w-3" />

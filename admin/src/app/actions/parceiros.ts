@@ -9,7 +9,12 @@ import { canManageParceiros, isOpsLimitedRole } from "@/lib/permissions";
 import { capitalizeText } from "@/lib/utils";
 import { normalizeCidade } from "@/lib/address";
 import { maybeRedactForRole } from "@/lib/viewerRedact";
-import { getPartnerRoleLabel } from "@/lib/partnerTypes";
+import {
+  getPartnerRoleLabel,
+  isPartnerOrigemOption,
+  labelPartnerOrigem,
+  PARTNER_ORIGEM_PAINEL,
+} from "@/lib/partnerTypes";
 
 const QUOTE_CARD_MODES = new Set<PartnerQuoteCardMode>([
   "HIDDEN",
@@ -255,6 +260,16 @@ export async function createParceiro(
   }
 
   const quoteCardMode = parseQuoteCardMode(data.quote_card_mode) ?? "HIDDEN";
+  const origem = data.origem?.trim() || "";
+  if (!origem) {
+    return {
+      success: false,
+      error: "Informe a origem do parceiro (como conheceu a Móveis Unghero).",
+    };
+  }
+  if (!isPartnerOrigemOption(origem) && origem !== PARTNER_ORIGEM_PAINEL) {
+    return { success: false, error: "Origem inválida." };
+  }
 
   try {
     const parceiro = await prisma.professionalPartner.create({
@@ -267,7 +282,7 @@ export async function createParceiro(
         cidade: data.cidade ? normalizeCidade(data.cidade).cidade || null : null,
         escritorio: data.escritorio ? capitalizeText(data.escritorio) : null,
         registro_profissional: data.registro_profissional?.trim() || null,
-        origem: data.origem?.trim() || "PAINEL",
+        origem,
         observacoes: data.observacoes?.trim() || null,
         fotoUrl: data.fotoUrl?.trim() || null,
         imagens: data.imagens?.trim() || null,
@@ -327,6 +342,18 @@ export async function updateParceiro(
 
     const quoteCardMode = parseQuoteCardMode(data.quote_card_mode);
 
+    let nextOrigem: string | null | undefined;
+    if (data.origem !== undefined) {
+      const value = data.origem.trim();
+      if (!value) {
+        nextOrigem = null;
+      } else if (!isPartnerOrigemOption(value) && value !== PARTNER_ORIGEM_PAINEL) {
+        return { success: false, error: "Origem inválida." };
+      } else {
+        nextOrigem = value;
+      }
+    }
+
     const parceiro = await prisma.professionalPartner.update({
       where: { id },
       data: {
@@ -347,7 +374,7 @@ export async function updateParceiro(
         ...(data.registro_profissional !== undefined
           ? { registro_profissional: data.registro_profissional.trim() || null }
           : {}),
-        ...(data.origem !== undefined ? { origem: data.origem.trim() || null } : {}),
+        ...(nextOrigem !== undefined ? { origem: nextOrigem } : {}),
         ...(data.observacoes !== undefined ? { observacoes: data.observacoes.trim() || null } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         ...(data.fotoUrl !== undefined ? { fotoUrl: data.fotoUrl?.trim() || null } : {}),
@@ -469,7 +496,7 @@ function buildParceiroRegistrationActivity(
     minute: "2-digit",
   });
   const papel = getPartnerRoleLabel(tipo, nome);
-  const origemLabel = origem?.trim() || "não informada";
+  const origemLabel = labelPartnerOrigem(origem);
   return {
     id: `registration-${partnerId}`,
     data: cadastroEm.toISOString(),

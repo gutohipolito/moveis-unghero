@@ -14,11 +14,14 @@ import { getParceirosLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import {
   PARTNER_ORIGEM_OPTIONS,
+  PARTNER_ORIGEM_PAINEL,
   PARTNER_SIGNUP_TYPES,
   PARTNER_TYPE_STYLES,
   PARTNER_TYPES,
   formatPartnerRegistro,
   getPartnerRoleLabel,
+  isPartnerOrigemOption,
+  labelPartnerOrigem,
   partnerRegistroLabel,
 } from "@/lib/partnerTypes";
 import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
@@ -235,6 +238,18 @@ const PartnerCard = ({
                 <MapPin className="h-2.5 w-2.5 text-muted-foreground/70" />
                 {p.cidade || "—"}
               </span>
+
+              <span
+                className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                  p.origem
+                    ? "text-sky-800 bg-sky-50 border-sky-100"
+                    : "invisible border-transparent"
+                }`}
+                aria-hidden={!p.origem}
+                title="Origem do cadastro"
+              >
+                {p.origem ? labelPartnerOrigem(p.origem) : "—"}
+              </span>
             </div>
 
             <p
@@ -388,6 +403,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [parceiros, setParceiros] = useState<ParceiroDTO[]>(initialParceiros);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("ALL");
+  const [filterOrigem, setFilterOrigem] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<"ACTIVE" | "PENDING" | "ALL">("ACTIVE");
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -445,7 +461,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
   const [cidade, setCidade] = useState("");
   const [escritorio, setEscritorio] = useState("");
   const [registroProfissional, setRegistroProfissional] = useState("");
-  const [origem, setOrigem] = useState("");
+  const [origem, setOrigem] = useState<string>("");
   const [observacoes, setObservacoes] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
@@ -592,6 +608,20 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
     [parceiros]
   );
 
+  const origemFilterOptions = useMemo(() => {
+    const fromData = new Set<string>();
+    for (const p of parceiros) {
+      const value = p.origem?.trim();
+      if (value) fromData.add(value);
+    }
+    const known: string[] = [...PARTNER_ORIGEM_OPTIONS];
+    if (fromData.has(PARTNER_ORIGEM_PAINEL)) known.push(PARTNER_ORIGEM_PAINEL);
+    const extras = [...fromData]
+      .filter((v) => !isPartnerOrigemOption(v) && v !== PARTNER_ORIGEM_PAINEL)
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return [...known, ...extras];
+  }, [parceiros]);
+
   const filtered = useMemo(() => {
     return parceiros.filter((p) => {
       const q = search.toLowerCase();
@@ -602,13 +632,18 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         (p.cidade?.toLowerCase().includes(q) ?? false) ||
         (p.registro_profissional?.toLowerCase().includes(q) ?? false);
       const matchesTipo = filterTipo === "ALL" || p.tipo === filterTipo;
+      const matchesOrigem =
+        filterOrigem === "ALL" ||
+        (filterOrigem === "__NONE__"
+          ? !p.origem?.trim()
+          : (p.origem?.trim() || "") === filterOrigem);
       const matchesStatus =
         filterStatus === "ALL" ||
         (filterStatus === "ACTIVE" && p.ativo) ||
         (filterStatus === "PENDING" && !p.ativo);
-      return matchesSearch && matchesTipo && matchesStatus;
+      return matchesSearch && matchesTipo && matchesOrigem && matchesStatus;
     });
-  }, [parceiros, search, filterTipo, filterStatus]);
+  }, [parceiros, search, filterTipo, filterOrigem, filterStatus]);
 
   const portalCandidates = useMemo(() => {
     const q = portalSearch.trim().toLowerCase();
@@ -649,6 +684,10 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       showError("Campo obrigatório", "Informe o nome do profissional ou escritório.");
       return;
     }
+    if (!origem.trim()) {
+      showError("Campo obrigatório", "Informe como o parceiro conheceu a Móveis Unghero.");
+      return;
+    }
 
     setLoading(true);
     const payload = {
@@ -659,7 +698,7 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
       cidade,
       escritorio: escritorio.trim() || nome.trim(),
       registro_profissional: registroProfissional || undefined,
-      origem: origem || "PAINEL",
+      origem: origem.trim(),
       observacoes: observacoes || undefined,
       fotoUrl,
       portfolioUrl: portfolioUrl || undefined,
@@ -914,6 +953,19 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
             ))}
           </select>
           <select
+            value={filterOrigem}
+            onChange={(e) => setFilterOrigem(e.target.value)}
+            className="h-10 px-3 rounded-md border border-border bg-card text-sm cursor-pointer"
+          >
+            <option value="ALL">Todas as origens</option>
+            <option value="__NONE__">Sem origem</option>
+            {origemFilterOptions.map((option) => (
+              <option key={option} value={option}>
+                {labelPartnerOrigem(option)}
+              </option>
+            ))}
+          </select>
+          <select
             value={filterStatus}
             onChange={(e) =>
               setFilterStatus(e.target.value as "ACTIVE" | "PENDING" | "ALL")
@@ -1130,6 +1182,28 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
                       {PARTNER_TYPE_STYLES[t].label}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground">Origem *</label>
+                <select
+                  required
+                  value={origem}
+                  onChange={(e) => setOrigem(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                >
+                  <option value="" disabled>
+                    Como conheceu a Móveis Unghero?
+                  </option>
+                  {PARTNER_ORIGEM_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                  {origem &&
+                    !isPartnerOrigemOption(origem) && (
+                      <option value={origem}>{labelPartnerOrigem(origem)}</option>
+                    )}
                 </select>
               </div>
               <div className="space-y-1">

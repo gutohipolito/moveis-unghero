@@ -88,6 +88,15 @@ export const SYSTEM_CAPABILITIES: ReleaseFeatureGroup[] = [
  */
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    title: "Origem do projetista e arquiteto",
+    summary:
+      "O cadastro de parceiros no painel passa a pedir a mesma origem do formulário público.",
+    items: [
+      "Campo Origem obrigatório ao cadastrar ou editar no painel",
+      "Filtro e selo de origem na lista e na ficha do parceiro",
+    ],
+  },
+  {
     title: "Histórico do projetista e arquiteto",
     summary:
       "A ficha de parceiros passa a ter a mesma linha do tempo comercial da ficha de cliente.",
