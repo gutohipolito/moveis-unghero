@@ -56,6 +56,9 @@ const PUBLIC_SITE = "https://moveisunghero.com.br";
 /** Forms públicos (quando passam pelo proxy). */
 const PUBLIC_FORM_RATE = { limit: 20, windowMs: 60 * 60 * 1000 };
 
+/** Bootstrap de admin: bem restrito (rota também limita). */
+const ADMIN_BOOTSTRAP_RATE = { limit: 5, windowMs: 15 * 60 * 1000 };
+
 function isPublicPath(pathname: string) {
   if (PUBLIC_PATHS.has(pathname)) return true;
   return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -145,6 +148,17 @@ export async function proxy(request: NextRequest) {
       { message: "Cadastro público desativado. Operadores são criados pela equipe." },
       { status: 403 }
     );
+  }
+
+  if (pathname === "/api/create-admin-prod" && request.method === "POST") {
+    const result = await checkRateLimitAsync(`admin-bootstrap:${ip}`, ADMIN_BOOTSTRAP_RATE);
+    if (!result.ok) {
+      return rateLimitedJson(
+        `Muitas tentativas. Aguarde ${result.retryAfterSec}s e tente novamente.`,
+        result.retryAfterSec,
+        ADMIN_BOOTSTRAP_RATE.limit
+      );
+    }
   }
 
   if (isAuthSignIn(pathname, request.method)) {
@@ -259,6 +273,7 @@ export const config = {
     "/",
     "/login",
     "/api/auth/:path*",
+    "/api/create-admin-prod",
     "/api/public/:path*",
     "/api/o/:path*",
     "/api/r/:path*",

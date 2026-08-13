@@ -1,7 +1,20 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_EMAIL } from "@/lib/constants";
+
+function setupSecretsMatch(provided: unknown, expected: string): boolean {
+  if (typeof provided !== "string") return false;
+  try {
+    const a = Buffer.from(provided, "utf8");
+    const b = Buffer.from(expected, "utf8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Bootstrap de admin — desabilitado por padrão.
@@ -40,7 +53,7 @@ async function handleCreateAdmin(request: NextRequest) {
   const email = body?.email || ADMIN_EMAIL;
   const password = body?.password;
 
-  if (providedSecret !== setupSecret) {
+  if (!setupSecretsMatch(providedSecret, setupSecret)) {
     return NextResponse.json(
       { success: false, error: "Secret inválido." },
       { status: 403 }
