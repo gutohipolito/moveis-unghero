@@ -1,4 +1,3 @@
-import html2canvas from "html2canvas-pro";
 import { slugifyFileName } from "@/lib/quoteWhatsApp";
 
 export class QuotePdfBlobNotConfiguredError extends Error {
@@ -89,7 +88,10 @@ export async function generateQuotePdfBlob(options?: GeneratePrintPdfOptions) {
     throw new Error("Não foi possível localizar o conteúdo do documento.");
   }
 
-  const { jsPDF } = await import("jspdf");
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import("html2canvas-pro"),
+    import("jspdf"),
+  ]);
   const shell = document.documentElement;
   const overlay = showCaptureOverlay();
 
