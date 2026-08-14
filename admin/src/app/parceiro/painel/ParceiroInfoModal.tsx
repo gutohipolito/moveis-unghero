@@ -11,6 +11,7 @@ import { partnerRegistroLabel } from "@/lib/partnerTypes";
 import { updateParceiroProfileAction } from "@/app/actions/parceiroPortal";
 import { fetchViaCep } from "@/lib/viaCep";
 import { normalizeCidade } from "@/lib/address";
+import CityField from "@/components/forms/CityField";
 import { faviconUrlFor } from "@/lib/accessCategories";
 import {
   MAX_PORTFOLIO_URLS,
@@ -336,7 +337,16 @@ export default function ParceiroInfoModal({ open, partner, onClose, onSaved }: P
               </div>
             </Field>
             <Field label="Cidade">
-              {fieldInput("cidade", { autoComplete: "address-level2" })}
+              {editing ? (
+                <CityField
+                  value={fields.cidade}
+                  onChange={(cidade) => setField("cidade", cidade)}
+                  selectClassName={cn(inputClass, !fields.cidade.trim() && "parceiro-info-input-empty")}
+                  inputClassName={cn(inputClass, !fields.cidade.trim() && "parceiro-info-input-empty")}
+                />
+              ) : (
+                fieldInput("cidade", { autoComplete: "address-level2" })
+              )}
             </Field>
             <Field label="Endereço" className="sm:col-span-2">
               {fieldInput("endereco", { autoComplete: "street-address" })}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   CIDADE_OUTRA_VALUE,
   CIDADES_SERRA_GAUCHA,
@@ -32,8 +33,20 @@ export default function CityField({
   required,
   dark = false,
 }: CityFieldProps) {
-  const selectVal = citySelectValue(value);
-  const isOther = selectVal === CIDADE_OUTRA_VALUE;
+  const canonical = citySelectValue(value);
+  const [pickingOther, setPickingOther] = useState(
+    () => Boolean(value) && citySelectValue(value) === CIDADE_OUTRA_VALUE
+  );
+
+  useEffect(() => {
+    if (value && citySelectValue(value) !== CIDADE_OUTRA_VALUE) {
+      setPickingOther(false);
+    }
+  }, [value]);
+
+  const isOther =
+    pickingOther || (Boolean(value) && canonical === CIDADE_OUTRA_VALUE);
+  const selectVal = isOther ? CIDADE_OUTRA_VALUE : canonical;
 
   return (
     <div className={`space-y-1.5 ${className}`}>
@@ -44,9 +57,11 @@ export default function CityField({
         onChange={(e) => {
           const next = e.target.value;
           if (next === CIDADE_OUTRA_VALUE) {
-            onChange(isOther ? value : "");
+            setPickingOther(true);
+            if (!isOther) onChange("");
             return;
           }
+          setPickingOther(false);
           onChange(next);
         }}
         className={selectClassName}
@@ -65,7 +80,8 @@ export default function CityField({
           required={required}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Digite a cidade"
+          placeholder="Digite o nome da cidade"
+          autoComplete="address-level2"
           className={inputClassName || selectClassName}
         />
       ) : null}

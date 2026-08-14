@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import CityField from "@/components/forms/CityField";
 import { Select } from "@/components/ui/select";
 import RowActionsMenu, { type RowActionItem } from "@/components/ui/RowActionsMenu";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -1169,11 +1170,12 @@ export default function QuotesList({
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs font-bold text-slate-500">Cidade *</label>
-                          <Input
+                          <CityField
                             required
                             value={quickCidade}
-                            onChange={(e) => setQuickCidade(e.target.value)}
-                            className="bg-white border-slate-200 text-sm h-10"
+                            onChange={setQuickCidade}
+                            selectClassName="w-full h-10 px-3 rounded-md border border-slate-200 bg-white text-sm"
+                            inputClassName="w-full h-10 px-3 rounded-md border border-slate-200 bg-white text-sm"
                           />
                         </div>
                       </div>

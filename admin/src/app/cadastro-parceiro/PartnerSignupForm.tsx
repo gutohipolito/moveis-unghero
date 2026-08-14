@@ -35,7 +35,7 @@ import {
 import { validateOptionalEmail } from "@/lib/email";
 import { preventEnterSubmit, useSubmitUnlock } from "@/hooks/useSubmitUnlock";
 import FormProgressBar from "@/components/forms/FormProgressBar";
-import { CIDADES_SERRA_GAUCHA } from "@/lib/address";
+import CityField from "@/components/forms/CityField";
 import {
   PARTNER_LGPD_CHECKBOX_LABEL,
   PARTNER_MARKETING_CHECKBOX_LABEL,
@@ -608,21 +608,15 @@ export default function PartnerSignupForm({ companyId }: { companyId?: string })
                   Cidade de atuação *
                 </label>
                 <div className="relative min-w-0">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-                  <select
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+                  <CityField
                     id="parceiro-signup-cidade"
                     required
                     value={cidade}
-                    onChange={(e) => setCidade(e.target.value)}
-                    className={cn(selectClass, "pl-10")}
-                  >
-                    <option value="">Selecione...</option>
-                    {CIDADES_SERRA_GAUCHA.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setCidade}
+                    selectClassName={cn(selectClass, "pl-10")}
+                    inputClassName={cn(selectClass, "pl-3")}
+                  />
                 </div>
               </div>
             </div>
