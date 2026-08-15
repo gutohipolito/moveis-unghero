@@ -52,8 +52,11 @@ export default async function PublicQuotePage({ params }: PublicQuotePageProps) 
   }
 
   const hdrs = await headers();
-  const { userAgent, hints } = resolveQuoteViewUserAgent(hdrs);
-  await recordQuotePublicView(data.quoteId, userAgent, hints);
+  // Proxy novo envia o dispositivo via POST /api/o/{code}/view — evita contar 2x.
+  if (!hdrs.get("x-quote-view-client")) {
+    const { userAgent, hints } = resolveQuoteViewUserAgent(hdrs);
+    await recordQuotePublicView(data.quoteId, userAgent, hints);
+  }
 
   return (
     <QuotePrintDocument

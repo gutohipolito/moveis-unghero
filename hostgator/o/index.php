@@ -13,7 +13,7 @@
 const QUOTE_ADMIN_BASE = 'https://admin.moveisunghero.com.br';
 const QUOTE_UNLOCK_COOKIE_PREFIX = 'qo_';
 const QUOTE_UNLOCK_MAX_AGE = 60 * 60 * 24 * 14;
-const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.6';
+const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.7';
 
 /**
  * UA do visitante (celular/desktop) — sem isso o admin registra tudo como Desktop.
@@ -38,6 +38,7 @@ function quote_proxy_headers(array $extra = []): array
         'User-Agent: ' . $clientUa,
         'X-Quote-Proxy: ' . QUOTE_PROXY_UA,
         'X-Quote-Client-UA: ' . $clientUa,
+        'X-Quote-View-Client: 1',
     ];
 
     $chMobile = (string) ($_SERVER['HTTP_SEC_CH_UA_MOBILE'] ?? '');
@@ -373,6 +374,43 @@ if (stripos($body, '</body>') !== false) {
     $body = preg_replace('/<\/body>/i', $printHelper . '</body>', $body, 1) ?? ($body . $printHelper);
 } else {
     $body .= $printHelper;
+}
+
+$chMobile = (string) ($_SERVER['HTTP_SEC_CH_UA_MOBILE'] ?? '');
+$chPlatform = (string) ($_SERVER['HTTP_SEC_CH_UA_PLATFORM'] ?? '');
+quote_http_json(
+    QUOTE_ADMIN_BASE . '/api/o/' . rawurlencode($code) . '/view',
+    'POST',
+    [
+        'userAgent' => quote_client_user_agent(),
+        'hints' => [
+            'mobile' => $chMobile,
+            'platform' => $chPlatform,
+        ],
+    ]
+);
+
+$viewBeacon = '<script>'
+    . '(function(){'
+    . 'var ua=navigator.userAgent||"";'
+    . 'var uaData=navigator.userAgentData||null;'
+    . 'var payload={'
+    . 'refine:true,'
+    . 'userAgent:ua,'
+    . 'hints:{mobile:uaData&&uaData.mobile?"?1":(uaData?"?0":""),platform:(uaData&&uaData.platform)||""},'
+    . 'client:{'
+    . 'mobile:!!(uaData&&uaData.mobile)||/Mobi|iPhone|iPod|Android.+Mobile/i.test(ua),'
+    . 'tablet:/iPad|Tablet/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),'
+    . 'maxTouchPoints:navigator.maxTouchPoints||0,'
+    . 'platform:navigator.platform||""'
+    . '}'
+    . '};'
+    . 'try{fetch(' . json_encode(QUOTE_ADMIN_BASE . '/api/o/' . $code . '/view') . ',{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:true,mode:"cors"});}catch(e){}'
+    . '})();</script>';
+if (stripos($body, '</body>') !== false) {
+    $body = preg_replace('/<\/body>/i', $viewBeacon . '</body>', $body, 1) ?? ($body . $viewBeacon);
+} else {
+    $body .= $viewBeacon;
 }
 
 http_response_code(200);

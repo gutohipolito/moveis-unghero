@@ -16,31 +16,74 @@ export type ParsedUserAgent = {
   label: string;
 };
 
-/** Extrai dispositivo e SO a partir do User-Agent (sem libs externas). */
+export type QuoteClientDeviceSignals = {
+  mobile?: boolean;
+  tablet?: boolean;
+  maxTouchPoints?: number;
+  platform?: string;
+};
+
+function normalizeHintMobile(raw?: string | null): "?1" | "?0" | "" {
+  const v = (raw || "").trim().replace(/"/g, "");
+  if (v === "?1" || v === "1" || v.toLowerCase() === "true") return "?1";
+  if (v === "?0" || v === "0" || v.toLowerCase() === "false") return "?0";
+  return "";
+}
+
+/** Extrai dispositivo e SO a partir do User-Agent, Client Hints e sinais do navegador. */
 export function parseQuoteUserAgent(
   userAgent?: string | null,
-  hints?: { mobile?: string | null; platform?: string | null }
+  hints?: { mobile?: string | null; platform?: string | null },
+  client?: QuoteClientDeviceSignals | null
 ): ParsedUserAgent {
   const ua = userAgent?.trim() || "";
-  const hintMobile = hints?.mobile?.trim() || "";
+  const hintMobile = normalizeHintMobile(hints?.mobile);
   const hintPlatform = (hints?.platform?.trim() || "").replace(/"/g, "");
+  const clientPlatform = (client?.platform || "").trim();
+  const touchPoints = Number(client?.maxTouchPoints || 0);
+
+  const uaLooksPhone = /iphone|ipod|windows phone|opera mini|android.+mobile|mobile safari|mobile\//i.test(
+    ua
+  );
+  const uaLooksTablet = /ipad|tablet|kindle|silk|(android(?!.*mobile))/i.test(ua);
+  const uaLooksMobile = uaLooksPhone || /mobi/i.test(ua);
+  const isIpadOs =
+    Boolean(client?.tablet) ||
+    (/ipad/i.test(ua) ) ||
+    ((/macintel/i.test(clientPlatform) || /macintosh|mac os x/i.test(ua)) &&
+      touchPoints > 1);
+
+  if (isIpadOs) {
+    return { device: "Tablet", os: "iOS", label: "Tablet · iOS" };
+  }
+
+  if (client?.mobile === true || hintMobile === "?1") {
+    let os: ParsedUserAgent["os"] = "Desconhecido";
+    if (/android/i.test(ua) || /android/i.test(hintPlatform) || /android/i.test(clientPlatform)) {
+      os = "Android";
+    } else if (
+      /iphone|ipad|ipod|ios/i.test(ua) ||
+      /ios|iphone/i.test(hintPlatform) ||
+      /iphone|ipad/i.test(clientPlatform)
+    ) {
+      os = "iOS";
+    } else {
+      os = platformHintToOs(hintPlatform || clientPlatform);
+      if (os === "Desconhecido" && ua) {
+        if (/android/i.test(ua)) os = "Android";
+        else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
+      }
+    }
+    const device = /ipad|tablet/i.test(ua) ? "Tablet" : "Mobile";
+    return { device, os, label: `${device} · ${os}` };
+  }
 
   // Proxy antigo sem UA do visitante
   if (!ua || /^MoveisUnghero-QuoteProxy\//i.test(ua)) {
-    if (hintMobile === "?1") {
-      const osFromHint = platformHintToOs(hintPlatform);
-      return {
-        device: "Mobile",
-        os: osFromHint,
-        label: `Mobile · ${osFromHint}`,
-      };
-    }
     if (!ua) {
       return { device: "Desktop", os: "Desconhecido", label: "Desktop · Desconhecido" };
     }
   }
-
-  const lower = ua.toLowerCase();
 
   let os: ParsedUserAgent["os"] = "Desconhecido";
   if (/android/i.test(ua)) os = "Android";
@@ -50,33 +93,25 @@ export function parseQuoteUserAgent(
   else if (/macintosh|mac os x/i.test(ua)) os = "macOS";
   else if (/linux/i.test(ua)) os = "Linux";
 
-  // Client Hint de plataforma (quando o UA está reduzido)
   if (os === "Desconhecido" && hintPlatform) {
     os = platformHintToOs(hintPlatform);
   }
 
   let device: ParsedUserAgent["device"] = "Desktop";
-  if (hintMobile === "?1") {
+  if (uaLooksTablet) {
+    device = "Tablet";
+  } else if (uaLooksMobile || uaLooksPhone) {
     device = "Mobile";
   } else if (hintMobile === "?0") {
     device = "Desktop";
-  } else if (/ipad|tablet|kindle|silk|(android(?!.*mobile))/i.test(ua)) {
-    device = "Tablet";
-  } else if (
-    /mobi|iphone|ipod|android.*mobile|windows phone|opera mini/i.test(ua) ||
-    lower.includes("mobile")
-  ) {
-    device = "Mobile";
   }
 
-  // iPadOS 13+ pode se apresentar como Macintosh
   if (os === "macOS" && /mobile|touch/i.test(ua)) {
     os = "iOS";
     device = "Tablet";
   }
 
   const label = `${device} · ${os}`;
-
   return { device, os, label };
 }
 
@@ -199,11 +234,12 @@ function formatRelativeShort(iso: string): string {
 export async function recordQuotePublicView(
   quoteId: string,
   userAgent?: string | null,
-  hints?: { mobile?: string | null; platform?: string | null }
+  hints?: { mobile?: string | null; platform?: string | null },
+  client?: QuoteClientDeviceSignals | null
 ): Promise<void> {
   try {
     const isPreview = isQuoteLinkPreviewAgent(userAgent);
-    const parsed = parseQuoteUserAgent(userAgent, hints);
+    const parsed = parseQuoteUserAgent(userAgent, hints, client);
     const now = new Date();
 
     await prisma.$transaction([
@@ -235,5 +271,53 @@ export async function recordQuotePublicView(
     ]);
   } catch (error) {
     console.warn("Falha ao registrar visualização do orçamento:", error);
+  }
+}
+
+/** Ajusta o dispositivo da abertura recente (iPad / UA reduzido) sem contar de novo. */
+export async function refineQuotePublicView(
+  quoteId: string,
+  userAgent?: string | null,
+  hints?: { mobile?: string | null; platform?: string | null },
+  client?: QuoteClientDeviceSignals | null
+): Promise<void> {
+  try {
+    if (isQuoteLinkPreviewAgent(userAgent)) return;
+    const parsed = parseQuoteUserAgent(userAgent, hints, client);
+    const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+    const last = await prisma.quoteView.findFirst({
+      where: {
+        quote_id: quoteId,
+        is_preview: false,
+        viewed_at: { gte: cutoff },
+      },
+      orderBy: { viewed_at: "desc" },
+      select: { id: true },
+    });
+
+    if (!last) {
+      await recordQuotePublicView(quoteId, userAgent, hints, client);
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.quoteView.update({
+        where: { id: last.id },
+        data: {
+          device: parsed.device,
+          os: parsed.os,
+          user_agent: userAgent?.slice(0, 500) || undefined,
+        },
+      }),
+      prisma.quote.update({
+        where: { id: quoteId },
+        data: {
+          pdf_last_device: parsed.device,
+          pdf_last_os: parsed.os,
+        },
+      }),
+    ]);
+  } catch (error) {
+    console.warn("Falha ao refinar dispositivo da abertura:", error);
   }
 }
