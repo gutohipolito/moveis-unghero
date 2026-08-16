@@ -696,6 +696,7 @@ model QuoteItemPreset {
   company     Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
   descricao   String
   detalhes    Json?
+  imagem_url  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -703,14 +704,18 @@ model QuoteItemPreset {
 }
 
 model QuoteDetailPreset {
-  id          String   @id @default(uuid())
-  company_id  String
-  company     Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  texto       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String         @id @default(uuid())
+  company_id         String
+  company            Company        @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  texto              String
+  imagem_url         String?
+  inventory_item_id  String?
+  inventoryItem      InventoryItem? @relation(fields: [inventory_item_id], references: [id], onDelete: SetNull)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   @@index([company_id])
+  @@index([company_id, inventory_item_id])
 }
 
 model SupplyTicket {
@@ -1046,7 +1051,8 @@ model InventoryItem {
   ativo       Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  showcaseProducts ShowcaseProduct[]
+  showcaseProducts   ShowcaseProduct[]
+  quoteDetailPresets QuoteDetailPreset[]
 
   @@index([company_id])
   @@index([company_id, categoria])
