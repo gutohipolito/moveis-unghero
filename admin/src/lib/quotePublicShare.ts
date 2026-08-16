@@ -5,6 +5,11 @@ import { formatDateBR } from "@/lib/brazilDate";
 import { summarizeQuoteItems } from "@/lib/quoteApproval";
 import { getPhoneLastFourDigits } from "@/lib/phone";
 import { toPartnerQuotePrintPayload } from "@/lib/partnerQuoteCard";
+import {
+  loadPresetImageMapByDescricao,
+  resolvePresetImageUrl,
+} from "@/lib/quotePresetImages";
+import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
 
 export async function loadPublicQuoteByShareCode(code: string) {
   const normalized = code.trim().toLowerCase();
@@ -40,6 +45,7 @@ export async function loadPublicQuoteByShareCode(code: string) {
               cidade: true,
               bairro: true,
               telefone: true,
+              company_id: true,
             },
           },
         },
@@ -49,7 +55,9 @@ export async function loadPublicQuoteByShareCode(code: string) {
 
   if (!dbQuote) return null;
 
-  const items = dbQuote.items.map((item) => ({
+  const companyId = dbQuote.project.client.company_id;
+
+  const itemsRaw = dbQuote.items.map((item) => ({
     id: item.id,
     descricao: item.descricao,
     quantidade: item.quantidade,
@@ -60,6 +68,18 @@ export async function loadPublicQuoteByShareCode(code: string) {
     produto_imagem_url: item.showcaseProduct?.imagem_url ?? null,
     status: item.status,
     aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
+  }));
+
+  const presetMap = isImageCatalogTemplate(dbQuote.template_tipo)
+    ? await loadPresetImageMapByDescricao(
+        companyId,
+        itemsRaw.map((i) => i.descricao)
+      )
+    : new Map<string, string>();
+
+  const items = itemsRaw.map((item) => ({
+    ...item,
+    preset_imagem_url: resolvePresetImageUrl(presetMap, item.descricao),
   }));
   const summary = summarizeQuoteItems(items);
   const calculatedAt = dbQuote.valores_calculados_em ?? dbQuote.createdAt;

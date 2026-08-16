@@ -4,6 +4,7 @@ import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
+import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
 
 export const QUOTE_PRINT_FACTORY = {
   name: "Móveis Unghero LTDA",
@@ -49,6 +50,8 @@ export type QuotePrintItem = {
   subitens?: string[] | null;
   produto_nome?: string | null;
   produto_imagem_url?: string | null;
+  /** Imagem do item salvo (descrição) — página de catálogo visual. */
+  preset_imagem_url?: string | null;
   status?: string | null;
   aprovado_em?: string | null;
 };
@@ -213,6 +216,32 @@ export function quotePrintStylesCss() {
         display: flex !important;
         flex-direction: column !important;
       }
+      .print-catalog-card {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        border: 1px solid #d4d4d8 !important;
+        border-radius: 10px !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
+      }
+      .print-catalog-card__media {
+        aspect-ratio: 1 / 1 !important;
+        background: #fafafa !important;
+        border-bottom: 1px solid #e4e4e7 !important;
+      }
+      .print-catalog-card__name {
+        padding: 10px 12px !important;
+        text-align: center !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        line-height: 1.35 !important;
+        color: #171717 !important;
+      }
+      .print-catalog-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+      }
       .print-quote-bottom {
         flex-shrink: 0 !important;
         margin-top: auto !important;
@@ -296,6 +325,41 @@ export function quotePrintStylesCss() {
     .print-footer-link {
       color: #ffffff;
       text-decoration: none;
+    }
+    .print-catalog-card {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      border: 1px solid #d4d4d8;
+      border-radius: 10px;
+      background: #ffffff;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .print-catalog-card__media {
+      aspect-ratio: 1 / 1;
+      background: #fafafa;
+      border-bottom: 1px solid #e4e4e7;
+      overflow: hidden;
+    }
+    .print-catalog-card__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .print-catalog-card__name {
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: #171717;
+    }
+    .print-catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
     }
   `;
 }
@@ -563,6 +627,22 @@ export default function QuotePrintDocument({
   const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
   const isComparative = quote.template_tipo === "COMPARATIVO";
+  const isImageCatalog = isImageCatalogTemplate(quote.template_tipo);
+  const catalogItems = isImageCatalog
+    ? quote.items.filter(
+        (item) =>
+          item.status !== "RECUSADO" && Boolean(item.preset_imagem_url?.trim())
+      )
+    : [];
+  const catalogPages: typeof catalogItems[] = [];
+  const CATALOG_PER_PAGE = 9;
+  for (let i = 0; i < catalogItems.length; i += CATALOG_PER_PAGE) {
+    catalogPages.push(catalogItems.slice(i, i + CATALOG_PER_PAGE));
+  }
+  // Sempre gera a 2ª página no template com imagens (mesmo sem match de foto).
+  if (isImageCatalog && catalogPages.length === 0) {
+    catalogPages.push([]);
+  }
   const quoteCodigo =
     quote.id || quote.codigo
       ? formatQuoteCodigo({ id: quote.id || "", codigo: quote.codigo })
@@ -733,7 +813,7 @@ export default function QuotePrintDocument({
                         >
                           <td className={`${cellPad} leading-relaxed`}>
                             <div className="flex gap-2.5 items-start">
-                              {item.produto_imagem_url ? (
+                              {!isImageCatalog && item.produto_imagem_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={item.produto_imagem_url}
@@ -865,6 +945,52 @@ export default function QuotePrintDocument({
             <PrintBottomFooter />
           </div>
         ) : null}
+
+        {catalogPages.map((pageItems, pageIndex) => (
+          <div
+            key={`catalog-${pageIndex}`}
+            className="print-page print-page-break flex flex-col"
+          >
+            <PrintTopHeader
+              assetBase={assetBase}
+              title="Detalhamento visual"
+              quoteCodigo={quoteCodigo}
+            />
+            <main className="flex-1 px-[20mm] py-6 flex flex-col gap-4 min-h-0">
+              <div className="shrink-0 space-y-1">
+                <p className="text-[11px] text-neutral-500 leading-relaxed">
+                  Referências visuais dos itens desta proposta. Valores na página anterior.
+                </p>
+                {pageIndex === 0 && catalogItems.length === 0 ? (
+                  <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                    Nenhum item com imagem nos itens salvos. Cadastre a foto em Orçamentos → Itens
+                    salvos (descrição) com o mesmo nome do item.
+                  </p>
+                ) : null}
+              </div>
+              <div className="print-catalog-grid">
+                {pageItems.map((item, idx) => (
+                  <article
+                    key={`${item.descricao}-${idx}`}
+                    className="print-catalog-card"
+                  >
+                    <div className="print-catalog-card__media">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.preset_imagem_url || ""}
+                        alt={item.descricao}
+                      />
+                    </div>
+                    <p className="print-catalog-card__name line-clamp-2">
+                      {item.descricao}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </main>
+            <PrintBottomFooter />
+          </div>
+        ))}
       </div>
     </div>
   );

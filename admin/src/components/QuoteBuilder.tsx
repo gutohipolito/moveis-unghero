@@ -14,6 +14,7 @@ import {
   QUOTE_TEMPLATE_LABELS,
   getQuoteTemplate,
   isComparativeTemplate,
+  isImageCatalogTemplate,
   type QuoteTemplateId,
 } from "@/lib/quoteTemplates";
 import { listQuoteItemPresets, listQuoteDetailPresets, createQuoteItemPreset, createQuoteDetailPreset } from "@/app/actions/quoteItemPresets";
@@ -136,6 +137,7 @@ export default function QuoteBuilder({
   const [activeBuilderTab, setActiveBuilderTab] = useState<"items" | "briefing">("items");
   const hasBriefing = Boolean(briefingData);
   const isComparative = isComparativeTemplate(templateTipo);
+  const isImageCatalog = isImageCatalogTemplate(templateTipo);
   const hasLockedItems = items.some((item) => item.locked);
 
   useEffect(() => {
@@ -640,6 +642,12 @@ export default function QuoteBuilder({
             {isComparative ? (
               <p className="mt-1.5 text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1.5 leading-snug">
                 PDF sem valor total. Na aprovação o cliente escolhe 1 opção; as demais ficam recusadas e o orçamento não entra em pendências comerciais.
+              </p>
+            ) : null}
+            {isImageCatalog ? (
+              <p className="mt-1.5 text-[10px] text-sky-900 bg-sky-500/10 border border-sky-500/20 rounded-md px-2 py-1.5 leading-snug">
+                PDF em duas partes: página 1 com valores (layout básico) e página 2 com cards de foto + nome.
+                As imagens vêm dos <strong>Itens salvos</strong> (descrição com o mesmo nome do item).
               </p>
             ) : null}
           </div>

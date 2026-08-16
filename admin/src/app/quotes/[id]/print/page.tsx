@@ -11,6 +11,11 @@ import { formatDateBR } from "@/lib/brazilDate";
 import { summarizeQuoteItems } from "@/lib/quoteApproval";
 import { isOpsLimitedRole } from "@/lib/permissions";
 import { toPartnerQuotePrintPayload } from "@/lib/partnerQuoteCard";
+import {
+  loadPresetImageMapByDescricao,
+  resolvePresetImageUrl,
+} from "@/lib/quotePresetImages";
+import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -59,6 +64,7 @@ type LoadedPrintQuote = {
     subitens: string[];
     produto_nome: string | null;
     produto_imagem_url: string | null;
+    preset_imagem_url?: string | null;
     status?: string | null;
     aprovado_em?: string | null;
   }>;
@@ -118,7 +124,7 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         pdf_share_url: dbQuote.pdf_share_url,
       });
 
-      const items = dbQuote.items.map((item) => ({
+      const itemsRaw = dbQuote.items.map((item) => ({
         id: item.id,
         descricao: item.descricao,
         quantidade: item.quantidade,
@@ -129,6 +135,18 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         produto_imagem_url: item.showcaseProduct?.imagem_url ?? null,
         status: item.status,
         aprovado_em: item.aprovado_em ? item.aprovado_em.toISOString() : null,
+      }));
+
+      const presetMap = isImageCatalogTemplate(dbQuote.template_tipo)
+        ? await loadPresetImageMapByDescricao(
+            companyId,
+            itemsRaw.map((i) => i.descricao)
+          )
+        : new Map<string, string>();
+
+      const items = itemsRaw.map((item) => ({
+        ...item,
+        preset_imagem_url: resolvePresetImageUrl(presetMap, item.descricao),
       }));
       const summary = summarizeQuoteItems(items);
       const calculatedAt =

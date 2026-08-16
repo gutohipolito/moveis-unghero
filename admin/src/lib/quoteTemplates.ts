@@ -1,10 +1,11 @@
 import type { ItemType } from "@/app/actions/quotes";
 
-export const QUOTE_TEMPLATE_IDS = ["BASICO", "COMPARATIVO"] as const;
+export const QUOTE_TEMPLATE_IDS = ["BASICO", "BASICO_IMAGENS", "COMPARATIVO"] as const;
 export type QuoteTemplateId = (typeof QUOTE_TEMPLATE_IDS)[number];
 
 export const QUOTE_TEMPLATE_LABELS: Record<QuoteTemplateId, string> = {
   BASICO: "Básico",
+  BASICO_IMAGENS: "Básico com imagens",
   COMPARATIVO: "Proposta Comparativa",
 };
 
@@ -22,6 +23,8 @@ export interface QuoteTemplateDef {
   items: QuoteTemplateItem[];
   /** PDF omite total agregado; aprovação exige exatamente 1 item. */
   comparative: boolean;
+  /** PDF com 2ª página de cards (foto + nome) via itens salvos. */
+  withImages: boolean;
 }
 
 export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
@@ -31,6 +34,15 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     observacoes: "",
     items: [],
     comparative: false,
+    withImages: false,
+  },
+  BASICO_IMAGENS: {
+    id: "BASICO_IMAGENS",
+    nome: QUOTE_TEMPLATE_LABELS.BASICO_IMAGENS,
+    observacoes: "",
+    items: [],
+    comparative: false,
+    withImages: true,
   },
   COMPARATIVO: {
     id: "COMPARATIVO",
@@ -38,6 +50,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     observacoes: "",
     items: [],
     comparative: true,
+    withImages: false,
   },
 };
 
@@ -51,6 +64,10 @@ export function normalizeQuoteTemplateId(value: unknown): QuoteTemplateId {
 
 export function isComparativeTemplate(value: unknown): boolean {
   return normalizeQuoteTemplateId(value) === "COMPARATIVO";
+}
+
+export function isImageCatalogTemplate(value: unknown): boolean {
+  return getQuoteTemplate(value).withImages;
 }
 
 export function getQuoteTemplate(value: unknown): QuoteTemplateDef {
