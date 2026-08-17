@@ -273,6 +273,7 @@ export default function ProjectChatDock() {
       return 0;
     });
   }, [threads]);
+  const fabUnread = unreadTotal;
   const peekItems = open
     ? []
     : unreadItems.filter(
