@@ -46,7 +46,7 @@ function splitEntries(raw: string): string[] {
 }
 
 type Tab = "descricoes" | "detalhes";
-type ImageTarget = { type: "item"; id: string; label: string; imagem_url: string | null };
+type ImageTarget = { type: "item" | "detail"; id: string; label: string; imagem_url: string | null };
 
 export default function QuoteItemPresetsManager({
   isOpen,
@@ -254,8 +254,12 @@ export default function QuoteItemPresetsManager({
     setImageError(null);
   }
 
-  function applyImageUrl(id: string, imagem_url: string | null) {
-    setPresets((prev) => prev.map((p) => (p.id === id ? { ...p, imagem_url } : p)));
+  function applyImageUrl(type: "item" | "detail", id: string, imagem_url: string | null) {
+    if (type === "item") {
+      setPresets((prev) => prev.map((p) => (p.id === id ? { ...p, imagem_url } : p)));
+    } else {
+      setDetails((prev) => prev.map((d) => (d.id === id ? { ...d, imagem_url } : d)));
+    }
     setImageTarget((prev) => (prev && prev.id === id ? { ...prev, imagem_url } : prev));
   }
 
@@ -279,7 +283,7 @@ export default function QuoteItemPresetsManager({
         setImageError(data.error || "Não foi possível enviar a imagem.");
         return;
       }
-      applyImageUrl(imageTarget.id, data.imagem_url ?? null);
+      applyImageUrl(imageTarget.type, imageTarget.id, data.imagem_url ?? null);
     } catch {
       setImageError("Falha de conexão ao enviar a imagem.");
     } finally {
@@ -302,7 +306,7 @@ export default function QuoteItemPresetsManager({
         setImageError(data.error || "Não foi possível remover a imagem.");
         return;
       }
-      applyImageUrl(imageTarget.id, null);
+      applyImageUrl(imageTarget.type, imageTarget.id, null);
     } catch {
       setImageError("Falha de conexão ao remover a imagem.");
     } finally {
@@ -621,6 +625,14 @@ export default function QuoteItemPresetsManager({
                           ) : null}
                         </div>
                         {rowActions({
+                          hasImage: Boolean(d.imagem_url),
+                          onImage: () =>
+                            openImagePanel({
+                              type: "detail",
+                              id: d.id,
+                              label: d.texto,
+                              imagem_url: d.imagem_url,
+                            }),
                           onEdit: () => {
                             setEditingDetailId(d.id);
                             setDetailText(d.texto);

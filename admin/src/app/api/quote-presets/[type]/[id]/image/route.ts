@@ -95,13 +95,6 @@ export async function POST(
   if (!type) {
     return NextResponse.json({ success: false, error: "Tipo inválido." }, { status: 400 });
   }
-  // Imagens só nas descrições salvas (não nos detalhes).
-  if (type !== "item") {
-    return NextResponse.json(
-      { success: false, error: "Imagem só é permitida em descrições salvas." },
-      { status: 400 }
-    );
-  }
 
   const preset = await loadPreset(type, id, auth.companyId);
   if (!preset) {
@@ -173,12 +166,6 @@ export async function DELETE(
   const type = parseType(rawType);
   if (!type) {
     return NextResponse.json({ success: false, error: "Tipo inválido." }, { status: 400 });
-  }
-  if (type !== "item") {
-    return NextResponse.json(
-      { success: false, error: "Imagem só é permitida em descrições salvas." },
-      { status: 400 }
-    );
   }
 
   const preset = await loadPreset(type, id, auth.companyId);
