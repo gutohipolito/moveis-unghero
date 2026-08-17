@@ -31,7 +31,7 @@ import { loadNotificationPrefs } from "@/lib/notificationChannels";
 import { playNotificationChime } from "@/lib/notificationSound";
 import { cn } from "@/lib/utils";
 
-const BADGE_POLL_VISIBLE_MS = 20_000;
+const BADGE_POLL_VISIBLE_MS = 50_000;
 const BADGE_POLL_HIDDEN_MS = 2 * 60_000;
 const MAX_PEEKS = 2;
 

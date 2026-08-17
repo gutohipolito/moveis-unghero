@@ -47,6 +47,7 @@ export async function fetchFactoryBoard(companyId: string) {
           },
           responsavel: { select: { name: true } },
           ajudante: { select: { name: true } },
+          _count: { select: { attachments: true } },
           attachments: {
             select: {
               id: true,
@@ -54,6 +55,7 @@ export async function fetchFactoryBoard(companyId: string) {
               mime_type: true,
             },
             orderBy: { createdAt: "desc" },
+            take: 5,
           },
         },
       })
@@ -90,7 +92,7 @@ export async function fetchFactoryBoard(companyId: string) {
       observacoesFabrica: environment.observacoes_fabrica,
       materialsSummary: summarizeText(environment.materiais),
       hardwareSummary: summarizeText(environment.ferragens),
-      attachmentCount: environment.attachments.length,
+      attachmentCount: environment._count.attachments,
       coverUrl: cover?.url ?? null,
       techSheetFilled: fill.filled,
       techSheetTotal: fill.total,

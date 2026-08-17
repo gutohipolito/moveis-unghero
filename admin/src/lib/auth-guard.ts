@@ -1,5 +1,5 @@
-import { headers } from "next/headers";
-import { getSessionSafe } from "@/lib/auth";
+import { cache } from "react";
+import { getCachedSession } from "@/lib/session";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { isReadOnlyRole } from "@/lib/permissions";
@@ -12,8 +12,9 @@ export interface AuthContext {
   cargo: Role;
 }
 
-export async function getAuthContext(): Promise<AuthContext | null> {
-  const session = await getSessionSafe(await headers());
+/** Auth deduplicado por request (layout + pages + actions na mesma navegação). */
+export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
+  const session = await getCachedSession();
   if (!session?.user?.id) return null;
 
   return {
@@ -22,7 +23,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     email: session.user.email,
     cargo: (session.user.cargo as Role) || "PRODUCAO",
   };
-}
+});
 
 export async function requireAuth(): Promise<AuthContext> {
   const auth = await getAuthContext();

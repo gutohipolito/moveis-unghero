@@ -366,6 +366,7 @@ export function summarizeEnvironmentAttachments(input: {
     mime_type: string;
     categoria: EnvironmentAttachmentCategory;
   }>;
+  attachmentCount?: number;
 }): EnvironmentAttachmentSummary {
   const cover =
     input.attachments.find((item) => item.id === input.capa_attachment_id) ??
@@ -377,7 +378,7 @@ export function summarizeEnvironmentAttachments(input: {
   );
 
   return {
-    attachmentCount: input.attachments.length,
+    attachmentCount: input.attachmentCount ?? input.attachments.length,
     coverUrl: cover && isImageMime(cover.mime_type) ? cover.url : null,
     categories,
     hasArchProject: categories.includes("PROJETO_ARQUITETO"),

@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import SuggestionFab from "@/components/melhorias/SuggestionFab";
-import ProjectChatDock from "@/components/project-chat/ProjectChatDock";
 import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
@@ -13,6 +13,11 @@ import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { homePathForRole } from "@/lib/permissions";
 import { usePermissions } from "@/context/PermissionsContext";
 import { cn } from "@/lib/utils";
+
+const ProjectChatDock = dynamic(
+  () => import("@/components/project-chat/ProjectChatDock"),
+  { ssr: false }
+);
 
 interface DashboardLayoutWrapperProps {
   children: React.ReactNode;

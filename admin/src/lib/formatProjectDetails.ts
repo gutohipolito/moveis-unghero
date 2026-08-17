@@ -130,6 +130,7 @@ const projectInclude = {
   environments: {
     orderBy: { nome: "asc" as const },
     include: {
+      _count: { select: { attachments: true } },
       attachments: {
         select: {
           id: true,
@@ -138,6 +139,7 @@ const projectInclude = {
           categoria: true,
         },
         orderBy: { createdAt: "desc" as const },
+        take: 20,
       },
     },
   },
@@ -171,6 +173,7 @@ const projectInclude = {
   timeline: {
     include: { user: { select: { name: true } } },
     orderBy: { data: "desc" as const },
+    take: 60,
   },
 } satisfies Prisma.ProjectInclude;
 
@@ -209,6 +212,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       const summary = summarizeEnvironmentAttachments({
         capa_attachment_id: env.capa_attachment_id,
         attachments: env.attachments,
+        attachmentCount: env._count.attachments,
       });
       return {
         id: env.id,

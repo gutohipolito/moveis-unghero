@@ -16,7 +16,7 @@ import { getChangedLiveEntities } from "@/lib/liveVersions";
 // Polling curto no cliente (sem SSE persistente). Evita manter uma função
 // serverless aberta o tempo todo na Vercel e permite o Neon escalar a zero
 // quando ninguém está usando (abas ocultas usam intervalo bem maior).
-const POLL_VISIBLE_MS = 25_000;
+const POLL_VISIBLE_MS = 50_000;
 const POLL_HIDDEN_MS = 5 * 60_000;
 
 type LiveSubscriber = {

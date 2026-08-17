@@ -1271,6 +1271,7 @@ async function loadClientActivitiesAndPayments(clientId: string) {
       where: { client_id: clientId },
       include: { user: { select: { name: true } } },
       orderBy: { data: "desc" },
+      take: 120,
     }),
     prisma.project.findMany({
       where: { client_id: clientId },
@@ -1281,6 +1282,7 @@ async function loadClientActivitiesAndPayments(clientId: string) {
         timeline: {
           include: { user: { select: { name: true } } },
           orderBy: { data: "desc" },
+          take: 40,
         },
         installments: {
           orderBy: { data_vencimento: "asc" },

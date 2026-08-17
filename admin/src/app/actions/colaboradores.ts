@@ -72,6 +72,18 @@ export async function getColaboradores(companyId: string) {
       where: {
         company_id: companyId,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        cargo: true,
+        funcoes: true,
+        areaAtuacao: true,
+        tem_acesso: true,
+        image: true,
+        createdAt: true,
+        company_id: true,
+      },
       orderBy: {
         name: "asc",
       },

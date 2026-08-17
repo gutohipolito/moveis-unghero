@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: monorepoRoot,
   serverExternalPackages: ["sharp", "pdf-lib"],
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "motion/react"],
   },
   async headers() {
     return [
