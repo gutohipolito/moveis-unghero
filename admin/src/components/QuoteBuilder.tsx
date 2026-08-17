@@ -647,7 +647,7 @@ export default function QuoteBuilder({
             {isImageCatalog ? (
               <p className="mt-1.5 text-[10px] text-sky-900 bg-sky-500/10 border border-sky-500/20 rounded-md px-2 py-1.5 leading-snug">
                 PDF em duas partes: página 1 com valores (layout básico) e página 2 com cards de foto + nome.
-                As imagens vêm dos <strong>Itens salvos</strong> (descrição com o mesmo nome do item).
+                As imagens vêm dos <strong>Itens salvos</strong> (descrição ou detalhe com o mesmo texto do orçamento).
               </p>
             ) : null}
           </div>

@@ -6,7 +6,9 @@ import { summarizeQuoteItems } from "@/lib/quoteApproval";
 import { getPhoneLastFourDigits } from "@/lib/phone";
 import { toPartnerQuotePrintPayload } from "@/lib/partnerQuoteCard";
 import {
-  loadPresetImageMapByDescricao,
+  buildQuoteCatalogEntries,
+  collectQuoteImageLabels,
+  loadPresetImageMap,
   resolvePresetImageUrl,
 } from "@/lib/quotePresetImages";
 import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
@@ -71,16 +73,16 @@ export async function loadPublicQuoteByShareCode(code: string) {
   }));
 
   const presetMap = isImageCatalogTemplate(dbQuote.template_tipo)
-    ? await loadPresetImageMapByDescricao(
-        companyId,
-        itemsRaw.map((i) => i.descricao)
-      )
+    ? await loadPresetImageMap(companyId, collectQuoteImageLabels(itemsRaw))
     : new Map<string, string>();
 
   const items = itemsRaw.map((item) => ({
     ...item,
     preset_imagem_url: resolvePresetImageUrl(presetMap, item.descricao),
   }));
+  const catalog_images = isImageCatalogTemplate(dbQuote.template_tipo)
+    ? buildQuoteCatalogEntries(itemsRaw, presetMap)
+    : [];
   const summary = summarizeQuoteItems(items);
   const calculatedAt = dbQuote.valores_calculados_em ?? dbQuote.createdAt;
   const updatedAt = dbQuote.valores_atualizados_em;
@@ -100,6 +102,7 @@ export async function loadPublicQuoteByShareCode(code: string) {
     rejectedTotal: summary.rejectedTotal,
     valuesCalculatedAt: formatDateBR(calculatedAt),
     lastUpdatedAt: updatedAt ? formatDateBR(updatedAt) : null,
+    catalog_images,
     items,
   };
 

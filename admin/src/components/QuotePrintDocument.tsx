@@ -50,10 +50,15 @@ export type QuotePrintItem = {
   subitens?: string[] | null;
   produto_nome?: string | null;
   produto_imagem_url?: string | null;
-  /** Imagem do item salvo (descrição) — página de catálogo visual. */
+  /** Imagem do item salvo (descrição) — legado; preferir catalog_images. */
   preset_imagem_url?: string | null;
   status?: string | null;
   aprovado_em?: string | null;
+};
+
+export type QuoteCatalogPrintEntry = {
+  label: string;
+  imagem_url: string;
 };
 
 export type QuotePrintPartner = {
@@ -80,6 +85,8 @@ export type QuotePrintData = {
   valor_final: number;
   observacoes?: string | null;
   items: QuotePrintItem[];
+  /** Cards da página visual (descrições e detalhes com foto nos itens salvos). */
+  catalog_images?: QuoteCatalogPrintEntry[];
   partner: QuotePrintPartner;
   solicitante_nome?: string | null;
   solicitante_area?: string | null;
@@ -628,13 +635,20 @@ export default function QuotePrintDocument({
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
   const isComparative = quote.template_tipo === "COMPARATIVO";
   const isImageCatalog = isImageCatalogTemplate(quote.template_tipo);
-  const catalogItems = isImageCatalog
-    ? quote.items.filter(
-        (item) =>
-          item.status !== "RECUSADO" && Boolean(item.preset_imagem_url?.trim())
-      )
+  const catalogItems: QuoteCatalogPrintEntry[] = isImageCatalog
+    ? quote.catalog_images && quote.catalog_images.length > 0
+      ? quote.catalog_images
+      : quote.items
+          .filter(
+            (item) =>
+              item.status !== "RECUSADO" && Boolean(item.preset_imagem_url?.trim())
+          )
+          .map((item) => ({
+            label: item.descricao,
+            imagem_url: item.preset_imagem_url!.trim(),
+          }))
     : [];
-  const catalogPages: typeof catalogItems[] = [];
+  const catalogPages: QuoteCatalogPrintEntry[][] = [];
   const CATALOG_PER_PAGE = 9;
   for (let i = 0; i < catalogItems.length; i += CATALOG_PER_PAGE) {
     catalogPages.push(catalogItems.slice(i, i + CATALOG_PER_PAGE));
@@ -964,25 +978,25 @@ export default function QuotePrintDocument({
                 {pageIndex === 0 && catalogItems.length === 0 ? (
                   <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                     Nenhum item com imagem nos itens salvos. Cadastre a foto em Orçamentos → Itens
-                    salvos (descrição) com o mesmo nome do item.
+                    salvos (descrição ou detalhe) com o mesmo texto usado no orçamento.
                   </p>
                 ) : null}
               </div>
               <div className="print-catalog-grid">
-                {pageItems.map((item, idx) => (
+                {pageItems.map((entry, idx) => (
                   <article
-                    key={`${item.descricao}-${idx}`}
+                    key={`${entry.label}-${idx}`}
                     className="print-catalog-card"
                   >
                     <div className="print-catalog-card__media">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={item.preset_imagem_url || ""}
-                        alt={item.descricao}
+                        src={entry.imagem_url}
+                        alt={entry.label}
                       />
                     </div>
                     <p className="print-catalog-card__name line-clamp-2">
-                      {item.descricao}
+                      {entry.label}
                     </p>
                   </article>
                 ))}
