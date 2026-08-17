@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getAuthContext, assertCanWrite } from "@/lib/auth-guard";
 import { checkRateLimitAsync } from "@/lib/rateLimit";
 import { isOpsLimitedRole } from "@/lib/permissions";
-import { OPS_CRM_STATUS_SET } from "@/lib/crmOpsAccess";
+import { OPS_CRM_STATUS_SET, OPS_CRM_STATUSES } from "@/lib/crmOpsAccess";
 import {
   PROJECT_CHAT_BODY_MAX,
   PROJECT_CHAT_SEARCH_MIN,
@@ -14,6 +14,8 @@ import {
   projectChatAvatarInitials,
   projectChatStatusFilter,
   roleLabelForChat,
+  type ProjectChatClientDTO,
+  type ProjectChatClientProjectDTO,
   type ProjectChatMessageDTO,
   type ProjectChatThreadDTO,
 } from "@/lib/projectChat";
@@ -163,6 +165,213 @@ export async function listProjectChats(options?: {
   } catch (error) {
     console.error("Erro ao listar chats do projeto:", error);
     return { success: false, threads: [], unreadTotal: 0 };
+  }
+}
+
+async function unreadCountsForThreads(
+  userId: string,
+  threadIds: string[]
+): Promise<Map<string, number>> {
+  const unreadByThread = new Map<string, number>();
+  if (threadIds.length === 0) return unreadByThread;
+  const unreadRows = await prisma.$queryRaw<Array<{ thread_id: string; count: bigint }>>`
+    SELECT m.thread_id, COUNT(*)::bigint AS count
+    FROM "ProjectChatMessage" m
+    LEFT JOIN "ProjectChatRead" r
+      ON r.thread_id = m.thread_id AND r.user_id = ${userId}
+    WHERE m.thread_id IN (${Prisma.join(threadIds)})
+      AND (m.author_id IS NULL OR m.author_id <> ${userId})
+      AND (r."lastReadAt" IS NULL OR m."createdAt" > r."lastReadAt")
+    GROUP BY m.thread_id
+  `;
+  for (const item of unreadRows) {
+    unreadByThread.set(item.thread_id, Number(item.count));
+  }
+  return unreadByThread;
+}
+
+function approvedClientProjectWhere(
+  companyId: string,
+  role: Role,
+  query: string
+): Prisma.ProjectWhereInput {
+  const nameFilter =
+    query.length >= PROJECT_CHAT_SEARCH_MIN
+      ? { nome: { contains: query, mode: "insensitive" as const } }
+      : undefined;
+
+  if (isOpsLimitedRole(role)) {
+    return {
+      status_geral: { in: OPS_CRM_STATUSES },
+      client: { company_id: companyId, ...(nameFilter ? nameFilter : {}) },
+    };
+  }
+
+  return {
+    status_geral: { not: "PERDIDO" },
+    client: { company_id: companyId, ...(nameFilter ? { nome: nameFilter.nome } : {}) },
+    OR: [
+      { status_geral: { in: OPS_CRM_STATUSES } },
+      { quotes: { some: { aprovado_em: { not: null } } } },
+    ],
+  };
+}
+
+export async function listApprovedClientChats(options?: {
+  query?: string;
+}): Promise<{ success: boolean; clients: ProjectChatClientDTO[]; unreadTotal: number }> {
+  const auth = await getAuthContext();
+  if (!auth) return { success: false, clients: [], unreadTotal: 0 };
+  const query = (options?.query ?? "").trim();
+
+  try {
+    const projects = await prisma.project.findMany({
+      where: approvedClientProjectWhere(auth.companyId, auth.cargo, query),
+      orderBy: { updatedAt: "desc" },
+      take: 180,
+      select: {
+        id: true,
+        client_id: true,
+        status_geral: true,
+        client: { select: { nome: true } },
+        environments: {
+          select: { nome: true },
+          orderBy: { createdAt: "asc" },
+          take: 3,
+        },
+        chatThread: {
+          select: {
+            id: true,
+            closedAt: true,
+            lastMessageAt: true,
+            lastMessagePreview: true,
+          },
+        },
+      },
+    });
+
+    const threadIds = projects
+      .map((project) => project.chatThread?.id)
+      .filter((id): id is string => Boolean(id));
+    const unreadByThread = await unreadCountsForThreads(auth.userId, threadIds);
+
+    const byClient = new Map<
+      string,
+      {
+        clientId: string;
+        clientName: string;
+        projects: ProjectChatClientProjectDTO[];
+      }
+    >();
+
+    for (const project of projects) {
+      const rooms = project.environments
+        .map((item) => item.nome.trim())
+        .filter(Boolean)
+        .join(", ");
+      const thread = project.chatThread;
+      const unreadCount = thread ? unreadByThread.get(thread.id) ?? 0 : 0;
+      const row: ProjectChatClientProjectDTO = {
+        projectId: project.id,
+        status: project.status_geral,
+        rooms,
+        lastMessageAt: thread?.lastMessageAt?.toISOString() ?? null,
+        lastMessagePreview: thread?.lastMessagePreview ?? null,
+        unreadCount,
+        closed: Boolean(thread?.closedAt),
+      };
+
+      const existing = byClient.get(project.client_id);
+      if (existing) {
+        existing.projects.push(row);
+      } else {
+        byClient.set(project.client_id, {
+          clientId: project.client_id,
+          clientName: project.client.nome,
+          projects: [row],
+        });
+      }
+    }
+
+    const clients: ProjectChatClientDTO[] = [];
+    let unreadTotal = 0;
+
+    for (const group of byClient.values()) {
+      group.projects.sort((a, b) => {
+        if ((a.unreadCount > 0) !== (b.unreadCount > 0)) {
+          return a.unreadCount > 0 ? -1 : 1;
+        }
+        if ((a.status === "FINALIZADO") !== (b.status === "FINALIZADO")) {
+          return a.status === "FINALIZADO" ? 1 : -1;
+        }
+        const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+        const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      const unreadCount = group.projects.reduce((sum, item) => sum + item.unreadCount, 0);
+      unreadTotal += unreadCount;
+      const latest = group.projects.find((item) => item.lastMessageAt) ?? group.projects[0];
+
+      clients.push({
+        clientId: group.clientId,
+        clientName: group.clientName,
+        clientInitials: projectChatAvatarInitials(group.clientName),
+        unreadCount,
+        lastMessageAt: latest?.lastMessageAt ?? null,
+        lastMessagePreview: latest?.lastMessagePreview ?? null,
+        projectCount: group.projects.length,
+        projects: group.projects,
+      });
+    }
+
+    clients.sort((a, b) => {
+      if ((a.unreadCount > 0) !== (b.unreadCount > 0)) {
+        return a.unreadCount > 0 ? -1 : 1;
+      }
+      const aDone = a.projects.every((item) => item.status === "FINALIZADO");
+      const bDone = b.projects.every((item) => item.status === "FINALIZADO");
+      if (aDone !== bDone) return aDone ? 1 : -1;
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return a.clientName.localeCompare(b.clientName, "pt-BR");
+    });
+
+    return { success: true, clients, unreadTotal };
+  } catch (error) {
+    console.error("Erro ao listar conversas por cliente:", error);
+    return { success: false, clients: [], unreadTotal: 0 };
+  }
+}
+
+export async function getApprovedClientChatUnread(): Promise<{
+  success: boolean;
+  unreadTotal: number;
+}> {
+  const auth = await getAuthContext();
+  if (!auth) return { success: false, unreadTotal: 0 };
+  try {
+    const threads = await prisma.projectChatThread.findMany({
+      where: {
+        company_id: auth.companyId,
+        lastMessageAt: { not: null },
+        closedAt: null,
+        project: approvedClientProjectWhere(auth.companyId, auth.cargo, ""),
+      },
+      select: { id: true },
+      take: 180,
+    });
+    const unreadByThread = await unreadCountsForThreads(
+      auth.userId,
+      threads.map((thread) => thread.id)
+    );
+    let unreadTotal = 0;
+    for (const count of unreadByThread.values()) unreadTotal += count;
+    return { success: true, unreadTotal };
+  } catch (error) {
+    console.error("Erro ao contar não lidas do chat por cliente:", error);
+    return { success: false, unreadTotal: 0 };
   }
 }
 

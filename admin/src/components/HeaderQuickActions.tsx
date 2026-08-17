@@ -4,11 +4,12 @@ import { useState } from "react";
 import NotificationCenter from "@/components/NotificationCenter";
 import NotesCenter from "@/components/NotesCenter";
 import RemindersCenter from "@/components/RemindersCenter";
+import ProjectChatCenter from "@/components/project-chat/ProjectChatCenter";
 import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 import { usePermissions } from "@/context/PermissionsContext";
 
-type HeaderMenu = "notes" | "reminders" | "notifications";
+type HeaderMenu = "chats" | "notes" | "reminders" | "notifications";
 
 interface HeaderQuickActionsProps {
   companyId: string;
@@ -28,6 +29,10 @@ export default function HeaderQuickActions({
 
   return (
     <div className="flex items-center gap-1">
+      <ProjectChatCenter
+        isOpen={openMenu === "chats"}
+        onOpenChange={(open) => setOpenMenu(open ? "chats" : null)}
+      />
       <NotesCenter
         companyId={companyId}
         initialNotes={initialNotes}

@@ -69,3 +69,25 @@ export type ProjectChatFocus = {
   projectId: string;
   clientName: string;
 };
+
+export type ProjectChatClientProjectDTO = {
+  projectId: string;
+  status: string;
+  rooms: string;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  unreadCount: number;
+  closed: boolean;
+};
+
+/** Cliente com orçamento aprovado (ou etapa posterior), para a lista do header. */
+export type ProjectChatClientDTO = {
+  clientId: string;
+  clientName: string;
+  clientInitials: string;
+  unreadCount: number;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  projectCount: number;
+  projects: ProjectChatClientProjectDTO[];
+};
