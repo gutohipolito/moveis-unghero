@@ -74,25 +74,25 @@ const CATEGORY_HINTS: Record<EnvironmentAttachmentCategory, string> = {
   FOTO: "Fotos gerais do cômodo / local",
 };
 
-const TOUR_STORAGE_KEY = "env-gallery-tour-v1";
+const TOUR_STORAGE_KEY = "env-gallery-tour-v2";
 
 const TOUR_STEPS: SpotlightTourStep[] = [
   {
     id: "category",
-    title: "Escolha o tipo",
-    body: "Antes de fotografar, toque no tipo do registro (por exemplo medição ou foto). A câmera e a galeria usam essa categoria.",
+    title: "Passo 1 — tipo do registro",
+    body: "Toque em medição, foto ou outro tipo. Só depois disso aparecem os botões de câmera e galeria.",
     target: '[data-tour-id="env-category"]',
   },
   {
     id: "capture",
-    title: "Tire a foto ou use a galeria",
-    body: "Na visita, use abrir câmera. Se a foto já estiver no aparelho, use da galeria.",
+    title: "Passo 2 — capturar",
+    body: "Com o tipo escolhido, tire a foto na visita ou escolha arquivos já salvos no aparelho.",
     target: '[data-tour-id="env-capture"]',
   },
   {
     id: "filter",
-    title: "Filtre o que vê",
-    body: "O filtro só organiza a grade. Ele não muda o destino da próxima foto — isso fica no tipo escolhido acima.",
+    title: "Filtro da grade",
+    body: "Organiza o que você vê abaixo. Não altera a categoria do próximo envio.",
     target: '[data-tour-id="env-filter"]',
   },
   {
@@ -120,15 +120,16 @@ export default function EnvironmentGalleryModal({
   const [uploading, setUploading] = useState(false);
   const [filterCategory, setFilterCategory] = useState<AttachmentFilter>("ALL");
   const [workCategory, setWorkCategory] =
-    useState<EnvironmentAttachmentCategory>("FOTO");
+    useState<EnvironmentAttachmentCategory | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [pendingCategory, setPendingCategory] =
-    useState<EnvironmentAttachmentCategory>("FOTO");
+    useState<EnvironmentAttachmentCategory | null>(null);
   const [preview, setPreview] = useState<PreviewTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [pendingPreviewUrls, setPendingPreviewUrls] = useState<string[]>([]);
+  const [showPendingCategoryPicker, setShowPendingCategoryPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,19 +143,6 @@ export default function EnvironmentGalleryModal({
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-
-  // Na visita em campo, Medição é o destino mais comum ao abrir o modal.
-  useEffect(() => {
-    if (!environment || !canManage) return;
-    if (typeof window === "undefined") return;
-    const mobile =
-      window.matchMedia("(max-width: 767px)").matches ||
-      window.matchMedia("(pointer: coarse)").matches;
-    if (mobile) {
-      setWorkCategory("MEDICAO");
-      setPendingCategory("MEDICAO");
-    }
-  }, [environment?.id, canManage]);
 
   const loadAttachments = useCallback(async (environmentId: string) => {
     setLoading(true);
@@ -176,8 +164,10 @@ export default function EnvironmentGalleryModal({
       setAttachments([]);
       setCapaId(null);
       setFilterCategory("ALL");
-      setWorkCategory("FOTO");
+      setWorkCategory(null);
+      setPendingCategory(null);
       setPendingFiles([]);
+      setShowPendingCategoryPicker(false);
       setPreview(null);
       setError(null);
       setCameraOpen(false);
@@ -252,12 +242,19 @@ export default function EnvironmentGalleryModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- listeners bound to current preview set
   }, [preview, previewableAttachments]);
 
+  function clearPendingUpload() {
+    setPendingFiles([]);
+    setPendingCategory(null);
+    setShowPendingCategoryPicker(false);
+  }
+
   function queueFilesForUpload(fileList: FileList | File[] | null) {
-    if (!fileList) return;
+    if (!fileList || !workCategory) return;
     const list = Array.isArray(fileList) ? fileList : Array.from(fileList);
     if (list.length === 0) return;
     setPendingFiles(list);
     setPendingCategory(workCategory);
+    setShowPendingCategoryPicker(false);
     setError(null);
   }
 
@@ -271,6 +268,7 @@ export default function EnvironmentGalleryModal({
   }
 
   function openCamera() {
+    if (!workCategory) return;
     if (preferNativeCameraCapture()) {
       cameraInputRef.current?.click();
     } else {
@@ -279,7 +277,7 @@ export default function EnvironmentGalleryModal({
   }
 
   async function confirmPendingUpload() {
-    if (!environment || pendingFiles.length === 0 || !canManage) return;
+    if (!environment || pendingFiles.length === 0 || !pendingCategory || !canManage) return;
     setUploading(true);
     setError(null);
     try {
@@ -294,6 +292,7 @@ export default function EnvironmentGalleryModal({
         });
       }
       setPendingFiles([]);
+      setShowPendingCategoryPicker(false);
       await loadAttachments(environment.id);
     } catch (err) {
       setError(describeUploadException(err, { maxBytes: ENVIRONMENT_ATTACHMENT_MAX_BYTES }));
@@ -373,8 +372,8 @@ export default function EnvironmentGalleryModal({
                     {tipoLabel}
                     {canManage
                       ? isMobile
-                        ? " · escolha o tipo e tire a foto"
-                        : " · registre fotos por tipo (medição, conferência…). A câmera usa a categoria selecionada."
+                        ? " · escolha o tipo e depois capture"
+                        : " · escolha o tipo, capture e confirme o envio"
                       : " · somente visualização"}
                   </p>
                 </div>
@@ -406,16 +405,145 @@ export default function EnvironmentGalleryModal({
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6">
-              {canManage && (
-                <div className="rounded-xl border border-border bg-secondary/20 p-3 sm:p-5 space-y-3 sm:space-y-5">
+              {canManage && pendingFiles.length > 0 && pendingCategory ? (
+                <div className="rounded-xl border-2 border-primary/35 bg-primary/[0.06] p-4 sm:p-5 space-y-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+                        Revisar envio
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-foreground">
+                        {pendingFiles.length} arquivo{pendingFiles.length > 1 ? "s" : ""} pronto
+                        {pendingFiles.length > 1 ? "s" : ""} para enviar
+                      </p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+                        Confira as miniaturas e a categoria antes de publicar no ambiente.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearPendingUpload}
+                      className="text-muted-foreground hover:text-foreground p-2 rounded-md cursor-pointer min-h-10 min-w-10 inline-flex items-center justify-center shrink-0"
+                      title="Descartar seleção"
+                      disabled={uploading}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {pendingPreviewUrls.length > 0 ? (
+                    <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+                      {pendingPreviewUrls.map((url) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={url}
+                          src={url}
+                          alt=""
+                          className="h-24 w-24 sm:h-28 sm:w-28 rounded-xl object-cover border-2 border-background shadow-sm shrink-0"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border bg-background/80 px-4 py-6 text-center text-xs text-muted-foreground">
+                      {pendingFiles.map((f) => f.name).join(", ")}
+                    </div>
+                  )}
+
+                  <div className="rounded-lg border border-border bg-background p-3 sm:p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Categoria
+                        </p>
+                        <p className="text-sm font-semibold text-foreground">
+                          {attachmentCategoryLabel(pendingCategory)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {CATEGORY_HINTS[pendingCategory]}
+                        </p>
+                      </div>
+                      {!showPendingCategoryPicker ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowPendingCategoryPicker(true)}
+                          disabled={uploading}
+                          className="text-xs font-semibold text-primary hover:underline cursor-pointer min-h-10 px-2"
+                        >
+                          Alterar categoria
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {showPendingCategoryPicker ? (
+                      <div className="space-y-2 pt-1 border-t border-border">
+                        <p className="text-[11px] text-muted-foreground">
+                          Escolha outra categoria para este envio:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => {
+                            const active = pendingCategory === cat.value;
+                            return (
+                              <button
+                                key={cat.value}
+                                type="button"
+                                onClick={() => {
+                                  setPendingCategory(cat.value);
+                                  setWorkCategory(cat.value);
+                                  setShowPendingCategoryPicker(false);
+                                }}
+                                disabled={uploading}
+                                className={`inline-flex items-center min-h-9 rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors cursor-pointer touch-manipulation ${
+                                  active
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-secondary/60 text-muted-foreground border-border hover:text-foreground"
+                                }`}
+                              >
+                                {cat.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="hidden sm:flex gap-2 sm:gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 h-11 text-sm font-semibold touch-manipulation"
+                      onClick={clearPendingUpload}
+                      disabled={uploading}
+                    >
+                      Voltar
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 h-11 text-sm font-semibold touch-manipulation"
+                      onClick={() => void confirmPendingUpload()}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-1.5" />
+                      )}
+                      Enviar agora
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              {canManage && pendingFiles.length === 0 ? (
+                <div className="rounded-xl border border-border bg-secondary/20 p-3 sm:p-5 space-y-4 sm:space-y-5">
                   <div data-tour-id="env-category" className="space-y-2 sm:space-y-3">
                     <div className="space-y-1">
                       <p className="text-xs sm:text-sm font-semibold text-foreground">
                         1. O que você está registrando?
                       </p>
                       <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                        Escolha o tipo <strong className="text-foreground">antes</strong> de
-                        fotografar.
+                        Toque no tipo do registro. A câmera e a galeria só aparecem depois
+                        dessa escolha.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 sm:gap-2.5">
@@ -425,10 +553,7 @@ export default function EnvironmentGalleryModal({
                           <button
                             key={cat.value}
                             type="button"
-                            onClick={() => {
-                              setWorkCategory(cat.value);
-                              if (pendingFiles.length > 0) setPendingCategory(cat.value);
-                            }}
+                            onClick={() => setWorkCategory(cat.value)}
                             disabled={uploading}
                             title={CATEGORY_HINTS[cat.value]}
                             className={`inline-flex items-center min-h-10 sm:min-h-9 rounded-full px-3 py-2 text-xs font-semibold border transition-colors cursor-pointer touch-manipulation ${
@@ -442,36 +567,57 @@ export default function EnvironmentGalleryModal({
                         );
                       })}
                     </div>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                      {CATEGORY_HINTS[workCategory]}
-                    </p>
+                    {workCategory ? (
+                      <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+                        {CATEGORY_HINTS[workCategory]}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed italic">
+                        Nenhum tipo selecionado — escolha acima para continuar.
+                      </p>
+                    )}
                   </div>
 
-                  {/* Desktop: botões no fluxo. Mobile: barra fixa no rodapé. */}
-                  <div
-                    data-tour-id={isMobile ? undefined : "env-capture"}
-                    className="hidden sm:flex flex-row gap-3 pt-1"
-                  >
-                    <Button
-                      type="button"
-                      disabled={uploading || pendingFiles.length > 0}
-                      onClick={openCamera}
-                      className="flex-1 h-11 text-sm font-semibold gap-1.5"
+                  {workCategory ? (
+                    <div
+                      data-tour-id={isMobile ? undefined : "env-capture"}
+                      className="space-y-2 sm:space-y-3 pt-1 border-t border-border/70"
                     >
-                      <Camera className="h-4 w-4" />
-                      Abrir câmera
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploading || pendingFiles.length > 0}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 h-11 text-sm font-semibold gap-1.5"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Da galeria
-                    </Button>
-                  </div>
+                      <div className="space-y-1">
+                        <p className="text-xs sm:text-sm font-semibold text-foreground">
+                          2. Adicionar arquivos
+                        </p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+                          Registrando como{" "}
+                          <strong className="text-foreground">
+                            {attachmentCategoryLabel(workCategory)}
+                          </strong>
+                          . Depois você revisa antes de enviar.
+                        </p>
+                      </div>
+                      <div className="hidden sm:flex flex-row gap-3">
+                        <Button
+                          type="button"
+                          disabled={uploading}
+                          onClick={openCamera}
+                          className="flex-1 h-11 text-sm font-semibold gap-1.5"
+                        >
+                          <Camera className="h-4 w-4" />
+                          Abrir câmera
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={uploading}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex-1 h-11 text-sm font-semibold gap-1.5"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Da galeria
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <input
                     ref={fileInputRef}
@@ -479,7 +625,7 @@ export default function EnvironmentGalleryModal({
                     accept={ENVIRONMENT_ATTACHMENT_ACCEPT}
                     multiple
                     className="hidden"
-                    disabled={uploading}
+                    disabled={uploading || !workCategory}
                     onChange={(e) => {
                       queueFilesForUpload(e.target.files);
                       e.target.value = "";
@@ -491,107 +637,14 @@ export default function EnvironmentGalleryModal({
                     accept="image/*"
                     capture="environment"
                     className="hidden"
-                    disabled={uploading}
+                    disabled={uploading || !workCategory}
                     onChange={(e) => {
                       queueFilesForUpload(e.target.files);
                       e.target.value = "";
                     }}
                   />
-
-                  {pendingFiles.length > 0 && (
-                    <div className="rounded-lg border border-primary/25 bg-background p-3 sm:p-4 space-y-3 sm:space-y-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-xs sm:text-sm font-semibold text-foreground">
-                            Confirmar envio · {pendingFiles.length} arquivo
-                            {pendingFiles.length > 1 ? "s" : ""}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[280px]">
-                            {pendingFiles.map((f) => f.name).join(", ")}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setPendingFiles([])}
-                          className="text-muted-foreground hover:text-foreground p-2 rounded-md cursor-pointer min-h-10 min-w-10 inline-flex items-center justify-center"
-                          title="Cancelar seleção"
-                          disabled={uploading}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      {pendingPreviewUrls.length > 0 ? (
-                        <div className="flex gap-2 overflow-x-auto pb-1">
-                          {pendingPreviewUrls.map((url) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              key={url}
-                              src={url}
-                              alt=""
-                              className="h-20 w-20 rounded-lg object-cover border border-border shrink-0"
-                            />
-                          ))}
-                        </div>
-                      ) : null}
-
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-foreground">
-                          Categoria deste envio
-                        </p>
-                        <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                          {ENVIRONMENT_ATTACHMENT_CATEGORIES.map((cat) => {
-                            const active = pendingCategory === cat.value;
-                            return (
-                              <button
-                                key={cat.value}
-                                type="button"
-                                onClick={() => {
-                                  setPendingCategory(cat.value);
-                                  setWorkCategory(cat.value);
-                                }}
-                                disabled={uploading}
-                                className={`inline-flex items-center min-h-10 sm:min-h-9 rounded-full px-3 py-2 text-xs font-semibold border transition-colors cursor-pointer touch-manipulation ${
-                                  active
-                                    ? "bg-primary text-primary-foreground border-primary"
-                                    : "bg-secondary/60 text-muted-foreground border-border hover:text-foreground"
-                                }`}
-                              >
-                                {cat.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 sm:gap-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="flex-1 h-12 sm:h-11 text-sm font-semibold touch-manipulation"
-                          onClick={() => setPendingFiles([])}
-                          disabled={uploading}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button
-                          type="button"
-                          className="flex-1 h-12 sm:h-11 text-sm font-semibold touch-manipulation"
-                          onClick={() => void confirmPendingUpload()}
-                          disabled={uploading}
-                        >
-                          {uploading ? (
-                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4 mr-1.5" />
-                          )}
-                          Enviar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              )}
+              ) : null}
 
               <div data-tour-id="env-filter" className="space-y-2 sm:space-y-3">
                 <div className="space-y-1">
@@ -664,7 +717,7 @@ export default function EnvironmentGalleryModal({
                   <div className="rounded-xl border border-dashed border-border p-8 sm:p-10 text-center text-sm text-muted-foreground leading-relaxed">
                     Nenhuma imagem ou arquivo neste ambiente ainda.
                     {canManage
-                      ? " Escolha o tipo acima e use abrir câmera ou da galeria."
+                      ? " Escolha o tipo do registro e depois use câmera ou galeria."
                       : ""}
                   </div>
                 ) : filteredAttachments.length === 0 ? (
@@ -779,11 +832,36 @@ export default function EnvironmentGalleryModal({
                   : "px-6 py-4 flex justify-end"
               }`}
             >
-              {isMobile && canManage ? (
+              {isMobile && canManage && pendingFiles.length > 0 ? (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 h-12 text-sm font-bold touch-manipulation"
+                    onClick={clearPendingUpload}
+                    disabled={uploading}
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    type="button"
+                    className="flex-[1.4] h-12 text-sm font-bold gap-1.5 touch-manipulation shadow-md"
+                    onClick={() => void confirmPendingUpload()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Upload className="h-5 w-5" />
+                    )}
+                    Enviar agora
+                  </Button>
+                </div>
+              ) : isMobile && canManage && workCategory ? (
                 <div data-tour-id={isMobile ? "env-capture" : undefined} className="flex gap-2">
                   <Button
                     type="button"
-                    disabled={uploading || pendingFiles.length > 0}
+                    disabled={uploading}
                     onClick={openCamera}
                     className="flex-[1.4] h-12 text-sm font-bold gap-1.5 touch-manipulation shadow-md"
                   >
@@ -793,7 +871,7 @@ export default function EnvironmentGalleryModal({
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={uploading || pendingFiles.length > 0}
+                    disabled={uploading}
                     onClick={() => fileInputRef.current?.click()}
                     className="flex-1 h-12 text-sm font-bold gap-1.5 touch-manipulation"
                   >
@@ -801,6 +879,15 @@ export default function EnvironmentGalleryModal({
                     Galeria
                   </Button>
                 </div>
+              ) : isMobile && canManage ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onClose}
+                  className="w-full h-12 text-sm font-semibold touch-manipulation"
+                >
+                  Fechar
+                </Button>
               ) : (
                 <Button type="button" variant="secondary" onClick={onClose} className="min-h-10">
                   Fechar
@@ -812,9 +899,13 @@ export default function EnvironmentGalleryModal({
       </Dialog>
 
       <CameraCaptureModal
-        open={cameraOpen}
+        open={cameraOpen && Boolean(workCategory)}
         onClose={() => setCameraOpen(false)}
-        title={`Foto — ${attachmentCategoryLabel(workCategory)}`}
+        title={
+          workCategory
+            ? `Foto — ${attachmentCategoryLabel(workCategory)}`
+            : "Foto do ambiente"
+        }
         onCapture={async (file) => {
           queueFilesForUpload([file]);
           setCameraOpen(false);
