@@ -103,6 +103,17 @@ export function canManageClients(role: Role | string | null | undefined): boolea
   return !isOpsLimitedRole(role) && !isReadOnlyRole(role);
 }
 
+/**
+ * Upload operacional de mídia: pastas do cliente (Residência/Documentos),
+ * arquivos do projeto e galeria dos ambientes.
+ * Projetista pode; fábrica e VIEWER só visualizam.
+ */
+export function canManageOperationalMedia(
+  role: Role | string | null | undefined
+): boolean {
+  return !isFactoryRole(role) && !isReadOnlyRole(role);
+}
+
 /** Arrastar/mover cards do funil — bloqueado para ops e VIEWER. */
 export function canMoveCrmCards(role: Role | string | null | undefined): boolean {
   return !isOpsLimitedRole(role) && !isReadOnlyRole(role);

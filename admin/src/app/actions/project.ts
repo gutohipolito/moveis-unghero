@@ -13,13 +13,22 @@ import {
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
-import { isOpsLimitedRole } from "@/lib/permissions";
+import { isFactoryRole, isOpsLimitedRole, isReadOnlyRole } from "@/lib/permissions";
 
 function denyOpsProjectMutation(cargo: string | null | undefined) {
   return isOpsLimitedRole(cargo)
     ? {
         success: false as const,
         error: "Este projeto está disponível somente para visualização.",
+      }
+    : null;
+}
+
+function denyProjectFileUpload(cargo: string | null | undefined) {
+  return isFactoryRole(cargo) || isReadOnlyRole(cargo)
+    ? {
+        success: false as const,
+        error: "Este cargo pode apenas visualizar os arquivos do projeto.",
       }
     : null;
 }
@@ -279,7 +288,7 @@ export async function uploadProjectFile(projectId: string, data: { tipo: FileTyp
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
-  const denied = denyOpsProjectMutation(auth.cargo);
+  const denied = denyProjectFileUpload(auth.cargo);
   if (denied) return denied;
   try {
     await requireProjectInCompany(projectId, auth.companyId);

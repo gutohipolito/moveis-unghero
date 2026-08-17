@@ -304,6 +304,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const { isAdmin, isOpsLimited, role } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
   const canManageEnvGallery = canManageEnvironmentAttachments(role);
+  const canManageProjectFiles = canManageEnvGallery;
   const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
   const isFormLead = !isOpsLimited && project.client.origem === "FORMULARIO";
@@ -1540,8 +1541,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 Faça upload de projetos em DWG, SketchUp, PDFs de medição e renders em alta definição.
               </p>
             </div>
-            {!isOpsLimited && (
+            {canManageProjectFiles && (
               <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+                {!isOpsLimited && (
                 <Button
                   onClick={() => handlePromobImportClick()}
                   size="sm"
@@ -1552,6 +1554,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 shrink-0" />
                   <span className="truncate">Importar Promob (em breve)</span>
                 </Button>
+                )}
                 <Button
                   onClick={() => setIsUploadOpen(true)}
                   size="sm"

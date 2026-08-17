@@ -1,4 +1,5 @@
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
+import { canManageOperationalMedia } from "@/lib/permissions";
 
 export type FactoryBoardEnvironment = {
   id: string;
@@ -77,7 +78,7 @@ export const ENVIRONMENT_ATTACHMENT_CATEGORIES: {
 export function canManageEnvironmentAttachments(
   role: string | null | undefined
 ): boolean {
-  return role !== "PRODUCAO" && role !== "VIEWER";
+  return canManageOperationalMedia(role);
 }
 
 export const TECH_SHEET_TOTAL_FIELDS = 5;

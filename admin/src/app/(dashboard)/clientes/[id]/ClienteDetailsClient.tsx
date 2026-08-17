@@ -55,7 +55,7 @@ import {
 } from "@/lib/clientConsent";
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { usePermissions } from "@/context/PermissionsContext";
-import { canManageClients } from "@/lib/permissions";
+import { canManageClients, canManageOperationalMedia } from "@/lib/permissions";
 import type { Origin } from "@/app/actions/kanban";
 import type { ClientWizardData } from "../ClientWizard";
 
@@ -256,6 +256,7 @@ export default function ClienteDetailsClient({
   const { isOpsLimited, role } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
   const canManage = canManageClients(role);
+  const canManageAttachments = canManageOperationalMedia(role);
   const hideClientContact = isOpsLimited;
 
   useEffect(() => {
@@ -749,7 +750,7 @@ export default function ClienteDetailsClient({
               folders={attachmentFolders}
               onAttachmentsChange={setAttachments}
               onFoldersChange={setAttachmentFolders}
-              canManage={canManage}
+              canManage={canManageAttachments}
               tipoPessoa={docInfo.tipo_pessoa === "PJ" ? "PJ" : "PF"}
               showError={showError}
               confirmAction={confirmAction}

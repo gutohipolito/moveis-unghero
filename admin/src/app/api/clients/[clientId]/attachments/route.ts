@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext, requireClientInCompany } from "@/lib/auth-guard";
 import { requireWriteAccess } from "@/lib/moduleAccess";
+import { canManageOperationalMedia } from "@/lib/permissions";
 import { putSensitiveBlob } from "@/lib/secureBlob";
 import {
   CLIENT_ATTACHMENT_MAX_BYTES,
@@ -17,6 +18,14 @@ import {
 import type { ClientAttachmentType } from "@prisma/client";
 
 const CLIENT_UPLOAD_MAX_FILES = 20;
+
+function denyMediaWrite(cargo: string | null | undefined) {
+  if (canManageOperationalMedia(cargo)) return null;
+  return NextResponse.json(
+    { success: false, error: "Este cargo pode apenas visualizar os arquivos do cliente." },
+    { status: 403 }
+  );
+}
 
 function toClientUrl(url: string): string {
   try {
@@ -126,6 +135,8 @@ export async function POST(
   } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
+  const mediaDenied = denyMediaWrite(auth.cargo);
+  if (mediaDenied) return mediaDenied;
 
   const { clientId } = await context.params;
 
@@ -275,6 +286,8 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
+  const mediaDenied = denyMediaWrite(auth.cargo);
+  if (mediaDenied) return mediaDenied;
 
   const { clientId } = await context.params;
 
@@ -439,6 +452,8 @@ export async function DELETE(
   if (!auth) {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
+  const mediaDenied = denyMediaWrite(auth.cargo);
+  if (mediaDenied) return mediaDenied;
 
   const { clientId } = await context.params;
   const attachmentId = request.nextUrl.searchParams.get("id");
