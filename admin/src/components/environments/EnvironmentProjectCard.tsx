@@ -21,6 +21,7 @@ type EnvironmentProjectCardProps = {
   statusLabel: string;
   statusClassName: string;
   onOpen: () => void;
+  compact?: boolean;
 };
 
 function CategoryIcon({ category }: { category: EnvironmentAttachmentCategory }) {
@@ -38,6 +39,7 @@ export default function EnvironmentProjectCard({
   statusLabel,
   statusClassName,
   onOpen,
+  compact = false,
 }: EnvironmentProjectCardProps) {
   const tipoLabel = ENVIRONMENT_TIPO_LABELS[environment.tipo] ?? environment.tipo;
   const hasFiles = environment.attachmentCount > 0;
@@ -55,7 +57,11 @@ export default function EnvironmentProjectCard({
             : "border-border border-dashed hover:border-primary/30"
       }`}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+      <div
+        className={`relative w-full overflow-hidden bg-slate-100 ${
+          compact ? "aspect-[4/3]" : "aspect-[16/10]"
+        }`}
+      >
         {environment.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -103,16 +109,22 @@ export default function EnvironmentProjectCard({
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className={`flex flex-1 flex-col gap-3 ${compact ? "p-3 gap-2" : "p-4"}`}>
         <div className="min-w-0">
-          <h4 className="font-semibold text-base text-foreground break-words leading-snug">
+          <h4
+            className={`font-semibold text-foreground break-words leading-snug ${
+              compact ? "text-sm" : "text-base"
+            }`}
+          >
             {environment.nome}
           </h4>
-          <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-            {hasFiles
-              ? "Toque para ver fotos, projetos, medições e renders deste cômodo."
-              : "Abra para enviar medição, projeto do arquiteto ou arquivos da fábrica."}
-          </p>
+          {!compact ? (
+            <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+              {hasFiles
+                ? "Toque para ver fotos, projetos, medições e renders deste cômodo."
+                : "Abra para enviar medição, projeto do arquiteto ou arquivos da fábrica."}
+            </p>
+          ) : null}
         </div>
 
         {environment.categories.length > 0 ? (
@@ -133,10 +145,12 @@ export default function EnvironmentProjectCard({
           </span>
         )}
 
-        <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:underline">
-          <Images className="h-3.5 w-3.5 shrink-0" />
-          Abrir arquivos
-        </span>
+        {!compact ? (
+          <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:underline">
+            <Images className="h-3.5 w-3.5 shrink-0" />
+            Abrir arquivos
+          </span>
+        ) : null}
       </div>
     </button>
   );

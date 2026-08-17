@@ -39,6 +39,14 @@ import {
 } from "@/lib/clientConsent";
 import { canManageEnvironmentAttachments, EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY, sortEnvironmentsForOperator } from "@/lib/factoryEnvironment";
 import EnvironmentProjectCard from "@/components/environments/EnvironmentProjectCard";
+import EnvironmentProjectListRow from "@/components/environments/EnvironmentProjectListRow";
+import {
+  ENVIRONMENT_GRID_COL_CLASS,
+  readEnvironmentViewPrefs,
+  writeEnvironmentViewPrefs,
+  type EnvironmentGridCols,
+  type EnvironmentViewMode,
+} from "@/lib/environmentProjectView";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -117,6 +125,8 @@ import {
   Images,
   Paperclip,
   MessageSquare,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import type {
   PartnerProjectFileDTO,
@@ -316,6 +326,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [environmentFilter, setEnvironmentFilter] = useState<
     "all" | "with_files" | "production_ready" | "empty"
   >("all");
+  const [environmentViewMode, setEnvironmentViewMode] = useState<EnvironmentViewMode>("grid");
+  const [environmentGridCols, setEnvironmentGridCols] = useState<EnvironmentGridCols>(4);
   const sortedEnvironments = useMemo(
     () => sortEnvironmentsForOperator(project.environments),
     [project.environments]
@@ -534,6 +546,19 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [uploadForm, setUploadForm] = useState({ tipo: "RENDER" as FileType, nome_arquivo: "" });
   const [loading, setLoading] = useState(false);
   const [isRenderingPro, setIsRenderingPro] = useState(false);
+
+  useEffect(() => {
+    const saved = readEnvironmentViewPrefs();
+    setEnvironmentViewMode(saved.viewMode);
+    setEnvironmentGridCols(saved.gridCols);
+  }, []);
+
+  useEffect(() => {
+    writeEnvironmentViewPrefs({
+      viewMode: environmentViewMode,
+      gridCols: environmentGridCols,
+    });
+  }, [environmentViewMode, environmentGridCols]);
 
   const syncProject = useCallback(async () => {
     const result = await getProjectLiveSnapshot(project.id);
@@ -1478,84 +1503,152 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           </div>
 
           {project.environments.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {(
-                [
-                  { id: "all" as const, label: "Todos", count: project.environments.length },
-                  {
-                    id: "with_files" as const,
-                    label: "Com arquivos",
-                    count: environmentStats.withFiles,
-                  },
-                  {
-                    id: "production_ready" as const,
-                    label: "Prontos p/ produção",
-                    count: environmentStats.productionReady,
-                  },
-                  { id: "empty" as const, label: "Sem arquivos", count: environmentStats.empty },
-                ] as const
-              ).map((filter) => {
-                const active = environmentFilter === filter.id;
-                return (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    { id: "all" as const, label: "Todos", count: project.environments.length },
+                    {
+                      id: "with_files" as const,
+                      label: "Com arquivos",
+                      count: environmentStats.withFiles,
+                    },
+                    {
+                      id: "production_ready" as const,
+                      label: "Prontos p/ produção",
+                      count: environmentStats.productionReady,
+                    },
+                    { id: "empty" as const, label: "Sem arquivos", count: environmentStats.empty },
+                  ] as const
+                ).map((filter) => {
+                  const active = environmentFilter === filter.id;
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setEnvironmentFilter(filter.id)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                        active
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {filter.label}
+                      <span
+                        className={`ml-1 tabular-nums ${active ? "opacity-90" : "opacity-60"}`}
+                      >
+                        ({filter.count})
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div
+                  className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5"
+                  role="group"
+                  aria-label="Modo de visualização dos cômodos"
+                >
                   <button
-                    key={filter.id}
                     type="button"
-                    onClick={() => setEnvironmentFilter(filter.id)}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-                      active
-                        ? "bg-primary text-white shadow-sm"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    onClick={() => setEnvironmentViewMode("grid")}
+                    className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[11px] font-bold cursor-pointer ${
+                      environmentViewMode === "grid"
+                        ? "bg-white text-foreground shadow-xs"
+                        : "text-muted-foreground"
                     }`}
+                    aria-pressed={environmentViewMode === "grid"}
                   >
-                    {filter.label}
-                    <span className={`ml-1 tabular-nums ${active ? "opacity-90" : "opacity-60"}`}>
-                      ({filter.count})
-                    </span>
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Grade</span>
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={() => setEnvironmentViewMode("list")}
+                    className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[11px] font-bold cursor-pointer ${
+                      environmentViewMode === "list"
+                        ? "bg-white text-foreground shadow-xs"
+                        : "text-muted-foreground"
+                    }`}
+                    aria-pressed={environmentViewMode === "list"}
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Lista</span>
+                  </button>
+                </div>
+                {environmentViewMode === "grid" ? (
+                  <div
+                    className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5"
+                    role="group"
+                    aria-label="Cômodos por linha no desktop"
+                  >
+                    {([4, 5, 6] as EnvironmentGridCols[]).map((cols) => (
+                      <button
+                        key={cols}
+                        type="button"
+                        title={`${cols} por linha no desktop`}
+                        onClick={() => setEnvironmentGridCols(cols)}
+                        className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold tabular-nums cursor-pointer ${
+                          environmentGridCols === cols
+                            ? "bg-white text-foreground shadow-xs"
+                            : "text-muted-foreground"
+                        }`}
+                        aria-pressed={environmentGridCols === cols}
+                      >
+                        {cols}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {project.environments.length === 0 ? (
-              <div className="col-span-full border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground space-y-2">
-                <p>
-                  Nenhum ambiente neste projeto.
-                  {!isOpsLimited
-                    ? ' Use "Novo Cômodo" ou aprove itens no orçamento — cada item aprovado vira um ambiente aqui.'
-                    : " Quando o comercial aprovar o orçamento, os cômodos aparecem automaticamente."}
+          {project.environments.length === 0 ? (
+            <div className="border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground space-y-2">
+              <p>
+                Nenhum ambiente neste projeto.
+                {!isOpsLimited
+                  ? ' Use "Novo Cômodo" ou aprove itens no orçamento — cada item aprovado vira um ambiente aqui.'
+                  : " Quando o comercial aprovar o orçamento, os cômodos aparecem automaticamente."}
+              </p>
+              {(project.status_geral === "APROVADO" ||
+                project.status_geral === "PRODUCAO" ||
+                project.status_geral === "CONFERENCIA_TECNICA") && (
+                <p className="text-xs">
+                  Quando listados, os cards mostram miniatura e quais tipos de arquivo já foram
+                  enviados (projeto, medição, render, etc.).
                 </p>
-                {(project.status_geral === "APROVADO" ||
-                  project.status_geral === "PRODUCAO" ||
-                  project.status_geral === "CONFERENCIA_TECNICA") && (
-                  <p className="text-xs">
-                    Quando listados, os cards mostram miniatura e quais tipos de arquivo já foram
-                    enviados (projeto, medição, render, etc.).
-                  </p>
-                )}
-              </div>
-            ) : filteredEnvironments.length === 0 ? (
-              <div className="col-span-full border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
-                Nenhum cômodo neste filtro. Tente outra opção ou volte em{" "}
-                <button
-                  type="button"
-                  onClick={() => setEnvironmentFilter("all")}
-                  className="font-bold text-primary hover:underline cursor-pointer"
-                >
-                  Todos
-                </button>
-                .
-              </div>
-            ) : (
-              filteredEnvironments.map((env) => {
+              )}
+            </div>
+          ) : filteredEnvironments.length === 0 ? (
+            <div className="border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
+              Nenhum cômodo neste filtro. Tente outra opção ou volte em{" "}
+              <button
+                type="button"
+                onClick={() => setEnvironmentFilter("all")}
+                className="font-bold text-primary hover:underline cursor-pointer"
+              >
+                Todos
+              </button>
+              .
+            </div>
+          ) : environmentViewMode === "grid" ? (
+            <div
+              className={`grid gap-3 sm:gap-4 ${ENVIRONMENT_GRID_COL_CLASS[environmentGridCols]}`}
+            >
+              {filteredEnvironments.map((env) => {
                 const currentStatusInfo = ENVIRONMENT_STATUSES.find((s) => s.value === env.status);
                 return (
                   <EnvironmentProjectCard
                     key={env.id}
                     environment={env}
+                    compact={environmentGridCols >= 5}
                     statusLabel={currentStatusInfo?.label ?? env.status}
-                    statusClassName={currentStatusInfo?.bg ?? "bg-slate-500/10 text-slate-600 border-slate-200"}
+                    statusClassName={
+                      currentStatusInfo?.bg ?? "bg-slate-500/10 text-slate-600 border-slate-200"
+                    }
                     onOpen={() =>
                       setGalleryEnvironment({
                         id: env.id,
@@ -1565,9 +1658,32 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     }
                   />
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          ) : (
+            <Card className="overflow-hidden border border-border bg-white divide-y divide-border shadow-sm">
+              {filteredEnvironments.map((env) => {
+                const currentStatusInfo = ENVIRONMENT_STATUSES.find((s) => s.value === env.status);
+                return (
+                  <EnvironmentProjectListRow
+                    key={env.id}
+                    environment={env}
+                    statusLabel={currentStatusInfo?.label ?? env.status}
+                    statusClassName={
+                      currentStatusInfo?.bg ?? "bg-slate-500/10 text-slate-600 border-slate-200"
+                    }
+                    onOpen={() =>
+                      setGalleryEnvironment({
+                        id: env.id,
+                        nome: env.nome,
+                        tipo: env.tipo,
+                      })
+                    }
+                  />
+                );
+              })}
+            </Card>
+          )}
         </TabsContent>
 
         {/* Tab 2: Arquivos Técnicos */}
