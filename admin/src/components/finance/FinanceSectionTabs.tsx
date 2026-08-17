@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useActivePathname } from "@/context/NavigationIntentContext";
 import { ArrowDownCircle, ArrowUpCircle, BarChart3, Target } from "lucide-react";
 
 const TABS = [
@@ -12,7 +12,7 @@ const TABS = [
 ];
 
 export default function FinanceSectionTabs() {
-  const pathname = usePathname();
+  const pathname = useActivePathname();
 
   return (
     <div className="section-tabs">
@@ -22,6 +22,7 @@ export default function FinanceSectionTabs() {
           <Link
             key={href}
             href={href}
+            prefetch={false}
             className={`section-tabs-item ${active ? "section-tabs-item-active" : ""}`}
           >
             <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} />

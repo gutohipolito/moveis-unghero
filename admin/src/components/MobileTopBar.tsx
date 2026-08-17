@@ -37,7 +37,7 @@ export default function MobileTopBar({
 
   return (
     <header className="mobile-topbar md:hidden">
-      <Link href={homeHref} className="mobile-topbar-brand" aria-label="Móveis Unghero">
+      <Link href={homeHref} prefetch={false} className="mobile-topbar-brand" aria-label="Móveis Unghero">
         <img
           src="/logo.png"
           alt=""

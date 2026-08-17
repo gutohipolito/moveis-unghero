@@ -59,6 +59,7 @@ export default function DashboardLayoutWrapper({
               <div className="flex flex-col items-center gap-1.5">
                 <Link
                   href={homeHref}
+                  prefetch={false}
                   aria-label="Móveis Unghero"
                   className="h-9 w-9 rounded-lg overflow-hidden shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
@@ -79,7 +80,7 @@ export default function DashboardLayoutWrapper({
               </div>
             ) : (
               <>
-                <Link href={homeHref} aria-label="Móveis Unghero" className="flex items-center">
+                <Link href={homeHref} prefetch={false} aria-label="Móveis Unghero" className="flex items-center">
                   <img
                     src="/logo.png"
                     alt="Móveis Unghero"

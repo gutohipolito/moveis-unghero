@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useActivePathname } from "@/context/NavigationIntentContext";
 import { Star, NotebookPen, BarChart3, MessageCircle } from "lucide-react";
 import { usePermissions } from "@/context/PermissionsContext";
 import {
@@ -40,7 +40,7 @@ const TABS = [
 ];
 
 export default function MarketingSectionTabs() {
-  const pathname = usePathname();
+  const pathname = useActivePathname();
   const { role } = usePermissions();
   const showAnalytics = canViewMarketingAnalytics(role);
   const showFull = canViewFullMarketing(role);
@@ -57,6 +57,7 @@ export default function MarketingSectionTabs() {
           <Link
             key={href}
             href={href}
+            prefetch={false}
             className={`section-tabs-item ${active ? "section-tabs-item-active" : ""}`}
           >
             <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} />

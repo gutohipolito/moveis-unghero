@@ -249,6 +249,7 @@ export default function DashboardHeader({
               <div className="p-2">
               <Link
                 href="/perfil"
+                prefetch={false}
                 onClick={() => setMenuOpen(false)}
                 className="dashboard-user-menu-item w-full rounded-lg"
               >

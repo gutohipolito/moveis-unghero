@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useActivePathname } from "@/context/NavigationIntentContext";
 import {
   Kanban,
   Calendar,
@@ -110,30 +110,13 @@ export function isNavItemActive(
   return true;
 }
 
-const HEAVY_ROUTES = new Set([
-  "/crm",
-  "/bi",
-  "/marketing",
-  "/marketing/analytics",
-  "/marketing/formularios",
-  "/factory",
-  "/financeiro",
-  "/clientes",
-  "/quotes",
-  "/produtos",
-  "/produtos/catalogos",
-  "/contratos",
-  "/estoque",
-  "/logistica",
-]);
-
 interface SidebarNavProps {
   onNavigate?: () => void;
   compact?: boolean;
 }
 
 export default function SidebarNav({ onNavigate, compact = false }: SidebarNavProps) {
-  const pathname = usePathname();
+  const pathname = useActivePathname();
   const { isSectionCollapsed, toggleSection } = useSidebarSections();
   const { can } = usePermissions();
 
@@ -180,7 +163,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                   <Link
                     key={item.href}
                     href={href}
-                    prefetch={!HEAVY_ROUTES.has(item.href)}
+                    prefetch={false}
                     onClick={onNavigate}
                     className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""} ${
                       compact ? "justify-center px-1" : ""
