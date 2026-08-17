@@ -309,8 +309,10 @@ export function buildQuoteExpiringNotifications(
     .filter((n): n is NonNullable<typeof n> => Boolean(n));
 }
 
-/** Alertas visuais no painel (toast) — só críticos (priority high). */
+/** Alertas visuais no painel (toast) — só críticos (priority high).
+ *  Chat interno aparece no botão flutuante, não neste stack do topo. */
 export function isInAppToastNotification(notification: AppNotification): boolean {
+  if (notification.type === "project_chat") return false;
   return notification.priority === "high";
 }
 

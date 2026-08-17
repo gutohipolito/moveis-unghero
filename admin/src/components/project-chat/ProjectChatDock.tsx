@@ -15,6 +15,7 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { useProjectChat } from "@/context/ProjectChatContext";
 import {
   getProjectChat,
+  getProjectChatBadge,
   listProjectChats,
   postProjectChatMessage,
   setProjectChatClosed,
@@ -26,7 +27,13 @@ import {
   type ProjectChatMessageDTO,
   type ProjectChatThreadDTO,
 } from "@/lib/projectChat";
+import { loadNotificationPrefs } from "@/lib/notificationChannels";
+import { playNotificationChime } from "@/lib/notificationSound";
 import { cn } from "@/lib/utils";
+
+const BADGE_POLL_VISIBLE_MS = 20_000;
+const BADGE_POLL_HIDDEN_MS = 2 * 60_000;
+const MAX_PEEKS = 2;
 
 const STATUS_LABEL: Record<string, string> = {
   LEAD: "Lead",
@@ -74,10 +81,37 @@ export default function ProjectChatDock() {
   const [sending, setSending] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unreadItems, setUnreadItems] = useState<ProjectChatThreadDTO[]>([]);
+  const [dismissedPeeks, setDismissedPeeks] = useState<Set<string>>(() => new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number | undefined>(undefined);
+  const knownUnreadRef = useRef<Set<string>>(new Set());
+  const badgeReadyRef = useRef(false);
 
   const viewingProjectId = open ? activeProjectId : null;
+
+  const refreshBadge = useCallback(async () => {
+    const result = await getProjectChatBadge();
+    if (!result.success) return;
+
+    setUnreadTotal(result.unreadTotal);
+    setUnreadItems(result.items);
+
+    const nextKeys = new Set(
+      result.items.map((item) => `${item.projectId}:${item.lastMessageAt ?? ""}`)
+    );
+    if (badgeReadyRef.current) {
+      let arrived = false;
+      for (const key of nextKeys) {
+        if (!knownUnreadRef.current.has(key)) arrived = true;
+      }
+      if (arrived && !open && loadNotificationPrefs().sound) {
+        playNotificationChime({ urgent: true });
+      }
+    }
+    knownUnreadRef.current = nextKeys;
+    badgeReadyRef.current = true;
+  }, [open]);
 
   const refreshInbox = useCallback(async (query = inboxQuery, closed = includeClosed) => {
     const result = await listProjectChats({
@@ -86,7 +120,6 @@ export default function ProjectChatDock() {
     });
     if (result.success) {
       setThreads(result.threads);
-      setUnreadTotal(result.unreadTotal);
     }
   }, [inboxQuery, includeClosed]);
 
@@ -104,21 +137,46 @@ export default function ProjectChatDock() {
     setThreadClosed(Boolean(result.thread?.closed));
     setCanWrite(result.canWrite);
     setCanClose(result.canClose);
-  }, []);
+    void refreshBadge();
+  }, [refreshBadge]);
 
   useLiveEntity("projectChat", {
     sync: async () => {
-      await refreshInbox();
+      await Promise.all([refreshBadge(), refreshInbox()]);
       if (viewingProjectId) await refreshThread(viewingProjectId);
     },
     skipInitialSync: true,
   });
 
   useEffect(() => {
+    void refreshBadge();
     void refreshInbox();
-    // badge inicial
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const tick = () => {
+      if (document.visibilityState === "visible") void refreshBadge();
+    };
+    const arm = () => {
+      if (timer) window.clearInterval(timer);
+      timer = window.setInterval(
+        tick,
+        document.visibilityState === "visible" ? BADGE_POLL_VISIBLE_MS : BADGE_POLL_HIDDEN_MS
+      );
+    };
+    arm();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshBadge();
+      arm();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      if (timer) window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refreshBadge]);
 
   useEffect(() => {
     if (!focus?.projectId) return;
@@ -192,6 +250,7 @@ export default function ProjectChatDock() {
     setMessages((prev) => [...prev, result.message!]);
     setThreadClosed(false);
     void refreshInbox();
+    void refreshBadge();
   }
 
   async function handleToggleClosed() {
@@ -203,11 +262,22 @@ export default function ProjectChatDock() {
     }
     setThreadClosed(!threadClosed);
     void refreshInbox();
+    void refreshBadge();
   }
 
-  const unreadForFocus =
-    (focus && threads.find((item) => item.projectId === focus.projectId)?.unreadCount) || 0;
-  const fabUnread = focus ? unreadForFocus : unreadTotal;
+  const sortedThreads = useMemo(() => {
+    return [...threads].sort((a, b) => {
+      if ((a.unreadCount > 0) !== (b.unreadCount > 0)) {
+        return a.unreadCount > 0 ? -1 : 1;
+      }
+      return 0;
+    });
+  }, [threads]);
+  const peekItems = open
+    ? []
+    : unreadItems.filter(
+        (item) => !dismissedPeeks.has(`${item.projectId}:${item.lastMessageAt ?? ""}`)
+      );
 
   return (
     <>
@@ -221,8 +291,21 @@ export default function ProjectChatDock() {
           if (focus?.projectId) openProject(focus.projectId, focus.clientName);
           else setOpen(true);
         }}
-        aria-label={focus?.clientName ? `Chat interno de ${focus.clientName}` : "Conversas internas dos projetos"}
-        title={focus?.clientName ? `Chat · ${focus.clientName}` : "Conversas internas"}
+        aria-label={
+          fabUnread > 0
+            ? `${fabUnread} conversa${fabUnread === 1 ? "" : "s"} não lida${fabUnread === 1 ? "" : "s"}`
+            : focus?.clientName
+              ? `Chat interno de ${focus.clientName}`
+              : "Conversas internas dos projetos"
+        }
+        title={
+          fabUnread > 0
+            ? `${fabUnread} não lida${fabUnread === 1 ? "" : "s"}`
+            : focus?.clientName
+              ? `Chat · ${focus.clientName}`
+              : "Conversas internas"
+        }
+        data-unread={fabUnread > 0 ? "true" : undefined}
         className={cn(
           "project-chat-fab relative flex h-11 w-11 items-center justify-center rounded-full",
           "bg-slate-900 text-white shadow-lg shadow-slate-900/25",
@@ -236,11 +319,74 @@ export default function ProjectChatDock() {
           <Mail className="h-5 w-5" />
         )}
         {fabUnread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">
+          <span className="notification-badge notification-badge-urgent">
             {fabUnread > 9 ? "9+" : fabUnread}
           </span>
         )}
       </button>
+
+      {!open && peekItems.length > 0 && (
+        <div className="project-chat-alert-stack" role="region" aria-label="Mensagens de chat não lidas">
+          {peekItems.slice(0, MAX_PEEKS).map((item) => {
+            const peekKey = `${item.projectId}:${item.lastMessageAt ?? ""}`;
+            return (
+              <article
+                key={peekKey}
+                className="in-app-toast"
+                data-priority="high"
+                data-accent="chat"
+              >
+                <button
+                  type="button"
+                  className="in-app-toast-close"
+                  onClick={() =>
+                    setDismissedPeeks((prev) => {
+                      const next = new Set(prev);
+                      next.add(peekKey);
+                      return next;
+                    })
+                  }
+                  aria-label="Dispensar aviso"
+                >
+                  <X className="h-3 w-3" strokeWidth={2.5} />
+                </button>
+                <div className="in-app-toast-row">
+                  <div className="in-app-toast-icon-wrap" aria-hidden>
+                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-white">
+                      {item.clientInitials}
+                    </span>
+                    <span className="in-app-toast-icon-badge">
+                      <Mail className="h-3 w-3" />
+                    </span>
+                  </div>
+                  <div className="in-app-toast-content">
+                    <button
+                      type="button"
+                      className="in-app-toast-main"
+                      onClick={() => {
+                        setDismissedPeeks((prev) => {
+                          const next = new Set(prev);
+                          next.add(peekKey);
+                          return next;
+                        });
+                        openProject(item.projectId, item.clientName);
+                      }}
+                    >
+                      <p className="in-app-toast-title">
+                        Chat · {item.clientName}
+                        {item.unreadCount > 1 ? ` (${item.unreadCount})` : ""}
+                      </p>
+                      <p className="in-app-toast-message">
+                        {item.lastMessagePreview || "Nova mensagem na conversa do projeto."}
+                      </p>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {open && (
         <div
@@ -408,7 +554,7 @@ export default function ProjectChatDock() {
                   Ainda não há conversas. Abra um projeto e comece pelo botão com as iniciais do cliente.
                 </p>
               ) : (
-                threads.map((thread) => (
+                sortedThreads.map((thread) => (
                   <button
                     key={thread.id}
                     type="button"

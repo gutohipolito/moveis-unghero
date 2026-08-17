@@ -169,9 +169,14 @@ export async function listProjectChats(options?: {
 export async function getProjectChatBadge(): Promise<{
   success: boolean;
   unreadTotal: number;
+  items: ProjectChatThreadDTO[];
 }> {
   const listed = await listProjectChats({ includeClosed: false });
-  return { success: listed.success, unreadTotal: listed.unreadTotal };
+  return {
+    success: listed.success,
+    unreadTotal: listed.unreadTotal,
+    items: listed.threads.filter((thread) => thread.unreadCount > 0),
+  };
 }
 
 export async function getProjectChat(
