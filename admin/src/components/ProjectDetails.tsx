@@ -313,15 +313,34 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const canManageProjectFiles = canManageEnvGallery;
   const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
+  const [environmentFilter, setEnvironmentFilter] = useState<
+    "all" | "with_files" | "production_ready" | "empty"
+  >("all");
   const sortedEnvironments = useMemo(
     () => sortEnvironmentsForOperator(project.environments),
     [project.environments]
   );
+  const filteredEnvironments = useMemo(() => {
+    if (environmentFilter === "all") return sortedEnvironments;
+    if (environmentFilter === "with_files") {
+      return sortedEnvironments.filter((env) => env.attachmentCount > 0);
+    }
+    if (environmentFilter === "production_ready") {
+      return sortedEnvironments.filter(
+        (env) => env.hasFactoryProject || env.hasArchProject
+      );
+    }
+    return sortedEnvironments.filter((env) => env.attachmentCount === 0);
+  }, [sortedEnvironments, environmentFilter]);
   const environmentStats = useMemo(() => {
     const withFiles = project.environments.filter((env) => env.attachmentCount > 0).length;
     const withFactory = project.environments.filter((env) => env.hasFactoryProject).length;
     const withArch = project.environments.filter((env) => env.hasArchProject).length;
-    return { withFiles, withFactory, withArch };
+    const productionReady = project.environments.filter(
+      (env) => env.hasFactoryProject || env.hasArchProject
+    ).length;
+    const empty = project.environments.filter((env) => env.attachmentCount === 0).length;
+    return { withFiles, withFactory, withArch, productionReady, empty };
   }, [project.environments]);
   useProjectChatFocus({ projectId: project.id, clientName: project.client.nome });
   const isFormLead = !isOpsLimited && project.client.origem === "FORMULARIO";
@@ -1458,6 +1477,46 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             )}
           </div>
 
+          {project.environments.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { id: "all" as const, label: "Todos", count: project.environments.length },
+                  {
+                    id: "with_files" as const,
+                    label: "Com arquivos",
+                    count: environmentStats.withFiles,
+                  },
+                  {
+                    id: "production_ready" as const,
+                    label: "Prontos p/ produção",
+                    count: environmentStats.productionReady,
+                  },
+                  { id: "empty" as const, label: "Sem arquivos", count: environmentStats.empty },
+                ] as const
+              ).map((filter) => {
+                const active = environmentFilter === filter.id;
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={() => setEnvironmentFilter(filter.id)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                      active
+                        ? "bg-primary text-white shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {filter.label}
+                    <span className={`ml-1 tabular-nums ${active ? "opacity-90" : "opacity-60"}`}>
+                      ({filter.count})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {project.environments.length === 0 ? (
               <div className="col-span-full border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground space-y-2">
@@ -1476,8 +1535,20 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   </p>
                 )}
               </div>
+            ) : filteredEnvironments.length === 0 ? (
+              <div className="col-span-full border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
+                Nenhum cômodo neste filtro. Tente outra opção ou volte em{" "}
+                <button
+                  type="button"
+                  onClick={() => setEnvironmentFilter("all")}
+                  className="font-bold text-primary hover:underline cursor-pointer"
+                >
+                  Todos
+                </button>
+                .
+              </div>
             ) : (
-              sortedEnvironments.map((env) => {
+              filteredEnvironments.map((env) => {
                 const currentStatusInfo = ENVIRONMENT_STATUSES.find((s) => s.value === env.status);
                 return (
                   <EnvironmentProjectCard
