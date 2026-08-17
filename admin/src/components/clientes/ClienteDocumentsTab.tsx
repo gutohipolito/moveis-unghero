@@ -88,6 +88,8 @@ export default function ClienteDocumentsTab({
   const [photoMode, setPhotoMode] = useState<PhotoMode>("grid");
   const [gridCols, setGridCols] = useState<GridCols>(3);
 
+  const [dropFolder, setDropFolder] = useState<string | null>(null);
+
   const isPj = tipoPessoa === "PJ";
   const placeNoun = isPj ? "empresa" : "casa";
 
@@ -229,8 +231,8 @@ export default function ClienteDocumentsTab({
     });
   }
 
-  async function uploadFiles(fileList: FileList | File[] | null) {
-    if (!canManage || !openFolder || !fileList || ("length" in fileList && fileList.length === 0)) {
+  async function uploadFiles(fileList: FileList | File[] | null, folder = openFolder) {
+    if (!canManage || !folder || !fileList || ("length" in fileList && fileList.length === 0)) {
       return;
     }
     const files = Array.from(fileList).slice(0, 20);
@@ -243,7 +245,7 @@ export default function ClienteDocumentsTab({
     setBusy(true);
     try {
       const formData = new FormData();
-      formData.append("folder", openFolder);
+      formData.append("folder", folder);
       setUploadProgress(
         files.length === 1 ? "Otimizando arquivo…" : `Otimizando ${files.length} arquivos…`
       );
@@ -274,9 +276,40 @@ export default function ClienteDocumentsTab({
     } finally {
       setBusy(false);
       setUploadProgress(null);
+      setDropFolder(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
+  }
+
+  function folderDropProps(folder: string) {
+    if (!canManage) return {};
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        if (dropFolder !== folder) setDropFolder(folder);
+      },
+      onDragEnter: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDropFolder(folder);
+      },
+      onDragLeave: (e: React.DragEvent) => {
+        e.preventDefault();
+        const next = e.relatedTarget as Node | null;
+        if (next && e.currentTarget.contains(next)) return;
+        setDropFolder((cur) => (cur === folder ? null : cur));
+      },
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDropFolder(null);
+        const files = e.dataTransfer.files;
+        if (files?.length) void uploadFiles(files, folder);
+      },
+    };
   }
 
   function deleteFile(attachment: ClientAttachmentDTO) {
@@ -346,7 +379,7 @@ export default function ClienteDocumentsTab({
           <p className="text-sm text-muted-foreground">Pasta vazia.</p>
           {canManage ? (
             <p className="text-xs text-muted-foreground">
-              Abra esta pasta e adicione fotos ou PDFs aqui.
+              Arraste arquivos para esta pasta ou use Adicionar.
             </p>
           ) : null}
         </div>
@@ -524,7 +557,8 @@ export default function ClienteDocumentsTab({
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-bold text-foreground truncate">{openFolder}</h3>
               <p className="text-[11px] text-muted-foreground">
-                {folderFiles.length} arquivo{folderFiles.length === 1 ? "" : "s"} · envio só nesta pasta
+                {folderFiles.length} arquivo{folderFiles.length === 1 ? "" : "s"}
+                {canManage ? " · arraste arquivos para cá" : ""}
               </p>
               {isResidencia ? (
                 <div className="mt-2 rounded-[var(--radius-md)] border border-sky-200/80 bg-sky-50/70 px-3 py-2.5 text-[11px] text-sky-950/90 leading-relaxed">
@@ -641,12 +675,19 @@ export default function ClienteDocumentsTab({
           <p className="text-[11px] text-muted-foreground">{uploadProgress}</p>
         ) : (
           <p className="text-[11px] text-muted-foreground">
-            JPG, PNG, WEBP, HEIC e PDF · até {Math.round(CLIENT_ATTACHMENT_MAX_BYTES / (1024 * 1024))} MB ·
-            imagens otimizadas automaticamente.
+            JPG, PNG, PDF, Word, Excel, ZIP, DWG, SketchUp e vídeo · até{" "}
+            {Math.round(CLIENT_ATTACHMENT_MAX_BYTES / (1024 * 1024))} MB.
           </p>
         )}
 
-        <Card className="p-3 sm:p-4 glass-card">{renderFiles(folderFiles)}</Card>
+        <Card
+          className={`p-3 sm:p-4 glass-card transition-colors ${
+            dropFolder === openFolder ? "ring-2 ring-primary/40 bg-primary/5" : ""
+          }`}
+          {...folderDropProps(openFolder)}
+        >
+          {renderFiles(folderFiles)}
+        </Card>
         {previewModal}
         <ClienteCameraModal
           open={cameraOpen}
@@ -672,14 +713,14 @@ export default function ClienteDocumentsTab({
                 items={[
                   "Residência: fotos da fachada, acesso e da casa para o montador.",
                   "Documentos: contratos, identidade e PDFs do cliente.",
-                  "Crie outras pastas se precisar. O envio só acontece com a pasta aberta.",
+                  "Crie outras pastas se precisar. Dá para arrastar arquivos direto em cima da pasta.",
                   `Fotos de ambientes da obra ficam no projeto, não nesta ${placeNoun}.`,
                 ]}
               />
             </InfoTooltip>
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Abra uma pasta para enviar arquivos — assim nada cai no lugar errado.
+            Abra uma pasta ou arraste os arquivos em cima dela.
             {clientOnly.length > 0
               ? ` ${clientOnly.length} arquivo${clientOnly.length === 1 ? "" : "s"} no total.`
               : ""}
@@ -790,6 +831,17 @@ export default function ClienteDocumentsTab({
 
       {renameBar}
 
+      {uploadProgress ? (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {uploadProgress}
+        </p>
+      ) : canManage ? (
+        <p className="text-[11px] text-muted-foreground">
+          Arraste fotos, PDFs, DWG ou ZIP em cima da pasta.
+        </p>
+      ) : null}
+
       <Card className="p-3 sm:p-5 glass-card overflow-hidden">
         {browseMode === "list" ? (
           <div className="divide-y divide-border/60">
@@ -798,7 +850,10 @@ export default function ClienteDocumentsTab({
               return (
                 <div
                   key={folder}
-                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0 group"
+                  className={`flex items-center gap-3 py-2.5 first:pt-0 last:pb-0 group rounded-lg px-1 -mx-1 transition-colors ${
+                    dropFolder === folder ? "bg-primary/10 ring-1 ring-primary/30" : ""
+                  }`}
+                  {...folderDropProps(folder)}
                 >
                   <button
                     type="button"
@@ -829,7 +884,13 @@ export default function ClienteDocumentsTab({
             {folderList.map((folder) => {
               const count = clientOnly.filter((item) => item.folder === folder).length;
               return (
-                <div key={folder} className="group relative">
+                <div
+                  key={folder}
+                  className={`group relative rounded-xl transition-colors ${
+                    dropFolder === folder ? "bg-primary/10 ring-2 ring-primary/30" : ""
+                  }`}
+                  {...folderDropProps(folder)}
+                >
                   <button
                     type="button"
                     onClick={() => setOpenFolder(folder)}

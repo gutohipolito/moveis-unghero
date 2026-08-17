@@ -8,7 +8,8 @@ import { canManageOperationalMedia } from "@/lib/permissions";
 import { putSensitiveBlob } from "@/lib/secureBlob";
 import {
   CLIENT_ATTACHMENT_MAX_BYTES,
-  CLIENT_ATTACHMENT_MIME_TYPES,
+  clientAttachmentExtension,
+  isAllowedClientAttachment,
   CLIENT_FOLDER_RESIDENCIA,
   isDefaultClientFolder,
   isImageMime,
@@ -190,10 +191,12 @@ export async function POST(
         { status: 400 }
       );
     }
-    const mimeType = file.type || "application/octet-stream";
-    if (!CLIENT_ATTACHMENT_MIME_TYPES.has(mimeType)) {
+    if (!isAllowedClientAttachment(file)) {
       return NextResponse.json(
-        { success: false, error: `"${file.name}" não é um formato suportado. Use JPG, PNG, WEBP ou PDF.` },
+        {
+          success: false,
+          error: `"${file.name}" não é um formato suportado. Envie imagem, PDF, Office, ZIP, DWG, SketchUp ou vídeo curto.`,
+        },
         { status: 400 }
       );
     }
@@ -219,7 +222,12 @@ export async function POST(
     const created = [];
     for (const file of files) {
       const mimeType = file.type || "application/octet-stream";
-      const isImage = isImageMime(mimeType);
+      const ext = clientAttachmentExtension(file.name);
+      const isImage =
+        isImageMime(mimeType) ||
+        ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "avif", "bmp", "tif", "tiff"].includes(
+          ext
+        );
       const optimized = isImage
         ? await optimizeImageFile(file)
         : {

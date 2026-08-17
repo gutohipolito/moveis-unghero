@@ -2,6 +2,8 @@ import { put, get } from "@vercel/blob";
 
 export type SecureBlobAccess = "private" | "public";
 
+export type SecureBlobBody = File | Blob | Buffer | Uint8Array | ReadableStream | string;
+
 export type SecureBlobResult = {
   url: string;
   pathname: string;
@@ -10,13 +12,24 @@ export type SecureBlobResult = {
   clientUrl: string;
 };
 
+/** Cópia em ArrayBuffer “limpo”: Buffer do Sharp/Node pode usar SharedArrayBuffer. */
+function toFetchSafeBody(body: SecureBlobBody): File | Blob | ReadableStream | string {
+  if (typeof body === "string" || body instanceof ReadableStream) return body;
+  if (typeof File !== "undefined" && body instanceof File) return body;
+  if (typeof Blob !== "undefined" && body instanceof Blob) return body;
+  const source = body as Buffer | Uint8Array;
+  const bytes = new Uint8Array(source.byteLength);
+  bytes.set(source);
+  return new Blob([bytes]);
+}
+
 /**
  * Upload sensível: tenta Blob private; se o store for público, faz fallback.
  * clientUrl nunca aponta direto para o Blob quando private — usa /api/secure-blob.
  */
 export async function putSensitiveBlob(
   pathname: string,
-  body: File | Blob | Buffer | ReadableStream | string,
+  body: SecureBlobBody,
   options: { contentType?: string; token?: string }
 ): Promise<SecureBlobResult> {
   const token = options.token ?? process.env.BLOB_READ_WRITE_TOKEN;
@@ -25,10 +38,11 @@ export async function putSensitiveBlob(
   }
 
   const preferPrivate = process.env.BLOB_FORCE_PUBLIC !== "true";
+  const safeBody = toFetchSafeBody(body);
 
   if (preferPrivate) {
     try {
-      const blob = await put(pathname, body, {
+      const blob = await put(pathname, safeBody, {
         access: "private",
         token,
         contentType: options.contentType,
@@ -47,7 +61,7 @@ export async function putSensitiveBlob(
     }
   }
 
-  const blob = await put(pathname, body, {
+  const blob = await put(pathname, safeBody, {
     access: "public",
     token,
     contentType: options.contentType,
