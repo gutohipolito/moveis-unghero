@@ -330,3 +330,95 @@ export function countTechSheetFields(fields: {
 export function attachmentCategoryLabel(categoria: EnvironmentAttachmentCategory) {
   return ENVIRONMENT_ATTACHMENT_CATEGORIES.find((item) => item.value === categoria)?.label ?? categoria;
 }
+
+/** Ordem de destaque nos cards de cômodo (produção primeiro). */
+export const ENVIRONMENT_CATEGORY_DISPLAY_ORDER: EnvironmentAttachmentCategory[] = [
+  "PROJETO_FABRICA",
+  "PROJETO_ARQUITETO",
+  "MEDICAO",
+  "CONFERENCIA",
+  "RENDER",
+  "FOTO",
+  "REFERENCIA",
+];
+
+export type EnvironmentAttachmentSummary = {
+  attachmentCount: number;
+  coverUrl: string | null;
+  categories: EnvironmentAttachmentCategory[];
+  hasArchProject: boolean;
+  hasFactoryProject: boolean;
+};
+
+export const EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY: EnvironmentAttachmentSummary = {
+  attachmentCount: 0,
+  coverUrl: null,
+  categories: [],
+  hasArchProject: false,
+  hasFactoryProject: false,
+};
+
+export function summarizeEnvironmentAttachments(input: {
+  capa_attachment_id: string | null;
+  attachments: Array<{
+    id: string;
+    url: string;
+    mime_type: string;
+    categoria: EnvironmentAttachmentCategory;
+  }>;
+}): EnvironmentAttachmentSummary {
+  const cover =
+    input.attachments.find((item) => item.id === input.capa_attachment_id) ??
+    input.attachments.find((item) => isImageMime(item.mime_type)) ??
+    null;
+
+  const categories = ENVIRONMENT_CATEGORY_DISPLAY_ORDER.filter((category) =>
+    input.attachments.some((item) => item.categoria === category)
+  );
+
+  return {
+    attachmentCount: input.attachments.length,
+    coverUrl: cover && isImageMime(cover.mime_type) ? cover.url : null,
+    categories,
+    hasArchProject: categories.includes("PROJETO_ARQUITETO"),
+    hasFactoryProject: categories.includes("PROJETO_FABRICA"),
+  };
+}
+
+export function sortEnvironmentsForOperator<
+  T extends EnvironmentAttachmentSummary & { nome: string }
+>(environments: T[]): T[] {
+  return [...environments].sort((a, b) => {
+    const score = (env: T) =>
+      (env.hasFactoryProject ? 4 : 0) +
+      (env.hasArchProject ? 2 : 0) +
+      (env.attachmentCount > 0 ? 1 : 0);
+    const diff = score(b) - score(a);
+    if (diff !== 0) return diff;
+    if (b.attachmentCount !== a.attachmentCount) {
+      return b.attachmentCount - a.attachmentCount;
+    }
+    return a.nome.localeCompare(b.nome, "pt-BR");
+  });
+}
+
+export const ENVIRONMENT_CATEGORY_CHIP: Record<
+  EnvironmentAttachmentCategory,
+  string
+> = {
+  PROJETO_ARQUITETO: "bg-violet-500/10 text-violet-800 border-violet-200",
+  PROJETO_FABRICA: "bg-emerald-500/10 text-emerald-800 border-emerald-200",
+  RENDER: "bg-sky-500/10 text-sky-800 border-sky-200",
+  REFERENCIA: "bg-slate-500/10 text-slate-700 border-slate-200",
+  MEDICAO: "bg-amber-500/10 text-amber-900 border-amber-200",
+  CONFERENCIA: "bg-indigo-500/10 text-indigo-800 border-indigo-200",
+  FOTO: "bg-teal-500/10 text-teal-800 border-teal-200",
+};
+
+export const ENVIRONMENT_TIPO_LABELS: Record<string, string> = {
+  COZINHA: "Cozinha",
+  CLOSET: "Closet",
+  DORMITORIO: "Dormitório",
+  BANHEIRO: "Banheiro",
+  OUTROS: "Outros",
+};

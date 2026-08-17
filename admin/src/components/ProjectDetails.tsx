@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { 
   updateProjectGeneralStatus, 
-  updateEnvironmentStatus, 
   addEnvironment, 
   addTimelineEvent, 
   toggleFileApproval, 
@@ -38,7 +37,8 @@ import {
   resolveClientConsent,
   stripConsentFromObservacoes,
 } from "@/lib/clientConsent";
-import { canManageEnvironmentAttachments } from "@/lib/factoryEnvironment";
+import { canManageEnvironmentAttachments, EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY, sortEnvironmentsForOperator } from "@/lib/factoryEnvironment";
+import EnvironmentProjectCard from "@/components/environments/EnvironmentProjectCard";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { Dialog } from "@/components/ui/dialog";
@@ -128,6 +128,11 @@ interface Environment {
   nome: string;
   tipo: string;
   status: string;
+  attachmentCount: number;
+  coverUrl: string | null;
+  categories: import("@prisma/client").EnvironmentAttachmentCategory[];
+  hasArchProject: boolean;
+  hasFactoryProject: boolean;
 }
 
 interface ProjectFile {
@@ -308,6 +313,16 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const canManageProjectFiles = canManageEnvGallery;
   const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
+  const sortedEnvironments = useMemo(
+    () => sortEnvironmentsForOperator(project.environments),
+    [project.environments]
+  );
+  const environmentStats = useMemo(() => {
+    const withFiles = project.environments.filter((env) => env.attachmentCount > 0).length;
+    const withFactory = project.environments.filter((env) => env.hasFactoryProject).length;
+    const withArch = project.environments.filter((env) => env.hasArchProject).length;
+    return { withFiles, withFactory, withArch };
+  }, [project.environments]);
   useProjectChatFocus({ projectId: project.id, clientName: project.client.nome });
   const isFormLead = !isOpsLimited && project.client.origem === "FORMULARIO";
   const hasNoQuote = !project.quotes || project.quotes.length === 0;
@@ -599,19 +614,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     }
   };
 
-  // Handler de alteração do status do ambiente individual
-  const handleEnvStatusChange = async (envId: string, newStatus: EnvironmentStatus) => {
-    const originalEnvs = [...project.environments];
-    const updatedEnvs = project.environments.map(e => e.id === envId ? { ...e, status: newStatus } : e);
-    setProject({ ...project, environments: updatedEnvs });
-
-    const result = await updateEnvironmentStatus(project.id, envId, newStatus);
-    if (!result.success) {
-      setProject({ ...project, environments: originalEnvs });
-      showError("Erro ao atualizar ambiente", "Não foi possível atualizar o status do ambiente.");
-    }
-  };
-
   // Submit para adicionar ambiente
   const handleAddEnvSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -619,9 +621,13 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
     const result = await addEnvironment(project.id, newEnvForm.nome, newEnvForm.tipo);
     if (result.success && result.data) {
+      const created = result.data as { id: string; nome: string; tipo: string; status: string };
       setProject({
         ...project,
-        environments: [...project.environments, result.data as Environment],
+        environments: [
+          ...project.environments,
+          { ...created, ...EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY },
+        ],
         // Adiciona um evento mockado localmente na timeline para atualizar instantaneamente
         timeline: [
           {
@@ -1426,12 +1432,24 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <h3 className="text-lg font-bold">Módulos de Ambientes / Cômodos</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Toque em um cômodo para ver imagens do projeto, conferência, medição e renders.
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Cômodos com borda verde já têm projeto da fábrica ou do arquiteto. Toque no card
+                para abrir fotos, medições, renders e arquivos técnicos.
                 {canManageEnvGallery
-                  ? " Você também pode adicionar arquivos."
+                  ? " Você também pode enviar novos arquivos por lá."
                   : " Visualização disponível para a fábrica."}
               </p>
+              {project.environments.length > 0 ? (
+                <p className="text-[11px] font-semibold text-foreground/80 mt-2">
+                  {environmentStats.withFiles} com arquivos
+                  {environmentStats.withFactory > 0
+                    ? ` · ${environmentStats.withFactory} com plano de corte`
+                    : ""}
+                  {environmentStats.withArch > 0
+                    ? ` · ${environmentStats.withArch} com projeto do arquiteto`
+                    : ""}
+                </p>
+              ) : null}
             </div>
             {!isOpsLimited && (
               <Button onClick={() => setIsAddEnvOpen(true)} size="sm" className="btn-metallic w-full sm:w-auto shrink-0">
@@ -1440,9 +1458,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {project.environments.length === 0 ? (
-              <div className="col-span-2 border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground space-y-2">
+              <div className="col-span-full border border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground space-y-2">
                 <p>
                   Nenhum ambiente neste projeto.
                   {!isOpsLimited
@@ -1453,81 +1471,28 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   project.status_geral === "PRODUCAO" ||
                   project.status_geral === "CONFERENCIA_TECNICA") && (
                   <p className="text-xs">
-                    Toque em um ambiente (quando listado) para adicionar fotos do local, projeto,
-                    medição e renders.
+                    Quando listados, os cards mostram miniatura e quais tipos de arquivo já foram
+                    enviados (projeto, medição, render, etc.).
                   </p>
                 )}
               </div>
             ) : (
-              project.environments.map((env) => {
-                const currentStatusInfo = ENVIRONMENT_STATUSES.find(s => s.value === env.status);
+              sortedEnvironments.map((env) => {
+                const currentStatusInfo = ENVIRONMENT_STATUSES.find((s) => s.value === env.status);
                 return (
-                  <div
+                  <EnvironmentProjectCard
                     key={env.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() =>
+                    environment={env}
+                    statusLabel={currentStatusInfo?.label ?? env.status}
+                    statusClassName={currentStatusInfo?.bg ?? "bg-slate-500/10 text-slate-600 border-slate-200"}
+                    onOpen={() =>
                       setGalleryEnvironment({
                         id: env.id,
                         nome: env.nome,
                         tipo: env.tipo,
                       })
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setGalleryEnvironment({
-                          id: env.id,
-                          nome: env.nome,
-                          tipo: env.tipo,
-                        });
-                      }
-                    }}
-                    className="p-5 rounded-xl border border-border bg-white flex flex-col justify-between gap-4 shadow-sm text-left cursor-pointer hover:border-primary/40 hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                  >
-                    <div className="flex items-start justify-between gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold bg-secondary px-2 py-0.5 rounded text-muted-foreground uppercase tracking-widest inline-block max-w-full truncate mb-1.5">
-                          {env.tipo}
-                        </span>
-                        <h4 className="font-semibold text-base text-foreground break-words">{env.nome}</h4>
-                      </div>
-                      
-                      {/* Badge de Status Atual */}
-                      <span className={`text-xs font-medium border px-2.5 py-0.5 rounded-full shrink-0 text-right ${currentStatusInfo?.bg}`}>
-                        {currentStatusInfo?.label}
-                      </span>
-                    </div>
-
-                    <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                        <Images className="h-3.5 w-3.5 shrink-0" />
-                        {canManageEnvGallery ? "Fotos e arquivos" : "Ver imagens"}
-                      </span>
-                      {!isOpsLimited ? (
-                        <div
-                          className="min-w-0 flex-1 max-w-[58%]"
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
-                            Status
-                          </label>
-                          <Select
-                            value={env.status}
-                            onChange={(e) => handleEnvStatusChange(env.id, e.target.value as EnvironmentStatus)}
-                            className="w-full text-xs"
-                          >
-                            {ENVIRONMENT_STATUSES.map(status => (
-                              <option key={status.value} value={status.value}>
-                                {status.label}
-                              </option>
-                            ))}
-                          </Select>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
+                  />
                 );
               })
             )}
@@ -2565,7 +2530,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       <EnvironmentGalleryModal
         environment={galleryEnvironment}
         canManage={canManageEnvGallery}
-        onClose={() => setGalleryEnvironment(null)}
+        onClose={() => {
+          setGalleryEnvironment(null);
+          void syncProject();
+        }}
       />
       <ConfTecnicaWhatsAppDialog
         target={confTecnicaWhatsApp}

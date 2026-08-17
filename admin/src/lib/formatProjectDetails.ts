@@ -1,6 +1,17 @@
 import type { Prisma, Role } from "@prisma/client";
 import { isOpsLimitedRole } from "@/lib/permissions";
 import { stripConsentFromObservacoes } from "@/lib/clientConsent";
+import {
+  summarizeEnvironmentAttachments,
+  type EnvironmentAttachmentSummary,
+} from "@/lib/factoryEnvironment";
+
+export type ProjectEnvironmentPayload = {
+  id: string;
+  nome: string;
+  tipo: string;
+  status: string;
+} & EnvironmentAttachmentSummary;
 
 export type ProjectDetailsPayload = {
   id: string;
@@ -26,7 +37,7 @@ export type ProjectDetailsPayload = {
   conf_tecnica_resp2_id: string | null;
   conf_tecnica_resp2Nome: string | null;
   observacoes: string;
-  environments: Array<{ id: string; nome: string; tipo: string; status: string }>;
+  environments: ProjectEnvironmentPayload[];
   files: Array<{
     id: string;
     tipo: string;
@@ -116,7 +127,20 @@ export type ProjectDetailsPayload = {
 
 const projectInclude = {
   client: true,
-  environments: true,
+  environments: {
+    orderBy: { nome: "asc" as const },
+    include: {
+      attachments: {
+        select: {
+          id: true,
+          url: true,
+          mime_type: true,
+          categoria: true,
+        },
+        orderBy: { createdAt: "desc" as const },
+      },
+    },
+  },
   files: true,
   quotes: {
     orderBy: { versao: "desc" as const },
@@ -181,12 +205,19 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
     conf_tecnica_resp2_id: project.conf_tecnica_resp2_id || null,
     conf_tecnica_resp2Nome: project.conf_tecnica_resp2?.name || null,
     observacoes: project.observacoes || "",
-    environments: project.environments.map((env) => ({
-      id: env.id,
-      nome: env.nome,
-      tipo: env.tipo,
-      status: env.status,
-    })),
+    environments: project.environments.map((env) => {
+      const summary = summarizeEnvironmentAttachments({
+        capa_attachment_id: env.capa_attachment_id,
+        attachments: env.attachments,
+      });
+      return {
+        id: env.id,
+        nome: env.nome,
+        tipo: env.tipo,
+        status: env.status,
+        ...summary,
+      };
+    }),
     files: project.files.map((file) => ({
       id: file.id,
       tipo: file.tipo,
