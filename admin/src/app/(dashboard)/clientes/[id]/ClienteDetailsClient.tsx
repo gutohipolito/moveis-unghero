@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import {
   type Activity,
-  type ClientActivityCategory,
   type Payment,
   addActivityAction,
   updateClientAction,
@@ -63,6 +62,7 @@ import type { Origin } from "@/app/actions/kanban";
 import type { ClientWizardData } from "../ClientWizard";
 import {
   CLIENT_ACTIVITY_CATEGORY_LABELS,
+  type ClientActivityCategory,
 } from "@/lib/clientTimeline";
 
 interface ProjectSummary extends ClientProjectSummary {}

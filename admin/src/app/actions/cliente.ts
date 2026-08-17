@@ -1192,8 +1192,6 @@ export interface Activity {
   origem?: "client" | "project";
 }
 
-export type { ClientActivityCategory };
-
 export interface Payment {
   id: string;
   projectId: string;
