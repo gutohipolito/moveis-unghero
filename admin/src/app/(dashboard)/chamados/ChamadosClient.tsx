@@ -88,6 +88,7 @@ export default function ChamadosClient({
   const [descricao, setDescricao] = useState("");
   const [prioridade, setPrioridade] = useState<SupplyTicketPriority>("MEDIA");
   const [projectId, setProjectId] = useState("");
+  const [notifyChat, setNotifyChat] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -155,6 +156,7 @@ export default function ChamadosClient({
         prioridade,
         projectId: projectId || null,
         imagens,
+        notifyChat: Boolean(projectId) && notifyChat,
       });
       if (res.success) {
         upsertTicket(res.ticket);
@@ -162,6 +164,7 @@ export default function ChamadosClient({
         setDescricao("");
         setPrioridade("MEDIA");
         setProjectId("");
+        setNotifyChat(true);
         setFiles([]);
         setShowForm(false);
       } else {
@@ -295,7 +298,7 @@ export default function ChamadosClient({
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-450">
-              Projeto relacionado (opcional)
+              Projeto
             </label>
             <select
               value={projectId}
@@ -309,6 +312,28 @@ export default function ChamadosClient({
                 </option>
               ))}
             </select>
+            {projectId ? (
+              <label className="mt-2 flex items-start gap-2.5 rounded-[var(--radius-sm)] border border-indigo-100 bg-indigo-50/60 px-3 py-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifyChat}
+                  onChange={(e) => setNotifyChat(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>
+                  <span className="block text-xs font-bold text-slate-800">
+                    Enviar aviso no chat do projeto
+                  </span>
+                  <span className="block text-[11px] text-slate-500 leading-snug">
+                    A equipe vê no grupo interno qual insumo falta, sem depender só da lista de chamados.
+                  </span>
+                </span>
+              </label>
+            ) : (
+              <p className="text-[11px] text-slate-400 font-medium">
+                Vincule o projeto para avisar a equipe no chat interno.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">

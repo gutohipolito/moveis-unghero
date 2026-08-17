@@ -47,8 +47,8 @@ export default async function ChamadosPage() {
             title="Como funciona"
             items={[
               "Qualquer colaborador pode abrir um chamado de falta de insumo.",
-              "Defina prioridade e, se quiser, vincule a um projeto e anexe fotos.",
-              "A Diretoria recebe uma notificação e pode assumir e resolver.",
+              "Vincule o projeto e marque o aviso no chat para a equipe ver o que falta.",
+              "A Diretoria recebe a notificação do chamado e pode assumir e resolver.",
               "O chamado registra quem solicitou e quem resolveu.",
             ]}
           />

@@ -6,11 +6,13 @@ import { requireAdmin } from "@/lib/auth-guard";
 import {requireModuleAccess, requireWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
 import { labelProjectStatus } from "@/lib/navLabels";
-import type {
-  SupplyTicketDTO,
-  SupplyTicketPriority,
-  SupplyTicketStatus,
+import {
+  formatSupplyTicketChatNotice,
+  type SupplyTicketDTO,
+  type SupplyTicketPriority,
+  type SupplyTicketStatus,
 } from "@/lib/chamados";
+import { postProjectChatMessage } from "@/app/actions/projectChat";
 
 type TicketRow = {
   id: string;
@@ -64,6 +66,7 @@ export interface CreateSupplyTicketInput {
   prioridade?: SupplyTicketPriority;
   projectId?: string | null;
   imagens?: string[];
+  notifyChat?: boolean;
 }
 
 export type SupplyTicketResult =
@@ -131,6 +134,17 @@ export async function createSupplyTicket(
     });
     revalidatePath("/chamados");
     revalidatePath("/", "layout");
+
+    if (input.notifyChat && projectId) {
+      const chatBody = formatSupplyTicketChatNotice({
+        titulo,
+        descricao,
+        prioridade,
+        requesterName: row.requester?.name?.trim() || "Colaborador",
+      });
+      await postProjectChatMessage(projectId, chatBody);
+    }
+
     return { success: true, ticket: mapTicket(row as TicketRow) };
   } catch (error) {
     console.error("Erro ao criar chamado:", error);

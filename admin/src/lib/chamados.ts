@@ -37,3 +37,21 @@ export const SUPPLY_STATUS_ORDER: SupplyTicketStatus[] = [
   "RESOLVIDO",
   "CANCELADO",
 ];
+
+export function formatSupplyTicketChatNotice(input: {
+  titulo: string;
+  descricao: string;
+  prioridade: SupplyTicketPriority;
+  requesterName: string;
+}): string {
+  const prio = SUPPLY_PRIORITY_LABELS[input.prioridade].toLowerCase();
+  const desc = input.descricao.trim();
+  return [
+    `Chamado de insumo · prioridade ${prio}`,
+    input.titulo,
+    "",
+    desc,
+    "",
+    `Aberto por ${input.requesterName}. Acompanhe em Chamados.`,
+  ].join("\n");
+}
