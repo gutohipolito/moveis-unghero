@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { FinderFolderIcon } from "@/components/parceiros/FinderFolderIcon";
 import { compressImageFile } from "@/lib/imageCompression";
+import { describeUploadException, readUploadResponse } from "@/lib/uploadErrors";
 import {
   countPartnerImages,
   imagesInFolder,
@@ -140,12 +141,15 @@ export default function ParceiroImagesTab({
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Não foi possível criar a pasta", data.error || "Tente novamente.");
+      const parsed = await readUploadResponse(res);
+      if (!parsed.ok) {
+        showError("Não foi possível criar a pasta", parsed.error);
         return;
       }
-      applyPartner(data.partner, data.gallery);
+      applyPartner(
+        (parsed.json?.partner as { imagens?: string | null }) ?? {},
+        parsed.json?.gallery as PartnerGallery | undefined
+      );
       const created = newFolderName.trim();
       setNewFolderName("");
       setCreatingFolder(false);
@@ -170,12 +174,15 @@ export default function ParceiroImagesTab({
           nextName: renameValue.trim(),
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Não foi possível renomear", data.error || "Tente novamente.");
+      const parsed = await readUploadResponse(res);
+      if (!parsed.ok) {
+        showError("Não foi possível renomear", parsed.error);
         return;
       }
-      applyPartner(data.partner, data.gallery);
+      applyPartner(
+        (parsed.json?.partner as { imagens?: string | null }) ?? {},
+        parsed.json?.gallery as PartnerGallery | undefined
+      );
       if (openFolder === from) setOpenFolder(renameValue.trim());
       setRenamingFolder(null);
       setRenameValue("");
@@ -254,14 +261,26 @@ export default function ParceiroImagesTab({
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Upload falhou", data.error || "Não foi possível enviar as fotos.");
+      const parsed = await readUploadResponse(res, {
+        allowedHint: "Use JPG, PNG ou WEBP.",
+        maxBytes: 10 * 1024 * 1024,
+      });
+      if (!parsed.ok) {
+        showError("Upload falhou", parsed.error);
         return;
       }
-      applyPartner(data.partner, data.gallery);
-    } catch {
-      showError("Erro de conexão", "Falha ao enviar as fotos.");
+      applyPartner(
+        (parsed.json?.partner as { imagens?: string | null }) ?? {},
+        parsed.json?.gallery as PartnerGallery | undefined
+      );
+    } catch (error) {
+      showError(
+        "Upload falhou",
+        describeUploadException(error, {
+          allowedHint: "Use JPG, PNG ou WEBP.",
+          maxBytes: 10 * 1024 * 1024,
+        })
+      );
     } finally {
       setBusy(false);
       setUploadProgress(null);

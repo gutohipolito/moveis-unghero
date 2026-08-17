@@ -21,15 +21,23 @@ import { FinderFolderIcon } from "@/components/parceiros/FinderFolderIcon";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   CLIENT_ATTACHMENT_ACCEPT,
+  CLIENT_ATTACHMENT_ALLOWED_HINT,
   CLIENT_ATTACHMENT_MAX_BYTES,
   CLIENT_DEFAULT_FOLDERS,
   CLIENT_FOLDER_RESIDENCIA,
   formatAttachmentSize,
+  isAllowedClientAttachment,
   isDefaultClientFolder,
   isImageMime,
   resolveClientFolders,
   type ClientAttachmentDTO,
 } from "@/lib/clientAttachments";
+import { safeUploadFilename, uploadOperatorBlob } from "@/lib/operatorBlobUpload";
+import {
+  describeUploadException,
+  readUploadResponse,
+  validateOperatorFile,
+} from "@/lib/uploadErrors";
 import ClienteCameraModal from "@/components/clientes/ClienteCameraModal";
 import { ModalShell } from "@/components/ui/modal-shell";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -146,17 +154,18 @@ export default function ClienteDocumentsTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "create-folder", folder: newFolderName.trim() }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Não foi possível criar a pasta", data.error || "Tente novamente.");
+      const parsed = await readUploadResponse(res);
+      if (!parsed.ok) {
+        showError("Não foi possível criar a pasta", parsed.error);
         return;
       }
-      onFoldersChange(data.folders || []);
+      const folders = Array.isArray(parsed.json?.folders) ? (parsed.json.folders as string[]) : [];
+      onFoldersChange(folders);
       setOpenFolder(newFolderName.trim());
       setNewFolderName("");
       setCreatingFolder(false);
-    } catch {
-      showError("Erro de conexão", "Falha ao criar a pasta.");
+    } catch (error) {
+      showError("Erro de conexão", describeUploadException(error));
     } finally {
       setBusy(false);
     }
@@ -175,12 +184,13 @@ export default function ClienteDocumentsTab({
           nextName: renameValue.trim(),
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Não foi possível renomear", data.error || "Tente novamente.");
+      const parsed = await readUploadResponse(res);
+      if (!parsed.ok) {
+        showError("Não foi possível renomear", parsed.error);
         return;
       }
-      onFoldersChange(data.folders || []);
+      const folders = Array.isArray(parsed.json?.folders) ? (parsed.json.folders as string[]) : [];
+      onFoldersChange(folders);
       onAttachmentsChange(
         attachments.map((item) =>
           item.folder === from ? { ...item, folder: renameValue.trim() } : item
@@ -189,8 +199,8 @@ export default function ClienteDocumentsTab({
       if (openFolder === from) setOpenFolder(renameValue.trim());
       setRenamingFolder(null);
       setRenameValue("");
-    } catch {
-      showError("Erro de conexão", "Falha ao renomear a pasta.");
+    } catch (error) {
+      showError("Erro de conexão", describeUploadException(error));
     } finally {
       setBusy(false);
     }
@@ -213,17 +223,23 @@ export default function ClienteDocumentsTab({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "delete-folder", folder }),
           });
-          const data = await res.json();
-          if (!res.ok || !data.success) {
-            showError("Não foi possível excluir", data.error || "Tente novamente.");
+          const parsed = await readUploadResponse(res);
+          if (!parsed.ok) {
+            showError("Não foi possível excluir", parsed.error);
             return;
           }
-          const deleted = new Set<string>(data.deletedIds || []);
+          const deletedIds = Array.isArray(parsed.json?.deletedIds)
+            ? (parsed.json.deletedIds as string[])
+            : [];
+          const deleted = new Set<string>(deletedIds);
           onAttachmentsChange(attachments.filter((item) => !deleted.has(item.id)));
-          onFoldersChange(data.folders || []);
+          const folders = Array.isArray(parsed.json?.folders)
+            ? (parsed.json.folders as string[])
+            : [];
+          onFoldersChange(folders);
           if (openFolder === folder) setOpenFolder(null);
-        } catch {
-          showError("Erro de conexão", "Falha ao excluir a pasta.");
+        } catch (error) {
+          showError("Erro de conexão", describeUploadException(error));
         } finally {
           setBusy(false);
         }
@@ -244,35 +260,67 @@ export default function ClienteDocumentsTab({
     }
     setBusy(true);
     try {
-      const formData = new FormData();
-      formData.append("folder", folder);
-      setUploadProgress(
-        files.length === 1 ? "Otimizando arquivo…" : `Otimizando ${files.length} arquivos…`
-      );
-      for (const file of files) {
-        const compressed = await compressImageFile(file, {
+      const prepared: Array<{ url: string; nome: string; mime_type: string; size_bytes: number }> = [];
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const invalid = validateOperatorFile(file, {
+          maxBytes: CLIENT_ATTACHMENT_MAX_BYTES,
+          isAllowed: isAllowedClientAttachment,
+          allowedHint: CLIENT_ATTACHMENT_ALLOWED_HINT,
+        });
+        if (invalid) {
+          showError("Arquivo não enviado", invalid);
+          return;
+        }
+        setUploadProgress(
+          files.length === 1
+            ? `Enviando ${file.name}…`
+            : `Enviando ${index + 1} de ${files.length}: ${file.name}`
+        );
+        const toSend = await compressImageFile(file, {
           maxDimension: 1920,
           quality: 0.8,
         });
-        formData.append("file", compressed, compressed.name);
+        const blob = await uploadOperatorBlob(toSend, {
+          pathname: `clients/${clientId}/${safeUploadFilename(toSend.name)}`,
+          handleUploadUrl: `/api/clients/${clientId}/attachments/upload`,
+          access: "public",
+          maxBytes: CLIENT_ATTACHMENT_MAX_BYTES,
+        });
+        prepared.push({
+          url: blob.url,
+          nome: toSend.name,
+          mime_type: toSend.type || file.type || "application/octet-stream",
+          size_bytes: toSend.size,
+        });
       }
-      setUploadProgress(
-        files.length === 1 ? "Enviando arquivo…" : `Enviando ${files.length} arquivos…`
-      );
       const res = await fetch(`/api/clients/${clientId}/attachments`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder, files: prepared }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Upload falhou", data.error || "Não foi possível enviar os arquivos.");
+      const parsed = await readUploadResponse(res, {
+        maxBytes: CLIENT_ATTACHMENT_MAX_BYTES,
+        allowedHint: CLIENT_ATTACHMENT_ALLOWED_HINT,
+      });
+      if (!parsed.ok) {
+        showError("Upload falhou", parsed.error);
         return;
       }
-      const uploaded = (data.attachments || [data.attachment]).filter(Boolean) as ClientAttachmentDTO[];
+      const uploaded = (
+        (parsed.json?.attachments as ClientAttachmentDTO[] | undefined) ||
+        ([parsed.json?.attachment].filter(Boolean) as ClientAttachmentDTO[])
+      );
       onAttachmentsChange([...uploaded, ...clientOnly]);
-      if (Array.isArray(data.folders)) onFoldersChange(data.folders);
-    } catch {
-      showError("Erro de conexão", "Falha ao enviar os arquivos.");
+      if (Array.isArray(parsed.json?.folders)) onFoldersChange(parsed.json.folders as string[]);
+    } catch (error) {
+      showError(
+        "Upload falhou",
+        describeUploadException(error, {
+          maxBytes: CLIENT_ATTACHMENT_MAX_BYTES,
+          allowedHint: CLIENT_ATTACHMENT_ALLOWED_HINT,
+        })
+      );
     } finally {
       setBusy(false);
       setUploadProgress(null);
@@ -325,14 +373,14 @@ export default function ClienteDocumentsTab({
             `/api/clients/${clientId}/attachments?id=${encodeURIComponent(attachment.id)}`,
             { method: "DELETE" }
           );
-          const data = await res.json();
-          if (!res.ok || !data.success) {
-            showError("Não foi possível excluir", data.error || "Tente novamente.");
+          const parsed = await readUploadResponse(res);
+          if (!parsed.ok) {
+            showError("Não foi possível excluir", parsed.error);
             return;
           }
           onAttachmentsChange(attachments.filter((item) => item.id !== attachment.id));
-        } catch {
-          showError("Erro de conexão", "Falha ao excluir o arquivo.");
+        } catch (error) {
+          showError("Erro de conexão", describeUploadException(error));
         } finally {
           setBusy(false);
         }
@@ -675,8 +723,7 @@ export default function ClienteDocumentsTab({
           <p className="text-[11px] text-muted-foreground">{uploadProgress}</p>
         ) : (
           <p className="text-[11px] text-muted-foreground">
-            JPG, PNG, PDF, Word, Excel, ZIP, DWG, SketchUp e vídeo · até{" "}
-            {Math.round(CLIENT_ATTACHMENT_MAX_BYTES / (1024 * 1024))} MB.
+            {CLIENT_ATTACHMENT_ALLOWED_HINT}
           </p>
         )}
 

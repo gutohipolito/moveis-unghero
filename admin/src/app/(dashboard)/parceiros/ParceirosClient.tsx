@@ -26,6 +26,7 @@ import {
 } from "@/lib/partnerTypes";
 import { PARTNER_QUOTE_CARD_MODE_OPTIONS } from "@/lib/partnerQuoteCard";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { describeUploadException, readUploadResponse } from "@/lib/uploadErrors";
 import PartnerCommissionsTab from "@/components/PartnerCommissionsTab";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { usePrivacy } from "@/context/PrivacyContext";
@@ -783,21 +784,33 @@ export default function ParceirosClient({ initialParceiros, companyId }: Parceir
         body: formData,
       });
 
-      const res = await response.json();
-      if (res.success && res.partner) {
+      const parsed = await readUploadResponse(response, {
+        fileName: file.name,
+        allowedHint: "Use JPG, PNG ou WEBP.",
+        maxBytes: 10 * 1024 * 1024,
+      });
+      const partner = parsed.json?.partner as ParceiroDTO | undefined;
+      if (parsed.ok && partner) {
         setParceiros((prev) =>
-          prev.map((p) => (p.id === partnerId ? { ...p, ...res.partner } : p))
+          prev.map((p) => (p.id === partnerId ? { ...p, ...partner } : p))
         );
         showSuccess(
           type === "avatar" ? "Foto de perfil atualizada" : "Projeto adicionado",
           type === "avatar" ? "O avatar do parceiro foi salvo." : "A foto foi adicionada à galeria."
         );
       } else {
-        showError("Erro no upload", res.error || "Não foi possível enviar o arquivo.");
+        showError("Erro no upload", parsed.error);
       }
     } catch (err) {
       console.error(err);
-      showError("Erro de conexão", "Falha de rede ao tentar subir a imagem.");
+      showError(
+        "Upload falhou",
+        describeUploadException(err, {
+          fileName: file.name,
+          allowedHint: "Use JPG, PNG ou WEBP.",
+          maxBytes: 10 * 1024 * 1024,
+        })
+      );
     } finally {
       setUploadingId(null);
     }

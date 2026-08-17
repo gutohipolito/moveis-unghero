@@ -47,10 +47,40 @@ export type EnvironmentTechSheet = {
   capa_attachment_id: string | null;
 };
 
-export const ENVIRONMENT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+export const ENVIRONMENT_ATTACHMENT_MAX_BYTES = 200 * 1024 * 1024; // 200 MB (upload direto no Blob)
 
-export const ENVIRONMENT_ATTACHMENT_ACCEPT =
-  "image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf";
+const ENVIRONMENT_ATTACHMENT_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "heic",
+  "heif",
+  "gif",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "zip",
+  "rar",
+  "7z",
+  "dwg",
+  "dxf",
+  "skp",
+  "3ds",
+  "obj",
+  "stl",
+] as const;
+
+export const ENVIRONMENT_ATTACHMENT_ACCEPT = [
+  "image/*",
+  "application/pdf",
+  ...ENVIRONMENT_ATTACHMENT_EXTENSIONS.map((ext) => `.${ext}`),
+].join(",");
+
+export const ENVIRONMENT_ATTACHMENT_ALLOWED_HINT =
+  "Envie imagem, PDF, DWG, SketchUp (.skp) ou ZIP (até 200 MB).";
 
 export const ENVIRONMENT_ATTACHMENT_MIME_TYPES = new Set([
   "image/jpeg",
@@ -58,8 +88,71 @@ export const ENVIRONMENT_ATTACHMENT_MIME_TYPES = new Set([
   "image/webp",
   "image/heic",
   "image/heif",
+  "image/gif",
   "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/x-rar-compressed",
+  "application/vnd.rar",
+  "application/x-7z-compressed",
+  "image/vnd.dwg",
+  "application/acad",
+  "application/dxf",
+  "image/vnd.dxf",
+  "application/vnd.sketchup.skp",
+  "application/octet-stream",
 ]);
+
+const ENVIRONMENT_ATTACHMENT_EXT_SET = new Set<string>(ENVIRONMENT_ATTACHMENT_EXTENSIONS);
+
+export function environmentAttachmentExtension(name: string): string {
+  const base = name.trim().split(/[\\/]/).pop() || "";
+  const dot = base.lastIndexOf(".");
+  if (dot < 0 || dot === base.length - 1) return "";
+  return base.slice(dot + 1).toLowerCase();
+}
+
+export function isAllowedEnvironmentAttachment(file: {
+  name: string;
+  type?: string | null;
+}): boolean {
+  const ext = environmentAttachmentExtension(file.name);
+  if (ext && ENVIRONMENT_ATTACHMENT_EXT_SET.has(ext)) return true;
+  const mime = (file.type || "").toLowerCase();
+  if (!mime || mime === "application/octet-stream") return false;
+  return ENVIRONMENT_ATTACHMENT_MIME_TYPES.has(mime);
+}
+
+export function guessEnvironmentAttachmentMime(name: string, type?: string | null): string {
+  const mime = (type || "").trim().toLowerCase();
+  if (mime && mime !== "application/octet-stream") return mime;
+  const ext = environmentAttachmentExtension(name);
+  const byExt: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    heic: "image/heic",
+    heif: "image/heif",
+    gif: "image/gif",
+    pdf: "application/pdf",
+    skp: "application/vnd.sketchup.skp",
+    dwg: "image/vnd.dwg",
+    dxf: "image/vnd.dxf",
+    zip: "application/zip",
+    rar: "application/vnd.rar",
+    "7z": "application/x-7z-compressed",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  };
+  return byExt[ext] || "application/octet-stream";
+}
 
 export const ENVIRONMENT_ATTACHMENT_CATEGORIES: {
   value: EnvironmentAttachmentCategory;

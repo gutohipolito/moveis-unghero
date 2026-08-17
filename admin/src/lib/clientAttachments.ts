@@ -18,7 +18,10 @@ export type ClientAttachmentDTO = {
   project_id: string | null;
 };
 
-export const CLIENT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+export const CLIENT_ATTACHMENT_MAX_BYTES = 200 * 1024 * 1024; // 200 MB (upload direto no Blob)
+
+export const CLIENT_ATTACHMENT_ALLOWED_HINT =
+  "Envie imagem, PDF, Office, ZIP, DWG, SketchUp (.skp) ou vídeo curto (até 200 MB).";
 
 const CLIENT_ATTACHMENT_EXTENSIONS = [
   "jpg",

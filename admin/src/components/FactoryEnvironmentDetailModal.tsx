@@ -22,17 +22,22 @@ import {
 } from "@/app/actions/factoryEnvironment";
 import {
   ENVIRONMENT_ATTACHMENT_ACCEPT,
+  ENVIRONMENT_ATTACHMENT_ALLOWED_HINT,
   ENVIRONMENT_ATTACHMENT_CATEGORIES,
+  ENVIRONMENT_ATTACHMENT_MAX_BYTES,
   attachmentCategoryLabel,
   canManageEnvironmentAttachments,
   countTechSheetFields,
   formatAttachmentSize,
   getClientColor,
+  guessEnvironmentAttachmentMime,
   isImageMime,
   summarizeText,
   type EnvironmentAttachmentDTO,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
+import { uploadEnvironmentAttachmentFile } from "@/lib/environmentAttachmentUpload";
+import { describeUploadException } from "@/lib/uploadErrors";
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import { usePermissions } from "@/context/PermissionsContext";
 import {
@@ -449,30 +454,21 @@ export default function FactoryEnvironmentDetailModal({
       let firstImageAsCover = attachments.length === 0;
 
       for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("categoria", categoria);
-        const setCover = firstImageAsCover && file.type.startsWith("image/");
-        if (setCover) {
-          formData.append("setAsCover", "true");
-          firstImageAsCover = false;
-        }
+        const mime = guessEnvironmentAttachmentMime(file.name, file.type);
+        const setCover = firstImageAsCover && mime.startsWith("image/");
+        if (setCover) firstImageAsCover = false;
 
-        const response = await fetch(`/api/factory/environments/${currentItem.id}/attachments`, {
-          method: "POST",
-          body: formData,
+        const attachment = await uploadEnvironmentAttachmentFile(currentItem.id, file, {
+          categoria,
+          setAsCover: setCover,
         });
-        const payload = await response.json();
-        if (!payload.success) {
-          throw new Error(payload.error || "Falha no upload");
-        }
 
         nextCount += 1;
-        setAttachments((prev) => [payload.attachment, ...prev]);
+        setAttachments((prev) => [attachment, ...prev]);
         if (setCover) {
-          setCapaId(payload.attachment.id);
+          setCapaId(attachment.id);
           onBoardPatch(currentItem.id, {
-            coverUrl: payload.attachment.url,
+            coverUrl: attachment.url,
             attachmentCount: nextCount,
           });
         } else {
@@ -483,7 +479,7 @@ export default function FactoryEnvironmentDetailModal({
       setFilterCategory(categoria);
       setPendingFiles([]);
     } catch (error) {
-      setAttachmentError(error instanceof Error ? error.message : "Erro no upload");
+      setAttachmentError(describeUploadException(error, { maxBytes: ENVIRONMENT_ATTACHMENT_MAX_BYTES }));
     } finally {
       setUploading(false);
     }
@@ -728,7 +724,7 @@ export default function FactoryEnvironmentDetailModal({
                 <div>
                   <p className="text-[10px] font-bold uppercase text-muted-foreground">Enviar arquivos</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    JPG, PNG, WEBP ou PDF até 10 MB. Depois escolha a categoria.
+                    {ENVIRONMENT_ATTACHMENT_ALLOWED_HINT} Depois escolha a categoria.
                   </p>
                 </div>
                 <button
@@ -934,8 +930,8 @@ export default function FactoryEnvironmentDetailModal({
                           />
                         </button>
                       ) : (
-                        <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
-                          PDF / documento
+                        <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground px-2 text-center">
+                          {file.nome.split(".").pop()?.toUpperCase() || "Arquivo"}
                         </div>
                       )}
                       <div className="space-y-0.5">

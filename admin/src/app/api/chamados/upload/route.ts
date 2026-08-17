@@ -8,14 +8,17 @@ const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", 
 export async function POST(request: NextRequest) {
   const auth = await getAuthContext();
   if (!auth) {
-    return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: "Sua sessão expirou. Entre de novo no painel e tente enviar o arquivo." },
+      { status: 401 }
+    );
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
       {
         success: false,
-        error: "Armazenamento não configurado. Adicione BLOB_READ_WRITE_TOKEN na Vercel.",
+        error: "O armazenamento de arquivos está indisponível no momento. Avise a diretoria.",
       },
       { status: 503 }
     );
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { success: false, error: "Imagem excede o limite de 10 MB" },
+      { success: false, error: `"${file.name}" ultrapassa o limite de 10 MB.` },
       { status: 400 }
     );
   }
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest) {
   const mimeType = file.type || "application/octet-stream";
   if (!ALLOWED.has(mimeType)) {
     return NextResponse.json(
-      { success: false, error: "Formato não suportado. Use JPG, PNG ou WEBP." },
+      { success: false, error: `"${file.name}" não é um formato aceito. Use JPG, PNG ou WEBP.` },
       { status: 400 }
     );
   }

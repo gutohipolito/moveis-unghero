@@ -11,11 +11,15 @@ import {
 import {
   ENVIRONMENT_ATTACHMENT_ACCEPT,
   ENVIRONMENT_ATTACHMENT_CATEGORIES,
+  ENVIRONMENT_ATTACHMENT_MAX_BYTES,
   attachmentCategoryLabel,
   formatAttachmentSize,
+  guessEnvironmentAttachmentMime,
   isImageMime,
   type EnvironmentAttachmentDTO,
 } from "@/lib/factoryEnvironment";
+import { uploadEnvironmentAttachmentFile } from "@/lib/environmentAttachmentUpload";
+import { describeUploadException } from "@/lib/uploadErrors";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
@@ -281,26 +285,18 @@ export default function EnvironmentGalleryModal({
     try {
       let firstImageAsCover = attachments.length === 0;
       for (const file of pendingFiles) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("categoria", pendingCategory);
-        if (firstImageAsCover && file.type.startsWith("image/")) {
-          formData.append("setAsCover", "true");
-          firstImageAsCover = false;
-        }
-        const response = await fetch(
-          `/api/factory/environments/${environment.id}/attachments`,
-          { method: "POST", body: formData }
-        );
-        const payload = await response.json();
-        if (!response.ok || !payload.success) {
-          throw new Error(payload.error || "Falha no upload");
-        }
+        const mime = guessEnvironmentAttachmentMime(file.name, file.type);
+        const setCover = firstImageAsCover && mime.startsWith("image/");
+        if (setCover) firstImageAsCover = false;
+        await uploadEnvironmentAttachmentFile(environment.id, file, {
+          categoria: pendingCategory,
+          setAsCover: setCover,
+        });
       }
       setPendingFiles([]);
       await loadAttachments(environment.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro no upload");
+      setError(describeUploadException(err, { maxBytes: ENVIRONMENT_ATTACHMENT_MAX_BYTES }));
     } finally {
       setUploading(false);
     }

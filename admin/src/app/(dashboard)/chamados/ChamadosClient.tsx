@@ -17,6 +17,7 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { compressImageFile } from "@/lib/imageCompression";
+import { describeUploadException, readUploadResponse } from "@/lib/uploadErrors";
 import {
   SUPPLY_STATUS_LABELS,
   SUPPLY_PRIORITY_LABELS,
@@ -143,11 +144,19 @@ export default function ChamadosClient({
         const fd = new FormData();
         fd.append("file", compressed);
         const resp = await fetch("/api/chamados/upload", { method: "POST", body: fd });
-        const data = await resp.json();
-        if (!resp.ok || !data.success) {
-          throw new Error(data.error || "Falha ao enviar a imagem.");
+        const parsed = await readUploadResponse(resp, {
+          fileName: compressed.name,
+          allowedHint: "Use JPG, PNG ou WEBP.",
+          maxBytes: 10 * 1024 * 1024,
+        });
+        if (!parsed.ok) {
+          throw new Error(parsed.error);
         }
-        imagens.push(data.url as string);
+        const url = parsed.json?.url;
+        if (typeof url !== "string") {
+          throw new Error("A foto subiu, mas não retornou o endereço. Tente de novo.");
+        }
+        imagens.push(url);
       }
 
       const res = await createSupplyTicket({
@@ -171,7 +180,12 @@ export default function ChamadosClient({
         setFormError(res.error);
       }
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Não foi possível abrir o chamado.");
+      setFormError(
+        describeUploadException(err, {
+          maxBytes: 10 * 1024 * 1024,
+          allowedHint: "Use JPG, PNG ou WEBP.",
+        })
+      );
     } finally {
       setSubmitting(false);
     }

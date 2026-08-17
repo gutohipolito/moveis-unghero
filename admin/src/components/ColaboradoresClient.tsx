@@ -12,6 +12,7 @@ import { getColaboradoresLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { updateUserPreference } from "@/app/actions/preferences";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { ADMIN_EMAIL } from "@/lib/constants";
+import { describeUploadException, readUploadResponse } from "@/lib/uploadErrors";
 import {
   TEAM_FUNCAO_IDS,
   TEAM_FUNCAO_META,
@@ -238,15 +239,31 @@ export default function ColaboradoresClient({
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Upload falhou", data.error || "Não foi possível enviar a foto.");
+      const parsed = await readUploadResponse(res, {
+        fileName: file.name,
+        allowedHint: "Use JPG, PNG ou WEBP.",
+        maxBytes: 10 * 1024 * 1024,
+      });
+      if (!parsed.ok) {
+        showError("Upload falhou", parsed.error);
         return;
       }
-      setImage(data.url as string);
+      const url = parsed.json?.url;
+      if (typeof url !== "string") {
+        showError("Upload falhou", "A foto subiu, mas não retornou o endereço. Tente de novo.");
+        return;
+      }
+      setImage(url);
       showSuccess("Foto enviada", "A imagem foi anexada ao cadastro.");
-    } catch {
-      showError("Upload falhou", "Erro de rede ao enviar a foto.");
+    } catch (error) {
+      showError(
+        "Upload falhou",
+        describeUploadException(error, {
+          fileName: file.name,
+          allowedHint: "Use JPG, PNG ou WEBP.",
+          maxBytes: 10 * 1024 * 1024,
+        })
+      );
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

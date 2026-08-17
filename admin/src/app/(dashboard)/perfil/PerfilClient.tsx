@@ -6,6 +6,7 @@ import {
   changeMyPasswordAction,
   updateMyProfileAction,
 } from "@/app/actions/perfil";
+import { describeUploadException, readUploadResponse } from "@/lib/uploadErrors";
 
 interface PerfilClientProps {
   initial: {
@@ -44,20 +45,29 @@ export default function PerfilClient({ initial }: PerfilClientProps) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/perfil/avatar", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setProfileError(data.error || "Falha no upload da foto.");
+      const parsed = await readUploadResponse(res, {
+        fileName: file.name,
+        allowedHint: "Use JPG, PNG ou WEBP.",
+        maxBytes: 10 * 1024 * 1024,
+      });
+      if (!parsed.ok) {
+        setProfileError(parsed.error);
         return;
       }
-      setImage(data.url);
-      const save = await updateMyProfileAction({ name, image: data.url });
+      const url = parsed.json?.url;
+      if (typeof url !== "string") {
+        setProfileError("A foto subiu, mas não retornou o endereço. Tente de novo.");
+        return;
+      }
+      setImage(url);
+      const save = await updateMyProfileAction({ name, image: url });
       if (!save.success) {
         setProfileError(save.error);
         return;
       }
       setProfileMsg("Foto atualizada.");
-    } catch {
-      setProfileError("Não foi possível enviar a foto.");
+    } catch (error) {
+      setProfileError(describeUploadException(error, { fileName: file.name, allowedHint: "Use JPG, PNG ou WEBP." }));
     } finally {
       setUploading(false);
     }

@@ -151,11 +151,126 @@ export async function POST(
     return NextResponse.json(
       {
         success: false,
-        error:
-          "Armazenamento de arquivos não configurado. Adicione BLOB_READ_WRITE_TOKEN na Vercel.",
+        error: "O armazenamento de arquivos está indisponível no momento. Avise a diretoria.",
       },
       { status: 503 }
     );
+  }
+
+  const contentType = request.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    let body: {
+      folder?: string;
+      projectId?: string | null;
+      files?: Array<{ url?: string; nome?: string; mime_type?: string; size_bytes?: number }>;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Não foi possível ler os dados do arquivo." },
+        { status: 400 }
+      );
+    }
+
+    const projectId = await resolveProjectId(body.projectId, clientId);
+    const folderName = normalizeClientFolderName(String(body.folder || ""));
+    if (!projectId && !folderName) {
+      return NextResponse.json(
+        { success: false, error: "Abra uma pasta para enviar arquivos." },
+        { status: 400 }
+      );
+    }
+    const incoming = Array.isArray(body.files) ? body.files : [];
+    if (incoming.length === 0) {
+      return NextResponse.json({ success: false, error: "Arquivo inválido. Escolha outro e tente de novo." }, { status: 400 });
+    }
+    if (incoming.length > CLIENT_UPLOAD_MAX_FILES) {
+      return NextResponse.json(
+        { success: false, error: `Envie no máximo ${CLIENT_UPLOAD_MAX_FILES} arquivos por vez.` },
+        { status: 400 }
+      );
+    }
+
+    for (const item of incoming) {
+      const nome = String(item.nome || "arquivo");
+      const url = String(item.url || "");
+      if (!url.includes("blob.vercel-storage.com")) {
+        return NextResponse.json(
+          { success: false, error: `"${nome}" não chegou ao armazenamento. Tente de novo.` },
+          { status: 400 }
+        );
+      }
+      if (!isAllowedClientAttachment({ name: nome, type: item.mime_type })) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `"${nome}" não é um formato suportado. Envie imagem, PDF, Office, ZIP, DWG, SketchUp ou vídeo curto.`,
+          },
+          { status: 400 }
+        );
+      }
+      if (typeof item.size_bytes === "number" && item.size_bytes > CLIENT_ATTACHMENT_MAX_BYTES) {
+        return NextResponse.json(
+          { success: false, error: `"${nome}" excede o limite de 200 MB.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const folder = folderName || CLIENT_FOLDER_RESIDENCIA;
+    try {
+      if (!projectId) {
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: { attachment_folders: true },
+        });
+        const folders = resolveClientFolders(client?.attachment_folders, [{ folder }]);
+        if (!folders.some((name) => name.toLowerCase() === folder.toLowerCase())) {
+          await prisma.client.update({
+            where: { id: clientId },
+            data: { attachment_folders: folders.filter((name) => !isDefaultClientFolder(name)) },
+          });
+        }
+      }
+
+      const created = [];
+      for (const item of incoming) {
+        const nome = (item.nome || "arquivo").replace(/[^\w.\-() ]+/g, "_").slice(0, 120);
+        const mimeType = item.mime_type || "application/octet-stream";
+        const tipo: ClientAttachmentType = isImageMime(mimeType) ? "FOTO" : "DOCUMENTO";
+        created.push(
+          await prisma.clientAttachment.create({
+            data: {
+              client_id: clientId,
+              company_id: auth.companyId,
+              project_id: projectId,
+              nome,
+              mime_type: mimeType,
+              url: String(item.url),
+              tipo,
+              folder,
+              size_bytes: typeof item.size_bytes === "number" ? item.size_bytes : null,
+              uploaded_by_id: auth.userId,
+            },
+            include: { uploaded_by: { select: { name: true } } },
+          })
+        );
+      }
+      const attachments = created.map(mapAttachment);
+      return NextResponse.json({
+        success: true,
+        attachment: attachments[0],
+        attachments,
+        folders: await loadFolders(clientId),
+      });
+    } catch (error) {
+      console.error("Erro ao registrar anexo do cliente:", error);
+      return NextResponse.json(
+        { success: false, error: "O servidor não conseguiu salvar o arquivo. Tente de novo em instantes." },
+        { status: 500 }
+      );
+    }
   }
 
   const formData = await request.formData();
@@ -187,7 +302,7 @@ export async function POST(
   for (const file of files) {
     if (file.size > CLIENT_ATTACHMENT_MAX_BYTES) {
       return NextResponse.json(
-        { success: false, error: `"${file.name}" excede o limite de 10 MB.` },
+        { success: false, error: `"${file.name}" excede o limite de 200 MB.` },
         { status: 400 }
       );
     }

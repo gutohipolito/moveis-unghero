@@ -14,6 +14,7 @@ import {
 } from "@/lib/productCatalogs";
 import { resolveCatalogPublicUrl } from "@/lib/catalogShare";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { describeUploadFailure } from "@/lib/uploadErrors";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
@@ -73,55 +74,13 @@ function describeCatalogUploadError(error: unknown, status?: number): string {
       : typeof error === "string"
         ? error.trim()
         : "";
-  const normalized = rawMessage.toLowerCase();
-
-  if (
-    normalized.includes("too large") ||
-    normalized.includes("larger than") ||
-    normalized.includes("exceed") ||
-    normalized.includes("maximum size") ||
-    normalized.includes("size limit") ||
-    normalized.includes("413")
-  ) {
-    return "O arquivo é muito grande.";
-  }
-  if (
-    normalized.includes("content type") ||
-    normalized.includes("mime") ||
-    normalized.includes("unsupported") ||
-    normalized.includes("not allowed")
-  ) {
-    return "O formato do arquivo não é aceito. Use PDF, JPG, PNG ou WEBP.";
-  }
-  if (
-    normalized.includes("unauth") ||
-    normalized.includes("forbidden") ||
-    normalized.includes("401") ||
-    normalized.includes("403")
-  ) {
-    return "Sua sessão expirou ou não possui permissão para enviar catálogos. Entre novamente e tente de novo.";
-  }
-  if (
-    normalized.includes("network") ||
-    normalized.includes("failed to fetch") ||
-    normalized.includes("offline")
-  ) {
-    return "A conexão foi interrompida durante o envio. Verifique sua internet e tente novamente.";
-  }
-  if (
-    normalized.includes("administrador") ||
-    normalized.includes("banco") ||
-    normalized.includes("database") ||
-    normalized.includes("prisma") ||
-    normalized.includes("postgres") ||
-    normalized.includes("neon")
-  ) {
-    return "Não foi possível concluir o cadastro. Entre em contato com o Administrador do Sistema.";
-  }
-  if (status === 400) {
-    return "Não foi possível concluir o cadastro. Confira os dados e tente novamente.";
-  }
-  return "Não foi possível concluir o cadastro. Entre em contato com o Administrador do Sistema.";
+  return describeUploadFailure({
+    status,
+    bodyText: rawMessage,
+    maxBytes: PRODUCT_CATALOG_MAX_BYTES,
+    allowedHint: "Use PDF, JPG, PNG ou WEBP.",
+    fallback: "Não foi possível concluir o cadastro. Tente de novo ou fale com a diretoria.",
+  });
 }
 
 type SupplierOption = {

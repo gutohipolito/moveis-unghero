@@ -12,6 +12,7 @@ import {
   parseShowcaseDescricao,
 } from "@/lib/zenAcabamentos";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
+import { describeUploadException, readUploadResponse } from "@/lib/uploadErrors";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
@@ -510,18 +511,31 @@ export default function ProdutosClient({
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Upload falhou", data.error || "Não foi possível enviar as imagens.");
+      const parsed = await readUploadResponse(res, {
+        allowedHint: "Use JPG, PNG ou WEBP.",
+        maxBytes: 10 * 1024 * 1024,
+      });
+      if (!parsed.ok) {
+        showError("Upload falhou", parsed.error);
         return;
       }
-      applyProductImages(productId, data.imagens || [], data.imagem_mime);
+      applyProductImages(
+        productId,
+        (parsed.json?.imagens as string[]) || [],
+        typeof parsed.json?.imagem_mime === "string" ? parsed.json.imagem_mime : null
+      );
       showSuccess(
         list.length > 1 ? "Fotos enviadas" : "Foto enviada",
         `${list.length} imagem(ns) adicionada(s) ao produto.`
       );
-    } catch {
-      showError("Upload falhou", "Erro de rede ao enviar as imagens.");
+    } catch (error) {
+      showError(
+        "Upload falhou",
+        describeUploadException(error, {
+          allowedHint: "Use JPG, PNG ou WEBP.",
+          maxBytes: 10 * 1024 * 1024,
+        })
+      );
     } finally {
       setUploading(false);
     }
@@ -534,12 +548,12 @@ export default function ProdutosClient({
     try {
       const qs = url ? `?url=${encodeURIComponent(url)}` : "";
       const res = await fetch(`/api/produtos/${productId}/image${qs}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showError("Falha", data.error || "Não foi possível remover a imagem.");
+      const parsed = await readUploadResponse(res);
+      if (!parsed.ok) {
+        showError("Falha", parsed.error);
         return;
       }
-      applyProductImages(productId, data.imagens || []);
+      applyProductImages(productId, (parsed.json?.imagens as string[]) || []);
     } finally {
       setUploading(false);
     }
