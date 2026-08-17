@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { del } from "@vercel/blob";
+import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext, requireClientInCompany } from "@/lib/auth-guard";
 import { requireWriteAccess } from "@/lib/moduleAccess";
 import { canManageOperationalMedia } from "@/lib/permissions";
 import { putSensitiveBlob } from "@/lib/secureBlob";
+import { logClientTimeline } from "@/lib/clientTimeline";
 import {
   CLIENT_ATTACHMENT_MAX_BYTES,
   clientAttachmentExtension,
@@ -89,6 +91,24 @@ async function loadFolders(clientId: string) {
     select: { folder: true },
   });
   return resolveClientFolders(client?.attachment_folders, attachments);
+}
+
+async function logAttachmentEvent(
+  clientId: string,
+  userId: string,
+  titulo: string,
+  descricao: string,
+  macro = true
+) {
+  await logClientTimeline({
+    clientId,
+    userId,
+    categoria: "ARQUIVO",
+    titulo,
+    descricao,
+    macro,
+  });
+  revalidatePath(`/clientes/${clientId}`);
 }
 
 async function optimizeImageFile(file: File): Promise<{
@@ -258,6 +278,14 @@ export async function POST(
         );
       }
       const attachments = created.map(mapAttachment);
+      await logAttachmentEvent(
+        clientId,
+        auth.userId,
+        created.length === 1
+          ? `Arquivo enviado: ${created[0].nome}`
+          : `${created.length} arquivos enviados`,
+        `Pasta: ${folder}${created.length > 1 ? `\n${created.map((item) => item.nome).join(", ")}` : ""}`
+      );
       return NextResponse.json({
         success: true,
         attachment: attachments[0],
@@ -384,6 +412,14 @@ export async function POST(
     }
 
     const attachments = created.map(mapAttachment);
+    await logAttachmentEvent(
+      clientId,
+      auth.userId,
+      created.length === 1
+        ? `Arquivo enviado: ${created[0].nome}`
+        : `${created.length} arquivos enviados`,
+      `Pasta: ${folder}${created.length > 1 ? `\n${created.map((item) => item.nome).join(", ")}` : ""}`
+    );
     return NextResponse.json({
       success: true,
       attachment: attachments[0],
@@ -449,6 +485,7 @@ export async function PATCH(
       where: { id: clientId },
       data: { attachment_folders: extras },
     });
+    await logAttachmentEvent(clientId, auth.userId, "Pasta criada", folderName, false);
     return NextResponse.json({
       success: true,
       folders: resolveClientFolders(extras, []),
@@ -485,6 +522,13 @@ export async function PATCH(
       where: { id: clientId },
       data: { attachment_folders: extras },
     });
+    await logAttachmentEvent(
+      clientId,
+      auth.userId,
+      "Pasta renomeada",
+      `${from} → ${next}`,
+      false
+    );
     return NextResponse.json({
       success: true,
       folders: await loadFolders(clientId),
@@ -530,6 +574,13 @@ export async function PATCH(
       where: { id: clientId },
       data: { attachment_folders: extras },
     });
+    await logAttachmentEvent(
+      clientId,
+      auth.userId,
+      "Pasta excluída",
+      `${folderName}${toDelete.length > 0 ? ` (${toDelete.length} arquivo(s))` : ""}`,
+      false
+    );
     return NextResponse.json({
       success: true,
       folders: resolveClientFolders(extras, []),
@@ -605,6 +656,12 @@ export async function DELETE(
     }
 
     await prisma.clientAttachment.delete({ where: { id: attachment.id } });
+    await logAttachmentEvent(
+      clientId,
+      auth.userId,
+      "Arquivo removido",
+      attachment.nome
+    );
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erro ao excluir anexo do cliente:", error);

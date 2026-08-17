@@ -107,6 +107,7 @@ model User {
   projectsObsUpdated        Project[]           @relation("ProjectObsUpdater")
   projectNoteReads          ProjectNoteRead[]
   partnerTimeline           PartnerTimeline[]
+  clientTimeline            ClientTimeline[]
   projectChatMessages       ProjectChatMessage[]
   projectChatReads          ProjectChatRead[]
   projectChatsClosed        ProjectChatThread[] @relation("ProjectChatCloser")
@@ -200,6 +201,7 @@ model Client {
   contracts    Contract[]
   paymentReceipts PaymentReceipt[]
   contacts     ClientContact[]
+  clientTimeline ClientTimeline[]
 
   @@index([company_id, telefone_digits])
   @@index([company_id, updatedAt])
@@ -311,6 +313,7 @@ model Project {
   files          File[]
   tasks          Task[]
   timeline       Timeline[]
+  clientTimeline ClientTimeline[]
   installments   Installment[]
 
   createdAt             DateTime  @default(now())
@@ -899,6 +902,35 @@ model Timeline {
 
   @@index([project_id, data])
   @@index([user_id])
+}
+
+enum ClientTimelineCategory {
+  CADASTRO
+  ARQUIVO
+  CONTATO
+  COMERCIAL
+  PROJETO
+  NOTAS
+}
+
+/** Histórico automático da ficha do cliente (cadastro, arquivos, contatos, etc.). */
+model ClientTimeline {
+  id         String                 @id @default(uuid())
+  client_id  String
+  client     Client                 @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  user_id    String?
+  user       User?                  @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  categoria  ClientTimelineCategory
+  titulo     String
+  descricao  String?                @db.Text
+  project_id String?
+  project    Project?               @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  macro      Boolean                @default(true)
+  data       DateTime               @default(now())
+
+  @@index([client_id, data])
+  @@index([user_id])
+  @@index([project_id])
 }
 
 /** Histórico comercial da ficha do projetista/arquiteto (não vai para o projeto do cliente). */

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import {
   type Activity,
+  type ClientActivityCategory,
   type Payment,
   addActivityAction,
   updateClientAction,
@@ -42,6 +43,7 @@ import {
   Pencil,
   Home,
   Truck,
+  Search,
 } from "lucide-react";
 import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
 import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
@@ -59,6 +61,9 @@ import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients, canManageOperationalMedia } from "@/lib/permissions";
 import type { Origin } from "@/app/actions/kanban";
 import type { ClientWizardData } from "../ClientWizard";
+import {
+  CLIENT_ACTIVITY_CATEGORY_LABELS,
+} from "@/lib/clientTimeline";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -137,6 +142,104 @@ const TIPO_IMOVEL_LABELS: Record<string, string> = {
   SOBRADO: "Sobrado / Triplex",
   OUTRO: "Outro",
 };
+
+type HistoryFilter = "all" | ClientActivityCategory;
+
+const HISTORY_FILTERS: { id: HistoryFilter; label: string }[] = [
+  { id: "all", label: "Tudo" },
+  { id: "cadastro", label: "Cadastro" },
+  { id: "arquivo", label: "Arquivos" },
+  { id: "comercial", label: "Comercial" },
+  { id: "contato", label: "Contatos" },
+  { id: "projeto", label: "Projetos" },
+  { id: "notas", label: "Notas" },
+];
+
+const CATEGORY_CHIP: Record<ClientActivityCategory, string> = {
+  cadastro: "text-emerald-700 bg-emerald-50",
+  arquivo: "text-blue-700 bg-blue-50",
+  contato: "text-violet-700 bg-violet-50",
+  comercial: "text-primary/80 bg-primary/5",
+  projeto: "text-amber-700 bg-amber-50",
+  notas: "text-slate-600 bg-slate-100",
+};
+
+function resolveActivityCategory(act: Activity): ClientActivityCategory {
+  if (act.categoria) return act.categoria;
+  if (act.tipo === "cadastro") return "cadastro";
+  return "comercial";
+}
+
+function formatActivityDate(iso: string) {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function ActivityTimelineItem({ act, compact = false }: { act: Activity; compact?: boolean }) {
+  const category = resolveActivityCategory(act);
+  const isRegistration = category === "cadastro";
+  return (
+    <div className={`relative group ${compact ? "" : ""}`}>
+      <span
+        className={`absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs transition-transform group-hover:scale-125 ${
+          isRegistration ? "bg-emerald-500" : "bg-primary"
+        }`}
+      />
+      <div className="space-y-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <strong className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              {isRegistration ? (
+                <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+              ) : null}
+              {act.titulo}
+            </strong>
+            {!compact ? (
+              <span
+                className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md ${CATEGORY_CHIP[category]}`}
+              >
+                {CLIENT_ACTIVITY_CATEGORY_LABELS[category]}
+              </span>
+            ) : null}
+          </div>
+          <span className="text-[10px] font-semibold text-muted-foreground shrink-0 tabular-nums">
+            {formatActivityDate(act.data)}
+          </span>
+        </div>
+        {act.descricao ? (
+          <p
+            className={`text-xs text-slate-600 leading-relaxed whitespace-pre-line ${
+              compact ? "line-clamp-2" : ""
+            }`}
+          >
+            {act.descricao}
+          </p>
+        ) : null}
+        {!compact ? (
+          <span
+            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+              isRegistration ? "text-emerald-700 bg-emerald-50" : "text-primary/70 bg-primary/5"
+            }`}
+          >
+            {isRegistration ? (
+              <ShieldCheck className="h-2.5 w-2.5" />
+            ) : (
+              <User className="h-2.5 w-2.5" />
+            )}
+            {isRegistration ? "Registro automático" : `Registrado por: ${act.autor}`}
+          </span>
+        ) : (
+          <span className="text-[10px] font-medium text-muted-foreground">{act.autor}</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function formatCepDisplay(cep: string | undefined) {
   const digits = (cep || "").replace(/\D/g, "").slice(0, 8);
@@ -231,6 +334,27 @@ export default function ClienteDetailsClient({
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const [historySearch, setHistorySearch] = useState("");
+
+  const macroActivities = useMemo(
+    () => activities.filter((act) => act.macro !== false).slice(0, 8),
+    [activities]
+  );
+
+  const filteredActivities = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    return activities.filter((act) => {
+      const category = resolveActivityCategory(act);
+      if (historyFilter !== "all" && category !== historyFilter) return false;
+      if (!query) return true;
+      return (
+        act.titulo.toLowerCase().includes(query) ||
+        act.descricao.toLowerCase().includes(query) ||
+        act.autor.toLowerCase().includes(query)
+      );
+    });
+  }, [activities, historyFilter, historySearch]);
 
   const syncClientDetails = useCallback(async () => {
     const result = await getClientDetailsLiveSnapshot(client.id);
@@ -641,7 +765,7 @@ export default function ClienteDetailsClient({
                         },
                         {
                           id: "timeline" as const,
-                          label: "Linha do Tempo",
+                          label: "Histórico",
                           icon: Clock,
                           count: null as number | null,
                         },
@@ -688,6 +812,28 @@ export default function ClienteDetailsClient({
                 />
               )}
 
+              {!isOpsLimited && macroActivities.length > 0 && (
+                <Card className="p-5 glass-card space-y-4">
+                  <div className="flex items-center justify-between gap-3 border-b border-border/40 pb-2">
+                    <h3 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-primary" /> Últimas atividades
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("timeline")}
+                      className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      Ver histórico completo →
+                    </button>
+                  </div>
+                  <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
+                    {macroActivities.map((act) => (
+                      <ActivityTimelineItem key={act.id} act={act} compact />
+                    ))}
+                  </div>
+                </Card>
+              )}
+
               <Card className="p-5 glass-card space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
@@ -707,7 +853,7 @@ export default function ClienteDetailsClient({
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Sem observações permanentes. Eventos com data ficam na Linha do Tempo.
+                    Sem observações permanentes. Eventos com data ficam no Histórico.
                   </p>
                 )}
                 {!isOpsLimited && (
@@ -826,69 +972,57 @@ export default function ClienteDetailsClient({
               </Card>
 
               <Card className="p-5 glass-card space-y-4">
-                <h3 className="text-sm font-black text-foreground uppercase tracking-wider border-b border-border/40 pb-2">
-                  Histórico de atividades
-                </h3>
+                <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/40 pb-3">
+                  <div>
+                    <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                      Histórico completo
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cadastro, arquivos, contatos, comercial e projetos — tudo em ordem cronológica.
+                    </p>
+                  </div>
+                  <div className="relative w-full sm:w-56">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      placeholder="Buscar no histórico…"
+                      className="pl-8 border-border bg-slate-50 text-xs h-8"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {HISTORY_FILTERS.map((filter) => {
+                    const active = historyFilter === filter.id;
+                    return (
+                      <button
+                        key={filter.id}
+                        type="button"
+                        onClick={() => setHistoryFilter(filter.id)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                          active
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
                 <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
-                  {activities.length === 0 ? (
+                  {filteredActivities.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Nenhum evento registrado no histórico deste cliente.
+                      {activities.length === 0
+                        ? "Nenhum evento registrado no histórico deste cliente."
+                        : "Nenhum evento corresponde aos filtros selecionados."}
                     </p>
                   ) : (
-                    activities.map((act) => {
-                      const isRegistration = act.tipo === "cadastro";
-                      return (
-                        <div key={act.id} className="relative group">
-                          <span
-                            className={`absolute -left-[22px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs transition-transform group-hover:scale-125 ${
-                              isRegistration ? "bg-emerald-500" : "bg-primary"
-                            }`}
-                          />
-
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <strong className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                                {isRegistration ? (
-                                  <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                                ) : null}
-                                {act.titulo}
-                              </strong>
-                              <span className="text-[10px] font-semibold text-muted-foreground shrink-0 tabular-nums">
-                                {new Date(act.data).toLocaleDateString("pt-BR", {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            </div>
-                            {act.descricao ? (
-                              <p className="text-xs text-slate-600 leading-relaxed">
-                                {act.descricao}
-                              </p>
-                            ) : null}
-                            <span
-                              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
-                                isRegistration
-                                  ? "text-emerald-700 bg-emerald-50"
-                                  : "text-primary/70 bg-primary/5"
-                              }`}
-                            >
-                              {isRegistration ? (
-                                <ShieldCheck className="h-2.5 w-2.5" />
-                              ) : (
-                                <User className="h-2.5 w-2.5" />
-                              )}
-                              {isRegistration
-                                ? "Registro automático"
-                                : `Registrado por: ${act.autor}`}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
+                    filteredActivities.map((act) => (
+                      <ActivityTimelineItem key={act.id} act={act} />
+                    ))
                   )}
                 </div>
               </Card>

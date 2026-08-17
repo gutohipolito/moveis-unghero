@@ -28,6 +28,15 @@ import { resolvePublicCompanyId } from "@/lib/publicCompany";
 import { resolveClientLocation } from "@/lib/clientLocation";
 import { checkRateLimit, getRequestIp } from "@/lib/rateLimit";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import {
+  buildRegistrationTimelineDesc,
+  describeClientFieldChanges,
+  labelClientOrigin,
+  logClientTimeline,
+  mapClientTimelineToActivity,
+  mapProjectTimelineToActivity,
+  type ClientActivityCategory,
+} from "@/lib/clientTimeline";
 import { canManageClients, isOpsLimitedRole } from "@/lib/permissions";
 import type { Prisma } from "@prisma/client";
 import { maybeRedactForRole, maybeRedactForViewer } from "@/lib/viewerRedact";
@@ -853,6 +862,18 @@ export async function createClientAction(formData: {
       }
     });
 
+    await logClientTimeline({
+      clientId: client.id,
+      userId: auth.userId,
+      categoria: "CADASTRO",
+      titulo: "Cadastro criado",
+      descricao: buildRegistrationTimelineDesc(
+        client.createdAt,
+        labelClientOrigin(formData.origem)
+      ),
+      macro: true,
+    });
+
     revalidatePath("/clientes");
     return { success: true, client: formatClientRecord({ ...client, projects: [] }) };
   } catch (error) {
@@ -916,6 +937,32 @@ export async function updateClientAction(
   }
 
   try {
+    const before = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: {
+        nome: true,
+        email: true,
+        telefone: true,
+        cidade: true,
+        origem: true,
+        status: true,
+        tipo_pessoa: true,
+        cpf: true,
+        cnpj: true,
+        cep: true,
+        endereco: true,
+        numero: true,
+        bairro: true,
+        uf: true,
+        tipo_imovel: true,
+        obs_imovel: true,
+        obs_entrega: true,
+      },
+    });
+    if (!before) {
+      return { success: false, error: "Cliente não encontrado." };
+    }
+
     const contact = resolveClientContactFields(formData.telefone, formData.email);
     const address = normalizeAddressFields({
       cidade: formData.cidade,
@@ -924,7 +971,7 @@ export async function updateClientAction(
       endereco: formData.endereco,
     });
 
-    await prisma.client.update({
+    const updated = await prisma.client.update({
       where: { id: clientId },
       data: {
         nome: capitalizeText(formData.nome),
@@ -948,10 +995,42 @@ export async function updateClientAction(
         tipo_imovel: formData.tipo_imovel !== undefined ? formData.tipo_imovel : undefined,
         obs_imovel: formData.obs_imovel !== undefined ? formData.obs_imovel : undefined,
         obs_entrega: formData.obs_entrega !== undefined ? formData.obs_entrega : undefined,
-      }
+      },
+      select: {
+        nome: true,
+        email: true,
+        telefone: true,
+        cidade: true,
+        origem: true,
+        status: true,
+        tipo_pessoa: true,
+        cpf: true,
+        cnpj: true,
+        cep: true,
+        endereco: true,
+        numero: true,
+        bairro: true,
+        uf: true,
+        tipo_imovel: true,
+        obs_imovel: true,
+        obs_entrega: true,
+      },
     });
 
+    const changes = describeClientFieldChanges(before, updated);
+    if (changes.length > 0) {
+      await logClientTimeline({
+        clientId,
+        userId: auth.userId,
+        categoria: "CADASTRO",
+        titulo: "Ficha atualizada",
+        descricao: changes.join("\n"),
+        macro: true,
+      });
+    }
+
     revalidatePath("/clientes");
+    revalidatePath(`/clientes/${clientId}`);
     return { success: true };
   } catch (error) {
     console.warn("Falha ao editar cliente no banco:", error);
@@ -1107,7 +1186,13 @@ export interface Activity {
   descricao: string;
   autor: string;
   tipo?: "cadastro" | "nota";
+  categoria?: ClientActivityCategory;
+  macro?: boolean;
+  projectId?: string;
+  origem?: "client" | "project";
 }
+
+export type { ClientActivityCategory };
 
 export interface Payment {
   id: string;
@@ -1126,32 +1211,6 @@ export interface Payment {
 }
 
 
-function mapTimelineToActivity(entry: {
-  id: string;
-  data: Date;
-  acao: string;
-  user: { name: string };
-}): Activity {
-  const separator = " — ";
-  const idx = entry.acao.indexOf(separator);
-  if (idx === -1) {
-    return {
-      id: entry.id,
-      data: entry.data.toISOString(),
-      titulo: entry.acao,
-      descricao: "",
-      autor: entry.user.name,
-    };
-  }
-
-  return {
-    id: entry.id,
-    data: entry.data.toISOString(),
-    titulo: entry.acao.slice(0, idx),
-    descricao: entry.acao.slice(idx + separator.length),
-    autor: entry.user.name,
-  };
-}
 
 function resolveInstallmentStatus(
   status: string,
@@ -1209,27 +1268,46 @@ function mapInstallmentToPayment(
 }
 
 async function loadClientActivitiesAndPayments(clientId: string) {
-  const projects = await prisma.project.findMany({
-    where: { client_id: clientId },
-    select: {
-      id: true,
-      status_geral: true,
-      createdAt: true,
-      timeline: {
-        include: { user: { select: { name: true } } },
-        orderBy: { data: "desc" },
+  const [clientTimeline, projects] = await Promise.all([
+    prisma.clientTimeline.findMany({
+      where: { client_id: clientId },
+      include: { user: { select: { name: true } } },
+      orderBy: { data: "desc" },
+    }),
+    prisma.project.findMany({
+      where: { client_id: clientId },
+      select: {
+        id: true,
+        status_geral: true,
+        createdAt: true,
+        timeline: {
+          include: { user: { select: { name: true } } },
+          orderBy: { data: "desc" },
+        },
+        installments: {
+          orderBy: { data_vencimento: "asc" },
+        },
       },
-      installments: {
-        orderBy: { data_vencimento: "asc" },
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
 
-  const activities = projects
-    .flatMap((project) => project.timeline)
-    .sort((a, b) => b.data.getTime() - a.data.getTime())
-    .map(mapTimelineToActivity);
+  const clientActivities = clientTimeline.map(mapClientTimelineToActivity);
+  const projectActivities = projects.flatMap((project) =>
+    project.timeline.map((entry) =>
+      mapProjectTimelineToActivity({
+        id: entry.id,
+        data: entry.data,
+        acao: entry.acao,
+        project_id: project.id,
+        user: entry.user,
+      })
+    )
+  );
+
+  const activities = [...clientActivities, ...projectActivities].sort(
+    (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()
+  );
 
   const payments = projects
     .flatMap((project) =>
@@ -1400,18 +1478,13 @@ export async function getClientDetailsAction(clientId: string) {
     const attachmentFolders = resolveClientFolders(client.attachment_folders, attachments);
 
     const cadastroEm = client.createdAt ?? earliestProjectAt;
-    const originLabels: Record<string, string> = {
-      SITE: "Site Institucional",
-      INSTAGRAM: "Instagram",
-      INDICACAO: "Indicação",
-      GOOGLE: "Busca Google",
-      WHATSAPP: "WhatsApp Comercial",
-      FACEBOOK: "Campanha Facebook",
-    };
-    const origemLabel = originLabels[client.origem] ?? client.origem;
+    const origemLabel = labelClientOrigin(client.origem);
 
+    const hasRegistration = activities.some(
+      (activity) => activity.categoria === "cadastro" || activity.tipo === "cadastro"
+    );
     const activitiesWithRegistration =
-      opsLimited || !cadastroEm
+      opsLimited || !cadastroEm || hasRegistration
         ? activities
         : [
             ...activities,
@@ -1495,14 +1568,23 @@ export async function addActivityAction(
     : titulo.trim();
 
   try {
-    const entry = await prisma.timeline.create({
+    await prisma.timeline.create({
       data: {
         project_id: project.id,
         user_id: userId,
         acao,
         interno_sotamente: false,
       },
-      include: { user: { select: { name: true } } },
+    });
+
+    const clientEntry = await logClientTimeline({
+      clientId,
+      userId,
+      categoria: "COMERCIAL",
+      titulo: titulo.trim(),
+      descricao: descricao.trim() || null,
+      projectId: project.id,
+      macro: true,
     });
 
     revalidatePath(`/clientes/${clientId}`);
@@ -1510,7 +1592,7 @@ export async function addActivityAction(
 
     return {
       success: true,
-      activity: mapTimelineToActivity(entry),
+      activity: mapClientTimelineToActivity(clientEntry),
     };
   } catch (error) {
     console.error("Erro ao registrar atividade do cliente:", error);
@@ -1542,10 +1624,35 @@ export async function updateClientObservacoesAction(
   const value = observacoes.trim();
 
   try {
+    const before = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: { observacoes: true },
+    });
+    if (!before) {
+      return { success: false, error: "Cliente não encontrado." };
+    }
+
     await prisma.client.update({
       where: { id: clientId },
       data: { observacoes: value || null },
     });
+
+    const prev = (before.observacoes ?? "").trim();
+    if (prev !== value) {
+      await logClientTimeline({
+        clientId,
+        userId: auth.userId,
+        categoria: "NOTAS",
+        titulo: "Notas permanentes atualizadas",
+        descricao: value
+          ? value.length > 240
+            ? `${value.slice(0, 240)}…`
+            : value
+          : "Notas removidas.",
+        macro: false,
+      });
+    }
+
     revalidatePath(`/clientes/${clientId}`);
     return { success: true, observacoes: value };
   } catch (error) {

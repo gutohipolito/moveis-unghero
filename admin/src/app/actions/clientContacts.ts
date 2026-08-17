@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { canManageClients, isOpsLimitedRole } from "@/lib/permissions";
 import { capitalizeText } from "@/lib/utils";
+import { logClientTimeline } from "@/lib/clientTimeline";
 
 export type ClientContactDTO = {
   id: string;
@@ -119,6 +120,15 @@ export async function createClientContact(input: {
     });
   });
 
+  await logClientTimeline({
+    clientId: input.clientId,
+    userId: auth.userId,
+    categoria: "CONTATO",
+    titulo: "Representante adicionado",
+    descricao: [nome, area, telefone, email].filter(Boolean).join(" · "),
+    macro: true,
+  });
+
   revalidatePath(`/clientes/${input.clientId}`);
   revalidatePath("/clientes");
   return { success: true as const, contact: mapContact(contact) };
@@ -178,6 +188,34 @@ export async function updateClientContact(input: {
     return tx.clientContact.update({ where: { id: existing.id }, data });
   });
 
+  const changes: string[] = [];
+  if (input.nome !== undefined && input.nome.trim() && existing.nome !== contact.nome) {
+    changes.push(`Nome: ${existing.nome} → ${contact.nome}`);
+  }
+  if (input.area !== undefined && (existing.area ?? "") !== (contact.area ?? "")) {
+    changes.push(`Área: ${existing.area || "—"} → ${contact.area || "—"}`);
+  }
+  if (input.telefone !== undefined && (existing.telefone ?? "") !== (contact.telefone ?? "")) {
+    changes.push(`Telefone: ${existing.telefone || "—"} → ${contact.telefone || "—"}`);
+  }
+  if (input.email !== undefined && (existing.email ?? "") !== (contact.email ?? "")) {
+    changes.push(`E-mail: ${existing.email || "—"} → ${contact.email || "—"}`);
+  }
+  if (input.principal === true && !existing.principal) {
+    changes.push("Definido como representante principal.");
+  }
+
+  if (changes.length > 0) {
+    await logClientTimeline({
+      clientId: existing.client_id,
+      userId: auth.userId,
+      categoria: "CONTATO",
+      titulo: "Representante atualizado",
+      descricao: `${contact.nome}\n${changes.join("\n")}`,
+      macro: true,
+    });
+  }
+
   revalidatePath(`/clientes/${existing.client_id}`);
   return { success: true as const, contact: mapContact(contact) };
 }
@@ -190,7 +228,7 @@ export async function deleteClientContact(id: string) {
 
   const existing = await prisma.clientContact.findFirst({
     where: { id, client: { company_id: auth.companyId } },
-    select: { id: true, client_id: true, principal: true },
+    select: { id: true, client_id: true, principal: true, nome: true },
   });
   if (!existing) return { success: false as const, error: "Representante não encontrado." };
 
@@ -208,6 +246,15 @@ export async function deleteClientContact(id: string) {
         });
       }
     }
+  });
+
+  await logClientTimeline({
+    clientId: existing.client_id,
+    userId: auth.userId,
+    categoria: "CONTATO",
+    titulo: "Representante removido",
+    descricao: existing.nome,
+    macro: true,
   });
 
   revalidatePath(`/clientes/${existing.client_id}`);
