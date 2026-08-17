@@ -16,7 +16,6 @@ import {
   Ruler,
   Sparkles,
 } from "lucide-react";
-import type { EnvironmentProjectCardData } from "@/components/environments/EnvironmentProjectCard";
 
 type EnvironmentProjectListRowProps = {
   environment: EnvironmentProjectCardData;
