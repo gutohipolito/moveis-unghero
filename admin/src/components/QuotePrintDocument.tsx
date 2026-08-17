@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { BadgeCheck, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
-import { formatQuoteSubitensLine } from "@/lib/quoteItems";
+import { formatQuotePhrase, formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
@@ -854,7 +854,7 @@ export default function QuotePrintDocument({
                                   ) : null}
                                 </div>
                                 <p className={`font-semibold ${isApproved ? "text-emerald-950" : "text-neutral-950"}`}>
-                                  {item.descricao}
+                                  {formatQuotePhrase(item.descricao)}
                                 </p>
                                 {subitensLine ? (
                                   <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
@@ -864,13 +864,17 @@ export default function QuotePrintDocument({
                               </div>
                             </div>
                           </td>
-                          <td className={`${cellPad} text-center font-bold text-neutral-700`}>
+                          <td className={`${cellPad} text-center font-medium text-neutral-600`}>
                             {item.quantidade}
                           </td>
-                          <td className={`${cellPad} text-right font-medium text-neutral-600`}>
+                          <td className={`${cellPad} text-right text-[11px] font-normal text-neutral-500`}>
                             {formatCurrency(item.valor_unitario)}
                           </td>
-                          <td className={`${cellPad} text-right font-extrabold ${isApproved ? "text-emerald-900" : "text-neutral-950"}`}>
+                          <td
+                            className={`${cellPad} text-right text-[11px] font-normal ${
+                              isApproved ? "text-emerald-800" : "text-neutral-800"
+                            }`}
+                          >
                             {formatCurrency(item.valor_total)}
                           </td>
                         </tr>
@@ -889,10 +893,10 @@ export default function QuotePrintDocument({
                       </p>
                     ) : null}
                     <div className="flex items-baseline justify-end gap-1.5">
-                      <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wide">
+                      <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide">
                         Investimento total:
                       </span>
-                      <span className="text-base font-black text-neutral-950">
+                      <span className="text-base font-medium text-neutral-900">
                         {formatCurrency(quote.valor_final)}
                       </span>
                     </div>
@@ -996,7 +1000,7 @@ export default function QuotePrintDocument({
                       />
                     </div>
                     <p className="print-catalog-card__name line-clamp-2">
-                      {entry.label}
+                      {formatQuotePhrase(entry.label)}
                     </p>
                   </article>
                 ))}

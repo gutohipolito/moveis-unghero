@@ -1,15 +1,44 @@
+import { capitalizeText } from "@/lib/utils";
+
 /** Normaliza subitens salvos como JSON no QuoteItem. */
 export function parseQuoteSubitens(value: unknown): string[] {
   if (!value) return [];
   if (!Array.isArray(value)) return [];
-  return value
-    .filter((entry): entry is string => typeof entry === "string")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+  return expandAndFormatQuoteDetails(
+    value.filter((entry): entry is string => typeof entry === "string")
+  );
+}
+
+/**
+ * Quebra vírgulas (mesmo sem espaço), normaliza espaços e capitaliza
+ * cada detalhe (Title Case do sistema).
+ */
+export function expandAndFormatQuoteDetails(parts: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  for (const part of parts) {
+    if (typeof part !== "string") continue;
+    for (const chunk of part.split(",")) {
+      const formatted = formatQuotePhrase(chunk);
+      if (!formatted) continue;
+      const key = formatted.toLocaleLowerCase("pt-BR");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(formatted);
+    }
+  }
+
+  return out;
+}
+
+/** Título/descrição do item: espaços + capitalização padrão do sistema. */
+export function formatQuotePhrase(value: string): string {
+  return capitalizeText(value.replace(/\s+/g, " ").trim());
 }
 
 export function formatQuoteSubitensLine(subitens: string[]): string {
-  return subitens.join(" • ");
+  return expandAndFormatQuoteDetails(subitens).join(" • ");
 }
 
 /**

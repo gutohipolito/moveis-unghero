@@ -5,7 +5,11 @@ import { createPortal } from "react-dom";
 import { flushSync } from "react-dom";
 import { Plus, X, ListPlus } from "lucide-react";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
-import { getPricingTextWarning } from "@/lib/quoteItems";
+import {
+  expandAndFormatQuoteDetails,
+  formatQuotePhrase,
+  getPricingTextWarning,
+} from "@/lib/quoteItems";
 
 function useDropdownPosition(open: boolean, anchorRef: React.RefObject<HTMLElement | null>) {
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -266,16 +270,18 @@ export function DetailsEditor({
     const toRegister: string[] = [];
 
     for (const raw of rawTexts) {
-      const t = raw.trim();
-      if (!t) continue;
-      if (next.some((s) => s.toLowerCase() === t.toLowerCase())) continue;
-      if (getPricingTextWarning(t)) continue;
+      for (const piece of expandAndFormatQuoteDetails([raw])) {
+        const t = piece;
+        if (!t) continue;
+        if (next.some((s) => s.toLowerCase() === t.toLowerCase())) continue;
+        if (getPricingTextWarning(t)) continue;
 
-      const existing =
-        suggestions.find((s) => s.toLowerCase() === t.toLowerCase()) ?? null;
-      const final = existing ?? t;
-      next.push(final);
-      if (register && !existing) toRegister.push(final);
+        const existing =
+          suggestions.find((s) => s.toLowerCase() === t.toLowerCase()) ?? null;
+        const final = existing ? formatQuotePhrase(existing) : t;
+        next.push(final);
+        if (register && !existing) toRegister.push(final);
+      }
     }
 
     if (next.length !== current.length) {

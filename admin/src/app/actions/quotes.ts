@@ -33,6 +33,10 @@ import { buildQuoteCodigoBase } from "@/lib/quoteCodigo";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { randomUUID } from "crypto";
 import { isOpsLimitedRole } from "@/lib/permissions";
+import {
+  expandAndFormatQuoteDetails,
+  formatQuotePhrase,
+} from "@/lib/quoteItems";
 
 async function getModuleAccess(moduleKey: "quotes") {
   const auth = await getBaseModuleAccess(moduleKey);
@@ -188,7 +192,7 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
         await tx.quoteItem.createMany({
           data: data.items.map((item) => ({
             quote_id: quote.id,
-            descricao: item.descricao,
+            descricao: normalizeQuoteDescricao(item.descricao),
             quantidade: item.quantidade,
             tipo_custo: item.tipo_custo,
             valor_unitario: item.valor_unitario,
@@ -198,7 +202,9 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
                 ? item.showcase_product_id
                 : null,
             subitens:
-              item.subitens && item.subitens.length > 0 ? item.subitens : undefined,
+              item.subitens && item.subitens.length > 0
+                ? normalizeQuoteSubitens(item.subitens)
+                : undefined,
           })),
         });
       }
@@ -267,9 +273,13 @@ function asItemType(value: string | undefined | null): ItemType {
 
 function normalizeQuoteSubitens(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-    .filter(Boolean);
+  return expandAndFormatQuoteDetails(
+    value.filter((entry): entry is string => typeof entry === "string")
+  );
+}
+
+function normalizeQuoteDescricao(value: string): string {
+  return formatQuotePhrase(value);
 }
 
 function sameSubitens(a: unknown, b: unknown): boolean {
@@ -463,7 +473,7 @@ export async function updateExistingQuote(
         const newUnit = Math.round(upd.valor_unitario * 100) / 100;
         const newTotal = Math.round(upd.valor_total * 100) / 100;
         const newQty = Math.round(upd.quantidade);
-        const newDescricao = upd.descricao.trim();
+        const newDescricao = normalizeQuoteDescricao(upd.descricao);
         const newSubitens = normalizeQuoteSubitens(upd.subitens);
         const newTipo = asItemType(upd.tipo_custo);
         const showcaseId =

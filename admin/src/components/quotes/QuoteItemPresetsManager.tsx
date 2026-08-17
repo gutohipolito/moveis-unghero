@@ -36,13 +36,11 @@ import {
 } from "@/app/actions/quoteItemPresets";
 import { compressImageFile } from "@/lib/imageCompression";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { expandAndFormatQuoteDetails, formatQuotePhrase } from "@/lib/quoteItems";
 
-/** Divide o texto por vírgula (e quebras de linha), removendo vazios. */
+/** Divide o texto por vírgula (e quebras de linha) e aplica capitalização. */
 function splitEntries(raw: string): string[] {
-  return raw
-    .split(/[,\n]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return expandAndFormatQuoteDetails(raw.split(/[\n]/).map((s) => s.trim()).filter(Boolean));
 }
 
 type Tab = "descricoes" | "detalhes";
