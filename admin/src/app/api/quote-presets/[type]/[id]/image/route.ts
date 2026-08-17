@@ -55,7 +55,7 @@ async function setImagemUrl(type: PresetType, id: string, imagem_url: string | n
   });
 }
 
-async function optimizeImage(file: File): Promise<{ buffer: Buffer; contentType: string }> {
+async function optimizeImage(file: File): Promise<{ body: Blob; contentType: string }> {
   const input = Buffer.from(await file.arrayBuffer());
   try {
     const buffer = await sharp(input)
@@ -63,9 +63,19 @@ async function optimizeImage(file: File): Promise<{ buffer: Buffer; contentType:
       .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
       .webp({ quality: 80 })
       .toBuffer();
-    return { buffer, contentType: "image/webp" };
+    // Cópia em ArrayBuffer “limpo”: Buffer do Sharp pode usar SharedArrayBuffer
+    // e o fetch do @vercel/blob rejeita com "SharedArrayBuffer is not allowed".
+    const bytes = new Uint8Array(buffer.byteLength);
+    bytes.set(buffer);
+    return {
+      body: new Blob([bytes], { type: "image/webp" }),
+      contentType: "image/webp",
+    };
   } catch {
-    return { buffer: input, contentType: file.type || "application/octet-stream" };
+    const mime = file.type || "application/octet-stream";
+    const bytes = new Uint8Array(input.byteLength);
+    bytes.set(input);
+    return { body: new Blob([bytes], { type: mime }), contentType: mime };
   }
 }
 
@@ -84,6 +94,13 @@ export async function POST(
   const type = parseType(rawType);
   if (!type) {
     return NextResponse.json({ success: false, error: "Tipo inválido." }, { status: 400 });
+  }
+  // Imagens só nas descrições salvas (não nos detalhes).
+  if (type !== "item") {
+    return NextResponse.json(
+      { success: false, error: "Imagem só é permitida em descrições salvas." },
+      { status: 400 }
+    );
   }
 
   const preset = await loadPreset(type, id, auth.companyId);
@@ -117,7 +134,7 @@ export async function POST(
   try {
     const optimized = await optimizeImage(file);
     const pathname = `quote-presets/${auth.companyId}/${type}/${id}/${Date.now()}.webp`;
-    const blob = await put(pathname, optimized.buffer, {
+    const blob = await put(pathname, optimized.body, {
       access: "public",
       token: process.env.BLOB_READ_WRITE_TOKEN,
       contentType: optimized.contentType,
@@ -156,6 +173,12 @@ export async function DELETE(
   const type = parseType(rawType);
   if (!type) {
     return NextResponse.json({ success: false, error: "Tipo inválido." }, { status: 400 });
+  }
+  if (type !== "item") {
+    return NextResponse.json(
+      { success: false, error: "Imagem só é permitida em descrições salvas." },
+      { status: 400 }
+    );
   }
 
   const preset = await loadPreset(type, id, auth.companyId);

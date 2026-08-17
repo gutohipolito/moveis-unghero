@@ -31,6 +31,7 @@ import {
   loadDeliveredNotificationIds,
   loadDismissedToastIds,
   loadNotificationPrefs,
+  DEFAULT_NOTIFICATION_PREFS,
   markNotificationDelivered,
   markNotificationsAnnounced,
   markToastDismissed,
@@ -114,15 +115,15 @@ export function NotificationProvider({
   const [clearedIds, setClearedIds] = useState<Set<string>>(() => new Set());
   const [clearedReady, setClearedReady] = useState(false);
   const [toasts, setToasts] = useState<InAppToast[]>([]);
-  const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPrefs());
-  const [browserPermission, setBrowserPermission] = useState<BrowserPermission>(() =>
-    typeof window !== "undefined" ? getBrowserPermission() : "default"
-  );
+  // Defaults estáveis no SSR/1º paint — carrega localStorage e APIs do browser no effect.
+  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFS);
+  const [browserPermission, setBrowserPermission] = useState<BrowserPermission>("default");
+  const [browserSupported, setBrowserSupported] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
   const [enablingBrowser, setEnablingBrowser] = useState(false);
   const [pushActive, setPushActive] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
 
-  const pushSupported = isPushNotificationSupported();
   const pushConfigured = Boolean(getVapidPublicKeyFromEnv());
 
   const deliveredRef = useRef<Set<string>>(new Set());
@@ -285,7 +286,10 @@ export function NotificationProvider({
   );
 
   useEffect(() => {
+    setPrefs(loadNotificationPrefs());
     setBrowserPermission(getBrowserPermission());
+    setBrowserSupported(isBrowserNotificationSupported());
+    setPushSupported(isPushNotificationSupported());
     deliveredRef.current = loadDeliveredNotificationIds();
     dismissedToastRef.current = loadDismissedToastIds();
     announcedRef.current = loadAnnouncedNotificationIds();
@@ -570,7 +574,7 @@ export function NotificationProvider({
     toasts,
     prefs,
     browserPermission,
-    browserSupported: isBrowserNotificationSupported(),
+    browserSupported,
     enablingBrowser,
     pushSupported,
     pushConfigured,

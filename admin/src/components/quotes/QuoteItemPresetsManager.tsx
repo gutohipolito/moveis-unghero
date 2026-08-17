@@ -46,7 +46,7 @@ function splitEntries(raw: string): string[] {
 }
 
 type Tab = "descricoes" | "detalhes";
-type ImageTarget = { type: "item" | "detail"; id: string; label: string; imagem_url: string | null };
+type ImageTarget = { type: "item"; id: string; label: string; imagem_url: string | null };
 
 export default function QuoteItemPresetsManager({
   isOpen,
@@ -254,12 +254,8 @@ export default function QuoteItemPresetsManager({
     setImageError(null);
   }
 
-  function applyImageUrl(type: "item" | "detail", id: string, imagem_url: string | null) {
-    if (type === "item") {
-      setPresets((prev) => prev.map((p) => (p.id === id ? { ...p, imagem_url } : p)));
-    } else {
-      setDetails((prev) => prev.map((d) => (d.id === id ? { ...d, imagem_url } : d)));
-    }
+  function applyImageUrl(id: string, imagem_url: string | null) {
+    setPresets((prev) => prev.map((p) => (p.id === id ? { ...p, imagem_url } : p)));
     setImageTarget((prev) => (prev && prev.id === id ? { ...prev, imagem_url } : prev));
   }
 
@@ -283,7 +279,7 @@ export default function QuoteItemPresetsManager({
         setImageError(data.error || "Não foi possível enviar a imagem.");
         return;
       }
-      applyImageUrl(imageTarget.type, imageTarget.id, data.imagem_url ?? null);
+      applyImageUrl(imageTarget.id, data.imagem_url ?? null);
     } catch {
       setImageError("Falha de conexão ao enviar a imagem.");
     } finally {
@@ -306,7 +302,7 @@ export default function QuoteItemPresetsManager({
         setImageError(data.error || "Não foi possível remover a imagem.");
         return;
       }
-      applyImageUrl(imageTarget.type, imageTarget.id, null);
+      applyImageUrl(imageTarget.id, null);
     } catch {
       setImageError("Falha de conexão ao remover a imagem.");
     } finally {
@@ -323,26 +319,28 @@ export default function QuoteItemPresetsManager({
   });
 
   function rowActions(opts: {
-    hasImage: boolean;
-    onImage: () => void;
+    hasImage?: boolean;
+    onImage?: () => void;
     onEdit: () => void;
     onDelete: () => void;
     deleting: boolean;
   }) {
     return (
       <div className="flex items-center gap-0.5 shrink-0">
-        <button
-          type="button"
-          onClick={opts.onImage}
-          className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
-            opts.hasImage
-              ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
-              : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-          }`}
-          title={opts.hasImage ? "Ver / trocar imagem" : "Adicionar imagem"}
-        >
-          <ImageIcon className="h-3.5 w-3.5" />
-        </button>
+        {opts.onImage ? (
+          <button
+            type="button"
+            onClick={opts.onImage}
+            className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+              opts.hasImage
+                ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
+                : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+            }`}
+            title={opts.hasImage ? "Ver / trocar imagem" : "Adicionar imagem"}
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={opts.onEdit}
@@ -623,14 +621,6 @@ export default function QuoteItemPresetsManager({
                           ) : null}
                         </div>
                         {rowActions({
-                          hasImage: Boolean(d.imagem_url),
-                          onImage: () =>
-                            openImagePanel({
-                              type: "detail",
-                              id: d.id,
-                              label: d.texto,
-                              imagem_url: d.imagem_url,
-                            }),
                           onEdit: () => {
                             setEditingDetailId(d.id);
                             setDetailText(d.texto);
