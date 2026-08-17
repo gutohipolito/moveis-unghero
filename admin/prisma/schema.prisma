@@ -16,6 +16,7 @@ model Company {
   email    String
   permissions Json?  // Permissões de acesso por cargo (mapa cargo -> módulos permitidos)
   users    User[]
+  projectChatThreads ProjectChatThread[]
   supplyTickets SupplyTicket[]
   quoteItemPresets QuoteItemPreset[]
   quoteDetailPresets QuoteDetailPreset[]
@@ -106,6 +107,9 @@ model User {
   projectsObsUpdated        Project[]           @relation("ProjectObsUpdater")
   projectNoteReads          ProjectNoteRead[]
   partnerTimeline           PartnerTimeline[]
+  projectChatMessages       ProjectChatMessage[]
+  projectChatReads          ProjectChatRead[]
+  projectChatsClosed        ProjectChatThread[] @relation("ProjectChatCloser")
 }
 
 enum Role {
@@ -342,6 +346,7 @@ model Project {
   partnerNotes          PartnerProjectNote[]
   partnerFiles          PartnerProjectFile[]
   partnerCommissions    PartnerCommission[]
+  chatThread            ProjectChatThread?
 
   @@index([client_id])
   @@index([status_geral])
@@ -364,6 +369,55 @@ model ProjectNoteRead {
   @@unique([project_id, user_id])
   @@index([user_id])
   @@index([project_id])
+}
+
+/** Conversa interna da equipe sobre um projeto (um fio por projeto). */
+model ProjectChatThread {
+  id              String    @id @default(uuid())
+  project_id      String    @unique
+  project         Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  company_id      String
+  company         Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  closedAt        DateTime?
+  closedById      String?
+  closedBy        User?     @relation("ProjectChatCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  lastMessageAt   DateTime?
+  lastMessagePreview String? @db.VarChar(180)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  messages        ProjectChatMessage[]
+  reads           ProjectChatRead[]
+
+  @@index([company_id, lastMessageAt])
+  @@index([closedAt])
+}
+
+model ProjectChatMessage {
+  id          String            @id @default(uuid())
+  thread_id   String
+  thread      ProjectChatThread @relation(fields: [thread_id], references: [id], onDelete: Cascade)
+  author_id   String?
+  author      User?             @relation(fields: [author_id], references: [id], onDelete: SetNull)
+  author_name String
+  author_role String
+  body        String            @db.Text
+  createdAt   DateTime          @default(now())
+
+  @@index([thread_id, createdAt])
+  @@index([author_id])
+}
+
+/** Última leitura do colaborador neste fio (para não lidas). */
+model ProjectChatRead {
+  id         String            @id @default(uuid())
+  thread_id  String
+  thread     ProjectChatThread @relation(fields: [thread_id], references: [id], onDelete: Cascade)
+  user_id    String
+  user       User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lastReadAt DateTime          @default(now())
+
+  @@unique([thread_id, user_id])
+  @@index([user_id])
 }
 
 /** Notas deixadas pelo parceiro no projeto (visível no portal e no CRM). */

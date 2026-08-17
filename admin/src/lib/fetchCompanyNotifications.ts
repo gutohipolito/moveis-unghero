@@ -7,12 +7,15 @@ import {
   buildSupplyTicketNotifications,
   buildQuoteExpiringNotifications,
   buildCardNoteNotifications,
+  buildProjectChatNotifications,
   mergeNotifications,
   type AppNotification,
 } from "@/lib/notifications";
 import { buildInstallmentDueNotifications } from "@/lib/installmentDueAlerts";
 import { getSlaAlertProjects, getInvoicePendingProjects } from "@/app/actions/productionSla";
 import { isOpsLimitedRole } from "@/lib/permissions";
+import { OPS_CRM_STATUSES } from "@/lib/crmOpsAccess";
+import { previewChatBody } from "@/lib/projectChat";
 import type { Role } from "@prisma/client";
 
 const NOTIF_TTL_MS = 30_000;
@@ -271,5 +274,77 @@ export async function fetchUnreadCardNoteNotifications(
       obs_updated_at: p.obs_updated_at!,
       obs_updated_by_name: p.obs_updated_by_name,
     }))
+  );
+}
+
+/** Mensagens internas não lidas — por usuário (fábrica e comercial recebem). */
+export async function fetchUnreadProjectChatNotifications(
+  companyId: string,
+  userId: string,
+  viewerRole?: Role | string
+): Promise<AppNotification[]> {
+  if (isDatabaseOffline()) return [];
+  if (viewerRole === "VIEWER") return [];
+
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const statusFilter = isOpsLimitedRole(viewerRole as Role)
+    ? { in: OPS_CRM_STATUSES }
+    : undefined;
+
+  const threads = await prisma.projectChatThread.findMany({
+    where: {
+      company_id: companyId,
+      closedAt: null,
+      lastMessageAt: { gte: since },
+      project: statusFilter ? { status_geral: statusFilter } : undefined,
+    },
+    select: {
+      id: true,
+      project_id: true,
+      lastMessageAt: true,
+      lastMessagePreview: true,
+      project: { select: { client: { select: { nome: true } } } },
+      reads: {
+        where: { user_id: userId },
+        select: { lastReadAt: true },
+        take: 1,
+      },
+      messages: {
+        where: {
+          createdAt: { gte: since },
+          OR: [{ author_id: null }, { author_id: { not: userId } }],
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          author_name: true,
+          body: true,
+          createdAt: true,
+          author_id: true,
+        },
+      },
+    },
+    orderBy: { lastMessageAt: "desc" },
+    take: 30,
+  });
+
+  const unread = threads.filter((thread) => {
+    const last = thread.messages[0];
+    if (!last) return false;
+    const seenAt = thread.reads[0]?.lastReadAt;
+    return !seenAt || last.createdAt > seenAt;
+  });
+
+  return buildProjectChatNotifications(
+    unread.map((thread) => {
+      const last = thread.messages[0]!;
+      return {
+        projectId: thread.project_id,
+        clientName: thread.project.client.nome,
+        authorName: last.author_name,
+        preview: previewChatBody(last.body, 80),
+        createdAt: last.createdAt,
+      };
+    })
   );
 }

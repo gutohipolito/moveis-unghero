@@ -47,6 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
+import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
@@ -307,6 +308,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const canManageProjectFiles = canManageEnvGallery;
   const sensitive = useSensitiveDisplay();
   const [project, setProject] = useState<Project>(initialProject);
+  useProjectChatFocus({ projectId: project.id, clientName: project.client.nome });
   const isFormLead = !isOpsLimited && project.client.origem === "FORMULARIO";
   const hasNoQuote = !project.quotes || project.quotes.length === 0;
   const isBlocked = isFormLead && hasNoQuote;

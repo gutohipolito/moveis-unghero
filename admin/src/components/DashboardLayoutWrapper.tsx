@@ -5,6 +5,7 @@ import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import SuggestionFab from "@/components/melhorias/SuggestionFab";
+import ProjectChatDock from "@/components/project-chat/ProjectChatDock";
 import ReadOnlyBanner from "@/components/ReadOnlyBanner";
 import { ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useSidebarSections } from "@/lib/useSidebarSections";
@@ -137,7 +138,17 @@ export default function DashboardLayoutWrapper({
       </div>
 
       <MobileBottomNav />
-      <SuggestionFab />
+      <div
+        className={cn(
+          "fixed z-40 right-4 md:right-6 flex flex-col-reverse items-center gap-3",
+          "bottom-[calc(var(--mobile-nav-height)_+_env(safe-area-inset-bottom)_+_1.5rem)]",
+          "md:bottom-12",
+          isOpsLimited && "bottom-[calc(1.5rem_+_env(safe-area-inset-bottom))] md:bottom-12"
+        )}
+      >
+        <SuggestionFab stacked />
+        <ProjectChatDock />
+      </div>
     </div>
   );
 }

@@ -183,6 +183,15 @@ async function fingerprintPortal(userId: string) {
   return `e:${versionFromAgg(envs)}|t:${timeCards._count}:${timeCards._max.data?.toISOString() ?? ""}`;
 }
 
+async function fingerprintProjectChat(companyId: string) {
+  const agg = await prisma.projectChatMessage.aggregate({
+    where: { thread: { company_id: companyId } },
+    _count: true,
+    _max: { createdAt: true },
+  });
+  return `${agg._count}:${agg._max.createdAt?.toISOString() ?? ""}`;
+}
+
 async function fingerprintWorkspace(userId: string, companyId: string) {
   const [notes, reminders] = await Promise.all([
     prisma.operatorNote.aggregate({
@@ -223,6 +232,7 @@ export async function getCompanyLiveVersions(
     colaboradores,
     portal,
     workspace,
+    projectChat,
   ] = await Promise.all([
     fingerprintProjects(companyId),
     prisma.timeline
@@ -250,6 +260,7 @@ export async function getCompanyLiveVersions(
     fingerprintColaboradores(companyId),
     userId ? fingerprintPortal(userId) : "0",
     userId ? fingerprintWorkspace(userId, companyId) : "0",
+    fingerprintProjectChat(companyId),
   ]);
 
   const versions: LiveVersions = {
@@ -268,6 +279,7 @@ export async function getCompanyLiveVersions(
     bi: `${projects}|${parceiros}`,
     portal,
     workspace,
+    projectChat,
   };
 
   return versions;

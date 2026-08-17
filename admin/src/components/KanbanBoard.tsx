@@ -5,6 +5,7 @@ import { updateProjectStatus, createLead, updateProjectAction, markProjectContac
 import { updateProjectDetails } from "@/app/actions/project";
 import { getCrmLiveSnapshot, getCrmProjectDetailsAction } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext"
+import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canMoveCrmCards } from "@/lib/permissions";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
@@ -671,6 +672,12 @@ export default function KanbanBoard({
   const [lossMotivo, setLossMotivo] = useState("");
   const [confTecnicaWhatsApp, setConfTecnicaWhatsApp] =
     useState<ConfTecnicaWhatsAppTarget | null>(null);
+  const editingProject = projects.find((p) => p.id === editingProjectId) ?? null;
+  useProjectChatFocus(
+    isEditLeadOpen && editingProject
+      ? { projectId: editingProject.id, clientName: editingProject.client.nome }
+      : null
+  );
   // Cards começam minimizados; só entram neste set quando o operador expande.
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [cardInnerTab, setCardInnerTab] = useState<Record<string, "geral" | "aberturas">>({});

@@ -4,6 +4,7 @@ import { getCachedSession } from "@/lib/session";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { NavigationIntentProvider } from "@/context/NavigationIntentContext";
+import { ProjectChatProvider } from "@/context/ProjectChatContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { LiveSyncProvider } from "@/context/LiveSyncContext";
 import { PermissionsProvider } from "@/context/PermissionsContext";
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
       >
       <LiveSyncProvider companyId={companyId}>
         <PermissionsProvider role={role} allowedModules={allowedModules}>
+        <ProjectChatProvider>
         <DashboardLayoutWrapper
           user={{
             id: user.id,
@@ -78,6 +80,7 @@ export default async function DashboardLayout({
         >
           {children}
         </DashboardLayoutWrapper>
+        </ProjectChatProvider>
         </PermissionsProvider>
       </LiveSyncProvider>
       </NotificationProvider>

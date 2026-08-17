@@ -19,6 +19,7 @@ export type NotificationType =
   | "quote_stale"
   | "lead_no_quote"
   | "quote_expiring"
+  | "project_chat"
   | "info";
 export type NotificationPriority = "normal" | "high";
 
@@ -68,6 +69,38 @@ export function buildCardNoteNotifications(
         },
       };
     })
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+}
+
+export type ProjectChatNotificationInput = {
+  projectId: string;
+  clientName: string;
+  authorName: string;
+  preview: string;
+  createdAt: Date;
+};
+
+export function buildProjectChatNotifications(
+  items: ProjectChatNotificationInput[]
+): AppNotification[] {
+  return items
+    .map((item) => ({
+      id: `project-chat-${item.projectId}-${item.createdAt.getTime()}`,
+      type: "project_chat" as const,
+      priority: "high" as const,
+      title: `Chat · ${item.clientName}`,
+      message: `${item.authorName}: ${item.preview}`,
+      href: `/projects/${item.projectId}?chat=1`,
+      createdAt: item.createdAt.toISOString(),
+      meta: {
+        projectId: item.projectId,
+        clientName: item.clientName,
+        authorName: item.authorName,
+      },
+    }))
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -291,7 +324,8 @@ export type InAppToastAccent =
   | "payment"
   | "supply"
   | "quote"
-  | "lead";
+  | "lead"
+  | "chat";
 
 export function getInAppToastMeta(notification: AppNotification): {
   actionLabel: string;
@@ -320,6 +354,8 @@ export function getInAppToastMeta(notification: AppNotification): {
       return { actionLabel: "Abrir", accent: "lead" };
     case "quote_expiring":
       return { actionLabel: "Abrir", accent: "quote" };
+    case "project_chat":
+      return { actionLabel: "Abrir chat", accent: "chat" };
     default:
       return { actionLabel: "Abrir", accent: "briefing" };
   }

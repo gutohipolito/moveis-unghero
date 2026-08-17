@@ -14,6 +14,7 @@ export const LIVE_ENTITIES = [
   "bi",
   "portal",
   "workspace",
+  "projectChat",
 ] as const;
 
 export type LiveEntityKey = (typeof LIVE_ENTITIES)[number];

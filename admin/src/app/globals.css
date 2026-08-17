@@ -1253,7 +1253,9 @@ button.partner-card:hover,
 
 @media print {
   .parceiro-portal-beta-banner,
-  .parceiro-portal-admin-banner {
+  .parceiro-portal-admin-banner,
+  .project-chat-fab,
+  .project-chat-panel {
     display: none !important;
   }
 }
@@ -4480,6 +4482,10 @@ button.partner-card:hover,
 
 .in-app-toast[data-accent="lead"] .in-app-toast-icon-badge {
   background: hsl(210 70% 52%);
+}
+
+.in-app-toast[data-accent="chat"] .in-app-toast-icon-badge {
+  background: hsl(222 47% 20%);
 }
 
 @keyframes in-app-toast-enter {

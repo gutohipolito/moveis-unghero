@@ -6,6 +6,7 @@ import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
 import { getFactoryLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { Card } from "@/components/ui/card";
 import SlaRadar from "@/components/SlaRadar";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
@@ -183,6 +184,11 @@ export default function FactoryClient({
   const [expandedStacks, setExpandedStacks] = useState<Set<string>>(() => new Set());
   const knownEnvIdsRef = useRef(new Set(initialEnvironments.map((e) => e.id)));
   const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
+  useProjectChatFocus(
+    detailItem
+      ? { projectId: detailItem.projectId, clientName: detailItem.clientName }
+      : null
+  );
   const [slaModal, setSlaModal] = useState<{
     projectId: string;
     stageKey: string;

@@ -671,6 +671,8 @@ export default function BiClient({
             nav,
             .print\\:hidden,
             .suggestion-fab,
+            .project-chat-fab,
+            .project-chat-panel,
             button {
               display: none !important;
             }

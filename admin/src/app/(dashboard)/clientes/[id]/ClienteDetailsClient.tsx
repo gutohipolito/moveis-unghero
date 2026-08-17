@@ -16,6 +16,7 @@ import {
 } from "@/app/actions/cliente";
 import { getClientDetailsLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { resolveClientDocument } from "@/lib/clientDocument";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
@@ -187,6 +188,11 @@ export default function ClienteDetailsClient({
   const [client, setClient] = useState<ClientDetails>(initialClient);
   const [projects, setProjects] = useState<ClientProjectSummary[]>(
     initialClient.projects ?? []
+  );
+  const chatProject =
+    projects.find((item) => item.status_geral !== "PERDIDO") ?? projects[0] ?? null;
+  useProjectChatFocus(
+    chatProject ? { projectId: chatProject.id, clientName: client.nome } : null
   );
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);

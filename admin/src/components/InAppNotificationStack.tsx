@@ -12,6 +12,7 @@ import {
   PackageOpen,
   UserRound,
   CalendarClock,
+  Mail,
   ChevronDown,
   X,
   type LucideIcon,
@@ -42,6 +43,7 @@ const TOAST_ICONS: Partial<Record<NotificationType, LucideIcon>> = {
   quote_stale: FileWarning,
   lead_no_quote: UserRound,
   quote_expiring: CalendarClock,
+  project_chat: Mail,
 };
 
 export default function InAppNotificationStack({
