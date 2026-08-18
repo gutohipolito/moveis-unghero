@@ -1,9 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,26 +12,12 @@ import {
   Lock,
   Plus,
   ClipboardList,
-  X,
 } from "lucide-react";
 import { labelProjectStatus } from "@/lib/navLabels";
-import { getProjectDetailsAction } from "@/app/actions/project";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
-import type { ProjectDetailsPayload } from "@/lib/formatProjectDetails";
-import type { ProjectSlaView } from "@/lib/productionSla";
-import { usePermissions } from "@/context/PermissionsContext";
-
-const ProjectDetails = dynamic(() => import("@/components/ProjectDetails"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-sm font-medium">Carregando projeto completo...</p>
-    </div>
-  ),
-});
+import { navigateApp } from "@/lib/navigateApp";
 
 export interface ClientProjectSummary {
   id: string;
@@ -61,10 +44,14 @@ interface ClienteProjectsTabProps {
   companyId: string;
   projects: ClientProjectSummary[];
   onProjectsChange: (projects: ClientProjectSummary[]) => void;
-  initialProjectId?: string | null;
-  initialCreateQuote?: boolean;
   /** Projetista/Fábrica: oculta valores e criação comercial de projeto. */
   hideValues?: boolean;
+}
+
+function projectPageHref(projectId: string, clientId: string, createQuote = false) {
+  const params = new URLSearchParams({ back: `/clientes/${clientId}` });
+  if (createQuote) params.set("createQuote", "true");
+  return `/projects/${projectId}?${params.toString()}`;
 }
 
 function ProjectStatusBadge({ status, blocked }: { status: string; blocked?: boolean }) {
@@ -108,23 +95,12 @@ export default function ClienteProjectsTab({
   companyId,
   projects,
   onProjectsChange,
-  initialProjectId = null,
-  initialCreateQuote = false,
   hideValues = false,
 }: ClienteProjectsTabProps) {
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);
-  const [openCreateQuote, setOpenCreateQuote] = useState(
-    hideValues ? false : initialCreateQuote
-  );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [valorPrevisto, setValorPrevisto] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-
-  const closeProjectDrawer = useCallback(() => {
-    setSelectedProjectId(null);
-    setOpenCreateQuote(false);
-  }, []);
 
   async function handleCreateProject(event: React.FormEvent) {
     event.preventDefault();
@@ -166,8 +142,7 @@ export default function ClienteProjectsTab({
       onProjectsChange([newSummary, ...projects]);
       setIsCreateModalOpen(false);
       setValorPrevisto("");
-      setSelectedProjectId(project.id);
-      setOpenCreateQuote(false);
+      navigateApp(projectPageHref(project.id, clientId));
     } else {
       setCreateError(res.error ?? "Não foi possível criar o projeto.");
     }
@@ -234,8 +209,7 @@ export default function ClienteProjectsTab({
                   key={project.id}
                   type="button"
                   onClick={() => {
-                    setOpenCreateQuote(!hideValues && isBlocked);
-                    setSelectedProjectId(project.id);
+                    navigateApp(projectPageHref(project.id, clientId, !hideValues && isBlocked));
                   }}
                   className={`group relative flex flex-col text-left p-4 rounded-2xl border bg-white transition-all hover:shadow-md hover:-translate-y-0.5 ${
                     isBlocked
@@ -325,16 +299,6 @@ export default function ClienteProjectsTab({
         )}
       </Card>
 
-      {selectedProjectId ? (
-        <ClienteProjectDrawer
-          projectId={selectedProjectId}
-          clientId={clientId}
-          companyId={companyId}
-          openCreateQuote={openCreateQuote}
-          onClose={closeProjectDrawer}
-        />
-      ) : null}
-
       <Dialog
         isOpen={!hideValues && isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -391,137 +355,5 @@ export default function ClienteProjectsTab({
         </div>
       </Dialog>
     </>
-  );
-}
-
-function ClienteProjectDrawer({
-  projectId,
-  clientId,
-  companyId,
-  openCreateQuote,
-  onClose,
-}: {
-  projectId: string;
-  clientId: string;
-  companyId: string;
-  openCreateQuote?: boolean;
-  onClose: () => void;
-}) {
-  const pathname = usePathname();
-  const { isOpsLimited } = usePermissions();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [project, setProject] = useState<ProjectDetailsPayload | null>(null);
-  const [colaboradores, setColaboradores] = useState<
-    { id: string; name: string; cargo: string }[]
-  >([]);
-  const [sla, setSla] = useState<ProjectSlaView | null>(null);
-  const previousOverflowRef = useRef("");
-  const pathnameWhenOpenedRef = useRef(pathname);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-
-    getProjectDetailsAction(projectId).then((res) => {
-      if (!active) return;
-      if (res.success && res.project) {
-        setProject(res.project);
-        setColaboradores(res.colaboradores ?? []);
-        setSla(res.sla ?? null);
-      } else {
-        setError(res.error ?? "Não foi possível carregar o projeto.");
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [projectId]);
-
-  // Fecha o painel ao navegar para outra rota (menu lateral, voltar, etc.)
-  useEffect(() => {
-    if (pathname !== pathnameWhenOpenedRef.current) {
-      onClose();
-    }
-  }, [pathname, onClose]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    previousOverflowRef.current = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflowRef.current;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[150] flex flex-col bg-background h-[100dvh] max-h-[100dvh] overflow-hidden">
-      <div className="shrink-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-muted-foreground">Projeto do cliente</p>
-          <p className="text-sm font-bold text-foreground truncate">
-            {project?.client.nome ?? "Carregando..."} · {projectId.slice(0, 8).toUpperCase()}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {!isOpsLimited && (
-            <a
-              href={`/projects/${projectId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-bold hidden sm:inline-flex items-center justify-center rounded-[var(--radius-sm)] border border-border bg-transparent hover:bg-muted/60 min-h-9 px-3"
-            >
-              Abrir em nova aba
-            </a>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            className="text-xs font-bold gap-1.5"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-            Fechar
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto overscroll-contain px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium">Carregando projeto completo...</p>
-          </div>
-        ) : error ? (
-          <div className="max-w-lg mx-auto p-6 text-center space-y-3">
-            <p className="text-sm text-destructive font-medium">{error}</p>
-            <Button type="button" variant="outline" onClick={onClose} className="text-xs font-bold">
-              Voltar
-            </Button>
-          </div>
-        ) : project ? (
-          <ProjectDetails
-            initialProject={project as any}
-            companyId={companyId}
-            colaboradores={colaboradores}
-            isMock={false}
-            initialSla={sla}
-            embedded
-            backHref={`/clientes/${clientId}`}
-            backLabel="Voltar ao cliente"
-            onClose={onClose}
-            initialOpenCreateQuote={isOpsLimited ? false : openCreateQuote}
-          />
-        ) : null}
-      </div>
-    </div>,
-    document.body
   );
 }

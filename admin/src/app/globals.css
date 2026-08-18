@@ -3586,7 +3586,7 @@ button.partner-card:hover,
 .mobile-drawer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 165;
   background: hsl(24 14% 14% / 0.5);
   border: none;
   padding: 0;
@@ -3641,7 +3641,7 @@ button.partner-card:hover,
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: 100;
+  z-index: 170;
   width: min(19rem, 88%);
   max-width: 100%;
   display: flex;
@@ -3667,7 +3667,7 @@ button.partner-card:hover,
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 35;
+  z-index: 160;
   display: none;
   padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0));
   background: hsl(var(--surface-elevated) / 0.92);

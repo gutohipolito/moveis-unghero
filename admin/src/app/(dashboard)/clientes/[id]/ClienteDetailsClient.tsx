@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import AppNavLink from "@/components/AppNavLink";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -532,12 +532,12 @@ export default function ClienteDetailsClient({
                   <span className="inline-flex items-center gap-1.5 min-w-0">
                     <User className="h-3.5 w-3.5 text-primary shrink-0" />
                     {client.partner_id ? (
-                      <Link
+                      <AppNavLink
                         href={`/parceiros/${client.partner_id}`}
                         className="text-primary hover:underline font-semibold truncate"
                       >
                         {client.partnerNome}
-                      </Link>
+                      </AppNavLink>
                     ) : (
                       <span className="truncate">{client.partnerNome}</span>
                     )}
@@ -1109,12 +1109,12 @@ export default function ClienteDetailsClient({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link
+        <AppNavLink
           href="/clientes"
           className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground transition-all flex items-center justify-center cursor-pointer"
         >
           <ArrowLeft className="h-4.5 w-4.5" />
-        </Link>
+        </AppNavLink>
         <span className="text-xs font-bold text-muted-foreground">Voltar para a lista</span>
       </div>
 

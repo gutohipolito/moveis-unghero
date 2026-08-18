@@ -18,6 +18,7 @@ import { deleteQuote, getQuoteForEdit } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { isSafeInternalPath, navigateApp } from "@/lib/navigateApp";
 import { payInstallment, createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import dynamic from "next/dynamic";
@@ -359,6 +360,12 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [confTecnicaWhatsApp, setConfTecnicaWhatsApp] =
     useState<ConfTecnicaWhatsAppTarget | null>(null);
   const searchParams = useSearchParams();
+  const backFromUrl = searchParams?.get("back");
+  const resolvedBackHref = isSafeInternalPath(backFromUrl) ? backFromUrl : backHref;
+  const resolvedBackLabel =
+    isSafeInternalPath(backFromUrl) && backFromUrl.startsWith("/clientes/")
+      ? "Voltar ao cliente"
+      : backLabel;
 
   const defaultTab = (() => {
     const fromUrl = searchParams?.get("tab");
@@ -393,7 +400,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   useEffect(() => {
     if (
       !isOpsLimited &&
-      (initialOpenCreateQuote || searchParams?.get("createQuote") === "true")
+      (initialOpenCreateQuote ||
+        searchParams?.get("createQuote") === "true" ||
+        searchParams?.get("createQuote") === "1")
     ) {
       setIsCreatingQuote(true);
     }
@@ -968,16 +977,17 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
-              {backLabel}
+              {resolvedBackLabel}
             </button>
           ) : (
-            <Link
-              href={backHref}
+            <button
+              type="button"
+              onClick={() => navigateApp(resolvedBackHref)}
               className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
-              {backLabel}
-            </Link>
+              {resolvedBackLabel}
+            </button>
           )}
           {isMock && (
             <span className="text-[11px] font-semibold bg-accent border border-primary/20 text-primary px-3 py-1 rounded-full">

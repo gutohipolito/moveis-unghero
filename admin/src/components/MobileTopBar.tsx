@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import HeaderQuickActions from "@/components/HeaderQuickActions";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import SensitiveToggle from "@/components/SensitiveToggle";
@@ -10,6 +9,7 @@ import type { AppNotification } from "@/lib/notifications";
 import type { OperatorNote, OperatorReminder } from "@/lib/operatorWorkspace";
 import { usePermissions } from "@/context/PermissionsContext";
 import { homePathForRole } from "@/lib/permissions";
+import AppNavLink from "@/components/AppNavLink";
 
 interface MobileTopBarProps {
   user: {
@@ -37,13 +37,13 @@ export default function MobileTopBar({
 
   return (
     <header className="mobile-topbar md:hidden">
-      <Link href={homeHref} prefetch={false} className="mobile-topbar-brand" aria-label="Móveis Unghero">
+      <AppNavLink href={homeHref} className="mobile-topbar-brand" aria-label="Móveis Unghero">
         <img
           src="/logo.png"
           alt=""
           className={`h-7 w-auto object-contain transition-[filter] duration-200 ${sidebarOpen ? "" : "mobile-topbar-logo-dark"}`}
         />
-      </Link>
+      </AppNavLink>
       <div className="mobile-topbar-actions">
         {!isOpsLimited && (
           <div className="flex items-center gap-1 pr-1.5 border-r border-border/80">

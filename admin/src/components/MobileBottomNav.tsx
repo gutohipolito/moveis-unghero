@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Kanban, Users, ClipboardList, Layers, LayoutDashboard } from "lucide-react";
 import { isNavItemActive } from "@/components/SidebarNav";
 import { usePermissions } from "@/context/PermissionsContext";
 import { moduleKeyForHref } from "@/lib/permissions";
+import AppNavLink from "@/components/AppNavLink";
 
 const MOBILE_NAV = [
   { name: "Funil", href: "/crm", icon: Kanban },
@@ -32,15 +32,14 @@ export default function MobileBottomNav() {
         {items.map((item) => {
           const isActive = isNavItemActive(pathname, item.href);
           return (
-            <Link
+            <AppNavLink
               key={item.href}
               href={item.href}
-              prefetch={false}
               className={`mobile-bottom-nav-item ${isActive ? "mobile-bottom-nav-item-active" : ""}`}
             >
               <item.icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.25 : 1.75} />
               <span>{item.name}</span>
-            </Link>
+            </AppNavLink>
           );
         })}
       </div>

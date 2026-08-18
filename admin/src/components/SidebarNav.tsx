@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Kanban,
@@ -27,6 +26,7 @@ import {
 import { useSidebarSections } from "@/lib/useSidebarSections";
 import { usePermissions } from "@/context/PermissionsContext";
 import { moduleKeyForHref } from "@/lib/permissions";
+import AppNavLink from "@/components/AppNavLink";
 import {
   SETTINGS_HUB_MODULES,
   SETTINGS_HUB_PATHS,
@@ -160,10 +160,9 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                 const label = compact && item.shortName ? item.shortName : item.name;
 
                 return (
-                  <Link
+                  <AppNavLink
                     key={item.href}
                     href={href}
-                    prefetch={false}
                     onClick={onNavigate}
                     className={`sidebar-nav-link ${isActive ? "sidebar-nav-link-active" : ""} ${
                       compact ? "justify-center px-1" : ""
@@ -175,7 +174,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                     </span>
                     {!compact && <span className="sidebar-nav-label">{label}</span>}
                     {!compact && item.badge && <span className="sidebar-nav-badge shrink-0">{item.badge}</span>}
-                  </Link>
+                  </AppNavLink>
                 );
               })}
             </div>

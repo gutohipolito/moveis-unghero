@@ -2,7 +2,7 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import AppNavLink from "@/components/AppNavLink";
 import SidebarNav from "@/components/SidebarNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import SuggestionFab from "@/components/melhorias/SuggestionFab";
@@ -50,7 +50,7 @@ export default function DashboardLayoutWrapper({
     >
       {/* Sidebar Desktop */}
       <aside
-        className={`app-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 z-30 transition-all duration-300 ${
+        className={`app-sidebar hidden md:flex md:flex-col md:fixed md:inset-y-0 z-[160] transition-all duration-300 ${
           isCollapsed ? "md:w-20" : "md:w-[17.5rem] lg:w-[19rem]"
         }`}
       >
@@ -63,9 +63,8 @@ export default function DashboardLayoutWrapper({
           >
             {isCollapsed ? (
               <div className="flex flex-col items-center gap-1.5">
-                <Link
+                <AppNavLink
                   href={homeHref}
-                  prefetch={false}
                   aria-label="Móveis Unghero"
                   className="h-9 w-9 rounded-lg overflow-hidden shadow-sm select-none transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
@@ -74,7 +73,7 @@ export default function DashboardLayoutWrapper({
                     alt="Móveis Unghero"
                     className="h-full w-full object-cover"
                   />
-                </Link>
+                </AppNavLink>
                 <button
                   onClick={toggleCollapsed}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-150 transition-all cursor-pointer flex items-center justify-center"
@@ -86,13 +85,13 @@ export default function DashboardLayoutWrapper({
               </div>
             ) : (
               <>
-                <Link href={homeHref} prefetch={false} aria-label="Móveis Unghero" className="flex items-center">
+                <AppNavLink href={homeHref} aria-label="Móveis Unghero" className="flex items-center">
                   <img
                     src="/logo.png"
                     alt="Móveis Unghero"
                     className="logo-sidebar h-9 w-auto object-contain transition-all"
                   />
-                </Link>
+                </AppNavLink>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={allCollapsed ? expandAll : collapseAll}
