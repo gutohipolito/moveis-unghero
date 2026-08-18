@@ -48,6 +48,7 @@ import { buildWhatsAppUrl, getFirstName } from "@/lib/google-review";
 import { Pagination } from "@/components/ui/pagination";
 import { updateUserPreference } from "@/app/actions/preferences";
 import ClientWizard, { type ClientWizardData } from "./ClientWizard";
+import ClienteEditWideForm from "@/components/clientes/ClienteEditWideForm";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients } from "@/lib/permissions";
 
@@ -366,7 +367,7 @@ export default function ClientesClient({
     setIsEditOpen(true);
   };
 
-  // Salvar Edição do Cliente (a partir do wizard)
+  // Salvar edição do cliente (mesmo formulário da ficha)
   const submitUpdate = async (form: ClientWizardData) => {
     if (!selectedClient) return { success: false, error: "Cliente não selecionado." };
     setLoading(true);
@@ -1019,16 +1020,25 @@ export default function ClientesClient({
         />
       </Dialog>
 
-      {/* ─── MODAL: EDITAR CLIENTE ─── */}
-      <Dialog isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} className="max-w-2xl w-full">
-        {selectedClient && (
-          <ClientWizard
-            mode="edit"
+      {/* ─── MODAL: EDITAR CLIENTE (mesmo formulário da ficha) ─── */}
+      <Dialog
+        isOpen={isEditOpen}
+        onClose={() => {
+          if (loading) return;
+          setIsEditOpen(false);
+        }}
+        className="w-[min(96vw,56rem)] max-w-[56rem]"
+        bodyClassName="max-h-[min(78vh,36rem)] overflow-y-auto"
+      >
+        {selectedClient ? (
+          <ClienteEditWideForm
+            key={`list-edit-${selectedClient.id}-${isEditOpen ? "open" : "closed"}`}
             initial={clientToWizardData(selectedClient)}
+            saving={loading}
             onCancel={() => setIsEditOpen(false)}
             onSubmit={submitUpdate}
           />
-        )}
+        ) : null}
       </Dialog>
 
       {/* ─── MODAL: INICIAR PROJETO NO CRM ─── */}
