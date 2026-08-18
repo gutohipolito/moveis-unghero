@@ -32,11 +32,6 @@ import {
 } from "@/lib/quoteApproval";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import SlaRadar from "@/components/SlaRadar";
-import ClientConsentCard from "@/components/clientes/ClientConsentCard";
-import {
-  resolveClientConsent,
-  stripConsentFromObservacoes,
-} from "@/lib/clientConsent";
 import { canManageEnvironmentAttachments, EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY, sortEnvironmentsForOperator } from "@/lib/factoryEnvironment";
 import EnvironmentProjectCard from "@/components/environments/EnvironmentProjectCard";
 import EnvironmentProjectListRow from "@/components/environments/EnvironmentProjectListRow";
@@ -99,9 +94,6 @@ const EnvironmentGalleryModal = dynamic(
 import {
   ArrowLeft,
   User, 
-  Phone, 
-  Mail, 
-  MapPin, 
   TrendingUp, 
   Plus, 
   Layers, 
@@ -115,7 +107,6 @@ import {
   ArrowRight,
   ShieldCheck,
   Send,
-  Building,
   DollarSign,
   Trash2,
   Sparkles,
@@ -1028,66 +1019,25 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           <div className="space-y-4 col-span-2">
             <div>
               <span className="text-xs font-bold text-primary tracking-widest uppercase">
-                Cliente & Projeto
+                Projeto
               </span>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1">
                 <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground break-words">
                   {project.client.nome}
                 </h2>
+                <Link
+                  href={`/clientes/${project.client.id}`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline shrink-0"
+                >
+                  Ver ficha do cliente
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
+              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed max-w-xl">
+                Contato, origem e consentimentos estão na ficha do cliente. Aqui você gerencia
+                prazos, status e execução deste projeto.
+              </p>
             </div>
-            
-            {!isFactoryRole && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                <div className="flex items-start min-w-0">
-                  <MapPin className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                  <span className="min-w-0">
-                    Cidade: <span className="text-foreground font-medium break-words">{project.client.cidade || "—"}</span>
-                  </span>
-                </div>
-                <div className="flex items-start min-w-0">
-                  <Phone className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                  <span className="min-w-0">
-                    WhatsApp: <span className="text-foreground font-medium break-all">{sensitive.phone(project.client.telefone || "")}</span>
-                  </span>
-                </div>
-                <div className="flex items-start min-w-0">
-                  <Mail className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                  <span className="min-w-0">
-                    E-mail: <span className="text-foreground font-medium break-all">{sensitive.email(project.client.email || "")}</span>
-                  </span>
-                </div>
-                {!isOpsLimited && (
-                  <div className="flex items-start min-w-0">
-                    <Building className="h-4 w-4 text-muted-foreground mr-2.5 mt-0.5 shrink-0" />
-                    <span className="min-w-0">
-                      Origem Lead: <span className="text-foreground font-medium uppercase break-words">{project.client.origem}</span>
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {!isFactoryRole && (() => {
-              const consent = resolveClientConsent({
-                lgpd_aceite: project.client.lgpd_aceite,
-                lgpd_aceite_em: project.client.lgpd_aceite_em,
-                marketing_aceite: project.client.marketing_aceite,
-                observacoes: project.client.observacoes,
-              });
-              const notes = stripConsentFromObservacoes(project.client.observacoes);
-              return (
-                <>
-                  {!isOpsLimited && <ClientConsentCard consent={consent} />}
-                  {notes ? (
-                    <div className="p-3.5 rounded-lg bg-slate-50 border border-border text-xs text-muted-foreground">
-                      <span className="font-semibold block text-foreground mb-1">Notas do Cliente:</span>
-                      <span className="whitespace-pre-wrap">{notes}</span>
-                    </div>
-                  ) : null}
-                </>
-              );
-            })()}
 
             {/* Controle Operacional do Projeto */}
             <div className="border-t border-slate-100 pt-4 mt-4 space-y-4">
