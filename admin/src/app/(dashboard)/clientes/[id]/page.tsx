@@ -3,15 +3,17 @@ import { getSessionSafe } from "@/lib/auth";
 import { guardModule } from "@/lib/moduleAccess";
 import { getClientDetailsAction } from "@/app/actions/cliente";
 import { redirect } from "next/navigation";
-import ClienteDetailsClient from "./ClienteDetailsClient";
+import ClienteDetailsClient, { parseClientDetailsTab } from "./ClienteDetailsClient";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function ClienteDetailsPage({ params }: RouteParams) {
+export default async function ClienteDetailsPage({ params, searchParams }: RouteParams) {
   await guardModule("clientes");
   const { id } = await params;
+  const { tab } = await searchParams;
   const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
 
@@ -28,6 +30,7 @@ export default async function ClienteDetailsPage({ params }: RouteParams) {
       initialAttachments={res.attachments ?? []}
       initialAttachmentFolders={res.attachmentFolders ?? ["Residência", "Documentos"]}
       companyId={companyId}
+      initialTab={parseClientDetailsTab(tab)}
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,11 +43,29 @@ import {
   Home,
   Truck,
   Search,
+  Loader2,
 } from "lucide-react";
-import ClienteDocumentsTab from "@/components/clientes/ClienteDocumentsTab";
-import ClienteFinanceTab from "@/components/clientes/ClienteFinanceTab";
-import ClienteProjectsTab, { type ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
+import type { ClientProjectSummary } from "@/components/clientes/ClienteProjectsTab";
 import ClienteContactsSection from "@/components/clientes/ClienteContactsSection";
+
+function TabLoading() {
+  return (
+    <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      <span className="text-sm font-medium">Carregando aba…</span>
+    </div>
+  );
+}
+
+const ClienteProjectsTab = dynamic(() => import("@/components/clientes/ClienteProjectsTab"), {
+  loading: () => <TabLoading />,
+});
+const ClienteDocumentsTab = dynamic(() => import("@/components/clientes/ClienteDocumentsTab"), {
+  loading: () => <TabLoading />,
+});
+const ClienteFinanceTab = dynamic(() => import("@/components/clientes/ClienteFinanceTab"), {
+  loading: () => <TabLoading />,
+});
 import { ClientConsentChip } from "@/components/clientes/ClientConsentCard";
 import ClienteEditWideForm from "@/components/clientes/ClienteEditWideForm";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
@@ -103,6 +121,31 @@ interface ClienteDetailsClientProps {
   initialAttachments: ClientAttachmentDTO[];
   initialAttachmentFolders?: string[];
   companyId: string;
+  initialTab?: ClientDetailsTab;
+}
+
+export type ClientDetailsTab =
+  | "overview"
+  | "projects"
+  | "finance"
+  | "timeline"
+  | "documents"
+  | "notas";
+
+const CLIENT_DETAILS_TABS = new Set<ClientDetailsTab>([
+  "overview",
+  "projects",
+  "finance",
+  "timeline",
+  "documents",
+  "notas",
+]);
+
+export function parseClientDetailsTab(value: string | undefined): ClientDetailsTab {
+  if (value && CLIENT_DETAILS_TABS.has(value as ClientDetailsTab)) {
+    return value as ClientDetailsTab;
+  }
+  return "overview";
 }
 
 const ORIGIN_LABELS: Record<string, string> = {
@@ -287,6 +330,7 @@ export default function ClienteDetailsClient({
   initialAttachments,
   initialAttachmentFolders = ["Residência", "Documentos"],
   companyId,
+  initialTab = "overview",
 }: ClienteDetailsClientProps) {
   const [client, setClient] = useState<ClientDetails>(initialClient);
   const [projects, setProjects] = useState<ClientProjectSummary[]>(
@@ -304,24 +348,7 @@ export default function ClienteDetailsClient({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
 
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "projects" | "finance" | "timeline" | "documents" | "notas"
-  >("overview");
-
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (
-      tab === "finance" ||
-      tab === "projects" ||
-      tab === "documents" ||
-      tab === "timeline" ||
-      tab === "overview" ||
-      tab === "notas"
-    ) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
+  const [activeTab, setActiveTab] = useState<ClientDetailsTab>(initialTab);
 
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -356,9 +383,21 @@ export default function ClienteDetailsClient({
     });
   }, [activities, historyFilter, historySearch]);
 
+  const mountedRef = useRef(true);
+  const syncingRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const syncClientDetails = useCallback(async () => {
-    const result = await getClientDetailsLiveSnapshot(client.id);
-    if (result.success && result.client) {
+    if (syncingRef.current || !mountedRef.current) return;
+    syncingRef.current = true;
+    try {
+      const result = await getClientDetailsLiveSnapshot(client.id);
+      if (!result.success || !result.client || !mountedRef.current) return;
       setClient(result.client as ClientDetails);
       if (result.activities) setActivities(result.activities);
       if (result.payments) setPayments(result.payments);
@@ -370,12 +409,15 @@ export default function ClienteDetailsClient({
       if (typeof result.client.observacoes === "string") {
         setNotesValue(stripConsentFromObservacoes(result.client.observacoes));
       }
+    } finally {
+      syncingRef.current = false;
     }
   }, [client.id]);
 
   useLiveEntity("clients", {
     sync: syncClientDetails,
     enabled: !isSubmittingNote && !editSaving && !isEditOpen,
+    skipInitialSync: true,
   });
 
   const dialog = useActionDialog();

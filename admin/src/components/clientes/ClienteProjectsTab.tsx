@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,10 +22,19 @@ import { getProjectDetailsAction } from "@/app/actions/project";
 import { createLead, type Origin } from "@/app/actions/kanban";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
-import ProjectDetails from "@/components/ProjectDetails";
 import type { ProjectDetailsPayload } from "@/lib/formatProjectDetails";
 import type { ProjectSlaView } from "@/lib/productionSla";
 import { usePermissions } from "@/context/PermissionsContext";
+
+const ProjectDetails = dynamic(() => import("@/components/ProjectDetails"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="text-sm font-medium">Carregando projeto completo...</p>
+    </div>
+  ),
+});
 
 export interface ClientProjectSummary {
   id: string;
@@ -109,6 +120,11 @@ export default function ClienteProjectsTab({
   const [valorPrevisto, setValorPrevisto] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  const closeProjectDrawer = useCallback(() => {
+    setSelectedProjectId(null);
+    setOpenCreateQuote(false);
+  }, []);
 
   async function handleCreateProject(event: React.FormEvent) {
     event.preventDefault();
@@ -315,10 +331,7 @@ export default function ClienteProjectsTab({
           clientId={clientId}
           companyId={companyId}
           openCreateQuote={openCreateQuote}
-          onClose={() => {
-            setSelectedProjectId(null);
-            setOpenCreateQuote(false);
-          }}
+          onClose={closeProjectDrawer}
         />
       ) : null}
 
@@ -394,6 +407,7 @@ function ClienteProjectDrawer({
   openCreateQuote?: boolean;
   onClose: () => void;
 }) {
+  const pathname = usePathname();
   const { isOpsLimited } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -402,6 +416,7 @@ function ClienteProjectDrawer({
     { id: string; name: string; cargo: string }[]
   >([]);
   const [sla, setSla] = useState<ProjectSlaView | null>(null);
+  const previousOverflowRef = useRef("");
 
   useEffect(() => {
     let active = true;
@@ -425,14 +440,24 @@ function ClienteProjectDrawer({
     };
   }, [projectId]);
 
+  const pathnameWhenOpenedRef = useRef(pathname);
+
+  // Fecha o painel ao navegar para outra rota (menu lateral, voltar, etc.)
+  useEffect(() => {
+    if (pathname !== pathnameWhenOpenedRef.current) {
+      onClose();
+    }
+  }, [pathname, onClose]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+    previousOverflowRef.current = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflowRef.current;
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [onClose]);
