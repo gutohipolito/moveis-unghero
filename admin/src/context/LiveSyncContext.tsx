@@ -49,6 +49,7 @@ export function LiveSyncProvider({
   const [connection, setConnection] = useState<LiveSyncContextValue["connection"]>("connecting");
   const subscribersRef = useRef<LiveSubscriber[]>([]);
   const versionsRef = useRef<Partial<LiveVersions>>({});
+  const versionsBootstrappedRef = useRef(false);
 
   const notifySubscribers = useCallback((changed: LiveEntityKey[]) => {
     if (changed.length === 0) return;
@@ -62,13 +63,17 @@ export function LiveSyncProvider({
 
   const applyVersions = useCallback(
     (nextVersions: LiveVersions, changed?: LiveEntityKey[]) => {
+      const isBootstrap = !versionsBootstrappedRef.current;
+      versionsBootstrappedRef.current = true;
+
       const entities =
         changed && changed.length > 0
           ? changed
           : getChangedLiveEntities(versionsRef.current, nextVersions);
       versionsRef.current = nextVersions;
       setVersions(nextVersions);
-      if (entities.length > 0) {
+      // Primeira carga só registra versões — evita refetch em massa ao abrir qualquer tela.
+      if (!isBootstrap && entities.length > 0) {
         notifySubscribers(entities);
       }
     },

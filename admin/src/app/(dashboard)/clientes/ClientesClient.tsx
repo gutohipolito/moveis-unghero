@@ -221,10 +221,10 @@ export default function ClientesClient({
     recency: filterRecency,
   };
 
-  const fetchList = useCallback(async () => {
+  const fetchList = useCallback(async (options?: { silent?: boolean }) => {
     const q = queryRef.current;
     const id = ++requestIdRef.current;
-    setListLoading(true);
+    if (!options?.silent) setListLoading(true);
     const result = await getClientsPage({
       companyId,
       page: q.page,
@@ -237,7 +237,7 @@ export default function ClientesClient({
       recency: q.recency,
     });
     if (id !== requestIdRef.current) return;
-    setListLoading(false);
+    if (!options?.silent) setListLoading(false);
     if (result.success) {
       setClients(result.clients as Client[]);
       setTotal(result.total);
@@ -270,7 +270,7 @@ export default function ClientesClient({
   }, [fetchList, filtersKey, page]);
 
   useLiveEntity("clients", {
-    sync: fetchList,
+    sync: () => fetchList({ silent: true }),
     enabled: !loading && !listLoading && !isCreateOpen && !isEditOpen && !isProjectModalOpen,
     skipInitialSync: true,
   });
@@ -726,7 +726,13 @@ export default function ClientesClient({
           <span className="text-sm">Carregando clientes...</span>
         </Card>
       ) : (
-        <div className={listLoading ? "relative opacity-60 pointer-events-none transition-opacity" : undefined}>
+        <div className={listLoading ? "relative" : undefined}>
+          {listLoading ? (
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full bg-background/90 border border-border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground shadow-sm">
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+              Atualizando…
+            </div>
+          ) : null}
           <div className="md:hidden space-y-3">
             {pagedClients.map((client) => {
               const orgBadge = ORIGIN_BADGES[client.origem] || { bg: "bg-muted", text: "text-muted-foreground" };
