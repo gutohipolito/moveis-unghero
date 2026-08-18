@@ -14,7 +14,11 @@ import { usePathname, useRouter } from "next/navigation";
 
 /** Tempo em que um clique recente ainda pode corrigir um RSC atrasado. */
 const GUARD_MS = 8_000;
-const RECOVER_EVERY_MS = 250;
+const RECOVER_EVERY_MS = 300;
+/** Espera o Link do Next.js antes de forçar a navegação. */
+const FORCE_NAV_DELAY_MS = 450;
+/** Evita push/replace em loop quando o App Router ainda está trocando de rota. */
+const MIN_FORCE_GAP_MS = 600;
 
 type Intent = {
   href: string;
@@ -22,6 +26,7 @@ type Intent = {
   fromPath: string;
   at: number;
   matched: boolean;
+  forcedNavAt?: number;
 };
 
 type NavigationIntentContextValue = {
@@ -137,6 +142,9 @@ export function NavigationIntentProvider({ children }: { children: ReactNode }) 
   useEffect(() => {
     if (!intentRef.current) return;
 
+    const canForceNav = (intent: Intent) =>
+      !intent.forcedNavAt || Date.now() - intent.forcedNavAt >= MIN_FORCE_GAP_MS;
+
     const tick = () => {
       const intent = intentRef.current;
       if (!intent) return;
@@ -158,12 +166,31 @@ export function NavigationIntentProvider({ children }: { children: ReactNode }) 
         return;
       }
 
-      // Ainda na tela de origem — a navegação pedida não chegou.
+      const elapsed = Date.now() - intent.at;
+
+      // Ainda na tela de origem — deixa o Link agir; depois força push uma vez.
       if (!intent.matched && current === intent.fromPath) {
+        if (elapsed >= FORCE_NAV_DELAY_MS && canForceNav(intent)) {
+          intent.forcedNavAt = Date.now();
+          router.push(intent.href);
+        }
         return;
       }
 
-      router.replace(intent.href);
+      // RSC atrasado: já chegamos ao destino e a URL voltou sozinha — replace corrige.
+      if (intent.matched) {
+        if (canForceNav(intent)) {
+          intent.forcedNavAt = Date.now();
+          router.replace(intent.href);
+        }
+        return;
+      }
+
+      // Rota intermediária ou payload errado durante a primeira navegação — push, não replace.
+      if (elapsed >= FORCE_NAV_DELAY_MS && canForceNav(intent)) {
+        intent.forcedNavAt = Date.now();
+        router.push(intent.href);
+      }
     };
 
     tick();

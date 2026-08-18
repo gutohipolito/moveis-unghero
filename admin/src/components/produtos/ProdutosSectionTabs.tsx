@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActivePathname } from "@/context/NavigationIntentContext";
+import { usePathname } from "next/navigation";
 import { Images, BookOpen } from "lucide-react";
 
 const TABS = [
@@ -10,7 +10,7 @@ const TABS = [
 ];
 
 export default function ProdutosSectionTabs() {
-  const pathname = useActivePathname();
+  const pathname = usePathname();
 
   return (
     <div className="section-tabs">

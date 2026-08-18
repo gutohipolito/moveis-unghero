@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActivePathname } from "@/context/NavigationIntentContext";
+import { usePathname } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, BarChart3, Target } from "lucide-react";
 
 const TABS = [
@@ -12,7 +12,7 @@ const TABS = [
 ];
 
 export default function FinanceSectionTabs() {
-  const pathname = useActivePathname();
+  const pathname = usePathname();
 
   return (
     <div className="section-tabs">

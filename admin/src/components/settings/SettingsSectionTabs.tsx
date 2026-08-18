@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActivePathname } from "@/context/NavigationIntentContext";
+import { usePathname } from "next/navigation";
 import { Settings, Users, ShieldCheck, BookMarked } from "lucide-react";
 import { usePermissions } from "@/context/PermissionsContext";
 
@@ -46,7 +46,7 @@ export function resolveSettingsHubHref(can: (moduleKey: string) => boolean): str
 }
 
 export default function SettingsSectionTabs() {
-  const pathname = useActivePathname();
+  const pathname = usePathname();
   const { can } = usePermissions();
   const visible = TABS.filter((t) => can(t.moduleKey));
 

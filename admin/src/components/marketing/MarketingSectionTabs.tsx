@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActivePathname } from "@/context/NavigationIntentContext";
+import { usePathname } from "next/navigation";
 import { Star, NotebookPen, BarChart3, MessageCircle } from "lucide-react";
 import { usePermissions } from "@/context/PermissionsContext";
 import {
@@ -40,7 +40,7 @@ const TABS = [
 ];
 
 export default function MarketingSectionTabs() {
-  const pathname = useActivePathname();
+  const pathname = usePathname();
   const { role } = usePermissions();
   const showAnalytics = canViewMarketingAnalytics(role);
   const showFull = canViewFullMarketing(role);
