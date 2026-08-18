@@ -82,6 +82,7 @@ import {
   CLIENT_ACTIVITY_CATEGORY_LABELS,
   type ClientActivityCategory,
 } from "@/lib/clientTimeline";
+import type { ClientDetailsTab } from "@/lib/clientDetailsTabs";
 
 interface ProjectSummary extends ClientProjectSummary {}
 
@@ -122,30 +123,6 @@ interface ClienteDetailsClientProps {
   initialAttachmentFolders?: string[];
   companyId: string;
   initialTab?: ClientDetailsTab;
-}
-
-export type ClientDetailsTab =
-  | "overview"
-  | "projects"
-  | "finance"
-  | "timeline"
-  | "documents"
-  | "notas";
-
-const CLIENT_DETAILS_TABS = new Set<ClientDetailsTab>([
-  "overview",
-  "projects",
-  "finance",
-  "timeline",
-  "documents",
-  "notas",
-]);
-
-export function parseClientDetailsTab(value: string | undefined): ClientDetailsTab {
-  if (value && CLIENT_DETAILS_TABS.has(value as ClientDetailsTab)) {
-    return value as ClientDetailsTab;
-  }
-  return "overview";
 }
 
 const ORIGIN_LABELS: Record<string, string> = {
@@ -414,12 +391,6 @@ export default function ClienteDetailsClient({
     }
   }, [client.id]);
 
-  useLiveEntity("clients", {
-    sync: syncClientDetails,
-    enabled: !isSubmittingNote && !editSaving && !isEditOpen,
-    skipInitialSync: true,
-  });
-
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const docInfo = resolveClientDocument(client);
@@ -430,6 +401,12 @@ export default function ClienteDetailsClient({
   const canManage = canManageClients(role);
   const canManageAttachments = canManageOperationalMedia(role);
   const hideClientContact = isOpsLimited;
+
+  useLiveEntity("clients", {
+    sync: syncClientDetails,
+    enabled: !isSubmittingNote && !editSaving && !isEditOpen,
+    skipInitialSync: true,
+  });
 
   useEffect(() => {
     if (!isOpsLimited) return;

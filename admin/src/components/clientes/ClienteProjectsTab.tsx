@@ -417,6 +417,7 @@ function ClienteProjectDrawer({
   >([]);
   const [sla, setSla] = useState<ProjectSlaView | null>(null);
   const previousOverflowRef = useRef("");
+  const pathnameWhenOpenedRef = useRef(pathname);
 
   useEffect(() => {
     let active = true;
@@ -439,8 +440,6 @@ function ClienteProjectDrawer({
       active = false;
     };
   }, [projectId]);
-
-  const pathnameWhenOpenedRef = useRef(pathname);
 
   // Fecha o painel ao navegar para outra rota (menu lateral, voltar, etc.)
   useEffect(() => {

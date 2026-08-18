@@ -3,7 +3,8 @@ import { getSessionSafe } from "@/lib/auth";
 import { guardModule } from "@/lib/moduleAccess";
 import { getClientDetailsAction } from "@/app/actions/cliente";
 import { redirect } from "next/navigation";
-import ClienteDetailsClient, { parseClientDetailsTab } from "./ClienteDetailsClient";
+import ClienteDetailsClient from "./ClienteDetailsClient";
+import { parseClientDetailsTab } from "@/lib/clientDetailsTabs";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
