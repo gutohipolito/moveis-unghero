@@ -7,7 +7,7 @@ import {
   ENVIRONMENT_TIPO_LABELS,
   type EnvironmentAttachmentSummary,
 } from "@/lib/factoryEnvironment";
-import { CheckCircle2, FileStack, FolderOpen, Images, Ruler, Sparkles } from "lucide-react";
+import { CheckCircle2, Compass, FileStack, FolderOpen, Images, Ruler } from "lucide-react";
 
 export type EnvironmentProjectCardData = {
   id: string;
@@ -96,7 +96,7 @@ export default function EnvironmentProjectCard({
           </span>
         ) : environment.hasArchProject ? (
           <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-md bg-violet-600/95 px-2 py-1 text-[10px] font-bold text-white shadow-sm">
-            <Sparkles className="h-3 w-3" />
+            <Compass className="h-3 w-3" />
             Projeto arquiteto
           </span>
         ) : null}

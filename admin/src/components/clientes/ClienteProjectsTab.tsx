@@ -14,7 +14,7 @@ import {
   Loader2,
   Lock,
   Plus,
-  Sparkles,
+  ClipboardList,
   X,
 } from "lucide-react";
 import { labelProjectStatus } from "@/lib/navLabels";
@@ -302,7 +302,7 @@ export default function ClienteProjectsTab({
                     ) : null}
                     {!hideValues && project.briefing ? (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
-                        <Sparkles className="h-3 w-3" />
+                        <ClipboardList className="h-3 w-3" />
                         {project.briefing.estilo}
                         {project.briefing.score != null ? ` · ${project.briefing.score}` : ""}
                       </span>

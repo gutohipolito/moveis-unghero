@@ -6,7 +6,7 @@ import type { ClientPortalData } from "@/lib/clientPortal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Sparkles, 
+  LayoutDashboard, 
   LogOut, 
   MapPin, 
   Layers, 
@@ -94,7 +94,7 @@ export default function ClienteDashboardClient({ client, isMock }: ClienteDashbo
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary">
-              <Sparkles className="h-4.5 w-4.5" />
+              <LayoutDashboard className="h-4.5 w-4.5" />
             </span>
             <span className="text-sm font-extrabold tracking-widest text-foreground uppercase">
               MÓVEIS UNGHERO

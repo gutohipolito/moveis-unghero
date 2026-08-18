@@ -26,7 +26,7 @@ import {
   Search,
   Download,
   Printer,
-  Sparkles,
+  Lightbulb,
   Info,
   CheckCircle2,
   AlertTriangle,
@@ -912,7 +912,7 @@ export default function BiClient({
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-2.5 mt-2">
-                  <Sparkles className="h-4.5 w-4.5 text-primary flex-shrink-0 mt-0.5" />
+                  <Lightbulb className="h-4.5 w-4.5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="text-xs">
                     <strong className="text-amber-800 font-bold block mb-0.5">Destaque Comercial:</strong>
                     <p className="text-amber-700/80 leading-relaxed font-medium">{highlightText}</p>
@@ -1174,7 +1174,7 @@ export default function BiClient({
             {/* Painel de Recomendações e Alertas Comerciais (Actionable Insights) */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 border-b border-border/40 pb-1">
-                <Sparkles className="h-4.5 w-4.5 text-primary" />
+                <Lightbulb className="h-4.5 w-4.5 text-primary" />
                 <h3 className="text-headline text-foreground">Alertas e Recomendações de Ação</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

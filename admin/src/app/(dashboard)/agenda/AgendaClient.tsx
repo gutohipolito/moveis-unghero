@@ -20,7 +20,6 @@ import {
   CheckCircle2,
   Filter,
   Layers,
-  Sparkles,
   FileText,
   FileClock,
   PhoneCall,
@@ -469,7 +468,7 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
                         {selectedEvent.titulo}
                       </h3>
                       <span className="text-xs text-primary font-semibold flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5" /> Projeto: {selectedEvent.projectName}
+                        <Layers className="h-3.5 w-3.5" /> Projeto: {selectedEvent.projectName}
                       </span>
                     </div>
 

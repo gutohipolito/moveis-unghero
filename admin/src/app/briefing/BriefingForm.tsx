@@ -5,7 +5,6 @@ import {
   Home, 
   Building, 
   Briefcase, 
-  Sparkles, 
   Clock, 
   Check, 
   ArrowRight, 

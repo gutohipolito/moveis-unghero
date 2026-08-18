@@ -8,7 +8,7 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Plus, Trash2, Calculator, Sparkles, ExternalLink, Layers, Building2, BadgeCheck, Images } from "lucide-react";
+import { Plus, Trash2, Calculator, ClipboardList, ExternalLink, Layers, Building2, BadgeCheck, Images } from "lucide-react";
 import {
   QUOTE_TEMPLATE_IDS,
   QUOTE_TEMPLATE_LABELS,
@@ -605,7 +605,7 @@ export default function QuoteBuilder({
                 : "text-muted-foreground hover:text-slate-700"
             }`}
           >
-            <Sparkles className="h-4 w-4 text-emerald-500 shrink-0" />
+            <ClipboardList className="h-4 w-4 text-emerald-500 shrink-0" />
             Briefing do lead
           </button>
         </div>
@@ -1302,7 +1302,7 @@ export default function QuoteBuilder({
       {activeBuilderTab === "briefing" && briefingData && (
         <div className="space-y-5 animate-in fade-in duration-200 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
           <div className="flex items-center gap-2 border-b border-slate-200/60 pb-3">
-            <Sparkles className="h-5 w-5 text-emerald-500" />
+            <ClipboardList className="h-5 w-5 text-emerald-500" />
             <div>
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">
                 Ficha Técnica do Lead de Formulário

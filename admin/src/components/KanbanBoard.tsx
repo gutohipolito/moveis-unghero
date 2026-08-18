@@ -67,7 +67,8 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
-  Sparkles,
+  Wand2,
+  ClipboardList,
   ExternalLink,
   Copy,
   Check,
@@ -2271,7 +2272,7 @@ export default function KanbanBoard({
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <ClipboardList className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                     Briefing
                   </button>
                 </div>
@@ -2293,7 +2294,7 @@ export default function KanbanBoard({
                       <div className="bg-gradient-to-br from-amber-500/[0.03] to-amber-600/[0.08] border border-amber-500/20 rounded-2xl p-4.5 space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+                            <Wand2 className="h-4 w-4 text-amber-500 animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">
                               Unghero AI Diagnostics
                             </span>

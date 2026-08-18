@@ -14,7 +14,7 @@ import {
   FolderOpen,
   Images,
   Ruler,
-  Sparkles,
+  Compass,
 } from "lucide-react";
 
 type EnvironmentProjectListRowProps = {
@@ -87,7 +87,7 @@ export default function EnvironmentProjectListRow({
                 </span>
               ) : environment.hasArchProject ? (
                 <span className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                  <Sparkles className="h-2.5 w-2.5" />
+                  <Compass className="h-2.5 w-2.5" />
                   Projeto arquiteto
                 </span>
               ) : null}

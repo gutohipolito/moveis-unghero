@@ -109,7 +109,9 @@ import {
   Send,
   DollarSign,
   Trash2,
-  Sparkles,
+  Handshake,
+  Box,
+  Wand2,
   Calendar,
   ChevronDown,
   Receipt,
@@ -1101,7 +1103,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2">
                     <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <Handshake className="h-3.5 w-3.5 text-primary" />
                       Parceiro Externo:
                     </div>
                     <strong className="text-sm text-slate-800 font-bold block truncate">
@@ -1655,7 +1657,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   className="border-border text-primary hover:bg-secondary/20 font-semibold cursor-pointer w-full sm:w-auto justify-center"
                   title="Funcionalidade em desenvolvimento"
                 >
-                  <Sparkles className="h-4 w-4 mr-1.5 text-amber-400 shrink-0" />
+                  <Box className="h-4 w-4 mr-1.5 text-amber-400 shrink-0" />
                   <span className="truncate">Importar Promob (em breve)</span>
                 </Button>
                 )}
@@ -1723,7 +1725,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           className="flex items-center text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
                           title="Melhorar com IA"
                         >
-                          <Sparkles className="h-3.5 w-3.5 mr-1" />
+                          <Wand2 className="h-3.5 w-3.5 mr-1" />
                           {isRenderingPro ? "Processando..." : "Render Pro (IA)"}
                         </button>
                       )}

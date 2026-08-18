@@ -4,7 +4,7 @@ import {
   Hammer,
   PenTool,
   Sofa,
-  Sparkles,
+  Palette,
   UserRound,
 } from "lucide-react";
 
@@ -248,7 +248,7 @@ export const PARTNER_TYPE_STYLES: Record<
     border: "border-pink-500/20",
     avatar: "bg-pink-500/15 text-pink-700 border-pink-500/25",
     accent: "bg-gradient-to-r from-pink-500 to-rose-500",
-    icon: Sparkles,
+    icon: Palette,
   },
   OUTROS: {
     label: PARTNER_TYPE_LABELS.OUTROS,

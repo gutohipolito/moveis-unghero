@@ -10,7 +10,7 @@ import {
   MapPin, 
   Calendar, 
   Layers, 
-  Sparkles, 
+  Wand2, 
   Flame, 
   TrendingUp, 
   Laptop, 
@@ -160,7 +160,7 @@ export default async function PrintBriefingPage({ params }: PrintPageProps) {
         {briefing.roteiro_sugerido && (
           <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
             <h3 className="text-xs font-black text-slate-850 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="h-4.5 w-4.5 text-amber-500 shrink-0" /> Diretrizes de Abordagem Comercial (IA)
+              <Wand2 className="h-4.5 w-4.5 text-amber-500 shrink-0" /> Diretrizes de Abordagem Comercial (IA)
             </h3>
             <div className="text-xs text-slate-700 leading-relaxed space-y-2 font-medium">
               {briefing.roteiro_sugerido.split("\n").map((line, idx) => {
