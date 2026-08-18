@@ -18,7 +18,6 @@ import { describeUploadFailure } from "@/lib/uploadErrors";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
 import CatalogCoverThumb from "@/components/produtos/CatalogCoverThumb";
-import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import CatalogActionsModal from "@/components/produtos/CatalogActionsModal";
 import CatalogShareWhatsAppDialog, {
   type CatalogShareClient,
@@ -673,7 +672,6 @@ export default function CatalogosClient({
                   : "Acesse, visualize e compartilhe catálogos de fornecedores, materiais e folders inspiracionais."}
             </p>
           </div>
-          <ProdutosSectionTabs />
         </div>
 
         {canManageCatalogs ? (

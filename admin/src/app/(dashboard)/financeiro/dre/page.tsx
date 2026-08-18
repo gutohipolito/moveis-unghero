@@ -2,7 +2,6 @@ import { guardModule } from "@/lib/moduleAccess";
 import { getDreData, type DreData } from "@/app/actions/dre";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 import DreClient from "./DreClient";
 
 export default async function DrePage() {
@@ -17,7 +16,7 @@ export default async function DrePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Financeiro"
         description="DRE (Demonstração do Resultado) por mês — regime de caixa."
@@ -33,9 +32,7 @@ export default async function DrePage() {
           />
         } />
 
-      <FinanceSectionTabs />
-
       <DreClient data={data} />
-    </div>
+    </>
   );
 }

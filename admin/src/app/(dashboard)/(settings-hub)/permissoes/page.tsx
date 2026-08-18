@@ -1,6 +1,5 @@
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import { guardModule, getCompanyPermissions } from "@/lib/moduleAccess";
 import { getSessionCompanyId } from "@/lib/session";
 import {
@@ -22,7 +21,7 @@ export default async function PermissoesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Configurações"
         description="Empresa, equipe, permissões e listas configuráveis do sistema."
@@ -38,8 +37,7 @@ export default async function PermissoesPage() {
           />
         }
       />
-      <SettingsSectionTabs />
       <PermissoesClient initial={initial} />
-    </div>
+    </>
   );
 }

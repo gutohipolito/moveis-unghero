@@ -20,7 +20,6 @@ export default function ProdutosSectionTabs() {
           <Link
             key={href}
             href={href}
-            prefetch={false}
             className={`section-tabs-item ${active ? "section-tabs-item-active" : ""}`}
           >
             <Icon className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-slate-500"}`} />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActivePathname } from "@/context/NavigationIntentContext";
+import { usePathname } from "next/navigation";
 import {
   Kanban,
   Calendar,
@@ -116,7 +116,7 @@ interface SidebarNavProps {
 }
 
 export default function SidebarNav({ onNavigate, compact = false }: SidebarNavProps) {
-  const pathname = useActivePathname();
+  const pathname = usePathname();
   const { isSectionCollapsed, toggleSection } = useSidebarSections();
   const { can } = usePermissions();
 

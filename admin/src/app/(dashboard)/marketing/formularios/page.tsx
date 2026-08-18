@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import MarketingFormsPanel from "@/components/marketing/MarketingFormsPanel";
-import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import { guardModule } from "@/lib/moduleAccess";
 import { auth } from "@/lib/auth";
 import { canViewFullMarketing } from "@/lib/permissions";
@@ -44,7 +43,7 @@ export default async function MarketingFormulariosPage() {
   const mailboxes = mailboxesResponse.success ? mailboxesResponse.data : [];
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Marketing"
         description="Avaliações, mensagens prontas, formulários e tráfego do site."
@@ -59,8 +58,7 @@ export default async function MarketingFormulariosPage() {
           />
         }
       />
-      <MarketingSectionTabs />
       <MarketingFormsPanel clients={clients} mailboxes={mailboxes} />
-    </div>
+    </>
   );
 }

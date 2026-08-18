@@ -17,7 +17,6 @@ import { usePrivacy } from "@/context/PrivacyContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageProducts as canManageProductsRole } from "@/lib/permissions";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
-import ProdutosSectionTabs from "@/components/produtos/ProdutosSectionTabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -631,7 +630,6 @@ export default function ProdutosClient({
                   : "Mostruário visual para identificar o que entra no orçamento do cliente."}
             </p>
           </div>
-          <ProdutosSectionTabs />
         </div>
 
         {canManageProducts ? (

@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
-import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import { getStorageUsageAction, type StorageUsage } from "@/app/actions/storage";
 import { usePermissions } from "@/context/PermissionsContext";
 import { EMAIL_SIGNATURE_BRAND } from "@/lib/emailSignature";
@@ -164,7 +163,6 @@ export default function SettingsPage() {
             Equipe, permissões e cadastros do sistema.
           </p>
         </div>
-        <SettingsSectionTabs />
         <div className="max-w-2xl mx-auto">
           <div className="bg-card border border-border rounded-[var(--radius-md)] shadow-sm p-8 text-center space-y-3">
             <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
@@ -207,8 +205,6 @@ export default function SettingsPage() {
           Empresa, equipe, permissões e listas configuráveis do sistema.
         </p>
       </div>
-
-      <SettingsSectionTabs />
 
       <form onSubmit={handleSave} className="space-y-5">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">

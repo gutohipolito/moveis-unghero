@@ -4,7 +4,6 @@ import { getSessionSafe } from "@/lib/auth";
 import { getCatalogGroups } from "@/app/actions/cadastros";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import CadastrosClient from "./CadastrosClient";
 
 interface CadastrosPageProps {
@@ -21,7 +20,7 @@ export default async function CadastrosPage({ searchParams }: CadastrosPageProps
   const groups = res.groups ?? [];
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Configurações"
         description="Empresa, equipe, permissões e listas configuráveis do sistema."
@@ -37,13 +36,11 @@ export default async function CadastrosPage({ searchParams }: CadastrosPageProps
         }
       />
 
-      <SettingsSectionTabs />
-
       <CadastrosClient
         initialGroups={groups}
         companyId={companyId}
         initialGroupSlug={params.grupo}
       />
-    </div>
+    </>
   );
 }

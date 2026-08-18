@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { getCachedSession } from "@/lib/session";
 import { DEFAULT_COMPANY_ID } from "@/lib/constants";
 import { PrivacyProvider } from "@/context/PrivacyContext";
-import { NavigationIntentProvider } from "@/context/NavigationIntentContext";
 import { ProjectChatProvider } from "@/context/ProjectChatContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { LiveSyncProvider } from "@/context/LiveSyncContext";
@@ -40,7 +39,6 @@ export default async function DashboardLayout({
             "(function(){try{document.body.classList.add('privacy-active');}catch(e){}})();",
         }}
       />
-      <NavigationIntentProvider>
       <NotificationProvider companyId={companyId} initialNotifications={[]}>
       <LiveSyncProvider companyId={companyId}>
         <PermissionsProvider role={role} allowedModules={allowedModules}>
@@ -76,7 +74,6 @@ export default async function DashboardLayout({
         </PermissionsProvider>
       </LiveSyncProvider>
       </NotificationProvider>
-      </NavigationIntentProvider>
     </PrivacyProvider>
   );
 }

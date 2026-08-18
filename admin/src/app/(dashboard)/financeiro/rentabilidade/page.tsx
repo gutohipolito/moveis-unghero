@@ -1,7 +1,6 @@
 import { guardModule } from "@/lib/moduleAccess";
 import { getProjectProfitability, type ProfitabilityData } from "@/app/actions/profitability";
 import PageHeader from "@/components/PageHeader";
-import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 import RentabilidadeClient from "./RentabilidadeClient";
 
 export default async function RentabilidadePage() {
@@ -22,7 +21,7 @@ export default async function RentabilidadePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Financeiro"
         description="Rentabilidade por obra — receita do contrato menos os custos vinculados."
@@ -63,9 +62,7 @@ export default async function RentabilidadePage() {
         }
       />
 
-      <FinanceSectionTabs />
-
       <RentabilidadeClient data={data} />
-    </div>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActivePathname } from "@/context/NavigationIntentContext";
+import { usePathname } from "next/navigation";
 import { Kanban, Users, ClipboardList, Layers, LayoutDashboard } from "lucide-react";
 import { isNavItemActive } from "@/components/SidebarNav";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -16,7 +16,7 @@ const MOBILE_NAV = [
 ] as const;
 
 export default function MobileBottomNav() {
-  const pathname = useActivePathname();
+  const pathname = usePathname();
   const { can, isOpsLimited } = usePermissions();
 
   // Projetista / Marceneiro usam a sidebar (ou tablet); sem barra inferior.

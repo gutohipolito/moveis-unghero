@@ -5,7 +5,6 @@ import { getClientsForWhatsAppMessaging } from "@/app/actions/cliente";
 import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import MarketingReviewClients from "./MarketingReviewClients";
 import { auth } from "@/lib/auth";
 import { canViewFullMarketing } from "@/lib/permissions";
@@ -45,7 +44,7 @@ export default async function MarketingPage() {
   const mailboxes = mailboxesResponse.success ? mailboxesResponse.data : [];
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Marketing"
         description="Avaliações, mensagens prontas, formulários e tráfego do site."
@@ -61,13 +60,11 @@ export default async function MarketingPage() {
         }
       />
 
-      <MarketingSectionTabs />
-
       <MarketingReviewClients
         initialClients={clients}
         companyId={companyId}
         mailboxes={mailboxes}
       />
-    </div>
+    </>
   );
 }

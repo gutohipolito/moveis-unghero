@@ -5,7 +5,6 @@ import { canViewMarketingAnalytics } from "@/lib/permissions";
 import { getMarketingDashboard } from "@/app/actions/marketing";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import MarketingClient from "../MarketingClient";
 
 export default async function MarketingAnalyticsPage() {
@@ -17,7 +16,7 @@ export default async function MarketingAnalyticsPage() {
   const data = await getMarketingDashboard("live");
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Marketing"
         description="Avaliações, mensagens prontas, formulários e tráfego do site."
@@ -33,8 +32,7 @@ export default async function MarketingAnalyticsPage() {
         }
       />
 
-      <MarketingSectionTabs />
       <MarketingClient initialData={data} />
-    </div>
+    </>
   );
 }

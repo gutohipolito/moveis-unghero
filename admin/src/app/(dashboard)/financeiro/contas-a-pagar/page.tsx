@@ -4,7 +4,6 @@ import { guardModule } from "@/lib/moduleAccess";
 import { listExpenses } from "@/app/actions/expenses";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 import ContasPagarClient from "./ContasPagarClient";
 import type { ExpenseDTO } from "@/lib/expenses";
 
@@ -39,7 +38,7 @@ export default async function ContasPagarPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Financeiro"
         description="Contas a pagar, despesas fixas e variáveis com vencimentos."
@@ -55,13 +54,11 @@ export default async function ContasPagarPage() {
           />
         } />
 
-      <FinanceSectionTabs />
-
       <ContasPagarClient
         initialExpenses={expenses}
         suppliers={suppliers}
         projects={projects}
       />
-    </div>
+    </>
   );
 }

@@ -5,7 +5,6 @@ import { getAuthContext } from "@/lib/auth-guard";
 import FinanceiroClient from "./FinanceiroClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import FinanceSectionTabs from "@/components/finance/FinanceSectionTabs";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
 
 export default async function FinanceiroPage() {
@@ -45,7 +44,7 @@ export default async function FinanceiroPage() {
   const safeInstallments = maybeRedactForViewer(formattedInsts, auth?.cargo);
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Financeiro"
         description="Faturamento, entradas, saldo devedor e parcelas de todos os projetos."
@@ -61,9 +60,7 @@ export default async function FinanceiroPage() {
           />
         } />
 
-      <FinanceSectionTabs />
-
       <FinanceiroClient initialInstallments={safeInstallments} companyId={userCompanyId} />
-    </div>
+    </>
   );
 }

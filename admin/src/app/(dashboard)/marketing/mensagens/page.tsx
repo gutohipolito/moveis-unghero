@@ -4,7 +4,6 @@ import { getClientsForWhatsAppMessaging } from "@/app/actions/cliente";
 import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import MarketingSectionTabs from "@/components/marketing/MarketingSectionTabs";
 import MarketingMessagesPanel from "@/components/marketing/MarketingMessagesPanel";
 import { auth } from "@/lib/auth";
 import type { GoogleReviewClientOption } from "@/lib/google-review";
@@ -38,7 +37,7 @@ export default async function MarketingMensagensPage() {
   const mailboxes = mailboxesResponse.success ? mailboxesResponse.data : [];
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Marketing"
         description="Mensagens prontas para WhatsApp e e-mail — medição, conferência técnica e pós-entrega."
@@ -53,8 +52,7 @@ export default async function MarketingMensagensPage() {
           />
         }
       />
-      <MarketingSectionTabs />
       <MarketingMessagesPanel clients={clients} mailboxes={mailboxes} />
-    </div>
+    </>
   );
 }

@@ -60,7 +60,6 @@ export default function SettingsSectionTabs() {
           <Link
             key={href}
             href={href}
-            prefetch={false}
             className={`section-tabs-item ${active ? "section-tabs-item-active" : ""}`}
           >
             <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} />

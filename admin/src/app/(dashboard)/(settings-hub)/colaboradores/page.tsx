@@ -6,7 +6,6 @@ import { getUserPreferences } from "@/app/actions/preferences";
 import ColaboradoresClient from "@/components/ColaboradoresClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
-import SettingsSectionTabs from "@/components/settings/SettingsSectionTabs";
 import { ADMIN_EMAIL } from "@/lib/constants";
 import {
   COLABORADORES_VIEW_PREF_KEY,
@@ -46,7 +45,7 @@ export default async function ColaboradoresPage() {
       : [];
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         title="Configurações"
         description="Empresa, equipe, permissões e listas configuráveis do sistema."
@@ -64,14 +63,12 @@ export default async function ColaboradoresPage() {
         }
       />
 
-      <SettingsSectionTabs />
-
       <ColaboradoresClient
         initialColaboradores={colaboradores}
         companyId={companyId}
         canManageUsers={canManageUsers}
         initialViewMode={initialViewMode}
       />
-    </div>
+    </>
   );
 }
