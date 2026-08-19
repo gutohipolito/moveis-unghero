@@ -134,9 +134,11 @@ interface Environment {
   status: string;
   attachmentCount: number;
   coverUrl: string | null;
+  coverPdfUrl: string | null;
   categories: import("@prisma/client").EnvironmentAttachmentCategory[];
   hasArchProject: boolean;
   hasFactoryProject: boolean;
+  hasFactoryProjectImages: boolean;
 }
 
 interface ProjectFile {

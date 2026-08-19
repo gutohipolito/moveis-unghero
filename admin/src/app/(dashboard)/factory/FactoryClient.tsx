@@ -38,7 +38,9 @@ import {
   Clock3,
   UserMinus,
   Search,
+  Images,
 } from "lucide-react";
+import PdfCoverThumb from "@/components/PdfCoverThumb";
 
 type EnvironmentItem = FactoryBoardEnvironment;
 
@@ -615,14 +617,44 @@ export default function FactoryClient({
             </div>
           </div>
 
-          <h4
-            className={cn(
-              "factory-card-title font-bold text-foreground leading-snug group-hover:text-primary transition-colors",
-              compactBoard ? "text-[13px]" : "text-[15px] leading-[1.2]"
+          <div className="flex items-start justify-between gap-2">
+            <h4
+              className={cn(
+                "factory-card-title font-bold text-foreground leading-snug group-hover:text-primary transition-colors min-w-0",
+                compactBoard ? "text-[13px]" : "text-[15px] leading-[1.2]"
+              )}
+            >
+              {item.nome}
+            </h4>
+            {(item.coverUrl || item.coverPdfUrl) && (
+              <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border bg-slate-100">
+                {item.coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.coverUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : item.coverPdfUrl ? (
+                  <PdfCoverThumb url={item.coverPdfUrl} className="h-full w-full" />
+                ) : null}
+              </span>
             )}
-          >
-            {item.nome}
-          </h4>
+          </div>
+
+          {(item.hasFactoryProjectImages || item.hasFactoryProject) && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold",
+                item.hasFactoryProjectImages
+                  ? "bg-emerald-600/95 text-white"
+                  : "bg-emerald-500/15 text-emerald-800"
+              )}
+            >
+              <Images className="h-3 w-3" />
+              {item.hasFactoryProjectImages ? "Imagens da fábrica" : "Projeto fábrica"}
+            </span>
+          )}
 
           <div className="flex items-center justify-between gap-2">
             {item.responsavelNome ? (

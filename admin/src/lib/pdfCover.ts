@@ -1,4 +1,4 @@
-/** Extrai a 1ª página de um PDF (File ou URL) como PNG via pdf.js (CDN). */
+/** Extrai a 1ª página de um PDF (File ou URL) como PNG via pdf.js. */
 
 declare global {
   interface Window {
@@ -23,38 +23,61 @@ interface PdfPage {
 
 const PDFJS_VERSION = "3.11.174";
 const PDFJS_SCRIPT_ID = "pdfjs-script";
+const PDFJS_LOCAL = "/vendor/pdfjs/pdf.min.js";
+const PDFJS_LOCAL_WORKER = "/vendor/pdfjs/pdf.worker.min.js";
 const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
-const PDFJS_WORKER = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
+const PDFJS_CDN_WORKER = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
 
 let pdfJsPromise: Promise<NonNullable<typeof window.pdfjsLib>> | null = null;
+const capaByUrl = new Map<string, Promise<Blob | null>>();
 
 export function ensurePdfJs(): Promise<NonNullable<typeof window.pdfjsLib>> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("pdf.js só no browser"));
   }
   if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_LOCAL_WORKER;
     return Promise.resolve(window.pdfjsLib);
   }
   if (pdfJsPromise) return pdfJsPromise;
 
-  pdfJsPromise = new Promise((resolve, reject) => {
-    const existing = document.getElementById(PDFJS_SCRIPT_ID) as HTMLScriptElement | null;
-    const onReady = () => {
+  pdfJsPromise = loadPdfJsScript(PDFJS_LOCAL, PDFJS_LOCAL_WORKER).catch(() =>
+    loadPdfJsScript(PDFJS_CDN, PDFJS_CDN_WORKER)
+  );
+
+  pdfJsPromise.catch(() => {
+    pdfJsPromise = null;
+  });
+
+  return pdfJsPromise;
+}
+
+function loadPdfJsScript(src: string, workerSrc: string) {
+  return new Promise<NonNullable<typeof window.pdfjsLib>>((resolve, reject) => {
+    const fail = (error: Error, scriptEl?: HTMLScriptElement | null) => {
+      scriptEl?.remove();
+      reject(error);
+    };
+
+    const onReady = (scriptEl?: HTMLScriptElement | null) => {
       if (!window.pdfjsLib) {
-        reject(new Error("pdf.js não carregou"));
+        fail(new Error("pdf.js não carregou"), scriptEl);
         return;
       }
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
       resolve(window.pdfjsLib);
     };
 
+    const existing = document.getElementById(PDFJS_SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
-      if (window.pdfjsLib) onReady();
-      else existing.addEventListener("load", onReady, { once: true });
+      if (window.pdfjsLib) {
+        onReady(existing);
+        return;
+      }
+      existing.addEventListener("load", () => onReady(existing), { once: true });
       existing.addEventListener(
         "error",
-        () => reject(new Error("Falha ao carregar pdf.js")),
+        () => fail(new Error("Falha ao carregar pdf.js"), existing),
         { once: true }
       );
       return;
@@ -62,14 +85,12 @@ export function ensurePdfJs(): Promise<NonNullable<typeof window.pdfjsLib>> {
 
     const script = document.createElement("script");
     script.id = PDFJS_SCRIPT_ID;
-    script.src = PDFJS_CDN;
+    script.src = src;
     script.async = true;
-    script.onload = onReady;
-    script.onerror = () => reject(new Error("Falha ao carregar pdf.js"));
+    script.onload = () => onReady(script);
+    script.onerror = () => fail(new Error("Falha ao carregar pdf.js"), script);
     document.head.appendChild(script);
   });
-
-  return pdfJsPromise;
 }
 
 async function renderPageToBlob(pdf: PdfDocument, scale = 1.4): Promise<Blob | null> {
@@ -105,16 +126,24 @@ export async function generateCapaFromPdfFile(pdfFile: File): Promise<File | nul
 
 /** Gera PNG da 1ª página a partir de uma URL pública do PDF. */
 export async function generateCapaFromPdfUrl(pdfUrl: string): Promise<Blob | null> {
-  try {
-    const pdfjs = await ensurePdfJs();
-    // Baixa o PDF e renderiza via ArrayBuffer (mais confiável que url+CORS no worker).
-    const res = await fetch(pdfUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.arrayBuffer();
-    const pdf = await pdfjs.getDocument({ data }).promise;
-    return await renderPageToBlob(pdf);
-  } catch (err) {
-    console.error("Erro ao extrair capa do PDF (url):", err);
-    return null;
-  }
+  const cached = capaByUrl.get(pdfUrl);
+  if (cached) return cached;
+
+  const pending = (async () => {
+    try {
+      const pdfjs = await ensurePdfJs();
+      const res = await fetch(pdfUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data }).promise;
+      return await renderPageToBlob(pdf);
+    } catch (err) {
+      console.error("Erro ao extrair capa do PDF (url):", err);
+      capaByUrl.delete(pdfUrl);
+      return null;
+    }
+  })();
+
+  capaByUrl.set(pdfUrl, pending);
+  return pending;
 }

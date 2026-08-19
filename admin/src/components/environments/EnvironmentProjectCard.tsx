@@ -8,6 +8,7 @@ import {
   type EnvironmentAttachmentSummary,
 } from "@/lib/factoryEnvironment";
 import { CheckCircle2, Compass, FileStack, FolderOpen, Images, Ruler } from "lucide-react";
+import PdfCoverThumb from "@/components/PdfCoverThumb";
 
 export type EnvironmentProjectCardData = {
   id: string;
@@ -69,6 +70,12 @@ export default function EnvironmentProjectCard({
             alt={`Capa de ${environment.nome}`}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
+        ) : environment.coverPdfUrl ? (
+          <PdfCoverThumb
+            url={environment.coverPdfUrl}
+            alt={`Capa de ${environment.nome}`}
+            className="absolute inset-0 h-full w-full transition-transform duration-300 group-hover:scale-[1.02]"
+          />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
             <FolderOpen className="h-8 w-8 opacity-40" />
@@ -89,7 +96,12 @@ export default function EnvironmentProjectCard({
           </span>
         </div>
 
-        {environment.hasFactoryProject ? (
+        {environment.hasFactoryProjectImages ? (
+          <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-md bg-emerald-600/95 px-2 py-1 text-[10px] font-bold text-white shadow-sm">
+            <Images className="h-3 w-3" />
+            Imagens da fábrica
+          </span>
+        ) : environment.hasFactoryProject ? (
           <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-md bg-emerald-600/95 px-2 py-1 text-[10px] font-bold text-white shadow-sm">
             <CheckCircle2 className="h-3 w-3" />
             Plano de corte

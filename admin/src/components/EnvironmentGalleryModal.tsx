@@ -16,6 +16,7 @@ import {
   formatAttachmentSize,
   guessEnvironmentAttachmentMime,
   isImageMime,
+  isPdfMime,
   type EnvironmentAttachmentDTO,
 } from "@/lib/factoryEnvironment";
 import { uploadEnvironmentAttachmentFile } from "@/lib/environmentAttachmentUpload";
@@ -24,6 +25,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
+import PdfCoverThumb from "@/components/PdfCoverThumb";
 import SpotlightTour, {
   type SpotlightTourStep,
 } from "@/components/ui/SpotlightTour";
@@ -571,6 +573,7 @@ export default function EnvironmentGalleryModal({
                     {filteredAttachments.map((file) => {
                       const isCover = capaId === file.id;
                       const image = isImageMime(file.mime_type);
+                      const pdf = isPdfMime(file.mime_type, file.nome);
                       return (
                         <li
                           key={file.id}
@@ -592,9 +595,23 @@ export default function EnvironmentGalleryModal({
                                 className="w-full h-28 object-cover rounded-lg border border-border group-hover:opacity-95 transition-opacity"
                               />
                             </button>
+                          ) : pdf ? (
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block"
+                              title="Abrir PDF"
+                            >
+                              <PdfCoverThumb
+                                url={file.url}
+                                alt={file.nome}
+                                className="w-full h-28 rounded-lg border border-border"
+                              />
+                            </a>
                           ) : (
                             <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
-                              PDF / documento
+                              Documento
                             </div>
                           )}
                           <div className="space-y-0.5">

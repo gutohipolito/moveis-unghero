@@ -32,12 +32,14 @@ import {
   getClientColor,
   guessEnvironmentAttachmentMime,
   isImageMime,
+  isPdfMime,
   summarizeText,
   type EnvironmentAttachmentDTO,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
 import { uploadEnvironmentAttachmentFile } from "@/lib/environmentAttachmentUpload";
 import { describeUploadException } from "@/lib/uploadErrors";
+import PdfCoverThumb from "@/components/PdfCoverThumb";
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import { usePermissions } from "@/context/PermissionsContext";
 import {
@@ -466,14 +468,25 @@ export default function FactoryEnvironmentDetailModal({
 
         nextCount += 1;
         setAttachments((prev) => [attachment, ...prev]);
+        const factoryPatch =
+          categoria === "PROJETO_FABRICA"
+            ? {
+                hasFactoryProject: true as const,
+                ...(isImageMime(mime) ? { hasFactoryProjectImages: true as const } : {}),
+                ...(isPdfMime(mime, attachment.nome) && !currentItem.coverUrl && !currentItem.coverPdfUrl
+                  ? { coverPdfUrl: attachment.url }
+                  : {}),
+              }
+            : {};
         if (setCover) {
           setCapaId(attachment.id);
           onBoardPatch(currentItem.id, {
             coverUrl: attachment.url,
             attachmentCount: nextCount,
+            ...factoryPatch,
           });
         } else {
-          onBoardPatch(currentItem.id, { attachmentCount: nextCount });
+          onBoardPatch(currentItem.id, { attachmentCount: nextCount, ...factoryPatch });
         }
       }
 
@@ -528,7 +541,10 @@ export default function FactoryEnvironmentDetailModal({
     }
     setCapaId(attachmentId);
     const cover = attachments.find((a) => a.id === attachmentId);
-    onBoardPatch(currentItem.id, { coverUrl: cover?.url ?? null });
+    onBoardPatch(currentItem.id, {
+      coverUrl: cover?.url ?? null,
+      coverPdfUrl: null,
+    });
   }
 
   const tabs: { id: ModalTab; label: string; icon: typeof ClipboardList }[] = [
@@ -909,6 +925,7 @@ export default function FactoryEnvironmentDetailModal({
                 {filteredAttachments.map((file) => {
                   const isCover = capaId === file.id;
                   const image = isImageMime(file.mime_type);
+                  const pdf = isPdfMime(file.mime_type, file.nome);
                   return (
                     <li
                       key={file.id}
@@ -930,6 +947,20 @@ export default function FactoryEnvironmentDetailModal({
                             className="w-full h-28 object-cover rounded-lg border border-border group-hover:opacity-95 transition-opacity"
                           />
                         </button>
+                      ) : pdf ? (
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block"
+                          title="Abrir PDF"
+                        >
+                          <PdfCoverThumb
+                            url={file.url}
+                            alt={file.nome}
+                            className="w-full h-28 rounded-lg border border-border"
+                          />
+                        </a>
                       ) : (
                         <div className="h-28 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground px-2 text-center">
                           {file.nome.split(".").pop()?.toUpperCase() || "Arquivo"}

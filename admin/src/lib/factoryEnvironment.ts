@@ -22,6 +22,9 @@ export type FactoryBoardEnvironment = {
   hardwareSummary: string | null;
   attachmentCount: number;
   coverUrl: string | null;
+  coverPdfUrl: string | null;
+  hasFactoryProject: boolean;
+  hasFactoryProjectImages: boolean;
   techSheetFilled: number;
   techSheetTotal: number;
   techSheetComplete: boolean;
@@ -283,6 +286,12 @@ export function isImageMime(mime: string) {
   return mime.startsWith("image/");
 }
 
+export function isPdfMime(mime: string, nameOrUrl?: string | null) {
+  const normalized = (mime || "").toLowerCase();
+  if (normalized === "application/pdf" || normalized === "application/x-pdf") return true;
+  return Boolean(nameOrUrl && /\.pdf(\?|#|$)/i.test(nameOrUrl));
+}
+
 export function formatAttachmentSize(bytes: number | null) {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -338,17 +347,21 @@ export const ENVIRONMENT_CATEGORY_DISPLAY_ORDER: EnvironmentAttachmentCategory[]
 export type EnvironmentAttachmentSummary = {
   attachmentCount: number;
   coverUrl: string | null;
+  coverPdfUrl: string | null;
   categories: EnvironmentAttachmentCategory[];
   hasArchProject: boolean;
   hasFactoryProject: boolean;
+  hasFactoryProjectImages: boolean;
 };
 
 export const EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY: EnvironmentAttachmentSummary = {
   attachmentCount: 0,
   coverUrl: null,
+  coverPdfUrl: null,
   categories: [],
   hasArchProject: false,
   hasFactoryProject: false,
+  hasFactoryProjectImages: false,
 };
 
 export function summarizeEnvironmentAttachments(input: {
@@ -358,24 +371,40 @@ export function summarizeEnvironmentAttachments(input: {
     url: string;
     mime_type: string;
     categoria: EnvironmentAttachmentCategory;
+    nome?: string;
   }>;
   attachmentCount?: number;
 }): EnvironmentAttachmentSummary {
-  const cover =
-    input.attachments.find((item) => item.id === input.capa_attachment_id) ??
+  const imageCover =
+    input.attachments.find(
+      (item) => item.id === input.capa_attachment_id && isImageMime(item.mime_type)
+    ) ??
     input.attachments.find((item) => isImageMime(item.mime_type)) ??
     null;
+
+  const pdfCover =
+    !imageCover
+      ? input.attachments.find(
+          (item) => item.id === input.capa_attachment_id && isPdfMime(item.mime_type, item.nome ?? item.url)
+        ) ??
+        input.attachments.find((item) => isPdfMime(item.mime_type, item.nome ?? item.url)) ??
+        null
+      : null;
 
   const categories = ENVIRONMENT_CATEGORY_DISPLAY_ORDER.filter((category) =>
     input.attachments.some((item) => item.categoria === category)
   );
 
+  const factoryFiles = input.attachments.filter((item) => item.categoria === "PROJETO_FABRICA");
+
   return {
     attachmentCount: input.attachmentCount ?? input.attachments.length,
-    coverUrl: cover && isImageMime(cover.mime_type) ? cover.url : null,
+    coverUrl: imageCover?.url ?? null,
+    coverPdfUrl: pdfCover?.url ?? null,
     categories,
     hasArchProject: categories.includes("PROJETO_ARQUITETO"),
     hasFactoryProject: categories.includes("PROJETO_FABRICA"),
+    hasFactoryProjectImages: factoryFiles.some((item) => isImageMime(item.mime_type)),
   };
 }
 

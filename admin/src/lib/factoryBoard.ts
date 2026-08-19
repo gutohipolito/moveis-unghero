@@ -11,12 +11,14 @@ import {
 } from "@/lib/agendaEvents";
 import {
   countTechSheetFields,
+  isImageMime,
+  isPdfMime,
   summarizeText,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
 
 export async function fetchFactoryBoard(companyId: string) {
-  const [environments, slaStates] = await Promise.all([
+  const [environments, slaStates, factoryProjectFiles] = await Promise.all([
     prisma.environment
       .findMany({
         where: {
@@ -53,9 +55,11 @@ export async function fetchFactoryBoard(companyId: string) {
               id: true,
               url: true,
               mime_type: true,
+              nome: true,
+              categoria: true,
             },
             orderBy: { createdAt: "desc" },
-            take: 5,
+            take: 8,
           },
         },
       })
@@ -64,14 +68,53 @@ export async function fetchFactoryBoard(companyId: string) {
         return [];
       }),
     getCompanySlaStates(companyId),
+    prisma.environmentAttachment
+      .findMany({
+        where: {
+          categoria: "PROJETO_FABRICA",
+          environment: {
+            project: {
+              client: { company_id: companyId },
+              status_geral: { in: ["PRODUCAO", "INSTALACAO"] },
+            },
+          },
+        },
+        select: {
+          environment_id: true,
+          mime_type: true,
+          url: true,
+          nome: true,
+        },
+      })
+      .catch(() => []),
   ]);
+
+  const factoryFilesByEnv = new Map<
+    string,
+    Array<{ mime_type: string; url: string; nome: string }>
+  >();
+  for (const file of factoryProjectFiles) {
+    const list = factoryFilesByEnv.get(file.environment_id) ?? [];
+    list.push(file);
+    factoryFilesByEnv.set(file.environment_id, list);
+  }
 
   const formattedEnvironments: FactoryBoardEnvironment[] = environments.map((environment) => {
     const fill = countTechSheetFields(environment);
-    const cover =
-      environment.attachments.find((item) => item.id === environment.capa_attachment_id) ??
-      environment.attachments.find((item) => item.mime_type.startsWith("image/")) ??
+    const factoryFiles = factoryFilesByEnv.get(environment.id) ?? [];
+    const coverImage =
+      environment.attachments.find(
+        (item) => item.id === environment.capa_attachment_id && isImageMime(item.mime_type)
+      ) ??
+      environment.attachments.find((item) => isImageMime(item.mime_type)) ??
+      factoryFiles.find((item) => isImageMime(item.mime_type)) ??
       null;
+    const coverPdf =
+      !coverImage
+        ? environment.attachments.find((item) => isPdfMime(item.mime_type, item.nome ?? item.url)) ??
+          factoryFiles.find((item) => isPdfMime(item.mime_type, item.nome ?? item.url)) ??
+          null
+        : null;
 
     return {
       id: environment.id,
@@ -93,7 +136,10 @@ export async function fetchFactoryBoard(companyId: string) {
       materialsSummary: summarizeText(environment.materiais),
       hardwareSummary: summarizeText(environment.ferragens),
       attachmentCount: environment._count.attachments,
-      coverUrl: cover?.url ?? null,
+      coverUrl: coverImage?.url ?? null,
+      coverPdfUrl: coverPdf?.url ?? null,
+      hasFactoryProject: factoryFiles.length > 0,
+      hasFactoryProjectImages: factoryFiles.some((item) => isImageMime(item.mime_type)),
       techSheetFilled: fill.filled,
       techSheetTotal: fill.total,
       techSheetComplete: fill.complete,
@@ -117,7 +163,9 @@ export async function fetchFactoryBoard(companyId: string) {
       measures: environment.medidasObservacoes ?? "",
       notes: environment.observacoesFabrica ?? "",
       attachments: environment.attachmentCount,
-      cover: environment.coverUrl ?? "",
+      cover: environment.coverUrl ?? environment.coverPdfUrl ?? "",
+      factoryProject: environment.hasFactoryProject ? "1" : "0",
+      factoryImages: environment.hasFactoryProjectImages ? "1" : "0",
     })),
     ...slaStates.map((sla) => ({
       id: sla.projectId,

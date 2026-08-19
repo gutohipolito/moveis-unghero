@@ -16,6 +16,7 @@ import {
   Ruler,
   Compass,
 } from "lucide-react";
+import PdfCoverThumb from "@/components/PdfCoverThumb";
 
 type EnvironmentProjectListRowProps = {
   environment: EnvironmentProjectCardData;
@@ -60,6 +61,8 @@ export default function EnvironmentProjectListRow({
             alt=""
             className="h-full w-full object-cover"
           />
+        ) : environment.coverPdfUrl ? (
+          <PdfCoverThumb url={environment.coverPdfUrl} className="h-full w-full" />
         ) : (
           <div className="flex h-full flex-col items-center justify-center px-2 text-muted-foreground">
             <FolderOpen className="h-6 w-6 opacity-40" />
@@ -80,7 +83,12 @@ export default function EnvironmentProjectListRow({
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                 {tipoLabel}
               </span>
-              {environment.hasFactoryProject ? (
+              {environment.hasFactoryProjectImages ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  <Images className="h-2.5 w-2.5" />
+                  Imagens da fábrica
+                </span>
+              ) : environment.hasFactoryProject ? (
                 <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
                   <CheckCircle2 className="h-2.5 w-2.5" />
                   Plano de corte

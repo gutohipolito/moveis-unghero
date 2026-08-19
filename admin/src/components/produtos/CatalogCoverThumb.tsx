@@ -20,12 +20,12 @@ export default function CatalogCoverThumb({
   onCapaSaved,
   className = "",
 }: CatalogCoverThumbProps) {
-  const isPdf = catalog.mime_type === "application/pdf";
+  const isPdf =
+    catalog.mime_type === "application/pdf" ||
+    catalog.mime_type === "application/x-pdf" ||
+    /\.pdf(\?|#|$)/i.test(catalog.arquivo_url || "");
   const staticThumb = catalog.capa_url || (!isPdf ? catalog.arquivo_url : null);
-  const canRenderClient =
-    isPdf &&
-    !staticThumb &&
-    Boolean(catalog.arquivo_url?.includes("blob.vercel-storage.com"));
+  const canRenderClient = isPdf && !staticThumb && Boolean(catalog.arquivo_url);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

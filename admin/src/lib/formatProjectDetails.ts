@@ -137,6 +137,7 @@ const projectInclude = {
           url: true,
           mime_type: true,
           categoria: true,
+          nome: true,
         },
         orderBy: { createdAt: "desc" as const },
         take: 20,
