@@ -182,7 +182,7 @@ export default function PortalColaboradorClient({
       setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
       showSuccess("Tarefa atualizada", "Status da tarefa alterado com sucesso.");
     } else {
-      showError("Erro ao atualizar", "Falha ao atualizar status da tarefa.");
+      showError("Erro ao atualizar", res.error || "Falha ao atualizar status da tarefa.");
     }
     setLoading(false);
   };

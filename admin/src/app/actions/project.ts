@@ -103,14 +103,38 @@ export async function updateProjectGeneralStatus(projectId: string, newStatus: s
   }
 }
 
-// Atualiza o status individual de um ambiente do projeto
+const ENVIRONMENT_STATUS_LABELS: Record<string, string> = {
+  AGUARDANDO_MEDICAO: "Aguardando Medição",
+  EM_DETALHAMENTO: "Em Detalhamento",
+  PRONTO_PRODUCAO: "Fila de Produção",
+  EM_CORTE: "Corte / Usinagem",
+  MONTAGEM_FABRICA: "Montagem Fábrica",
+  PRONTO_ENTREGA: "Pronto p/ Entrega",
+  EM_INSTALACAO: "Instalação",
+  FINALIZADO: "Finalizado",
+};
+
+function labelEnvironmentStatus(status: string) {
+  return ENVIRONMENT_STATUS_LABELS[status] ?? status;
+}
+
+async function actorDisplayName(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+  return user?.name?.trim() || "Operador";
+}
+
+// Atualiza o status individual de um ambiente (chão de fábrica).
 export async function updateEnvironmentStatus(projectId: string, envId: string, newStatus: EnvironmentStatus) {
-  const auth = await getWriteAccess("crm");
+  const auth = await getWriteAccess("factory");
   if (!auth) {
     return { success: false, error: "Não autenticado" };
   }
-  const denied = denyOpsProjectMutation(auth.cargo);
-  if (denied) return denied;
+  if (isReadOnlyRole(auth.cargo)) {
+    return { success: false as const, error: "Este cargo pode apenas visualizar a fábrica." };
+  }
   try {
     await requireProjectInCompany(projectId, auth.companyId);
     await requireEnvironmentInCompany(envId, auth.companyId);
@@ -133,23 +157,17 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
     });
 
     if (env && env.status !== newStatus) {
-      const labels: Record<string, string> = {
-        PRONTO_PRODUCAO: "Fila de Produção",
-        EM_CORTE: "Corte / Usinagem",
-        MONTAGEM_FABRICA: "Montagem Fábrica",
-        PRONTO_ENTREGA: "Pronto p/ Entrega",
-        EM_INSTALACAO: "Instalação",
-        FINALIZADO: "Finalizado",
-      };
+      const actor = await actorDisplayName(auth.userId);
       await logProjectTimeline(
         projectId,
-        `Ambiente "${env.nome}" movido para ${labels[newStatus] ?? newStatus} no chão de fábrica.`,
+        `${actor} moveu o cômodo "${env.nome}" de ${labelEnvironmentStatus(env.status)} para ${labelEnvironmentStatus(newStatus)} no chão de fábrica.`,
         true
       );
     }
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/factory");
+    revalidatePath("/factory/portal");
     return { success: true };
   } catch (error) {
     console.warn("Simulação de alteração de status do ambiente:", error);

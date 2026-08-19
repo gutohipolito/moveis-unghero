@@ -121,7 +121,8 @@ export default function FactoryEnvironmentDetailModal({
   onSlaUpdated,
   onOpenSlaVerify,
 }: FactoryEnvironmentDetailModalProps) {
-  const { role } = usePermissions();
+  const { role, isReadOnly } = usePermissions();
+  const canMove = !isReadOnly;
   const canManageAttachments = canManageEnvironmentAttachments(role);
   const [tab, setTab] = useState<ModalTab>("ficha");
   const [slaStageDraft, setSlaStageDraft] = useState<ProductionSlaStageKey | "">("");
@@ -1013,8 +1014,9 @@ export default function FactoryEnvironmentDetailModal({
               </p>
               <select
                 value={item.status}
+                disabled={!canMove}
                 onChange={(e) => onProductionStatusChange(item.id, e.target.value)}
-                className="w-full h-9 text-sm font-medium bg-background border border-border rounded-lg px-3 cursor-pointer outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full h-9 text-sm font-medium bg-background border border-border rounded-lg px-3 cursor-pointer outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {productionColumns.map((col) => (
                   <option key={col.id} value={col.id}>
@@ -1041,8 +1043,9 @@ export default function FactoryEnvironmentDetailModal({
                   </label>
                   <select
                     value={item.responsavelId || "none"}
+                    disabled={!canMove}
                     onChange={(e) => onResponsavelChange(item.id, e.target.value)}
-                    className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 cursor-pointer"
+                    className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="none">Nenhum</option>
                     {colaboradores
@@ -1060,8 +1063,9 @@ export default function FactoryEnvironmentDetailModal({
                   </label>
                   <select
                     value={item.ajudanteId || "none"}
+                    disabled={!canMove}
                     onChange={(e) => onAjudanteChange(item.id, e.target.value)}
-                    className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 cursor-pointer"
+                    className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="none">Sem ajudante</option>
                     {colaboradores

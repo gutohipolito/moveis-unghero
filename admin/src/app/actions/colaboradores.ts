@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { capitalizeText } from "@/lib/utils";
+import { logProjectTimeline } from "@/app/actions/timeline";
 import {
   buildInternalTeamEmail,
   normalizeFuncoes,
@@ -36,6 +37,25 @@ function denyUnlessPrimaryAdmin(authCtx: AuthContext | null) {
     };
   }
   return null;
+}
+
+async function actorDisplayName(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+  return user?.name?.trim() || "Operador";
+}
+
+async function logEnvironmentTeamChange(environmentId: string, actorUserId: string, acao: string) {
+  const env = await prisma.environment.findUnique({
+    where: { id: environmentId },
+    select: { nome: true, project_id: true },
+  });
+  if (!env?.project_id) return;
+  const actor = await actorDisplayName(actorUserId);
+  await logProjectTimeline(env.project_id, `${actor} ${acao} no cômodo "${env.nome}".`, true);
+  revalidatePath(`/projects/${env.project_id}`);
 }
 
 function areaLabelFromFuncoes(funcoes: TeamFuncaoId[]) {
@@ -338,6 +358,11 @@ export async function updateEnvironmentResponsavel(environmentId: string, respon
   }
 
   try {
+    const previous = await prisma.environment.findUnique({
+      where: { id: environmentId },
+      select: { nome: true, project_id: true, responsavel: { select: { name: true } } },
+    });
+
     const updated = await prisma.environment.update({
       where: { id: environmentId },
       data: {
@@ -345,7 +370,21 @@ export async function updateEnvironmentResponsavel(environmentId: string, respon
       },
     });
 
+    const nextName = responsavelId
+      ? (await prisma.user.findUnique({ where: { id: responsavelId }, select: { name: true } }))?.name
+      : null;
+    const from = previous?.responsavel?.name || "ninguém";
+    const to = nextName || "ninguém";
+    if (from !== to) {
+      await logEnvironmentTeamChange(
+        environmentId,
+        authCtx.userId,
+        `alterou o responsável de ${from} para ${to}`
+      );
+    }
+
     revalidatePath("/factory");
+    revalidatePath("/factory/portal");
     return { success: true, environment: updated };
   } catch (error: any) {
     console.error("Erro ao atualizar responsável do cômodo:", error);
@@ -372,6 +411,11 @@ export async function updateEnvironmentAjudante(environmentId: string, ajudanteI
   }
 
   try {
+    const previous = await prisma.environment.findUnique({
+      where: { id: environmentId },
+      select: { ajudante: { select: { name: true } } },
+    });
+
     const updated = await prisma.environment.update({
       where: { id: environmentId },
       data: {
@@ -379,7 +423,21 @@ export async function updateEnvironmentAjudante(environmentId: string, ajudanteI
       },
     });
 
+    const nextName = ajudanteId
+      ? (await prisma.user.findUnique({ where: { id: ajudanteId }, select: { name: true } }))?.name
+      : null;
+    const from = previous?.ajudante?.name || "ninguém";
+    const to = nextName || "ninguém";
+    if (from !== to) {
+      await logEnvironmentTeamChange(
+        environmentId,
+        authCtx.userId,
+        `alterou o ajudante de ${from} para ${to}`
+      );
+    }
+
     revalidatePath("/factory");
+    revalidatePath("/factory/portal");
     return { success: true, environment: updated };
   } catch (error: any) {
     console.error("Erro ao atualizar ajudante do cômodo:", error);

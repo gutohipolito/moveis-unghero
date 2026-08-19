@@ -1,17 +1,21 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import Link from "next/link";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { updateEnvironmentStatus } from "@/app/actions/project";
 import { updateEnvironmentResponsavel, updateEnvironmentAjudante } from "@/app/actions/colaboradores";
 import { getFactoryLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
 import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { Card } from "@/components/ui/card";
-import SlaRadar from "@/components/SlaRadar";
+import { Input } from "@/components/ui/input";
 import SlaVerificationModal from "@/components/SlaVerificationModal";
 import FactoryEnvironmentDetailModal from "@/components/FactoryEnvironmentDetailModal";
 import type { ProjectSlaView } from "@/lib/productionSla";
+import {
+  formatSlaDueLabel,
+  getFactorySlaSeverity,
+  getStageConfig,
+} from "@/lib/productionSla";
 import {
   getClientColor,
   type FactoryBoardEnvironment,
@@ -28,13 +32,12 @@ import {
   CheckCircle2,
   ClipboardList,
   User,
-  Users,
-  ChevronDown,
   ChevronUp,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  FileStack,
   ClipboardCheck,
+  AlertTriangle,
+  Clock3,
+  UserMinus,
+  Search,
 } from "lucide-react";
 
 type EnvironmentItem = FactoryBoardEnvironment;
@@ -50,6 +53,7 @@ interface FactoryClientProps {
   colaboradores: ColaboradorSelect[];
   slaByProject: Record<string, ProjectSlaView>;
   companyId: string;
+  currentUserId?: string | null;
   slaCheckProjectId?: string;
 }
 
@@ -110,55 +114,29 @@ function getInitials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
-function TeamSelect({
-  label,
-  optional,
-  value,
-  excludeId,
-  colaboradores,
-  onChange,
+function FilterChip({
+  active,
+  onClick,
+  children,
 }: {
-  label: string;
-  optional?: boolean;
-  value: string | null | undefined;
-  excludeId?: string | null;
-  colaboradores: ColaboradorSelect[];
-  onChange: (id: string) => void;
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
-  const selected = colaboradores.find((c) => c.id === value);
-  const options = colaboradores.filter((c) => c.id !== excludeId);
-
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-          {label}
-          {optional && (
-            <span className="ml-1 font-normal normal-case text-muted-foreground/60">(opcional)</span>
-          )}
-        </span>
-        {selected && (
-          <span
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
-            title={selected.name}
-          >
-            {getInitials(selected.name)}
-          </span>
-        )}
-      </div>
-      <select
-        value={value || "none"}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-8 text-xs font-medium text-foreground bg-secondary/60 border border-border rounded-md px-2 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
-      >
-        <option value="none">{optional ? "Sem ajudante" : "Nenhum"}</option>
-        {options.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name} ({c.cargo})
-          </option>
-        ))}
-      </select>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors min-h-8",
+        active
+          ? "bg-foreground text-background border-foreground"
+          : "bg-background text-muted-foreground border-border hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -167,23 +145,26 @@ export default function FactoryClient({
   colaboradores,
   slaByProject: initialSlaByProject,
   companyId,
+  currentUserId = null,
   slaCheckProjectId,
 }: FactoryClientProps) {
-  const { role } = usePermissions();
+  const { role, isReadOnly } = usePermissions();
   const { isTablet } = useTabletLayout();
   const isFactoryRole = role === "PRODUCAO";
   const compactBoard = isTablet || isFactoryRole;
+  const canMove = !isReadOnly;
 
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [slaByProject, setSlaByProject] = useState(initialSlaByProject);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [didDrag, setDidDrag] = useState(false);
-  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(
-    () => new Set(initialEnvironments.map((e) => e.id))
-  );
   const [expandedStacks, setExpandedStacks] = useState<Set<string>>(() => new Set());
-  const knownEnvIdsRef = useRef(new Set(initialEnvironments.map((e) => e.id)));
   const [detailItem, setDetailItem] = useState<EnvironmentItem | null>(null);
+  const [mineOnly, setMineOnly] = useState(false);
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
+  const [clientFilter, setClientFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
   useProjectChatFocus(
     detailItem
       ? { projectId: detailItem.projectId, clientName: detailItem.clientName }
@@ -206,22 +187,8 @@ export default function FactoryClient({
   useLiveEntity("factory", {
     sync: syncFactory,
     enabled: !draggedId && !detailItem && !slaModal,
+    skipInitialSync: true,
   });
-
-  useEffect(() => {
-    setCollapsedCards((prev) => {
-      let changed = false;
-      const next = new Set(prev);
-      for (const env of environments) {
-        if (!knownEnvIdsRef.current.has(env.id)) {
-          knownEnvIdsRef.current.add(env.id);
-          next.add(env.id);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [environments]);
 
   useEffect(() => {
     if (!slaCheckProjectId) return;
@@ -235,10 +202,101 @@ export default function FactoryClient({
     }
   }, [slaCheckProjectId, slaByProject]);
 
+  const activeEnvironments = useMemo(
+    () => environments.filter((item) => item.status !== "FINALIZADO"),
+    [environments]
+  );
+
+  const clientOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of environments) {
+      if (item.clientId) map.set(item.clientId, item.clientName);
+    }
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [environments]);
+
+  const exceptions = useMemo(() => {
+    const overdue: { projectId: string; clientName: string; label: string }[] = [];
+    const due: { projectId: string; clientName: string; label: string }[] = [];
+    const seenOverdue = new Set<string>();
+    const seenDue = new Set<string>();
+
+    for (const item of activeEnvironments) {
+      if (!item.projectId) continue;
+      const sla = slaByProject[item.projectId];
+      const severity = getFactorySlaSeverity(sla);
+      if (severity === "overdue" && !seenOverdue.has(item.projectId)) {
+        seenOverdue.add(item.projectId);
+        overdue.push({
+          projectId: item.projectId,
+          clientName: item.clientName,
+          label: sla ? formatSlaDueLabel(sla) : "Atrasado",
+        });
+      }
+      if (severity === "due" && !seenDue.has(item.projectId)) {
+        seenDue.add(item.projectId);
+        due.push({
+          projectId: item.projectId,
+          clientName: item.clientName,
+          label: "Prazo hoje",
+        });
+      }
+    }
+
+    const unassigned = activeEnvironments.filter((item) => !item.responsavelId);
+    const incompleteSheet = activeEnvironments.filter(
+      (item) => item.status === "EM_CORTE" && !item.techSheetComplete
+    );
+
+    return { overdue, due, unassigned, incompleteSheet };
+  }, [activeEnvironments, slaByProject]);
+
+  const kpis = useMemo(() => {
+    return {
+      wip: activeEnvironments.length,
+      overdue: exceptions.overdue.length,
+      due: exceptions.due.length,
+      unassigned: exceptions.unassigned.length,
+    };
+  }, [activeEnvironments.length, exceptions]);
+
+  const visibleEnvironments = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return environments.filter((item) => {
+      if (mineOnly && currentUserId) {
+        if (item.responsavelId !== currentUserId && item.ajudanteId !== currentUserId) {
+          return false;
+        }
+      }
+      if (unassignedOnly && item.responsavelId) return false;
+      if (overdueOnly) {
+        const severity = getFactorySlaSeverity(item.projectId ? slaByProject[item.projectId] : null);
+        if (severity === "ok") return false;
+      }
+      if (clientFilter !== "ALL" && item.clientId !== clientFilter) return false;
+      if (query) {
+        const haystack = `${item.nome} ${item.clientName} ${item.responsavelNome ?? ""}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
+    });
+  }, [
+    environments,
+    mineOnly,
+    currentUserId,
+    unassignedOnly,
+    overdueOnly,
+    clientFilter,
+    search,
+    slaByProject,
+  ]);
+
   const stacksByColumn = useMemo(() => {
     const result: Record<string, { key: string; projectId: string; items: EnvironmentItem[] }[]> = {};
     for (const col of COLUMNS) {
-      const colItems = environments.filter((item) => item.status === col.id);
+      const colItems = visibleEnvironments.filter((item) => item.status === col.id);
       const byProject = new Map<string, EnvironmentItem[]>();
       for (const item of colItems) {
         const pid = item.projectId || `loose-${item.id}`;
@@ -253,7 +311,7 @@ export default function FactoryClient({
       }));
     }
     return result;
-  }, [environments]);
+  }, [visibleEnvironments]);
 
   const openSlaVerify = (projectId: string) => {
     const sla = slaByProject[projectId];
@@ -266,16 +324,8 @@ export default function FactoryClient({
   };
 
   const handleSlaSuccess = () => {
-    window.location.reload();
-  };
-
-  const toggleCardCollapse = (id: string) => {
-    setCollapsedCards((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setSlaModal(null);
+    void syncFactory();
   };
 
   const toggleStackExpand = (key: string) => {
@@ -283,19 +333,6 @@ export default function FactoryClient({
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      return next;
-    });
-  };
-
-  const toggleColumnCollapse = (colId: string, itemIds: string[]) => {
-    setCollapsedCards((prev) => {
-      const allCollapsed = itemIds.length > 0 && itemIds.every((id) => prev.has(id));
-      const next = new Set(prev);
-      if (allCollapsed) {
-        itemIds.forEach((id) => next.delete(id));
-      } else {
-        itemIds.forEach((id) => next.add(id));
-      }
       return next;
     });
   };
@@ -345,6 +382,10 @@ export default function FactoryClient({
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
+    if (!canMove) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData("text/plain", id);
     setDraggedId(id);
     setDidDrag(false);
@@ -359,24 +400,41 @@ export default function FactoryClient({
     e.preventDefault();
   };
 
+  const applyStatusChange = async (item: EnvironmentItem, nextStatus: string) => {
+    if (!canMove || item.status === nextStatus) return;
+    const previous = item.status;
+    setEnvironments((prev) =>
+      prev.map((env) => (env.id === item.id ? { ...env, status: nextStatus } : env))
+    );
+    if (detailItem?.id === item.id) {
+      setDetailItem({ ...detailItem, status: nextStatus });
+    }
+    const result = await updateEnvironmentStatus(
+      item.projectId,
+      item.id,
+      nextStatus as Parameters<typeof updateEnvironmentStatus>[2]
+    );
+    if (!result.success) {
+      setEnvironments((prev) =>
+        prev.map((env) => (env.id === item.id ? { ...env, status: previous } : env))
+      );
+      if (detailItem?.id === item.id) {
+        setDetailItem({ ...detailItem, status: previous });
+      }
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent, targetStatus: string) => {
     e.preventDefault();
+    if (!canMove) return;
     const id = e.dataTransfer.getData("text/plain") || draggedId;
     if (!id) return;
 
     const item = environments.find((env) => env.id === id);
     if (!item || item.status === targetStatus) return;
-
-    setEnvironments((prev) =>
-      prev.map((env) => (env.id === id ? { ...env, status: targetStatus } : env))
-    );
     setDraggedId(null);
     setDidDrag(true);
-    if (detailItem?.id === id) {
-      setDetailItem({ ...detailItem, status: targetStatus });
-    }
-
-    await updateEnvironmentStatus(item.projectId, item.id, targetStatus as any);
+    await applyStatusChange(item, targetStatus);
   };
 
   const handleCardClick = (item: EnvironmentItem) => {
@@ -387,15 +445,7 @@ export default function FactoryClient({
   const handleProductionStatusChange = async (envId: string, status: string) => {
     const item = environments.find((e) => e.id === envId);
     if (!item || item.status === status) return;
-
-    setEnvironments((prev) =>
-      prev.map((env) => (env.id === envId ? { ...env, status } : env))
-    );
-    if (detailItem?.id === envId) {
-      setDetailItem({ ...detailItem, status });
-    }
-
-    await updateEnvironmentStatus(item.projectId, envId, status as Parameters<typeof updateEnvironmentStatus>[2]);
+    await applyStatusChange(item, status);
   };
 
   const handleDetailResponsavelChange = async (environmentId: string, responsavelId: string) => {
@@ -436,13 +486,7 @@ export default function FactoryClient({
   const handleMoveRight = async (item: EnvironmentItem) => {
     const currentIdx = COLUMNS.findIndex((col) => col.id === item.status);
     if (currentIdx === -1 || currentIdx === COLUMNS.length - 1) return;
-
-    const nextStatus = COLUMNS[currentIdx + 1].id;
-    setEnvironments((prev) =>
-      prev.map((env) => (env.id === item.id ? { ...env, status: nextStatus } : env))
-    );
-
-    await updateEnvironmentStatus(item.projectId, item.id, nextStatus as any);
+    await applyStatusChange(item, COLUMNS[currentIdx + 1].id);
   };
 
   const renderRoomCard = (
@@ -450,31 +494,45 @@ export default function FactoryClient({
     col: (typeof COLUMNS)[number],
     options?: { stackedExtra?: number; stackKey?: string; showStackToggle?: boolean }
   ) => {
-    const isCollapsed = collapsedCards.has(item.id);
     const clientColor = getClientColor(item.clientId);
     const stackedExtra = options?.stackedExtra ?? 0;
+    const sla = item.projectId ? slaByProject[item.projectId] ?? null : null;
+    const slaSeverity = getFactorySlaSeverity(sla);
+    const slaStage = sla ? getStageConfig(sla.currentStage).name : null;
 
     return (
       <Card
         key={item.id}
-        draggable
+        draggable={canMove}
         onDragStart={(e) => handleDragStart(e, item.id)}
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(item)}
         className={cn(
           "factory-card glass-card glass-card-hover overflow-hidden active:scale-[0.98] transition-all duration-200 cursor-pointer relative group",
           draggedId === item.id && "opacity-40 scale-[0.98]",
-          clientColor.border,
-          clientColor.soft,
+          slaSeverity === "overdue"
+            ? "border-red-500/60"
+            : slaSeverity === "due"
+              ? "border-amber-500/50"
+              : clientColor.border,
           compactBoard ? "border" : "border-2"
         )}
       >
-        <div className={cn(compactBoard ? "h-1" : "h-1.5", clientColor.swatch)} />
+        <div
+          className={cn(
+            compactBoard ? "h-1" : "h-1.5",
+            slaSeverity === "overdue"
+              ? "bg-red-500"
+              : slaSeverity === "due"
+                ? "bg-amber-500"
+                : clientColor.swatch
+          )}
+        />
 
         <div
           className={cn(
             "factory-card-body bg-card/85",
-            compactBoard ? "p-2 space-y-1.5" : "p-3 space-y-2.5"
+            compactBoard ? "p-2 space-y-1.5" : "p-3 space-y-2"
           )}
         >
           <div className="flex items-center justify-between gap-1.5">
@@ -485,33 +543,18 @@ export default function FactoryClient({
                   compactBoard ? "h-2 w-2" : "h-2.5 w-2.5",
                   clientColor.swatch
                 )}
-                title="Cor do cliente"
+                title="Cliente"
               />
-              {item.projectId ? (
-                <Link
-                  href={`/projects/${item.projectId}`}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                  className={cn(
-                    "bg-slate-100 hover:bg-slate-200 text-neutral-900 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200 transition-colors",
-                    compactBoard ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"
-                  )}
-                  title={item.clientName}
-                >
-                  <User className={cn("shrink-0 text-slate-500", compactBoard ? "h-2.5 w-2.5" : "h-3 w-3")} />
-                  <span className="truncate">{item.clientName}</span>
-                </Link>
-              ) : (
-                <span
-                  className={cn(
-                    "bg-slate-100 text-neutral-900 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200",
-                    compactBoard ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"
-                  )}
-                >
-                  <User className={cn("shrink-0 text-slate-500", compactBoard ? "h-2.5 w-2.5" : "h-3 w-3")} />
-                  <span className="truncate">{item.clientName}</span>
-                </span>
-              )}
+              <span
+                className={cn(
+                  "bg-slate-100 text-neutral-900 rounded-md font-extrabold tracking-wide inline-flex items-center gap-1 min-w-0 border border-slate-200",
+                  compactBoard ? "text-[10px] px-1.5 py-0.5" : "text-[11px] px-2 py-0.5"
+                )}
+                title={item.clientName}
+              >
+                <User className={cn("shrink-0 text-slate-500", compactBoard ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                <span className="truncate">{item.clientName}</span>
+              </span>
               {stackedExtra > 0 && (
                 <button
                   type="button"
@@ -522,7 +565,7 @@ export default function FactoryClient({
                   }}
                   className={cn(
                     "font-extrabold rounded-full text-white shrink-0",
-                    compactBoard ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-1.5 py-0.5",
+                    compactBoard ? "text-[10px] px-1.5 py-0.5" : "text-[10px] px-1.5 py-0.5",
                     clientColor.swatch
                   )}
                   title="Expandir pilha do projeto"
@@ -542,194 +585,101 @@ export default function FactoryClient({
                     toggleStackExpand(options.stackKey!);
                   }}
                   className={cn(
-                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center",
-                    compactBoard ? "p-0.5 h-6 w-6" : "p-1.5",
+                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center min-h-8 min-w-8",
                     clientColor.soft,
-                    clientColor.text,
-                    `hover:ring-1 ${clientColor.ring}`
+                    clientColor.text
                   )}
                   title="Expandir ou recolher pilha"
                 >
-                  <Layers className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
+                  <Layers className="h-3.5 w-3.5" />
                 </button>
               )}
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleCardCollapse(item.id);
-                }}
-                className={cn(
-                  "rounded-md transition-all cursor-pointer inline-flex items-center justify-center",
-                  compactBoard ? "p-0.5 h-6 w-6" : "p-1.5",
-                  clientColor.soft,
-                  clientColor.text,
-                  `hover:ring-1 ${clientColor.ring}`
-                )}
-                title={isCollapsed ? "Expandir card" : "Recolher card"}
-              >
-                {isCollapsed ? (
-                  <ChevronDown className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
-                ) : (
-                  <ChevronUp className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
-                )}
-              </button>
-
-              {col.id !== "FINALIZADO" && (
+              {canMove && col.id !== "FINALIZADO" && (
                 <button
                   type="button"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleMoveRight(item);
+                    void handleMoveRight(item);
                   }}
                   className={cn(
-                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center",
-                    compactBoard ? "p-0.5 h-6 w-6" : "p-1.5",
+                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center min-h-8 min-w-8",
                     clientColor.soft,
-                    clientColor.text,
-                    `hover:ring-1 ${clientColor.ring}`
+                    clientColor.text
                   )}
                   title="Avançar etapa de produção"
                 >
-                  <ArrowRight className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           </div>
 
-          <div className="min-w-0 flex-1">
-            <h4
-              className={cn(
-                "factory-card-title font-bold text-foreground leading-snug group-hover:text-primary transition-colors",
-                compactBoard ? "text-[12.5px]" : "text-[15px] leading-[1.2]"
-              )}
-            >
-              {item.nome}
-            </h4>
-            {!compactBoard && (
-              <p className="text-[10px] text-muted-foreground/80 mt-1">
-                Abrir ficha técnica
-              </p>
+          <h4
+            className={cn(
+              "factory-card-title font-bold text-foreground leading-snug group-hover:text-primary transition-colors",
+              compactBoard ? "text-[13px]" : "text-[15px] leading-[1.2]"
             )}
-          </div>
+          >
+            {item.nome}
+          </h4>
 
-          {(item.materialsSummary || item.hardwareSummary) &&
-            !(compactBoard && isCollapsed) && (
-            <p
-              className={cn(
-                "text-muted-foreground",
-                compactBoard ? "text-[9px] line-clamp-1" : "text-[10px] line-clamp-2"
-              )}
-            >
-              {item.materialsSummary || item.hardwareSummary}
-            </p>
-          )}
-
-          {item.projectId && !(compactBoard && isCollapsed) && (
-            <SlaRadar
-              sla={slaByProject[item.projectId] ?? null}
-              compact
-              onVerify={() => openSlaVerify(item.projectId)}
-            />
-          )}
-
-          <div className="flex items-end justify-between gap-2 pt-0.5">
-            <div className="flex flex-wrap items-center gap-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            {item.responsavelNome ? (
               <span
-                className={cn(
-                  "inline-flex items-center gap-1 font-semibold rounded-md",
-                  compactBoard ? "text-[9px] px-1 py-0.5" : "text-[10px] px-1.5 py-0.5",
-                  item.techSheetComplete
-                    ? "bg-emerald-500/10 text-emerald-700"
-                    : item.techSheetFilled > 0
-                      ? "bg-amber-500/10 text-amber-700"
-                      : "bg-secondary text-muted-foreground"
-                )}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground min-w-0"
+                title={`Responsável: ${item.responsavelNome}`}
               >
-                <ClipboardCheck className={compactBoard ? "h-2.5 w-2.5" : "h-3 w-3"} />
-                Ficha {item.techSheetFilled}/{item.techSheetTotal}
-              </span>
-              {item.attachmentCount > 0 && (
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 font-semibold rounded-md bg-secondary text-muted-foreground",
-                    compactBoard ? "text-[9px] px-1 py-0.5" : "text-[10px] px-1.5 py-0.5"
+                    "flex items-center justify-center rounded-full font-bold text-white h-6 w-6 text-[9px] shrink-0",
+                    clientColor.swatch
                   )}
                 >
-                  <FileStack className={compactBoard ? "h-2.5 w-2.5" : "h-3 w-3"} />
-                  {item.attachmentCount}
+                  {getInitials(item.responsavelNome)}
                 </span>
-              )}
-            </div>
-
-            {(item.responsavelNome || item.ajudanteNome) && (
-              <div className="flex items-center -space-x-1 shrink-0">
-                {item.responsavelNome && (
-                  <span
-                    className={cn(
-                      "flex items-center justify-center rounded-full ring-2 ring-card font-bold text-white",
-                      compactBoard ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[9px]",
-                      clientColor.swatch
-                    )}
-                    title={`Responsável: ${item.responsavelNome}`}
-                  >
-                    {getInitials(item.responsavelNome)}
-                  </span>
-                )}
-                {item.ajudanteNome && (
-                  <span
-                    className={cn(
-                      "flex items-center justify-center rounded-full ring-2 ring-card bg-secondary font-bold text-muted-foreground",
-                      compactBoard ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[9px]"
-                    )}
-                    title={`Ajudante: ${item.ajudanteNome}`}
-                  >
-                    {getInitials(item.ajudanteNome)}
-                  </span>
-                )}
-              </div>
+                <span className="truncate">{item.responsavelNome}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+                <UserMinus className="h-3.5 w-3.5" />
+                Sem responsável
+              </span>
+            )}
+            {item.techSheetComplete ? null : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-500/10 rounded-md px-1.5 py-0.5 shrink-0">
+                <ClipboardCheck className="h-3 w-3" />
+                Ficha {item.techSheetFilled}/{item.techSheetTotal}
+              </span>
             )}
           </div>
 
-          <div
-            className={`grid transition-all duration-200 ease-in-out ${
-              isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-            }`}
-          >
-            <div className="overflow-hidden">
-              <div
-                className={cn(
-                  "border-t",
-                  clientColor.border,
-                  compactBoard ? "space-y-1.5 pt-1.5" : "space-y-2.5 pt-2.5"
+          {sla && slaSeverity !== "ok" ? (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                openSlaVerify(item.projectId);
+              }}
+              className={cn(
+                "w-full text-left rounded-md px-2 py-1 text-[11px] font-semibold",
+                slaSeverity === "overdue"
+                  ? "bg-red-500/10 text-red-800"
+                  : "bg-amber-500/10 text-amber-800"
+              )}
+            >
+              <span className="inline-flex items-center gap-1">
+                {slaSeverity === "overdue" ? (
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                ) : (
+                  <Clock3 className="h-3.5 w-3.5" />
                 )}
-              >
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                  <Users className="h-3 w-3" />
-                  Equipe
-                </div>
-
-                <TeamSelect
-                  label="Responsável"
-                  value={item.responsavelId}
-                  excludeId={item.ajudanteId}
-                  colaboradores={colaboradores}
-                  onChange={(id) => handleResponsavelChange(item.id, id)}
-                />
-
-                <TeamSelect
-                  label="Ajudante"
-                  optional
-                  value={item.ajudanteId}
-                  excludeId={item.responsavelId}
-                  colaboradores={colaboradores}
-                  onChange={(id) => handleAjudanteChange(item.id, id)}
-                />
-              </div>
-            </div>
-          </div>
+                {formatSlaDueLabel(sla)}
+                {slaStage ? ` · ${slaStage}` : ""}
+              </span>
+            </button>
+          ) : null}
         </div>
       </Card>
     );
@@ -742,13 +692,177 @@ export default function FactoryClient({
         compactBoard ? "space-y-2" : "space-y-[var(--space-3)]"
       )}
     >
-      {!isFactoryRole && (
-        <p className="factory-intro text-[11px] text-muted-foreground shrink-0 leading-normal">
-          Cômodos do mesmo projeto formam uma <strong className="font-semibold text-foreground">pilha</strong> por etapa.
-          A cor identifica o cliente. Arraste cômodos individualmente; clique para abrir a{" "}
-          <strong className="font-semibold text-foreground">ficha técnica</strong> e detalhes.
-        </p>
-      )}
+      <div className="shrink-0 space-y-2">
+        <div className={cn("grid grid-cols-2 lg:grid-cols-4", compactBoard ? "gap-2" : "gap-3")}>
+          {[
+            {
+              label: "Em produção",
+              value: kpis.wip,
+              icon: Layers,
+              tone: "text-slate-600 bg-slate-500/10",
+              onClick: () => {
+                setOverdueOnly(false);
+                setUnassignedOnly(false);
+                setMineOnly(false);
+                setClientFilter("ALL");
+                setSearch("");
+              },
+              active: false,
+            },
+            {
+              label: "Atrasados",
+              value: kpis.overdue,
+              icon: AlertTriangle,
+              tone: "text-red-700 bg-red-500/10",
+              onClick: () => setOverdueOnly((v) => !v),
+              active: overdueOnly,
+            },
+            {
+              label: "Prazo hoje",
+              value: kpis.due,
+              icon: Clock3,
+              tone: "text-amber-700 bg-amber-500/10",
+              onClick: () => setOverdueOnly(true),
+              active: overdueOnly && kpis.due > 0 && kpis.overdue === 0,
+            },
+            {
+              label: "Sem responsável",
+              value: kpis.unassigned,
+              icon: UserMinus,
+              tone: "text-amber-800 bg-amber-500/10",
+              onClick: () => setUnassignedOnly((v) => !v),
+              active: unassignedOnly,
+            },
+          ].map((kpi) => {
+            const Icon = kpi.icon;
+            return (
+              <button
+                key={kpi.label}
+                type="button"
+                onClick={kpi.onClick}
+                className={cn(
+                  "glass-card border-border flex items-center gap-3 text-left",
+                  compactBoard ? "p-2.5" : "p-3",
+                  "cursor-pointer hover:border-foreground/20",
+                  kpi.active && "ring-1 ring-foreground/20"
+                )}
+              >
+                <div className={cn("rounded-lg p-2 shrink-0", kpi.tone)}>
+                  <Icon className={compactBoard ? "h-4 w-4" : "h-5 w-5"} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block truncate">
+                    {kpi.label}
+                  </span>
+                  <strong className={cn("font-extrabold text-foreground", compactBoard ? "text-lg" : "text-xl")}>
+                    {kpi.value}
+                  </strong>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {(exceptions.overdue.length > 0 ||
+          exceptions.due.length > 0 ||
+          exceptions.unassigned.length > 0 ||
+          exceptions.incompleteSheet.length > 0) && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2 space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900">
+              Exceções agora
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {exceptions.overdue.map((item) => (
+                <button
+                  key={`overdue-${item.projectId}`}
+                  type="button"
+                  onClick={() => {
+                    setOverdueOnly(true);
+                    openSlaVerify(item.projectId);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-red-500/15 text-red-800 text-[11px] font-semibold px-2 py-1 min-h-8"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  {item.clientName} · {item.label}
+                </button>
+              ))}
+              {exceptions.due.map((item) => (
+                <button
+                  key={`due-${item.projectId}`}
+                  type="button"
+                  onClick={() => {
+                    setOverdueOnly(true);
+                    openSlaVerify(item.projectId);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-900 text-[11px] font-semibold px-2 py-1 min-h-8"
+                >
+                  <Clock3 className="h-3 w-3" />
+                  {item.clientName} · prazo hoje
+                </button>
+              ))}
+              {exceptions.unassigned.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setUnassignedOnly(true)}
+                  className="inline-flex items-center gap-1 rounded-full bg-slate-500/15 text-slate-800 text-[11px] font-semibold px-2 py-1 min-h-8"
+                >
+                  <UserMinus className="h-3 w-3" />
+                  {exceptions.unassigned.length} sem responsável
+                </button>
+              )}
+              {exceptions.incompleteSheet.map((item) => (
+                <button
+                  key={`sheet-${item.id}`}
+                  type="button"
+                  onClick={() => setDetailItem(item)}
+                  className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 text-cyan-900 text-[11px] font-semibold px-2 py-1 min-h-8"
+                >
+                  <ClipboardCheck className="h-3 w-3" />
+                  {item.nome} · ficha incompleta no corte
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row lg:items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar cômodo, cliente ou responsável..."
+              className="pl-8 h-9 min-h-9 text-sm"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {currentUserId && (
+              <FilterChip active={mineOnly} onClick={() => setMineOnly((v) => !v)}>
+                Meus cômodos
+              </FilterChip>
+            )}
+            <FilterChip active={overdueOnly} onClick={() => setOverdueOnly((v) => !v)}>
+              Só atrasados
+            </FilterChip>
+            <FilterChip active={unassignedOnly} onClick={() => setUnassignedOnly((v) => !v)}>
+              Sem responsável
+            </FilterChip>
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="h-8 min-h-8 rounded-full border border-border bg-background px-2.5 text-[11px] font-semibold text-muted-foreground"
+            >
+              <option value="ALL">Todos os clientes</option>
+              {clientOptions.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
 
       <div className="factory-board-scroll flex-1 min-h-0 overflow-x-auto pb-2 custom-scrollbar">
         <div
@@ -761,9 +875,10 @@ export default function FactoryClient({
           const stacks = stacksByColumn[col.id] ?? [];
           const colItems = stacks.flatMap((stack) => stack.items);
           const Icon = col.icon;
-          const colItemIds = colItems.map((item) => item.id);
-          const allColCollapsed =
-            colItemIds.length > 0 && colItemIds.every((id) => collapsedCards.has(id));
+          const colOverdue = colItems.filter((item) => {
+            const sla = item.projectId ? slaByProject[item.projectId] : null;
+            return getFactorySlaSeverity(sla) === "overdue";
+          }).length;
 
           return (
             <div
@@ -787,22 +902,10 @@ export default function FactoryClient({
                   <span className="truncate">{col.name}</span>
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {colItems.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => toggleColumnCollapse(col.id, colItemIds)}
-                      className={cn(
-                        "inline-flex items-center justify-center rounded-md bg-background/60 hover:bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
-                        compactBoard ? "h-6 w-6 p-0.5" : "h-7 w-7 p-1"
-                      )}
-                      title={allColCollapsed ? "Expandir todos os cards" : "Recolher todos os cards"}
-                    >
-                      {allColCollapsed ? (
-                        <ChevronsUpDown className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
-                      ) : (
-                        <ChevronsDownUp className={compactBoard ? "h-3 w-3" : "h-3.5 w-3.5"} />
-                      )}
-                    </button>
+                  {colOverdue > 0 && (
+                    <span className="bg-red-500/15 text-red-700 text-[10px] px-2 py-0.5 rounded-full font-extrabold">
+                      {colOverdue} atraso{colOverdue === 1 ? "" : "s"}
+                    </span>
                   )}
                   <span className="bg-background/80 text-[10px] px-2 py-0.5 rounded-full font-extrabold text-muted-foreground">
                     {colItems.length}
@@ -823,7 +926,7 @@ export default function FactoryClient({
                       compactBoard ? "min-h-[5rem] p-3" : "min-h-[8rem] p-6"
                     )}
                   >
-                    Arrastar cômodo para esta fila...
+                    Nenhum cômodo nesta etapa
                   </div>
                 ) : (
                   stacks.map((stack) => {

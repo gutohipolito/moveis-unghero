@@ -52,6 +52,7 @@ export default async function FactoryPage({
         colaboradores={colaboradores}
         slaByProject={factoryBoard.slaByProject}
         companyId={userCompanyId}
+        currentUserId={auth?.userId ?? null}
         slaCheckProjectId={params.slaCheck}
       />
     </div>

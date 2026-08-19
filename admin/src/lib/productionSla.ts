@@ -82,3 +82,14 @@ export function formatSlaDueLabel(sla: ProjectSlaView) {
   if (remaining === 0) return "Prazo limite hoje";
   return `${Math.abs(remaining)} dia${Math.abs(remaining) !== 1 ? "s" : ""} em atraso`;
 }
+
+export type FactorySlaSeverity = "ok" | "due" | "overdue";
+
+export function getFactorySlaSeverity(
+  sla: Pick<ProjectSlaView, "currentStage" | "stageStartedAt" | "extensionDays" | "completedStages"> | null | undefined
+): FactorySlaSeverity {
+  if (!sla || isSlaFinished(sla)) return "ok";
+  if (isSlaOverdue(sla)) return "overdue";
+  if (isSlaDueToday(sla)) return "due";
+  return "ok";
+}
