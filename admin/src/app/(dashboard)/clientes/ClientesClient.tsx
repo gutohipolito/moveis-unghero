@@ -16,7 +16,6 @@ import {
   MapPin, 
   PlusCircle,
   UserPlus,
-  Users,
   Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -30,7 +29,7 @@ import {
   type ClientsListFacets,
 } from "@/app/actions/cliente";
 import { createLead, type Origin } from "@/app/actions/kanban";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import FilterPills from "@/components/FilterPills";
 import { labelOrigin, labelStatus, labelProjectStatus, projectStatusChipClass, shortProjectCode } from "@/lib/navLabels";
 import {
   resolveClientDocument,
@@ -655,63 +654,32 @@ export default function ClientesClient({
         </div>
       </Card>
 
-      <div
-        className="section-tabs"
-        role="tablist"
-        aria-label="Filtrar por recência do cadastro"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={filterRecency === "all"}
-          onClick={() => setFilterRecency("all")}
-          className={`section-tabs-item ${
-            filterRecency === "all" ? "section-tabs-item-active" : ""
-          }`}
-        >
-          <Users className="h-4 w-4 shrink-0 opacity-70" />
-          Todos
-          <span className="text-[10px] font-bold tabular-nums opacity-55">
-            ({tipoCounts.todos})
-          </span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={filterRecency === "new"}
-          onClick={() => setFilterRecency("new")}
-          className={`section-tabs-item ${
-            filterRecency === "new" ? "section-tabs-item-active" : ""
-          }`}
-        >
-          <UserPlus className="h-4 w-4 shrink-0 opacity-70" />
-          Novos
-          <span className="text-[10px] font-bold tabular-nums opacity-55">
-            ({newClientsCount})
-          </span>
-        </button>
-      </div>
+      <div className="space-y-2">
+      <FilterPills
+        variant="segmented"
+        ariaLabel="Filtrar por recência do cadastro"
+        value={filterRecency}
+        onChange={setFilterRecency}
+        options={[
+          { value: "all", label: `Todos (${tipoCounts.todos})` },
+          { value: "new", label: `Novos (${newClientsCount})` },
+        ]}
+      />
 
       {!isFactoryRole && (
-      <Tabs value={activeTipoTab} onValueChange={(v) => setActiveTipoTab(v as "todos" | "PF" | "PJ")}>
-        <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
-          <TabsTrigger value="todos" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
-            Todos
-            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">({tipoCounts.todos})</span>
-          </TabsTrigger>
-          <TabsTrigger value="PF" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
-            <span className="sm:hidden">PF</span>
-            <span className="hidden sm:inline">Pessoa Física – PF</span>
-            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">({tipoCounts.PF})</span>
-          </TabsTrigger>
-          <TabsTrigger value="PJ" className="whitespace-normal text-xs sm:text-sm py-2 px-1.5 sm:px-3 gap-1">
-            <span className="sm:hidden">PJ</span>
-            <span className="hidden sm:inline">Pessoa Jurídica – PJ</span>
-            <span className="text-[10px] sm:text-xs opacity-70 tabular-nums">({tipoCounts.PJ})</span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <FilterPills
+        variant="segmented"
+        ariaLabel="Filtrar por tipo de pessoa"
+        value={activeTipoTab}
+        onChange={setActiveTipoTab}
+        options={[
+          { value: "todos", label: `Todos (${tipoCounts.todos})` },
+          { value: "PF", label: `Pessoa Física – PF (${tipoCounts.PF})` },
+          { value: "PJ", label: `Pessoa Jurídica – PJ (${tipoCounts.PJ})` },
+        ]}
+      />
       )}
+      </div>
 
       {/* Lista de clientes — cards no mobile, tabela no desktop */}
       {total === 0 && !listLoading ? (

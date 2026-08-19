@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { 
-  updateProjectGeneralStatus, 
+import {
   addEnvironment, 
   addTimelineEvent, 
   toggleFileApproval, 
@@ -24,7 +23,6 @@ import { markNotaFiscalEmitida } from "@/app/actions/productionSla";
 import dynamic from "next/dynamic";
 import type { QuoteBuilderEditingQuote } from "@/components/QuoteBuilder";
 import type { ReceiptIssuePrefill } from "@/components/finance/ReceiptIssueDialog";
-import type { ConfTecnicaWhatsAppTarget } from "@/components/ConfTecnicaWhatsAppDialog";
 import type { EnvironmentGalleryTarget } from "@/components/EnvironmentGalleryModal";
 import {
   summarizeQuoteItems,
@@ -50,6 +48,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import FilterPills from "@/components/FilterPills";
 import { usePermissions } from "@/context/PermissionsContext";
 import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { useProjectChatFocus } from "@/context/ProjectChatContext";
@@ -82,10 +81,6 @@ const ReceiptIssueDialog = dynamic(
   () => import("@/components/finance/ReceiptIssueDialog"),
   { ssr: false }
 );
-const ConfTecnicaWhatsAppDialog = dynamic(
-  () => import("@/components/ConfTecnicaWhatsAppDialog"),
-  { ssr: false }
-);
 const SlaVerificationModal = dynamic(() => import("@/components/SlaVerificationModal"), {
   ssr: false,
 });
@@ -96,7 +91,6 @@ const EnvironmentGalleryModal = dynamic(
 import {
   ArrowLeft,
   User, 
-  TrendingUp, 
   Plus, 
   Layers, 
   Clock, 
@@ -361,8 +355,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [isAddEnvOpen, setIsAddEnvOpen] = useState(false);
-  const [confTecnicaWhatsApp, setConfTecnicaWhatsApp] =
-    useState<ConfTecnicaWhatsAppTarget | null>(null);
   const searchParams = useSearchParams();
   const backFromUrl = searchParams?.get("back");
   const resolvedBackHref = isSafeInternalPath(backFromUrl)
@@ -645,31 +637,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   // Helper de Moeda
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
-  };
-
-  // Handler de alteração do status geral do projeto
-  const handleStatusChange = async (newStatus: string) => {
-    const originalStatus = project.status_geral;
-    const enteringConfTecnica =
-      newStatus === "CONFERENCIA_TECNICA" &&
-      originalStatus !== "CONFERENCIA_TECNICA";
-    setProject({ ...project, status_geral: newStatus });
-    
-    const result = await updateProjectGeneralStatus(project.id, newStatus);
-    if (!result.success) {
-      setProject({ ...project, status_geral: originalStatus });
-      showError("Erro ao alterar status", "Não foi possível alterar o status do projeto.");
-    } else if (enteringConfTecnica) {
-      setConfTecnicaWhatsApp({
-        projectId: project.id,
-        clientName: project.client.nome,
-        clientPhone: project.client.telefone || "",
-        responsaveis: [
-          project.conf_tecnica_resp1Nome,
-          project.conf_tecnica_resp2Nome,
-        ].filter((name): name is string => Boolean(name)),
-      });
-    }
   };
 
   // Submit para adicionar ambiente
@@ -1039,8 +1006,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
       {/* Card Principal - Cabeçalho e Informações Básicas */}
       <div className={`rounded-xl border border-border bg-white p-6 shadow-sm ${isTablet ? "project-details-hero" : ""}`}>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-          <div className="space-y-4 col-span-2">
+        <div className="space-y-4">
             <div>
               <span className="text-xs font-bold text-primary tracking-widest uppercase">
                 Projeto
@@ -1314,53 +1280,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               )}
             </div>
           </div>
-
-          {/* Painel Comercial Rápido */}
-          <div className="p-5 rounded-xl border border-border bg-slate-50 flex flex-col justify-between h-full gap-4 shadow-sm">
-            {!isOpsLimited && (
-              <div>
-                <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
-                {isBlocked ? (
-                  <span className="text-rose-600 font-bold text-sm block leading-normal mt-0.5">🔒 Bloqueado (Sem Orçamento)</span>
-                ) : (
-                  <PrivacyMoney value={project.valor_previsto} className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5" />
-                )}
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider flex items-center gap-1.5">
-                Status Operacional Geral
-                {isBlocked && (
-                  <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1 rounded uppercase">
-                    Bloqueado
-                  </span>
-                )}
-              </label>
-              {isOpsLimited ? (
-                <div className="rounded-lg border border-border bg-white px-3 py-2.5 text-sm font-semibold text-foreground">
-                  {project.status_geral.replaceAll("_", " ")}
-                </div>
-              ) : (
-                <Select
-                  value={project.status_geral}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className="w-full text-xs"
-                  disabled={isBlocked}
-                >
-                  <option value="LEAD">Lead</option>
-                  <option value="ORCAMENTO">Orçamento</option>
-                  <option value="NEGOCIACAO">Negociação</option>
-                  <option value="CONFERENCIA_TECNICA">Conferência Técnica</option>
-                  <option value="APROVADO">Aprovado pelo Cliente</option>
-                  <option value="PRODUCAO">Em Produção (Fábrica)</option>
-                  <option value="INSTALACAO">Em Instalação</option>
-                  <option value="FINALIZADO">Finalizado</option>
-                </Select>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       <SlaRadar
@@ -1476,44 +1395,21 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
           {project.environments.length > 0 ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-1.5">
-                {(
-                  [
-                    { id: "all" as const, label: "Todos", count: project.environments.length },
+              <div className="min-w-0 sm:flex-1">
+                <FilterPills
+                  ariaLabel="Filtrar cômodos"
+                  value={environmentFilter}
+                  onChange={setEnvironmentFilter}
+                  options={[
+                    { value: "all", label: `Todos (${project.environments.length})` },
+                    { value: "with_files", label: `Com arquivos (${environmentStats.withFiles})` },
                     {
-                      id: "with_files" as const,
-                      label: "Com arquivos",
-                      count: environmentStats.withFiles,
+                      value: "production_ready",
+                      label: `Prontos p/ produção (${environmentStats.productionReady})`,
                     },
-                    {
-                      id: "production_ready" as const,
-                      label: "Prontos p/ produção",
-                      count: environmentStats.productionReady,
-                    },
-                    { id: "empty" as const, label: "Sem arquivos", count: environmentStats.empty },
-                  ] as const
-                ).map((filter) => {
-                  const active = environmentFilter === filter.id;
-                  return (
-                    <button
-                      key={filter.id}
-                      type="button"
-                      onClick={() => setEnvironmentFilter(filter.id)}
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-                        active
-                          ? "bg-primary text-white shadow-sm"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      {filter.label}
-                      <span
-                        className={`ml-1 tabular-nums ${active ? "opacity-90" : "opacity-60"}`}
-                      >
-                        ({filter.count})
-                      </span>
-                    </button>
-                  );
-                })}
+                    { value: "empty", label: `Sem arquivos (${environmentStats.empty})` },
+                  ]}
+                />
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -1775,27 +1671,16 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </p>
             </div>
             
-            {/* Filtros da Timeline */}
-            <div className="inline-flex rounded-lg border border-border/40 p-0.5 bg-secondary text-xs">
-              <button 
-                onClick={() => setTimelineFilter("ALL")}
-                className={`px-2.5 py-1 rounded ${timelineFilter === "ALL" ? "bg-card text-foreground font-semibold" : "text-muted-foreground"}`}
-              >
-                Todas as Notas
-              </button>
-              <button 
-                onClick={() => setTimelineFilter("PUBLIC")}
-                className={`px-2.5 py-1 rounded ${timelineFilter === "PUBLIC" ? "bg-card text-foreground font-semibold" : "text-muted-foreground"}`}
-              >
-                Públicas
-              </button>
-              <button 
-                onClick={() => setTimelineFilter("PRIVATE")}
-                className={`px-2.5 py-1 rounded ${timelineFilter === "PRIVATE" ? "bg-card text-foreground font-semibold" : "text-muted-foreground"}`}
-              >
-                Internas
-              </button>
-            </div>
+            <FilterPills
+              ariaLabel="Filtrar notas da timeline"
+              value={timelineFilter}
+              onChange={setTimelineFilter}
+              options={[
+                { value: "ALL", label: "Todas as Notas" },
+                { value: "PUBLIC", label: "Públicas" },
+                { value: "PRIVATE", label: "Internas" },
+              ]}
+            />
           </div>
 
           {/* Form para adicionar Notas */}
@@ -1903,13 +1788,12 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 </Button>
               </div>
 
-              <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
-                {project.quotes.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-muted-foreground">
+              {project.quotes.length === 0 ? (
+                  <div className="rounded-xl border border-border bg-white p-8 text-center text-sm text-muted-foreground">
                     Nenhum orçamento gerado para este projeto. Clique em "Nova Proposta" para começar.
                   </div>
                 ) : (
-                  <div className="divide-y divide-border/30">
+                  <div className="space-y-3">
                     {project.quotes.map((q) => {
                       const summary = summarizeQuoteItems(
                         (q.items || []).map((i) => ({
@@ -1933,14 +1817,14 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       return (
                       <div
                         key={q.id}
-                        className={`p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
+                        className={`p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden rounded-xl border bg-white transition-colors ${
                           isFullyApproved
-                            ? "border-2 border-emerald-500 bg-emerald-50/60 shadow-sm shadow-emerald-500/10"
+                            ? "border-emerald-500 bg-emerald-50/60"
                             : isPartial
-                              ? "border-2 border-amber-400 bg-amber-50/50"
+                              ? "border-amber-400 bg-amber-50/50"
                               : commerciallyExpired
-                                ? "border-2 border-rose-400 bg-rose-50/60"
-                                : "hover:bg-slate-100"
+                                ? "border-rose-400 bg-rose-50/60"
+                                : "border-border hover:bg-slate-50"
                         }`}
                       >
                         <div className="space-y-1.5 flex-1">
@@ -2087,7 +1971,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     })}
                   </div>
                 )}
-              </div>
             </div>
           )}
         </TabsContent>
@@ -2695,10 +2578,6 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           setGalleryEnvironment(null);
           void syncProject();
         }}
-      />
-      <ConfTecnicaWhatsAppDialog
-        target={confTecnicaWhatsApp}
-        onClose={() => setConfTecnicaWhatsApp(null)}
       />
     </div>
   );

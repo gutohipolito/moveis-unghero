@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Settings, Users, ShieldCheck, BookMarked } from "lucide-react";
 import { usePermissions } from "@/context/PermissionsContext";
+import SectionNavTabs from "@/components/SectionNavTabs";
 
 const TABS = [
   {
@@ -46,27 +45,19 @@ export function resolveSettingsHubHref(can: (moduleKey: string) => boolean): str
 }
 
 export default function SettingsSectionTabs() {
-  const pathname = usePathname();
   const { can } = usePermissions();
   const visible = TABS.filter((t) => can(t.moduleKey));
 
-  if (visible.length <= 1) return null;
-
   return (
-    <div className="section-tabs">
-      {visible.map(({ href, label, icon: Icon, iconClass }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={`section-tabs-item ${active ? "section-tabs-item-active" : ""}`}
-          >
-            <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} />
-            {label}
-          </Link>
-        );
-      })}
-    </div>
+    <SectionNavTabs
+      ariaLabel="Seções de configurações"
+      tabs={visible.map(({ href, label, icon, iconClass }) => ({
+        href,
+        label,
+        icon,
+        iconClass,
+        isActive: (pathname) => pathname === href || pathname.startsWith(`${href}/`),
+      }))}
+    />
   );
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Star, NotebookPen, BarChart3, MessageCircle } from "lucide-react";
 import { usePermissions } from "@/context/PermissionsContext";
 import {
   canViewFullMarketing,
   canViewMarketingAnalytics,
 } from "@/lib/permissions";
+import SectionNavTabs from "@/components/SectionNavTabs";
 
 const TABS = [
   {
@@ -40,30 +39,23 @@ const TABS = [
 ];
 
 export default function MarketingSectionTabs() {
-  const pathname = usePathname();
   const { role } = usePermissions();
   const showAnalytics = canViewMarketingAnalytics(role);
   const showFull = canViewFullMarketing(role);
 
   return (
-    <div className="section-tabs">
-      {TABS.filter((tab) => {
+    <SectionNavTabs
+      ariaLabel="Seções de marketing"
+      tabs={TABS.filter((tab) => {
         if (tab.analyticsOnly && !showAnalytics) return false;
         if (tab.fullOnly && !showFull) return false;
         return true;
-      }).map(({ href, label, icon: Icon, iconClass }) => {
-        const active = pathname === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={`section-tabs-item ${active ? "section-tabs-item-active" : ""}`}
-          >
-            <Icon className={`h-4 w-4 shrink-0 ${iconClass}`} />
-            {label}
-          </Link>
-        );
-      })}
-    </div>
+      }).map(({ href, label, icon, iconClass }) => ({
+        href,
+        label,
+        icon,
+        iconClass,
+      }))}
+    />
   );
 }

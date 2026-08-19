@@ -21,8 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { usePermissions } from "@/context/PermissionsContext";
-import { cn } from "@/lib/utils";
 import { AccessCredentialCard } from "./AccessCredentialCard";
+import FilterPills from "@/components/FilterPills";
 import {
   KeyRound,
   Loader2,
@@ -379,21 +379,18 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
             className="pl-9 bg-white"
           />
         </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 scrollbar-none">
-          <FilterChip
-            active={categoryFilter === "ALL"}
-            onClick={() => setCategoryFilter("ALL")}
-            label="Todos"
-          />
-          {ACCESS_CATEGORIES.map((cat) => (
-            <FilterChip
-              key={cat.key}
-              active={categoryFilter === cat.key}
-              onClick={() => setCategoryFilter(cat.key)}
-              label={cat.short}
-            />
-          ))}
-        </div>
+        <FilterPills
+          ariaLabel="Filtrar acessos por categoria"
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          options={[
+            { value: "ALL", label: "Todos" },
+            ...ACCESS_CATEGORIES.map((cat) => ({
+              value: cat.key,
+              label: cat.short,
+            })),
+          ]}
+        />
       </div>
 
       {filtered.length === 0 ? (
@@ -652,31 +649,6 @@ export default function AcessosClient({ initialItems, companyId }: AcessosClient
         </form>
       </Dialog>
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "shrink-0 rounded-full px-3 h-8 text-xs font-bold border transition-colors",
-        active
-          ? "bg-stone-900 text-white border-stone-900"
-          : "bg-white text-slate-600 border-border hover:bg-slate-50"
-      )}
-    >
-      {label}
-    </button>
   );
 }
 
