@@ -1320,13 +1320,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
             {!isOpsLimited && (
               <div>
                 <span className="text-xs text-muted-foreground block">Valor Previsto do Projeto</span>
-                <span className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5">
-                  {isBlocked ? (
-                    <span className="text-rose-600 font-bold text-sm block leading-normal">🔒 Bloqueado (Sem Orçamento)</span>
-                  ) : (
-                    <PrivacyMoney value={project.valor_previsto} className="text-2xl font-bold tracking-tight text-gradient-gold" />
-                  )}
-                </span>
+                {isBlocked ? (
+                  <span className="text-rose-600 font-bold text-sm block leading-normal mt-0.5">🔒 Bloqueado (Sem Orçamento)</span>
+                ) : (
+                  <PrivacyMoney value={project.valor_previsto} className="text-2xl font-bold tracking-tight text-gradient-gold block mt-0.5" />
+                )}
               </div>
             )}
 
@@ -2002,17 +2000,19 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             ) : null}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                            <span>
-                              Subtotal:{" "}
-                              <PrivacyMoney value={q.subtotal} as="strong" className="text-foreground" />
-                            </span>
+                            {q.desconto > 0 ? (
+                              <span>
+                                Subtotal:{" "}
+                                <PrivacyMoney value={q.subtotal} as="strong" className="text-foreground" />
+                              </span>
+                            ) : null}
                             {q.desconto > 0 && (
                               <span className="text-amber-500 font-medium inline-flex items-center gap-1">
                                 Desconto: -<PrivacyMoney value={q.desconto} />
                               </span>
                             )}
                             <span>
-                              Valor Final:{" "}
+                              Valor:{" "}
                               <PrivacyMoney value={q.valor_final} as="strong" className="text-primary font-bold" />
                             </span>
                           </div>

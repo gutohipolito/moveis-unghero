@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
 import {
   AlertTriangle,
   CalendarClock,
   ChevronDown,
-  ExternalLink,
   Eye,
   EyeOff,
   FileText,
@@ -317,17 +315,6 @@ export default function KanbanNegotiationPanel({
                 </p>
               </div>
             </div>
-            <Link
-              href={`/projects/${project.id}?back=/crm`}
-              onClick={(event) => {
-                event.preventDefault();
-                navigateApp(`/projects/${project.id}?back=/crm`);
-              }}
-              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-950"
-            >
-              Ver projeto
-              <ExternalLink className="h-3 w-3" />
-            </Link>
           </div>
 
           <div className="px-4 py-3.5 space-y-2.5">

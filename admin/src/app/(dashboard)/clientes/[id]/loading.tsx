@@ -1,5 +1,5 @@
 import PageLoadingState from "@/components/PageLoadingState";
 
-export default function LoadingCliente() {
-  return <PageLoadingState title="Carregando a ficha do cliente" />;
+export default function Loading() {
+  return <PageLoadingState />;
 }

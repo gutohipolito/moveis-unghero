@@ -11,7 +11,6 @@ import React, {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { beginAppNavigation } from "@/lib/navigateApp";
 import { getNotifications } from "@/app/actions/notifications";
 import {
   isInAppToastNotification,
@@ -225,10 +224,7 @@ export function NotificationProvider({
 
       for (const item of undelivered) {
         await showBrowserNotification(item, {
-          onClick: () => {
-            beginAppNavigation();
-            router.push(item.href);
-          },
+          onClick: () => router.push(item.href),
           playSound,
         });
         markNotificationDelivered(item.id, deliveredRef.current);
@@ -343,7 +339,6 @@ export function NotificationProvider({
   useEffect(() => {
     function onSwNavigate(event: MessageEvent) {
       if (event.data?.type === "notification-navigate" && typeof event.data.href === "string") {
-        beginAppNavigation();
         router.push(event.data.href);
       }
     }
@@ -550,7 +545,6 @@ export function NotificationProvider({
   const openToast = useCallback(
     (id: string, href: string) => {
       dismissToast(id);
-      beginAppNavigation();
       router.push(href);
     },
     [dismissToast, router]

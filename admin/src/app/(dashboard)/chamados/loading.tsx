@@ -1,5 +1,5 @@
 import PageLoadingState from "@/components/PageLoadingState";
 
-export default function LoadingChamados() {
-  return <PageLoadingState title="Carregando os chamados" />;
+export default function Loading() {
+  return <PageLoadingState />;
 }

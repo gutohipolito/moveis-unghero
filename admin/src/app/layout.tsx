@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
 import PwaImmersiveMode from "@/components/PwaImmersiveMode";
-import AppPageLoader from "@/components/AppPageLoader";
 
 const APP_NAME = "Sistema - Móveis Unghero";
 const APP_DESCRIPTION = "CRM, fábrica e gestão interna da Móveis Unghero";
@@ -57,36 +55,11 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{if(sessionStorage.getItem('mu-nav-loading')==='1'){document.documentElement.classList.add('mu-nav-loading');document.documentElement.setAttribute('aria-busy','true');}}catch(e){}})();",
+              "(function(){try{sessionStorage.removeItem('mu-nav-loading');document.documentElement.classList.remove('mu-nav-loading');document.documentElement.removeAttribute('aria-busy');}catch(e){}})();",
           }}
         />
-        <style
-          dangerouslySetInnerHTML={{
-            __html:
-              "#mu-page-loader{display:none}html.mu-nav-loading #mu-page-loader{display:flex}",
-          }}
-        />
-        <div
-          id="mu-page-loader"
-          className="mu-page-loader"
-          role="status"
-          aria-live="assertive"
-          aria-label="Carregando a página"
-        >
-          <div className="mu-page-loader-bar" aria-hidden="true" />
-          <div className="mu-page-loader-panel">
-            <div className="mu-page-loader-spinner" aria-hidden="true" />
-            <p className="mu-page-loader-title">Carregando</p>
-            <p className="mu-page-loader-sub">
-              Aguarde, estamos buscando as informações. Isso não é um erro.
-            </p>
-          </div>
-        </div>
         <PwaRegister />
         <PwaImmersiveMode />
-        <Suspense fallback={null}>
-          <AppPageLoader />
-        </Suspense>
         {children}
       </body>
     </html>
