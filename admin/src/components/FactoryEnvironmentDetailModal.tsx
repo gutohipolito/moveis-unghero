@@ -605,7 +605,7 @@ export default function FactoryEnvironmentDetailModal({
             </span>
           </div>
           <h2 className="text-lg font-bold text-foreground leading-snug">{item.nome}</h2>
-          <p className={`text-sm mt-1 flex items-center gap-1.5 ${clientColor.text}`}>
+          <p className="text-sm mt-1 flex items-center gap-1.5 text-foreground">
             <User className="h-3.5 w-3.5 shrink-0" />
             {item.clientName}
           </p>

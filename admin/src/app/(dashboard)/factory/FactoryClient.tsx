@@ -586,11 +586,7 @@ export default function FactoryClient({
                     e.stopPropagation();
                     toggleStackExpand(options.stackKey!);
                   }}
-                  className={cn(
-                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center min-h-8 min-w-8",
-                    clientColor.soft,
-                    clientColor.text
-                  )}
+                  className="rounded-md transition-all cursor-pointer inline-flex items-center justify-center min-h-8 min-w-8 bg-background/90 text-foreground border border-border/80 hover:bg-background"
                   title="Expandir ou recolher pilha"
                 >
                   <Layers className="h-3.5 w-3.5" />
@@ -604,11 +600,7 @@ export default function FactoryClient({
                     e.stopPropagation();
                     void handleMoveRight(item);
                   }}
-                  className={cn(
-                    "rounded-md transition-all cursor-pointer inline-flex items-center justify-center min-h-8 min-w-8",
-                    clientColor.soft,
-                    clientColor.text
-                  )}
+                  className="rounded-md transition-all cursor-pointer inline-flex items-center justify-center min-h-8 min-w-8 bg-background/90 text-foreground border border-border/80 hover:bg-background"
                   title="Avançar etapa de produção"
                 >
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -994,14 +986,14 @@ export default function FactoryClient({
                           <button
                             type="button"
                             onClick={() => toggleStackExpand(stack.key)}
-                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border ${clientColor.border} ${clientColor.soft} text-[10px] font-bold uppercase tracking-wide ${clientColor.text}`}
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border ${clientColor.border} ${clientColor.soft} text-[10px] font-bold uppercase tracking-wide text-foreground`}
                           >
                             <span className="flex items-center gap-1.5 min-w-0">
                               <span className={`h-2 w-2 rounded-full ${clientColor.swatch}`} />
                               <span className="truncate">{top.clientName}</span>
-                              <span className="opacity-70">· {stack.items.length} cômodos</span>
+                              <span className="text-muted-foreground">· {stack.items.length} cômodos</span>
                             </span>
-                            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                            <ChevronUp className="h-3.5 w-3.5 shrink-0 text-foreground" />
                           </button>
                         )}
                         {stack.items.map((item) => renderRoomCard(item, col))}
