@@ -320,16 +320,16 @@ export default function EnvironmentGalleryModal({
         isOpen={Boolean(environment)}
         onClose={onClose}
         className={isMobile ? undefined : "max-w-4xl"}
-        bodyClassName="p-0"
+        bodyClassName={isMobile ? "p-0 modal-panel-body-fill" : "p-0"}
         fullscreen={isMobile}
         showClose={!isMobile}
       >
         {environment ? (
           <div
             ref={modalBodyRef}
-            className={`flex flex-col ${
+            className={`flex flex-col min-h-0 ${
               isMobile
-                ? "h-[100svh] max-h-[100svh]"
+                ? "h-full flex-1"
                 : "max-h-[min(88dvh,900px)]"
             }`}
           >

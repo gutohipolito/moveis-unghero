@@ -51,6 +51,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/context/PermissionsContext";
+import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
@@ -314,6 +315,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false, partnerContributions }: ProjectDetailsProps) {
   const { isAdmin, isOpsLimited, role } = usePermissions();
+  const { isTablet } = useTabletLayout();
   const isFactoryRole = role === "PRODUCAO";
   const canManageEnvGallery = canManageEnvironmentAttachments(role);
   const canManageProjectFiles = canManageEnvGallery;
@@ -363,11 +365,19 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     useState<ConfTecnicaWhatsAppTarget | null>(null);
   const searchParams = useSearchParams();
   const backFromUrl = searchParams?.get("back");
-  const resolvedBackHref = isSafeInternalPath(backFromUrl) ? backFromUrl : backHref;
+  const resolvedBackHref = isSafeInternalPath(backFromUrl)
+    ? backFromUrl
+    : isFactoryRole
+      ? "/factory"
+      : backHref;
   const resolvedBackLabel =
     isSafeInternalPath(backFromUrl) && backFromUrl.startsWith("/clientes/")
       ? "Voltar ao cliente"
-      : backLabel;
+      : isSafeInternalPath(backFromUrl) && backFromUrl.startsWith("/factory")
+        ? "Voltar ao chão de fábrica"
+        : isFactoryRole
+          ? "Voltar ao chão de fábrica"
+          : backLabel;
 
   const defaultTab = (() => {
     const fromUrl = searchParams?.get("tab");
@@ -968,7 +978,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   });
 
   return (
-    <div className="space-y-6 min-w-0 max-w-full">
+    <div className={`space-y-6 min-w-0 max-w-full ${isTablet ? "project-details-tablet space-y-4" : ""}`}>
       {/* Botão de Voltar e Banner de Mock */}
       {!embedded ? (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1028,8 +1038,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       )}
 
       {/* Card Principal - Cabeçalho e Informações Básicas */}
-      <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className={`rounded-xl border border-border bg-white p-6 shadow-sm ${isTablet ? "project-details-hero" : ""}`}>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
           <div className="space-y-4 col-span-2">
             <div>
               <span className="text-xs font-bold text-primary tracking-widest uppercase">
@@ -1372,8 +1382,8 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0 max-w-full">
-        {/* Mobile: dropdown — evita estourar a largura do viewport */}
-        <div className="relative sm:hidden">
+        {/* Mobile e tablet: dropdown — evita cortar as abas na largura do 10″ */}
+        <div className={isTablet ? "relative" : "relative sm:hidden"}>
           <select
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value)}
@@ -1396,7 +1406,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
 
-        <div className="project-tabs-scroll hidden sm:block">
+        <div className={isTablet ? "hidden" : "project-tabs-scroll hidden sm:block"}>
           <TabsList className="project-tabs-list !flex h-auto w-max min-w-full max-w-none flex-nowrap items-center justify-start gap-0.5 overflow-visible">
             {!isOpsLimited && (
               <>
@@ -1541,7 +1551,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                     <span className="hidden sm:inline">Lista</span>
                   </button>
                 </div>
-                {environmentViewMode === "grid" ? (
+                {environmentViewMode === "grid" && !isTablet ? (
                   <div
                     className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5"
                     role="group"

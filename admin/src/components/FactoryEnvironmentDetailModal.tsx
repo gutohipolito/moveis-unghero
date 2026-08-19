@@ -42,6 +42,8 @@ import { describeUploadException } from "@/lib/uploadErrors";
 import PdfCoverThumb from "@/components/PdfCoverThumb";
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import { usePermissions } from "@/context/PermissionsContext";
+import { useTabletLayout } from "@/hooks/useTabletLayout";
+import { cn } from "@/lib/utils";
 import {
   ExternalLink,
   Layers,
@@ -124,6 +126,7 @@ export default function FactoryEnvironmentDetailModal({
   onOpenSlaVerify,
 }: FactoryEnvironmentDetailModalProps) {
   const { role, isReadOnly } = usePermissions();
+  const { isTablet } = useTabletLayout();
   const canMove = !isReadOnly;
   const canManageAttachments = canManageEnvironmentAttachments(role);
   const [tab, setTab] = useState<ModalTab>("ficha");
@@ -584,9 +587,27 @@ export default function FactoryEnvironmentDetailModal({
   }
 
   return (
-    <Dialog isOpen={!!item} onClose={handleModalClose} className="max-w-3xl">
-      <div className="space-y-4 pr-6">
-        <div>
+    <Dialog
+      isOpen={!!item}
+      onClose={handleModalClose}
+      fullscreen={isTablet}
+      className={isTablet ? undefined : "max-w-3xl"}
+      bodyClassName={isTablet ? "p-0 modal-panel-body-fill" : undefined}
+    >
+      <div
+        className={
+          isTablet
+            ? "flex h-full min-h-0 flex-col"
+            : "space-y-4 pr-6"
+        }
+      >
+        <div
+          className={
+            isTablet
+              ? "shrink-0 px-4 pb-2 pt-[max(1rem,env(safe-area-inset-top,0px))] pr-14"
+              : undefined
+          }
+        >
           <div className="flex items-center gap-2 mb-1">
             <span className={`h-2.5 w-2.5 rounded-full ${clientColor.swatch}`} />
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -611,7 +632,12 @@ export default function FactoryEnvironmentDetailModal({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 border-b border-border pb-2">
+        <div
+          className={cn(
+            "flex flex-wrap gap-1.5 border-b border-border pb-2",
+            isTablet && "shrink-0 px-4"
+          )}
+        >
           {tabs.map((entry) => {
             const Icon = entry.icon;
             const active = tab === entry.id;
@@ -620,7 +646,7 @@ export default function FactoryEnvironmentDetailModal({
                 key={entry.id}
                 type="button"
                 onClick={() => setTab(entry.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-10 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
                   active
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -633,6 +659,13 @@ export default function FactoryEnvironmentDetailModal({
           })}
         </div>
 
+        <div
+          className={
+            isTablet
+              ? "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3"
+              : undefined
+          }
+        >
         {tab === "ficha" && (
           <section className="space-y-3">
             <div className="flex items-start justify-between gap-3">
@@ -1186,19 +1219,26 @@ export default function FactoryEnvironmentDetailModal({
             )}
           </section>
         )}
+        </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border">
+        <div
+          className={cn(
+            "flex flex-col sm:flex-row gap-2 pt-2 border-t border-border",
+            isTablet &&
+              "shrink-0 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+          )}
+        >
           {item.projectId && (
             <Link
-              href={`/projects/${item.projectId}`}
+              href={`/projects/${item.projectId}?back=/factory`}
               onClick={handleModalClose}
-              className="inline-flex flex-1 items-center justify-center h-9 px-4 text-sm font-medium rounded-md border border-border bg-background hover:bg-secondary transition-colors"
+              className="inline-flex flex-1 items-center justify-center min-h-11 px-4 text-sm font-medium rounded-md border border-border bg-background hover:bg-secondary transition-colors"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Abrir projeto completo
             </Link>
           )}
-          <Button type="button" variant="secondary" onClick={handleModalClose} className="flex-1 sm:flex-none">
+          <Button type="button" variant="secondary" onClick={handleModalClose} className="flex-1 sm:flex-none min-h-11">
             Fechar
           </Button>
         </div>

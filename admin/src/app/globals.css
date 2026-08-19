@@ -4018,6 +4018,25 @@ button.partner-card:hover,
   .dashboard-main .factory-column-body {
     padding: 0.625rem;
   }
+
+  .dashboard-shell-tablet .dashboard-main {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell-tablet .project-details-tablet {
+    max-width: 100%;
+  }
+
+  .dashboard-shell-tablet .project-details-hero {
+    padding: 1rem !important;
+  }
+
+  .dashboard-shell-tablet .project-details-hero h2 {
+    font-size: 1.375rem !important;
+    line-height: 1.25;
+  }
 }
 
 .notification-trigger {
@@ -4232,8 +4251,9 @@ button.partner-card:hover,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  justify-content: safe center;
+  /* flex-start + margin auto no painel: centraliza quando cabe e
+     não corta o topo quando o conteúdo passa da tela (iPad/tablet). */
+  justify-content: flex-start;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -4264,8 +4284,6 @@ button.partner-card:hover,
       100svh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
     )
   );
-  /* margin auto + viewport flex: centraliza na tela e ainda permite scroll
-     quando o conteúdo for mais alto que a viewport. */
   margin: auto;
   flex-shrink: 0;
   display: flex;
@@ -4320,6 +4338,7 @@ button.partner-card:hover,
   border-radius: 0;
   border: none;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .modal-panel-body {

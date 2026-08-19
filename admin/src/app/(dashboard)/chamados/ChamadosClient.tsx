@@ -267,8 +267,8 @@ export default function ChamadosClient({
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5 md:col-span-2">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="space-y-1.5 xl:col-span-2">
               <label className="text-[10px] font-black uppercase tracking-wider text-slate-450">
                 Insumo / Título
               </label>

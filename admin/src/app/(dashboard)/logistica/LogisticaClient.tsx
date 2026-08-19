@@ -434,7 +434,7 @@ export default function LogisticaClient({
                   </div>
 
                   {/* Checklist Items */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 border border-slate-100 p-4 rounded-xl flex-1">
+                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 bg-slate-50 border border-slate-100 p-4 rounded-xl flex-1">
                     <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-neutral-700">
                       <input
                         type="checkbox"

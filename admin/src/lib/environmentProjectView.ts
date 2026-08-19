@@ -4,9 +4,9 @@ export type EnvironmentGridCols = 4 | 5 | 6;
 export const ENVIRONMENT_VIEW_PREFS_KEY = "mu-project-environments-view";
 
 export const ENVIRONMENT_GRID_COL_CLASS: Record<EnvironmentGridCols, string> = {
-  4: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-  5: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
-  6: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6",
+  4: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+  5: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5",
+  6: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6",
 };
 
 export function readEnvironmentViewPrefs(): {

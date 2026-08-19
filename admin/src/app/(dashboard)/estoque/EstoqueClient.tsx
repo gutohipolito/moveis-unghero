@@ -506,7 +506,7 @@ export default function EstoqueClient({
       </div>
 
       {/* ─── CARDS DE MÉTRICAS ─── */}
-      <div className={`grid grid-cols-1 gap-6 ${showPatrimonio ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+      <div className={`grid grid-cols-1 gap-6 ${showPatrimonio ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}>
         {showPatrimonio && (
         <Card className="p-5 glass-card flex items-center gap-4 relative overflow-hidden">
           <div className="p-3 bg-primary/10 text-primary rounded-xl">

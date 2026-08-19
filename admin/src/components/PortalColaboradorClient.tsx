@@ -227,10 +227,10 @@ export default function PortalColaboradorClient({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
         {/* Coluna 1: Bater Ponto e Evolução */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="xl:col-span-1 space-y-6">
           {/* Cartão de Ponto Eletrônico */}
           <Card className="p-5 border-border glass-card space-y-4">
             <div className="flex items-center gap-2 border-b border-border/10 pb-3">
@@ -312,7 +312,7 @@ export default function PortalColaboradorClient({
         </div>
 
         {/* Coluna 2: Minhas Atribuições (Lista de Cômodos) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-6">
           <Card className="p-5 border-border glass-card space-y-4">
             <div className="flex items-center justify-between border-b border-border/10 pb-3">
               <div className="flex items-center gap-2">
@@ -349,12 +349,12 @@ export default function PortalColaboradorClient({
                       </div>
 
                       {/* Botões Rápidos de Alteração de Etapa */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-200/50">
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/50">
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mr-2">Progresso:</span>
                         {task.status === "PRONTO_PRODUCAO" && (
                           <Button
                             onClick={() => handleUpdateStatus(task.id, task.projectId, "EM_CORTE")}
-                            className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-[9px] px-2.5 py-1.5 h-7 rounded border-none cursor-pointer"
+                            className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-xs px-3 py-2 min-h-11 rounded border-none cursor-pointer"
                           >
                             Iniciar Corte
                           </Button>
@@ -362,7 +362,7 @@ export default function PortalColaboradorClient({
                         {task.status === "EM_CORTE" && (
                           <Button
                             onClick={() => handleUpdateStatus(task.id, task.projectId, "MONTAGEM_FABRICA")}
-                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-[9px] px-2.5 py-1.5 h-7 rounded border-none cursor-pointer"
+                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-3 py-2 min-h-11 rounded border-none cursor-pointer"
                           >
                             Mandar p/ Montagem
                           </Button>
@@ -370,7 +370,7 @@ export default function PortalColaboradorClient({
                         {task.status === "MONTAGEM_FABRICA" && (
                           <Button
                             onClick={() => handleUpdateStatus(task.id, task.projectId, "PRONTO_ENTREGA")}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] px-2.5 py-1.5 h-7 rounded border-none cursor-pointer"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 min-h-11 rounded border-none cursor-pointer"
                           >
                             Pronto p/ Entrega
                           </Button>
@@ -378,7 +378,7 @@ export default function PortalColaboradorClient({
                         {task.status === "PRONTO_ENTREGA" && (
                           <Button
                             onClick={() => handleUpdateStatus(task.id, task.projectId, "EM_INSTALACAO")}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[9px] px-2.5 py-1.5 h-7 rounded border-none cursor-pointer"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 min-h-11 rounded border-none cursor-pointer"
                           >
                             Iniciar Instalação
                           </Button>
@@ -386,7 +386,7 @@ export default function PortalColaboradorClient({
                         {task.status === "EM_INSTALACAO" && (
                           <Button
                             onClick={() => handleUpdateStatus(task.id, task.projectId, "FINALIZADO")}
-                            className="bg-slate-600 hover:bg-slate-700 text-white font-bold text-[9px] px-2.5 py-1.5 h-7 rounded border-none cursor-pointer"
+                            className="bg-slate-600 hover:bg-slate-700 text-white font-bold text-xs px-3 py-2 min-h-11 rounded border-none cursor-pointer"
                           >
                             Finalizar Projeto
                           </Button>
