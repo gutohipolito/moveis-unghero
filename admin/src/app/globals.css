@@ -3970,18 +3970,18 @@ button.partner-card:hover,
     gap: 0.875rem;
   }
 
-  /* Chão de fábrica: mais altura útil, cards densos no 10.1″ */
+  /* Chão de fábrica: o quadro ocupa a tela; sem header nem KPIs no 10.1″ */
+  .dashboard-main:has(.factory-floor) {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
   .dashboard-main .factory-floor {
-    gap: 0.5rem;
+    gap: 0;
   }
 
-  .dashboard-main .factory-floor .page-header {
-    margin-bottom: 0;
-  }
-
-  .dashboard-main .factory-floor .page-title {
-    font-size: 1.125rem;
-    line-height: 1.2;
+  .dashboard-main .factory-floor .factory-page-header {
+    display: none;
   }
 
   .dashboard-main .factory-board {
@@ -3989,12 +3989,15 @@ button.partner-card:hover,
   }
 
   .dashboard-main .factory-board-scroll {
-    /* Usa o flex do pai; evita chrome excessivo no tablet */
-    padding-bottom: 0.25rem;
+    padding-bottom: 0;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
   }
 
   .dashboard-main .factory-column {
-    width: min(38vw, 15.75rem);
+    width: min(46vw, 18.75rem);
+    scroll-snap-align: start;
   }
 
   .dashboard-main .factory-card .glass-card,
@@ -4003,12 +4006,17 @@ button.partner-card:hover,
   }
 
   .dashboard-main .factory-card-title {
-    font-size: 0.75rem !important;
-    line-height: 1.25;
+    font-size: 0.8125rem !important;
+    line-height: 1.3;
+  }
+
+  .dashboard-main .factory-column-header {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.6875rem;
   }
 
   .dashboard-main .factory-column-body {
-    padding: 0.5rem;
+    padding: 0.625rem;
   }
 }
 

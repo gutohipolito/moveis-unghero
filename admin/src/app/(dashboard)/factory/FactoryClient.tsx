@@ -255,15 +255,6 @@ export default function FactoryClient({
     return { overdue, due, unassigned, incompleteSheet };
   }, [activeEnvironments, slaByProject]);
 
-  const kpis = useMemo(() => {
-    return {
-      wip: activeEnvironments.length,
-      overdue: exceptions.overdue.length,
-      due: exceptions.due.length,
-      unassigned: exceptions.unassigned.length,
-    };
-  }, [activeEnvironments.length, exceptions]);
-
   const visibleEnvironments = useMemo(() => {
     const query = search.trim().toLowerCase();
     return environments.filter((item) => {
@@ -713,80 +704,11 @@ export default function FactoryClient({
     <div
       className={cn(
         "factory-board flex-1 min-h-0 flex flex-col overflow-hidden",
-        compactBoard ? "space-y-2" : "space-y-[var(--space-3)]"
+        compactBoard ? "gap-0" : "space-y-[var(--space-3)]"
       )}
     >
+      {!compactBoard && (
       <div className="shrink-0 space-y-2">
-        <div className={cn("grid grid-cols-2 lg:grid-cols-4", compactBoard ? "gap-2" : "gap-3")}>
-          {[
-            {
-              label: "Em produção",
-              value: kpis.wip,
-              icon: Layers,
-              tone: "text-slate-600 bg-slate-500/10",
-              onClick: () => {
-                setOverdueOnly(false);
-                setUnassignedOnly(false);
-                setMineOnly(false);
-                setClientFilter("ALL");
-                setSearch("");
-              },
-              active: false,
-            },
-            {
-              label: "Atrasados",
-              value: kpis.overdue,
-              icon: AlertTriangle,
-              tone: "text-red-700 bg-red-500/10",
-              onClick: () => setOverdueOnly((v) => !v),
-              active: overdueOnly,
-            },
-            {
-              label: "Prazo hoje",
-              value: kpis.due,
-              icon: Clock3,
-              tone: "text-amber-700 bg-amber-500/10",
-              onClick: () => setOverdueOnly(true),
-              active: overdueOnly && kpis.due > 0 && kpis.overdue === 0,
-            },
-            {
-              label: "Sem responsável",
-              value: kpis.unassigned,
-              icon: UserMinus,
-              tone: "text-amber-800 bg-amber-500/10",
-              onClick: () => setUnassignedOnly((v) => !v),
-              active: unassignedOnly,
-            },
-          ].map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <button
-                key={kpi.label}
-                type="button"
-                onClick={kpi.onClick}
-                className={cn(
-                  "glass-card border-border flex items-center gap-3 text-left",
-                  compactBoard ? "p-2.5" : "p-3",
-                  "cursor-pointer hover:border-foreground/20",
-                  kpi.active && "ring-1 ring-foreground/20"
-                )}
-              >
-                <div className={cn("rounded-lg p-2 shrink-0", kpi.tone)}>
-                  <Icon className={compactBoard ? "h-4 w-4" : "h-5 w-5"} />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block truncate">
-                    {kpi.label}
-                  </span>
-                  <strong className={cn("font-extrabold text-foreground", compactBoard ? "text-lg" : "text-xl")}>
-                    {kpi.value}
-                  </strong>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
         {(exceptions.overdue.length > 0 ||
           exceptions.due.length > 0 ||
           exceptions.unassigned.length > 0 ||
@@ -886,13 +808,13 @@ export default function FactoryClient({
           </div>
         </div>
       </div>
+      )}
 
-
-      <div className="factory-board-scroll flex-1 min-h-0 overflow-x-auto pb-2 custom-scrollbar">
+      <div className="factory-board-scroll flex-1 min-h-0 overflow-x-auto overflow-y-hidden custom-scrollbar">
         <div
           className={cn(
             "flex items-stretch h-full min-w-max print:flex-col print:h-auto print:min-w-0",
-            compactBoard ? "gap-2.5" : "gap-4 print:gap-6"
+            compactBoard ? "gap-3" : "gap-4 print:gap-6"
           )}
         >
         {COLUMNS.map((col) => {
@@ -911,7 +833,7 @@ export default function FactoryClient({
               onDrop={(e) => handleDrop(e, col.id)}
               className={cn(
                 "factory-column shrink-0 flex flex-col h-full bg-slate-50 border border-border rounded-xl overflow-hidden shadow-xs print:h-auto print:w-full",
-                compactBoard ? "w-[15.5rem] xl:w-[16.5rem]" : "w-72 xl:w-80"
+                compactBoard ? "w-[18.5rem]" : "w-72 xl:w-80"
               )}
             >
               <div
