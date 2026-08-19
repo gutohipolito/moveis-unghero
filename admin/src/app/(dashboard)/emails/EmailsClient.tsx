@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   Trash2,
   Undo2,
+  FileText,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -455,12 +456,19 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
             items={[
               "Cada caixa (comercial, financeiro, atendimento) é compartilhada pela equipe.",
               "A Diretoria configura IMAP/SMTP em Configurar caixas.",
-              "Orçamentos e recibos também podem ser enviados por e-mail nos fluxos respectivos.",
+              "Orçamentos, recibos e avisos de etapa também saem por e-mail nos fluxos respectivos.",
+              "Em Templates você vê e edita os avisos automáticos para cliente e arquiteto.",
             ]}
           />
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Link href="/emails/templates">
+              <Button variant="outline" className="gap-1.5">
+                <FileText className="h-4 w-4" />
+                Templates
+              </Button>
+            </Link>
             {isAdmin && (
               <Link href="/emails/config">
                 <Button variant="outline" className="gap-1.5">

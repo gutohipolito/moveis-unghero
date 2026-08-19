@@ -37,6 +37,7 @@ model Company {
   accessCredentials AccessCredential[]
   emailMailboxes    EmailMailbox[]
   emailDocumentTemplates EmailDocumentTemplate[]
+  emailTransitionTemplates EmailTransitionTemplate[]
 }
 
 /** Cofre de acessos da empresa (sites, e-mails, hospedagem, etc.). */
@@ -1571,6 +1572,22 @@ enum EmailOutboundStatus {
 enum EmailDocumentTemplateType {
   QUOTE
   RECEIPT
+}
+
+/** Templates de e-mail de transição (cliente / arquiteto) por empresa. */
+model EmailTransitionTemplate {
+  id         String   @id @default(uuid())
+  company_id String
+  company    Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  key        String
+  subject    String
+  body       String
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([company_id, key])
+  @@index([company_id])
 }
 
 /** Templates de e-mail automático (orçamento / recibo) por empresa. */

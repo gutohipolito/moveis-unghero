@@ -29,6 +29,7 @@ import type { EmailMailboxArea, Role } from "@prisma/client";
 import { EDITABLE_ROLES, ROLE_LABELS } from "@/lib/permissions";
 import type { EmailDocumentTemplateDTO } from "@/app/actions/emailDocumentTemplates";
 import EmailDocumentTemplatesPanel from "./EmailDocumentTemplatesPanel";
+import { TRANSITION_TEMPLATE_DEFS } from "@/lib/emailTransitionTemplates";
 
 interface Props {
   initialMailboxes: EmailMailboxDTO[];
@@ -167,7 +168,7 @@ export default function EmailMailboxesConfigClient({
     <div className="space-y-5">
       <PageHeader
         title="Configurar e-mails"
-        description="Caixas IMAP/SMTP HostGator e templates de orçamento/recibo."
+        description="Caixas IMAP/SMTP HostGator e templates de orçamento/recibo. Avisos de etapa do projeto ficam em Templates."
         actions={
           <div className="flex gap-2">
             <Link href="/emails">
@@ -210,7 +211,24 @@ export default function EmailMailboxesConfigClient({
       </div>
 
       {tab === "templates" && (
-        <EmailDocumentTemplatesPanel initialTemplates={initialTemplates} />
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border/50 bg-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Transições (cliente e arquiteto)
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {TRANSITION_TEMPLATE_DEFS.length} e-mails automáticos de etapa — edição com prévia ao vivo.
+              </p>
+            </div>
+            <Link href="/emails/templates">
+              <Button variant="outline" className="gap-1.5">
+                Abrir templates de transição
+              </Button>
+            </Link>
+          </div>
+          <EmailDocumentTemplatesPanel initialTemplates={initialTemplates} />
+        </div>
       )}
 
       {tab === "caixas" && info && (
