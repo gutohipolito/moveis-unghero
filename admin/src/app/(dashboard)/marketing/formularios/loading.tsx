@@ -1,11 +1,5 @@
-import { Card } from "@/components/ui/card";
+import PageLoadingState from "@/components/PageLoadingState";
 
-export default function MarketingFormulariosLoading() {
-  return (
-    <div className="space-y-6 animate-pulse">
-      <div className="h-16 rounded-xl bg-muted/50" />
-      <Card className="h-48 bg-muted/30" />
-      <Card className="h-72 bg-muted/30" />
-    </div>
-  );
+export default function LoadingFormularios() {
+  return <PageLoadingState title="Carregando os formulários" />;
 }

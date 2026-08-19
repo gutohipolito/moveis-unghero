@@ -5443,3 +5443,109 @@ body.viewer-privacy-lock .privacy-value {
     margin-top: 0.5rem !important;
   }
 }
+
+/* Loader de navegação — visível no clique, antes da próxima página pintar. */
+#mu-page-loader {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: hsl(var(--background) / 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: all;
+}
+
+html.mu-nav-loading #mu-page-loader {
+  display: flex;
+}
+
+.mu-page-loader-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  overflow: hidden;
+  background: hsl(var(--primary) / 0.18);
+}
+
+.mu-page-loader-bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: hsl(var(--primary));
+  animation: mu-loader-bar 1.1s ease-in-out infinite;
+}
+
+@keyframes mu-loader-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.mu-page-loader-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 22rem;
+  padding: 1.35rem 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--border) / 0.8);
+  background: hsl(var(--card));
+  box-shadow: 0 18px 40px hsl(24 14% 14% / 0.16);
+  text-align: center;
+}
+
+.mu-page-loader-title {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.mu-page-loader-sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+.mu-page-loader-spinner,
+.mu-inline-spinner {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  border: 2.5px solid hsl(var(--primary) / 0.22);
+  border-top-color: hsl(var(--primary));
+  animation: mu-loader-spin 0.7s linear infinite;
+}
+
+.mu-inline-spinner {
+  width: 2rem;
+  height: 2rem;
+}
+
+@keyframes mu-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mu-page-loader-bar::after,
+  .mu-page-loader-spinner,
+  .mu-inline-spinner {
+    animation: none;
+  }
+}
