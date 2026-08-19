@@ -25,6 +25,7 @@ import {
   type FollowUpSlaConfig,
 } from "@/lib/followUp";
 import { labelOrigin } from "@/lib/navLabels";
+import { navigateApp } from "@/lib/navigateApp";
 import { formatQuoteViewLabel } from "@/lib/quoteViewTracking";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +54,7 @@ export type NegotiationProject = {
   createdAt?: string | null;
   observacoes?: string | null;
   client: {
+    id?: string;
     nome: string;
     telefone: string;
     email: string;
@@ -162,10 +164,6 @@ export default function KanbanNegotiationPanel({
       })
     : null;
 
-  const stageTitle =
-    STATUS_OPTIONS.find((o) => o.id === editingStatusGeral)?.title ||
-    editingStatusGeral;
-
   const statusSelectOptions = useMemo(() => {
     const opts = [...STATUS_OPTIONS];
     if (!opts.some((o) => o.id === editingStatusGeral)) {
@@ -218,8 +216,6 @@ export default function KanbanNegotiationPanel({
                 <span className="uppercase tracking-wide font-semibold text-white/55">
                   {labelOrigin(leadForm.origem)}
                 </span>
-                <span className="opacity-35">·</span>
-                <span className="font-medium text-amber-200/90">{stageTitle}</span>
               </div>
             </div>
 
@@ -322,10 +318,14 @@ export default function KanbanNegotiationPanel({
               </div>
             </div>
             <Link
-              href={`/projects/${project.id}`}
+              href={`/projects/${project.id}?back=/crm`}
+              onClick={(event) => {
+                event.preventDefault();
+                navigateApp(`/projects/${project.id}?back=/crm`);
+              }}
               className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-950"
             >
-              Projeto
+              Ver projeto
               <ExternalLink className="h-3 w-3" />
             </Link>
           </div>
@@ -361,28 +361,17 @@ export default function KanbanNegotiationPanel({
                           </span>
                         </p>
                       ) : null}
-                      {project.quoteShare.firstViewedAt ? (
+                      {project.quoteShare.neverOpened ? (
+                        <p className="text-amber-700 font-medium">
+                          O cliente ainda não abriu o link da proposta.
+                        </p>
+                      ) : project.quoteShare.firstViewedAt &&
+                        project.quoteShare.viewCount > 1 ? (
                         <p>
                           Primeira abertura{" "}
                           <span className="font-semibold text-slate-700">
                             {formatAbsoluteDate(project.quoteShare.firstViewedAt)}
                           </span>
-                        </p>
-                      ) : (
-                        <p className="text-amber-700 font-medium">
-                          O cliente ainda não abriu o link da proposta.
-                        </p>
-                      )}
-                      {project.quoteShare.lastViewedAt &&
-                      project.quoteShare.viewCount > 1 ? (
-                        <p>
-                          Última abertura{" "}
-                          <span className="font-semibold text-slate-700">
-                            {formatAbsoluteDate(project.quoteShare.lastViewedAt)}
-                          </span>
-                          {project.quoteShare.lastDeviceLabel
-                            ? ` · ${project.quoteShare.lastDeviceLabel}`
-                            : ""}
                         </p>
                       ) : null}
                     </div>
@@ -540,6 +529,14 @@ export default function KanbanNegotiationPanel({
             ) : null}
           </div>
           <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigateApp(`/projects/${project.id}?back=/crm`)}
+              className="text-xs font-bold h-10 sm:h-9 flex-1 sm:flex-none"
+            >
+              Ver projeto
+            </Button>
             <Button
               type="button"
               variant="outline"

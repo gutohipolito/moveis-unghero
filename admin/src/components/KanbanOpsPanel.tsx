@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import {
   ExternalLink,
   MapPin,
@@ -11,6 +10,7 @@ import {
 import type { ProjectStatus } from "@/app/actions/kanban";
 import { Button } from "@/components/ui/button";
 import { OPS_FUNNEL_COLUMNS } from "@/lib/crmOpsAccess";
+import { navigateApp } from "@/lib/navigateApp";
 import { cn } from "@/lib/utils";
 
 export type OpsLeadForm = {
@@ -176,20 +176,18 @@ export default function KanbanOpsPanel({
           </a>
         ) : null}
         {project.client.id && !isFactoryRole ? (
-          <Link
-            href={`/clientes/${project.client.id}`}
+          <button
+            type="button"
+            onClick={() => navigateApp(`/clientes/${project.client.id}?back=/crm`)}
             className="inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors"
           >
             <ExternalLink className="h-3.5 w-3.5 shrink-0" />
             Ficha do cliente
-          </Link>
+          </button>
         ) : null}
-        <Link
-          href={
-            project.client.id
-              ? `/clientes/${project.client.id}?tab=projects`
-              : `/projects/${project.id}`
-          }
+        <button
+          type="button"
+          onClick={() => navigateApp(`/projects/${project.id}?back=/crm`)}
           className={cn(
             "inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors",
             isFactoryRole || !showClientContact || !whatsappHref || !project.client.id
@@ -198,8 +196,8 @@ export default function KanbanOpsPanel({
           )}
         >
           <Layers className="h-3.5 w-3.5 shrink-0" />
-          {isFactoryRole ? "Ver projetos do cliente" : "Ver projeto"}
-        </Link>
+          Ver projeto
+        </button>
       </div>
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">

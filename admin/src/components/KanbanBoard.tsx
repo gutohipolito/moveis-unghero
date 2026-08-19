@@ -2296,7 +2296,7 @@ export default function KanbanBoard({
                           <div className="flex items-center gap-1.5">
                             <Wand2 className="h-4 w-4 text-amber-500 animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">
-                              Unghero AI Diagnostics
+                              Diagnóstico da Móveis Unghero
                             </span>
                           </div>
                           <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 text-[9px] font-black uppercase">
@@ -2322,21 +2322,6 @@ export default function KanbanBoard({
                                 ? "Quente 🔥"
                                 : "Morno ⚡"}
                             </strong>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 text-xs pt-0.5">
-                          <div className="flex justify-between items-center bg-white/40 px-2.5 py-1.5 rounded-lg border border-slate-200/20">
-                            <span className="text-slate-500 font-medium">Estilo Principal:</span>
-                            <strong className="text-slate-800 font-bold">{currentProject.briefing.estilo || "Não especificado"}</strong>
-                          </div>
-                          <div className="flex justify-between items-center bg-white/40 px-2.5 py-1.5 rounded-lg border border-slate-200/20">
-                            <span className="text-slate-500 font-medium">Investimento:</span>
-                            <strong className="text-slate-800 font-bold">{currentProject.briefing.faixa_investimento || "Não informado"}</strong>
-                          </div>
-                          <div className="flex justify-between items-center bg-white/40 px-2.5 py-1.5 rounded-lg border border-slate-200/20">
-                            <span className="text-slate-500 font-medium">Início Pretendido:</span>
-                            <strong className="text-slate-800 font-bold">{currentProject.briefing.prazo_inicio || "Não especificado"}</strong>
                           </div>
                         </div>
                       </div>
