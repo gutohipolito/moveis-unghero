@@ -26,6 +26,7 @@ import {
 } from "@/lib/quoteApproval";
 import {
   isComparativeTemplate,
+  isAddendumTemplate,
   normalizeQuoteTemplateId,
 } from "@/lib/quoteTemplates";
 import { withInheritedPartnerId, withInheritedPartnerIdTx } from "@/lib/partnerAttribution";
@@ -37,6 +38,10 @@ import {
   expandAndFormatQuoteDetails,
   formatQuotePhrase,
 } from "@/lib/quoteItems";
+import {
+  buildDefaultAddendumText,
+  summarizeAddendumSource,
+} from "@/lib/quoteAddendum";
 
 async function getModuleAccess(moduleKey: "quotes") {
   const auth = await getBaseModuleAccess(moduleKey);
@@ -259,6 +264,143 @@ export async function createQuote(projectId: string, data: CreateQuoteInput) {
   }
 }
 
+/** Nova versão em modo adendo, com base em proposta já aprovada. */
+export async function createQuoteAddendum(sourceQuoteId: string) {
+  const auth = await getWriteAccess("quotes");
+  if (!auth) {
+    return { success: false as const, error: "Não autenticado" };
+  }
+
+  try {
+    const source = await prisma.quote.findFirst({
+      where: {
+        id: sourceQuoteId,
+        project: { client: { company_id: auth.companyId } },
+      },
+      include: {
+        items: {
+          select: { id: true, valor_total: true, status: true },
+        },
+      },
+    });
+    if (!source) {
+      return { success: false as const, error: "Orçamento não encontrado." };
+    }
+
+    const sourceSummary = summarizeAddendumSource(source);
+    if (!sourceSummary) {
+      return {
+        success: false as const,
+        error: "Só é possível criar adendo a partir de proposta com itens aprovados.",
+      };
+    }
+
+    const pendingSummary = summarizeQuoteItems(
+      source.items.map((i) => ({
+        id: i.id,
+        valor_total: Number(i.valor_total),
+        status: i.status,
+      }))
+    );
+    if (pendingSummary.hasPending) {
+      return {
+        success: false as const,
+        error: "Finalize ou aprove todos os itens pendentes antes de criar um adendo.",
+      };
+    }
+
+    const observacoes = buildDefaultAddendumText(sourceSummary);
+    const refLabel = sourceSummary.label;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existingQuotes = await tx.quote.findMany({
+        where: { project_id: source.project_id },
+        select: { versao: true },
+      });
+      const nextVersion =
+        existingQuotes.length > 0
+          ? Math.max(...existingQuotes.map((q) => q.versao)) + 1
+          : 1;
+
+      const projectClient = await tx.project.findUnique({
+        where: { id: source.project_id },
+        select: { client: { select: { nome: true } } },
+      });
+      const clientName = projectClient?.client.nome || "Cliente";
+      const codigoBase = buildQuoteCodigoBase(clientName);
+      let codigo = codigoBase;
+      for (let attempt = 2; attempt <= 50; attempt++) {
+        const clash = await tx.quote.findFirst({
+          where: { codigo },
+          select: { id: true },
+        });
+        if (!clash) break;
+        codigo = `${codigoBase}-${attempt}`;
+      }
+
+      const quote = await tx.quote.create({
+        data: {
+          project_id: source.project_id,
+          versao: nextVersion,
+          template_tipo: "ADENDO",
+          codigo,
+          subtotal: 0,
+          desconto: 0,
+          valor_final: 0,
+          validade: parseISODateOnlyBrazil(defaultQuoteValidadeISO()),
+          observacoes,
+          partner_id: source.partner_id,
+          solicitante_id: source.solicitante_id,
+          solicitante_nome: source.solicitante_nome,
+          solicitante_area: source.solicitante_area,
+          adendo_ref_quote_id: source.id,
+        },
+      });
+
+      await tx.quoteItem.create({
+        data: {
+          id: randomUUID(),
+          quote_id: quote.id,
+          descricao: "Alterações / acréscimos solicitados",
+          quantidade: 1,
+          tipo_custo: "OUTROS",
+          valor_unitario: 0,
+          valor_total: 0,
+          status: "PENDENTE",
+        },
+      });
+
+      await tx.timeline.create({
+        data: {
+          project_id: source.project_id,
+          acao: `Adendo v${nextVersion} criado com base na proposta ${refLabel}.`,
+          interno_sotamente: false,
+          user_id: await ensureActorUserId(),
+        },
+      });
+
+      return {
+        id: quote.id,
+        project_id: quote.project_id,
+        versao: quote.versao,
+        codigo: quote.codigo,
+        template_tipo: quote.template_tipo,
+        observacoes: quote.observacoes,
+      };
+    });
+
+    revalidatePath(`/projects/${source.project_id}`);
+    revalidatePath("/quotes");
+    return { success: true as const, data: result };
+  } catch (error) {
+    console.error("createQuoteAddendum:", error);
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Falha ao criar adendo.",
+    };
+  }
+}
+
 const ITEM_TYPES: ItemType[] = [
   "MOVEIS_MDF",
   "FERRAGENS_ESPECIAIS",
@@ -443,6 +585,13 @@ export async function updateExistingQuote(
       return {
         success: false,
         error: "Não é possível mudar o modelo da proposta após itens aprovados/recusados.",
+      };
+    }
+
+    if (isAddendumTemplate(quote.template_tipo) && templateTipo !== "ADENDO") {
+      return {
+        success: false,
+        error: "Adendos comerciais não podem ser convertidos para outro modelo de proposta.",
       };
     }
 

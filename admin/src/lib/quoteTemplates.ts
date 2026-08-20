@@ -1,12 +1,13 @@
 import type { ItemType } from "@/app/actions/quotes";
 
-export const QUOTE_TEMPLATE_IDS = ["BASICO", "BASICO_IMAGENS", "COMPARATIVO"] as const;
+export const QUOTE_TEMPLATE_IDS = ["BASICO", "BASICO_IMAGENS", "COMPARATIVO", "ADENDO"] as const;
 export type QuoteTemplateId = (typeof QUOTE_TEMPLATE_IDS)[number];
 
 export const QUOTE_TEMPLATE_LABELS: Record<QuoteTemplateId, string> = {
   BASICO: "Básico",
   BASICO_IMAGENS: "Básico com imagens",
   COMPARATIVO: "Proposta Comparativa",
+  ADENDO: "Adendo comercial",
 };
 
 export interface QuoteTemplateItem {
@@ -25,6 +26,8 @@ export interface QuoteTemplateDef {
   comparative: boolean;
   /** PDF com 2ª página de cards (foto + nome) via itens salvos. */
   withImages: boolean;
+  /** Adendo: texto explicativo no PDF; sem cards de montagem/pagamento. */
+  addendum: boolean;
 }
 
 export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
@@ -35,6 +38,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     items: [],
     comparative: false,
     withImages: false,
+    addendum: false,
   },
   BASICO_IMAGENS: {
     id: "BASICO_IMAGENS",
@@ -43,6 +47,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     items: [],
     comparative: false,
     withImages: true,
+    addendum: false,
   },
   COMPARATIVO: {
     id: "COMPARATIVO",
@@ -51,6 +56,16 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     items: [],
     comparative: true,
     withImages: false,
+    addendum: false,
+  },
+  ADENDO: {
+    id: "ADENDO",
+    nome: QUOTE_TEMPLATE_LABELS.ADENDO,
+    observacoes: "",
+    items: [],
+    comparative: false,
+    withImages: false,
+    addendum: true,
   },
 };
 
@@ -68,6 +83,10 @@ export function isComparativeTemplate(value: unknown): boolean {
 
 export function isImageCatalogTemplate(value: unknown): boolean {
   return getQuoteTemplate(value).withImages;
+}
+
+export function isAddendumTemplate(value: unknown): boolean {
+  return getQuoteTemplate(value).addendum;
 }
 
 export function getQuoteTemplate(value: unknown): QuoteTemplateDef {

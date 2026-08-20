@@ -4,7 +4,8 @@ import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuotePhrase, formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
-import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
+import { isAddendumTemplate, isImageCatalogTemplate } from "@/lib/quoteTemplates";
+import { formatQuoteMoney } from "@/lib/quoteAddendum";
 
 export const QUOTE_PRINT_FACTORY = {
   name: "Móveis Unghero LTDA",
@@ -97,6 +98,13 @@ export type QuotePrintData = {
   valuesCalculatedAt?: string | null;
   /** Data da última edição comercial; omitir se nunca editado. */
   lastUpdatedAt?: string | null;
+  /** Proposta original quando este PDF é um adendo. */
+  addendumRef?: {
+    label: string;
+    versao: number;
+    approvedAtLabel: string | null;
+    approvedTotal: number;
+  } | null;
 };
 
 function formatCurrency(val: number) {
@@ -585,6 +593,47 @@ function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
   );
 }
 
+function AddendumContextBlock({
+  observacoes,
+  addendumRef,
+}: {
+  observacoes?: string | null;
+  addendumRef?: QuotePrintData["addendumRef"];
+}) {
+  return (
+    <section className="rounded-xl border border-amber-200/90 bg-amber-50/50 px-4 py-4 space-y-3 print:break-inside-avoid">
+      <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
+        Contexto do adendo
+      </p>
+      {addendumRef ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-neutral-700">
+          <p>
+            <span className="font-bold text-neutral-900 block">Proposta base</span>
+            {addendumRef.label}
+          </p>
+          <p>
+            <span className="font-bold text-neutral-900 block">Aprovada em</span>
+            {addendumRef.approvedAtLabel || "—"}
+          </p>
+          <p>
+            <span className="font-bold text-neutral-900 block">Valor aprovado</span>
+            {formatQuoteMoney(addendumRef.approvedTotal)}
+          </p>
+        </div>
+      ) : null}
+      {observacoes?.trim() ? (
+        <div className="text-[11px] text-neutral-700 leading-relaxed whitespace-pre-wrap border-t border-amber-200/60 pt-3">
+          {observacoes.trim()}
+        </div>
+      ) : null}
+      <p className="text-[9px] text-neutral-500 leading-snug">
+        Este adendo não substitui a proposta original. Os valores abaixo referem-se apenas às
+        alterações solicitadas após a aprovação inicial.
+      </p>
+    </section>
+  );
+}
+
 function CommercialFooterBlock({
   compact,
   assetBase,
@@ -634,7 +683,8 @@ export default function QuotePrintDocument({
   const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
   const isComparative = quote.template_tipo === "COMPARATIVO";
-  const isImageCatalog = isImageCatalogTemplate(quote.template_tipo);
+  const isAddendum = isAddendumTemplate(quote.template_tipo);
+  const isImageCatalog = !isAddendum && isImageCatalogTemplate(quote.template_tipo);
   const catalogItems: QuoteCatalogPrintEntry[] = isImageCatalog
     ? quote.catalog_images && quote.catalog_images.length > 0
       ? quote.catalog_images
@@ -670,7 +720,11 @@ export default function QuotePrintDocument({
 
       <div className="print-shell-inner">
         <div className="print-page flex flex-col">
-          <PrintTopHeader assetBase={assetBase} quoteCodigo={quoteCodigo} />
+          <PrintTopHeader
+            assetBase={assetBase}
+            quoteCodigo={quoteCodigo}
+            title={isAddendum ? "Adendo comercial" : "Orçamento Comercial detalhado"}
+          />
 
           <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">
             <section className="grid grid-cols-[1fr_auto] gap-5 pb-4 border-b border-neutral-100 shrink-0">
@@ -777,15 +831,24 @@ export default function QuotePrintDocument({
               </div>
             </section>
 
+            {isAddendum ? (
+              <AddendumContextBlock
+                observacoes={quote.observacoes}
+                addendumRef={quote.addendumRef}
+              />
+            ) : null}
+
             <div
               className={`print-quote-items ${sectionGap} ${
                 centerItems ? "justify-center" : "justify-start"
               }`}
             >
               <p className="text-[11px] text-neutral-500 leading-relaxed">
-                {isComparative
-                  ? "Opções de proposta para o seu projeto. Cada alternativa traz seu próprio valor."
-                  : "Relação completa de marcenaria sob medida, ferragens e serviços."}
+                {isAddendum
+                  ? "Itens e valores referentes às alterações solicitadas após a aprovação da proposta original."
+                  : isComparative
+                    ? "Opções de proposta para o seu projeto. Cada alternativa traz seu próprio valor."
+                    : "Relação completa de marcenaria sob medida, ferragens e serviços."}
               </p>
 
               <div className="overflow-hidden border border-neutral-200 rounded-xl">
@@ -894,7 +957,7 @@ export default function QuotePrintDocument({
                     ) : null}
                     <div className="flex items-baseline justify-end gap-1.5">
                       <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide">
-                        Investimento total:
+                        {isAddendum ? "Valor deste adendo:" : "Investimento total:"}
                       </span>
                       <span className="text-base font-medium text-neutral-900">
                         {formatCurrency(quote.valor_final)}
@@ -941,7 +1004,7 @@ export default function QuotePrintDocument({
               ) : null}
             </div>
 
-            {!isPaged ? (
+            {!isPaged && !isAddendum ? (
               <CommercialFooterBlock compact={isCompact} assetBase={assetBase} />
             ) : null}
           </main>
@@ -949,7 +1012,7 @@ export default function QuotePrintDocument({
           <PrintBottomFooter />
         </div>
 
-        {isPaged ? (
+        {isPaged && !isAddendum ? (
           <div className="print-page print-page-break flex flex-col">
             <PrintTopHeader assetBase={assetBase} title="Condições comerciais" />
             <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">

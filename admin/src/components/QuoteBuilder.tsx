@@ -15,6 +15,7 @@ import {
   getQuoteTemplate,
   isComparativeTemplate,
   isImageCatalogTemplate,
+  isAddendumTemplate,
   type QuoteTemplateId,
 } from "@/lib/quoteTemplates";
 import { listQuoteItemPresets, listQuoteDetailPresets, createQuoteItemPreset, createQuoteDetailPreset } from "@/app/actions/quoteItemPresets";
@@ -138,6 +139,7 @@ export default function QuoteBuilder({
   const hasBriefing = Boolean(briefingData);
   const isComparative = isComparativeTemplate(templateTipo);
   const isImageCatalog = isImageCatalogTemplate(templateTipo);
+  const isAddendum = isAddendumTemplate(templateTipo);
   const hasLockedItems = items.some((item) => item.locked);
 
   useEffect(() => {
@@ -568,14 +570,18 @@ export default function QuoteBuilder({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-border/40 pb-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-gradient-gold">
-              {isEditing
-                ? `Editar proposta v${editingQuote?.versao}`
-                : "Construtor de proposta comercial"}
+              {isAddendum && isEditing
+                ? `Adendo comercial · v${editingQuote?.versao}`
+                : isEditing
+                  ? `Editar proposta v${editingQuote?.versao}`
+                  : "Construtor de proposta comercial"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {isEditing
-                ? "Altere cômodos e itens pendentes nesta mesma versão — não cria outra proposta. Cada edição fica no histórico."
-                : "Monte a tabela comercial e exporte o PDF com itens e valores."}
+              {isAddendum
+                ? "Descreva o motivo das alterações e inclua apenas os itens novos ou ajustados. O PDF referencia a proposta original aprovada."
+                : isEditing
+                  ? "Altere cômodos e itens pendentes nesta mesma versão — não cria outra proposta. Cada edição fica no histórico."
+                  : "Monte a tabela comercial e exporte o PDF com itens e valores."}
             </p>
           </div>
         </div>
@@ -616,6 +622,19 @@ export default function QuoteBuilder({
         
         {/* Bloco 1: Template e validade */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {isAddendum ? (
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Modelo
+              </label>
+              <div className="h-10 flex items-center px-3 rounded-lg border border-amber-200/80 bg-amber-50/80 text-sm font-semibold text-amber-900">
+                Adendo comercial
+              </div>
+              <p className="mt-1.5 text-[10px] text-amber-900/90 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1.5 leading-snug">
+                PDF sem condições de montagem e pagamento. O texto explicativo abaixo substitui esses blocos.
+              </p>
+            </div>
+          ) : (
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
               Template de Proposta
@@ -633,7 +652,7 @@ export default function QuoteBuilder({
               }}
               className="h-10"
             >
-              {QUOTE_TEMPLATE_IDS.map((id) => (
+              {QUOTE_TEMPLATE_IDS.filter((id) => id !== "ADENDO").map((id) => (
                 <option key={id} value={id}>
                   {QUOTE_TEMPLATE_LABELS[id]}
                 </option>
@@ -651,6 +670,7 @@ export default function QuoteBuilder({
               </p>
             ) : null}
           </div>
+          )}
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">
               Validade da proposta
@@ -792,6 +812,22 @@ export default function QuoteBuilder({
             </div>
           ) : null}
         </div>
+
+        {isAddendum ? (
+          <div className="space-y-1.5 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+            <label className="text-xs font-bold text-amber-900 block">
+              Texto explicativo do adendo (impresso no PDF)
+            </label>
+            <p className="text-[10px] text-amber-900/80 leading-snug">
+              Explique a relação com a proposta aprovada, o que mudou na produção e por que há acréscimo ou ajuste de valor.
+            </p>
+            <textarea
+              className="w-full min-h-[140px] rounded-lg border border-amber-200/80 bg-white px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-amber-400"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+            />
+          </div>
+        ) : null}
 
         {/* Bloco 2: Tabela Dinâmica de Itens */}
         <div className="rounded-xl border border-border/40 bg-white overflow-visible">
@@ -1210,7 +1246,8 @@ export default function QuoteBuilder({
 
         </div>
 
-        {/* Bloco 3: Observações internas */}
+        {/* Bloco 3: Observações internas (não usado em adendos) */}
+        {!isAddendum ? (
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-muted-foreground block">
             Observações internas (opcional, não impressas no PDF)
@@ -1221,6 +1258,7 @@ export default function QuoteBuilder({
             onChange={(e) => setObservacoes(e.target.value)}
           />
         </div>
+        ) : null}
 
         {/* Bloco 4: Fechamento Financeiro (oculto no comparativo — só 1 opção será aprovada) */}
         {!isComparative ? (
@@ -1249,7 +1287,8 @@ export default function QuoteBuilder({
 
             <div className="space-y-1.5 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-1">
               <span className="text-xs text-muted-foreground block font-medium flex items-center">
-                <Calculator className="h-3.5 w-3.5 mr-1 text-primary" /> Valor final
+                <Calculator className="h-3.5 w-3.5 mr-1 text-primary" />{" "}
+                {isAddendum ? "Valor deste adendo" : "Valor final"}
               </span>
               <span className="text-xl sm:text-2xl font-black tracking-tight text-gradient-gold block">
                 {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}

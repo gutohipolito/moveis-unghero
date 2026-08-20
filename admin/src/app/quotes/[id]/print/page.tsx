@@ -18,6 +18,7 @@ import {
   resolvePresetImageUrl,
 } from "@/lib/quotePresetImages";
 import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
+import { buildAddendumPrintRef } from "@/lib/quoteAddendum";
 
 interface PrintPageProps {
   params: Promise<{ id: string }>;
@@ -40,6 +41,12 @@ type LoadedPrintQuote = {
   valuesCalculatedAt?: string | null;
   lastUpdatedAt?: string | null;
   catalog_images?: Array<{ label: string; imagem_url: string }>;
+  addendumRef?: {
+    label: string;
+    versao: number;
+    approvedAtLabel: string | null;
+    approvedTotal: number;
+  } | null;
   partner: {
     nome: string;
     tipo: string;
@@ -112,6 +119,17 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
             quote_card_mode: true,
           },
         },
+        adendo_ref: {
+          select: {
+            id: true,
+            versao: true,
+            codigo: true,
+            aprovado_em: true,
+            items: {
+              select: { id: true, valor_total: true, status: true },
+            },
+          },
+        },
         project: {
           include: {
             client: true,
@@ -180,6 +198,9 @@ export default async function PrintQuotePage({ params }: PrintPageProps) {
         valuesCalculatedAt: formatDateBR(calculatedAt),
         lastUpdatedAt: updatedAt ? formatDateBR(updatedAt) : null,
         catalog_images,
+        addendumRef: dbQuote.adendo_ref
+          ? buildAddendumPrintRef(dbQuote.adendo_ref)
+          : null,
         items,
       };
     }

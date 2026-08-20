@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   PencilLine,
   CalendarDays,
+  FilePlus2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,8 @@ import {
   getProjectsForQuotes, 
   getQuotes,
   createProjectForClient,
-  createQuickClientAndProject
+  createQuickClientAndProject,
+  createQuoteAddendum,
 } from "@/app/actions/quotes";
 import { updateUserPreference } from "@/app/actions/preferences";
 import { getQuotesLiveSnapshot } from "@/app/actions/liveSnapshots";
@@ -46,6 +48,7 @@ import { useLiveEntity } from "@/context/LiveSyncContext";
 import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { getClients } from "@/app/actions/cliente";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
+import { isAddendumTemplate } from "@/lib/quoteTemplates";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import {
@@ -170,6 +173,7 @@ export default function QuotesList({
   const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor" | "criacao">("validade");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [creatingAddendumId, setCreatingAddendumId] = useState<string | null>(null);
   const [approvalQuote, setApprovalQuote] = useState<Quote | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
@@ -347,6 +351,23 @@ export default function QuotesList({
     );
     if (!summary.hasPending) return;
     setApprovalQuote(quote);
+  };
+
+  const handleCreateAddendum = async (quote: Quote) => {
+    if (creatingAddendumId || isReadOnly) return;
+    setCreatingAddendumId(quote.id);
+    const res = await createQuoteAddendum(quote.id);
+    if (!res.success || !res.data) {
+      setCreatingAddendumId(null);
+      showError("Não foi possível criar adendo", res.error || "Falha ao gerar adendo.");
+      return;
+    }
+    setCreatingAddendumId(null);
+    showSuccess(
+      "Adendo criado",
+      `Versão v${res.data.versao} pronta para edição no projeto.`
+    );
+    window.location.href = `/projects/${quote.project_id}?tab=quotes&editQuote=${res.data.id}`;
   };
 
   const formatDate = (dateInput: Date | string) => formatDateBR(dateInput);
@@ -808,6 +829,20 @@ export default function QuotesList({
                         : undefined;
 
                   const rowActions: RowActionItem[] = [];
+                  if (!isReadOnly && isFullyApproved) {
+                    rowActions.push({
+                      key: "addendum",
+                      label: "Criar adendo",
+                      icon: (
+                        <FilePlus2
+                          className={`h-4 w-4 ${creatingAddendumId === q.id ? "animate-pulse" : ""}`}
+                        />
+                      ),
+                      tone: "warning",
+                      disabled: creatingAddendumId === q.id,
+                      onClick: () => void handleCreateAddendum(q),
+                    });
+                  }
                   if (!isReadOnly && hasPending) {
                     rowActions.push({
                       key: "approve",
@@ -920,6 +955,12 @@ export default function QuotesList({
                         )}
                       </td>
                       <td className="py-3 px-3 text-sm min-w-0 whitespace-nowrap">
+                        <div className="flex flex-wrap items-center gap-1">
+                        {isAddendumTemplate(q.template_tipo) ? (
+                          <span className="inline-flex items-center gap-1 bg-amber-600/15 text-amber-900 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            Adendo
+                          </span>
+                        ) : null}
                         {isFullyApproved ? (
                           <span className="inline-flex items-center gap-1 bg-emerald-600/15 text-emerald-800 px-2 py-0.5 rounded-full text-[11px] font-bold">
                             ✓ Aprovado
@@ -946,6 +987,7 @@ export default function QuotesList({
                             Ativo
                           </span>
                         )}
+                        </div>
                       </td>
                       <td className="py-3 px-3 text-sm text-slate-800 font-bold whitespace-nowrap">
                         <PrivacyMoney value={q.valor_final} className="inline-block" />

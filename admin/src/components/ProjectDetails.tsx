@@ -13,7 +13,7 @@ import {
   type EnvironmentStatus,
   type FileType
 } from "@/app/actions/project";
-import { deleteQuote, getQuoteForEdit } from "@/app/actions/quotes";
+import { deleteQuote, getQuoteForEdit, createQuoteAddendum } from "@/app/actions/quotes";
 import { getProjectDetailsAction } from "@/app/actions/project";
 import { getProjectLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
@@ -30,6 +30,7 @@ import {
   isQuoteCommerciallyExpired,
 } from "@/lib/quoteApproval";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
+import { isAddendumTemplate } from "@/lib/quoteTemplates";
 import SlaRadar from "@/components/SlaRadar";
 import { canManageEnvironmentAttachments, EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY, sortEnvironmentsForOperator } from "@/lib/factoryEnvironment";
 import EnvironmentProjectCard from "@/components/environments/EnvironmentProjectCard";
@@ -95,6 +96,7 @@ import {
   Layers, 
   Clock, 
   FileText, 
+  FilePlus2,
   CheckCircle2, 
   AlertCircle, 
   Lock, 
@@ -400,6 +402,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   const [isCreatingQuote, setIsCreatingQuote] = useState(false);
   const [editingQuote, setEditingQuote] = useState<QuoteBuilderEditingQuote | null>(null);
   const [loadingEditQuote, setLoadingEditQuote] = useState(false);
+  const [creatingAddendumId, setCreatingAddendumId] = useState<string | null>(null);
 
   useEffect(() => {
     if (
@@ -821,6 +824,24 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     setEditingQuote(res.data);
     setIsCreatingQuote(true);
     setActiveTab("quotes");
+  };
+
+  const handleCreateAddendum = async (quoteId: string) => {
+    if (creatingAddendumId || loadingEditQuote) return;
+    setCreatingAddendumId(quoteId);
+    const res = await createQuoteAddendum(quoteId);
+    if (!res.success || !res.data) {
+      setCreatingAddendumId(null);
+      showError("Não foi possível criar adendo", res.error || "Falha ao gerar adendo.");
+      return;
+    }
+    await refreshProjectFromServer();
+    setCreatingAddendumId(null);
+    showSuccess(
+      "Adendo criado",
+      `Versão v${res.data.versao} aberta para edição. Ajuste o texto e os itens das alterações.`
+    );
+    await openEditQuote(res.data.id);
   };
 
   const closeQuoteBuilder = () => {
@@ -1835,6 +1856,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                                 · Proposta v{q.versao}
                               </span>
                             </h4>
+                            {isAddendumTemplate(q.template_tipo) ? (
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white">
+                                Adendo
+                              </span>
+                            ) : null}
                             {isFullyApproved ? (
                               <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                                 Aprovada
@@ -1923,9 +1949,22 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
                         <div className="flex items-center gap-3 flex-wrap">
                           {isFullyApproved ? (
-                            <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-600 text-white cursor-default select-none shadow-sm">
-                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovado
-                            </span>
+                            <>
+                              <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-600 text-white cursor-default select-none shadow-sm">
+                                <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovado
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => void handleCreateAddendum(q.id)}
+                                disabled={!!creatingAddendumId || loadingEditQuote}
+                                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <FilePlus2
+                                  className={`h-4 w-4 mr-1.5 ${creatingAddendumId === q.id ? "animate-pulse" : ""}`}
+                                />
+                                Criar adendo
+                              </button>
+                            </>
                           ) : (
                             <button
                               type="button"

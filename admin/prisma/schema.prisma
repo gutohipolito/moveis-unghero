@@ -588,6 +588,9 @@ model Quote {
   partnerCommissions PartnerCommission[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @default(now()) @updatedAt
+  adendo_ref_quote_id String?
+  adendo_ref          Quote?  @relation("QuoteAddendum", fields: [adendo_ref_quote_id], references: [id], onDelete: SetNull)
+  addendums           Quote[] @relation("QuoteAddendum")
 
   @@unique([codigo])
   @@index([project_id])

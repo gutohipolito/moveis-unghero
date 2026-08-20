@@ -12,6 +12,7 @@ import {
   resolvePresetImageUrl,
 } from "@/lib/quotePresetImages";
 import { isImageCatalogTemplate } from "@/lib/quoteTemplates";
+import { buildAddendumPrintRef } from "@/lib/quoteAddendum";
 
 export async function loadPublicQuoteByShareCode(code: string) {
   const normalized = code.trim().toLowerCase();
@@ -37,6 +38,17 @@ export async function loadPublicQuoteByShareCode(code: string) {
           registro_profissional: true,
           fotoUrl: true,
           quote_card_mode: true,
+        },
+      },
+      adendo_ref: {
+        select: {
+          id: true,
+          versao: true,
+          codigo: true,
+          aprovado_em: true,
+          items: {
+            select: { id: true, valor_total: true, status: true },
+          },
         },
       },
       project: {
@@ -103,6 +115,9 @@ export async function loadPublicQuoteByShareCode(code: string) {
     valuesCalculatedAt: formatDateBR(calculatedAt),
     lastUpdatedAt: updatedAt ? formatDateBR(updatedAt) : null,
     catalog_images,
+    addendumRef: dbQuote.adendo_ref
+      ? buildAddendumPrintRef(dbQuote.adendo_ref)
+      : null,
     items,
   };
 
