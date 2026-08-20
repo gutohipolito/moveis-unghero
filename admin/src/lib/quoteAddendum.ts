@@ -166,3 +166,52 @@ export function buildAddendumPrintRef(refQuote: {
     approvedTotal: summary.approvedTotal,
   };
 }
+
+/**
+ * Mantém a ordenação base, mas agrupa cada adendo logo abaixo da proposta referenciada.
+ */
+export function orderQuotesWithAddendums<T extends {
+  id: string;
+  versao: number;
+  adendo_ref_quote_id?: string | null;
+}>(quotes: T[]): T[] {
+  if (quotes.length <= 1) return quotes;
+
+  const ids = new Set(quotes.map((q) => q.id));
+  const childrenByParent = new Map<string, T[]>();
+  const roots: T[] = [];
+
+  for (const quote of quotes) {
+    const parentId = quote.adendo_ref_quote_id ?? null;
+    if (parentId && ids.has(parentId)) {
+      const bucket = childrenByParent.get(parentId) ?? [];
+      bucket.push(quote);
+      childrenByParent.set(parentId, bucket);
+    } else {
+      roots.push(quote);
+    }
+  }
+
+  for (const children of childrenByParent.values()) {
+    children.sort((a, b) => a.versao - b.versao || a.id.localeCompare(b.id));
+  }
+
+  const ordered: T[] = [];
+  const seen = new Set<string>();
+  for (const root of roots) {
+    if (seen.has(root.id)) continue;
+    ordered.push(root);
+    seen.add(root.id);
+    for (const child of childrenByParent.get(root.id) ?? []) {
+      if (seen.has(child.id)) continue;
+      ordered.push(child);
+      seen.add(child.id);
+    }
+  }
+
+  for (const quote of quotes) {
+    if (!seen.has(quote.id)) ordered.push(quote);
+  }
+
+  return ordered;
+}

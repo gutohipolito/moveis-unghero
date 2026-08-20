@@ -31,6 +31,7 @@ import {
 } from "@/lib/quoteApproval";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { isAddendumTemplate } from "@/lib/quoteTemplates";
+import { orderQuotesWithAddendums } from "@/lib/quoteAddendum";
 import SlaRadar from "@/components/SlaRadar";
 import { canManageEnvironmentAttachments, EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY, sortEnvironmentsForOperator } from "@/lib/factoryEnvironment";
 import EnvironmentProjectCard from "@/components/environments/EnvironmentProjectCard";
@@ -163,6 +164,7 @@ interface Quote {
   versao: number;
   codigo?: string | null;
   template_tipo?: string | null;
+  adendo_ref_quote_id?: string | null;
   subtotal: number;
   desconto: number;
   valor_final: number;
@@ -1818,7 +1820,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {project.quotes.map((q) => {
+                    {orderQuotesWithAddendums(project.quotes).map((q) => {
                       const summary = summarizeQuoteItems(
                         (q.items || []).map((i) => ({
                           id: i.id,
@@ -1837,12 +1839,15 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                       const isApproving = approvingQuoteId === q.id;
                       const viewStats = toQuoteViewStats(q);
                       const viewLabel = formatQuoteViewLabel(viewStats);
+                      const isAddendum = isAddendumTemplate(q.template_tipo);
 
                       return (
                       <div
                         key={q.id}
                         className={`p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden rounded-xl border bg-white transition-colors ${
-                          isFullyApproved
+                          isAddendum
+                            ? "ml-3 sm:ml-5 border-indigo-300 bg-indigo-50/70 border-l-4 border-l-indigo-500"
+                            : isFullyApproved
                             ? "border-emerald-500 bg-emerald-50/60"
                             : isPartial
                               ? "border-amber-400 bg-amber-50/50"
@@ -1856,11 +1861,11 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                             <h4 className="font-bold text-base text-foreground leading-none">
                               {formatQuoteCodigo(q)}
                               <span className="text-muted-foreground font-semibold text-sm ml-2">
-                                · Proposta v{q.versao}
+                                · {isAddendum ? "Adendo" : "Proposta"} v{q.versao}
                               </span>
                             </h4>
-                            {isAddendumTemplate(q.template_tipo) ? (
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white">
+                            {isAddendum ? (
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-600 text-white">
                                 Adendo
                               </span>
                             ) : null}
@@ -1956,7 +1961,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-600 text-white cursor-default select-none shadow-sm">
                                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovado
                               </span>
-                              {!isAddendumTemplate(q.template_tipo) ? (
+                              {!isAddendum ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleCreateAddendum(q.id)}

@@ -60,6 +60,7 @@ export type ProjectDetailsPayload = {
     versao: number;
     codigo?: string | null;
     template_tipo?: string;
+    adendo_ref_quote_id?: string | null;
     subtotal: number;
     desconto: number;
     valor_final: number;
@@ -249,6 +250,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
       versao: q.versao,
       codigo: q.codigo,
       template_tipo: q.template_tipo,
+      adendo_ref_quote_id: q.adendo_ref_quote_id ?? null,
       subtotal: Number(q.subtotal),
       desconto: Number(q.desconto),
       valor_final: Number(q.valor_final),

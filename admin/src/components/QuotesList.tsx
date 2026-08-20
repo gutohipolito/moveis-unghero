@@ -49,6 +49,7 @@ import { formatDateBR, toISODateBR } from "@/lib/brazilDate";
 import { getClients } from "@/app/actions/cliente";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { isAddendumTemplate } from "@/lib/quoteTemplates";
+import { orderQuotesWithAddendums } from "@/lib/quoteAddendum";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import {
@@ -140,6 +141,7 @@ interface Quote {
   versao: number;
   codigo?: string | null;
   template_tipo?: string | null;
+  adendo_ref_quote_id?: string | null;
   subtotal: number;
   desconto: number;
   valor_final: number;
@@ -421,8 +423,9 @@ export default function QuotesList({
     return matchesSearch && matchesStatus && matchesCreatedFrom && matchesCreatedTo;
   });
 
-  // Ordenação
-  const sortedQuotes = [...filteredQuotes].sort((a, b) => {
+  // Ordenação + adendos logo abaixo da proposta referenciada
+  const sortedQuotes = orderQuotesWithAddendums(
+    [...filteredQuotes].sort((a, b) => {
     let valA: any = "";
     let valB: any = "";
 
@@ -462,7 +465,8 @@ export default function QuotesList({
     if (valA < valB) return sortOrder === "asc" ? -1 : 1;
     if (valA > valB) return sortOrder === "asc" ? 1 : -1;
     return 0;
-  });
+  })
+  );
 
   useEffect(() => {
     setPage(1);
@@ -820,16 +824,19 @@ export default function QuotesList({
                   else if (nearDanger) dateClass = "text-rose-600 font-bold";
                   else if (nearWarning) dateClass = "text-amber-600 font-bold";
 
-                  const rowTone = isFullyApproved
-                    ? "bg-emerald-500/10"
-                    : isPartial
-                      ? "bg-amber-500/10"
-                      : rowExpired
-                        ? "bg-rose-500/10"
-                        : undefined;
+                  const isAddendum = isAddendumTemplate(q.template_tipo);
+                  const rowTone = isAddendum
+                    ? "bg-indigo-50/80"
+                    : isFullyApproved
+                      ? "bg-emerald-500/10"
+                      : isPartial
+                        ? "bg-amber-500/10"
+                        : rowExpired
+                          ? "bg-rose-500/10"
+                          : undefined;
 
                   const rowActions: RowActionItem[] = [];
-                  if (!isReadOnly && isFullyApproved && !isAddendumTemplate(q.template_tipo)) {
+                  if (!isReadOnly && isFullyApproved && !isAddendum) {
                     rowActions.push({
                       key: "addendum",
                       label: "Criar adendo",
@@ -911,10 +918,28 @@ export default function QuotesList({
                       className={rowTone}
                       style={{ WebkitTapHighlightColor: "transparent" }}
                     >
-                      <td className="py-3 px-3 text-sm font-medium text-slate-700 whitespace-nowrap">
-                        <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[11px] inline-block">
-                          {formatQuoteCodigo(q)}
-                        </span>
+                      <td
+                        className={`py-3 px-3 text-sm font-medium text-slate-700 whitespace-nowrap ${
+                          isAddendum ? "pl-7 sm:pl-9" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {isAddendum ? (
+                            <span
+                              className="inline-block w-1.5 self-stretch min-h-[1.25rem] rounded-full bg-indigo-400 shrink-0"
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span
+                            className={`font-mono px-1.5 py-0.5 rounded text-[11px] inline-block ${
+                              isAddendum
+                                ? "bg-indigo-100 text-indigo-800"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {formatQuoteCodigo(q)}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-3 px-3 text-sm text-slate-800 font-semibold min-w-0 max-w-[14rem]">
                         <span className="block truncate" title={q.project.client.nome}>
@@ -956,8 +981,8 @@ export default function QuotesList({
                       </td>
                       <td className="py-3 px-3 text-sm min-w-0 whitespace-nowrap">
                         <div className="flex flex-wrap items-center gap-1">
-                        {isAddendumTemplate(q.template_tipo) ? (
-                          <span className="inline-flex items-center gap-1 bg-amber-600/15 text-amber-900 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                        {isAddendum ? (
+                          <span className="inline-flex items-center gap-1 bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[11px] font-bold">
                             Adendo
                           </span>
                         ) : null}
