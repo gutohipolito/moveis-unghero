@@ -50,9 +50,9 @@ export default function MobileTopBar({
           />
         </AppNavLink>
       ) : (
-        <div className="mobile-topbar-tools min-w-0 flex-1">
+        <div className="mobile-topbar-tools">
           {!isOpsLimited ? (
-            <div className="flex items-center gap-1 pr-1.5 border-r border-border/80 shrink-0">
+            <div className="mobile-topbar-privacy">
               <PrivacyToggle />
               <SensitiveToggle />
             </div>
@@ -67,7 +67,7 @@ export default function MobileTopBar({
         </div>
       )}
 
-      <div className="mobile-topbar-actions shrink-0">
+      <div className="mobile-topbar-actions">
         {!actionsOpen ? (
           <button
             type="button"

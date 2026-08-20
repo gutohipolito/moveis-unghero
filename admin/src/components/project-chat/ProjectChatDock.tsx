@@ -33,7 +33,6 @@ import { cn } from "@/lib/utils";
 
 const BADGE_POLL_VISIBLE_MS = 50_000;
 const BADGE_POLL_HIDDEN_MS = 2 * 60_000;
-const MAX_PEEKS = 2;
 
 const STATUS_LABEL: Record<string, string> = {
   LEAD: "Lead",
@@ -81,8 +80,6 @@ export default function ProjectChatDock() {
   const [sending, setSending] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [unreadItems, setUnreadItems] = useState<ProjectChatThreadDTO[]>([]);
-  const [dismissedPeeks, setDismissedPeeks] = useState<Set<string>>(() => new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number | undefined>(undefined);
   const knownUnreadRef = useRef<Set<string>>(new Set());
@@ -95,7 +92,6 @@ export default function ProjectChatDock() {
     if (!result.success) return;
 
     setUnreadTotal(result.unreadTotal);
-    setUnreadItems(result.items);
 
     const nextKeys = new Set(
       result.items.map((item) => `${item.projectId}:${item.lastMessageAt ?? ""}`)
@@ -274,11 +270,6 @@ export default function ProjectChatDock() {
     });
   }, [threads]);
   const fabUnread = unreadTotal;
-  const peekItems = open
-    ? []
-    : unreadItems.filter(
-        (item) => !dismissedPeeks.has(`${item.projectId}:${item.lastMessageAt ?? ""}`)
-      );
 
   return (
     <>
@@ -325,69 +316,6 @@ export default function ProjectChatDock() {
           </span>
         )}
       </button>
-
-      {!open && peekItems.length > 0 && (
-        <div className="project-chat-alert-stack" role="region" aria-label="Mensagens de chat não lidas">
-          {peekItems.slice(0, MAX_PEEKS).map((item) => {
-            const peekKey = `${item.projectId}:${item.lastMessageAt ?? ""}`;
-            return (
-              <article
-                key={peekKey}
-                className="in-app-toast"
-                data-priority="high"
-                data-accent="chat"
-              >
-                <button
-                  type="button"
-                  className="in-app-toast-close"
-                  onClick={() =>
-                    setDismissedPeeks((prev) => {
-                      const next = new Set(prev);
-                      next.add(peekKey);
-                      return next;
-                    })
-                  }
-                  aria-label="Dispensar aviso"
-                >
-                  <X className="h-3 w-3" strokeWidth={2.5} />
-                </button>
-                <div className="in-app-toast-row">
-                  <div className="in-app-toast-icon-wrap" aria-hidden>
-                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-white">
-                      {item.clientInitials}
-                    </span>
-                    <span className="in-app-toast-icon-badge">
-                      <Mail className="h-3 w-3" />
-                    </span>
-                  </div>
-                  <div className="in-app-toast-content">
-                    <button
-                      type="button"
-                      className="in-app-toast-main"
-                      onClick={() => {
-                        setDismissedPeeks((prev) => {
-                          const next = new Set(prev);
-                          next.add(peekKey);
-                          return next;
-                        });
-                        openProject(item.projectId, item.clientName);
-                      }}
-                    >
-                      <p className="in-app-toast-title">
-                        Chat · {item.clientName}
-                        {item.unreadCount > 1 ? ` (${item.unreadCount})` : ""}
-                      </p>
-                      <p className="in-app-toast-message">
-                        {item.lastMessagePreview || "Nova mensagem na conversa do projeto."}
-                      </p>
-                    </button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
 
       {open && (
         <div
