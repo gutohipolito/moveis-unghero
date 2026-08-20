@@ -486,7 +486,7 @@ export default function KanbanNegotiationPanel({
       </div>
       </div>
 
-      {/* Footer fixo (não sticky) — fica abaixo do scroll, com safe-area */}
+      {/* Footer fixo — abaixo do scroll; safe-area para home indicator (modal cobre o bottom nav). */}
       <div className="shrink-0 z-10 border-t border-slate-200/80 bg-white px-5 pt-3.5 sm:px-6 sm:pt-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom,0px))]">
         <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5">
           <div className="flex flex-wrap gap-2">

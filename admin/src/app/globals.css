@@ -3586,7 +3586,7 @@ button.partner-card:hover,
 .mobile-drawer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 165;
+  z-index: 185;
   background: hsl(24 14% 14% / 0.5);
   border: none;
   padding: 0;
@@ -3641,7 +3641,7 @@ button.partner-card:hover,
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: 170;
+  z-index: 190;
   width: min(19rem, 88%);
   max-width: 100%;
   display: flex;
@@ -3759,6 +3759,15 @@ button.partner-card:hover,
   display: flex;
   align-items: center;
   min-height: var(--touch-min);
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-topbar-logo {
+  height: clamp(1.35rem, 4.8vw, 1.75rem);
+  width: auto;
+  max-width: min(42vw, 11rem);
+  object-fit: contain;
 }
 
 .mobile-topbar-logo-dark {
@@ -3770,6 +3779,25 @@ button.partner-card:hover,
   display: flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.mobile-topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-right: var(--space-1);
+}
+
+.mobile-topbar-tools::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-topbar-actions-open .mobile-topbar-actions {
+  margin-left: auto;
 }
 
 .segment-control {
@@ -4229,7 +4257,8 @@ button.partner-card:hover,
 .modal-root {
   position: fixed;
   inset: 0;
-  z-index: 150;
+  /* Acima do mobile-bottom-nav (160) para o footer do funil não ficar cortado. */
+  z-index: 180;
   isolation: isolate;
 }
 
