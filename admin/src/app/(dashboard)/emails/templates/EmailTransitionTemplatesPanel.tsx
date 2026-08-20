@@ -285,6 +285,15 @@ export default function EmailTransitionTemplatesPanel({
                 rows={12}
                 className="w-full rounded-lg border border-border/60 bg-white px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-60"
               />
+              <p className="text-[11px] text-muted-foreground">
+                HTML simples vale na prévia e no envio:{" "}
+                <code className="font-mono">&lt;b&gt;</code>,{" "}
+                <code className="font-mono">&lt;i&gt;</code>,{" "}
+                <code className="font-mono">&lt;u&gt;</code>,{" "}
+                <code className="font-mono">&lt;br&gt;</code> e{" "}
+                <code className="font-mono">&lt;a href=&quot;https://...&quot;&gt;</code>.
+                O assunto permanece texto puro. Outras tags aparecem como texto.
+              </p>
             </div>
 
             <div>

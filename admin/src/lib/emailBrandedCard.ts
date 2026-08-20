@@ -10,6 +10,55 @@ export function escapeEmailHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
+const ALLOWED_TAG_RE =
+  /^<\/?(?:b|strong|i|em|u|br|a)(?:\s+[^<>]*?)?\s*\/?>$/i;
+
+function extractSafeHref(tag: string): string | null {
+  const match = tag.match(/href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+  const href = (match?.[2] || match?.[3] || match?.[4] || "").trim();
+  if (/^(https?:\/\/|mailto:)/i.test(href)) return href;
+  return null;
+}
+
+function rewriteAllowedTag(raw: string): string {
+  const close = /^<\s*\//.test(raw);
+  const name = raw.match(/^<\s*\/?\s*([a-z]+)/i)?.[1]?.toLowerCase() ?? "";
+
+  if (name === "br") return "<br/>";
+  if (name === "a") {
+    if (close) return "</a>";
+    const href = extractSafeHref(raw);
+    if (!href) return escapeEmailHtml(raw);
+    return `<a href="${escapeEmailHtml(href)}" style="color:#0f172a;text-decoration:underline;word-break:break-all;">`;
+  }
+  if (name === "b" || name === "strong") {
+    return close ? "</strong>" : '<strong style="font-weight:700;">';
+  }
+  if (name === "i" || name === "em") {
+    return close ? "</em>" : '<em style="font-style:italic;">';
+  }
+  if (name === "u") {
+    return close ? "</u>" : '<u style="text-decoration:underline;">';
+  }
+  return escapeEmailHtml(raw);
+}
+
+/** Remove tags do corpo para a versão texto do e-mail. */
+export function stripEmailMarkup(text: string): string {
+  return text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h\d)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function renderEmailPlaceholders(
   template: string,
   vars: Record<string, string>
@@ -32,12 +81,32 @@ function linkifyEscaped(escaped: string): string {
   );
 }
 
+function formatInlineMarkup(block: string): string {
+  const parts = block.split(
+    /(<\/?(?:b|strong|i|em|u|br|a)(?:\s+[^<>]*?)?\s*\/?>)/gi
+  );
+  let inAnchor = 0;
+  return parts
+    .map((part) => {
+      if (!part) return "";
+      if (ALLOWED_TAG_RE.test(part)) {
+        const rewritten = rewriteAllowedTag(part);
+        if (/^<a\s/i.test(rewritten)) inAnchor += 1;
+        if (/^<\/a>/i.test(rewritten)) inAnchor = Math.max(0, inAnchor - 1);
+        return rewritten;
+      }
+      const escaped = escapeEmailHtml(part).replace(/\n/g, "<br/>");
+      return inAnchor > 0 ? escaped : linkifyEscaped(escaped);
+    })
+    .join("");
+}
+
 export function emailBodyTextToHtml(text: string): string {
   const blocks = text.split(/\n{2,}/).filter(Boolean);
   if (blocks.length === 0) return "";
   return blocks
     .map((block) => {
-      const html = linkifyEscaped(escapeEmailHtml(block)).replace(/\n/g, "<br/>");
+      const html = formatInlineMarkup(block);
       return `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#334155;">${html}</p>`;
     })
     .join("");
@@ -88,7 +157,7 @@ export function composeBrandedEmail(options: {
   ctaLabel?: string;
   ctaHref?: string;
 }): { subject: string; text: string; html: string } {
-  const textParts = [options.bodyText.trim()];
+  const textParts = [stripEmailMarkup(options.bodyText)];
   if (options.ctaLabel && options.ctaHref) {
     textParts.push("", `${options.ctaLabel}: ${options.ctaHref}`);
   }

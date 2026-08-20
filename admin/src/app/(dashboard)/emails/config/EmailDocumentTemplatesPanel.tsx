@@ -225,8 +225,14 @@ export default function EmailDocumentTemplatesPanel({
             ))}
           </div>
           <p className="text-[11px] text-muted-foreground mt-1.5">
-            Clique para inserir no final do corpo. O rodapé automático de documentos e a
-            assinatura da caixa são adicionados na hora do envio.
+            Clique para inserir no final do corpo. HTML simples vale no envio:{" "}
+            <code className="font-mono">&lt;b&gt;</code>,{" "}
+            <code className="font-mono">&lt;i&gt;</code>,{" "}
+            <code className="font-mono">&lt;u&gt;</code>,{" "}
+            <code className="font-mono">&lt;br&gt;</code> e{" "}
+            <code className="font-mono">&lt;a href=&quot;https://...&quot;&gt;</code>.
+            O rodapé automático de documentos e a assinatura da caixa entram na hora do
+            envio.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { DOCUMENT_EMAIL_FOOTER_TEXT } from "@/lib/consentCopy";
 import { composeBodyWithSignature } from "@/lib/emailSignature";
+import { emailBodyTextToHtml, stripEmailMarkup } from "@/lib/emailBrandedCard";
 
 export type EmailDocumentTemplateType = "QUOTE" | "RECEIPT";
 
@@ -148,7 +149,13 @@ export function composeDocumentEmail(input: {
   const bodyText = withDocumentEmailFooter(
     renderEmailTemplate(input.bodyTemplate, input.vars)
   );
-  const composed = composeBodyWithSignature(bodyText, input.signature);
+  const composed = composeBodyWithSignature(
+    {
+      text: stripEmailMarkup(bodyText),
+      html: emailBodyTextToHtml(bodyText),
+    },
+    input.signature
+  );
   return {
     subject,
     text: composed.text,
