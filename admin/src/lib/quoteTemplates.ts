@@ -1,11 +1,18 @@
 import type { ItemType } from "@/app/actions/quotes";
 
-export const QUOTE_TEMPLATE_IDS = ["BASICO", "BASICO_IMAGENS", "COMPARATIVO", "ADENDO"] as const;
+export const QUOTE_TEMPLATE_IDS = [
+  "BASICO",
+  "BASICO_IMAGENS",
+  "COMPLETO",
+  "COMPARATIVO",
+  "ADENDO",
+] as const;
 export type QuoteTemplateId = (typeof QUOTE_TEMPLATE_IDS)[number];
 
 export const QUOTE_TEMPLATE_LABELS: Record<QuoteTemplateId, string> = {
   BASICO: "Básico",
   BASICO_IMAGENS: "Básico com imagens",
+  COMPLETO: "Completo (2 páginas)",
   COMPARATIVO: "Proposta Comparativa",
   ADENDO: "Adendo comercial",
 };
@@ -28,6 +35,10 @@ export interface QuoteTemplateDef {
   withImages: boolean;
   /** Adendo: texto explicativo no PDF; sem cards de montagem/pagamento. */
   addendum: boolean;
+  /**
+   * Sempre 2 páginas: itens na 1ª; aviso de alterações + condições comerciais na 2ª.
+   */
+  pagedCommercial: boolean;
 }
 
 export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
@@ -39,6 +50,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     comparative: false,
     withImages: false,
     addendum: false,
+    pagedCommercial: false,
   },
   BASICO_IMAGENS: {
     id: "BASICO_IMAGENS",
@@ -48,6 +60,17 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     comparative: false,
     withImages: true,
     addendum: false,
+    pagedCommercial: false,
+  },
+  COMPLETO: {
+    id: "COMPLETO",
+    nome: QUOTE_TEMPLATE_LABELS.COMPLETO,
+    observacoes: "",
+    items: [],
+    comparative: false,
+    withImages: false,
+    addendum: false,
+    pagedCommercial: true,
   },
   COMPARATIVO: {
     id: "COMPARATIVO",
@@ -57,6 +80,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     comparative: true,
     withImages: false,
     addendum: false,
+    pagedCommercial: false,
   },
   ADENDO: {
     id: "ADENDO",
@@ -66,6 +90,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplateDef> = {
     comparative: false,
     withImages: false,
     addendum: true,
+    pagedCommercial: false,
   },
 };
 
@@ -87,6 +112,15 @@ export function isImageCatalogTemplate(value: unknown): boolean {
 
 export function isAddendumTemplate(value: unknown): boolean {
   return getQuoteTemplate(value).addendum;
+}
+
+export function isCompleteTemplate(value: unknown): boolean {
+  return normalizeQuoteTemplateId(value) === "COMPLETO";
+}
+
+/** Força 2ª página com condições comerciais (template Completo). */
+export function forcesCommercialSecondPage(value: unknown): boolean {
+  return getQuoteTemplate(value).pagedCommercial;
 }
 
 export function getQuoteTemplate(value: unknown): QuoteTemplateDef {

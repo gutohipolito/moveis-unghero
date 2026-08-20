@@ -16,6 +16,7 @@ import {
   isComparativeTemplate,
   isImageCatalogTemplate,
   isAddendumTemplate,
+  isCompleteTemplate,
   type QuoteTemplateId,
 } from "@/lib/quoteTemplates";
 import {
@@ -148,6 +149,7 @@ export default function QuoteBuilder({
   const isComparative = isComparativeTemplate(templateTipo);
   const isImageCatalog = isImageCatalogTemplate(templateTipo);
   const isAddendum = isAddendumTemplate(templateTipo);
+  const isComplete = isCompleteTemplate(templateTipo);
   const hasLockedItems = items.some((item) => item.locked);
 
   useEffect(() => {
@@ -691,6 +693,11 @@ export default function QuoteBuilder({
               <p className="mt-1.5 text-[10px] text-sky-900 bg-sky-500/10 border border-sky-500/20 rounded-md px-2 py-1.5 leading-snug">
                 PDF em duas partes: página 1 com valores (layout básico) e página 2 com cards de foto + nome.
                 As imagens vêm dos <strong>Itens salvos</strong> (descrição ou detalhe com o mesmo texto do orçamento).
+              </p>
+            ) : null}
+            {isComplete ? (
+              <p className="mt-1.5 text-[10px] text-indigo-900 bg-indigo-500/10 border border-indigo-500/20 rounded-md px-2 py-1.5 leading-snug">
+                PDF em 2 páginas: itens e valor na 1ª; na 2ª, aviso de alterações pós-aprovação (adendo) e condições comerciais (prazo, garantia, montagem e pagamento), um bloco por linha.
               </p>
             ) : null}
           </div>

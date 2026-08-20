@@ -4,7 +4,7 @@ import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuotePhrase, formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
-import { isAddendumTemplate, isImageCatalogTemplate } from "@/lib/quoteTemplates";
+import { isAddendumTemplate, isImageCatalogTemplate, forcesCommercialSecondPage } from "@/lib/quoteTemplates";
 import { formatQuoteMoney, extractAddendumReason, buildAddendumReferenceCopy, formatAddendumDeltaLabel } from "@/lib/quoteAddendum";
 
 export const QUOTE_PRINT_FACTORY = {
@@ -483,7 +483,36 @@ function PrintBottomFooter() {
   );
 }
 
-function CommercialNotesSection({ compact }: { compact: boolean }) {
+function CommercialNotesSection({
+  compact,
+  layout = "grid",
+}: {
+  compact: boolean;
+  layout?: "grid" | "stack";
+}) {
+  if (layout === "stack") {
+    return (
+      <section className="space-y-2">
+        <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500">
+          Condições do projeto
+        </h4>
+        <div className="space-y-2">
+          {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
+            <div
+              key={text.slice(0, 24)}
+              className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-3"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80">
+                <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
+              </div>
+              <p className="text-[10px] text-neutral-700 leading-relaxed pt-1.5">{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-3">
       <div className={`grid grid-cols-3 ${compact ? "gap-2" : "gap-3"}`}>
@@ -512,7 +541,68 @@ function CommercialNotesSection({ compact }: { compact: boolean }) {
   );
 }
 
-function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
+function PaymentConditionsSection({
+  assetBase,
+  layout = "grid",
+}: {
+  assetBase?: string;
+  layout?: "grid" | "stack";
+}) {
+  const options = (
+    <>
+      <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
+        <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
+          À vista
+        </span>
+        <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+          <li className="flex gap-1.5">
+            <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
+            <span>
+              <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
+              <strong className="text-neutral-900">50% na entrega</strong>.
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+        <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+          Parcelado
+        </span>
+        <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+          <li className="flex gap-1.5">
+            <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+            <span>
+              <strong className="text-neutral-900">35% de entrada*</strong> e o restante em até{" "}
+              <strong className="text-neutral-900">5x sem juros</strong>.
+            </span>
+          </li>
+          <li className="flex gap-1.5">
+            <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+            <span>
+              Ou em até <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo).
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+        <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+          Cartão
+        </span>
+        <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+          <li className="flex gap-1.5">
+            <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+            <span>
+              Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos (+ a taxa
+              de parcelamento do cartão).
+            </span>
+          </li>
+        </ul>
+      </div>
+    </>
+  );
+
   return (
     <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
@@ -533,63 +623,55 @@ function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
-          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
-            À vista
-          </span>
-          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-            <li className="flex gap-1.5">
-              <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
-              <span>
-                <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
-                <strong className="text-neutral-900">50% na entrega</strong>.
-              </span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-            Parcelado
-          </span>
-          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-            <li className="flex gap-1.5">
-              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-              <span>
-                <strong className="text-neutral-900">35% de entrada*</strong> e o restante em até{" "}
-                <strong className="text-neutral-900">5x sem juros</strong>.
-              </span>
-            </li>
-            <li className="flex gap-1.5">
-              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-              <span>
-                Ou em até <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo).
-              </span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-            Cartão
-          </span>
-          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-            <li className="flex gap-1.5">
-              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-              <span>
-                Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos (+ a taxa
-                de parcelamento do cartão).
-              </span>
-            </li>
-          </ul>
-        </div>
+      <div className={layout === "stack" ? "space-y-2" : "grid grid-cols-3 gap-2.5"}>
+        {options}
       </div>
 
       <p className="text-[8px] text-neutral-400 leading-snug">
         *Na assinatura do contrato. Se preferir, solicite a simulação da opção desejada.
       </p>
     </section>
+  );
+}
+
+function AddendumPostApprovalNotice() {
+  return (
+    <section className="rounded-xl border border-indigo-200/90 bg-indigo-50/50 px-4 py-3.5 space-y-2 print:break-inside-avoid">
+      <p className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-900">
+        Alterações após a aprovação
+      </p>
+      <div className="text-[11px] text-neutral-700 leading-relaxed space-y-1.5">
+        <p>
+          Depois de aprovada, esta proposta permanece válida no que foi acordado. Qualquer mudança
+          pedida em seguida — medidas, materiais, inclusão ou exclusão de itens — será tratada em um{" "}
+          <strong className="text-neutral-900">adendo comercial</strong>, com valor próprio e nova
+          aprovação.
+        </p>
+        <p>
+          O que já foi aprovado aqui não é substituído pelo adendo; o adendo só complementa.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function CommercialFooterBlock({
+  compact,
+  assetBase,
+  layout = "grid",
+  showAddendumNotice = false,
+}: {
+  compact: boolean;
+  assetBase?: string;
+  layout?: "grid" | "stack";
+  showAddendumNotice?: boolean;
+}) {
+  return (
+    <div className={`print-quote-bottom ${layout === "stack" ? "space-y-4" : "space-y-3.5"}`}>
+      {showAddendumNotice ? <AddendumPostApprovalNotice /> : null}
+      <CommercialNotesSection compact={compact} layout={layout} />
+      <PaymentConditionsSection assetBase={assetBase} layout={layout} />
+    </div>
   );
 }
 
@@ -655,21 +737,6 @@ function AddendumContextBlock({
   );
 }
 
-function CommercialFooterBlock({
-  compact,
-  assetBase,
-}: {
-  compact: boolean;
-  assetBase?: string;
-}) {
-  return (
-    <div className="print-quote-bottom space-y-3.5">
-      <CommercialNotesSection compact={compact} />
-      <PaymentConditionsSection assetBase={assetBase} />
-    </div>
-  );
-}
-
 type QuotePrintDocumentProps = {
   quote: QuotePrintData;
   client: QuotePrintClient;
@@ -697,10 +764,11 @@ export default function QuotePrintDocument({
     : null;
 
   const density = resolveQuotePrintDensity(quote.items);
-  const isCompact = density === "compact" || density === "paged";
-  const isPaged = density === "paged";
+  const isComplete = forcesCommercialSecondPage(quote.template_tipo);
+  const isCompact = density === "compact" || density === "paged" || isComplete;
+  const isPaged = density === "paged" || isComplete;
   /** Poucos itens: bloco de itens centralizado no espaço livre do A4. */
-  const centerItems = density === "normal";
+  const centerItems = density === "normal" && !isComplete;
   const cellPad = isCompact ? "py-2.5 px-3" : "py-3.5 px-4";
   const sectionGap = isCompact ? "space-y-2.5" : "space-y-3.5";
   const isComparative = quote.template_tipo === "COMPARATIVO";
@@ -1058,13 +1126,28 @@ export default function QuotePrintDocument({
 
         {isPaged && !isAddendum ? (
           <div className="print-page print-page-break flex flex-col">
-            <PrintTopHeader assetBase={assetBase} title="Condições comerciais" />
+            <PrintTopHeader
+              assetBase={assetBase}
+              title={isComplete ? "Condições e alterações" : "Condições comerciais"}
+              quoteCodigo={isComplete ? quoteCodigo : undefined}
+            />
             <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">
-              <p className="text-[11px] text-neutral-500 leading-relaxed shrink-0">
-                Informações de prazo, garantia, montagem e formas de pagamento desta proposta.
-              </p>
-              <div className="print-quote-items flex-1 flex flex-col justify-end">
-                <CommercialFooterBlock compact={false} assetBase={assetBase} />
+              {!isComplete ? (
+                <p className="text-[11px] text-neutral-500 leading-relaxed shrink-0">
+                  Informações de prazo, garantia, montagem e formas de pagamento desta proposta.
+                </p>
+              ) : null}
+              <div
+                className={`print-quote-items flex-1 flex flex-col ${
+                  isComplete ? "justify-start gap-1" : "justify-end"
+                }`}
+              >
+                <CommercialFooterBlock
+                  compact={false}
+                  assetBase={assetBase}
+                  layout={isComplete ? "stack" : "grid"}
+                  showAddendumNotice={isComplete}
+                />
               </div>
             </main>
             <PrintBottomFooter />
