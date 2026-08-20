@@ -13,7 +13,6 @@ import {
   Loader2,
   ChevronLeft,
   ChevronDown,
-  FolderKanban,
   UserRound,
   UserPlus,
   ArrowUpAZ,
@@ -189,7 +188,7 @@ export default function QuotesList({
   const [searchProject, setSearchProject] = useState("");
 
   // Novos estados para vinculação de cliente ou avulso
-  const [creationMode, setCreationMode] = useState<"PROJECT" | "CLIENT" | "QUICK">("PROJECT");
+  const [creationMode, setCreationMode] = useState<"PROJECT" | "CLIENT" | "QUICK">("CLIENT");
   const [clientsList, setClientsList] = useState<any[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [searchClient, setSearchClient] = useState("");
@@ -216,16 +215,27 @@ export default function QuotesList({
 
   const handleOpenCreateModal = async () => {
     setIsCreateOpen(true);
-    setLoadingProjects(true);
-    const res = await getProjectsForQuotes();
-    if (res.success) {
-      setProjects(res.data || []);
+    setCreationMode("CLIENT");
+    if (clientsList.length === 0) {
+      setLoadingClients(true);
+      const res = await getClients(companyId);
+      if (res.success) {
+        setClientsList(res.clients || []);
+      }
+      setLoadingClients(false);
     }
-    setLoadingProjects(false);
   };
 
   const handleModeChange = async (mode: "PROJECT" | "CLIENT" | "QUICK") => {
     setCreationMode(mode);
+    if (mode === "PROJECT" && projects.length === 0) {
+      setLoadingProjects(true);
+      const res = await getProjectsForQuotes();
+      if (res.success) {
+        setProjects(res.data || []);
+      }
+      setLoadingProjects(false);
+    }
     if (mode === "CLIENT" && clientsList.length === 0) {
       setLoadingClients(true);
       const res = await getClients(companyId);
@@ -285,7 +295,7 @@ export default function QuotesList({
     setSelectedProjectId(null);
     setSearchProject("");
     setSearchClient("");
-    setCreationMode("PROJECT");
+    setCreationMode("CLIENT");
     setQuickNome("");
     setQuickEmail("");
     setQuickTelefone("");
@@ -297,7 +307,7 @@ export default function QuotesList({
     setSelectedProjectId(null);
     setSearchProject("");
     setSearchClient("");
-    setCreationMode("PROJECT");
+    setCreationMode("CLIENT");
     setQuickNome("");
     setQuickEmail("");
     setQuickTelefone("");
@@ -308,8 +318,8 @@ export default function QuotesList({
     setSelectedProjectId(null);
   };
 
+  // "Projeto" oculto por enquanto (clientes duplicavam na lista). Código mantido para reativar depois.
   const creationModes = [
-    { id: "PROJECT" as const, label: "Projeto", icon: FolderKanban },
     { id: "CLIENT" as const, label: "Cliente", icon: UserRound },
     { id: "QUICK" as const, label: "Avulso", icon: UserPlus },
   ];
@@ -1075,7 +1085,7 @@ export default function QuotesList({
 
           {!selectedProjectId && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {creationModes.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
