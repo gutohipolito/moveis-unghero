@@ -62,6 +62,7 @@ export default function MobileTopBar({
             initialNotifications={initialNotifications}
             initialNotes={initialNotes}
             initialReminders={initialReminders}
+            items={["chats", "notes", "reminders"]}
           />
         </div>
       )}
@@ -88,6 +89,13 @@ export default function MobileTopBar({
             <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
           </button>
         )}
+        <HeaderQuickActions
+          companyId={companyId}
+          initialNotifications={initialNotifications}
+          initialNotes={initialNotes}
+          initialReminders={initialReminders}
+          items={["notifications"]}
+        />
         <SidebarToggle user={user} onOpenChange={setSidebarOpen} />
       </div>
     </header>

@@ -770,15 +770,15 @@ export default function QuotesList({
 
       {/* Lista de Orçamentos */}
       <div className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overscroll-x-contain -mx-px">
-          <table className="w-full min-w-[640px] md:min-w-[720px] text-left border-collapse">
+        <div className="overflow-x-auto overscroll-x-contain -mx-px md:mx-0">
+          <table className="w-full min-w-0 md:min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">COD</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[10rem]">Cliente</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Cidade</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Bairro</th>
-                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Validade</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">Validade</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Valor</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right w-14">Ações</th>
@@ -935,7 +935,7 @@ export default function QuotesList({
                           {q.project.client.bairro || "Não informado"}
                         </span>
                       </td>
-                      <td className={`py-3 px-3 text-sm whitespace-nowrap ${!hasPending || isFullyApproved || isPartial ? "text-slate-400" : dateClass}`}>
+                      <td className={`py-3 px-3 text-sm whitespace-nowrap hidden sm:table-cell ${!hasPending || isFullyApproved || isPartial ? "text-slate-400" : dateClass}`}>
                         {!hasPending || isFullyApproved || isPartial ? (
                           <span className="text-slate-400">—</span>
                         ) : (

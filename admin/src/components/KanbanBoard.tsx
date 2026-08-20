@@ -2106,8 +2106,7 @@ export default function KanbanBoard({
           )}
         </div>
       ) : (
-      <div className="flex-1 min-h-0 overflow-x-auto pb-4 custom-scrollbar select-none">
-        <div className="flex gap-4 items-stretch h-full min-w-max pb-2 print:flex-col print:h-auto print:min-w-0 print:gap-6">
+      <div className="flex-1 min-h-0 kanban-scroll select-none print:flex-col print:h-auto print:min-w-0 print:gap-6">
         {funnelColumns.map((col) => {
           const colProjects = sortProjectsForFunnel(
             projects.filter((p) => p.status_geral === col.id)
@@ -2169,7 +2168,6 @@ export default function KanbanBoard({
             </div>
           );
         })}
-        </div>
       </div>
       )}
 
@@ -2251,7 +2249,7 @@ export default function KanbanBoard({
           return (
             <div className="flex flex-col flex-1 min-h-0 h-full">
               {hasBriefing ? (
-                <div className="flex border-b border-slate-200/80 bg-white sticky top-0 z-20 shrink-0 pr-12">
+                <div className="flex border-b border-slate-200/80 bg-white sticky top-0 z-20 shrink-0 pr-12 pt-[env(safe-area-inset-top,0px)]">
                   <button
                     type="button"
                     onClick={() => setActiveModalTab("negociacao")}

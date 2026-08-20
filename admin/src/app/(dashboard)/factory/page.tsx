@@ -23,8 +23,8 @@ export default async function FactoryPage({
   ]);
 
   return (
-    <div className="factory-floor md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:flex md:flex-col md:overflow-hidden md:space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
-      <div className="factory-page-header shrink-0 print:hidden">
+    <div className="factory-floor h-[calc(100svh-var(--dashboard-chrome-offset-mobile))] flex flex-col overflow-hidden md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
+      <div className="factory-page-header shrink-0 print:hidden max-md:hidden">
         <PageHeader
           title="Chão de Fábrica"
           description={

@@ -70,7 +70,7 @@
   --leading-relaxed: 1.6;
 
   /* ─── Layout ─── */
-  --mobile-nav-height: 3.25rem;
+  --mobile-nav-height: 3.5rem;
   --mobile-header-height: 3.25rem;
   --dashboard-topbar-height: 3.5rem;
   --dashboard-main-pad-x: 1rem;
@@ -78,6 +78,11 @@
   --dashboard-stack-gap: 1.25rem;
   /* Topbar + paddings do main + margem do PageHeader (CRM/BI/Fábrica) */
   --dashboard-chrome-offset: 7.8125rem; /* 125px */
+  /* Mobile: topbar + bottom nav + safe areas (funil/fábrica em viewport travado) */
+  --dashboard-chrome-offset-mobile: calc(
+    var(--mobile-header-height) + var(--mobile-nav-height) + env(safe-area-inset-top, 0px) +
+      env(safe-area-inset-bottom, 0px) + 0.75rem
+  );
   --factory-board-offset: 23rem;
 }
 

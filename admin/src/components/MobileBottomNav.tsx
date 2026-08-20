@@ -28,7 +28,10 @@ export default function MobileBottomNav() {
 
   return (
     <nav className="mobile-bottom-nav md:hidden" aria-label="Navegação principal">
-      <div className="mobile-bottom-nav-inner">
+      <div
+        className="mobile-bottom-nav-inner"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
           const isActive = isNavItemActive(pathname, item.href);
           return (

@@ -392,11 +392,11 @@ export default function ProjectChatDock() {
       {open && (
         <div
           className={cn(
-            "project-chat-panel fixed z-50 flex flex-col overflow-hidden",
+            "project-chat-panel fixed z-[170] flex flex-col overflow-hidden",
             "right-3 w-[min(100vw-1.5rem,26rem)]",
             "bottom-[calc(var(--mobile-nav-height)+env(safe-area-inset-bottom)+7.25rem)]",
             "md:right-6 md:bottom-36",
-            "h-[min(70vh,36rem)] rounded-2xl border border-border bg-white shadow-2xl"
+            "h-[min(70vh,36rem,calc(100svh-var(--mobile-header-height)-env(safe-area-inset-top)-var(--mobile-nav-height)-env(safe-area-inset-bottom)-8.5rem))] rounded-2xl border border-border bg-white shadow-2xl"
           )}
           role="dialog"
           aria-label="Chat interno do projeto"

@@ -29,7 +29,7 @@ export default async function CRMPage() {
   );
 
   return (
-    <div className="md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:flex md:flex-col md:overflow-hidden space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
+    <div className="h-[calc(100svh-var(--dashboard-chrome-offset-mobile))] flex flex-col overflow-hidden space-y-[var(--space-3)] md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
       <KanbanBoard
         initialProjects={boardSnapshot.projects}
         initialLostCount={boardSnapshot.lostCount}

@@ -3860,6 +3860,10 @@ button.partner-card:hover,
 
 .dashboard-main-mobile.dashboard-main-no-mobile-nav {
   padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+  --dashboard-chrome-offset-mobile: calc(
+    var(--mobile-header-height) + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px) +
+      0.75rem
+  );
 }
 
 .dashboard-main {
@@ -4128,7 +4132,7 @@ button.partner-card:hover,
 @media (max-width: 767px) {
   .notification-panel {
     position: fixed !important;
-    top: 3.8rem !important;
+    top: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px) + 0.5rem) !important;
     left: 1rem !important;
     right: 1rem !important;
     width: auto !important;
@@ -4562,9 +4566,9 @@ button.partner-card:hover,
 
 .project-chat-alert-stack {
   position: fixed;
-  z-index: 46;
+  z-index: 166;
   right: 1rem;
-  bottom: calc(var(--mobile-nav-height, 3.25rem) + env(safe-area-inset-bottom, 0px) + 8.35rem);
+  bottom: calc(var(--mobile-nav-height, 3.5rem) + env(safe-area-inset-bottom, 0px) + 8.35rem);
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
@@ -4934,7 +4938,11 @@ button.partner-card:hover,
 .kanban-scroll {
   display: flex;
   gap: var(--space-3);
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 0.75rem;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -5396,7 +5404,7 @@ body.viewer-privacy-lock .privacy-value {
   (display-mode: minimal-ui) {
   .dashboard-topbar,
   .mobile-topbar {
-    padding-top: env(safe-area-inset-top, 0);
+    padding-top: calc(var(--space-2) + env(safe-area-inset-top, 0));
   }
 
   /* Só reserva espaço da bottom nav no mobile; tablet/desktop usam sidebar */
