@@ -20,6 +20,7 @@ import {
   getClientColor,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
+import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
 import { usePermissions } from "@/context/PermissionsContext";
 import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { cn } from "@/lib/utils";
@@ -638,6 +639,12 @@ export default function FactoryClient({
               {item.hasFactoryProjectImages ? "Imagens da fábrica" : "Projeto fábrica"}
             </span>
           )}
+
+          <ApprovedQuoteSubitens
+            items={item.approvedSubitens ?? []}
+            variant="preview"
+            previewLimit={2}
+          />
 
           <div className="flex items-center justify-between gap-2">
             {item.responsavelNome ? (

@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import CameraCaptureModal from "@/components/CameraCaptureModal";
 import PdfCoverThumb from "@/components/PdfCoverThumb";
+import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
 import SpotlightTour, {
   type SpotlightTourStep,
 } from "@/components/ui/SpotlightTour";
@@ -58,6 +59,7 @@ export type EnvironmentGalleryTarget = {
   id: string;
   nome: string;
   tipo: string;
+  approvedSubitens?: string[];
 };
 
 const TIPO_LABELS: Record<string, string> = {
@@ -353,6 +355,10 @@ export default function EnvironmentGalleryModal({
                         : " · escolha o tipo e capture — o envio é automático"
                       : " · somente visualização"}
                   </p>
+                  <ApprovedQuoteSubitens
+                    items={environment.approvedSubitens ?? []}
+                    className="mt-3"
+                  />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {canManage ? (

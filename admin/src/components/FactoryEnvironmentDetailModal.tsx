@@ -37,6 +37,7 @@ import {
   type EnvironmentAttachmentDTO,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
+import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
 import { uploadEnvironmentAttachmentFile } from "@/lib/environmentAttachmentUpload";
 import { describeUploadException } from "@/lib/uploadErrors";
 import PdfCoverThumb from "@/components/PdfCoverThumb";
@@ -139,6 +140,7 @@ export default function FactoryEnvironmentDetailModal({
   const [acabamentos, setAcabamentos] = useState("");
   const [medidas, setMedidas] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [approvedSubitens, setApprovedSubitens] = useState<string[]>([]);
   const [techReady, setTechReady] = useState(false);
   const [savingTech, setSavingTech] = useState(false);
   const [techDirty, setTechDirty] = useState(false);
@@ -242,6 +244,7 @@ export default function FactoryEnvironmentDetailModal({
     setAcabamentos(item.acabamentos ?? "");
     setMedidas(item.medidasObservacoes ?? "");
     setObservacoes(item.observacoesFabrica ?? "");
+    setApprovedSubitens(item.approvedSubitens ?? []);
 
     let cancelled = false;
     (async () => {
@@ -264,6 +267,10 @@ export default function FactoryEnvironmentDetailModal({
       setMedidas(result.tech.medidas_observacoes);
       setObservacoes(result.tech.observacoes_fabrica);
       setCapaId(result.tech.capa_attachment_id);
+      setApprovedSubitens(result.approvedSubitens ?? []);
+      onBoardPatch(item.id, {
+        approvedSubitens: result.approvedSubitens ?? [],
+      });
       lastSavedTechRef.current = JSON.stringify({
         materiais: result.tech.materiais,
         ferragens: result.tech.ferragens,
@@ -702,6 +709,7 @@ export default function FactoryEnvironmentDetailModal({
                 ) : null}
               </div>
             </div>
+            <ApprovedQuoteSubitens items={approvedSubitens} />
             <div className="grid grid-cols-1 gap-3">
               <label className="space-y-1">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">Materiais</span>

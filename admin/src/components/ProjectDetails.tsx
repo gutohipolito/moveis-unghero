@@ -129,6 +129,7 @@ interface Environment {
   nome: string;
   tipo: string;
   status: string;
+  approvedSubitens?: string[];
   attachmentCount: number;
   coverUrl: string | null;
   coverPdfUrl: string | null;
@@ -654,7 +655,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
         ...project,
         environments: [
           ...project.environments,
-          { ...created, ...EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY },
+          { ...created, ...EMPTY_ENVIRONMENT_ATTACHMENT_SUMMARY, approvedSubitens: [] },
         ],
         // Adiciona um evento mockado localmente na timeline para atualizar instantaneamente
         timeline: [
@@ -1543,6 +1544,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                         id: env.id,
                         nome: env.nome,
                         tipo: env.tipo,
+                        approvedSubitens: env.approvedSubitens ?? [],
                       })
                     }
                   />
@@ -1566,6 +1568,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                         id: env.id,
                         nome: env.nome,
                         tipo: env.tipo,
+                        approvedSubitens: env.approvedSubitens ?? [],
                       })
                     }
                   />

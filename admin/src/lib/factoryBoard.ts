@@ -16,6 +16,7 @@ import {
   summarizeText,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
+import { linkedQuoteSubitens } from "@/lib/quoteItems";
 
 export async function fetchFactoryBoard(companyId: string) {
   const [environments, slaStates, factoryProjectFiles] = await Promise.all([
@@ -41,6 +42,9 @@ export async function fetchFactoryBoard(companyId: string) {
           medidas_observacoes: true,
           observacoes_fabrica: true,
           capa_attachment_id: true,
+          quoteItem: {
+            select: { subitens: true },
+          },
           project: {
             select: {
               id: true,
@@ -135,6 +139,7 @@ export async function fetchFactoryBoard(companyId: string) {
       observacoesFabrica: environment.observacoes_fabrica,
       materialsSummary: summarizeText(environment.materiais),
       hardwareSummary: summarizeText(environment.ferragens),
+      approvedSubitens: linkedQuoteSubitens(environment.quoteItem),
       attachmentCount: environment._count.attachments,
       coverUrl: coverImage?.url ?? null,
       coverPdfUrl: coverPdf?.url ?? null,

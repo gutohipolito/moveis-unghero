@@ -7,6 +7,7 @@ import {
   ENVIRONMENT_TIPO_LABELS,
 } from "@/lib/factoryEnvironment";
 import type { EnvironmentProjectCardData } from "@/components/environments/EnvironmentProjectCard";
+import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
 import {
   CheckCircle2,
   ChevronRight,
@@ -103,6 +104,12 @@ export default function EnvironmentProjectListRow({
             <h4 className="font-semibold text-sm sm:text-base text-foreground break-words leading-snug">
               {environment.nome}
             </h4>
+            <ApprovedQuoteSubitens
+              items={environment.approvedSubitens ?? []}
+              variant="preview"
+              previewLimit={3}
+              className="mt-1.5"
+            />
           </div>
           <span
             className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClassName}`}

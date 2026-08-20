@@ -41,6 +41,14 @@ export function formatQuoteSubitensLine(subitens: string[]): string {
   return expandAndFormatQuoteDetails(subitens).join(" • ");
 }
 
+/** Subitens do item de orçamento vinculado ao ambiente (sem preços). */
+export function linkedQuoteSubitens(
+  quoteItem: { subitens?: unknown } | null | undefined
+): string[] {
+  if (!quoteItem) return [];
+  return parseQuoteSubitens(quoteItem.subitens);
+}
+
 /**
  * Detecta se o texto parece misturar preço/quantidade no título ou detalhe
  * (ex.: "R$ 1300 cada", "2x balcão 1500").

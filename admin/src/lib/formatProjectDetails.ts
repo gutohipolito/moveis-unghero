@@ -5,12 +5,14 @@ import {
   summarizeEnvironmentAttachments,
   type EnvironmentAttachmentSummary,
 } from "@/lib/factoryEnvironment";
+import { linkedQuoteSubitens } from "@/lib/quoteItems";
 
 export type ProjectEnvironmentPayload = {
   id: string;
   nome: string;
   tipo: string;
   status: string;
+  approvedSubitens: string[];
 } & EnvironmentAttachmentSummary;
 
 export type ProjectDetailsPayload = {
@@ -130,6 +132,9 @@ const projectInclude = {
   environments: {
     orderBy: { nome: "asc" as const },
     include: {
+      quoteItem: {
+        select: { subitens: true },
+      },
       _count: { select: { attachments: true } },
       attachments: {
         select: {
@@ -220,6 +225,7 @@ export function formatProjectDetails(project: ProjectWithDetails): ProjectDetail
         nome: env.nome,
         tipo: env.tipo,
         status: env.status,
+        approvedSubitens: linkedQuoteSubitens(env.quoteItem),
         ...summary,
       };
     }),

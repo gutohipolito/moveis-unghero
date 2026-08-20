@@ -20,6 +20,8 @@ export type FactoryBoardEnvironment = {
   observacoesFabrica: string | null;
   materialsSummary: string | null;
   hardwareSummary: string | null;
+  /** Detalhes aprovados no orçamento (sem preços) — fonte para projetista/fábrica. */
+  approvedSubitens: string[];
   attachmentCount: number;
   coverUrl: string | null;
   coverPdfUrl: string | null;

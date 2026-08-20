@@ -7,6 +7,7 @@ import {
   ENVIRONMENT_TIPO_LABELS,
   type EnvironmentAttachmentSummary,
 } from "@/lib/factoryEnvironment";
+import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
 import { CheckCircle2, Compass, FileStack, FolderOpen, Images, Ruler } from "lucide-react";
 import PdfCoverThumb from "@/components/PdfCoverThumb";
 
@@ -15,6 +16,7 @@ export type EnvironmentProjectCardData = {
   nome: string;
   tipo: string;
   status: string;
+  approvedSubitens?: string[];
 } & EnvironmentAttachmentSummary;
 
 type EnvironmentProjectCardProps = {
@@ -137,6 +139,12 @@ export default function EnvironmentProjectCard({
                 : "Abra para enviar medição, projeto do arquiteto ou arquivos da fábrica."}
             </p>
           ) : null}
+          <ApprovedQuoteSubitens
+            items={environment.approvedSubitens ?? []}
+            variant="preview"
+            previewLimit={compact ? 2 : 3}
+            className="mt-2"
+          />
         </div>
 
         {environment.categories.length > 0 ? (

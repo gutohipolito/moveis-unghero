@@ -11,6 +11,7 @@ import {
   type EnvironmentAttachmentDTO,
   type EnvironmentTechSheet,
 } from "@/lib/factoryEnvironment";
+import { linkedQuoteSubitens } from "@/lib/quoteItems";
 
 function mapAttachment(record: {
   id: string;
@@ -58,6 +59,9 @@ export async function getEnvironmentTechSheet(environmentId: string) {
       medidas_observacoes: true,
       observacoes_fabrica: true,
       capa_attachment_id: true,
+      quoteItem: {
+        select: { subitens: true },
+      },
     },
   });
 
@@ -77,6 +81,7 @@ export async function getEnvironmentTechSheet(environmentId: string) {
   return {
     success: true as const,
     tech,
+    approvedSubitens: linkedQuoteSubitens(environment.quoteItem),
     fill: countTechSheetFields(environment),
   };
 }
