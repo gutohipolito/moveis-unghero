@@ -39,7 +39,9 @@ import {
   formatQuotePhrase,
 } from "@/lib/quoteItems";
 import {
-  buildDefaultAddendumText,
+  buildAddendumPrintRef,
+  buildDefaultAddendumReason,
+  extractAddendumReason,
   summarizeAddendumSource,
 } from "@/lib/quoteAddendum";
 
@@ -309,7 +311,7 @@ export async function createQuoteAddendum(sourceQuoteId: string) {
       };
     }
 
-    const observacoes = buildDefaultAddendumText(sourceSummary);
+    const observacoes = buildDefaultAddendumReason();
     const refLabel = sourceSummary.label;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -733,7 +735,9 @@ export async function updateExistingQuote(
           desconto,
           valor_final: valorFinal,
           validade: parseISODateOnlyBrazil(data.validade),
-          observacoes: data.observacoes || "",
+          observacoes: isAddendumTemplate(templateTipo)
+            ? extractAddendumReason(data.observacoes)
+            : data.observacoes || "",
           partner_id: partnerId,
           solicitante_id: solicitanteId,
           solicitante_nome: solicitanteNome,
@@ -812,6 +816,17 @@ export async function getQuoteForEdit(quoteId: string) {
         solicitante_id: true,
         solicitante_nome: true,
         solicitante_area: true,
+        adendo_ref: {
+          select: {
+            id: true,
+            versao: true,
+            codigo: true,
+            aprovado_em: true,
+            items: {
+              select: { id: true, valor_total: true, status: true },
+            },
+          },
+        },
         items: {
           orderBy: { id: "asc" },
           select: {
@@ -851,8 +866,13 @@ export async function getQuoteForEdit(quoteId: string) {
         subtotal: Number(quote.subtotal),
         valor_final: Number(quote.valor_final),
         validade: quote.validade.toISOString(),
-        observacoes: quote.observacoes || "",
+        observacoes: isAddendumTemplate(quote.template_tipo)
+          ? extractAddendumReason(quote.observacoes)
+          : quote.observacoes || "",
         partner_id: quote.partner_id,
+        addendumRef: quote.adendo_ref
+          ? buildAddendumPrintRef(quote.adendo_ref)
+          : null,
         solicitante_id: quote.solicitante_id,
         solicitante_nome: quote.solicitante_nome,
         solicitante_area: quote.solicitante_area,

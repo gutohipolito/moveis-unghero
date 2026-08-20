@@ -18,6 +18,13 @@ import {
   isAddendumTemplate,
   type QuoteTemplateId,
 } from "@/lib/quoteTemplates";
+import {
+  buildAddendumReferenceCopy,
+  extractAddendumReason,
+  formatAddendumDeltaLabel,
+  formatQuoteMoney,
+  type AddendumPrintRef,
+} from "@/lib/quoteAddendum";
 import { listQuoteItemPresets, listQuoteDetailPresets, createQuoteItemPreset, createQuoteDetailPreset } from "@/app/actions/quoteItemPresets";
 import type { QuoteItemPresetDTO } from "@/lib/quoteItemPresets";
 import {
@@ -73,6 +80,7 @@ export type QuoteBuilderEditingQuote = {
   observacoes?: string | null;
   partner_id?: string | null;
   solicitante_id?: string | null;
+  addendumRef?: AddendumPrintRef | null;
   items: Array<{
     id: string;
     descricao: string;
@@ -148,7 +156,12 @@ export default function QuoteBuilder({
     setTemplateTipo(
       QUOTE_TEMPLATE_IDS.includes(tpl) ? tpl : "BASICO"
     );
-    setObservacoes(editingQuote.observacoes || "");
+    const nextIsAddendum = isAddendumTemplate(tpl);
+    setObservacoes(
+      nextIsAddendum
+        ? extractAddendumReason(editingQuote.observacoes)
+        : editingQuote.observacoes || ""
+    );
     setValidade(toISODateBR(editingQuote.validade));
     setDesconto(Number(editingQuote.desconto) || 0);
     setPartnerId(editingQuote.partner_id || "");
@@ -442,6 +455,15 @@ export default function QuoteBuilder({
   // Cálculos comerciais
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const valorFinal = Math.max(0, subtotal - desconto);
+  const addendumCopy =
+    isAddendum && editingQuote?.addendumRef
+      ? buildAddendumReferenceCopy({
+          label: editingQuote.addendumRef.label,
+          approvedAtLabel: editingQuote.addendumRef.approvedAtLabel,
+          approvedTotal: editingQuote.addendumRef.approvedTotal,
+          addendumTotal: valorFinal,
+        })
+      : null;
 
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -508,7 +530,9 @@ export default function QuoteBuilder({
       desconto,
       valor_final: currentValorFinal,
       validade,
-      observacoes,
+      observacoes: isAddendum
+        ? extractAddendumReason(observacoes)
+        : observacoes,
       template_tipo: templateTipo,
       partnerId: partnerId || null,
       solicitanteId: clientTipoPessoa === "PJ" ? solicitanteId || null : null,
@@ -578,7 +602,7 @@ export default function QuoteBuilder({
             </h2>
             <p className="text-xs text-muted-foreground">
               {isAddendum
-                ? "Descreva o motivo das alterações e inclua apenas os itens novos ou ajustados. O PDF referencia a proposta original aprovada."
+                ? "A referência e o acréscimo de valor são gerados sozinhos. Você só descreve o motivo das alterações."
                 : isEditing
                   ? "Altere cômodos e itens pendentes nesta mesma versão — não cria outra proposta. Cada edição fica no histórico."
                   : "Monte a tabela comercial e exporte o PDF com itens e valores."}
@@ -814,18 +838,67 @@ export default function QuoteBuilder({
         </div>
 
         {isAddendum ? (
-          <div className="space-y-1.5 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
-            <label className="text-xs font-bold text-amber-900 block">
-              Texto explicativo do adendo (impresso no PDF)
-            </label>
-            <p className="text-[10px] text-amber-900/80 leading-snug">
-              Explique a relação com a proposta aprovada, o que mudou na produção e por que há acréscimo ou ajuste de valor.
-            </p>
-            <textarea
-              className="w-full min-h-[140px] rounded-lg border border-amber-200/80 bg-white px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-amber-400"
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-            />
+          <div className="space-y-3 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-amber-900">
+                Referência à proposta aprovada (gerada automaticamente)
+              </p>
+              {editingQuote?.addendumRef ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-amber-950">
+                    <p>
+                      <span className="font-bold block">Proposta base</span>
+                      {editingQuote.addendumRef.label}
+                    </p>
+                    <p>
+                      <span className="font-bold block">Aprovada em</span>
+                      {editingQuote.addendumRef.approvedAtLabel || "—"}
+                    </p>
+                    <p>
+                      <span className="font-bold block">Valor original</span>
+                      {formatQuoteMoney(editingQuote.addendumRef.approvedTotal)}
+                    </p>
+                  </div>
+                  {addendumCopy ? (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-amber-950">
+                          <p>
+                            <span className="font-bold block">Este adendo</span>
+                            {formatAddendumDeltaLabel(addendumCopy.delta)}
+                          </p>
+                          <p>
+                            <span className="font-bold block">Original + alterações</span>
+                            {formatQuoteMoney(addendumCopy.delta.combinedTotal)}
+                          </p>
+                        </div>
+                        <div className="text-[11px] text-amber-950/90 leading-relaxed space-y-1">
+                          {addendumCopy.paragraphs.map((paragraph) => (
+                            <p key={paragraph}>{paragraph}</p>
+                          ))}
+                        </div>
+                      </>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-[11px] text-amber-900/80">
+                  A referência e o delta de valor entram no PDF automaticamente, conforme os itens abaixo.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5 border-t border-amber-200/70 pt-3">
+              <label className="text-xs font-bold text-amber-900 block">
+                Por que este valor está sendo cobrado (impresso no PDF)
+              </label>
+              <p className="text-[10px] text-amber-900/80 leading-snug">
+                Explique o que mudou na produção — item extra, troca de material, alteração de medida — e o motivo da cobrança.
+              </p>
+              <textarea
+                className="w-full min-h-[110px] rounded-lg border border-amber-200/80 bg-white px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-amber-400"
+                value={observacoes}
+                placeholder="Ex.: Inclusão de painel extra no home office e troca do MDF do nicho da TV, solicitadas após o início da produção."
+                onChange={(e) => setObservacoes(e.target.value)}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -1293,6 +1366,11 @@ export default function QuoteBuilder({
               <span className="text-xl sm:text-2xl font-black tracking-tight text-gradient-gold block">
                 {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valorFinal)}
               </span>
+              {addendumCopy ? (
+                <span className="text-[10px] text-muted-foreground block">
+                  Original + alterações: {formatQuoteMoney(addendumCopy.delta.combinedTotal)}
+                </span>
+              ) : null}
             </div>
           </div>
         ) : (

@@ -5,7 +5,7 @@ import { formatQuotePhrase, formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { isAddendumTemplate, isImageCatalogTemplate } from "@/lib/quoteTemplates";
-import { formatQuoteMoney } from "@/lib/quoteAddendum";
+import { formatQuoteMoney, extractAddendumReason, buildAddendumReferenceCopy, formatAddendumDeltaLabel } from "@/lib/quoteAddendum";
 
 export const QUOTE_PRINT_FACTORY = {
   name: "Móveis Unghero LTDA",
@@ -596,14 +596,26 @@ function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
 function AddendumContextBlock({
   observacoes,
   addendumRef,
+  addendumTotal,
 }: {
   observacoes?: string | null;
   addendumRef?: QuotePrintData["addendumRef"];
+  addendumTotal: number;
 }) {
+  const reason = extractAddendumReason(observacoes);
+  const generated = addendumRef
+    ? buildAddendumReferenceCopy({
+        label: addendumRef.label,
+        approvedAtLabel: addendumRef.approvedAtLabel,
+        approvedTotal: addendumRef.approvedTotal,
+        addendumTotal,
+      })
+    : null;
+
   return (
     <section className="rounded-xl border border-amber-200/90 bg-amber-50/50 px-4 py-4 space-y-3 print:break-inside-avoid">
       <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
-        Contexto do adendo
+        Referência à proposta aprovada
       </p>
       {addendumRef ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-neutral-700">
@@ -616,20 +628,40 @@ function AddendumContextBlock({
             {addendumRef.approvedAtLabel || "—"}
           </p>
           <p>
-            <span className="font-bold text-neutral-900 block">Valor aprovado</span>
+            <span className="font-bold text-neutral-900 block">Valor original</span>
             {formatQuoteMoney(addendumRef.approvedTotal)}
           </p>
         </div>
       ) : null}
-      {observacoes?.trim() ? (
-        <div className="text-[11px] text-neutral-700 leading-relaxed whitespace-pre-wrap border-t border-amber-200/60 pt-3">
-          {observacoes.trim()}
+      {generated ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-neutral-700 border-t border-amber-200/60 pt-3">
+            <p>
+              <span className="font-bold text-neutral-900 block">Este adendo</span>
+              {formatAddendumDeltaLabel(generated.delta)}
+            </p>
+            <p>
+              <span className="font-bold text-neutral-900 block">Original + alterações</span>
+              {formatQuoteMoney(generated.delta.combinedTotal)}
+            </p>
+          </div>
+          <div className="text-[11px] text-neutral-700 leading-relaxed space-y-1.5">
+            {generated.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+        </>
+      ) : null}
+      {reason ? (
+        <div className="border-t border-amber-200/60 pt-3 space-y-1.5">
+          <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
+            Por que este valor está sendo cobrado
+          </p>
+          <div className="text-[11px] text-neutral-700 leading-relaxed whitespace-pre-wrap">
+            {reason}
+          </div>
         </div>
       ) : null}
-      <p className="text-[9px] text-neutral-500 leading-snug">
-        Este adendo não substitui a proposta original. Os valores abaixo referem-se apenas às
-        alterações solicitadas após a aprovação inicial.
-      </p>
     </section>
   );
 }
@@ -835,6 +867,7 @@ export default function QuotePrintDocument({
               <AddendumContextBlock
                 observacoes={quote.observacoes}
                 addendumRef={quote.addendumRef}
+                addendumTotal={quote.valor_final}
               />
             ) : null}
 
@@ -963,6 +996,12 @@ export default function QuotePrintDocument({
                         {formatCurrency(quote.valor_final)}
                       </span>
                     </div>
+                    {isAddendum && quote.addendumRef ? (
+                      <p className="text-[9px] text-neutral-600 font-semibold text-right">
+                        Original + alterações:{" "}
+                        {formatCurrency(quote.addendumRef.approvedTotal + quote.valor_final)}
+                      </p>
+                    ) : null}
                     {typeof quote.approvedTotal === "number" && quote.approvedTotal > 0 ? (
                       <p className="text-[9px] text-emerald-800 font-bold text-right">
                         Já aprovado: {formatCurrency(quote.approvedTotal)}.

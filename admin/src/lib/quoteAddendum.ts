@@ -13,6 +13,24 @@ export type AddendumSourceSummary = {
   label: string;
 };
 
+export type AddendumPrintRef = {
+  label: string;
+  versao: number;
+  approvedAtLabel: string | null;
+  approvedTotal: number;
+};
+
+export type AddendumDelta = {
+  originalTotal: number;
+  addendumTotal: number;
+  combinedTotal: number;
+  kind: "increase" | "decrease" | "none";
+};
+
+const OLD_REASON_MARKER = /(?:^|\n)Motivo e detalhamento das alterações:\s*/i;
+const OLD_INTRO = /^Este documento é um adendo à proposta comercial\b/i;
+const OLD_PLACEHOLDER = /^\(descreva o que mudou/i;
+
 export function formatQuoteMoney(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -20,21 +38,80 @@ export function formatQuoteMoney(value: number) {
   }).format(value);
 }
 
-export function buildDefaultAddendumText(source: AddendumSourceSummary): string {
-  const ref = source.label;
-  const dateLabel = source.approvedAt
-    ? formatDateBR(source.approvedAt)
-    : "data anterior";
-  const valorOriginal = formatQuoteMoney(source.approvedTotal);
+export function computeAddendumDelta(
+  originalTotal: number,
+  addendumTotal: number
+): AddendumDelta {
+  const original = Math.round(Math.max(0, originalTotal) * 100) / 100;
+  const addendum = Math.round(addendumTotal * 100) / 100;
+  const combined = Math.round((original + addendum) * 100) / 100;
+  const kind =
+    addendum > 0.004 ? "increase" : addendum < -0.004 ? "decrease" : "none";
+  return {
+    originalTotal: original,
+    addendumTotal: addendum,
+    combinedTotal: combined,
+    kind,
+  };
+}
 
-  return [
-    `Este documento é um adendo à proposta comercial ${ref}, aprovada em ${dateLabel}, no valor de ${valorOriginal}.`,
-    "",
-    "Durante a execução do projeto, o cliente solicitou alterações em relação ao escopo originalmente aprovado. Os itens abaixo referem-se exclusivamente a essas mudanças e precisam de nova análise e aprovação.",
-    "",
-    "Motivo e detalhamento das alterações:",
-    "(descreva o que mudou na produção e por que há acréscimo ou ajuste de valor)",
-  ].join("\n");
+export function formatAddendumDeltaLabel(delta: AddendumDelta): string {
+  if (delta.kind === "increase") return `+ ${formatQuoteMoney(delta.addendumTotal)}`;
+  if (delta.kind === "decrease") {
+    return `− ${formatQuoteMoney(Math.abs(delta.addendumTotal))}`;
+  }
+  return "sem alteração de valor";
+}
+
+/** Texto gerado para o PDF — não é editável pelo operador. */
+export function buildAddendumReferenceCopy(input: {
+  label: string;
+  approvedAtLabel: string | null;
+  approvedTotal: number;
+  addendumTotal: number;
+}): { paragraphs: string[]; delta: AddendumDelta } {
+  const dateLabel = input.approvedAtLabel || "data anterior";
+  const original = formatQuoteMoney(input.approvedTotal);
+  const delta = computeAddendumDelta(input.approvedTotal, input.addendumTotal);
+  const deltaMoney = formatQuoteMoney(Math.abs(delta.addendumTotal));
+  const combined = formatQuoteMoney(delta.combinedTotal);
+
+  const intro = `Este adendo complementa a proposta ${input.label}, aprovada em ${dateLabel} no valor de ${original}.`;
+
+  let values: string;
+  if (delta.kind === "increase") {
+    values = `As alterações abaixo acrescentam ${deltaMoney} ao valor já aprovado. Com este adendo, o investimento total passa a ${combined}.`;
+  } else if (delta.kind === "decrease") {
+    values = `As alterações abaixo reduzem ${deltaMoney} do valor já aprovado. Com este adendo, o investimento total passa a ${combined}.`;
+  } else {
+    values = `As alterações abaixo não mudam o valor já aprovado de ${original}.`;
+  }
+
+  const scope =
+    "A proposta original continua valendo. Aqui entram só as mudanças pedidas depois da aprovação.";
+
+  return { paragraphs: [intro, values, scope], delta };
+}
+
+/** Só o motivo editável — a referência e o delta são gerados na hora da impressão. */
+export function buildDefaultAddendumReason(): string {
+  return "";
+}
+
+/** Remove o texto gerado antigo, se ainda estiver salvo em observações. */
+export function extractAddendumReason(observacoes: string | null | undefined): string {
+  const text = (observacoes || "").trim();
+  if (!text) return "";
+
+  const parts = text.split(OLD_REASON_MARKER);
+  if (parts.length > 1) {
+    const reason = parts.slice(1).join("\n").trim();
+    if (!reason || OLD_PLACEHOLDER.test(reason)) return "";
+    return reason;
+  }
+
+  if (OLD_INTRO.test(text)) return "";
+  return text;
 }
 
 export function summarizeAddendumSource(quote: {
@@ -73,7 +150,7 @@ export function buildAddendumPrintRef(refQuote: {
   codigo: string | null;
   aprovado_em: Date | null;
   items: Array<{ id: string; valor_total: unknown; status: string | null }>;
-}) {
+}): AddendumPrintRef | null {
   const summary = summarizeQuoteItems(
     refQuote.items.map((item) => ({
       id: item.id,
