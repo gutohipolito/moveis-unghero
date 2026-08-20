@@ -829,7 +829,7 @@ export default function QuotesList({
                         : undefined;
 
                   const rowActions: RowActionItem[] = [];
-                  if (!isReadOnly && isFullyApproved) {
+                  if (!isReadOnly && isFullyApproved && !isAddendumTemplate(q.template_tipo)) {
                     rowActions.push({
                       key: "addendum",
                       label: "Criar adendo",

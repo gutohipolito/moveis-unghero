@@ -613,49 +613,38 @@ function AddendumContextBlock({
     : null;
 
   return (
-    <section className="rounded-xl border border-amber-200/90 bg-amber-50/50 px-4 py-4 space-y-3 print:break-inside-avoid">
-      <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
-        Referência à proposta aprovada
-      </p>
-      {addendumRef ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-neutral-700">
-          <p>
-            <span className="font-bold text-neutral-900 block">Proposta base</span>
+    <section className="rounded-xl border border-amber-200/80 bg-amber-50/40 px-4 py-3.5 space-y-2.5 print:break-inside-avoid">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
+          Referência à proposta aprovada
+        </p>
+        {addendumRef ? (
+          <p className="text-[10px] text-neutral-600 font-medium">
             {addendumRef.label}
+            {addendumRef.approvedAtLabel ? ` · aprovada em ${addendumRef.approvedAtLabel}` : ""}
+            {" · "}
+            original {formatQuoteMoney(addendumRef.approvedTotal)}
           </p>
-          <p>
-            <span className="font-bold text-neutral-900 block">Aprovada em</span>
-            {addendumRef.approvedAtLabel || "—"}
-          </p>
-          <p>
-            <span className="font-bold text-neutral-900 block">Valor original</span>
-            {formatQuoteMoney(addendumRef.approvedTotal)}
-          </p>
+        ) : null}
+      </div>
+      {generated ? (
+        <div className="text-[11px] text-neutral-700 leading-relaxed space-y-1">
+          {generated.paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
         </div>
       ) : null}
       {generated ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-neutral-700 border-t border-amber-200/60 pt-3">
-            <p>
-              <span className="font-bold text-neutral-900 block">Este adendo</span>
-              {formatAddendumDeltaLabel(generated.delta)}
-            </p>
-            <p>
-              <span className="font-bold text-neutral-900 block">Original + alterações</span>
-              {formatQuoteMoney(generated.delta.combinedTotal)}
-            </p>
-          </div>
-          <div className="text-[11px] text-neutral-700 leading-relaxed space-y-1.5">
-            {generated.paragraphs.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </div>
-        </>
+        <p className="text-[10px] text-neutral-600 font-semibold">
+          Alteração neste adendo: {formatAddendumDeltaLabel(generated.delta)}
+          {" · "}
+          Investimento total com alterações: {formatQuoteMoney(generated.delta.combinedTotal)}
+        </p>
       ) : null}
       {reason ? (
-        <div className="border-t border-amber-200/60 pt-3 space-y-1.5">
-          <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
-            Por que este valor está sendo cobrado
+        <div className="border-t border-amber-200/70 pt-2.5 space-y-1">
+          <p className="text-[9px] font-extrabold uppercase tracking-widest text-amber-900">
+            Motivo das alterações
           </p>
           <div className="text-[11px] text-neutral-700 leading-relaxed whitespace-pre-wrap">
             {reason}
@@ -863,14 +852,6 @@ export default function QuotePrintDocument({
               </div>
             </section>
 
-            {isAddendum ? (
-              <AddendumContextBlock
-                observacoes={quote.observacoes}
-                addendumRef={quote.addendumRef}
-                addendumTotal={quote.valor_final}
-              />
-            ) : null}
-
             <div
               className={`print-quote-items ${sectionGap} ${
                 centerItems ? "justify-center" : "justify-start"
@@ -997,22 +978,38 @@ export default function QuotePrintDocument({
                       </span>
                     </div>
                     {isAddendum && quote.addendumRef ? (
-                      <p className="text-[9px] text-neutral-600 font-semibold text-right">
-                        Original + alterações:{" "}
-                        {formatCurrency(quote.addendumRef.approvedTotal + quote.valor_final)}
-                      </p>
+                      <>
+                        <p className="text-[9px] text-emerald-800 font-bold text-right">
+                          Proposta original aprovada:{" "}
+                          {formatCurrency(quote.addendumRef.approvedTotal)}.
+                        </p>
+                        <p className="text-[9px] text-neutral-600 font-semibold text-right">
+                          Original + alterações:{" "}
+                          {formatCurrency(quote.addendumRef.approvedTotal + quote.valor_final)}.
+                        </p>
+                      </>
                     ) : null}
-                    {typeof quote.approvedTotal === "number" && quote.approvedTotal > 0 ? (
+                    {!isAddendum &&
+                    typeof quote.approvedTotal === "number" &&
+                    quote.approvedTotal > 0 ? (
                       <p className="text-[9px] text-emerald-800 font-bold text-right">
                         Já aprovado: {formatCurrency(quote.approvedTotal)}.
                       </p>
                     ) : null}
-                    {typeof quote.approvedTotal === "number" &&
+                    {!isAddendum &&
+                    typeof quote.approvedTotal === "number" &&
                     quote.approvedTotal > 0 &&
                     typeof quote.pendingTotal === "number" &&
                     quote.pendingTotal > 0 ? (
                       <p className="text-[9px] text-amber-800 font-semibold text-right">
                         Ainda pendente: {formatCurrency(quote.pendingTotal)}.
+                      </p>
+                    ) : null}
+                    {isAddendum &&
+                    typeof quote.pendingTotal === "number" &&
+                    quote.pendingTotal > 0 ? (
+                      <p className="text-[9px] text-amber-800 font-semibold text-right">
+                        Ainda pendente neste adendo: {formatCurrency(quote.pendingTotal)}.
                       </p>
                     ) : null}
                     {quote.valuesCalculatedAt ? (
@@ -1042,6 +1039,14 @@ export default function QuotePrintDocument({
                 </div>
               ) : null}
             </div>
+
+            {isAddendum ? (
+              <AddendumContextBlock
+                observacoes={quote.observacoes}
+                addendumRef={quote.addendumRef}
+                addendumTotal={quote.valor_final}
+              />
+            ) : null}
 
             {!isPaged && !isAddendum ? (
               <CommercialFooterBlock compact={isCompact} assetBase={assetBase} />

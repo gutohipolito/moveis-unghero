@@ -289,6 +289,13 @@ export async function createQuoteAddendum(sourceQuoteId: string) {
       return { success: false as const, error: "Orçamento não encontrado." };
     }
 
+    if (isAddendumTemplate(source.template_tipo) || source.adendo_ref_quote_id) {
+      return {
+        success: false as const,
+        error: "Não é possível criar adendo a partir de outro adendo. Use a proposta original aprovada.",
+      };
+    }
+
     const sourceSummary = summarizeAddendumSource(source);
     if (!sourceSummary) {
       return {

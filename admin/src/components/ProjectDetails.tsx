@@ -1956,17 +1956,19 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                               <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-600 text-white cursor-default select-none shadow-sm">
                                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprovado
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => void handleCreateAddendum(q.id)}
-                                disabled={!!creatingAddendumId || loadingEditQuote}
-                                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <FilePlus2
-                                  className={`h-4 w-4 mr-1.5 ${creatingAddendumId === q.id ? "animate-pulse" : ""}`}
-                                />
-                                Criar adendo
-                              </button>
+                              {!isAddendumTemplate(q.template_tipo) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleCreateAddendum(q.id)}
+                                  disabled={!!creatingAddendumId || loadingEditQuote}
+                                  className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <FilePlus2
+                                    className={`h-4 w-4 mr-1.5 ${creatingAddendumId === q.id ? "animate-pulse" : ""}`}
+                                  />
+                                  Criar adendo
+                                </button>
+                              ) : null}
                             </>
                           ) : (
                             <button
