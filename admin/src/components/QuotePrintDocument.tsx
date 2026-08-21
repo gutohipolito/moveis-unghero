@@ -3,10 +3,10 @@ import {
   BadgeCheck,
   CalendarClock,
   Check,
-  Minus,
   Ruler,
   ShieldCheck,
   Wrench,
+  X,
 } from "lucide-react";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuotePhrase, formatQuoteSubitensLine } from "@/lib/quoteItems";
@@ -651,8 +651,8 @@ const COMPLETE_PROJECT_CONDITIONS = [
 const COMPLETE_INCLUDED = [
   "Fabricação dos móveis descritos na proposta.",
   "Ferragens e acessórios especificados no projeto.",
-  "Transporte, quando previsto na proposta.",
-  "Montagem e instalação, quando previsto.",
+  "Transporte.",
+  "Montagem e instalação.",
 ] as const;
 
 const COMPLETE_EXCLUDED = [
@@ -747,8 +747,8 @@ function CompleteCommercialConditionsPage({
             <ul className="space-y-1">
               {COMPLETE_EXCLUDED.map((item) => (
                 <li key={item} className="flex gap-1.5 text-[9.5px] text-neutral-600 leading-snug">
-                  <Minus
-                    className="h-3 w-3 shrink-0 text-neutral-400 mt-0.5"
+                  <X
+                    className="h-3 w-3 shrink-0 text-rose-500/85 mt-0.5"
                     strokeWidth={2}
                     aria-hidden
                   />
