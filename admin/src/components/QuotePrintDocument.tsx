@@ -337,13 +337,13 @@ export function quotePrintStylesCss() {
     }
     .print-partner-card {
       background: #ffffff;
-      box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.22);
+      box-shadow: none;
     }
     .print-partner-card--verified {
-      border: 1px solid rgba(217, 119, 6, 0.5);
+      border: 1px solid rgba(212, 212, 212, 0.95);
     }
     .print-partner-card--unverified {
-      border: 1px solid #d4d4d8;
+      border: 1px solid #e4e4e7;
       box-shadow: none;
     }
     .print-footer-link {
@@ -1009,109 +1009,122 @@ export default function QuotePrintDocument({
             title={isAddendum ? "Adendo comercial" : "Orçamento Comercial detalhado"}
           />
 
-          <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">
-            <section className="grid grid-cols-[1fr_auto] gap-5 pb-4 border-b border-neutral-100 shrink-0">
-              <div className="space-y-2 min-w-0">
-                <span className="text-[9px] text-neutral-400 font-extrabold uppercase tracking-widest">
-                  Cliente
-                </span>
-                <p className="text-base font-bold text-neutral-950 truncate">{client.nome}</p>
-                {quote.solicitante_nome ? (
-                  <p className="text-xs text-neutral-700">
-                    <span className="font-semibold text-neutral-700">Solicitante:</span>{" "}
-                    {quote.solicitante_nome}
-                    {quote.solicitante_area ? ` (${quote.solicitante_area})` : ""}
+          <main className="flex-1 px-[20mm] py-5 flex flex-col gap-4 min-h-0">
+            <section
+              className={`grid gap-4 pb-3.5 border-b border-neutral-200/80 shrink-0 ${
+                quote.partner ? "grid-cols-[1fr_auto]" : "grid-cols-1"
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 min-w-0">
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-[0.14em]">
+                    Cliente
+                  </span>
+                  <p className="text-[17px] font-semibold tracking-tight text-neutral-950 leading-snug">
+                    {client.nome}
                   </p>
-                ) : null}
-                <div className="text-xs text-neutral-600 space-y-0.5">
-                  <p>
-                    <span className="font-semibold text-neutral-700">Cidade:</span> {client.cidade}
-                  </p>
-                  {client.bairro ? (
-                    <p>
-                      <span className="font-semibold text-neutral-700">Bairro:</span>{" "}
-                      {client.bairro}
+                  {quote.solicitante_nome ? (
+                    <p className="text-[10px] text-neutral-500">
+                      Solicitante:{" "}
+                      <span className="font-medium text-neutral-700">
+                        {quote.solicitante_nome}
+                        {quote.solicitante_area ? ` (${quote.solicitante_area})` : ""}
+                      </span>
                     </p>
                   ) : null}
+                  <div className="text-[10px] text-neutral-500 space-y-0.5 pt-0.5">
+                    <p>
+                      <span className="text-neutral-400">Cidade</span>{" "}
+                      <span className="text-neutral-700 font-medium">{client.cidade}</span>
+                    </p>
+                    {client.bairro ? (
+                      <p>
+                        <span className="text-neutral-400">Bairro</span>{" "}
+                        <span className="text-neutral-700 font-medium">{client.bairro}</span>
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col items-stretch gap-3 shrink-0 self-start">
-                <div className="flex gap-3">
-                  <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
-                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
+                <div className="flex gap-2 shrink-0">
+                  <div className="rounded-md border border-neutral-200/90 bg-white px-3 py-2 text-center min-w-[5.5rem]">
+                    <span className="text-[7px] font-bold uppercase tracking-[0.12em] text-neutral-400 block mb-1">
                       Emissão
                     </span>
-                    <p className="text-[11px] font-bold text-emerald-800 leading-none">
+                    <p className="text-[11px] font-semibold text-neutral-900 leading-none tabular-nums">
                       {emissaoLabel}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-rose-200/80 bg-rose-50/60 px-3.5 py-2.5 text-center min-w-[96px] flex-1">
-                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-600 block mb-1">
+                  <div className="rounded-md border border-rose-200/70 bg-rose-50/40 px-3 py-2 text-center min-w-[5.5rem]">
+                    <span className="text-[7px] font-bold uppercase tracking-[0.12em] text-rose-600/80 block mb-1">
                       Validade
                     </span>
-                    <p className="text-[11px] font-bold text-rose-800 leading-none">
+                    <p className="text-[11px] font-semibold text-rose-900 leading-none tabular-nums">
                       {validadeLabel}
                     </p>
                   </div>
                 </div>
+              </div>
 
-                {quote.partner ? (
-                  (() => {
-                    const verified =
-                      (quote.partner.quote_card_mode ?? "VERIFIED") !== "UNVERIFIED";
-                    return (
-                  <div
-                    className={`print-partner-card w-full p-3 rounded-xl bg-white text-[10px] text-neutral-600 space-y-1 leading-tight flex items-center gap-3 ${
-                      verified
-                        ? "print-partner-card--verified border border-amber-500/50 shadow-[0_4px_14px_-3px_rgba(0,0,0,0.22)]"
-                        : "print-partner-card--unverified border border-zinc-300"
-                    }`}
-                  >
+              {quote.partner ? (
+                (() => {
+                  const verified =
+                    (quote.partner.quote_card_mode ?? "VERIFIED") !== "UNVERIFIED";
+                  return (
                     <div
-                      className={`h-14 w-14 shrink-0 rounded-full overflow-hidden bg-neutral-50 flex items-center justify-center ${
-                        verified ? "border border-amber-500/45" : "border border-zinc-300"
+                      className={`print-partner-card w-[13.5rem] p-2.5 rounded-lg bg-white text-[10px] text-neutral-600 leading-tight flex items-center gap-2.5 shrink-0 self-start ${
+                        verified
+                          ? "print-partner-card--verified border border-neutral-200/90"
+                          : "print-partner-card--unverified border border-zinc-200"
                       }`}
                     >
-                      {quote.partner.fotoUrl ? (
-                        <img
-                          src={quote.partner.fotoUrl}
-                          alt={quote.partner.nome}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs font-black text-neutral-500">
-                          {quote.partner.nome.substring(0, 2).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-0.5 text-left">
-                      <div className="flex items-center gap-1 min-w-0">
-                        <p className="font-bold text-neutral-900 text-xs leading-snug truncate">
-                          {quote.partner.nome}
-                        </p>
-                        {verified ? (
-                          <BadgeCheck
-                            className="h-3.5 w-3.5 shrink-0 text-amber-600 fill-amber-400/25"
-                            aria-label="Parceiro verificado"
+                      <div
+                        className={`h-11 w-11 shrink-0 rounded-full overflow-hidden bg-neutral-50 flex items-center justify-center ${
+                          verified ? "border border-amber-500/35" : "border border-zinc-200"
+                        }`}
+                      >
+                        {quote.partner.fotoUrl ? (
+                          <img
+                            src={quote.partner.fotoUrl}
+                            alt={quote.partner.nome}
+                            className="h-full w-full object-cover"
                           />
+                        ) : (
+                          <span className="text-[10px] font-bold text-neutral-500">
+                            {quote.partner.nome.substring(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5 text-left">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <p className="font-semibold text-neutral-900 text-[11px] leading-snug truncate">
+                            {quote.partner.nome}
+                          </p>
+                          {verified ? (
+                            <BadgeCheck
+                              className="h-3 w-3 shrink-0 text-amber-600/90 fill-amber-400/20"
+                              aria-label="Parceiro verificado"
+                            />
+                          ) : null}
+                        </div>
+                        <span className="text-[7px] font-bold uppercase tracking-[0.12em] text-neutral-400 block">
+                          {partnerRoleLabel}
+                        </span>
+                        {quote.partner.escritorio ? (
+                          <p className="text-neutral-500 text-[9px] truncate">
+                            {quote.partner.escritorio}
+                          </p>
+                        ) : null}
+                        {partnerRegistro ? (
+                          <p className="text-neutral-400 text-[9px] font-medium tabular-nums">
+                            {partnerRegistro}
+                          </p>
                         ) : null}
                       </div>
-                      <span className="text-[8px] font-extrabold uppercase tracking-widest text-neutral-500 block">
-                        {partnerRoleLabel}
-                      </span>
-                      {quote.partner.escritorio ? (
-                        <p className="text-neutral-500 font-medium">{quote.partner.escritorio}</p>
-                      ) : null}
-                      {partnerRegistro ? (
-                        <p className="text-neutral-400 font-semibold">{partnerRegistro}</p>
-                      ) : null}
                     </div>
-                  </div>
-                    );
-                  })()
-                ) : null}
-              </div>
+                  );
+                })()
+              ) : null}
             </section>
 
             <div
@@ -1119,7 +1132,7 @@ export default function QuotePrintDocument({
                 centerItems ? "justify-center" : "justify-start"
               }`}
             >
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
+              <p className="text-[10px] text-neutral-500 leading-relaxed tracking-wide">
                 {isAddendum
                   ? "Itens e valores referentes às alterações solicitadas após a aprovação da proposta original."
                   : isComparative
@@ -1127,19 +1140,19 @@ export default function QuotePrintDocument({
                     : "Relação completa de marcenaria sob medida, ferragens e serviços."}
               </p>
 
-              <div className="overflow-hidden border border-neutral-200 rounded-xl">
+              <div className="overflow-hidden border border-neutral-200/90 rounded-lg">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-neutral-200 text-neutral-500 uppercase font-bold bg-neutral-50/50 text-[10px]">
-                      <th className={`${cellPad} w-7/12`}>
-                        {isComparative ? "Opção / Descrição Detalhada" : "Descrição Detalhada do Item"}
+                    <tr className="border-b border-neutral-200/90 text-neutral-400 uppercase tracking-[0.08em] font-bold bg-neutral-50/40 text-[9px]">
+                      <th className={`${cellPad} w-7/12 font-bold`}>
+                        {isComparative ? "Opção / Descrição detalhada" : "Descrição detalhada do item"}
                       </th>
                       <th className={`${cellPad} text-center w-1/12`}>Qtd</th>
                       <th className={`${cellPad} text-right w-2/12`}>Unitário</th>
                       <th className={`${cellPad} text-right w-2/12`}>Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-150 text-neutral-800">
+                  <tbody className="divide-y divide-neutral-100 text-neutral-800">
                     {quote.items.map((item, idx) => {
                       const subitensLine =
                         item.subitens && item.subitens.length > 0
@@ -1147,15 +1160,16 @@ export default function QuotePrintDocument({
                           : "";
                       const isApproved = item.status === "APROVADO";
                       const isRejected = item.status === "RECUSADO";
+                      const isPending = !isApproved && !isRejected;
 
                       return (
                         <tr
                           key={idx}
                           className={
                             isApproved
-                              ? "bg-emerald-50/90 text-emerald-950"
+                              ? "bg-emerald-50/40 text-neutral-900"
                               : isRejected
-                                ? "bg-neutral-100 text-neutral-500"
+                                ? "bg-neutral-50/80 text-neutral-500"
                                 : undefined
                           }
                           style={
@@ -1171,47 +1185,56 @@ export default function QuotePrintDocument({
                                 <img
                                   src={item.produto_imagem_url}
                                   alt={item.produto_nome || item.descricao}
-                                  className="w-11 h-11 rounded-md object-cover border border-neutral-200 shrink-0"
+                                  className="w-10 h-10 rounded object-cover border border-neutral-200/80 shrink-0"
                                 />
                               ) : null}
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                                  {item.produto_nome ? (
-                                    <p className="text-[9px] font-bold uppercase tracking-wide text-neutral-500">
-                                      {item.produto_nome}
-                                    </p>
-                                  ) : null}
+                              <div className="min-w-0 space-y-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   {isApproved ? (
-                                    <span className="text-[8px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-600 text-white">
+                                    <span className="text-[7px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-600/90 text-white">
                                       Aprovado
                                     </span>
                                   ) : null}
                                   {isRejected ? (
-                                    <span className="text-[8px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded bg-neutral-400 text-white">
+                                    <span className="text-[7px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-rose-500/80 text-white">
                                       Não incluso
                                     </span>
                                   ) : null}
+                                  {isPending ? (
+                                    <span className="text-[7px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-300/80 bg-amber-50 text-amber-800/90">
+                                      Pendente
+                                    </span>
+                                  ) : null}
+                                  {item.produto_nome ? (
+                                    <span className="text-[8px] font-medium uppercase tracking-wide text-neutral-400">
+                                      {item.produto_nome}
+                                    </span>
+                                  ) : null}
                                 </div>
-                                <p className={`font-semibold ${isApproved ? "text-emerald-950" : "text-neutral-950"}`}>
+                                <p
+                                  className={`text-[12px] font-semibold leading-snug ${
+                                    isRejected ? "text-neutral-500" : "text-neutral-950"
+                                  }`}
+                                >
                                   {formatQuotePhrase(item.descricao)}
                                 </p>
                                 {subitensLine ? (
-                                  <p className="text-[9px] text-neutral-500 font-normal mt-0.5">
+                                  <p className="text-[9px] text-neutral-500 font-normal leading-relaxed">
                                     {subitensLine}
                                   </p>
                                 ) : null}
                               </div>
                             </div>
                           </td>
-                          <td className={`${cellPad} text-center font-medium text-neutral-600`}>
+                          <td className={`${cellPad} text-center text-[11px] font-medium text-neutral-600 tabular-nums`}>
                             {item.quantidade}
                           </td>
-                          <td className={`${cellPad} text-right text-[11px] font-normal text-neutral-500`}>
+                          <td className={`${cellPad} text-right text-[10px] font-normal text-neutral-500 tabular-nums`}>
                             {formatCurrency(item.valor_unitario)}
                           </td>
                           <td
-                            className={`${cellPad} text-right text-[11px] font-normal ${
-                              isApproved ? "text-emerald-800" : "text-neutral-800"
+                            className={`${cellPad} text-right text-[11px] font-medium tabular-nums ${
+                              isApproved ? "text-neutral-900" : isRejected ? "text-neutral-400" : "text-neutral-800"
                             }`}
                           >
                             {formatCurrency(item.valor_total)}
@@ -1224,38 +1247,54 @@ export default function QuotePrintDocument({
               </div>
 
               {!isComparative ? (
-                <div className="flex justify-end -mt-1">
-                  <div className="border border-neutral-200 rounded-lg px-3.5 py-2 bg-neutral-50/80 min-w-[220px] space-y-0.5">
+                <div className="flex justify-end pt-1">
+                  <div className="min-w-[15rem] max-w-[18rem] space-y-2 border-t border-neutral-200 pt-3">
                     {quote.desconto > 0 ? (
-                      <p className="text-[9px] text-emerald-700 font-semibold text-right">
-                        Desconto: -{formatCurrency(quote.desconto)}
-                      </p>
+                      <div className="space-y-1 text-right">
+                        <div className="flex items-baseline justify-between gap-4 text-[10px] text-neutral-500">
+                          <span>Valor original</span>
+                          <span className="tabular-nums text-neutral-700">
+                            {formatCurrency(quote.valor_final + quote.desconto)}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between gap-4 text-[10px] text-emerald-700/90">
+                          <span>Desconto</span>
+                          <span className="tabular-nums font-medium">
+                            − {formatCurrency(quote.desconto)}
+                          </span>
+                        </div>
+                      </div>
                     ) : null}
-                    <div className="flex items-baseline justify-end gap-1.5">
-                      <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide">
-                        {isAddendum ? "Valor deste adendo:" : "Investimento total:"}
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-neutral-500">
+                        {isAddendum ? "Valor deste adendo" : "Investimento total"}
                       </span>
-                      <span className="text-base font-medium text-neutral-900">
+                      <span className="text-[18px] font-semibold tracking-tight text-neutral-950 tabular-nums leading-none">
                         {formatCurrency(quote.valor_final)}
                       </span>
                     </div>
                     {isAddendum && quote.addendumRef ? (
-                      <>
-                        <p className="text-[9px] text-emerald-800 font-bold text-right">
+                      <div className="space-y-0.5 text-right pt-0.5">
+                        <p className="text-[8.5px] text-neutral-500">
                           Proposta original aprovada:{" "}
-                          {formatCurrency(quote.addendumRef.approvedTotal)}.
+                          <span className="tabular-nums text-neutral-600">
+                            {formatCurrency(quote.addendumRef.approvedTotal)}
+                          </span>
                         </p>
-                        <p className="text-[9px] text-neutral-600 font-semibold text-right">
+                        <p className="text-[8.5px] text-neutral-500">
                           Original + alterações:{" "}
-                          {formatCurrency(quote.addendumRef.approvedTotal + quote.valor_final)}.
+                          <span className="tabular-nums text-neutral-700 font-medium">
+                            {formatCurrency(quote.addendumRef.approvedTotal + quote.valor_final)}
+                          </span>
                         </p>
-                      </>
+                      </div>
                     ) : null}
                     {!isAddendum &&
                     typeof quote.approvedTotal === "number" &&
                     quote.approvedTotal > 0 ? (
-                      <p className="text-[9px] text-emerald-800 font-bold text-right">
-                        Já aprovado: {formatCurrency(quote.approvedTotal)}.
+                      <p className="text-[8.5px] text-neutral-500 text-right">
+                        Já aprovado:{" "}
+                        <span className="tabular-nums">{formatCurrency(quote.approvedTotal)}</span>
                       </p>
                     ) : null}
                     {!isAddendum &&
@@ -1263,26 +1302,32 @@ export default function QuotePrintDocument({
                     quote.approvedTotal > 0 &&
                     typeof quote.pendingTotal === "number" &&
                     quote.pendingTotal > 0 ? (
-                      <p className="text-[9px] text-amber-800 font-semibold text-right">
-                        Ainda pendente: {formatCurrency(quote.pendingTotal)}.
+                      <p className="text-[8.5px] text-amber-800/80 text-right">
+                        Ainda pendente:{" "}
+                        <span className="tabular-nums">{formatCurrency(quote.pendingTotal)}</span>
                       </p>
                     ) : null}
                     {isAddendum &&
                     typeof quote.pendingTotal === "number" &&
                     quote.pendingTotal > 0 ? (
-                      <p className="text-[9px] text-amber-800 font-semibold text-right">
-                        Ainda pendente neste adendo: {formatCurrency(quote.pendingTotal)}.
+                      <p className="text-[8.5px] text-amber-800/80 text-right">
+                        Ainda pendente neste adendo:{" "}
+                        <span className="tabular-nums">{formatCurrency(quote.pendingTotal)}</span>
                       </p>
                     ) : null}
-                    {quote.valuesCalculatedAt ? (
-                      <p className="text-[8px] text-neutral-500 text-right pt-0.5">
-                        Valores calculados em {quote.valuesCalculatedAt}
-                      </p>
-                    ) : null}
-                    {quote.lastUpdatedAt ? (
-                      <p className="text-[8px] text-neutral-500 text-right">
-                        Atualizado em {quote.lastUpdatedAt}
-                      </p>
+                    {quote.valuesCalculatedAt || quote.lastUpdatedAt ? (
+                      <div className="space-y-0.5 pt-1 border-t border-neutral-100">
+                        {quote.valuesCalculatedAt ? (
+                          <p className="text-[7.5px] text-neutral-400 text-right">
+                            Valores calculados em {quote.valuesCalculatedAt}
+                          </p>
+                        ) : null}
+                        {quote.lastUpdatedAt ? (
+                          <p className="text-[7.5px] text-neutral-400 text-right">
+                            Atualizado em {quote.lastUpdatedAt}
+                          </p>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 </div>
