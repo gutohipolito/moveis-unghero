@@ -697,7 +697,8 @@ export default function QuoteBuilder({
             ) : null}
             {isComplete ? (
               <p className="mt-1.5 text-[10px] text-indigo-900 bg-indigo-500/10 border border-indigo-500/20 rounded-md px-2 py-1.5 leading-snug">
-                PDF em 2 páginas: itens e valor na 1ª; na 2ª, aviso de alterações pós-aprovação (adendo) e condições comerciais (prazo, garantia, montagem e pagamento), um bloco por linha.
+                PDF em 2 páginas: itens e valor na 1ª; na 2ª, condições comerciais premium (projeto,
+                alterações pós-aprovação, inclusões/exclusões, pagamento e informações importantes).
               </p>
             ) : null}
           </div>

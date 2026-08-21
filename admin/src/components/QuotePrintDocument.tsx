@@ -1,11 +1,20 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, CalendarClock, ShieldCheck, Wrench } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarClock,
+  Check,
+  Minus,
+  Ruler,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
 import { PAYMENT_BRANDS } from "@/lib/paymentBrands";
 import { formatQuotePhrase, formatQuoteSubitensLine } from "@/lib/quoteItems";
 import { formatPartnerRegistro, getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { formatQuoteCodigo } from "@/lib/quoteCodigo";
 import { isAddendumTemplate, isImageCatalogTemplate, forcesCommercialSecondPage } from "@/lib/quoteTemplates";
 import { formatQuoteMoney, extractAddendumReason, buildAddendumReferenceCopy, formatAddendumDeltaLabel } from "@/lib/quoteAddendum";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/brazilDate";
 
 export const QUOTE_PRINT_FACTORY = {
   name: "Móveis Unghero LTDA",
@@ -483,36 +492,7 @@ function PrintBottomFooter() {
   );
 }
 
-function CommercialNotesSection({
-  compact,
-  layout = "grid",
-}: {
-  compact: boolean;
-  layout?: "grid" | "stack";
-}) {
-  if (layout === "stack") {
-    return (
-      <section className="space-y-2">
-        <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-500">
-          Condições do projeto
-        </h4>
-        <div className="space-y-2">
-          {COMMERCIAL_NOTES.map(({ icon: Icon, text }) => (
-            <div
-              key={text.slice(0, 24)}
-              className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-3"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 border border-amber-200/80">
-                <Icon className="h-4 w-4 text-amber-700" strokeWidth={2.25} />
-              </div>
-              <p className="text-[10px] text-neutral-700 leading-relaxed pt-1.5">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
+function CommercialNotesSection({ compact }: { compact: boolean }) {
   return (
     <section className="space-y-3">
       <div className={`grid grid-cols-3 ${compact ? "gap-2" : "gap-3"}`}>
@@ -541,68 +521,7 @@ function CommercialNotesSection({
   );
 }
 
-function PaymentConditionsSection({
-  assetBase,
-  layout = "grid",
-}: {
-  assetBase?: string;
-  layout?: "grid" | "stack";
-}) {
-  const options = (
-    <>
-      <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
-        <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
-          À vista
-        </span>
-        <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-          <li className="flex gap-1.5">
-            <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
-            <span>
-              <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
-              <strong className="text-neutral-900">50% na entrega</strong>.
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-        <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-          Parcelado
-        </span>
-        <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-          <li className="flex gap-1.5">
-            <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-            <span>
-              <strong className="text-neutral-900">35% de entrada*</strong> e o restante em até{" "}
-              <strong className="text-neutral-900">5x sem juros</strong>.
-            </span>
-          </li>
-          <li className="flex gap-1.5">
-            <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-            <span>
-              Ou em até <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo).
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
-        <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
-          Cartão
-        </span>
-        <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
-          <li className="flex gap-1.5">
-            <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
-            <span>
-              Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos (+ a taxa
-              de parcelamento do cartão).
-            </span>
-          </li>
-        </ul>
-      </div>
-    </>
-  );
-
+function PaymentConditionsSection({ assetBase }: { assetBase?: string }) {
   return (
     <section className="rounded-lg border border-neutral-200 px-3.5 py-3 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
@@ -623,8 +542,57 @@ function PaymentConditionsSection({
         </div>
       </div>
 
-      <div className={layout === "stack" ? "space-y-2" : "grid grid-cols-3 gap-2.5"}>
-        {options}
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5">
+          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1.5">
+            À vista
+          </span>
+          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+            <li className="flex gap-1.5">
+              <span className="text-emerald-500 font-bold leading-none mt-px">•</span>
+              <span>
+                <strong className="text-neutral-900">50% de entrada*</strong> e os outros{" "}
+                <strong className="text-neutral-900">50% na entrega</strong>.
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+            Parcelado
+          </span>
+          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+            <li className="flex gap-1.5">
+              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+              <span>
+                <strong className="text-neutral-900">35% de entrada*</strong> e o restante em até{" "}
+                <strong className="text-neutral-900">5x sem juros</strong>.
+              </span>
+            </li>
+            <li className="flex gap-1.5">
+              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+              <span>
+                Ou em até <strong className="text-neutral-900">10x no boleto</strong> (com acréscimo).
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 px-3 py-2.5">
+          <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-neutral-600 mb-1.5">
+            Cartão
+          </span>
+          <ul className="space-y-1.5 text-[9px] text-neutral-700 leading-snug">
+            <li className="flex gap-1.5">
+              <span className="text-neutral-400 font-bold leading-none mt-px">•</span>
+              <span>
+                Em até <strong className="text-neutral-900">18x</strong> nos cartões aceitos (+ a taxa
+                de parcelamento do cartão).
+              </span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <p className="text-[8px] text-neutral-400 leading-snug">
@@ -634,43 +602,269 @@ function PaymentConditionsSection({
   );
 }
 
-function AddendumPostApprovalNotice() {
-  return (
-    <section className="rounded-xl border border-indigo-200/90 bg-indigo-50/50 px-4 py-3.5 space-y-2 print:break-inside-avoid">
-      <p className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-900">
-        Alterações após a aprovação
-      </p>
-      <div className="text-[11px] text-neutral-700 leading-relaxed space-y-1.5">
-        <p>
-          Depois de aprovada, esta proposta permanece válida no que foi acordado. Qualquer mudança
-          pedida em seguida — medidas, materiais, inclusão ou exclusão de itens — será tratada em um{" "}
-          <strong className="text-neutral-900">adendo comercial</strong>, com valor próprio e nova
-          aprovação.
-        </p>
-        <p>
-          O que já foi aprovado aqui não é substituído pelo adendo; o adendo só complementa.
-        </p>
-      </div>
-    </section>
-  );
-}
-
 function CommercialFooterBlock({
   compact,
   assetBase,
-  layout = "grid",
-  showAddendumNotice = false,
 }: {
   compact: boolean;
   assetBase?: string;
-  layout?: "grid" | "stack";
-  showAddendumNotice?: boolean;
 }) {
   return (
-    <div className={`print-quote-bottom ${layout === "stack" ? "space-y-4" : "space-y-3.5"}`}>
-      {showAddendumNotice ? <AddendumPostApprovalNotice /> : null}
-      <CommercialNotesSection compact={compact} layout={layout} />
-      <PaymentConditionsSection assetBase={assetBase} layout={layout} />
+    <div className="print-quote-bottom space-y-3.5">
+      <CommercialNotesSection compact={compact} />
+      <PaymentConditionsSection assetBase={assetBase} />
+    </div>
+  );
+}
+
+function CompleteSectionTitle({ index, title }: { index: string; title: string }) {
+  return (
+    <h3 className="text-[9px] font-bold uppercase tracking-[0.14em] text-indigo-900/80">
+      {index} — {title}
+    </h3>
+  );
+}
+
+const COMPLETE_PROJECT_CONDITIONS = [
+  {
+    icon: CalendarClock,
+    title: "Prazo",
+    text: "O prazo de fabricação e instalação é definido individualmente para cada projeto e passa a ser contado após a aprovação final do projeto, confirmação das medidas e pagamento da entrada.",
+  },
+  {
+    icon: Ruler,
+    title: "Medidas",
+    text: "As medidas estão sujeitas à conferência técnica antes do início da fabricação. A produção será iniciada somente após a validação das medidas e especificações do projeto.",
+  },
+  {
+    icon: Wrench,
+    title: "Montagem",
+    text: "A montagem e instalação são realizadas por técnicos especializados da própria fábrica, conforme as condições previstas para cada projeto.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Garantia",
+    text: "Garantia de 5 anos para defeitos de fabricação relacionados à estrutura dos móveis, conforme as condições de garantia da Móveis Unghero.",
+  },
+] as const;
+
+const COMPLETE_INCLUDED = [
+  "Fabricação dos móveis descritos na proposta.",
+  "Ferragens e acessórios especificados no projeto.",
+  "Transporte, quando previsto na proposta.",
+  "Montagem e instalação, quando previsto.",
+] as const;
+
+const COMPLETE_EXCLUDED = [
+  "Serviços de alvenaria.",
+  "Pintura.",
+  "Serviços elétricos.",
+  "Serviços hidráulicos.",
+  "Gesso.",
+  "Retirada ou descarte de móveis existentes.",
+  "Adequações estruturais do ambiente.",
+  "Serviços executados por terceiros.",
+] as const;
+
+/** Segunda página do template Completo — peça editorial comercial (sem aceite). */
+function CompleteCommercialConditionsPage({
+  assetBase,
+  validadeLabel,
+}: {
+  assetBase?: string;
+  validadeLabel: string;
+}) {
+  return (
+    <div className="flex flex-col gap-5 min-h-0">
+      {/* 01 — Condições do projeto */}
+      <section className="space-y-2.5 print:break-inside-avoid">
+        <CompleteSectionTitle index="01" title="Condições do projeto" />
+        <div className="grid grid-cols-2 gap-x-5 gap-y-3.5">
+          {COMPLETE_PROJECT_CONDITIONS.map(({ icon: Icon, title, text }) => (
+            <article key={title} className="flex gap-2.5 min-w-0">
+              <Icon
+                className="h-3.5 w-3.5 shrink-0 text-amber-700/90 mt-0.5"
+                strokeWidth={1.75}
+                aria-hidden
+              />
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-900">
+                  {title}
+                </p>
+                <p className="text-[9.5px] text-neutral-600 leading-relaxed">{text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <div className="h-px w-full bg-neutral-200/90" aria-hidden />
+
+      {/* 02 — Alterações após aprovação */}
+      <section className="space-y-2 print:break-inside-avoid">
+        <CompleteSectionTitle index="02" title="Alterações após aprovação" />
+        <div className="rounded-md border border-indigo-200/70 bg-indigo-50/35 px-3.5 py-2.5">
+          <p className="text-[9.5px] text-neutral-700 leading-relaxed">
+            Após a aprovação do orçamento e projeto, qualquer alteração solicitada pelo cliente,
+            incluindo medidas, materiais, acabamentos, ferragens, acessórios, inclusão ou exclusão de
+            itens, poderá implicar alteração de valores e prazos. As alterações serão formalizadas por{" "}
+            <strong className="font-semibold text-indigo-950">aditivo comercial</strong> e somente
+            serão executadas após{" "}
+            <strong className="font-semibold text-indigo-950">nova aprovação</strong>. As condições
+            originalmente aprovadas permanecem válidas, salvo quando expressamente modificadas pelo
+            aditivo.
+          </p>
+        </div>
+      </section>
+
+      <div className="h-px w-full bg-neutral-200/90" aria-hidden />
+
+      {/* 03 — Inclusões e exclusões */}
+      <section className="space-y-2.5 print:break-inside-avoid">
+        <CompleteSectionTitle index="03" title="Inclusões e exclusões" />
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+          <div className="space-y-1.5 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-900">
+              Incluso no orçamento
+            </p>
+            <ul className="space-y-1">
+              {COMPLETE_INCLUDED.map((item) => (
+                <li key={item} className="flex gap-1.5 text-[9.5px] text-neutral-600 leading-snug">
+                  <Check
+                    className="h-3 w-3 shrink-0 text-emerald-600/80 mt-0.5"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="space-y-1.5 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-900">
+              Não incluso, salvo indicação expressa
+            </p>
+            <ul className="space-y-1">
+              {COMPLETE_EXCLUDED.map((item) => (
+                <li key={item} className="flex gap-1.5 text-[9.5px] text-neutral-600 leading-snug">
+                  <Minus
+                    className="h-3 w-3 shrink-0 text-neutral-400 mt-0.5"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div className="h-px w-full bg-neutral-200/90" aria-hidden />
+
+      {/* 04 — Condições de pagamento */}
+      <section className="space-y-2.5 print:break-inside-avoid">
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+          <CompleteSectionTitle index="04" title="Condições de pagamento" />
+          <div className="flex flex-wrap items-center gap-1 opacity-70">
+            {PAYMENT_BRANDS.map((brand) => (
+              <img
+                key={brand.id}
+                src={resolveAsset(assetBase, brand.src)}
+                alt={brand.alt}
+                width={brand.width}
+                height={brand.height}
+                className="h-3.5 w-auto object-contain grayscale"
+              />
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5 border-t border-emerald-600/40 pt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+              À vista
+            </p>
+            <p className="text-[10px] text-neutral-800 leading-snug">
+              <span className="font-semibold text-neutral-950">50% na aprovação</span>
+              <br />
+              <span className="font-semibold text-neutral-950">50% na entrega</span>
+            </p>
+          </div>
+          <div className="space-y-1.5 border-t border-neutral-300 pt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-800">
+              Parcelado
+            </p>
+            <p className="text-[10px] text-neutral-700 leading-snug">
+              <span className="font-semibold text-neutral-950">35% de entrada</span>
+              <br />
+              Saldo em até{" "}
+              <span className="font-semibold text-emerald-800">5× sem juros</span>
+              <br />
+              ou <span className="font-semibold text-neutral-950">10× no boleto</span>, com acréscimo
+            </p>
+          </div>
+          <div className="space-y-1.5 border-t border-neutral-300 pt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-800">
+              Cartão
+            </p>
+            <p className="text-[10px] text-neutral-700 leading-snug">
+              <span className="font-semibold text-neutral-950">Até 18×</span>
+              <br />
+              Sujeito à taxa de parcelamento da operadora.
+            </p>
+          </div>
+        </div>
+        <p className="text-[8px] text-neutral-400 leading-snug">
+          As condições de pagamento poderão variar conforme o valor total e as condições específicas
+          do projeto.
+        </p>
+      </section>
+
+      <div className="h-px w-full bg-neutral-200/90" aria-hidden />
+
+      {/* 05 — Informações importantes */}
+      <section className="space-y-2 print:break-inside-avoid">
+        <CompleteSectionTitle index="05" title="Informações importantes" />
+        <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-neutral-800">
+              Validade da proposta
+            </p>
+            <p className="text-[8.5px] text-neutral-500 leading-snug">
+              Esta proposta possui validade de{" "}
+              <span className="font-medium text-neutral-700">{QUOTE_VALIDITY_DAYS} dias</span>{" "}
+              corridos a partir da data de emissão
+              {validadeLabel ? (
+                <>
+                  {" "}
+                  (válida até <span className="font-medium text-neutral-700">{validadeLabel}</span>)
+                </>
+              ) : null}
+              . Após esse período, valores, condições comerciais e prazos poderão ser revisados.
+            </p>
+          </div>
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-neutral-800">
+              Condições para instalação
+            </p>
+            <p className="text-[8.5px] text-neutral-500 leading-snug">
+              Para a realização da montagem, o ambiente deverá estar liberado e em condições
+              adequadas para instalação, incluindo pisos, paredes, pintura, pontos elétricos e
+              hidráulicos concluídos quando aplicáveis.
+            </p>
+          </div>
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-neutral-800">
+              Atrasos decorrentes do ambiente
+            </p>
+            <p className="text-[8.5px] text-neutral-500 leading-snug">
+              Eventuais atrasos decorrentes da indisponibilidade ou inadequação do ambiente, acesso
+              ao imóvel ou execução de serviços de terceiros poderão impactar o cronograma de
+              instalação.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1128,27 +1322,29 @@ export default function QuotePrintDocument({
           <div className="print-page print-page-break flex flex-col">
             <PrintTopHeader
               assetBase={assetBase}
-              title={isComplete ? "Condições e alterações" : "Condições comerciais"}
+              title="Condições comerciais"
               quoteCodigo={isComplete ? quoteCodigo : undefined}
             />
-            <main className="flex-1 px-[20mm] py-6 flex flex-col gap-5 min-h-0">
-              {!isComplete ? (
-                <p className="text-[11px] text-neutral-500 leading-relaxed shrink-0">
-                  Informações de prazo, garantia, montagem e formas de pagamento desta proposta.
-                </p>
-              ) : null}
-              <div
-                className={`print-quote-items flex-1 flex flex-col ${
-                  isComplete ? "justify-start gap-1" : "justify-end"
-                }`}
-              >
-                <CommercialFooterBlock
-                  compact={false}
+            <main
+              className={`flex-1 px-[20mm] flex flex-col min-h-0 ${
+                isComplete ? "py-5 gap-0" : "py-6 gap-5"
+              }`}
+            >
+              {isComplete ? (
+                <CompleteCommercialConditionsPage
                   assetBase={assetBase}
-                  layout={isComplete ? "stack" : "grid"}
-                  showAddendumNotice={isComplete}
+                  validadeLabel={validadeLabel}
                 />
-              </div>
+              ) : (
+                <>
+                  <p className="text-[11px] text-neutral-500 leading-relaxed shrink-0">
+                    Informações de prazo, garantia, montagem e formas de pagamento desta proposta.
+                  </p>
+                  <div className="print-quote-items flex-1 flex flex-col justify-end">
+                    <CommercialFooterBlock compact={false} assetBase={assetBase} />
+                  </div>
+                </>
+              )}
             </main>
             <PrintBottomFooter />
           </div>
