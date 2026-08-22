@@ -55,6 +55,8 @@ import {
   summarizeQuoteItems,
   quoteCommercialLabel,
   isQuoteCommerciallyExpired,
+  isQuoteCommerciallyLost,
+  QUOTE_NO_RESPONSE_LOST_DAYS,
 } from "@/lib/quoteApproval";
 
 const QuoteBuilder = dynamic(() => import("@/components/QuoteBuilder"), {
@@ -82,6 +84,7 @@ const STATUS_FILTER_OPTIONS = [
   { value: "ALL", label: "Todos", tone: "slate" },
   { value: "ACTIVE", label: "Ativos", tone: "slate" },
   { value: "EXPIRED", label: "Vencidos", tone: "rose" },
+  { value: "LOST", label: "Perdidos", tone: "slate" },
   { value: "APPROVED", label: "Aprovados", tone: "emerald" },
   { value: "PARTIAL", label: "Parciais", tone: "amber" },
 ] as const;
@@ -104,7 +107,7 @@ const SORT_OPTIONS = [
   { key: "client", label: "Cliente" },
   { key: "bairro", label: "Bairro" },
   { key: "criacao", label: "Criação" },
-  { key: "validade", label: "Validade" },
+  { key: "validade", label: "Data" },
   { key: "status", label: "Status" },
   { key: "valor", label: "Valor" },
 ] as const;
@@ -170,7 +173,9 @@ export default function QuotesList({
   const [search, setSearch] = useState("");
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "APPROVED" | "PARTIAL">("ALL");
+  const [filterStatus, setFilterStatus] = useState<
+    "ALL" | "ACTIVE" | "EXPIRED" | "LOST" | "APPROVED" | "PARTIAL"
+  >("ALL");
   const [sortBy, setSortBy] = useState<"client" | "bairro" | "validade" | "status" | "valor" | "criacao">("validade");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -447,13 +452,19 @@ export default function QuotesList({
       }))
     );
     const commerciallyExpired = isQuoteCommerciallyExpired(expired, summary);
+    const commerciallyLost = isQuoteCommerciallyLost(q.createdAt, summary);
     const matchesStatus =
       filterStatus === "ALL" ||
       (filterStatus === "APPROVED" &&
         (summary.isFullyApproved || (Boolean(q.aprovado_em) && !summary.hasPending))) ||
       (filterStatus === "PARTIAL" && summary.isPartiallyApproved) ||
-      (filterStatus === "ACTIVE" && !commerciallyExpired && summary.hasPending && !summary.hasApproved) ||
-      (filterStatus === "EXPIRED" && commerciallyExpired);
+      (filterStatus === "ACTIVE" &&
+        !commerciallyExpired &&
+        !commerciallyLost &&
+        summary.hasPending &&
+        !summary.hasApproved) ||
+      (filterStatus === "EXPIRED" && commerciallyExpired && !commerciallyLost) ||
+      (filterStatus === "LOST" && commerciallyLost);
 
     const createdKey = q.createdAt ? toISODateBR(q.createdAt) : "";
     const matchesCreatedFrom = !createdFrom || (createdKey !== "" && createdKey >= createdFrom);
@@ -491,6 +502,7 @@ export default function QuotesList({
         );
         if (summary.isFullyApproved || (Boolean(q.aprovado_em) && !summary.hasPending)) return 4;
         if (summary.isPartiallyApproved) return 3;
+        if (isQuoteCommerciallyLost(q.createdAt, summary)) return 0;
         if (isQuoteCommerciallyExpired(isExpired(q.validade), summary)) return 1;
         return 2;
       };
@@ -536,7 +548,8 @@ export default function QuotesList({
               "Crie orçamentos com itens livres ou reutilizando itens salvos.",
               "Vincule um arquiteto e escolha o modelo antes de gerar o PDF.",
               "Aprovar um orçamento gera as parcelas em Contas a Receber.",
-              "A validade muda de cor conforme se aproxima do vencimento.",
+              "A coluna de data mostra a validade (em aberto) ou a data de aprovação (aprovados).",
+              `Sem retorno há ${QUOTE_NO_RESPONSE_LOST_DAYS} dias ou mais, a proposta entra como perdida.`,
               "Indicadores de valor ficam em Relatórios.",
             ]}
           />
@@ -821,7 +834,9 @@ export default function QuotesList({
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider min-w-[10rem]">Cliente</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Cidade</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Bairro</th>
-                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">Validade</th>
+                <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden sm:table-cell">
+                  Data
+                </th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Valor</th>
                 <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right w-14">Ações</th>
@@ -853,13 +868,20 @@ export default function QuotesList({
                   const statusLabel = quoteCommercialLabel(summary);
                   // Vencido só sem nenhuma aprovação; parcial não herda "vencido".
                   const rowExpired = isQuoteCommerciallyExpired(expired, summary);
+                  const rowLost = isQuoteCommerciallyLost(q.createdAt, summary);
                   const nearDanger =
-                    hasPending && !summary.hasApproved && !expired && daysLeft <= 3;
+                    hasPending && !summary.hasApproved && !expired && !rowLost && daysLeft <= 3;
                   const nearWarning =
-                    hasPending && !summary.hasApproved && !expired && daysLeft > 3 && daysLeft <= 7;
+                    hasPending &&
+                    !summary.hasApproved &&
+                    !expired &&
+                    !rowLost &&
+                    daysLeft > 3 &&
+                    daysLeft <= 7;
 
                   let dateClass = "text-slate-600";
-                  if (rowExpired) dateClass = "text-rose-700 font-bold";
+                  if (rowLost) dateClass = "text-slate-500";
+                  else if (rowExpired) dateClass = "text-rose-700 font-bold";
                   else if (nearDanger) dateClass = "text-rose-600 font-bold";
                   else if (nearWarning) dateClass = "text-amber-600 font-bold";
 
@@ -870,9 +892,11 @@ export default function QuotesList({
                       ? "bg-emerald-500/10"
                       : isPartial
                         ? "bg-amber-500/10"
-                        : rowExpired
-                          ? "bg-rose-500/10"
-                          : undefined;
+                        : rowLost
+                          ? "bg-slate-500/10"
+                          : rowExpired
+                            ? "bg-rose-500/10"
+                            : undefined;
 
                   const rowActions: RowActionItem[] = [];
                   if (!isReadOnly && isFullyApproved && !isAddendum) {
@@ -999,22 +1023,52 @@ export default function QuotesList({
                           {q.project.client.bairro || "Não informado"}
                         </span>
                       </td>
-                      <td className={`py-3 px-3 text-sm whitespace-nowrap hidden sm:table-cell ${!hasPending || isFullyApproved || isPartial ? "text-slate-400" : dateClass}`}>
-                        {!hasPending || isFullyApproved || isPartial ? (
+                      <td
+                        className={`py-3 px-3 text-sm whitespace-nowrap hidden sm:table-cell ${
+                          isFullyApproved
+                            ? "text-emerald-800"
+                            : isPartial
+                              ? "text-slate-400"
+                              : dateClass
+                        }`}
+                      >
+                        {isFullyApproved && (q.aprovado_em || summary.hasApproved) ? (
+                          <span className="inline-flex flex-col items-start gap-0.5" title="Data de aprovação">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700/80">
+                              Aprovado
+                            </span>
+                            <span className="font-semibold">
+                              {formatDate(
+                                q.aprovado_em ||
+                                  (q.items || [])
+                                    .map((i) => i.aprovado_em)
+                                    .filter(Boolean)
+                                    .sort()
+                                    .at(-1) ||
+                                  q.validade
+                              )}
+                            </span>
+                          </span>
+                        ) : isPartial ? (
                           <span className="text-slate-400">—</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1">
-                            {formatDate(q.validade)}
-                            {nearWarning && (
-                              <span className="text-[10px] font-semibold text-amber-600">
-                                ({daysLeft}d)
-                              </span>
-                            )}
-                            {nearDanger && (
-                              <span className="text-[10px] font-semibold text-rose-600">
-                                ({daysLeft <= 0 ? "hoje" : `${daysLeft}d`})
-                              </span>
-                            )}
+                          <span className="inline-flex flex-col items-start gap-0.5" title="Validade da proposta">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                              Validade
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              {formatDate(q.validade)}
+                              {nearWarning && (
+                                <span className="text-[10px] font-semibold text-amber-600">
+                                  ({daysLeft}d)
+                                </span>
+                              )}
+                              {nearDanger && (
+                                <span className="text-[10px] font-semibold text-rose-600">
+                                  ({daysLeft <= 0 ? "hoje" : `${daysLeft}d`})
+                                </span>
+                              )}
+                            </span>
                           </span>
                         )}
                       </td>
@@ -1039,6 +1093,10 @@ export default function QuotesList({
                               {" "}
                               · <PrivacyMoney value={summary.pendingTotal} /> pend.
                             </span>
+                          </span>
+                        ) : rowLost ? (
+                          <span className="inline-flex items-center gap-1 bg-slate-600/15 text-slate-700 px-2 py-0.5 rounded-full text-[11px] font-medium">
+                            Perdido
                           </span>
                         ) : rowExpired ? (
                           <span className="inline-flex items-center gap-1 bg-rose-500/15 text-rose-700 px-2 py-0.5 rounded-full text-[11px] font-medium">
