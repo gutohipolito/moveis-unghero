@@ -334,17 +334,46 @@ export default function QuotesList({
       showError("Não permitido", "Orçamentos aprovados só podem ser excluídos por um administrador.");
       return;
     }
+    const linkedAddendums = quotes.filter((q) => q.adendo_ref_quote_id === quoteId);
+    const addendumCount = linkedAddendums.length;
+    const hasApprovedAddendum = linkedAddendums.some((q) => Boolean(q.aprovado_em));
+    if (hasApprovedAddendum && !isAdmin) {
+      showError(
+        "Não permitido",
+        "Esta proposta possui adendo aprovado. Só um administrador pode excluir a proposta e os adendos."
+      );
+      return;
+    }
+
+    const addendumNote =
+      addendumCount > 0
+        ? ` Também será${addendumCount === 1 ? "" : "ão"} excluído${addendumCount === 1 ? "" : "s"} ${addendumCount} adendo${addendumCount === 1 ? "" : "s"} vinculado${addendumCount === 1 ? "" : "s"}.`
+        : "";
+
     confirmAction({
       title: isApproved ? "Excluir orçamento aprovado?" : "Excluir orçamento?",
       message: isApproved
-        ? `A versão ${version} está aprovada e será removida permanentemente. Esta ação não pode ser desfeita.`
-        : `A versão ${version} será removida permanentemente. Esta ação não pode ser desfeita.`,
+        ? `A versão ${version} está aprovada e será removida permanentemente.${addendumNote} Esta ação não pode ser desfeita.`
+        : `A versão ${version} será removida permanentemente.${addendumNote} Esta ação não pode ser desfeita.`,
       confirmLabel: "Sim, excluir",
       onConfirm: async () => {
         const res = await deleteQuote(projectId, quoteId, version);
         if (res.success) {
-          setQuotes((prev) => prev.filter((q) => q.id !== quoteId));
-          showSuccess("Orçamento excluído", `A versão ${version} foi removida com sucesso.`);
+          const removedIds = new Set([
+            quoteId,
+            ...quotes.filter((q) => q.adendo_ref_quote_id === quoteId).map((q) => q.id),
+          ]);
+          setQuotes((prev) => prev.filter((q) => !removedIds.has(q.id)));
+          const cascaded =
+            "deletedAddendumCount" in res && typeof res.deletedAddendumCount === "number"
+              ? res.deletedAddendumCount
+              : addendumCount;
+          showSuccess(
+            "Orçamento excluído",
+            cascaded > 0
+              ? `A versão ${version} e ${cascaded} adendo${cascaded === 1 ? "" : "s"} foram removidos.`
+              : `A versão ${version} foi removida com sucesso.`
+          );
         } else {
           showError("Erro ao excluir", (res as { error?: string }).error || "Erro ao excluir orçamento.");
         }

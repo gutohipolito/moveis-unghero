@@ -1362,7 +1362,7 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
   try {
     const existing = await prisma.quote.findFirst({
       where: { id: quoteId, project_id: projectId },
-      select: { id: true, aprovado_em: true },
+      select: { id: true, aprovado_em: true, versao: true },
     });
     if (!existing) {
       return { success: false, error: "Orçamento não encontrado." };
@@ -1374,17 +1374,38 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
       };
     }
 
+    const linkedAddendums = await prisma.quote.findMany({
+      where: { project_id: projectId, adendo_ref_quote_id: quoteId },
+      select: { id: true, versao: true, aprovado_em: true },
+      orderBy: { versao: "asc" },
+    });
+
+    if (linkedAddendums.some((a) => a.aprovado_em) && !canDeleteApproved) {
+      return {
+        success: false,
+        error:
+          "Esta proposta possui adendo aprovado. Só um administrador pode excluir a proposta e os adendos vinculados.",
+      };
+    }
+
+    const idsToDelete = [quoteId, ...linkedAddendums.map((a) => a.id)];
+
     await prisma.$transaction(async (tx) => {
-      // 1. Remove itens
       await tx.quoteItem.deleteMany({
-        where: { quote_id: quoteId }
-      });
-      // 2. Remove quote (approvals em cascata)
-      await tx.quote.delete({
-        where: { id: quoteId }
+        where: { quote_id: { in: idsToDelete } },
       });
 
-      // 3. Recalcula valor previsto com base nos eventos de aprovação restantes
+      // Adendos primeiro (evita órfãos); depois a proposta base.
+      if (linkedAddendums.length > 0) {
+        await tx.quote.deleteMany({
+          where: { id: { in: linkedAddendums.map((a) => a.id) } },
+        });
+      }
+
+      await tx.quote.delete({
+        where: { id: quoteId },
+      });
+
       const approvals = await tx.quoteApproval.findMany({
         where: { quote: { project_id: projectId } },
         select: { valor_aprovado: true },
@@ -1398,21 +1419,29 @@ export async function deleteQuote(projectId: string, quoteId: string, version: n
         data: { valor_previsto: totalAprovado },
       });
 
-      // 4. Registra na timeline
+      const addendumNote =
+        linkedAddendums.length > 0
+          ? ` (e ${linkedAddendums.length} adendo${linkedAddendums.length === 1 ? "" : "s"} vinculado${linkedAddendums.length === 1 ? "" : "s"})`
+          : "";
+
       await tx.timeline.create({
         data: {
           project_id: projectId,
           acao: existing.aprovado_em
-            ? `Orçamento comercial v${version} (aprovado) foi excluído pelo administrador`
-            : `Orçamento comercial v${version} foi excluído do sistema`,
+            ? `Orçamento comercial v${version} (aprovado) foi excluído pelo administrador${addendumNote}`
+            : `Orçamento comercial v${version} foi excluído do sistema${addendumNote}`,
           interno_sotamente: true,
-          user_id: await ensureActorUserId()
-        }
+          user_id: await ensureActorUserId(),
+        },
       });
     });
 
     revalidatePath(`/projects/${projectId}`);
-    return { success: true };
+    revalidatePath("/quotes");
+    return {
+      success: true as const,
+      deletedAddendumCount: linkedAddendums.length,
+    };
   } catch (error) {
     console.error("Erro na Server Action deleteQuote:", error);
     return { success: false, error: error instanceof Error ? error.message : "Erro ao excluir orçamento no banco remoto" };

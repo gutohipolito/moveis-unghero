@@ -859,28 +859,59 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
     }
   };
 
-  const handleDeleteProjectQuote = (quote: { id: string; versao: number; aprovado_em?: string | null }) => {
+  const handleDeleteProjectQuote = (quote: {
+    id: string;
+    versao: number;
+    aprovado_em?: string | null;
+  }) => {
     const isApproved = Boolean(quote.aprovado_em);
     if (isApproved && !isAdmin) {
       showError("Não permitido", "Propostas aprovadas só podem ser excluídas por um administrador.");
       return;
     }
+    const linkedAddendums = project.quotes.filter((q) => q.adendo_ref_quote_id === quote.id);
+    const addendumCount = linkedAddendums.length;
+    if (linkedAddendums.some((q) => Boolean(q.aprovado_em)) && !isAdmin) {
+      showError(
+        "Não permitido",
+        "Esta proposta possui adendo aprovado. Só um administrador pode excluir a proposta e os adendos."
+      );
+      return;
+    }
+    const addendumNote =
+      addendumCount > 0
+        ? ` Também será${addendumCount === 1 ? "" : "ão"} excluído${addendumCount === 1 ? "" : "s"} ${addendumCount} adendo${addendumCount === 1 ? "" : "s"} vinculado${addendumCount === 1 ? "" : "s"}.`
+        : "";
+
     confirmAction({
       title: isApproved ? "Excluir proposta aprovada?" : "Excluir proposta?",
       message: isApproved
-        ? `A versão ${quote.versao} está aprovada e será removida permanentemente.`
-        : `A versão ${quote.versao} será removida permanentemente.`,
+        ? `A versão ${quote.versao} está aprovada e será removida permanentemente.${addendumNote}`
+        : `A versão ${quote.versao} será removida permanentemente.${addendumNote}`,
       confirmLabel: "Sim, excluir",
       onConfirm: async () => {
         const previousQuotes = project.quotes;
-        setProject(prev => ({ ...prev, quotes: prev.quotes.filter(item => item.id !== quote.id) }));
+        const removedIds = new Set([quote.id, ...linkedAddendums.map((a) => a.id)]);
+        setProject((prev) => ({
+          ...prev,
+          quotes: prev.quotes.filter((item) => !removedIds.has(item.id)),
+        }));
         const res = await deleteQuote(project.id, quote.id, quote.versao);
         if (!res.success) {
-          setProject(prev => ({ ...prev, quotes: previousQuotes }));
+          setProject((prev) => ({ ...prev, quotes: previousQuotes }));
           showError("Erro ao excluir", res.error ?? "Não foi possível excluir a proposta.");
           return;
         }
-        showSuccess("Proposta excluída", `Versão ${quote.versao} removida do projeto.`);
+        const cascaded =
+          "deletedAddendumCount" in res && typeof res.deletedAddendumCount === "number"
+            ? res.deletedAddendumCount
+            : addendumCount;
+        showSuccess(
+          "Proposta excluída",
+          cascaded > 0
+            ? `Versão ${quote.versao} e ${cascaded} adendo${cascaded === 1 ? "" : "s"} removidos do projeto.`
+            : `Versão ${quote.versao} removida do projeto.`
+        );
       },
     });
   };
