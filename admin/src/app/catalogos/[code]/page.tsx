@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { isValidCatalogShareCode } from "@/lib/catalogShare";
+import { publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const dynamic = "force-dynamic";
 
@@ -12,18 +13,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { code: rawCode } = await params;
   const code = rawCode.trim().toLowerCase();
   if (!isValidCatalogShareCode(code)) {
-    return { title: "Catálogo | Móveis Unghero", robots: { index: false, follow: false } };
+    return publicPageMetadata({
+      title: "Catálogo | Móveis Unghero",
+      description: "Catálogo de produtos da Móveis Unghero.",
+    });
   }
   const catalog = await prisma.productCatalog.findFirst({
     where: { share_code: code, ativo: true },
     select: { titulo: true },
   });
-  return {
+  return publicPageMetadata({
     title: catalog?.titulo
       ? `${catalog.titulo} | Catálogo Móveis Unghero`
       : "Catálogo | Móveis Unghero",
-    robots: { index: false, follow: false, nocache: true },
-  };
+    description: "Confira o catálogo de produtos da Móveis Unghero.",
+  });
 }
 
 /**

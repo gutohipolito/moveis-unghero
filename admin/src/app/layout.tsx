@@ -2,11 +2,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
 import PwaImmersiveMode from "@/components/PwaImmersiveMode";
+import { publicAssetOrigin, PUBLIC_SHARE_ICON_PATH } from "@/lib/publicPageMetadata";
 
 const APP_NAME = "Sistema - Móveis Unghero";
 const APP_DESCRIPTION = "CRM, fábrica e gestão interna da Móveis Unghero";
+const assetOrigin = publicAssetOrigin();
 
 export const metadata: Metadata = {
+  metadataBase: new URL(assetOrigin),
   title: "Sistema - Móveis Unghero",
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
@@ -29,6 +32,25 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/icon-mu.png", type: "image/png", sizes: "512x512" }],
     apple: [{ url: "/icon-mu.png", type: "image/png", sizes: "512x512" }],
+  },
+  // Fallback se alguma rota pública herdar só o root — miniatura ao lado, nunca summary_large_image.
+  openGraph: {
+    siteName: "Móveis Unghero",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: PUBLIC_SHARE_ICON_PATH,
+        width: 192,
+        height: 192,
+        alt: "Móveis Unghero",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    images: [PUBLIC_SHARE_ICON_PATH],
   },
 };
 

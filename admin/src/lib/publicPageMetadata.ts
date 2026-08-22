@@ -2,6 +2,42 @@ import type { Metadata } from "next";
 
 const BRAND = "Móveis Unghero";
 
+/** Ícone quadrado para preview de link (WhatsApp/Telegram) — ao lado do título, não banner. */
+export const PUBLIC_SHARE_ICON_PATH = "/icon-mu-192.png";
+const SHARE_ICON_WIDTH = 192;
+const SHARE_ICON_HEIGHT = 192;
+
+/**
+ * Origem absoluta para og:image / twitter:image.
+ * Preferimos o admin (onde o PNG é servido pelo Next); crawlers aceitam URL cross-origin.
+ */
+export function publicAssetOrigin(): string {
+  const fromEnv =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_FORMS_ADMIN_URL?.replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+  return "https://admin.moveisunghero.com.br";
+}
+
+export function publicShareIconUrl(origin = publicAssetOrigin()): string {
+  return `${origin}${PUBLIC_SHARE_ICON_PATH}`;
+}
+
+function shareImages(origin = publicAssetOrigin()) {
+  const url = publicShareIconUrl(origin);
+  return [
+    {
+      url,
+      width: SHARE_ICON_WIDTH,
+      height: SHARE_ICON_HEIGHT,
+      alt: BRAND,
+      type: "image/png" as const,
+    },
+  ];
+}
+
 /** Metadata voltada ao destinatário externo (cliente / parceiro) — sem jargão de CRM/SaaS. */
 export function publicPageMetadata(opts: {
   title: string;
@@ -10,8 +46,11 @@ export function publicPageMetadata(opts: {
   noIndex?: boolean;
 }): Metadata {
   const noIndex = opts.noIndex !== false;
+  const origin = publicAssetOrigin();
+  const images = shareImages(origin);
 
   return {
+    metadataBase: new URL(origin),
     title: opts.title,
     description: opts.description,
     applicationName: BRAND,
@@ -21,11 +60,14 @@ export function publicPageMetadata(opts: {
       siteName: BRAND,
       locale: "pt_BR",
       type: "website",
+      // Quadrado + twitter summary → miniatura ao lado (não capa esticada no topo).
+      images,
     },
     twitter: {
       card: "summary",
       title: opts.title,
       description: opts.description,
+      images: images.map((img) => img.url),
     },
     robots: noIndex
       ? { index: false, follow: false, nocache: true }
