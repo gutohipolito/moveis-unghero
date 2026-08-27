@@ -17,6 +17,19 @@ export type TransitionTemplateKey =
   | `${TransitionAudience}:${TransitionStatus}`
   | "PARTNER:COMMISSION";
 
+/**
+ * Temporário: só o e-mail de orçamento/etapa aprovada para o parceiro.
+ * Os demais templates de transição ficam desligados no envio (mesmo se enabled no banco).
+ */
+export const TRANSITION_EMAILS_CURRENTLY_ALLOWED: ReadonlySet<TransitionTemplateKey> =
+  new Set(["PARTNER:APROVADO"]);
+
+export function isTransitionEmailCurrentlyAllowed(
+  key: TransitionTemplateKey
+): boolean {
+  return TRANSITION_EMAILS_CURRENTLY_ALLOWED.has(key);
+}
+
 export type TransitionPlaceholder = {
   key: string;
   label: string;
@@ -94,7 +107,7 @@ function clientDefaults(status: TransitionStatus): Pick<
   };
 
   return {
-    defaultEnabled: true,
+    defaultEnabled: false,
     subject: `Seu projeto: ${etapa} — Móveis Unghero`,
     body: [
       "Olá, {{destinatario_primeiro_nome}}.",
@@ -116,7 +129,8 @@ function partnerDefaults(status: TransitionStatus): Pick<
 > {
   const etapa = statusLabel(status);
   return {
-    defaultEnabled: true,
+    // Só aprovação para o parceiro permanece ativa por enquanto.
+    defaultEnabled: status === "APROVADO",
     subject: `Projeto atualizado: {{cliente_nome}} — ${etapa}`,
     body: [
       "Olá, {{destinatario_primeiro_nome}}.",
@@ -166,7 +180,7 @@ const COMMISSION_TEMPLATE: TransitionTemplateDef = {
   description: "Aviso ao projetista/arquiteto quando a comissão é marcada como paga.",
   when: "Dispara ao registrar o pagamento da comissão no financeiro do parceiro.",
   ctaLabel: "Ver comissões",
-  defaultEnabled: true,
+  defaultEnabled: false,
   placeholders: COMMISSION_PLACEHOLDERS,
   subject: "Comissão paga — {{cliente_nome}}",
   body: [

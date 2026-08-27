@@ -10,6 +10,7 @@ import { composeBrandedEmail, renderEmailPlaceholders } from "@/lib/emailBranded
 import {
   TRANSITION_STATUSES,
   getTransitionTemplateDef,
+  isTransitionEmailCurrentlyAllowed,
   isTransitionTemplateKey,
   type TransitionStatus,
   type TransitionTemplateKey,
@@ -49,7 +50,10 @@ export async function loadTransitionTemplate(
   return {
     subject: row?.subject || def.subject,
     body: row?.body || def.body,
-    enabled: row?.enabled ?? def.defaultEnabled,
+    // Kill-switch temporário: ignora enabled do banco se o template não estiver na allowlist.
+    enabled: isTransitionEmailCurrentlyAllowed(key)
+      ? (row?.enabled ?? def.defaultEnabled)
+      : false,
     ctaLabel: def.ctaLabel,
   };
 }

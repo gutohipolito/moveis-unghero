@@ -8,6 +8,7 @@ import { composeBrandedEmail, renderEmailPlaceholders } from "@/lib/emailBranded
 import {
   TRANSITION_TEMPLATE_DEFS,
   getTransitionTemplateDef,
+  isTransitionEmailCurrentlyAllowed,
   isTransitionTemplateKey,
   sampleTransitionVars,
   type TransitionTemplateKey,
@@ -56,7 +57,9 @@ export async function listEmailTransitionTemplates(): Promise<{
         ctaLabel: def.ctaLabel,
         subject: row?.subject || def.subject,
         body: row?.body || def.body,
-        enabled: row?.enabled ?? def.defaultEnabled,
+        enabled: isTransitionEmailCurrentlyAllowed(def.key)
+          ? (row?.enabled ?? def.defaultEnabled)
+          : false,
         persisted: Boolean(row),
         placeholders: def.placeholders,
       };
@@ -89,6 +92,9 @@ export async function upsertEmailTransitionTemplate(input: {
     return { success: false as const, error: "Informe o corpo do e-mail." };
   }
 
+  const enabled =
+    isTransitionEmailCurrentlyAllowed(input.key) && input.enabled;
+
   await prisma.emailTransitionTemplate.upsert({
     where: {
       company_id_key: { company_id: auth.companyId, key: input.key },
@@ -98,9 +104,9 @@ export async function upsertEmailTransitionTemplate(input: {
       key: input.key,
       subject,
       body,
-      enabled: input.enabled,
+      enabled,
     },
-    update: { subject, body, enabled: input.enabled },
+    update: { subject, body, enabled },
   });
 
   revalidatePath("/emails/templates");

@@ -12,6 +12,7 @@ import {
 } from "@/lib/emailBrandedCard";
 import {
   OTHER_AUTOMATED_EMAILS,
+  isTransitionEmailCurrentlyAllowed,
   sampleTransitionVars,
   type TransitionTemplateKey,
 } from "@/lib/emailTransitionTemplates";
@@ -256,12 +257,20 @@ export default function EmailTransitionTemplatesPanel({
               <input
                 type="checkbox"
                 checked={current.enabled}
-                disabled={isReadOnly}
+                disabled={
+                  isReadOnly || !isTransitionEmailCurrentlyAllowed(current.key)
+                }
                 onChange={(e) => updateField("enabled", e.target.checked)}
                 className="h-4 w-4 rounded border-border"
               />
               Enviar este e-mail automaticamente
             </label>
+            {!isTransitionEmailCurrentlyAllowed(current.key) ? (
+              <p className="text-xs text-muted-foreground -mt-2">
+                Temporariamente desativado. Só o e-mail de aprovação para o
+                arquiteto permanece ativo.
+              </p>
+            ) : null}
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">
