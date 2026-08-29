@@ -103,7 +103,18 @@ const COLUMNS = [
     accent: "bg-gradient-to-r from-slate-400 to-slate-500",
     icon: CheckCircle2,
   },
-];
+] as const;
+
+/** Coluna única para VIEWER — sem nomes de etapa. */
+const VIEWER_COLUMNS = [
+  {
+    id: "OCULTO",
+    name: "Cômodos em produção",
+    bg: "bg-slate-500/10 text-slate-700 border-slate-500/20",
+    accent: "bg-gradient-to-r from-slate-400 to-slate-500",
+    icon: Layers,
+  },
+] as const;
 
 function stackKey(status: string, projectId: string) {
   return `${status}::${projectId || "sem-projeto"}`;
@@ -156,6 +167,7 @@ export default function FactoryClient({
   const isFactoryRole = role === "PRODUCAO";
   const compactBoard = isTablet || isFactoryRole;
   const canMove = !isReadOnly;
+  const boardColumns = isReadOnly ? VIEWER_COLUMNS : COLUMNS;
 
   const [environments, setEnvironments] = useState<EnvironmentItem[]>(initialEnvironments);
   const [slaByProject, setSlaByProject] = useState(initialSlaByProject);
@@ -194,7 +206,7 @@ export default function FactoryClient({
   });
 
   useEffect(() => {
-    if (!slaCheckProjectId) return;
+    if (isReadOnly || !slaCheckProjectId) return;
     const sla = slaByProject[slaCheckProjectId];
     if (sla) {
       setSlaModal({
@@ -203,7 +215,7 @@ export default function FactoryClient({
         clientName: sla.clientName,
       });
     }
-  }, [slaCheckProjectId, slaByProject]);
+  }, [slaCheckProjectId, slaByProject, isReadOnly]);
 
   const activeEnvironments = useMemo(
     () => environments.filter((item) => item.status !== "FINALIZADO"),
@@ -289,8 +301,10 @@ export default function FactoryClient({
 
   const stacksByColumn = useMemo(() => {
     const result: Record<string, { key: string; projectId: string; items: EnvironmentItem[] }[]> = {};
-    for (const col of COLUMNS) {
-      const colItems = visibleEnvironments.filter((item) => item.status === col.id);
+    for (const col of boardColumns) {
+      const colItems = visibleEnvironments.filter((item) =>
+        isReadOnly ? true : item.status === col.id
+      );
       const byProject = new Map<string, EnvironmentItem[]>();
       for (const item of colItems) {
         const pid = item.projectId || `loose-${item.id}`;
@@ -305,7 +319,7 @@ export default function FactoryClient({
       }));
     }
     return result;
-  }, [visibleEnvironments]);
+  }, [visibleEnvironments, boardColumns, isReadOnly]);
 
   const openSlaVerify = (projectId: string) => {
     const sla = slaByProject[projectId];
@@ -432,6 +446,7 @@ export default function FactoryClient({
   };
 
   const handleCardClick = (item: EnvironmentItem) => {
+    if (isReadOnly) return;
     if (didDrag || draggedId) return;
     setDetailItem(item);
   };
@@ -485,12 +500,12 @@ export default function FactoryClient({
 
   const renderRoomCard = (
     item: EnvironmentItem,
-    col: (typeof COLUMNS)[number],
+    col: (typeof boardColumns)[number],
     options?: { stackedExtra?: number; stackKey?: string; showStackToggle?: boolean }
   ) => {
     const clientColor = getClientColor(item.clientId);
     const stackedExtra = options?.stackedExtra ?? 0;
-    const sla = item.projectId ? slaByProject[item.projectId] ?? null : null;
+    const sla = !isReadOnly && item.projectId ? slaByProject[item.projectId] ?? null : null;
     const slaSeverity = getFactorySlaSeverity(sla);
     const slaStage = sla ? getStageConfig(sla.currentStage).name : null;
 
@@ -502,7 +517,8 @@ export default function FactoryClient({
         onDragEnd={handleDragEnd}
         onClick={() => handleCardClick(item)}
         className={cn(
-          "factory-card glass-card glass-card-hover overflow-hidden active:scale-[0.98] transition-all duration-200 cursor-pointer relative group",
+          "factory-card glass-card overflow-hidden active:scale-[0.98] transition-all duration-200 relative group",
+          isReadOnly ? "cursor-default" : "glass-card-hover cursor-pointer",
           draggedId === item.id && "opacity-40 scale-[0.98]",
           slaSeverity === "overdue"
             ? "border-red-500/60"
@@ -610,7 +626,7 @@ export default function FactoryClient({
             >
               {item.nome}
             </h4>
-            {(item.coverUrl || item.coverPdfUrl) && (
+            {(item.coverUrl || item.coverPdfUrl) && !isReadOnly && (
               <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border bg-slate-100">
                 {item.coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -626,7 +642,7 @@ export default function FactoryClient({
             )}
           </div>
 
-          {(item.hasFactoryProjectImages || item.hasFactoryProject) && (
+          {!isReadOnly && (item.hasFactoryProjectImages || item.hasFactoryProject) && (
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold",
@@ -640,14 +656,18 @@ export default function FactoryClient({
             </span>
           )}
 
-          <ApprovedQuoteSubitens
-            items={item.approvedSubitens ?? []}
-            variant="preview"
-            previewLimit={2}
-          />
+          {!isReadOnly ? (
+            <ApprovedQuoteSubitens
+              items={item.approvedSubitens ?? []}
+              variant="preview"
+              previewLimit={2}
+            />
+          ) : null}
 
           <div className="flex items-center justify-between gap-2">
-            {item.responsavelNome ? (
+            {isReadOnly ? (
+              <span className="text-[11px] font-semibold text-muted-foreground">—</span>
+            ) : item.responsavelNome ? (
               <span
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground min-w-0"
                 title={`Responsável: ${item.responsavelNome}`}
@@ -668,12 +688,12 @@ export default function FactoryClient({
                 Sem responsável
               </span>
             )}
-            {item.techSheetComplete ? null : (
+            {!isReadOnly && !item.techSheetComplete ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-500/10 rounded-md px-1.5 py-0.5 shrink-0">
                 <ClipboardCheck className="h-3 w-3" />
                 Ficha {item.techSheetFilled}/{item.techSheetTotal}
               </span>
-            )}
+            ) : null}
           </div>
 
           {sla && slaSeverity !== "ok" ? (
@@ -714,7 +734,7 @@ export default function FactoryClient({
         compactBoard ? "gap-0" : "space-y-[var(--space-3)]"
       )}
     >
-      {!compactBoard && (
+      {!compactBoard && !isReadOnly && (
       <div className="shrink-0 space-y-2">
         {(exceptions.overdue.length > 0 ||
           exceptions.due.length > 0 ||
@@ -824,7 +844,7 @@ export default function FactoryClient({
             compactBoard ? "gap-3" : "gap-4 print:gap-6"
           )}
         >
-        {COLUMNS.map((col) => {
+        {boardColumns.map((col) => {
           const stacks = stacksByColumn[col.id] ?? [];
           const colItems = stacks.flatMap((stack) => stack.items);
           const Icon = col.icon;
@@ -937,7 +957,7 @@ export default function FactoryClient({
         </div>
       </div>
 
-      {slaModal && (
+      {!isReadOnly && slaModal && (
         <SlaVerificationModal
           projectId={slaModal.projectId}
           stageKey={slaModal.stageKey}
@@ -948,29 +968,31 @@ export default function FactoryClient({
         />
       )}
 
-      <FactoryEnvironmentDetailModal
-        item={detailItem}
-        sla={detailItem?.projectId ? slaByProject[detailItem.projectId] ?? null : null}
-        productionColumns={COLUMNS.map((c) => ({ id: c.id, name: c.name }))}
-        colaboradores={colaboradores}
-        siblingEnvironments={
-          detailItem
-            ? environments.filter((e) => e.projectId === detailItem.projectId)
-            : []
-        }
-        onClose={() => setDetailItem(null)}
-        onProductionStatusChange={handleProductionStatusChange}
-        onResponsavelChange={handleDetailResponsavelChange}
-        onAjudanteChange={handleDetailAjudanteChange}
-        onBoardPatch={handleBoardPatch}
-        onSlaUpdated={(projectId, updated) => {
-          setSlaByProject((prev) => ({ ...prev, [projectId]: updated }));
-        }}
-        onOpenSlaVerify={(projectId) => {
-          setDetailItem(null);
-          openSlaVerify(projectId);
-        }}
-      />
+      {!isReadOnly ? (
+        <FactoryEnvironmentDetailModal
+          item={detailItem}
+          sla={detailItem?.projectId ? slaByProject[detailItem.projectId] ?? null : null}
+          productionColumns={COLUMNS.map((c) => ({ id: c.id, name: c.name }))}
+          colaboradores={colaboradores}
+          siblingEnvironments={
+            detailItem
+              ? environments.filter((e) => e.projectId === detailItem.projectId)
+              : []
+          }
+          onClose={() => setDetailItem(null)}
+          onProductionStatusChange={handleProductionStatusChange}
+          onResponsavelChange={handleDetailResponsavelChange}
+          onAjudanteChange={handleDetailAjudanteChange}
+          onBoardPatch={handleBoardPatch}
+          onSlaUpdated={(projectId, updated) => {
+            setSlaByProject((prev) => ({ ...prev, [projectId]: updated }));
+          }}
+          onOpenSlaVerify={(projectId) => {
+            setDetailItem(null);
+            openSlaVerify(projectId);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -179,6 +179,55 @@ export function canManageEnvironmentAttachments(
   return canManageOperationalMedia(role);
 }
 
+/**
+ * Payload do quadro para VIEWER: sem URLs de mídia, sem responsáveis,
+ * sem etapa real e sem detalhes técnicos (não vazam no DevTools).
+ */
+export function redactFactoryBoardForViewer(input: {
+  environments: FactoryBoardEnvironment[];
+  slaByProject: Record<string, unknown>;
+}): {
+  environments: FactoryBoardEnvironment[];
+  slaByProject: Record<string, never>;
+} {
+  return {
+    environments: input.environments.map((env) => ({
+      ...env,
+      status: "OCULTO",
+      clientName: redactFirstNameOnly(env.clientName),
+      responsavelId: null,
+      responsavelNome: null,
+      ajudanteId: null,
+      ajudanteNome: null,
+      materiais: null,
+      ferragens: null,
+      acabamentos: null,
+      medidasObservacoes: null,
+      observacoesFabrica: null,
+      materialsSummary: null,
+      hardwareSummary: null,
+      approvedSubitens: [],
+      attachmentCount: 0,
+      coverUrl: null,
+      coverPdfUrl: null,
+      hasFactoryProject: false,
+      hasFactoryProjectImages: false,
+      techSheetFilled: 0,
+      techSheetTotal: env.techSheetTotal,
+      techSheetComplete: false,
+    })),
+    slaByProject: {},
+  };
+}
+
+function redactFirstNameOnly(name: string): string {
+  const trimmed = (name || "").trim();
+  if (!trimmed) return "Cliente";
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0]!;
+  return `${parts[0]} ••••`;
+}
+
 export const TECH_SHEET_TOTAL_FIELDS = 5;
 
 export type ClientColorToken = {

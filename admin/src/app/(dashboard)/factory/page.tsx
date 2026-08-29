@@ -2,6 +2,8 @@ import { fetchColaboradoresSelect, fetchFactoryBoard } from "@/lib/factoryBoard"
 import { getSessionCompanyId } from "@/lib/session";
 import { guardModule } from "@/lib/moduleAccess";
 import { getAuthContext } from "@/lib/auth-guard";
+import { isReadOnlyRole } from "@/lib/permissions";
+import { redactFactoryBoardForViewer } from "@/lib/factoryEnvironment";
 import FactoryClient from "./FactoryClient";
 import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
@@ -16,11 +18,16 @@ export default async function FactoryPage({
   const userCompanyId = await getSessionCompanyId();
   const auth = await getAuthContext();
   const isFactoryRole = auth?.cargo === "PRODUCAO";
+  const isViewer = isReadOnlyRole(auth?.cargo);
 
-  const [colaboradores, factoryBoard] = await Promise.all([
-    fetchColaboradoresSelect(userCompanyId),
+  const [colaboradoresRaw, factoryBoardRaw] = await Promise.all([
+    isViewer ? Promise.resolve([]) : fetchColaboradoresSelect(userCompanyId),
     fetchFactoryBoard(userCompanyId),
   ]);
+
+  const factoryBoard = isViewer
+    ? redactFactoryBoardForViewer(factoryBoardRaw)
+    : factoryBoardRaw;
 
   return (
     <div className="factory-floor h-[calc(100svh-var(--dashboard-chrome-offset-mobile))] flex flex-col overflow-hidden md:h-[calc(100vh-var(--dashboard-chrome-offset))] md:space-y-[var(--space-3)] print:p-0 print:h-auto print:overflow-visible">
@@ -28,12 +35,12 @@ export default async function FactoryPage({
         <PageHeader
           title="Chão de Fábrica"
           description={
-            isFactoryRole
+            isFactoryRole || isViewer
               ? undefined
               : "Acompanhe em tempo real as etapas de fabricação e montagem dos cômodos liberados para produção."
           }
           help={
-            isFactoryRole ? undefined : (
+            isFactoryRole || isViewer ? undefined : (
               <TooltipBody
                 title="Produção em tempo real"
                 items={[
@@ -49,11 +56,11 @@ export default async function FactoryPage({
 
       <FactoryClient
         initialEnvironments={factoryBoard.environments}
-        colaboradores={colaboradores}
+        colaboradores={colaboradoresRaw}
         slaByProject={factoryBoard.slaByProject}
         companyId={userCompanyId}
         currentUserId={auth?.userId ?? null}
-        slaCheckProjectId={params.slaCheck}
+        slaCheckProjectId={isViewer ? undefined : params.slaCheck}
       />
     </div>
   );

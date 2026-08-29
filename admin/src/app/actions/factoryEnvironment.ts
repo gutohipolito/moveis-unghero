@@ -4,6 +4,7 @@ import { del } from "@vercel/blob";
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import { getAuthContext, requireEnvironmentInCompany } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
+import { isReadOnlyRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   canManageEnvironmentAttachments,
@@ -156,6 +157,9 @@ export async function saveEnvironmentTechSheet(
 export async function listEnvironmentAttachments(environmentId: string) {
   const auth = await getModuleAccess("factory");
   if (!auth) return { success: false as const, error: "Não autenticado" };
+  if (isReadOnlyRole(auth.cargo)) {
+    return { success: false as const, error: "Anexos indisponíveis nesta conta." };
+  }
 
   try {
     await requireEnvironmentInCompany(environmentId, auth.companyId);

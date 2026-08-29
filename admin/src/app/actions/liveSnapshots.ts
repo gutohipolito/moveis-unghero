@@ -21,6 +21,7 @@ import { fetchAgendaEvents, fetchFactoryBoard } from "@/lib/factoryBoard";
 import { buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
 import { prisma } from "@/lib/prisma";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { isReadOnlyRole } from "@/lib/permissions";
 
 async function assertCompanyAccess(companyId: string) {
   const auth = await getAuthContext();
@@ -65,6 +66,10 @@ export async function getFactoryLiveSnapshot(companyId: string) {
 
   try {
     const snapshot = await fetchFactoryBoard(auth.companyId);
+    if (isReadOnlyRole(auth.cargo)) {
+      const { redactFactoryBoardForViewer } = await import("@/lib/factoryEnvironment");
+      return { success: true as const, ...redactFactoryBoardForViewer(snapshot) };
+    }
     return { success: true as const, ...snapshot };
   } catch (error) {
     console.warn("Falha ao sincronizar fábrica:", error);
