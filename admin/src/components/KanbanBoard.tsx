@@ -9,6 +9,7 @@ import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canMoveCrmCards } from "@/lib/permissions";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { BlurSurnameName } from "@/components/ViewerPrivacy";
 import KanbanNegotiationPanel from "@/components/KanbanNegotiationPanel";
 import KanbanOpsPanel from "@/components/KanbanOpsPanel";
 import { useSensitiveDisplay } from "@/hooks/useSensitiveDisplay";
@@ -1465,7 +1466,10 @@ export default function KanbanBoard({
                 </span>
               </div>
               <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors leading-snug">
-                {project.client.nome}
+                <BlurSurnameName
+                  name={project.client.nome}
+                  enabled={isReadOnly}
+                />
               </h4>
               {shouldShowStageEntryDate(project.status_geral) ? (
                 <p className="flex items-center gap-1 text-[11px] text-muted-foreground/90 min-w-0">

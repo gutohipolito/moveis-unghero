@@ -118,7 +118,7 @@ interface SidebarNavProps {
 export default function SidebarNav({ onNavigate, compact = false }: SidebarNavProps) {
   const pathname = usePathname();
   const { isSectionCollapsed, toggleSection } = useSidebarSections();
-  const { can } = usePermissions();
+  const { can, isReadOnly } = usePermissions();
 
   return (
     <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
@@ -158,6 +158,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                   item.href === "/settings" ? resolveSettingsHubHref(can) : item.href;
                 const isActive = isNavItemActive(pathname, href, item.matchPaths);
                 const label = compact && item.shortName ? item.shortName : item.name;
+                const blurLabel = isReadOnly && item.href === "/melhorias";
 
                 return (
                   <AppNavLink
@@ -169,10 +170,14 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                     }`}
                     title={compact ? item.name : undefined}
                   >
-                    <span className="sidebar-nav-icon">
+                    <span className={`sidebar-nav-icon ${blurLabel ? "blur-[3px]" : ""}`}>
                       <item.icon className="h-4.5 w-4.5" />
                     </span>
-                    {!compact && <span className="sidebar-nav-label">{label}</span>}
+                    {!compact && (
+                      <span className={`sidebar-nav-label ${blurLabel ? "blur-[5px] select-none" : ""}`}>
+                        {label}
+                      </span>
+                    )}
                     {!compact && item.badge && <span className="sidebar-nav-badge shrink-0">{item.badge}</span>}
                   </AppNavLink>
                 );

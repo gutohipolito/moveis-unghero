@@ -2,6 +2,7 @@ import PageHeader from "@/components/PageHeader";
 import { TooltipBody } from "@/components/ui/InfoTooltip";
 import { guardModule } from "@/lib/moduleAccess";
 import { getAuthContext } from "@/lib/auth-guard";
+import { isReadOnlyRole } from "@/lib/permissions";
 import { listSuggestions } from "@/app/actions/suggestions";
 import MelhoriasClient from "./MelhoriasClient";
 
@@ -10,6 +11,7 @@ export default async function MelhoriasPage() {
 
   const auth = await getAuthContext();
   const { suggestions } = await listSuggestions();
+  const blurContent = isReadOnlyRole(auth?.cargo);
 
   return (
     <div className="space-y-6">
@@ -33,6 +35,7 @@ export default async function MelhoriasPage() {
         initialSuggestions={suggestions}
         isAdmin={auth?.cargo === "ADMIN"}
         currentUserId={auth?.userId ?? ""}
+        blurContent={blurContent}
       />
     </div>
   );

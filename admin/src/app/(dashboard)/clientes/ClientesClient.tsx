@@ -50,6 +50,7 @@ import ClientWizard, { type ClientWizardData } from "./ClientWizard";
 import ClienteEditWideForm from "@/components/clientes/ClienteEditWideForm";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients } from "@/lib/permissions";
+import { BlurSurnameName, ViewerBlurBox } from "@/components/ViewerPrivacy";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -65,25 +66,30 @@ function LinkedProjectChip({
   project,
   href,
   hideQuotesHint,
+  blur,
 }: {
   project: ProjectSummary;
   href?: string;
   hideQuotesHint?: boolean;
+  blur?: boolean;
 }) {
   const title = hideQuotesHint
     ? labelProjectStatus(project.status_geral)
     : `${labelProjectStatus(project.status_geral)}${
         (project.quotes_count ?? 0) > 0 ? ` · ${project.quotes_count} orçamento(s)` : ""
       }`;
-  return (
+  const chip = (
     <Link
-      href={href ?? `/projects/${project.id}`}
-      title={title}
+      href={blur ? "#" : href ?? `/projects/${project.id}`}
+      title={blur ? "Projeto oculto" : title}
+      onClick={blur ? (e) => e.preventDefault() : undefined}
+      tabIndex={blur ? -1 : undefined}
       className={`inline-flex items-center font-mono text-[10px] font-bold tracking-wide px-2 py-1 rounded-md border ${projectStatusChipClass(project.status_geral)}`}
     >
       #{shortProjectCode(project.id)}
     </Link>
   );
+  return blur ? <ViewerBlurBox enabled>{chip}</ViewerBlurBox> : chip;
 }
 
 interface Client {
@@ -157,13 +163,15 @@ export default function ClientesClient({
   const [facets, setFacets] = useState<ClientsListFacets>(initialFacets);
   const [listLoading, setListLoading] = useState(false);
   const { sensitiveHidden } = usePrivacy();
-  const { role, isOpsLimited } = usePermissions();
+  const { role, isOpsLimited, isReadOnly } = usePermissions();
   /** Marceneiro: lista só nome, bairro, cidade e projetos. */
   const isFactoryRole = role === "PRODUCAO";
   /** Projetista e Marceneiro: sem cadastro/edição/exclusão nem origem. */
   const canManage = canManageClients(role);
   /** Projetista e Marceneiro: sem telefone/e-mail na lista. */
   const hideClientContact = isOpsLimited;
+  /** VIEWER: sobrenome e projetos vinculados com blur. */
+  const blurViewerPrivacy = isReadOnly;
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
   const [search, setSearch] = useState("");
@@ -723,7 +731,10 @@ export default function ClientesClient({
                             href={`/clientes/${client.id}`}
                             className="font-semibold text-foreground truncate hover:text-primary transition-colors"
                           >
-                            {client.nome}
+                            <BlurSurnameName
+                              name={client.nome}
+                              enabled={blurViewerPrivacy}
+                            />
                           </Link>
                           {isNewClient(client, now) && (
                             <span className="badge-meta inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md">
@@ -782,6 +793,7 @@ export default function ClientesClient({
                             project={p}
                             href={isFactoryRole ? `/clientes/${client.id}?tab=projects` : undefined}
                             hideQuotesHint={isFactoryRole}
+                            blur={blurViewerPrivacy}
                           />
                         ))}
                       </div>
@@ -858,7 +870,10 @@ export default function ClientesClient({
                                   href={`/clientes/${client.id}`}
                                   className="text-sm font-bold text-slate-900 hover:text-primary transition-colors"
                                 >
-                                  {client.nome}
+                                  <BlurSurnameName
+                                    name={client.nome}
+                                    enabled={blurViewerPrivacy}
+                                  />
                                 </Link>
                                 {isNewClient(client, now) && (
                                   <span className="badge-meta inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md">
@@ -932,6 +947,7 @@ export default function ClientesClient({
                                 project={p}
                                 href={isFactoryRole ? `/clientes/${client.id}?tab=projects` : undefined}
                                 hideQuotesHint={isFactoryRole}
+                                blur={blurViewerPrivacy}
                               />
                             ))}
                           </div>

@@ -52,6 +52,7 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import FilterPills from "@/components/FilterPills";
 import { usePermissions } from "@/context/PermissionsContext";
+import { BlurSurnameName } from "@/components/ViewerPrivacy";
 import { useTabletLayout } from "@/hooks/useTabletLayout";
 import { useProjectChatFocus } from "@/context/ProjectChatContext";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
@@ -313,7 +314,7 @@ const FILE_TYPES: { value: FileType; label: string }[] = [
 ];
 
 export default function ProjectDetails({ initialProject, companyId, colaboradores, isMock, initialSla = null, embedded = false, backHref = "/crm", backLabel = "Voltar para o CRM Kanban", onClose, initialOpenCreateQuote = false, partnerContributions }: ProjectDetailsProps) {
-  const { isAdmin, isOpsLimited, role } = usePermissions();
+  const { isAdmin, isOpsLimited, role, isReadOnly } = usePermissions();
   const { isTablet } = useTabletLayout();
   const isFactoryRole = role === "PRODUCAO";
   const canManageEnvGallery = canManageEnvironmentAttachments(role);
@@ -1068,7 +1069,10 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
               </span>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1">
                 <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground break-words">
-                  {project.client.nome}
+                  <BlurSurnameName
+                    name={project.client.nome}
+                    enabled={isReadOnly}
+                  />
                 </h2>
                 <Link
                   href={`/clientes/${project.client.id}`}

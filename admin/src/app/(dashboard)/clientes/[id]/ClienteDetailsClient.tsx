@@ -76,6 +76,7 @@ import {
 import type { ClientAttachmentDTO } from "@/lib/clientAttachments";
 import { usePermissions } from "@/context/PermissionsContext";
 import { canManageClients, canManageOperationalMedia } from "@/lib/permissions";
+import { BlurSurnameName } from "@/components/ViewerPrivacy";
 import type { Origin } from "@/app/actions/kanban";
 import type { ClientWizardData } from "../ClientWizard";
 import {
@@ -396,11 +397,12 @@ export default function ClienteDetailsClient({
   const docInfo = resolveClientDocument(client);
   const { sensitiveHidden } = usePrivacy();
   const sensitive = useSensitiveDisplay();
-  const { isOpsLimited, role } = usePermissions();
+  const { isOpsLimited, role, isReadOnly } = usePermissions();
   const isFactoryRole = role === "PRODUCAO";
   const canManage = canManageClients(role);
   const canManageAttachments = canManageOperationalMedia(role);
   const hideClientContact = isOpsLimited;
+  const blurViewerPrivacy = isReadOnly;
 
   useLiveEntity("clients", {
     sync: syncClientDetails,
@@ -513,7 +515,9 @@ export default function ClienteDetailsClient({
       <Card className={`p-5 sm:p-6 glass-card ${isFactoryRole ? "space-y-0" : "space-y-4"}`}>
         <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
           <div className="min-w-0 flex-1 space-y-2">
-            <h1 className="text-2xl font-black text-foreground tracking-tight">{client.nome}</h1>
+            <h1 className="text-2xl font-black text-foreground tracking-tight">
+              <BlurSurnameName name={client.nome} enabled={blurViewerPrivacy} />
+            </h1>
 
             {!isOpsLimited && docInfo.documento ? (
               <p className="text-xs font-semibold text-slate-500 select-none">
@@ -900,6 +904,7 @@ export default function ClienteDetailsClient({
               projects={projects}
               onProjectsChange={setProjects}
               hideValues={isOpsLimited}
+              blurProjects={blurViewerPrivacy}
             />
           )}
 

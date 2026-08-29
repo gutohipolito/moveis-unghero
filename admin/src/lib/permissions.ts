@@ -160,9 +160,10 @@ export function homePathForRole(role: Role | string | null | undefined): string 
 
 /**
  * Módulos que o VIEWER nunca acessa (mesmo se marcados na matriz).
- * Cadastros, financeiro e logística ficam fora do escopo de visualização.
+ * Cadastros, financeiro, logística e relatórios ficam fora do escopo de visualização.
  */
 export const VIEWER_BLOCKED_MODULES = new Set([
+  "bi",
   "cadastros",
   "estoque",
   "financeiro",

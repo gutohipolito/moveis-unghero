@@ -32,6 +32,7 @@ import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost
 import { Dialog } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { BlurSurnameName } from "@/components/ViewerPrivacy";
 import { usePermissions } from "@/context/PermissionsContext";
 import { 
   deleteQuote,
@@ -1005,8 +1006,11 @@ export default function QuotesList({
                         </div>
                       </td>
                       <td className="py-3 px-3 text-sm text-slate-800 font-semibold min-w-0 max-w-[14rem]">
-                        <span className="block truncate" title={q.project.client.nome}>
-                          {q.project.client.nome}
+                        <span className="block truncate" title={isReadOnly ? undefined : q.project.client.nome}>
+                          <BlurSurnameName
+                            name={q.project.client.nome}
+                            enabled={isReadOnly}
+                          />
                         </span>
                         <span className="block truncate text-[11px] font-normal text-slate-500 md:hidden">
                           {q.project.client.cidade}

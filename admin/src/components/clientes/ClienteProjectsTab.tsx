@@ -18,6 +18,7 @@ import { createLead, type Origin } from "@/app/actions/kanban";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { navigateApp } from "@/lib/navigateApp";
+import { ViewerBlurBox } from "@/components/ViewerPrivacy";
 
 export interface ClientProjectSummary {
   id: string;
@@ -46,6 +47,8 @@ interface ClienteProjectsTabProps {
   onProjectsChange: (projects: ClientProjectSummary[]) => void;
   /** Projetista/Fábrica: oculta valores e criação comercial de projeto. */
   hideValues?: boolean;
+  /** VIEWER: blur nos cards de projetos vinculados. */
+  blurProjects?: boolean;
 }
 
 function projectPageHref(projectId: string, clientId: string, createQuote = false) {
@@ -96,6 +99,7 @@ export default function ClienteProjectsTab({
   projects,
   onProjectsChange,
   hideValues = false,
+  blurProjects = false,
 }: ClienteProjectsTabProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [valorPrevisto, setValorPrevisto] = useState("");
@@ -157,9 +161,11 @@ export default function ClienteProjectsTab({
               <Layers className="h-4.5 w-4.5 text-primary" /> Projetos do cliente
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              {hideValues
-                ? "Clique em um projeto para ver status, arquivos e produção."
-                : "Clique em um projeto para ver briefing, orçamentos, arquivos e produção."}
+              {blurProjects
+                ? "Detalhes dos projetos ocultos nesta conta."
+                : hideValues
+                  ? "Clique em um projeto para ver status, arquivos e produção."
+                  : "Clique em um projeto para ver briefing, orçamentos, arquivos e produção."}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -196,6 +202,7 @@ export default function ClienteProjectsTab({
             )}
           </div>
         ) : (
+          <ViewerBlurBox enabled={blurProjects}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {projects.map((project) => {
               const isFormLead = clientOrigem === "FORMULARIO";
@@ -296,6 +303,7 @@ export default function ClienteProjectsTab({
               );
             })}
           </div>
+          </ViewerBlurBox>
         )}
       </Card>
 

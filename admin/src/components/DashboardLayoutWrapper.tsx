@@ -40,7 +40,7 @@ export default function DashboardLayoutWrapper({
 }: DashboardLayoutWrapperProps) {
   const { isTablet, isCollapsed, toggleCollapsed } = useTabletLayout();
   const { allCollapsed, collapseAll, expandAll } = useSidebarSections();
-  const { isOpsLimited } = usePermissions();
+  const { isOpsLimited, isReadOnly } = usePermissions();
   const homeHref = homePathForRole(user.cargo);
 
   return (
@@ -150,7 +150,7 @@ export default function DashboardLayoutWrapper({
           isOpsLimited && "bottom-[calc(1.5rem_+_env(safe-area-inset-bottom))] md:bottom-12"
         )}
       >
-        <SuggestionFab stacked />
+        {!isReadOnly ? <SuggestionFab stacked /> : null}
         <ProjectChatDock />
       </div>
     </div>

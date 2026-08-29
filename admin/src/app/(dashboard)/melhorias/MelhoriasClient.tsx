@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import SuggestionModal from "@/components/melhorias/SuggestionModal";
 import { setSuggestionDone, deleteSuggestion } from "@/app/actions/suggestions";
 import type { SuggestionDTO } from "@/lib/suggestions";
+import { ViewerBlurBox } from "@/components/ViewerPrivacy";
 
 interface MelhoriasClientProps {
   initialSuggestions: SuggestionDTO[];
   isAdmin: boolean;
   currentUserId: string;
+  /** VIEWER: lista ilegível (blur). */
+  blurContent?: boolean;
 }
 
 function formatDate(iso: string) {
@@ -25,6 +28,7 @@ export default function MelhoriasClient({
   initialSuggestions,
   isAdmin,
   currentUserId,
+  blurContent = false,
 }: MelhoriasClientProps) {
   const [suggestions, setSuggestions] = useState<SuggestionDTO[]>(initialSuggestions);
   const [modalOpen, setModalOpen] = useState(false);
@@ -86,6 +90,12 @@ export default function MelhoriasClient({
 
   return (
     <div className="space-y-4">
+      {blurContent ? (
+        <p className="text-xs text-muted-foreground rounded-lg border border-border/60 bg-slate-50 px-3 py-2">
+          Conteúdo de melhorias oculto nesta conta (somente leitura).
+        </p>
+      ) : null}
+      <ViewerBlurBox enabled={blurContent} className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
@@ -100,6 +110,7 @@ export default function MelhoriasClient({
         <Button
           onClick={() => setModalOpen(true)}
           className="w-full sm:w-auto justify-center gap-1.5"
+          disabled={blurContent}
         >
           <Plus className="h-4 w-4" />
           Nova melhoria
@@ -191,9 +202,10 @@ export default function MelhoriasClient({
           })}
         </ul>
       )}
+      </ViewerBlurBox>
 
       <SuggestionModal
-        isOpen={modalOpen}
+        isOpen={modalOpen && !blurContent}
         onClose={() => setModalOpen(false)}
         onCreated={(s) => setSuggestions((prev) => [s, ...prev])}
       />
