@@ -8,6 +8,7 @@ import { OPS_CRM_STATUS_SET, OPS_CRM_STATUSES } from "@/lib/crmOpsAccess";
 import {
   PROJECT_CHAT_BODY_MAX,
   PROJECT_CHAT_SEARCH_MIN,
+  canAccessProjectChat,
   canCloseProjectChat,
   canWriteProjectChat,
   previewChatBody,
@@ -77,6 +78,9 @@ export async function listProjectChats(options?: {
 }): Promise<{ success: boolean; threads: ProjectChatThreadDTO[]; unreadTotal: number }> {
   const auth = await getAuthContext();
   if (!auth) return { success: false, threads: [], unreadTotal: 0 };
+  if (!canAccessProjectChat(auth.cargo)) {
+    return { success: true, threads: [], unreadTotal: 0 };
+  }
   const query = (options?.query ?? "").trim();
   const statusFilter = projectChatStatusFilter(auth.cargo);
 
@@ -222,6 +226,9 @@ export async function listApprovedClientChats(options?: {
 }): Promise<{ success: boolean; clients: ProjectChatClientDTO[]; unreadTotal: number }> {
   const auth = await getAuthContext();
   if (!auth) return { success: false, clients: [], unreadTotal: 0 };
+  if (!canAccessProjectChat(auth.cargo)) {
+    return { success: true, clients: [], unreadTotal: 0 };
+  }
   const query = (options?.query ?? "").trim();
 
   try {
@@ -410,6 +417,15 @@ export async function getProjectChat(
   messages: ProjectChatMessageDTO[];
 }> {
   const auth = await requireAuth();
+  if (!canAccessProjectChat(auth.cargo)) {
+    return {
+      success: false,
+      error: "Mensagens indisponíveis nesta conta.",
+      canWrite: false,
+      canClose: false,
+      messages: [],
+    };
+  }
   try {
     const project = await loadVisibleProject(projectId, auth.companyId, auth.cargo);
   if (!project) {

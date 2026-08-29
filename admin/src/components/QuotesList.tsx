@@ -935,15 +935,7 @@ export default function QuotesList({
                       href: `/projects/${q.project_id}?tab=quotes&editQuote=${q.id}`,
                     });
                   }
-                  if (isReadOnly) {
-                    rowActions.push({
-                      key: "pdf-ro",
-                      label: "PDF (somente leitura)",
-                      icon: <Printer className="h-4 w-4" />,
-                      disabled: true,
-                      tone: "muted",
-                    });
-                  } else {
+                  if (!isReadOnly) {
                     rowActions.push({
                       key: "pdf",
                       label: "PDF / Imprimir",
@@ -951,13 +943,13 @@ export default function QuotesList({
                       href: `/quotes/${q.id}/print`,
                       target: "_blank",
                     });
+                    rowActions.push({
+                      key: "project",
+                      label: "Ver projeto",
+                      icon: <ExternalLink className="h-4 w-4" />,
+                      href: `/projects/${q.project_id}`,
+                    });
                   }
-                  rowActions.push({
-                    key: "project",
-                    label: "Ver projeto",
-                    icon: <ExternalLink className="h-4 w-4" />,
-                    href: `/projects/${q.project_id}`,
-                  });
                   if (!isReadOnly && (!summary.hasApproved || isAdmin)) {
                     rowActions.push({
                       key: "delete",
@@ -1119,7 +1111,9 @@ export default function QuotesList({
                         <PrivacyMoney value={q.valor_final} className="inline-block" />
                       </td>
                       <td className="py-3 px-3 text-sm text-right">
-                        <RowActionsMenu items={rowActions} label="Ações do orçamento" />
+                        {rowActions.length > 0 ? (
+                          <RowActionsMenu items={rowActions} label="Ações do orçamento" />
+                        ) : null}
                       </td>
                     </tr>
                   );

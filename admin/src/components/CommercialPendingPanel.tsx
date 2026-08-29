@@ -172,16 +172,20 @@ export default function CommercialPendingPanel({ onNotify }: CommercialPendingPa
                     </Button>
                   </Link>
                 ) : null}
-                <Link href={`/quotes/${q.id}/print`} target="_blank">
-                  <Button size="sm" variant="outline" className="h-8">
-                    <Printer className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-                <Link href={`/projects/${q.project_id}`}>
-                  <Button size="sm" variant="outline" className="h-8">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+                {!isReadOnly ? (
+                  <Link href={`/quotes/${q.id}/print`} target="_blank">
+                    <Button size="sm" variant="outline" className="h-8">
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                ) : null}
+                {!isReadOnly ? (
+                  <Link href={`/projects/${q.project_id}`}>
+                    <Button size="sm" variant="outline" className="h-8">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                ) : null}
               </div>
             </div>
           );

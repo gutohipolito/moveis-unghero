@@ -21,6 +21,8 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 import { PrivacyMoney } from "@/components/privacy/PrivacyMoney";
+import { BlurSurnameName } from "@/components/ViewerPrivacy";
+import { usePermissions } from "@/context/PermissionsContext";
 import {
   createContract,
   createContractTemplate,
@@ -102,6 +104,7 @@ export default function ContratosClient({
 }) {
   const dialog = useActionDialog();
   const { showSuccess, showError, confirmAction } = dialog;
+  const { isReadOnly } = usePermissions();
 
   const [tab, setTab] = useState<Tab>("contratos");
   const [contracts, setContracts] = useState(initialContracts);
@@ -424,7 +427,7 @@ export default function ContratosClient({
           />
         }
         actions={
-          tab === "contratos" ? (
+          isReadOnly ? undefined : tab === "contratos" ? (
             <Button onClick={openCreateContract} className="font-bold gap-1.5">
               <Plus className="h-4 w-4" /> Novo Contrato
             </Button>
@@ -485,7 +488,9 @@ export default function ContratosClient({
                 <Card key={c.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold text-foreground truncate">{c.cliente_nome}</h3>
+                      <h3 className="font-bold text-foreground truncate">
+                        <BlurSurnameName name={c.cliente_nome} enabled={isReadOnly} />
+                      </h3>
                       <span
                         className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full border ${
                           c.status === "EMITIDO"
@@ -504,45 +509,53 @@ export default function ContratosClient({
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleWhatsAppContract(c)}
-                      disabled={whatsAppBusyId === c.id}
-                      title="Enviar por WhatsApp para assinatura"
-                      className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-60"
-                    >
-                      {whatsAppBusyId === c.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <MessageCircle className="h-3.5 w-3.5" />
-                      )}
-                      WhatsApp
-                    </button>
-                    <Link
-                      href={`/contratos/${c.id}/print`}
-                      target="_blank"
-                      className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md border border-border text-xs font-semibold hover:bg-muted/60"
-                    >
-                      <Printer className="h-3.5 w-3.5" /> Imprimir
-                    </Link>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditContract(c)}
-                      className="gap-1.5"
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteContract(c)}
-                      className="text-rose-600"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {!isReadOnly ? (
+                      <button
+                        type="button"
+                        onClick={() => handleWhatsAppContract(c)}
+                        disabled={whatsAppBusyId === c.id}
+                        title="Enviar por WhatsApp para assinatura"
+                        className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-60"
+                      >
+                        {whatsAppBusyId === c.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        )}
+                        WhatsApp
+                      </button>
+                    ) : null}
+                    {!isReadOnly ? (
+                      <Link
+                        href={`/contratos/${c.id}/print`}
+                        target="_blank"
+                        className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md border border-border text-xs font-semibold hover:bg-muted/60"
+                      >
+                        <Printer className="h-3.5 w-3.5" /> Imprimir
+                      </Link>
+                    ) : null}
+                    {!isReadOnly ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditContract(c)}
+                        className="gap-1.5"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </Button>
+                    ) : null}
+                    {!isReadOnly ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteContract(c)}
+                        className="text-rose-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : null}
                   </div>
                 </Card>
               ))}
@@ -566,18 +579,22 @@ export default function ContratosClient({
                 <p className="text-xs text-muted-foreground truncate">{t.titulo}</p>
               </div>
               <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => openEditTemplate(t)}>
-                  Editar
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-rose-600"
-                  onClick={() => handleDeleteTemplate(t)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                {!isReadOnly ? (
+                  <Button type="button" variant="outline" size="sm" onClick={() => openEditTemplate(t)}>
+                    Editar
+                  </Button>
+                ) : null}
+                {!isReadOnly ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-rose-600"
+                    onClick={() => handleDeleteTemplate(t)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                ) : null}
               </div>
             </Card>
           ))}

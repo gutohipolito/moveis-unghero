@@ -57,6 +57,21 @@ const PII_KEYS = new Set([
   "user_agent",
 ]);
 
+/**
+ * Nomes de pessoa/empresa — VIEWER só recebe o primeiro token + máscara.
+ * Assim o sobrenome não aparece nem no DevTools / payload RSC.
+ */
+const NAME_KEYS = new Set([
+  "nome",
+  "clientName",
+  "cliente_nome",
+  "clienteNome",
+  "partnerNome",
+  "parceiro_nome",
+  "solicitante_nome",
+  "authorName",
+]);
+
 /** Documento e dados sensíveis (ops mantém telefone/e-mail). */
 const OPS_DOC_KEYS = new Set([
   "cpf",
@@ -88,6 +103,33 @@ function redactPii(value: unknown): unknown {
   return null;
 }
 
+/** Mantém só o primeiro nome; o restante vira máscara (irrecuperável no payload). */
+export function redactPersonName(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ••••`;
+}
+
+function redactLinkedProject(project: unknown, index: number): unknown {
+  if (!isPlainObject(project)) return project;
+  const status =
+    typeof project.status_geral === "string" ? project.status_geral : "—";
+  return {
+    id: `oculto-${index + 1}`,
+    status_geral: status,
+    valor_previsto: 0,
+    quotes_count: 0,
+    quotes: [],
+    createdAt: null,
+    updatedAt: null,
+    environments_count: 0,
+    briefing: null,
+  };
+}
+
 /**
  * Remove valores sensíveis de um payload (deep).
  * Idempotente: reaplicar em dados já redigidos não muda o resultado.
@@ -109,6 +151,14 @@ export function redactSensitivePayload<T>(data: T): T {
       }
       if (PII_KEYS.has(key)) {
         out[key] = redactPii(value);
+        continue;
+      }
+      if (NAME_KEYS.has(key)) {
+        out[key] = redactPersonName(value);
+        continue;
+      }
+      if (key === "projects" && Array.isArray(value)) {
+        out[key] = value.map((item, i) => redactLinkedProject(item, i));
         continue;
       }
       if (FREE_TEXT_KEYS.has(key) && typeof value === "string") {

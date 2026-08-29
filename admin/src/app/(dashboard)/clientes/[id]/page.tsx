@@ -5,6 +5,7 @@ import { getClientDetailsAction } from "@/app/actions/cliente";
 import { redirect } from "next/navigation";
 import ClienteDetailsClient from "./ClienteDetailsClient";
 import { parseClientDetailsTab } from "@/lib/clientDetailsTabs";
+import { isReadOnlyRole } from "@/lib/permissions";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,9 +14,12 @@ interface RouteParams {
 
 export default async function ClienteDetailsPage({ params, searchParams }: RouteParams) {
   await guardModule("clientes");
+  const session = await getSessionSafe(await headers()).catch(() => null);
+  if (isReadOnlyRole(session?.user?.cargo)) {
+    redirect("/clientes");
+  }
   const { id } = await params;
   const { tab } = await searchParams;
-  const session = await getSessionSafe(await headers()).catch(() => null);
   const companyId = session?.user?.company_id || "mock-company-id";
 
   const res = await getClientDetailsAction(id);

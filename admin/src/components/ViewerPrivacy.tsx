@@ -2,8 +2,12 @@
 
 import type { ReactNode } from "react";
 
+/** Blur sutil (ilegível de longe, sem “borrar” demais a tela). */
+export const VIEWER_BLUR_CLASS = "blur-[3px]";
+
 /**
- * Para VIEWER: mostra o primeiro nome e aplica blur no restante (sobrenome / razão social).
+ * Para VIEWER: mostra o primeiro nome e aplica blur sutil no restante.
+ * Preferir dados já redigidos no servidor (`João ••••`) — o blur é reforço visual.
  */
 export function BlurSurnameName({
   name,
@@ -33,14 +37,17 @@ export function BlurSurnameName({
   return (
     <span className={className} title={first}>
       <span>{first} </span>
-      <span className="blur-[6px] select-none pointer-events-none" aria-hidden>
+      <span
+        className={`${VIEWER_BLUR_CLASS} select-none pointer-events-none`}
+        aria-hidden
+      >
         {rest}
       </span>
     </span>
   );
 }
 
-/** Envelope com blur visual (conteúdo ilegível, sem interação). */
+/** Envelope com blur visual sutil (conteúdo ilegível, sem interação). */
 export function ViewerBlurBox({
   enabled,
   children,
@@ -53,7 +60,7 @@ export function ViewerBlurBox({
   if (!enabled) return <>{children}</>;
   return (
     <div
-      className={`blur-[6px] select-none pointer-events-none ${className}`}
+      className={`${VIEWER_BLUR_CLASS} select-none pointer-events-none ${className}`}
       aria-hidden
     >
       {children}

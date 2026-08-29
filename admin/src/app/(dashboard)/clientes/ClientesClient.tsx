@@ -727,15 +727,21 @@ export default function ClientesClient({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link
-                            href={`/clientes/${client.id}`}
-                            className="font-semibold text-foreground truncate hover:text-primary transition-colors"
-                          >
-                            <BlurSurnameName
-                              name={client.nome}
-                              enabled={blurViewerPrivacy}
-                            />
-                          </Link>
+                          {blurViewerPrivacy ? (
+                            <span className="font-semibold text-foreground truncate">
+                              <BlurSurnameName
+                                name={client.nome}
+                                enabled
+                              />
+                            </span>
+                          ) : (
+                            <Link
+                              href={`/clientes/${client.id}`}
+                              className="font-semibold text-foreground truncate hover:text-primary transition-colors"
+                            >
+                              {client.nome}
+                            </Link>
+                          )}
                           {isNewClient(client, now) && (
                             <span className="badge-meta inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md">
                               <UserPlus className="h-3 w-3 opacity-70" />
@@ -866,15 +872,18 @@ export default function ClientesClient({
                           return (
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <Link
-                                  href={`/clientes/${client.id}`}
-                                  className="text-sm font-bold text-slate-900 hover:text-primary transition-colors"
-                                >
-                                  <BlurSurnameName
-                                    name={client.nome}
-                                    enabled={blurViewerPrivacy}
-                                  />
-                                </Link>
+                                {blurViewerPrivacy ? (
+                                  <span className="text-sm font-bold text-slate-900">
+                                    <BlurSurnameName name={client.nome} enabled />
+                                  </span>
+                                ) : (
+                                  <Link
+                                    href={`/clientes/${client.id}`}
+                                    className="text-sm font-bold text-slate-900 hover:text-primary transition-colors"
+                                  >
+                                    {client.nome}
+                                  </Link>
+                                )}
                                 {isNewClient(client, now) && (
                                   <span className="badge-meta inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md">
                                     <UserPlus className="h-3 w-3 opacity-70" />

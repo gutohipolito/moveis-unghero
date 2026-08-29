@@ -151,7 +151,7 @@ export default function DashboardLayoutWrapper({
         )}
       >
         {!isReadOnly ? <SuggestionFab stacked /> : null}
-        <ProjectChatDock />
+        {!isReadOnly ? <ProjectChatDock /> : null}
       </div>
     </div>
   );

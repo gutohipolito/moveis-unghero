@@ -158,7 +158,7 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                   item.href === "/settings" ? resolveSettingsHubHref(can) : item.href;
                 const isActive = isNavItemActive(pathname, href, item.matchPaths);
                 const label = compact && item.shortName ? item.shortName : item.name;
-                const blurLabel = isReadOnly && item.href === "/melhorias";
+                    const blurLabel = isReadOnly && item.href === "/melhorias";
 
                 return (
                   <AppNavLink
@@ -170,11 +170,11 @@ export default function SidebarNav({ onNavigate, compact = false }: SidebarNavPr
                     }`}
                     title={compact ? item.name : undefined}
                   >
-                    <span className={`sidebar-nav-icon ${blurLabel ? "blur-[3px]" : ""}`}>
+                    <span className={`sidebar-nav-icon ${blurLabel ? "blur-[2px]" : ""}`}>
                       <item.icon className="h-4.5 w-4.5" />
                     </span>
                     {!compact && (
-                      <span className={`sidebar-nav-label ${blurLabel ? "blur-[5px] select-none" : ""}`}>
+                      <span className={`sidebar-nav-label ${blurLabel ? "blur-[3px] select-none" : ""}`}>
                         {label}
                       </span>
                     )}

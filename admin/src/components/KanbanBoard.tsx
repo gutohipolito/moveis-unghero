@@ -1104,6 +1104,7 @@ export default function KanbanBoard({
   };
 
   const handleCardClick = (project: Project) => {
+    if (isReadOnly) return;
     if (didDrag || activeDragId) return;
     openEditModal(project);
   };
@@ -1435,10 +1436,12 @@ export default function KanbanBoard({
         onClick={() => handleCardClick(project)}
         className={`group kanban-card kanban-card-stage overflow-hidden border relative ${
           !isFactoryRole && project.client.tipo_pessoa === "PJ" ? "border-indigo-500/50 shadow-xs ring-1 ring-indigo-50" : theme.cardBorder
-        } ${theme.cardShadow} ${theme.cardHover} ${
+        } ${theme.cardShadow} ${isReadOnly ? "" : theme.cardHover} ${
           canDragCard
             ? "cursor-grab active:cursor-grabbing"
-            : "cursor-pointer"
+            : isReadOnly
+              ? "cursor-default"
+              : "cursor-pointer"
         } ${
           isDraggingThis ? "opacity-35 scale-[0.98] border-dashed" : ""
         } ${followLevel === "ok" || isOpsLimited ? "" : FOLLOW_UP_CARD_STYLES[followLevel]} ${

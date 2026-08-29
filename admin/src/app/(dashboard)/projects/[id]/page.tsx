@@ -10,9 +10,10 @@ import {
 } from "@/lib/formatProjectDetails";
 import { maybeRedactForViewer } from "@/lib/viewerRedact";
 import { guardModule } from "@/lib/moduleAccess";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import ProjectDetails from "@/components/ProjectDetails";
 import { loadPartnerContributionsForProject } from "@/lib/partnerPortal";
+import { isReadOnlyRole } from "@/lib/permissions";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,9 +21,12 @@ interface RouteParams {
 
 export default async function ProjectPage({ params }: RouteParams) {
   await guardModule("crm");
+  const auth = await getAuthContext();
+  if (isReadOnlyRole(auth?.cargo)) {
+    redirect("/crm");
+  }
   const { id } = await params;
   const userCompanyId = await getSessionCompanyId();
-  const auth = await getAuthContext();
 
   let project = null;
   try {

@@ -10,6 +10,11 @@ export function canWriteProjectChat(role: Role | string | null | undefined): boo
   return !isReadOnlyRole(role);
 }
 
+/** VIEWER não vê o float de mensagens nem lista threads. */
+export function canAccessProjectChat(role: Role | string | null | undefined): boolean {
+  return !isReadOnlyRole(role);
+}
+
 export function canCloseProjectChat(role: Role | string | null | undefined): boolean {
   return role === "ADMIN" || role === "COMERCIAL";
 }
