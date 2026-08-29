@@ -52,9 +52,11 @@ export default async function PublicQuotePage({ params }: PublicQuotePageProps) 
   }
 
   const hdrs = await headers();
-  // Proxy novo envia o dispositivo via POST /api/o/{code}/view — evita contar 2x.
+  // Proxy HostGator marca X-Quote-View-Client e registra via POST /api/o/.../view
+  // (beacon no browser). Sem o header (acesso direto no admin), registra aqui.
   if (!hdrs.get("x-quote-view-client")) {
     const { userAgent, hints } = resolveQuoteViewUserAgent(hdrs);
+    // Sem UA real (ex.: proxy antigo), não grava Desktop falso — o beacon corrige.
     await recordQuotePublicView(data.quoteId, userAgent, hints);
   }
 

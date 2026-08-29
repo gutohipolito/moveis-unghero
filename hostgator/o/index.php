@@ -13,7 +13,7 @@
 const QUOTE_ADMIN_BASE = 'https://admin.moveisunghero.com.br';
 const QUOTE_UNLOCK_COOKIE_PREFIX = 'qo_';
 const QUOTE_UNLOCK_MAX_AGE = 60 * 60 * 24 * 14;
-const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.7';
+const QUOTE_PROXY_UA = 'MoveisUnghero-QuoteProxy/1.8';
 
 /**
  * UA do visitante (celular/desktop) — sem isso o admin registra tudo como Desktop.
@@ -28,6 +28,19 @@ function quote_client_user_agent(): string
         return QUOTE_PROXY_UA;
     }
     return $ua;
+}
+
+function quote_is_proxy_ua(string $ua): bool
+{
+    return (bool) preg_match('/^MoveisUnghero-QuoteProxy\//i', $ua);
+}
+
+function quote_is_preview_ua(string $ua): bool
+{
+    return (bool) preg_match(
+        '/whatsapp|facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|preview|bot|crawler|spider|embedly|pinterest/i',
+        $ua
+    );
 }
 
 /** Cabeçalhos comuns do proxy: UA real + identificação do proxy. */
@@ -378,34 +391,62 @@ if (stripos($body, '</body>') !== false) {
 
 $chMobile = (string) ($_SERVER['HTTP_SEC_CH_UA_MOBILE'] ?? '');
 $chPlatform = (string) ($_SERVER['HTTP_SEC_CH_UA_PLATFORM'] ?? '');
-quote_http_json(
-    QUOTE_ADMIN_BASE . '/api/o/' . rawurlencode($code) . '/view',
-    'POST',
-    [
-        'userAgent' => quote_client_user_agent(),
-        'hints' => [
-            'mobile' => $chMobile,
-            'platform' => $chPlatform,
-        ],
-    ]
-);
+$clientUa = quote_client_user_agent();
+$serverCanTrustUa = !quote_is_proxy_ua($clientUa);
+$isPreviewBot = quote_is_preview_ua($clientUa);
+
+// Só registra no servidor se temos UA real do visitante (ou crawler/preview).
+// Proxy antigo (1.4) mandava MoveisUnghero-QuoteProxy → 100% Desktop.
+// Aberturas humanas ficam a cargo do beacon no browser (UA + touch + viewport).
+if ($serverCanTrustUa || $isPreviewBot) {
+    quote_http_json(
+        QUOTE_ADMIN_BASE . '/api/o/' . rawurlencode($code) . '/view',
+        'POST',
+        [
+            'userAgent' => $clientUa,
+            'hints' => [
+                'mobile' => $chMobile,
+                'platform' => $chPlatform,
+            ],
+        ]
+    );
+}
+
+$viewUrlJson = json_encode(QUOTE_ADMIN_BASE . '/api/o/' . $code . '/view', JSON_UNESCAPED_SLASHES);
+// Se o PHP já contou com UA real de um humano, o JS só refina; senão o JS é a abertura oficial.
+$refineFlag = ($serverCanTrustUa && !$isPreviewBot) ? 'true' : 'false';
 
 $viewBeacon = '<script>'
     . '(function(){'
+    . 'var url=' . $viewUrlJson . ';'
+    . 'function detect(){'
     . 'var ua=navigator.userAgent||"";'
     . 'var uaData=navigator.userAgentData||null;'
-    . 'var payload={'
-    . 'refine:true,'
+    . 'var touch=navigator.maxTouchPoints||0;'
+    . 'var w=Math.min(screen.width||0,window.innerWidth||0)||0;'
+    . 'var tablet=/iPad|Tablet|(Android(?!.*Mobile))/i.test(ua)||(navigator.platform==="MacIntel"&&touch>1);'
+    . 'var mobile=false;'
+    . 'if(uaData&&typeof uaData.mobile==="boolean"){mobile=!!uaData.mobile;}'
+    . 'else if(/Mobi|iPhone|iPod|Android.+Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)){mobile=true;}'
+    . 'else if(touch>0&&w>0&&w<768){mobile=true;}'
+    . 'if(tablet){mobile=false;}'
+    . 'var platform=(uaData&&uaData.platform)||navigator.platform||"";'
+    . 'return{'
+    . 'refine:' . $refineFlag . ','
     . 'userAgent:ua,'
-    . 'hints:{mobile:uaData&&uaData.mobile?"?1":(uaData?"?0":""),platform:(uaData&&uaData.platform)||""},'
-    . 'client:{'
-    . 'mobile:!!(uaData&&uaData.mobile)||/Mobi|iPhone|iPod|Android.+Mobile/i.test(ua),'
-    . 'tablet:/iPad|Tablet/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),'
-    . 'maxTouchPoints:navigator.maxTouchPoints||0,'
-    . 'platform:navigator.platform||""'
-    . '}'
+    . 'hints:{mobile:mobile?"?1":"?0",platform:platform},'
+    . 'client:{mobile:mobile,tablet:tablet,maxTouchPoints:touch,platform:navigator.platform||"",viewportWidth:w}'
     . '};'
-    . 'try{fetch(' . json_encode(QUOTE_ADMIN_BASE . '/api/o/' . $code . '/view') . ',{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:true,mode:"cors"});}catch(e){}'
+    . '}'
+    . 'function send(payload){'
+    . 'var body=JSON.stringify(payload);'
+    . 'try{fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true,mode:"cors",credentials:"omit"});}'
+    . 'catch(e){'
+    . 'try{if(navigator.sendBeacon){navigator.sendBeacon(url,new Blob([body],{type:"application/json"}));}}catch(e2){}'
+    . '}'
+    . '}'
+    . 'send(detect());'
+    . 'window.addEventListener("pageshow",function(ev){if(ev.persisted)send(detect());});'
     . '})();</script>';
 if (stripos($body, '</body>') !== false) {
     $body = preg_replace('/<\/body>/i', $viewBeacon . '</body>', $body, 1) ?? ($body . $viewBeacon);
@@ -417,5 +458,7 @@ http_response_code(200);
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: private, no-cache, must-revalidate');
 header('X-Robots-Tag: noindex, nofollow');
+header('Accept-CH: Sec-CH-UA-Mobile, Sec-CH-UA-Platform');
+header('Permissions-Policy: ch-ua-mobile=(self), ch-ua-platform=(self)');
 
 echo $body;

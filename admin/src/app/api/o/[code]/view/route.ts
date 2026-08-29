@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadPublicQuoteByShareCode } from "@/lib/quotePublicShare";
 import {
+  isQuoteProxyUserAgent,
   recordQuotePublicView,
   refineQuotePublicView,
+  resolveQuoteViewUserAgent,
   type QuoteClientDeviceSignals,
 } from "@/lib/quoteViewTracking";
 
@@ -56,8 +58,15 @@ export async function POST(
     return NextResponse.json({ success: false }, { status: 404, headers });
   }
 
-  const userAgent = typeof body.userAgent === "string" ? body.userAgent : null;
-  const hints = body.hints || {};
+  const fromHeaders = resolveQuoteViewUserAgent(request.headers);
+  const bodyUa = typeof body.userAgent === "string" ? body.userAgent.trim() : "";
+  const userAgent =
+    (bodyUa && !isQuoteProxyUserAgent(bodyUa) ? bodyUa : null) ||
+    fromHeaders.userAgent;
+  const hints = {
+    mobile: body.hints?.mobile ?? fromHeaders.hints.mobile,
+    platform: body.hints?.platform ?? fromHeaders.hints.platform,
+  };
   const client = body.client || null;
 
   if (body.refine) {

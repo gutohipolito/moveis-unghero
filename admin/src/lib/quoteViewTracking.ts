@@ -10,6 +10,11 @@ export function isQuoteLinkPreviewAgent(userAgent?: string | null): boolean {
   return PREVIEW_UA_RE.test(userAgent);
 }
 
+/** UA interno do proxy HostGator — nunca é o dispositivo real do cliente. */
+export function isQuoteProxyUserAgent(userAgent?: string | null): boolean {
+  return Boolean(userAgent?.trim() && /^MoveisUnghero-QuoteProxy\//i.test(userAgent.trim()));
+}
+
 export type ParsedUserAgent = {
   device: "Mobile" | "Tablet" | "Desktop";
   os: "iOS" | "Android" | "Windows" | "macOS" | "Linux" | "Chrome OS" | "Desconhecido";
@@ -21,6 +26,8 @@ export type QuoteClientDeviceSignals = {
   tablet?: boolean;
   maxTouchPoints?: number;
   platform?: string;
+  /** Largura útil da viewport (px) — reforça detecção mobile quando UA é genérico. */
+  viewportWidth?: number;
 };
 
 function normalizeHintMobile(raw?: string | null): "?1" | "?0" | "" {
@@ -30,17 +37,35 @@ function normalizeHintMobile(raw?: string | null): "?1" | "?0" | "" {
   return "";
 }
 
+/** Há sinal confiável de dispositivo além do UA do proxy? */
+export function hasUsableQuoteDeviceSignal(
+  userAgent?: string | null,
+  hints?: { mobile?: string | null; platform?: string | null },
+  client?: QuoteClientDeviceSignals | null
+): boolean {
+  if (client?.mobile === true || client?.tablet === true) return true;
+  if (Number(client?.maxTouchPoints || 0) > 0) return true;
+  if (Number(client?.viewportWidth || 0) > 0) return true;
+  if (normalizeHintMobile(hints?.mobile)) return true;
+  if ((hints?.platform || "").trim().replace(/"/g, "")) return true;
+  const ua = userAgent?.trim() || "";
+  if (!ua || isQuoteProxyUserAgent(ua)) return false;
+  return true;
+}
+
 /** Extrai dispositivo e SO a partir do User-Agent, Client Hints e sinais do navegador. */
 export function parseQuoteUserAgent(
   userAgent?: string | null,
   hints?: { mobile?: string | null; platform?: string | null },
   client?: QuoteClientDeviceSignals | null
 ): ParsedUserAgent {
-  const ua = userAgent?.trim() || "";
+  const rawUa = userAgent?.trim() || "";
+  const ua = isQuoteProxyUserAgent(rawUa) ? "" : rawUa;
   const hintMobile = normalizeHintMobile(hints?.mobile);
   const hintPlatform = (hints?.platform?.trim() || "").replace(/"/g, "");
   const clientPlatform = (client?.platform || "").trim();
   const touchPoints = Number(client?.maxTouchPoints || 0);
+  const viewportWidth = Number(client?.viewportWidth || 0);
 
   const uaLooksPhone = /iphone|ipod|windows phone|opera mini|android.+mobile|mobile safari|mobile\//i.test(
     ua
@@ -57,7 +82,12 @@ export function parseQuoteUserAgent(
     return { device: "Tablet", os: "iOS", label: "Tablet · iOS" };
   }
 
-  if (client?.mobile === true || hintMobile === "?1") {
+  const clientSaysMobile =
+    client?.mobile === true ||
+    hintMobile === "?1" ||
+    (touchPoints > 0 && viewportWidth > 0 && viewportWidth < 768 && !client?.tablet);
+
+  if (clientSaysMobile) {
     let os: ParsedUserAgent["os"] = "Desconhecido";
     if (/android/i.test(ua) || /android/i.test(hintPlatform) || /android/i.test(clientPlatform)) {
       os = "Android";
@@ -74,15 +104,13 @@ export function parseQuoteUserAgent(
         else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
       }
     }
-    const device = /ipad|tablet/i.test(ua) ? "Tablet" : "Mobile";
+    const device = /ipad|tablet/i.test(ua) || client?.tablet ? "Tablet" : "Mobile";
     return { device, os, label: `${device} · ${os}` };
   }
 
-  // Proxy antigo sem UA do visitante
-  if (!ua || /^MoveisUnghero-QuoteProxy\//i.test(ua)) {
-    if (!ua) {
-      return { device: "Desktop", os: "Desconhecido", label: "Desktop · Desconhecido" };
-    }
+  // Sem UA real e sem sinais do cliente — não assumir Desktop (proxy antigo fazia isso).
+  if (!ua && !hintPlatform && !clientPlatform && hintMobile !== "?0") {
+    return { device: "Desktop", os: "Desconhecido", label: "Desktop · Desconhecido" };
   }
 
   let os: ParsedUserAgent["os"] = "Desconhecido";
@@ -93,8 +121,8 @@ export function parseQuoteUserAgent(
   else if (/macintosh|mac os x/i.test(ua)) os = "macOS";
   else if (/linux/i.test(ua)) os = "Linux";
 
-  if (os === "Desconhecido" && hintPlatform) {
-    os = platformHintToOs(hintPlatform);
+  if (os === "Desconhecido" && (hintPlatform || clientPlatform)) {
+    os = platformHintToOs(hintPlatform || clientPlatform);
   }
 
   let device: ParsedUserAgent["device"] = "Desktop";
@@ -104,6 +132,8 @@ export function parseQuoteUserAgent(
     device = "Mobile";
   } else if (hintMobile === "?0") {
     device = "Desktop";
+  } else if (touchPoints > 0 && viewportWidth > 0 && viewportWidth < 1024 && viewportWidth >= 768) {
+    device = "Tablet";
   }
 
   if (os === "macOS" && /mobile|touch/i.test(ua)) {
@@ -141,10 +171,12 @@ export function resolveQuoteViewUserAgent(hdrs: {
     hdrs.get("x-forwarded-user-agent")?.trim() ||
     null;
   const rawUa = hdrs.get("user-agent")?.trim() || null;
-  const isProxyUa = Boolean(rawUa && /^MoveisUnghero-QuoteProxy\//i.test(rawUa));
+  const candidate = forwarded || rawUa;
+  const userAgent =
+    candidate && !isQuoteProxyUserAgent(candidate) ? candidate : null;
 
   return {
-    userAgent: forwarded || (!isProxyUa ? rawUa : null) || rawUa,
+    userAgent,
     hints: {
       mobile: hdrs.get("sec-ch-ua-mobile"),
       platform: hdrs.get("sec-ch-ua-platform"),
@@ -238,8 +270,15 @@ export async function recordQuotePublicView(
   client?: QuoteClientDeviceSignals | null
 ): Promise<void> {
   try {
-    const isPreview = isQuoteLinkPreviewAgent(userAgent);
-    const parsed = parseQuoteUserAgent(userAgent, hints, client);
+    const ua = isQuoteProxyUserAgent(userAgent) ? null : userAgent;
+    const isPreview = isQuoteLinkPreviewAgent(ua);
+    // Proxy antigo grava MoveisUnghero-QuoteProxy → tudo virava Desktop.
+    // Sem UA real nem sinais do browser, espera o beacon do cliente.
+    if (!isPreview && !hasUsableQuoteDeviceSignal(ua, hints, client)) {
+      return;
+    }
+
+    const parsed = parseQuoteUserAgent(ua, hints, client);
     const now = new Date();
 
     await prisma.$transaction([
@@ -248,7 +287,7 @@ export async function recordQuotePublicView(
           id: randomUUID(),
           quote_id: quoteId,
           viewed_at: now,
-          user_agent: userAgent?.slice(0, 500) || null,
+          user_agent: ua?.slice(0, 500) || null,
           is_preview: isPreview,
           device: parsed.device,
           os: parsed.os,
@@ -282,9 +321,12 @@ export async function refineQuotePublicView(
   client?: QuoteClientDeviceSignals | null
 ): Promise<void> {
   try {
-    if (isQuoteLinkPreviewAgent(userAgent)) return;
-    const parsed = parseQuoteUserAgent(userAgent, hints, client);
-    const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+    const ua = isQuoteProxyUserAgent(userAgent) ? null : userAgent;
+    if (isQuoteLinkPreviewAgent(ua)) return;
+    if (!hasUsableQuoteDeviceSignal(ua, hints, client)) return;
+
+    const parsed = parseQuoteUserAgent(ua, hints, client);
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000);
     const last = await prisma.quoteView.findFirst({
       where: {
         quote_id: quoteId,
@@ -292,11 +334,11 @@ export async function refineQuotePublicView(
         viewed_at: { gte: cutoff },
       },
       orderBy: { viewed_at: "desc" },
-      select: { id: true },
+      select: { id: true, user_agent: true },
     });
 
     if (!last) {
-      await recordQuotePublicView(quoteId, userAgent, hints, client);
+      await recordQuotePublicView(quoteId, ua, hints, client);
       return;
     }
 
@@ -306,7 +348,7 @@ export async function refineQuotePublicView(
         data: {
           device: parsed.device,
           os: parsed.os,
-          user_agent: userAgent?.slice(0, 500) || undefined,
+          ...(ua ? { user_agent: ua.slice(0, 500) } : {}),
         },
       }),
       prisma.quote.update({
