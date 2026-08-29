@@ -20,7 +20,7 @@ import {
 import { fetchAgendaEvents, fetchFactoryBoard } from "@/lib/factoryBoard";
 import { buildLiveSnapshotVersion } from "@/lib/liveSnapshot";
 import { prisma } from "@/lib/prisma";
-import { maybeRedactForViewer } from "@/lib/viewerRedact";
+import { maybeRedactForViewer, redactPersonName } from "@/lib/viewerRedact";
 import { isReadOnlyRole } from "@/lib/permissions";
 
 async function assertCompanyAccess(companyId: string) {
@@ -83,7 +83,17 @@ export async function getAgendaLiveSnapshot(companyId: string) {
 
   try {
     const snapshot = await fetchAgendaEvents(auth.companyId);
-    return { success: true as const, ...snapshot };
+    if (!isReadOnlyRole(auth.cargo)) {
+      return { success: true as const, ...snapshot };
+    }
+    return {
+      success: true as const,
+      ...snapshot,
+      events: snapshot.events.map((event) => ({
+        ...event,
+        projectName: String(redactPersonName(event.projectName) ?? event.projectName ?? ""),
+      })),
+    };
   } catch (error) {
     console.warn("Falha ao sincronizar agenda:", error);
     return { success: false as const, error: "Não foi possível sincronizar a agenda." };

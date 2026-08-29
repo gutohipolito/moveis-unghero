@@ -4,12 +4,14 @@ import React, { useState, useCallback, useMemo } from "react";
 import { createTask, toggleTaskStatus } from "@/app/actions/operations";
 import { getAgendaLiveSnapshot } from "@/app/actions/liveSnapshots";
 import { useLiveEntity } from "@/context/LiveSyncContext";
+import { usePermissions } from "@/context/PermissionsContext";
 import type { AgendaCategory, AgendaEventSource, DerivedAgendaEvent } from "@/lib/agendaEvents";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { BlurSurnameName } from "@/components/ViewerPrivacy";
 import {
   ChevronLeft,
   ChevronRight,
@@ -114,6 +116,8 @@ function toDateInputValue(date: Date): string {
 }
 
 export default function AgendaClient({ initialEvents, derivedEvents, projects, companyId }: AgendaClientProps) {
+  const { isReadOnly } = usePermissions();
+
   // Estados separados: tarefas (com live-sync) e derivados (estáticos das props).
   const [taskEvents, setTaskEvents] = useState<TaskAgendaEvent[]>(initialEvents);
   const [currentDate, setCurrentDate] = useState(() => new Date());
@@ -199,6 +203,7 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
   // Salvar novo agendamento
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
     if (!form.titulo || !form.responsavel || !form.projectId) return;
 
     setLoading(true);
@@ -243,7 +248,7 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
 
   // Concluir / Reabrir tarefa (apenas eventos editáveis)
   const handleToggleStatus = async (evt: CalendarEvent) => {
-    if (evt.readOnly) return;
+    if (isReadOnly || evt.readOnly) return;
     const newStatus = evt.status === "PENDENTE" ? "CONCLUIDA" : "PENDENTE";
 
     setTaskEvents(taskEvents.map((e) => (e.id === evt.id ? { ...e, status: newStatus } : e)));
@@ -307,9 +312,11 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
             </Select>
           </div>
 
-          <Button onClick={() => setIsAddEventOpen(true)} size="sm" className="btn-metallic">
-            <Plus className="h-4 w-4 mr-1.5" /> Agendar
-          </Button>
+          {!isReadOnly && (
+            <Button onClick={() => setIsAddEventOpen(true)} size="sm" className="btn-metallic">
+              <Plus className="h-4 w-4 mr-1.5" /> Agendar
+            </Button>
+          )}
         </Card>
 
         {/* Legenda de origens */}
@@ -444,12 +451,13 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
                         {cfg.label}
                       </span>
 
-                      {selectedEvent.readOnly ? (
+                      {isReadOnly || selectedEvent.readOnly ? (
                         <span className="inline-flex items-center text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-border/60 bg-secondary text-muted-foreground">
                           <Lock className="h-3 w-3 mr-1" /> Somente leitura
                         </span>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => handleToggleStatus(selectedEvent)}
                           className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer transition-all ${
                             selectedEvent.status === "CONCLUIDA"
@@ -468,7 +476,8 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
                         {selectedEvent.titulo}
                       </h3>
                       <span className="text-xs text-primary font-semibold flex items-center gap-1.5">
-                        <Layers className="h-3.5 w-3.5" /> Projeto: {selectedEvent.projectName}
+                        <Layers className="h-3.5 w-3.5" /> Projeto:{" "}
+                        <BlurSurnameName name={selectedEvent.projectName} enabled={isReadOnly} />
                       </span>
                     </div>
 
@@ -493,7 +502,7 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
                   </div>
 
                   <div className="border-t border-border/20 pt-4 flex gap-2">
-                    {selectedEvent.readOnly && selectedEvent.href && (
+                    {!isReadOnly && selectedEvent.readOnly && selectedEvent.href && (
                       <a
                         href={selectedEvent.href}
                         className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 btn-metallic"
@@ -562,7 +571,9 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
                       <p className="text-[10px] text-muted-foreground flex items-center gap-2">
                         <span>{new Date(evt.data).toLocaleDateString("pt-BR")} às {formatEventTime(evt.data)}</span>
                         <span>•</span>
-                        <span className="truncate">{evt.projectName.split(" ")[0]}</span>
+                        <span className="truncate">
+                          <BlurSurnameName name={evt.projectName} enabled={isReadOnly} />
+                        </span>
                       </p>
                     </div>
                     <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wider ${cfg.bg} ${cfg.color}`}>
@@ -576,119 +587,124 @@ export default function AgendaClient({ initialEvents, derivedEvents, projects, c
         </Card>
       </div>
 
-      {/* Modal - Novo Agendamento */}
-      <Dialog isOpen={isAddEventOpen} onClose={() => setIsAddEventOpen(false)}>
-        <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
-          Agendar Compromisso Técnico
-        </h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Projeto / Cliente Associado
-            </label>
-            <Select
-              value={form.projectId}
-              onChange={(e) => setForm({ ...form, projectId: e.target.value })}
-              required
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.clientName} (Projeto {p.id.split("-")[1] || p.id})
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Título do Compromisso
-            </label>
-            <Input
-              required
-              value={form.titulo}
-              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Descrição Detalhada
-            </label>
-            <textarea
-              className="w-full bg-card/60 border border-border/60 hover:border-border rounded-lg p-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary placeholder-muted-foreground transition-all duration-200 resize-none h-16"
-              value={form.descricao}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Modal - Novo Agendamento (bloqueado para VIEWER) */}
+      {!isReadOnly && (
+        <Dialog
+          isOpen={isAddEventOpen}
+          onClose={() => setIsAddEventOpen(false)}
+        >
+          <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
+            Agendar Compromisso Técnico
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Data do Compromisso
-              </label>
-              <Input
-                required
-                type="date"
-                value={form.data}
-                onChange={(e) => setForm({ ...form, data: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Horário
-              </label>
-              <Input
-                required
-                type="time"
-                value={form.hora}
-                onChange={(e) => setForm({ ...form, hora: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Responsável Técnico
-              </label>
-              <Input
-                required
-                value={form.responsavel}
-                onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                Tipo do Evento
+                Projeto / Cliente Associado
               </label>
               <Select
-                value={form.tipo}
-                onChange={(e) => setForm({ ...form, tipo: e.target.value as any })}
+                value={form.projectId}
+                onChange={(e) => setForm({ ...form, projectId: e.target.value })}
+                required
               >
-                <option value="MEDICAO_TECNICA">Medição Técnica</option>
-                <option value="ENTREGA_MOVEIS">Entrega de Móveis</option>
-                <option value="INSTALACAO">Instalação / Montagem</option>
-                <option value="VISITA_COMERCIAL">Visita Comercial</option>
-                <option value="OUTROS">Outros</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.clientName} (Projeto {p.id.split("-")[1] || p.id})
+                  </option>
+                ))}
               </Select>
             </div>
-          </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsAddEventOpen(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
-              {loading ? "Agendando..." : "Confirmar Agendamento"}
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Título do Compromisso
+              </label>
+              <Input
+                required
+                value={form.titulo}
+                onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                Descrição Detalhada
+              </label>
+              <textarea
+                className="w-full bg-card/60 border border-border/60 hover:border-border rounded-lg p-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary placeholder-muted-foreground transition-all duration-200 resize-none h-16"
+                value={form.descricao}
+                onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Data do Compromisso
+                </label>
+                <Input
+                  required
+                  type="date"
+                  value={form.data}
+                  onChange={(e) => setForm({ ...form, data: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Horário
+                </label>
+                <Input
+                  required
+                  type="time"
+                  value={form.hora}
+                  onChange={(e) => setForm({ ...form, hora: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Responsável Técnico
+                </label>
+                <Input
+                  required
+                  value={form.responsavel}
+                  onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Tipo do Evento
+                </label>
+                <Select
+                  value={form.tipo}
+                  onChange={(e) => setForm({ ...form, tipo: e.target.value as any })}
+                >
+                  <option value="MEDICAO_TECNICA">Medição Técnica</option>
+                  <option value="ENTREGA_MOVEIS">Entrega de Móveis</option>
+                  <option value="INSTALACAO">Instalação / Montagem</option>
+                  <option value="VISITA_COMERCIAL">Visita Comercial</option>
+                  <option value="OUTROS">Outros</option>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-border/40">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAddEventOpen(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading} className="font-semibold btn-metallic">
+                {loading ? "Agendando..." : "Confirmar Agendamento"}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      )}
 
     </div>
   );

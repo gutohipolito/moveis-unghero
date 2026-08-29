@@ -918,6 +918,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
   };
 
   const handleToggleTask = async (taskId: string, completed: boolean) => {
+    if (isReadOnly || isOpsLimited) return;
     setProject(prev => ({
       ...prev,
       tasks: prev.tasks.map(t => t.id === taskId ? {
@@ -942,6 +943,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
 
   const handleAddTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly || isOpsLimited) return;
     if (!newTaskForm.titulo || !newTaskForm.responsavel) return;
 
     setLoading(true);
@@ -2320,7 +2322,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                 Organize e agende medições técnicas, vistorias e etapas de montagem para este projeto.
               </p>
             </div>
-            {!isOpsLimited && (
+            {!isOpsLimited && !isReadOnly && (
               <Button onClick={() => setIsAddTaskOpen(true)} size="sm" className="btn-metallic">
                 <Plus className="h-4 w-4 mr-1.5" /> Agendar
               </Button>
@@ -2330,7 +2332,9 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           <div className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-xs overflow-hidden">
             {project.tasks.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">
-                Nenhum compromisso técnico agendado. Clique em "Agendar" para registrar uma atividade.
+                {isReadOnly
+                  ? "Nenhum compromisso técnico agendado."
+                  : 'Nenhum compromisso técnico agendado. Clique em "Agendar" para registrar uma atividade.'}
               </div>
             ) : (
               <div className="divide-y divide-border/20">
@@ -2356,7 +2360,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
                           type="checkbox"
                           checked={isCompleted}
                           onChange={(e) => handleToggleTask(t.id, e.target.checked)}
-                          disabled={isOpsLimited}
+                          disabled={isOpsLimited || isReadOnly}
                           className="h-4.5 w-4.5 rounded border-border bg-slate-100 text-primary focus:ring-primary/40 focus:ring-1 disabled:cursor-default cursor-pointer mt-0.5"
                         />
                         <div className="space-y-1 min-w-0">
@@ -2521,6 +2525,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
       />
 
       {/* Modal - Novo Agendamento / Tarefa */}
+      {!isReadOnly && !isOpsLimited && (
       <Dialog isOpen={isAddTaskOpen} onClose={() => setIsAddTaskOpen(false)}>
         <h3 className="text-lg font-bold tracking-tight text-gradient-gold mb-4">
           Agendar Compromisso Técnico / Tarefa
@@ -2620,6 +2625,7 @@ export default function ProjectDetails({ initialProject, companyId, colaboradore
           </div>
         </form>
       </Dialog>
+      )}
       <QuoteApprovalDialog
         open={!!approvalQuote}
         onClose={() => setApprovalQuote(null)}
