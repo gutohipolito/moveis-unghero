@@ -19,6 +19,7 @@ import {
   listEnvironmentAttachments,
   saveEnvironmentTechSheet,
   setEnvironmentCoverAttachment,
+  updateEnvironmentProductionSchedule,
 } from "@/app/actions/factoryEnvironment";
 import {
   ENVIRONMENT_ATTACHMENT_ACCEPT,
@@ -29,6 +30,7 @@ import {
   canManageEnvironmentAttachments,
   countTechSheetFields,
   formatAttachmentSize,
+  formatFactoryBoardDate,
   getClientColor,
   guessEnvironmentAttachmentMime,
   isImageMime,
@@ -36,6 +38,7 @@ import {
   summarizeText,
   type EnvironmentAttachmentDTO,
   type FactoryBoardEnvironment,
+  type ProductionPriority,
 } from "@/lib/factoryEnvironment";
 import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
 import { uploadEnvironmentAttachmentFile } from "@/lib/environmentAttachmentUpload";
@@ -62,7 +65,16 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Flag,
+  CalendarDays,
 } from "lucide-react";
+
+function toDateInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 const TECH_AUTOSAVE_MS = 900;
 
@@ -126,7 +138,7 @@ export default function FactoryEnvironmentDetailModal({
   onSlaUpdated,
   onOpenSlaVerify,
 }: FactoryEnvironmentDetailModalProps) {
-  const { role, isReadOnly } = usePermissions();
+  const { role, isReadOnly, isAdmin } = usePermissions();
   const { isTablet } = useTabletLayout();
   const canMove = !isReadOnly;
   const canManageAttachments = canManageEnvironmentAttachments(role);
@@ -134,6 +146,12 @@ export default function FactoryEnvironmentDetailModal({
   const [slaStageDraft, setSlaStageDraft] = useState<ProductionSlaStageKey | "">("");
   const [savingSla, setSavingSla] = useState(false);
   const [slaError, setSlaError] = useState<string | null>(null);
+
+  const [entregaAcordada, setEntregaAcordada] = useState("");
+  const [prioridade, setPrioridade] = useState<ProductionPriority>("NORMAL");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
 
   const [materiais, setMateriais] = useState("");
   const [ferragens, setFerragens] = useState("");
@@ -245,6 +263,14 @@ export default function FactoryEnvironmentDetailModal({
     setMedidas(item.medidasObservacoes ?? "");
     setObservacoes(item.observacoesFabrica ?? "");
     setApprovedSubitens(item.approvedSubitens ?? []);
+    setPrioridade(item.prioridadeProducao ?? "NORMAL");
+    setEntregaAcordada(
+      item.dataEntregaAcordada
+        ? toDateInputValue(new Date(item.dataEntregaAcordada))
+        : ""
+    );
+    setScheduleError(null);
+    setScheduleMessage(null);
 
     let cancelled = false;
     (async () => {
@@ -424,6 +450,28 @@ export default function FactoryEnvironmentDetailModal({
     }
     onSlaUpdated(currentItem.projectId, result.sla);
     setSlaStageDraft("");
+  }
+
+  async function handleSaveSchedule() {
+    if (!isAdmin) return;
+    setSavingSchedule(true);
+    setScheduleError(null);
+    setScheduleMessage(null);
+    const result = await updateEnvironmentProductionSchedule(currentItem.id, {
+      data_entrega_acordada: entregaAcordada || null,
+      prioridade_producao: prioridade,
+    });
+    setSavingSchedule(false);
+    if (!result.success) {
+      setScheduleError(result.error ?? "Erro ao salvar prazo e prioridade.");
+      return;
+    }
+    onBoardPatch(currentItem.id, {
+      dataEntregaAcordada: result.dataEntregaAcordada,
+      prioridadeProducao: result.prioridadeProducao,
+      filaEntradaEm: result.filaEntradaEm,
+    });
+    setScheduleMessage("Prazo e prioridade salvos.");
   }
 
   async function handleSaveTechNow() {
@@ -1150,6 +1198,87 @@ export default function FactoryEnvironmentDetailModal({
                   </select>
                 </div>
               </div>
+            </section>
+
+            <section className="rounded-xl border border-border bg-secondary/20 p-4 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-foreground flex items-center gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Prazo acordado com o cliente
+              </h3>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Por cômodo — visível a toda a equipe no card. Prioridade e entrega acordada
+                ordenam automaticamente a fila.
+              </p>
+              {item.filaEntradaEm && (
+                <p className="text-[11px] text-muted-foreground">
+                  Na fila desde{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatFactoryBoardDate(item.filaEntradaEm)}
+                  </span>
+                </p>
+              )}
+              {isAdmin ? (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      Entrega acordada
+                    </label>
+                    <input
+                      type="date"
+                      value={entregaAcordada}
+                      onChange={(e) => setEntregaAcordada(e.target.value)}
+                      className="w-full h-9 text-sm bg-background border border-border rounded-lg px-3"
+                    />
+                  </div>
+                  <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prioridade === "PRIORITARIO"}
+                      onChange={(e) =>
+                        setPrioridade(e.target.checked ? "PRIORITARIO" : "NORMAL")
+                      }
+                      className="rounded border-border"
+                    />
+                    <Flag className="h-3.5 w-3.5 text-orange-600" />
+                    Marcar como prioridade
+                  </label>
+                  {scheduleError && (
+                    <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1.5">
+                      {scheduleError}
+                    </p>
+                  )}
+                  {scheduleMessage && (
+                    <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1.5">
+                      {scheduleMessage}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={savingSchedule}
+                    onClick={() => void handleSaveSchedule()}
+                    className="btn-metallic"
+                  >
+                    {savingSchedule ? "Salvando..." : "Salvar prazo e prioridade"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-1 text-[11px]">
+                  {item.dataEntregaAcordada ? (
+                    <p className="font-semibold text-foreground">
+                      Entrega acordada: {formatFactoryBoardDate(item.dataEntregaAcordada)}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">Nenhuma data acordada definida.</p>
+                  )}
+                  {item.prioridadeProducao === "PRIORITARIO" && (
+                    <p className="inline-flex items-center gap-1 font-bold text-orange-800">
+                      <Flag className="h-3.5 w-3.5" />
+                      Cômodo prioritário
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
 
             {item.projectId && (

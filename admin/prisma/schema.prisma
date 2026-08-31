@@ -469,6 +469,11 @@ enum ProjectStatus {
   PERDIDO
 }
 
+enum ProductionPriority {
+  NORMAL
+  PRIORITARIO
+}
+
 model Environment {
   id             String            @id @default(uuid())
   project_id     String
@@ -478,6 +483,12 @@ model Environment {
   status         EnvironmentStatus // AGUARDANDO_MEDICAO, EM_DETALHAMENTO, PRONTO_PRODUCAO, EM_CORTE, MONTAGEM_FABRICA, PRONTO_ENTREGA, EM_INSTALACAO, FINALIZADO
   quote_item_id  String?           @unique
   quoteItem      QuoteItem?        @relation(fields: [quote_item_id], references: [id], onDelete: SetNull)
+
+  /** Quando o cômodo entrou na fila de produção (coluna Fila). */
+  fila_entrada_em       DateTime?
+  /** Prazo acordado com o cliente para este cômodo. */
+  data_entrega_acordada DateTime?
+  prioridade_producao   ProductionPriority @default(NORMAL)
   
   // Equipe na fábrica
   responsavel_id String?

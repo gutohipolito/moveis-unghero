@@ -42,6 +42,10 @@ export async function fetchFactoryBoard(companyId: string) {
           medidas_observacoes: true,
           observacoes_fabrica: true,
           capa_attachment_id: true,
+          fila_entrada_em: true,
+          data_entrega_acordada: true,
+          prioridade_producao: true,
+          createdAt: true,
           quoteItem: {
             select: { subitens: true },
           },
@@ -132,6 +136,13 @@ export async function fetchFactoryBoard(companyId: string) {
       responsavelNome: environment.responsavel?.name || null,
       ajudanteId: environment.ajudante_id || null,
       ajudanteNome: environment.ajudante?.name || null,
+      filaEntradaEm: (
+        environment.fila_entrada_em ?? environment.createdAt
+      ).toISOString(),
+      dataEntregaAcordada: environment.data_entrega_acordada
+        ? environment.data_entrega_acordada.toISOString()
+        : null,
+      prioridadeProducao: environment.prioridade_producao,
       materiais: environment.materiais,
       ferragens: environment.ferragens,
       acabamentos: environment.acabamentos,
@@ -171,6 +182,9 @@ export async function fetchFactoryBoard(companyId: string) {
       cover: environment.coverUrl ?? environment.coverPdfUrl ?? "",
       factoryProject: environment.hasFactoryProject ? "1" : "0",
       factoryImages: environment.hasFactoryProjectImages ? "1" : "0",
+      filaEntrada: environment.filaEntradaEm,
+      entregaAcordada: environment.dataEntregaAcordada ?? "",
+      prioridade: environment.prioridadeProducao,
     })),
     ...slaStates.map((sla) => ({
       id: sla.projectId,

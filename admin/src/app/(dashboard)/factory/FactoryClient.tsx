@@ -18,6 +18,10 @@ import {
 } from "@/lib/productionSla";
 import {
   getClientColor,
+  compareFactoryBoardEnvironments,
+  formatFactoryBoardDate,
+  getPromisedDeliverySeverity,
+  sortFactoryBoardEnvironments,
   type FactoryBoardEnvironment,
 } from "@/lib/factoryEnvironment";
 import ApprovedQuoteSubitens from "@/components/environments/ApprovedQuoteSubitens";
@@ -40,6 +44,8 @@ import {
   UserMinus,
   Search,
   Images,
+  Flag,
+  CalendarDays,
 } from "lucide-react";
 import PdfCoverThumb from "@/components/PdfCoverThumb";
 
@@ -302,8 +308,8 @@ export default function FactoryClient({
   const stacksByColumn = useMemo(() => {
     const result: Record<string, { key: string; projectId: string; items: EnvironmentItem[] }[]> = {};
     for (const col of boardColumns) {
-      const colItems = visibleEnvironments.filter((item) =>
-        isReadOnly ? true : item.status === col.id
+      const colItems = sortFactoryBoardEnvironments(
+        visibleEnvironments.filter((item) => (isReadOnly ? true : item.status === col.id))
       );
       const byProject = new Map<string, EnvironmentItem[]>();
       for (const item of colItems) {
@@ -312,11 +318,16 @@ export default function FactoryClient({
         list.push(item);
         byProject.set(pid, list);
       }
-      result[col.id] = Array.from(byProject.entries()).map(([projectId, items]) => ({
-        key: stackKey(col.id, projectId.startsWith("loose-") ? items[0]?.id ?? projectId : projectId),
-        projectId: projectId.startsWith("loose-") ? items[0]?.projectId ?? "" : projectId,
-        items,
-      }));
+      result[col.id] = Array.from(byProject.entries())
+        .map(([projectId, items]) => ({
+          key: stackKey(
+            col.id,
+            projectId.startsWith("loose-") ? items[0]?.id ?? projectId : projectId
+          ),
+          projectId: projectId.startsWith("loose-") ? items[0]?.projectId ?? "" : projectId,
+          items: sortFactoryBoardEnvironments(items),
+        }))
+        .sort((a, b) => compareFactoryBoardEnvironments(a.items[0]!, b.items[0]!));
     }
     return result;
   }, [visibleEnvironments, boardColumns, isReadOnly]);
@@ -411,11 +422,17 @@ export default function FactoryClient({
   const applyStatusChange = async (item: EnvironmentItem, nextStatus: string) => {
     if (!canMove || item.status === nextStatus) return;
     const previous = item.status;
+    const queuePatch =
+      nextStatus === "PRONTO_PRODUCAO" && !item.filaEntradaEm
+        ? { filaEntradaEm: new Date().toISOString() }
+        : {};
     setEnvironments((prev) =>
-      prev.map((env) => (env.id === item.id ? { ...env, status: nextStatus } : env))
+      prev.map((env) =>
+        env.id === item.id ? { ...env, status: nextStatus, ...queuePatch } : env
+      )
     );
     if (detailItem?.id === item.id) {
-      setDetailItem({ ...detailItem, status: nextStatus });
+      setDetailItem({ ...detailItem, status: nextStatus, ...queuePatch });
     }
     const result = await updateEnvironmentStatus(
       item.projectId,
@@ -508,6 +525,8 @@ export default function FactoryClient({
     const sla = !isReadOnly && item.projectId ? slaByProject[item.projectId] ?? null : null;
     const slaSeverity = getFactorySlaSeverity(sla);
     const slaStage = sla ? getStageConfig(sla.currentStage).name : null;
+    const promisedSeverity = getPromisedDeliverySeverity(item.dataEntregaAcordada);
+    const isPriority = item.prioridadeProducao === "PRIORITARIO";
 
     return (
       <Card
@@ -524,7 +543,11 @@ export default function FactoryClient({
             ? "border-red-500/60"
             : slaSeverity === "due"
               ? "border-amber-500/50"
-              : clientColor.border,
+              : isPriority
+                ? "border-orange-500/55"
+                : promisedSeverity === "overdue"
+                  ? "border-red-400/45"
+                  : clientColor.border,
           compactBoard ? "border" : "border-2"
         )}
       >
@@ -535,7 +558,11 @@ export default function FactoryClient({
               ? "bg-red-500"
               : slaSeverity === "due"
                 ? "bg-amber-500"
-                : clientColor.swatch
+                : isPriority
+                  ? "bg-orange-500"
+                  : promisedSeverity === "overdue"
+                    ? "bg-red-400"
+                    : clientColor.swatch
           )}
         />
 
@@ -626,20 +653,28 @@ export default function FactoryClient({
             >
               {item.nome}
             </h4>
-            {(item.coverUrl || item.coverPdfUrl) && !isReadOnly && (
-              <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border bg-slate-100">
-                {item.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.coverUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : item.coverPdfUrl ? (
-                  <PdfCoverThumb url={item.coverPdfUrl} className="h-full w-full" />
-                ) : null}
-              </span>
-            )}
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {isPriority && !isReadOnly && (
+                <span className="inline-flex items-center gap-0.5 rounded-md bg-orange-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-orange-800 border border-orange-500/25">
+                  <Flag className="h-2.5 w-2.5" />
+                  Prioridade
+                </span>
+              )}
+              {(item.coverUrl || item.coverPdfUrl) && !isReadOnly && (
+                <span className="h-10 w-10 overflow-hidden rounded-md border border-border bg-slate-100">
+                  {item.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.coverUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : item.coverPdfUrl ? (
+                    <PdfCoverThumb url={item.coverPdfUrl} className="h-full w-full" />
+                  ) : null}
+                </span>
+              )}
+            </div>
           </div>
 
           {!isReadOnly && (item.hasFactoryProjectImages || item.hasFactoryProject) && (
@@ -663,6 +698,36 @@ export default function FactoryClient({
               previewLimit={2}
             />
           ) : null}
+
+          {!isReadOnly && (item.filaEntradaEm || item.dataEntregaAcordada) && (
+            <div className="space-y-0.5 rounded-md border border-border/40 bg-slate-50/80 px-2 py-1.5">
+              {item.filaEntradaEm && (
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <ClipboardList className="h-3 w-3 shrink-0" />
+                  Na fila:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatFactoryBoardDate(item.filaEntradaEm)}
+                  </span>
+                </p>
+              )}
+              {item.dataEntregaAcordada && (
+                <p
+                  className={cn(
+                    "text-[10px] flex items-center gap-1 font-semibold",
+                    promisedSeverity === "overdue"
+                      ? "text-red-800"
+                      : promisedSeverity === "due"
+                        ? "text-amber-800"
+                        : "text-emerald-800"
+                  )}
+                >
+                  <CalendarDays className="h-3 w-3 shrink-0" />
+                  Entrega acordada:{" "}
+                  <span>{formatFactoryBoardDate(item.dataEntregaAcordada)}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between gap-2">
             {isReadOnly ? (

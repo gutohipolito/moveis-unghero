@@ -100,6 +100,7 @@ export async function updateProjectStatus(projectId: string, newStatus: ProjectS
               nome: "Projeto Completo (Ambiente Padrão)",
               tipo: "OUTROS",
               status: "PRONTO_PRODUCAO",
+              fila_entrada_em: new Date(),
             },
           });
         }
@@ -687,6 +688,7 @@ export async function updateProjectCommercialAction(
               nome: "Projeto Completo (Ambiente Padrão)",
               tipo: "OUTROS",
               status: "PRONTO_PRODUCAO",
+              fila_entrada_em: new Date(),
             },
           });
         }

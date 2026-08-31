@@ -148,12 +148,19 @@ export async function updateEnvironmentStatus(projectId: string, envId: string, 
   try {
     const env = await prisma.environment.findUnique({
       where: { id: envId },
-      select: { nome: true, status: true },
+      select: { nome: true, status: true, fila_entrada_em: true },
     });
+
+    const updateData: { status: EnvironmentStatus; fila_entrada_em?: Date } = {
+      status: newStatus,
+    };
+    if (newStatus === "PRONTO_PRODUCAO" && !env?.fila_entrada_em) {
+      updateData.fila_entrada_em = new Date();
+    }
 
     await prisma.environment.update({
       where: { id: envId },
-      data: { status: newStatus }
+      data: updateData,
     });
 
     if (env && env.status !== newStatus) {

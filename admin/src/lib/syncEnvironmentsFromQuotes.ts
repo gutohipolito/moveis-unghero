@@ -19,7 +19,7 @@ export async function upsertEnvironmentsFromApprovedItems(
 ): Promise<EnvSyncResult> {
   const existingEnvs = await db.environment.findMany({
     where: { project_id: projectId },
-    select: { id: true, nome: true, quote_item_id: true, status: true },
+    select: { id: true, nome: true, quote_item_id: true, status: true, fila_entrada_em: true },
   });
   const linkedItemIds = new Set(
     existingEnvs.map((e) => e.quote_item_id).filter((id): id is string => Boolean(id))
@@ -46,6 +46,7 @@ export async function upsertEnvironmentsFromApprovedItems(
         data: {
           quote_item_id: item.id,
           status: "PRONTO_PRODUCAO",
+          ...(!reusable.fila_entrada_em ? { fila_entrada_em: new Date() } : {}),
         },
       });
       linkedItemIds.add(item.id);
@@ -63,6 +64,7 @@ export async function upsertEnvironmentsFromApprovedItems(
           tipo: inferEnvironmentTypeFromName(nome),
           status: "PRONTO_PRODUCAO",
           quote_item_id: item.id,
+          fila_entrada_em: new Date(),
         },
       });
       existingNames.add(uniqueNome.toLowerCase());
@@ -78,6 +80,7 @@ export async function upsertEnvironmentsFromApprovedItems(
         tipo: inferEnvironmentTypeFromName(nome),
         status: "PRONTO_PRODUCAO",
         quote_item_id: item.id,
+        fila_entrada_em: new Date(),
       },
     });
     existingNames.add(key);

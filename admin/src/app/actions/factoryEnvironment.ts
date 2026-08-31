@@ -1,8 +1,9 @@
 "use server";
 
 import { del } from "@vercel/blob";
-import type { EnvironmentAttachmentCategory } from "@prisma/client";
-import { getAuthContext, requireEnvironmentInCompany } from "@/lib/auth-guard";
+import type { EnvironmentAttachmentCategory, ProductionPriority } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { getAuthContext, requireAdmin, requireEnvironmentInCompany } from "@/lib/auth-guard";
 import { getModuleAccess, getWriteAccess } from "@/lib/moduleAccess";
 import { isReadOnlyRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -151,6 +152,71 @@ export async function saveEnvironmentTechSheet(
   } catch (error) {
     console.error("Erro ao salvar ficha técnica do cômodo:", error);
     return { success: false as const, error: "Não foi possível salvar a ficha técnica." };
+  }
+}
+
+/** Admin: prazo acordado e prioridade por cômodo no chão de fábrica. */
+export async function updateEnvironmentProductionSchedule(
+  environmentId: string,
+  data: {
+    data_entrega_acordada?: string | null;
+    prioridade_producao?: ProductionPriority;
+  }
+) {
+  try {
+    const auth = await requireAdmin();
+    await requireEnvironmentInCompany(environmentId, auth.companyId);
+
+    const updateData: {
+      data_entrega_acordada?: Date | null;
+      prioridade_producao?: ProductionPriority;
+    } = {};
+
+    if (data.prioridade_producao !== undefined) {
+      updateData.prioridade_producao = data.prioridade_producao;
+    }
+
+    if (data.data_entrega_acordada !== undefined) {
+      if (data.data_entrega_acordada === null || data.data_entrega_acordada === "") {
+        updateData.data_entrega_acordada = null;
+      } else {
+        const parsed = new Date(`${data.data_entrega_acordada}T12:00:00`);
+        if (Number.isNaN(parsed.getTime())) {
+          return { success: false as const, error: "Data de entrega inválida." };
+        }
+        updateData.data_entrega_acordada = parsed;
+      }
+    }
+
+    const updated = await prisma.environment.update({
+      where: { id: environmentId },
+      data: updateData,
+      select: {
+        data_entrega_acordada: true,
+        prioridade_producao: true,
+        fila_entrada_em: true,
+        createdAt: true,
+      },
+    });
+
+    revalidatePath("/factory");
+    revalidatePath("/factory/portal");
+
+    return {
+      success: true as const,
+      dataEntregaAcordada: updated.data_entrega_acordada
+        ? updated.data_entrega_acordada.toISOString()
+        : null,
+      prioridadeProducao: updated.prioridade_producao,
+      filaEntradaEm: (updated.fila_entrada_em ?? updated.createdAt).toISOString(),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    if (message.includes("Acesso negado") || message.includes("Não autenticado")) {
+      return { success: false as const, error: "Somente administradores podem alterar prazo e prioridade." };
+    }
+    console.error("Erro ao salvar prazo/prioridade do cômodo:", error);
+    return { success: false as const, error: "Não foi possível salvar prazo e prioridade." };
   }
 }
 

@@ -1,6 +1,8 @@
 import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import { canManageOperationalMedia } from "@/lib/permissions";
 
+export type ProductionPriority = "NORMAL" | "PRIORITARIO";
+
 export type FactoryBoardEnvironment = {
   id: string;
   nome: string;
@@ -13,6 +15,11 @@ export type FactoryBoardEnvironment = {
   responsavelNome: string | null;
   ajudanteId: string | null;
   ajudanteNome: string | null;
+  /** Quando entrou na fila de produção. */
+  filaEntradaEm: string | null;
+  /** Prazo acordado com o cliente para este cômodo. */
+  dataEntregaAcordada: string | null;
+  prioridadeProducao: ProductionPriority;
   materiais: string | null;
   ferragens: string | null;
   acabamentos: string | null;
@@ -457,6 +464,60 @@ export function summarizeEnvironmentAttachments(input: {
     hasFactoryProject: categories.includes("PROJETO_FABRICA"),
     hasFactoryProjectImages: factoryFiles.some((item) => isImageMime(item.mime_type)),
   };
+}
+
+export function formatFactoryBoardDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+}
+
+/** Severidade visual do prazo acordado (não confundir com SLA interno). */
+export function getPromisedDeliverySeverity(
+  iso: string | null | undefined
+): "overdue" | "due" | "ok" | null {
+  if (!iso) return null;
+  const deadline = new Date(iso);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+  if (deadline.getTime() < today.getTime()) return "overdue";
+  const diffDays = Math.round((deadline.getTime() - today.getTime()) / 86_400_000);
+  if (diffDays <= 2) return "due";
+  return "ok";
+}
+
+/** Ordenação do kanban: prioritário → entrega mais próxima → mais antigo na fila. */
+export function compareFactoryBoardEnvironments(
+  a: FactoryBoardEnvironment,
+  b: FactoryBoardEnvironment
+): number {
+  const prioA = a.prioridadeProducao === "PRIORITARIO" ? 0 : 1;
+  const prioB = b.prioridadeProducao === "PRIORITARIO" ? 0 : 1;
+  if (prioA !== prioB) return prioA - prioB;
+
+  const entregaA = a.dataEntregaAcordada
+    ? new Date(a.dataEntregaAcordada).getTime()
+    : Number.MAX_SAFE_INTEGER;
+  const entregaB = b.dataEntregaAcordada
+    ? new Date(b.dataEntregaAcordada).getTime()
+    : Number.MAX_SAFE_INTEGER;
+  if (entregaA !== entregaB) return entregaA - entregaB;
+
+  const filaA = a.filaEntradaEm ? new Date(a.filaEntradaEm).getTime() : Number.MAX_SAFE_INTEGER;
+  const filaB = b.filaEntradaEm ? new Date(b.filaEntradaEm).getTime() : Number.MAX_SAFE_INTEGER;
+  if (filaA !== filaB) return filaA - filaB;
+
+  return a.nome.localeCompare(b.nome, "pt-BR");
+}
+
+export function sortFactoryBoardEnvironments(
+  items: FactoryBoardEnvironment[]
+): FactoryBoardEnvironment[] {
+  return [...items].sort(compareFactoryBoardEnvironments);
 }
 
 export function sortEnvironmentsForOperator<
