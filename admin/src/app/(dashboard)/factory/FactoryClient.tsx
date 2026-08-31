@@ -655,9 +655,29 @@ export default function FactoryClient({
             </h4>
             <div className="flex flex-col items-end gap-1 shrink-0">
               {isPriority && !isReadOnly && (
-                <span className="inline-flex items-center gap-0.5 rounded-md bg-orange-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-orange-800 border border-orange-500/25">
-                  <Flag className="h-2.5 w-2.5" />
-                  Prioridade
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wide",
+                    promisedSeverity === "overdue"
+                      ? "text-red-800"
+                      : promisedSeverity === "due" || !promisedSeverity
+                        ? "text-amber-800"
+                        : "text-emerald-800"
+                  )}
+                >
+                  <Flag className="h-2.5 w-2.5 shrink-0" />
+                  <span
+                    className={cn(
+                      "factory-delivery-until-shine",
+                      promisedSeverity === "overdue"
+                        ? "factory-delivery-until-shine--overdue"
+                        : promisedSeverity === "due" || !promisedSeverity
+                          ? "factory-delivery-until-shine--due"
+                          : "factory-delivery-until-shine--ok"
+                    )}
+                  >
+                    Prioridade
+                  </span>
                 </span>
               )}
               {(item.coverUrl || item.coverPdfUrl) && !isReadOnly && (
