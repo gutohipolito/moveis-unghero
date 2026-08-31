@@ -1219,29 +1219,33 @@ export default function FactoryEnvironmentDetailModal({
               )}
               {isAdmin ? (
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase">
-                      Entrega até
-                    </label>
-                    <input
-                      type="date"
-                      value={entregaAcordada}
-                      onChange={(e) => setEntregaAcordada(e.target.value)}
-                      className="w-full h-9 text-sm bg-background border border-border rounded-lg px-3"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                        Entrega até
+                      </label>
+                      <input
+                        type="date"
+                        value={entregaAcordada}
+                        onChange={(e) => setEntregaAcordada(e.target.value)}
+                        className="w-full h-9 text-sm bg-background border border-border rounded-lg px-3"
+                      />
+                    </div>
+                    <div className="space-y-1 sm:flex sm:flex-col sm:justify-end">
+                      <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer h-9">
+                        <input
+                          type="checkbox"
+                          checked={prioridade === "PRIORITARIO"}
+                          onChange={(e) =>
+                            setPrioridade(e.target.checked ? "PRIORITARIO" : "NORMAL")
+                          }
+                          className="rounded border-border"
+                        />
+                        <Flag className="h-3.5 w-3.5 text-orange-600" />
+                        Marcar como prioridade
+                      </label>
+                    </div>
                   </div>
-                  <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={prioridade === "PRIORITARIO"}
-                      onChange={(e) =>
-                        setPrioridade(e.target.checked ? "PRIORITARIO" : "NORMAL")
-                      }
-                      className="rounded border-border"
-                    />
-                    <Flag className="h-3.5 w-3.5 text-orange-600" />
-                    Marcar como prioridade
-                  </label>
                   {scheduleError && (
                     <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1.5">
                       {scheduleError}
@@ -1252,15 +1256,17 @@ export default function FactoryEnvironmentDetailModal({
                       {scheduleMessage}
                     </p>
                   )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={savingSchedule}
-                    onClick={() => void handleSaveSchedule()}
-                    className="btn-metallic"
-                  >
-                    {savingSchedule ? "Salvando..." : "Salvar prazo e prioridade"}
-                  </Button>
+                  <div className="flex justify-end pt-1 border-t border-border/40">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={savingSchedule}
+                      onClick={() => void handleSaveSchedule()}
+                      className="btn-metallic"
+                    >
+                      {savingSchedule ? "Salvando..." : "Salvar prazo e prioridade"}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-1 text-[11px]">
