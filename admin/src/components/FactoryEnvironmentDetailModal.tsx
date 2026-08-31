@@ -1211,7 +1211,7 @@ export default function FactoryEnvironmentDetailModal({
               </p>
               {item.filaEntradaEm && (
                 <p className="text-[11px] text-muted-foreground">
-                  Na fila desde{" "}
+                  Entrou na fila em:{" "}
                   <span className="font-semibold text-foreground">
                     {formatFactoryBoardDate(item.filaEntradaEm)}
                   </span>
@@ -1221,7 +1221,7 @@ export default function FactoryEnvironmentDetailModal({
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-semibold text-muted-foreground uppercase">
-                      Entrega acordada
+                      Entrega até
                     </label>
                     <input
                       type="date"
@@ -1266,10 +1266,10 @@ export default function FactoryEnvironmentDetailModal({
                 <div className="space-y-1 text-[11px]">
                   {item.dataEntregaAcordada ? (
                     <p className="font-semibold text-foreground">
-                      Entrega acordada: {formatFactoryBoardDate(item.dataEntregaAcordada)}
+                      Entrega até: {formatFactoryBoardDate(item.dataEntregaAcordada)}
                     </p>
                   ) : (
-                    <p className="text-muted-foreground">Nenhuma data acordada definida.</p>
+                    <p className="text-muted-foreground">Nenhuma data de entrega definida.</p>
                   )}
                   {item.prioridadeProducao === "PRIORITARIO" && (
                     <p className="inline-flex items-center gap-1 font-bold text-orange-800">

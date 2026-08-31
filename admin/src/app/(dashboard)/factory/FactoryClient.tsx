@@ -704,26 +704,27 @@ export default function FactoryClient({
               {item.filaEntradaEm && (
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <ClipboardList className="h-3 w-3 shrink-0" />
-                  Na fila:{" "}
+                  Entrou na fila em:{" "}
                   <span className="font-semibold text-foreground">
                     {formatFactoryBoardDate(item.filaEntradaEm)}
                   </span>
                 </p>
               )}
               {item.dataEntregaAcordada && (
-                <p
-                  className={cn(
-                    "text-[10px] flex items-center gap-1 font-semibold",
-                    promisedSeverity === "overdue"
-                      ? "text-red-800"
-                      : promisedSeverity === "due"
-                        ? "text-amber-800"
-                        : "text-emerald-800"
-                  )}
-                >
-                  <CalendarDays className="h-3 w-3 shrink-0" />
-                  Entrega acordada:{" "}
-                  <span>{formatFactoryBoardDate(item.dataEntregaAcordada)}</span>
+                <p className="text-[10px] flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <span
+                    className={cn(
+                      "factory-delivery-until-shine font-semibold",
+                      promisedSeverity === "overdue"
+                        ? "factory-delivery-until-shine--overdue"
+                        : promisedSeverity === "due"
+                          ? "factory-delivery-until-shine--due"
+                          : "factory-delivery-until-shine--ok"
+                    )}
+                  >
+                    Entrega até: {formatFactoryBoardDate(item.dataEntregaAcordada)}
+                  </span>
                 </p>
               )}
             </div>
