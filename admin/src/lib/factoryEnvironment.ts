@@ -490,6 +490,17 @@ export function getPromisedDeliverySeverity(
   return "ok";
 }
 
+/** Variante de cor/brilho da prioridade (badge e faixa do card). */
+export type FactoryPriorityShineVariant = "overdue" | "due" | "ok";
+
+export function getFactoryPriorityShineVariant(
+  promisedSeverity: ReturnType<typeof getPromisedDeliverySeverity>
+): FactoryPriorityShineVariant {
+  if (promisedSeverity === "overdue") return "overdue";
+  if (promisedSeverity === "due" || !promisedSeverity) return "due";
+  return "ok";
+}
+
 /** Normaliza data de entrega para comparação (dia local). Sem data → vai ao final. */
 export function factoryDeliveryDateMs(iso: string | null | undefined): number {
   if (!iso) return Number.POSITIVE_INFINITY;

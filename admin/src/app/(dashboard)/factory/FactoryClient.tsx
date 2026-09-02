@@ -20,6 +20,7 @@ import {
   getClientColor,
   compareFactoryBoardStacks,
   formatFactoryBoardDate,
+  getFactoryPriorityShineVariant,
   getPromisedDeliverySeverity,
   sortFactoryBoardEnvironments,
   type FactoryBoardEnvironment,
@@ -535,6 +536,9 @@ export default function FactoryClient({
     const slaStage = sla ? getStageConfig(sla.currentStage).name : null;
     const promisedSeverity = getPromisedDeliverySeverity(item.dataEntregaAcordada);
     const isPriority = item.prioridadeProducao === "PRIORITARIO";
+    const priorityShine = isPriority
+      ? getFactoryPriorityShineVariant(promisedSeverity)
+      : null;
 
     return (
       <Card
@@ -551,23 +555,27 @@ export default function FactoryClient({
             ? "border-red-500/60"
             : slaSeverity === "due"
               ? "border-amber-500/50"
-              : isPriority
-                ? "border-orange-500/55"
-                : promisedSeverity === "overdue"
-                  ? "border-red-400/45"
-                  : clientColor.border,
+              : priorityShine === "overdue"
+                ? "border-red-500/55"
+                : priorityShine === "due"
+                  ? "border-amber-500/55"
+                  : priorityShine === "ok"
+                    ? "border-emerald-500/55"
+                    : promisedSeverity === "overdue"
+                      ? "border-red-400/45"
+                      : clientColor.border,
           compactBoard ? "border" : "border-2"
         )}
       >
         <div
           className={cn(
             compactBoard ? "h-1" : "h-1.5",
-            slaSeverity === "overdue"
-              ? "bg-red-500"
-              : slaSeverity === "due"
-                ? "bg-amber-500"
-                : isPriority
-                  ? "bg-orange-500"
+            priorityShine
+              ? `factory-card-top-shine factory-card-top-shine--${priorityShine}`
+              : slaSeverity === "overdue"
+                ? "bg-red-500"
+                : slaSeverity === "due"
+                  ? "bg-amber-500"
                   : promisedSeverity === "overdue"
                     ? "bg-red-400"
                     : clientColor.swatch
@@ -663,25 +671,12 @@ export default function FactoryClient({
             </h4>
             <div className="flex flex-col items-end gap-1 shrink-0">
               {isPriority && !isReadOnly && (
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wide",
-                    promisedSeverity === "overdue"
-                      ? "text-red-800"
-                      : promisedSeverity === "due" || !promisedSeverity
-                        ? "text-amber-800"
-                        : "text-emerald-800"
-                  )}
-                >
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wide">
                   <Flag className="h-2.5 w-2.5 shrink-0" />
                   <span
                     className={cn(
                       "factory-delivery-until-shine",
-                      promisedSeverity === "overdue"
-                        ? "factory-delivery-until-shine--overdue"
-                        : promisedSeverity === "due" || !promisedSeverity
-                          ? "factory-delivery-until-shine--due"
-                          : "factory-delivery-until-shine--ok"
+                      `factory-delivery-until-shine--${priorityShine}`
                     )}
                   >
                     Prioridade
