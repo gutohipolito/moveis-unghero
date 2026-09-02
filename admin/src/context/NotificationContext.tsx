@@ -30,8 +30,10 @@ import {
   loadClearedNotificationIds,
   loadDeliveredNotificationIds,
   loadDismissedToastIds,
+  loadKnownNotificationIds,
   loadNotificationPrefs,
   DEFAULT_NOTIFICATION_PREFS,
+  markKnownNotificationIds,
   markNotificationDelivered,
   markNotificationsAnnounced,
   markToastDismissed,
@@ -64,6 +66,14 @@ const INITIAL_SYNC_MS = 3 * 1000;
 const CHIME_COOLDOWN_MS = 8 * 1000;
 /** Poucos toasts: só críticos chegam aqui. */
 const MAX_VISIBLE_TOASTS = 2;
+
+function dedupeNotifications(items: AppNotification[]): AppNotification[] {
+  const map = new Map<string, AppNotification>();
+  for (const item of items) {
+    map.set(item.id, item);
+  }
+  return [...map.values()];
+}
 
 export interface InAppToast extends AppNotification {
   toastKey: string;
@@ -130,11 +140,11 @@ export function NotificationProvider({
   const dismissedToastRef = useRef<Set<string>>(new Set());
   const announcedRef = useRef<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set(initialNotifications.map((n) => n.id)));
+  const activeNotificationIdsRef = useRef<string[]>([]);
   const toastKeysRef = useRef<Set<string>>(new Set());
   const clearedIdsRef = useRef<Set<string>>(clearedIds);
   const syncingRef = useRef(false);
   const lastChimeAtRef = useRef(0);
-  const seededKnownRef = useRef(false);
   clearedIdsRef.current = clearedIds;
 
   const notifications = useMemo(() => {
@@ -168,7 +178,8 @@ export function NotificationProvider({
         (n) =>
           canShowToast(n) &&
           !toastKeysRef.current.has(n.id) &&
-          !announcedRef.current.has(n.id)
+          !announcedRef.current.has(n.id) &&
+          !knownIdsRef.current.has(n.id)
       );
       if (fresh.length === 0) return;
 
@@ -178,7 +189,9 @@ export function NotificationProvider({
       }
       markNotificationsAnnounced(
         fresh.map((n) => n.id),
-        announcedRef.current
+        announcedRef.current,
+        companyId,
+        activeNotificationIdsRef.current
       );
 
       playChimeOnce(fresh.some((n) => n.priority === "high"));
@@ -191,7 +204,7 @@ export function NotificationProvider({
         return next.slice(-MAX_VISIBLE_TOASTS);
       });
     },
-    [canShowToast, playChimeOnce]
+    [canShowToast, companyId, playChimeOnce]
   );
 
   const deliverToBrowser = useCallback(
@@ -242,12 +255,13 @@ export function NotificationProvider({
         const res = await getNotifications(companyId);
         if (!res.success) return;
 
-        const next = res.notifications;
+        const next = dedupeNotifications(res.notifications);
         const nextIds = next.map((n) => n.id);
+        activeNotificationIdsRef.current = nextIds;
 
         pruneDeliveredIds(deliveredRef.current, nextIds);
         pruneDismissedToastIds(dismissedToastRef.current, nextIds);
-        pruneAnnouncedIds(announcedRef.current, nextIds);
+        pruneAnnouncedIds(announcedRef.current, nextIds, companyId);
         pruneSnoozedToasts(nextIds);
 
         if (options?.deliverNew) {
@@ -265,13 +279,14 @@ export function NotificationProvider({
             }
             markNotificationsAnnounced(
               newItems.map((n) => n.id),
-              announcedRef.current
+              announcedRef.current,
+              companyId,
+              nextIds
             );
           }
         }
 
-        // Une IDs conhecidos — nunca encolhe por snapshot stale do layout.
-        for (const id of nextIds) knownIdsRef.current.add(id);
+        markKnownNotificationIds(nextIds, knownIdsRef.current, companyId);
         setActiveNotifications(next);
         setToasts((prev) =>
           prev.filter(
@@ -292,28 +307,31 @@ export function NotificationProvider({
     setPushSupported(isPushNotificationSupported());
     deliveredRef.current = loadDeliveredNotificationIds();
     dismissedToastRef.current = loadDismissedToastIds();
-    announcedRef.current = loadAnnouncedNotificationIds();
+    announcedRef.current = loadAnnouncedNotificationIds(companyId);
+    knownIdsRef.current = loadKnownNotificationIds(companyId);
     const loaded = loadClearedNotificationIds(companyId);
     setClearedIds(loaded);
     clearedIdsRef.current = loaded;
     setClearedReady(true);
 
-    // Seed inicial: marca o que já existia no SSR como conhecido/anunciado
-    // para não abrir janela nem tocar som de alertas antigos ao abrir o painel.
-    seededKnownRef.current = false;
-    knownIdsRef.current = new Set();
-    toastKeysRef.current = new Set();
+    // Seed do SSR + storage — não zera IDs já vistos nesta empresa.
+    toastKeysRef.current = new Set(announcedRef.current);
 
     for (const n of initialNotifications) {
       knownIdsRef.current.add(n.id);
       announcedRef.current.add(n.id);
       toastKeysRef.current.add(n.id);
     }
+    markKnownNotificationIds(
+      initialNotifications.map((n) => n.id),
+      knownIdsRef.current,
+      companyId
+    );
     markNotificationsAnnounced(
       initialNotifications.map((n) => n.id),
-      announcedRef.current
+      announcedRef.current,
+      companyId
     );
-    seededKnownRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed no mount / troca de empresa
   }, [companyId]);
 
@@ -329,12 +347,14 @@ export function NotificationProvider({
   }, [pushSupported, prefs.push]);
 
   useEffect(() => {
-    // Atualiza lista visual do SSR sem reabrir alertas já conhecidos.
+    if (initialNotifications.length === 0) return;
     setActiveNotifications(initialNotifications);
-    for (const n of initialNotifications) {
-      knownIdsRef.current.add(n.id);
-    }
-  }, [initialNotifications]);
+    markKnownNotificationIds(
+      initialNotifications.map((n) => n.id),
+      knownIdsRef.current,
+      companyId
+    );
+  }, [companyId, initialNotifications]);
 
   useEffect(() => {
     function onSwNavigate(event: MessageEvent) {
@@ -406,18 +426,20 @@ export function NotificationProvider({
     saveNotificationPrefs(nextPrefs);
 
     const res = await getNotifications(companyId);
-    const pending = res.notifications;
+    const pending = dedupeNotifications(res.notifications);
+    const pendingIds = pending.map((n) => n.id);
+    activeNotificationIdsRef.current = pendingIds;
     setActiveNotifications(pending);
-    for (const n of pending) {
-      knownIdsRef.current.add(n.id);
-    }
+    markKnownNotificationIds(pendingIds, knownIdsRef.current, companyId);
 
     if (pending.length > 0) {
       playChimeOnce(pending.some((n) => n.priority === "high"));
       await deliverToBrowser(pending, { summaryOnly: pending.length > 1 });
       markNotificationsAnnounced(
-        pending.map((n) => n.id),
-        announcedRef.current
+        pendingIds,
+        announcedRef.current,
+        companyId,
+        pendingIds
       );
     }
 

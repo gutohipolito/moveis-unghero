@@ -15,7 +15,18 @@ const PREFS_KEY = "mu_notification_prefs";
 const DELIVERED_KEY = "mu_notification_delivered";
 const TOAST_DISMISSED_KEY = "mu_toast_dismissed";
 const ANNOUNCED_KEY = "mu_notification_announced";
+const KNOWN_KEY = "mu_notification_known";
 const CLEARED_KEY = "mu_notification_cleared";
+const ANNOUNCED_STORAGE_CAP = 500;
+const KNOWN_STORAGE_CAP = 500;
+
+function announcedKey(companyId?: string) {
+  return companyId ? `${ANNOUNCED_KEY}:${companyId}` : ANNOUNCED_KEY;
+}
+
+function knownKey(companyId?: string) {
+  return companyId ? `${KNOWN_KEY}:${companyId}` : KNOWN_KEY;
+}
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   browser: false,
@@ -111,25 +122,45 @@ export function pruneDismissedToastIds(dismissed: Set<string>, activeIds: string
   if (changed) saveDismissedToastIds(dismissed);
 }
 
-/** IDs que já tocaram som / abriram toast nesta sessão — evita eco a cada poll. */
-export function loadAnnouncedNotificationIds(): Set<string> {
+/** IDs que já tocaram som / abriram toast — evita eco a cada poll ou reload. */
+export function loadAnnouncedNotificationIds(companyId?: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = sessionStorage.getItem(ANNOUNCED_KEY);
-    if (!raw) return new Set();
-    return new Set(JSON.parse(raw) as string[]);
+    const scoped = sessionStorage.getItem(announcedKey(companyId));
+    if (scoped) return new Set(JSON.parse(scoped) as string[]);
+
+    // Migra chave legada (global) para a empresa.
+    if (companyId) {
+      const legacy = sessionStorage.getItem(ANNOUNCED_KEY);
+      if (legacy) {
+        const ids = new Set(JSON.parse(legacy) as string[]);
+        saveAnnouncedNotificationIds(ids, companyId);
+        return ids;
+      }
+    }
+    return new Set();
   } catch {
     return new Set();
   }
 }
 
-export function saveAnnouncedNotificationIds(ids: Set<string>) {
+export function saveAnnouncedNotificationIds(
+  ids: Set<string>,
+  companyId?: string,
+  pinIds: string[] = []
+) {
   if (typeof window === "undefined") return;
-  const list = [...ids].slice(-300);
-  sessionStorage.setItem(ANNOUNCED_KEY, JSON.stringify(list));
+  const merged = new Set([...pinIds, ...ids]);
+  const list = [...merged].slice(-ANNOUNCED_STORAGE_CAP);
+  sessionStorage.setItem(announcedKey(companyId), JSON.stringify(list));
 }
 
-export function markNotificationsAnnounced(ids: string[], announced: Set<string>) {
+export function markNotificationsAnnounced(
+  ids: string[],
+  announced: Set<string>,
+  companyId?: string,
+  pinIds: string[] = []
+) {
   let changed = false;
   for (const id of ids) {
     if (!announced.has(id)) {
@@ -137,20 +168,52 @@ export function markNotificationsAnnounced(ids: string[], announced: Set<string>
       changed = true;
     }
   }
-  if (changed) saveAnnouncedNotificationIds(announced);
+  if (changed) saveAnnouncedNotificationIds(announced, companyId, pinIds);
 }
 
-export function pruneAnnouncedIds(announced: Set<string>, activeIds: string[]) {
-  if (activeIds.length === 0) return;
-  const active = new Set(activeIds);
+/** IDs já vistos no painel — persiste entre reloads para não reabrir o mesmo alerta. */
+export function loadKnownNotificationIds(companyId?: string): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = sessionStorage.getItem(knownKey(companyId));
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveKnownNotificationIds(ids: Set<string>, companyId?: string) {
+  if (typeof window === "undefined") return;
+  const list = [...ids].slice(-KNOWN_STORAGE_CAP);
+  sessionStorage.setItem(knownKey(companyId), JSON.stringify(list));
+}
+
+export function markKnownNotificationIds(
+  ids: Iterable<string>,
+  known: Set<string>,
+  companyId?: string
+) {
   let changed = false;
-  for (const id of announced) {
-    if (!active.has(id)) {
-      announced.delete(id);
+  for (const id of ids) {
+    if (!known.has(id)) {
+      known.add(id);
       changed = true;
     }
   }
-  if (changed) saveAnnouncedNotificationIds(announced);
+  if (changed) saveKnownNotificationIds(known, companyId);
+}
+
+/**
+ * Não remove IDs anunciados quando somem de um poll — snapshot parcial ou cache
+ * fazia o mesmo alerta voltar após reload. O teto em saveAnnouncedNotificationIds basta.
+ */
+export function pruneAnnouncedIds(
+  _announced: Set<string>,
+  _activeIds: string[],
+  _companyId?: string
+) {
+  // no-op de propósito
 }
 
 function clearedKey(companyId?: string) {
