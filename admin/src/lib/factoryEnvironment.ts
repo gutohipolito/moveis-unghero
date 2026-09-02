@@ -490,15 +490,25 @@ export function getPromisedDeliverySeverity(
   return "ok";
 }
 
-/** Normaliza data de entrega para comparação (só dia, sem fuso). */
+/** Normaliza data de entrega para comparação (dia local). Sem data → vai ao final. */
 export function factoryDeliveryDateMs(iso: string | null | undefined): number {
-  if (!iso) return Number.MAX_SAFE_INTEGER;
+  if (!iso) return Number.POSITIVE_INFINITY;
   const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) return Number.MAX_SAFE_INTEGER;
-  return Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
+  if (Number.isNaN(parsed.getTime())) return Number.POSITIVE_INFINITY;
+  const day = new Date(parsed);
+  day.setHours(0, 0, 0, 0);
+  return day.getTime();
 }
 
-/** Ordenação do kanban: entrega mais próxima → prioridade → mais antigo na fila. */
+/** Timestamp de entrada na fila. Sem data → vai ao final do grupo. */
+export function factoryQueueDateMs(iso: string | null | undefined): number {
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return Number.POSITIVE_INFINITY;
+  return parsed.getTime();
+}
+
+/** Ordenação do kanban: entrega mais próxima → mais antigo na fila → nome. */
 export function compareFactoryBoardEnvironments(
   a: FactoryBoardEnvironment,
   b: FactoryBoardEnvironment
@@ -507,12 +517,8 @@ export function compareFactoryBoardEnvironments(
   const entregaB = factoryDeliveryDateMs(b.dataEntregaAcordada);
   if (entregaA !== entregaB) return entregaA - entregaB;
 
-  const prioA = a.prioridadeProducao === "PRIORITARIO" ? 0 : 1;
-  const prioB = b.prioridadeProducao === "PRIORITARIO" ? 0 : 1;
-  if (prioA !== prioB) return prioA - prioB;
-
-  const filaA = a.filaEntradaEm ? new Date(a.filaEntradaEm).getTime() : Number.MAX_SAFE_INTEGER;
-  const filaB = b.filaEntradaEm ? new Date(b.filaEntradaEm).getTime() : Number.MAX_SAFE_INTEGER;
+  const filaA = factoryQueueDateMs(a.filaEntradaEm);
+  const filaB = factoryQueueDateMs(b.filaEntradaEm);
   if (filaA !== filaB) return filaA - filaB;
 
   return a.nome.localeCompare(b.nome, "pt-BR");
