@@ -18,7 +18,7 @@ import {
 } from "@/lib/productionSla";
 import {
   getClientColor,
-  compareFactoryBoardEnvironments,
+  compareFactoryBoardStacks,
   formatFactoryBoardDate,
   getPromisedDeliverySeverity,
   sortFactoryBoardEnvironments,
@@ -311,23 +311,31 @@ export default function FactoryClient({
       const colItems = sortFactoryBoardEnvironments(
         visibleEnvironments.filter((item) => (isReadOnly ? true : item.status === col.id))
       );
-      const byProject = new Map<string, EnvironmentItem[]>();
+
+      const stacks: { key: string; projectId: string; items: EnvironmentItem[] }[] = [];
+      const stackByProject = new Map<string, (typeof stacks)[number]>();
+
       for (const item of colItems) {
         const pid = item.projectId || `loose-${item.id}`;
-        const list = byProject.get(pid) ?? [];
-        list.push(item);
-        byProject.set(pid, list);
+        let stack = stackByProject.get(pid);
+        if (!stack) {
+          stack = {
+            key: stackKey(col.id, pid.startsWith("loose-") ? item.id : pid),
+            projectId: pid.startsWith("loose-") ? item.projectId : pid,
+            items: [],
+          };
+          stackByProject.set(pid, stack);
+          stacks.push(stack);
+        }
+        stack.items.push(item);
       }
-      result[col.id] = Array.from(byProject.entries())
-        .map(([projectId, items]) => ({
-          key: stackKey(
-            col.id,
-            projectId.startsWith("loose-") ? items[0]?.id ?? projectId : projectId
-          ),
-          projectId: projectId.startsWith("loose-") ? items[0]?.projectId ?? "" : projectId,
-          items: sortFactoryBoardEnvironments(items),
-        }))
-        .sort((a, b) => compareFactoryBoardEnvironments(a.items[0]!, b.items[0]!));
+
+      for (const stack of stacks) {
+        stack.items = sortFactoryBoardEnvironments(stack.items);
+      }
+
+      stacks.sort((a, b) => compareFactoryBoardStacks(a.items, b.items));
+      result[col.id] = stacks;
     }
     return result;
   }, [visibleEnvironments, boardColumns, isReadOnly]);

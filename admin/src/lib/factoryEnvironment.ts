@@ -490,22 +490,26 @@ export function getPromisedDeliverySeverity(
   return "ok";
 }
 
-/** Ordenação do kanban: prioritário → entrega mais próxima → mais antigo na fila. */
+/** Normaliza data de entrega para comparação (só dia, sem fuso). */
+export function factoryDeliveryDateMs(iso: string | null | undefined): number {
+  if (!iso) return Number.MAX_SAFE_INTEGER;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return Number.MAX_SAFE_INTEGER;
+  return Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
+}
+
+/** Ordenação do kanban: entrega mais próxima → prioridade → mais antigo na fila. */
 export function compareFactoryBoardEnvironments(
   a: FactoryBoardEnvironment,
   b: FactoryBoardEnvironment
 ): number {
+  const entregaA = factoryDeliveryDateMs(a.dataEntregaAcordada);
+  const entregaB = factoryDeliveryDateMs(b.dataEntregaAcordada);
+  if (entregaA !== entregaB) return entregaA - entregaB;
+
   const prioA = a.prioridadeProducao === "PRIORITARIO" ? 0 : 1;
   const prioB = b.prioridadeProducao === "PRIORITARIO" ? 0 : 1;
   if (prioA !== prioB) return prioA - prioB;
-
-  const entregaA = a.dataEntregaAcordada
-    ? new Date(a.dataEntregaAcordada).getTime()
-    : Number.MAX_SAFE_INTEGER;
-  const entregaB = b.dataEntregaAcordada
-    ? new Date(b.dataEntregaAcordada).getTime()
-    : Number.MAX_SAFE_INTEGER;
-  if (entregaA !== entregaB) return entregaA - entregaB;
 
   const filaA = a.filaEntradaEm ? new Date(a.filaEntradaEm).getTime() : Number.MAX_SAFE_INTEGER;
   const filaB = b.filaEntradaEm ? new Date(b.filaEntradaEm).getTime() : Number.MAX_SAFE_INTEGER;
@@ -518,6 +522,17 @@ export function sortFactoryBoardEnvironments(
   items: FactoryBoardEnvironment[]
 ): FactoryBoardEnvironment[] {
   return [...items].sort(compareFactoryBoardEnvironments);
+}
+
+/** Compara pilhas pelo cômodo com entrega mais urgente de cada uma. */
+export function compareFactoryBoardStacks(
+  a: FactoryBoardEnvironment[],
+  b: FactoryBoardEnvironment[]
+): number {
+  const topA = sortFactoryBoardEnvironments(a)[0];
+  const topB = sortFactoryBoardEnvironments(b)[0];
+  if (!topA || !topB) return 0;
+  return compareFactoryBoardEnvironments(topA, topB);
 }
 
 export function sortEnvironmentsForOperator<
