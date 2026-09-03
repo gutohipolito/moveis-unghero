@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Inbox,
@@ -36,6 +36,7 @@ import {
   moveMailboxMessageToInbox,
   moveMailboxMessageToSpam,
   moveMailboxMessageToTrash,
+  moveMailboxMessagesToTrash,
   sendMailboxEmail,
 } from "@/app/actions/emailInbox";
 import {
@@ -105,13 +106,19 @@ function MessageGroup({
   title,
   messages,
   selectedUid,
+  checkedUids,
   onOpen,
+  onToggle,
+  canSelect,
   hideHeader,
 }: {
   title: string;
   messages: EmailListItem[];
   selectedUid: number | null;
+  checkedUids: Set<number>;
   onOpen: (uid: number) => void;
+  onToggle: (uid: number, checked: boolean) => void;
+  canSelect: boolean;
   hideHeader?: boolean;
 }) {
   return (
@@ -127,55 +134,77 @@ function MessageGroup({
         {messages.map((msg) => {
           const selected = selectedUid === msg.uid;
           const unread = !msg.seen;
+          const checked = checkedUids.has(msg.uid);
           return (
             <li key={msg.uid}>
-              <button
-                type="button"
-                onClick={() => onOpen(msg.uid)}
+              <div
                 className={cn(
-                  "relative w-full text-left px-3 py-2.5 transition-colors cursor-pointer border-b border-border/20",
+                  "relative flex items-stretch border-b border-border/20 transition-colors",
                   selected
                     ? "bg-amber-50"
                     : unread
-                      ? "bg-sky-50/70 hover:bg-sky-50"
-                      : "bg-white hover:bg-slate-50"
+                      ? "bg-sky-50/70"
+                      : "bg-white"
                 )}
               >
                 {unread && (
                   <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-500" aria-hidden />
                 )}
-                <div className="flex items-start justify-between gap-2 pl-1">
-                  <p
-                    className={cn(
-                      "text-xs truncate",
-                      unread ? "font-bold text-slate-900" : "font-medium text-slate-500"
-                    )}
+                {canSelect ? (
+                  <label
+                    className="flex items-center pl-2.5 pr-1 cursor-pointer shrink-0"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {displayFrom(msg.from)}
-                  </p>
-                  <span
-                    className={cn(
-                      "text-[10px] shrink-0",
-                      unread ? "font-semibold text-sky-700" : "text-muted-foreground"
-                    )}
-                  >
-                    {formatMsgDate(msg.date)}
-                  </span>
-                </div>
-                <p
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-sky-700 accent-sky-700 cursor-pointer"
+                      checked={checked}
+                      onChange={(e) => onToggle(msg.uid, e.target.checked)}
+                      aria-label={`Selecionar ${msg.subject}`}
+                    />
+                  </label>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => onOpen(msg.uid)}
                   className={cn(
-                    "text-sm truncate mt-0.5 pl-1",
-                    unread ? "font-semibold text-slate-900" : "text-slate-600"
+                    "min-w-0 flex-1 text-left px-3 py-2.5 cursor-pointer",
+                    !selected && (unread ? "hover:bg-sky-50" : "hover:bg-slate-50")
                   )}
                 >
-                  {msg.subject}
-                </p>
-                {msg.hasAttachments && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-1 pl-1">
-                    <Paperclip className="h-3 w-3" /> anexo
-                  </span>
-                )}
-              </button>
+                  <div className="flex items-start justify-between gap-2 pl-1">
+                    <p
+                      className={cn(
+                        "text-xs truncate",
+                        unread ? "font-bold text-slate-900" : "font-medium text-slate-500"
+                      )}
+                    >
+                      {displayFrom(msg.from)}
+                    </p>
+                    <span
+                      className={cn(
+                        "text-[10px] shrink-0",
+                        unread ? "font-semibold text-sky-700" : "text-muted-foreground"
+                      )}
+                    >
+                      {formatMsgDate(msg.date)}
+                    </span>
+                  </div>
+                  <p
+                    className={cn(
+                      "text-sm truncate mt-0.5 pl-1",
+                      unread ? "font-semibold text-slate-900" : "text-slate-600"
+                    )}
+                  >
+                    {msg.subject}
+                  </p>
+                  {msg.hasAttachments && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-1 pl-1">
+                      <Paperclip className="h-3 w-3" /> anexo
+                    </span>
+                  )}
+                </button>
+              </div>
             </li>
           );
         })}
@@ -210,6 +239,10 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   >([]);
   const [sending, setSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
+  const [checkedUids, setCheckedUids] = useState<Set<number>>(new Set());
+  const loadGenRef = useRef(0);
+  const hasListRef = useRef(false);
+  const inflightRef = useRef(false);
 
   const selectedMailbox = useMemo(
     () => mailboxes.find((m) => m.id === mailboxId) || null,
@@ -234,24 +267,80 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     return { unread, read };
   }, [folder, messages]);
 
-  const loadFolder = useCallback(async (id: string, nextFolder: MailFolderKey) => {
-    if (!id) return;
-    setLoadingList(true);
-    setListError(null);
-    setSelectedUid(null);
-    setDetail(null);
-    const res = await listMailboxFolder(id, nextFolder);
-    setLoadingList(false);
-    if (!res.success) {
-      setListError(res.error || "Falha ao carregar pasta.");
-      setMessages([]);
-      return;
-    }
-    setMessages(res.data);
-  }, []);
+  const loadFolder = useCallback(
+    async (
+      id: string,
+      nextFolder: MailFolderKey,
+      options?: { resetSelection?: boolean; silent?: boolean }
+    ) => {
+      if (!id) return;
+      const silent = Boolean(options?.silent) && hasListRef.current;
+      if (silent && inflightRef.current) return;
+      const gen = ++loadGenRef.current;
+      inflightRef.current = true;
+      if (!silent) setLoadingList(true);
+      setListError(null);
+      if (options?.resetSelection) {
+        setSelectedUid(null);
+        setDetail(null);
+        setCheckedUids(new Set());
+      }
+      try {
+        const res = await listMailboxFolder(id, nextFolder);
+        if (gen !== loadGenRef.current) return;
+        if (!res.success) {
+          hasListRef.current = false;
+          setListError(res.error || "Falha ao carregar pasta.");
+          setMessages([]);
+          return;
+        }
+        hasListRef.current = true;
+        const nextIds = new Set(res.data.map((m) => m.uid));
+        setMessages(res.data);
+        setCheckedUids((prev) => {
+          if (prev.size === 0) return prev;
+          const kept = [...prev].filter((uid) => nextIds.has(uid));
+          if (kept.length === prev.size) return prev;
+          return new Set(kept);
+        });
+        setSelectedUid((prev) => (prev && !nextIds.has(prev) ? null : prev));
+        setDetail((prev) => (prev && !nextIds.has(prev.uid) ? null : prev));
+      } finally {
+        if (gen === loadGenRef.current) {
+          inflightRef.current = false;
+          setLoadingList(false);
+        }
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    if (mailboxId) void loadFolder(mailboxId, folder);
+    hasListRef.current = false;
+    if (mailboxId) void loadFolder(mailboxId, folder, { resetSelection: true });
+  }, [mailboxId, folder, loadFolder]);
+
+  useEffect(() => {
+    if (!mailboxId) return;
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadFolder(mailboxId, folder, { silent: true });
+      }
+    };
+
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) refreshIfVisible();
+    };
+
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("focus", refreshIfVisible);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("focus", refreshIfVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, [mailboxId, folder, loadFolder]);
 
   const openMessage = async (uid: number) => {
@@ -278,7 +367,64 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
 
   const removeFromList = (uid: number) => {
     setMessages((prev) => prev.filter((m) => m.uid !== uid));
+    setCheckedUids((prev) => {
+      if (!prev.has(uid)) return prev;
+      const next = new Set(prev);
+      next.delete(uid);
+      return next;
+    });
     if (selectedUid === uid) clearSelection();
+  };
+
+  const visibleUids = useMemo(() => messages.map((m) => m.uid), [messages]);
+  const checkedCount = checkedUids.size;
+  const allVisibleChecked =
+    visibleUids.length > 0 && visibleUids.every((uid) => checkedUids.has(uid));
+
+  const toggleChecked = (uid: number, checked: boolean) => {
+    setCheckedUids((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(uid);
+      else next.delete(uid);
+      return next;
+    });
+  };
+
+  const toggleAllVisible = (checked: boolean) => {
+    setCheckedUids(checked ? new Set(visibleUids) : new Set());
+  };
+
+  const handleBulkTrash = () => {
+    if (!mailboxId || isReadOnly || checkedCount === 0) return;
+    const uids = [...checkedUids];
+    confirmAction({
+      title:
+        folder === "trash"
+          ? `Excluir ${uids.length} mensagem${uids.length === 1 ? "" : "ns"}?`
+          : `Excluir ${uids.length} mensagem${uids.length === 1 ? "" : "ns"}?`,
+      message:
+        folder === "trash"
+          ? "As mensagens selecionadas serão removidas da Lixeira."
+          : "As mensagens selecionadas serão movidas para a Lixeira da caixa.",
+      confirmLabel: "Excluir",
+      onConfirm: async () => {
+        setActionBusy(true);
+        const res = await moveMailboxMessagesToTrash(mailboxId, uids, folder);
+        setActionBusy(false);
+        if (!res.success) {
+          showError("Falha ao excluir", res.error || "Não foi possível excluir.");
+          return;
+        }
+        const removed = new Set(uids);
+        setMessages((prev) => prev.filter((m) => !removed.has(m.uid)));
+        setCheckedUids(new Set());
+        if (selectedUid && removed.has(selectedUid)) clearSelection();
+        showSuccess(
+          uids.length === 1 ? "Mensagem excluída" : `${uids.length} mensagens excluídas`,
+          res.deleted ? "Removidas permanentemente." : "Movidas para a Lixeira."
+        );
+      },
+    });
   };
 
   const handleMarkUnseen = async () => {
@@ -563,16 +709,56 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                     );
                   })}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 shrink-0"
-                  onClick={() => void loadFolder(mailboxId, folder)}
-                  disabled={loadingList}
-                  title="Atualizar"
-                >
-                  <RefreshCw className={`h-4 w-4 ${loadingList ? "animate-spin" : ""}`} />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {!isReadOnly && messages.length > 0 ? (
+                    <>
+                      <label
+                        className="flex items-center gap-1 px-1.5 h-8 cursor-pointer"
+                        title="Selecionar todos desta lista"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-700 cursor-pointer"
+                          checked={allVisibleChecked}
+                          ref={(el) => {
+                            if (el) {
+                              el.indeterminate = checkedCount > 0 && !allVisibleChecked;
+                            }
+                          }}
+                          onChange={(e) => toggleAllVisible(e.target.checked)}
+                          aria-label="Selecionar todos"
+                        />
+                      </label>
+                      {checkedCount > 0 ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2 gap-1 text-rose-700 border-rose-200 hover:bg-rose-50"
+                          onClick={handleBulkTrash}
+                          disabled={actionBusy}
+                          title="Excluir selecionados"
+                        >
+                          {actionBusy ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                          <span className="text-[11px] font-semibold">{checkedCount}</span>
+                        </Button>
+                      ) : null}
+                    </>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 shrink-0"
+                    onClick={() => void loadFolder(mailboxId, folder, { silent: false })}
+                    disabled={loadingList}
+                    title="Atualizar"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loadingList ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
               </div>
 
               {loadingList ? (
@@ -600,7 +786,10 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                           title={`Não lidas (${groupedMessages.unread.length})`}
                           messages={groupedMessages.unread}
                           selectedUid={selectedUid}
+                          checkedUids={checkedUids}
                           onOpen={(uid) => void openMessage(uid)}
+                          onToggle={toggleChecked}
+                          canSelect={!isReadOnly}
                         />
                       )}
                       {groupedMessages.read.length > 0 && (
@@ -612,7 +801,10 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                           }
                           messages={groupedMessages.read}
                           selectedUid={selectedUid}
+                          checkedUids={checkedUids}
                           onOpen={(uid) => void openMessage(uid)}
+                          onToggle={toggleChecked}
+                          canSelect={!isReadOnly}
                         />
                       )}
                     </>
@@ -621,7 +813,10 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                       title={FOLDER_NAV.find((f) => f.id === folder)?.label || "Mensagens"}
                       messages={messages}
                       selectedUid={selectedUid}
+                      checkedUids={checkedUids}
                       onOpen={(uid) => void openMessage(uid)}
+                      onToggle={toggleChecked}
+                      canSelect={!isReadOnly}
                       hideHeader={folder === "unread"}
                     />
                   )}

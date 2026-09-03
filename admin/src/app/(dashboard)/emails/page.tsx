@@ -4,6 +4,7 @@ import { listEmailMailboxesForUser } from "@/app/actions/emailMailboxes";
 import EmailsClient from "./EmailsClient";
 
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 export default async function EmailsPage() {
   await guardModule("emails");

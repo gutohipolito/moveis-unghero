@@ -1,5 +1,6 @@
 "use server";
 
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureActorUserId } from "@/lib/currentUser";
 import { getWriteAccess } from "@/lib/moduleAccess";
@@ -10,6 +11,7 @@ import {
   fetchFolderMessage,
   listFolderMessages,
   moveFolderMessage,
+  moveFolderMessages,
   resolveMailFolderPath,
   setFolderMessageSeen,
   type MoveDestination,
@@ -38,6 +40,7 @@ function imapConfigFromLoaded(loaded: NonNullable<Awaited<ReturnType<typeof load
 }
 
 export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey) {
+  await connection();
   const loaded = await loadAccessibleMailboxSecrets(mailboxId);
   if (!loaded) {
     return {
@@ -160,6 +163,43 @@ export async function moveMailboxMessageToTrash(
   fromFolder: MailFolderKey = "inbox"
 ) {
   return moveFromFolder(mailboxId, uid, fromFolder, "trash", "Sem permissão para excluir.");
+}
+
+const BULK_DELETE_MAX = 40;
+
+export async function moveMailboxMessagesToTrash(
+  mailboxId: string,
+  uids: number[],
+  fromFolder: MailFolderKey = "inbox"
+) {
+  const loaded = await loadAccessibleMailboxSecrets(mailboxId);
+  if (!loaded || isReadOnlyRole(loaded.auth.cargo)) {
+    return { success: false as const, error: "Sem permissão para excluir." };
+  }
+  if (!isMailFolderKey(fromFolder)) {
+    return { success: false as const, error: "Pasta inválida." };
+  }
+
+  const unique = [...new Set(uids.filter((uid) => Number.isInteger(uid) && uid > 0))].slice(
+    0,
+    BULK_DELETE_MAX
+  );
+  if (unique.length === 0) {
+    return { success: false as const, error: "Nenhuma mensagem selecionada." };
+  }
+
+  try {
+    const config = imapConfigFromLoaded(loaded);
+    const fromPath = await resolveMailFolderPath(config, fromFolder);
+    const result = await moveFolderMessages(config, fromPath, unique, "trash");
+    return { success: true as const, ...result };
+  } catch (error) {
+    console.error("moveMailboxMessagesToTrash:", error);
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Não foi possível excluir as mensagens.",
+    };
+  }
 }
 
 export async function moveMailboxMessageToSpam(

@@ -271,6 +271,11 @@ export async function listFolderMessages(
 
     const lock = await client.getMailboxLock(folderPath);
     try {
+      try {
+        await client.noop();
+      } catch {
+        /* alguns servidores só atualizam EXISTS após NOOP */
+      }
       const mailbox = client.mailbox;
       const total =
         mailbox && typeof mailbox === "object" && "exists" in mailbox
@@ -308,7 +313,7 @@ export async function listFolderMessages(
       }
 
       const start = Math.max(1, total - limit + 1);
-      const range = `${start}:${total}`;
+      const range = `${start}:*`;
       for await (const msg of client.fetch(range, {
         uid: true,
         flags: true,
@@ -317,7 +322,7 @@ export async function listFolderMessages(
       })) {
         items.push(mapFetchToListItem(msg));
       }
-      return { folderPath, items: items.reverse() };
+      return { folderPath, items: items.reverse().slice(0, limit) };
     } finally {
       lock.release();
     }
@@ -463,29 +468,69 @@ export async function setInboxMessageSeen(
 
 export type MoveDestination = "trash" | "junk" | "inbox";
 
+const MOVE_CHUNK = 25;
+
+function normalizeUids(uids: number[]): number[] {
+  return [...new Set(uids.filter((uid) => Number.isInteger(uid) && uid > 0))];
+}
+
 /**
- * Move mensagem entre pastas.
- * Se destino for lixeira e a pasta não existir, usa exclusão IMAP.
+ * Move uma ou mais mensagens entre pastas na mesma conexão IMAP.
+ * Na lixeira (ou sem pasta de lixo), exclui de fato.
  */
-export async function moveFolderMessage(
+export async function moveFolderMessages(
   config: ImapConnectionConfig,
   fromFolderPath: string,
-  uid: number,
+  uids: number[],
   destination: MoveDestination
-): Promise<{ folder: string | null; deleted: boolean }> {
+): Promise<{ folder: string | null; deleted: boolean; moved: number }> {
+  const unique = normalizeUids(uids);
+  if (unique.length === 0) {
+    return { folder: fromFolderPath, deleted: false, moved: 0 };
+  }
+
   return withFolderClient(config, fromFolderPath, async (client) => {
+    const runChunks = async (
+      fn: (uidList: string) => Promise<unknown>
+    ) => {
+      for (let i = 0; i < unique.length; i += MOVE_CHUNK) {
+        const chunk = unique.slice(i, i + MOVE_CHUNK);
+        await fn(chunk.join(","));
+      }
+    };
+
     if (destination === "inbox") {
-      if (fromFolderPath === "INBOX") return { folder: "INBOX", deleted: false };
-      const moved = await client.messageMove(String(uid), "INBOX", { uid: true });
-      if (!moved) throw new Error("Não foi possível mover para a Entrada.");
-      return { folder: "INBOX", deleted: false };
+      if (fromFolderPath === "INBOX") {
+        return { folder: "INBOX", deleted: false, moved: 0 };
+      }
+      await runChunks(async (uidList) => {
+        const moved = await client.messageMove(uidList, "INBOX", { uid: true });
+        if (!moved) throw new Error("Não foi possível mover para a Entrada.");
+      });
+      return { folder: "INBOX", deleted: false, moved: unique.length };
     }
 
     const kind: SpecialFolderKind = destination === "junk" ? "junk" : "trash";
     const folder = await resolveSpecialFolderPath(client, kind);
-    if (folder) {
-      if (folder === fromFolderPath) return { folder, deleted: false };
-      const moved = await client.messageMove(String(uid), folder, { uid: true });
+
+    if (destination === "trash" && (!folder || folder === fromFolderPath)) {
+      await runChunks(async (uidList) => {
+        const ok = await client.messageDelete(uidList, { uid: true });
+        if (!ok) throw new Error("Não foi possível excluir a mensagem.");
+      });
+      return { folder: folder ?? null, deleted: true, moved: unique.length };
+    }
+
+    if (!folder) {
+      throw new Error(
+        destination === "junk"
+          ? "Pasta de Spam/Junk não encontrada nesta caixa. Verifique no webmail do HostGator."
+          : "Pasta de Lixeira não encontrada nesta caixa."
+      );
+    }
+
+    await runChunks(async (uidList) => {
+      const moved = await client.messageMove(uidList, folder, { uid: true });
       if (!moved) {
         throw new Error(
           destination === "junk"
@@ -493,19 +538,19 @@ export async function moveFolderMessage(
             : "Não foi possível mover para a Lixeira."
         );
       }
-      return { folder, deleted: false };
-    }
-
-    if (destination === "trash") {
-      const ok = await client.messageDelete(String(uid), { uid: true });
-      if (!ok) throw new Error("Não foi possível excluir a mensagem.");
-      return { folder: null, deleted: true };
-    }
-
-    throw new Error(
-      "Pasta de Spam/Junk não encontrada nesta caixa. Verifique no webmail do HostGator."
-    );
+    });
+    return { folder, deleted: false, moved: unique.length };
   });
+}
+
+export async function moveFolderMessage(
+  config: ImapConnectionConfig,
+  fromFolderPath: string,
+  uid: number,
+  destination: MoveDestination
+): Promise<{ folder: string | null; deleted: boolean }> {
+  const result = await moveFolderMessages(config, fromFolderPath, [uid], destination);
+  return { folder: result.folder, deleted: result.deleted };
 }
 
 export async function moveInboxMessage(
