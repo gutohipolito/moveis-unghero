@@ -250,11 +250,19 @@ export async function listFolderMessages(
   config: ImapConnectionConfig,
   folderKey: MailFolderKey,
   options?: { limit?: number }
-): Promise<{ folderPath: string; items: EmailListItem[] }> {
+): Promise<{ folderPath: string; items: EmailListItem[]; inboxUnseen: number }> {
   const limit = options?.limit ?? 40;
   const client = createClient(config);
   await client.connect();
   try {
+    let inboxUnseen = 0;
+    try {
+      const status = await client.status("INBOX", { unseen: true });
+      inboxUnseen = Number(status.unseen) || 0;
+    } catch {
+      inboxUnseen = 0;
+    }
+
     let folderPath = "INBOX";
     if (folderKey === "spam" || folderKey === "trash") {
       const kind: SpecialFolderKind = folderKey === "spam" ? "junk" : "trash";
@@ -281,7 +289,7 @@ export async function listFolderMessages(
         mailbox && typeof mailbox === "object" && "exists" in mailbox
           ? Number(mailbox.exists) || 0
           : 0;
-      if (total === 0) return { folderPath, items: [] };
+      if (total === 0) return { folderPath, items: [], inboxUnseen };
 
       const items: EmailListItem[] = [];
 
@@ -289,7 +297,7 @@ export async function listFolderMessages(
         const searched = await client.search({ seen: false }, { uid: true });
         const uids = Array.isArray(searched) ? searched : [];
         if (uids.length === 0) {
-          return { folderPath, items: [] };
+          return { folderPath, items: [], inboxUnseen };
         }
         const slice = uids.slice(-limit);
         for await (const msg of client.fetch(
@@ -309,7 +317,7 @@ export async function listFolderMessages(
           const db = b.date ? Date.parse(b.date) : 0;
           return db - da;
         });
-        return { folderPath, items };
+        return { folderPath, items, inboxUnseen };
       }
 
       const start = Math.max(1, total - limit + 1);
@@ -322,10 +330,26 @@ export async function listFolderMessages(
       })) {
         items.push(mapFetchToListItem(msg));
       }
-      return { folderPath, items: items.reverse().slice(0, limit) };
+      return { folderPath, items: items.reverse().slice(0, limit), inboxUnseen };
     } finally {
       lock.release();
     }
+  } finally {
+    try {
+      await client.logout();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Contagem de não lidos da INBOX via STATUS — sem baixar mensagens. */
+export async function getInboxUnreadCount(config: ImapConnectionConfig): Promise<number> {
+  const client = createClient(config);
+  await client.connect();
+  try {
+    const status = await client.status("INBOX", { unseen: true });
+    return Number(status.unseen) || 0;
   } finally {
     try {
       await client.logout();

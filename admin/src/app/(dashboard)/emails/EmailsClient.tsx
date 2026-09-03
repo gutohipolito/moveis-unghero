@@ -32,6 +32,7 @@ import type { EmailMailboxDTO } from "@/app/actions/emailMailboxes";
 import {
   getMailboxMessage,
   listMailboxFolder,
+  listMailboxUnreadCounts,
   markMailboxMessageSeen,
   moveMailboxMessageToInbox,
   moveMailboxMessageToSpam,
@@ -240,6 +241,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   const [sending, setSending] = useState(false);
   const [composeError, setComposeError] = useState<string | null>(null);
   const [checkedUids, setCheckedUids] = useState<Set<number>>(new Set());
+  const [unreadByMailbox, setUnreadByMailbox] = useState<Record<string, number>>({});
   const loadGenRef = useRef(0);
   const hasListRef = useRef(false);
   const inflightRef = useRef(false);
@@ -249,10 +251,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     [mailboxes, mailboxId]
   );
 
-  const unreadCount = useMemo(
-    () => messages.filter((m) => !m.seen).length,
-    [messages]
-  );
+  const unreadCount = unreadByMailbox[mailboxId] ?? messages.filter((m) => !m.seen).length;
 
   const groupedMessages = useMemo(() => {
     if (folder !== "inbox") {
@@ -297,6 +296,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         hasListRef.current = true;
         const nextIds = new Set(res.data.map((m) => m.uid));
         setMessages(res.data);
+        setUnreadByMailbox((prev) => ({ ...prev, [id]: res.inboxUnseen }));
         setCheckedUids((prev) => {
           if (prev.size === 0) return prev;
           const kept = [...prev].filter((uid) => nextIds.has(uid));
@@ -343,8 +343,28 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     };
   }, [mailboxId, folder, loadFolder]);
 
+  const loadUnreadCounts = useCallback(async () => {
+    const res = await listMailboxUnreadCounts();
+    if (!res.success) return;
+    setUnreadByMailbox((prev) => ({ ...prev, ...res.counts }));
+  }, []);
+
+  useEffect(() => {
+    if (mailboxes.length === 0) return;
+    void loadUnreadCounts();
+  }, [mailboxes.length, loadUnreadCounts]);
+
+  const bumpUnread = useCallback((id: string, delta: number) => {
+    if (!id || delta === 0) return;
+    setUnreadByMailbox((prev) => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] ?? 0) + delta),
+    }));
+  }, []);
+
   const openMessage = async (uid: number) => {
     if (!mailboxId) return;
+    const wasUnread = messages.some((m) => m.uid === uid && !m.seen);
     setSelectedUid(uid);
     setLoadingDetail(true);
     setDetail(null);
@@ -355,6 +375,9 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
       setMessages((prev) =>
         prev.map((m) => (m.uid === uid ? { ...m, seen: true } : m))
       );
+      if (wasUnread && (folder === "inbox" || folder === "unread")) {
+        bumpUnread(mailboxId, -1);
+      }
     } else if (!res.success) {
       showError("Falha", res.error || "Não foi possível abrir a mensagem.");
     }
@@ -366,6 +389,10 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
   };
 
   const removeFromList = (uid: number) => {
+    const msg = messages.find((m) => m.uid === uid);
+    if (msg && !msg.seen && (folder === "inbox" || folder === "unread")) {
+      bumpUnread(mailboxId, -1);
+    }
     setMessages((prev) => prev.filter((m) => m.uid !== uid));
     setCheckedUids((prev) => {
       if (!prev.has(uid)) return prev;
@@ -416,9 +443,14 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
           return;
         }
         const removed = new Set(uids);
+        const unreadRemoved =
+          folder === "inbox" || folder === "unread"
+            ? messages.filter((m) => removed.has(m.uid) && !m.seen).length
+            : 0;
         setMessages((prev) => prev.filter((m) => !removed.has(m.uid)));
         setCheckedUids(new Set());
         if (selectedUid && removed.has(selectedUid)) clearSelection();
+        if (unreadRemoved > 0) bumpUnread(mailboxId, -unreadRemoved);
         showSuccess(
           uids.length === 1 ? "Mensagem excluída" : `${uids.length} mensagens excluídas`,
           res.deleted ? "Removidas permanentemente." : "Movidas para a Lixeira."
@@ -439,6 +471,9 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     setMessages((prev) =>
       prev.map((m) => (m.uid === selectedUid ? { ...m, seen: false } : m))
     );
+    if (folder === "inbox" || folder === "unread") {
+      bumpUnread(mailboxId, 1);
+    }
     showSuccess("Atualizado", "Mensagem marcada como não lida.");
   };
 
@@ -506,7 +541,9 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
           showError("Falha", res.error || "Não foi possível restaurar.");
           return;
         }
+        const restored = messages.find((m) => m.uid === uid);
         removeFromList(uid);
+        if (restored && !restored.seen) bumpUnread(mailboxId, 1);
         showSuccess("Restaurada", "Mensagem movida para a Entrada.");
       },
     });
@@ -652,7 +689,9 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         <div className="flex flex-col gap-3 md:min-h-[calc(100vh-var(--dashboard-chrome-offset)-8rem)]">
           {/* Caixas no topo */}
           <div className="flex flex-wrap gap-2 shrink-0">
-            {mailboxes.map((box) => (
+            {mailboxes.map((box) => {
+              const boxUnread = unreadByMailbox[box.id] ?? 0;
+              return (
               <button
                 key={box.id}
                 type="button"
@@ -667,10 +706,21 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                     : "bg-white border-border/50 hover:bg-slate-50"
                 )}
               >
-                <p className="text-xs font-bold text-foreground truncate">{box.areaLabel}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold text-foreground truncate">{box.areaLabel}</p>
+                  {boxUnread > 0 ? (
+                    <span
+                      className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-sky-600 text-white text-[10px] font-bold leading-5 text-center shrink-0"
+                      title={`${boxUnread} não lido${boxUnread === 1 ? "" : "s"}`}
+                    >
+                      {boxUnread > 99 ? "99+" : boxUnread}
+                    </span>
+                  ) : null}
+                </div>
                 <p className="text-[11px] text-muted-foreground truncate">{box.address}</p>
               </button>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pastas + lista 25% · Corpo 75% */}
@@ -682,9 +732,7 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                     const Icon = item.icon;
                     const active = folder === item.id;
                     const badge =
-                      item.id === "inbox" && folder === "inbox" && unreadCount > 0
-                        ? unreadCount
-                        : null;
+                      item.id === "inbox" && unreadCount > 0 ? unreadCount : null;
                     return (
                       <button
                         key={item.id}
@@ -752,7 +800,10 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2 shrink-0"
-                    onClick={() => void loadFolder(mailboxId, folder, { silent: false })}
+                    onClick={() => {
+                      void loadFolder(mailboxId, folder, { silent: false });
+                      void loadUnreadCounts();
+                    }}
                     disabled={loadingList}
                     title="Atualizar"
                   >

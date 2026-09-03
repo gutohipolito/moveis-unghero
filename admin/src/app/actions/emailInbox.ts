@@ -9,6 +9,7 @@ import { decryptVaultSecret } from "@/lib/accessVaultCrypto";
 import { EMAIL_INBOX_PAGE_SIZE, EMAIL_MAX_ATTACHMENT_BYTES, isMailFolderKey, type MailFolderKey, type EmailListItem } from "@/lib/emailAreas";
 import {
   fetchFolderMessage,
+  getInboxUnreadCount,
   listFolderMessages,
   moveFolderMessage,
   moveFolderMessages,
@@ -24,9 +25,7 @@ import {
   composeDocumentEmail,
   loadCompanyDocumentTemplate,
 } from "@/lib/emailDocumentTemplates";
-import {
-  loadAccessibleMailboxSecrets,
-} from "@/app/actions/emailMailboxes";
+import { listEmailMailboxesForUser, loadAccessibleMailboxSecrets } from "@/app/actions/emailMailboxes";
 import type { EmailMailboxArea } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -48,6 +47,7 @@ export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey
       error: "Caixa indisponível.",
       data: [] as EmailListItem[],
       folderPath: null as string | null,
+      inboxUnseen: 0,
     };
   }
 
@@ -59,6 +59,7 @@ export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey
       success: true as const,
       data: result.items,
       folderPath: result.folderPath,
+      inboxUnseen: result.inboxUnseen,
     };
   } catch (error) {
     console.error("listMailboxFolder:", error);
@@ -70,8 +71,34 @@ export async function listMailboxFolder(mailboxId: string, folder: MailFolderKey
           : "Não foi possível listar a pasta.",
       data: [] as EmailListItem[],
       folderPath: null as string | null,
+      inboxUnseen: 0,
     };
   }
+}
+
+export async function listMailboxUnreadCounts() {
+  await connection();
+  const listed = await listEmailMailboxesForUser();
+  if (!listed.success) {
+    return { success: false as const, counts: {} as Record<string, number> };
+  }
+
+  const counts: Record<string, number> = {};
+  for (const box of listed.data) {
+    const loaded = await loadAccessibleMailboxSecrets(box.id);
+    if (!loaded) {
+      counts[box.id] = 0;
+      continue;
+    }
+    try {
+      counts[box.id] = await getInboxUnreadCount(imapConfigFromLoaded(loaded));
+    } catch (error) {
+      console.error("listMailboxUnreadCounts:", box.address, error);
+      counts[box.id] = 0;
+    }
+  }
+
+  return { success: true as const, counts };
 }
 
 export async function getMailboxMessage(
