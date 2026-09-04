@@ -388,21 +388,6 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
     setDetail(null);
   };
 
-  const removeFromList = (uid: number) => {
-    const msg = messages.find((m) => m.uid === uid);
-    if (msg && !msg.seen && (folder === "inbox" || folder === "unread")) {
-      bumpUnread(mailboxId, -1);
-    }
-    setMessages((prev) => prev.filter((m) => m.uid !== uid));
-    setCheckedUids((prev) => {
-      if (!prev.has(uid)) return prev;
-      const next = new Set(prev);
-      next.delete(uid);
-      return next;
-    });
-    if (selectedUid === uid) clearSelection();
-  };
-
   const visibleUids = useMemo(() => messages.map((m) => m.uid), [messages]);
   const checkedCount = checkedUids.size;
   const allVisibleChecked =
@@ -439,21 +424,16 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         const res = await moveMailboxMessagesToTrash(mailboxId, uids, folder);
         setActionBusy(false);
         if (!res.success) {
-          showError("Falha ao excluir", res.error || "Não foi possível excluir.");
+          showError("Falha ao excluir", res.error || "Não foi possível excluir no servidor.");
           return;
         }
-        const removed = new Set(uids);
-        const unreadRemoved =
-          folder === "inbox" || folder === "unread"
-            ? messages.filter((m) => removed.has(m.uid) && !m.seen).length
-            : 0;
-        setMessages((prev) => prev.filter((m) => !removed.has(m.uid)));
         setCheckedUids(new Set());
-        if (selectedUid && removed.has(selectedUid)) clearSelection();
-        if (unreadRemoved > 0) bumpUnread(mailboxId, -unreadRemoved);
+        if (selectedUid && uids.includes(selectedUid)) clearSelection();
+        await loadFolder(mailboxId, folder, { silent: false });
+        void loadUnreadCounts();
         showSuccess(
           uids.length === 1 ? "Mensagem excluída" : `${uids.length} mensagens excluídas`,
-          res.deleted ? "Removidas permanentemente." : "Movidas para a Lixeira."
+          res.deleted ? "Removidas permanentemente no servidor." : "Movidas para a Lixeira no servidor."
         );
       },
     });
@@ -492,13 +472,15 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         const res = await moveMailboxMessageToTrash(mailboxId, uid, folder);
         setActionBusy(false);
         if (!res.success) {
-          showError("Falha ao excluir", res.error || "Não foi possível excluir.");
+          showError("Falha ao excluir", res.error || "Não foi possível excluir no servidor.");
           return;
         }
-        removeFromList(uid);
+        clearSelection();
+        await loadFolder(mailboxId, folder, { silent: false });
+        void loadUnreadCounts();
         showSuccess(
           "Mensagem excluída",
-          res.deleted ? "Removida permanentemente." : "Movida para a Lixeira."
+          res.deleted ? "Removida permanentemente no servidor." : "Movida para a Lixeira no servidor."
         );
       },
     });
@@ -516,11 +498,13 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         const res = await moveMailboxMessageToSpam(mailboxId, uid, folder);
         setActionBusy(false);
         if (!res.success) {
-          showError("Falha no spam", res.error || "Não foi possível mover.");
+          showError("Falha no spam", res.error || "Não foi possível mover no servidor.");
           return;
         }
-        removeFromList(uid);
-        showSuccess("Movida para spam", "A mensagem saiu desta pasta.");
+        clearSelection();
+        await loadFolder(mailboxId, folder, { silent: false });
+        void loadUnreadCounts();
+        showSuccess("Movida para spam", "A mensagem saiu desta pasta no servidor.");
       },
     });
   };
@@ -538,13 +522,13 @@ export default function EmailsClient({ initialMailboxes, isAdmin }: EmailsClient
         const res = await moveMailboxMessageToInbox(mailboxId, uid, folder);
         setActionBusy(false);
         if (!res.success) {
-          showError("Falha", res.error || "Não foi possível restaurar.");
+          showError("Falha", res.error || "Não foi possível restaurar no servidor.");
           return;
         }
-        const restored = messages.find((m) => m.uid === uid);
-        removeFromList(uid);
-        if (restored && !restored.seen) bumpUnread(mailboxId, 1);
-        showSuccess("Restaurada", "Mensagem movida para a Entrada.");
+        clearSelection();
+        await loadFolder(mailboxId, folder, { silent: false });
+        void loadUnreadCounts();
+        showSuccess("Restaurada", "Mensagem movida para a Entrada no servidor.");
       },
     });
   };

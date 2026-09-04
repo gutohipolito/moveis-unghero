@@ -84,19 +84,21 @@ export async function listMailboxUnreadCounts() {
   }
 
   const counts: Record<string, number> = {};
-  for (const box of listed.data) {
-    const loaded = await loadAccessibleMailboxSecrets(box.id);
-    if (!loaded) {
-      counts[box.id] = 0;
-      continue;
-    }
-    try {
-      counts[box.id] = await getInboxUnreadCount(imapConfigFromLoaded(loaded));
-    } catch (error) {
-      console.error("listMailboxUnreadCounts:", box.address, error);
-      counts[box.id] = 0;
-    }
-  }
+  await Promise.all(
+    listed.data.map(async (box) => {
+      const loaded = await loadAccessibleMailboxSecrets(box.id);
+      if (!loaded) {
+        counts[box.id] = 0;
+        return;
+      }
+      try {
+        counts[box.id] = await getInboxUnreadCount(imapConfigFromLoaded(loaded));
+      } catch (error) {
+        console.error("listMailboxUnreadCounts:", box.address, error);
+        counts[box.id] = 0;
+      }
+    })
+  );
 
   return { success: true as const, counts };
 }

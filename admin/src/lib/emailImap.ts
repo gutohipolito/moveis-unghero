@@ -61,8 +61,9 @@ function createClient(config: ImapConnectionConfig) {
     secure: true,
     auth: { user: config.user, pass: config.pass },
     logger: false,
-    connectionTimeout: 25_000,
-    greetingTimeout: 20_000,
+    connectionTimeout: 20_000,
+    greetingTimeout: 15_000,
+    disableAutoIdle: true,
     tls: {
       servername: config.host,
       minVersion: "TLSv1.2",
@@ -300,13 +301,13 @@ export async function listFolderMessages(
           return { folderPath, items: [], inboxUnseen };
         }
         const slice = uids.slice(-limit);
+        // Sem bodyStructure: lista bem mais rápida no HostGator.
         for await (const msg of client.fetch(
           slice,
           {
             uid: true,
             flags: true,
             envelope: true,
-            bodyStructure: true,
           },
           { uid: true }
         )) {
@@ -326,7 +327,6 @@ export async function listFolderMessages(
         uid: true,
         flags: true,
         envelope: true,
-        bodyStructure: true,
       })) {
         items.push(mapFetchToListItem(msg));
       }
@@ -492,15 +492,91 @@ export async function setInboxMessageSeen(
 
 export type MoveDestination = "trash" | "junk" | "inbox";
 
-const MOVE_CHUNK = 25;
+const MOVE_CHUNK = 20;
 
 function normalizeUids(uids: number[]): number[] {
   return [...new Set(uids.filter((uid) => Number.isInteger(uid) && uid > 0))];
 }
 
+async function findExistingUids(client: ImapFlow, uids: number[]): Promise<number[]> {
+  if (uids.length === 0) return [];
+  const found: number[] = [];
+  for (let i = 0; i < uids.length; i += MOVE_CHUNK) {
+    const chunk = uids.slice(i, i + MOVE_CHUNK);
+    const searched = await client.search({ uid: chunk.join(",") }, { uid: true });
+    if (Array.isArray(searched)) found.push(...searched);
+  }
+  return [...new Set(found)];
+}
+
+/** Copia + marca \Deleted + EXPUNGE — fallback confiável no HostGator. */
+async function copyThenDeleteUids(
+  client: ImapFlow,
+  uids: number[],
+  destination: string
+): Promise<void> {
+  for (let i = 0; i < uids.length; i += MOVE_CHUNK) {
+    const chunk = uids.slice(i, i + MOVE_CHUNK);
+    const copied = await client.messageCopy(chunk, destination, { uid: true });
+    if (!copied) {
+      throw new Error("Não foi possível copiar as mensagens para a pasta de destino.");
+    }
+    const deleted = await client.messageDelete(chunk, { uid: true });
+    if (!deleted) {
+      throw new Error(
+        "As mensagens foram copiadas, mas o servidor não as removeu da pasta atual."
+      );
+    }
+  }
+}
+
+async function deleteUidsReliably(client: ImapFlow, uids: number[]): Promise<void> {
+  for (let i = 0; i < uids.length; i += MOVE_CHUNK) {
+    const chunk = uids.slice(i, i + MOVE_CHUNK);
+    const ok = await client.messageDelete(chunk, { uid: true });
+    if (!ok) throw new Error("Não foi possível excluir as mensagens no servidor.");
+  }
+  const still = await findExistingUids(client, uids);
+  if (still.length > 0) {
+    throw new Error(
+      "O servidor HostGator ainda mantém mensagens na pasta após a exclusão."
+    );
+  }
+}
+
+/**
+ * Move UIDs e confirma que saíram da pasta de origem.
+ * HostGator às vezes aceita MOVE sem remover — nesse caso forçamos COPY+EXPUNGE.
+ */
+async function moveUidsReliably(
+  client: ImapFlow,
+  uids: number[],
+  destination: string
+): Promise<void> {
+  for (let i = 0; i < uids.length; i += MOVE_CHUNK) {
+    const chunk = uids.slice(i, i + MOVE_CHUNK);
+    const moved = await client.messageMove(chunk, destination, { uid: true });
+    if (!moved) {
+      await copyThenDeleteUids(client, chunk, destination);
+    }
+  }
+
+  const still = await findExistingUids(client, uids);
+  if (still.length === 0) return;
+
+  // MOVE “passou”, mas as mensagens seguem na pasta de origem.
+  await copyThenDeleteUids(client, still, destination);
+  const again = await findExistingUids(client, still);
+  if (again.length > 0) {
+    throw new Error(
+      "O servidor não removeu as mensagens da caixa. Tente novamente ou use o webmail."
+    );
+  }
+}
+
 /**
  * Move uma ou mais mensagens entre pastas na mesma conexão IMAP.
- * Na lixeira (ou sem pasta de lixo), exclui de fato.
+ * Confirma remoção na origem. Na lixeira (ou sem pasta de lixo), exclui de fato.
  */
 export async function moveFolderMessages(
   config: ImapConnectionConfig,
@@ -513,58 +589,58 @@ export async function moveFolderMessages(
     return { folder: fromFolderPath, deleted: false, moved: 0 };
   }
 
-  return withFolderClient(config, fromFolderPath, async (client) => {
-    const runChunks = async (
-      fn: (uidList: string) => Promise<unknown>
-    ) => {
-      for (let i = 0; i < unique.length; i += MOVE_CHUNK) {
-        const chunk = unique.slice(i, i + MOVE_CHUNK);
-        await fn(chunk.join(","));
-      }
-    };
-
+  const client = createClient(config);
+  await client.connect();
+  try {
+    // Resolve destino ANTES de abrir a pasta de origem (LIST sem SELECT).
+    let destPath: string | null = null;
     if (destination === "inbox") {
-      if (fromFolderPath === "INBOX") {
-        return { folder: "INBOX", deleted: false, moved: 0 };
+      destPath = "INBOX";
+    } else {
+      const kind: SpecialFolderKind = destination === "junk" ? "junk" : "trash";
+      destPath = await resolveSpecialFolderPath(client, kind);
+    }
+
+    const lock = await client.getMailboxLock(fromFolderPath);
+    try {
+      const existing = await findExistingUids(client, unique);
+      if (existing.length === 0) {
+        throw new Error("Nenhuma das mensagens selecionadas foi encontrada na pasta.");
       }
-      await runChunks(async (uidList) => {
-        const moved = await client.messageMove(uidList, "INBOX", { uid: true });
-        if (!moved) throw new Error("Não foi possível mover para a Entrada.");
-      });
-      return { folder: "INBOX", deleted: false, moved: unique.length };
-    }
 
-    const kind: SpecialFolderKind = destination === "junk" ? "junk" : "trash";
-    const folder = await resolveSpecialFolderPath(client, kind);
+      if (destination === "inbox") {
+        if (fromFolderPath === "INBOX") {
+          return { folder: "INBOX", deleted: false, moved: 0 };
+        }
+        await moveUidsReliably(client, existing, "INBOX");
+        return { folder: "INBOX", deleted: false, moved: existing.length };
+      }
 
-    if (destination === "trash" && (!folder || folder === fromFolderPath)) {
-      await runChunks(async (uidList) => {
-        const ok = await client.messageDelete(uidList, { uid: true });
-        if (!ok) throw new Error("Não foi possível excluir a mensagem.");
-      });
-      return { folder: folder ?? null, deleted: true, moved: unique.length };
-    }
+      if (destination === "trash" && (!destPath || destPath === fromFolderPath)) {
+        await deleteUidsReliably(client, existing);
+        return { folder: destPath, deleted: true, moved: existing.length };
+      }
 
-    if (!folder) {
-      throw new Error(
-        destination === "junk"
-          ? "Pasta de Spam/Junk não encontrada nesta caixa. Verifique no webmail do HostGator."
-          : "Pasta de Lixeira não encontrada nesta caixa."
-      );
-    }
-
-    await runChunks(async (uidList) => {
-      const moved = await client.messageMove(uidList, folder, { uid: true });
-      if (!moved) {
+      if (!destPath) {
         throw new Error(
           destination === "junk"
-            ? "Não foi possível mover para Spam."
-            : "Não foi possível mover para a Lixeira."
+            ? "Pasta de Spam/Junk não encontrada nesta caixa. Verifique no webmail do HostGator."
+            : "Pasta de Lixeira não encontrada nesta caixa. Verifique no webmail do HostGator."
         );
       }
-    });
-    return { folder, deleted: false, moved: unique.length };
-  });
+
+      await moveUidsReliably(client, existing, destPath);
+      return { folder: destPath, deleted: false, moved: existing.length };
+    } finally {
+      lock.release();
+    }
+  } finally {
+    try {
+      await client.logout();
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export async function moveFolderMessage(
