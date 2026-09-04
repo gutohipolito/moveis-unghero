@@ -139,16 +139,20 @@ export type CreatePaymentReceiptInput = {
   cidade_emissao?: string;
 };
 
+/** Comercial e Financeiro com escrita; cargos ops limitados ficam bloqueados. */
+async function getReceiptWriteAuth() {
+  const auth =
+    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
+  if (!auth) return null;
+  if (isOpsLimitedRole(auth.cargo)) return null;
+  return auth;
+}
+
 export async function createPaymentReceipt(
   input: CreatePaymentReceiptInput
 ): Promise<{ success: true; receipt: PaymentReceiptDTO } | { success: false; error: string }> {
-  // Comercial emite pelo funil; Financeiro também. VIEWER continua bloqueado.
-  const auth =
-    (await getWriteAccess("financeiro")) || (await getWriteAccess("crm"));
+  const auth = await getReceiptWriteAuth();
   if (!auth) return { success: false, error: "Sem permissão para emitir recibo." };
-  if (isOpsLimitedRole(auth.cargo)) {
-    return { success: false, error: "Financeiro não disponível para este cargo." };
-  }
 
   const valor = Number(input.valor);
   if (!Number.isFinite(valor) || valor <= 0) {
@@ -290,6 +294,137 @@ export async function createPaymentReceipt(
   } catch (error) {
     console.error("Erro ao emitir recibo:", error);
     return { success: false, error: "Não foi possível emitir o recibo." };
+  }
+}
+
+export type UpdatePaymentReceiptInput = {
+  receiptId: string;
+  valor: number;
+  parcela_numero?: number | null;
+  parcela_total?: number | null;
+  referente: string;
+  metodo_pagamento?: string;
+  data_recebimento?: string;
+  quitacao?: "TOTAL" | "PARCIAL";
+  projectId?: string | null;
+  observacoes?: string | null;
+  cidade_emissao?: string;
+};
+
+export async function updatePaymentReceipt(
+  input: UpdatePaymentReceiptInput
+): Promise<{ success: true; receipt: PaymentReceiptDTO } | { success: false; error: string }> {
+  const auth = await getReceiptWriteAuth();
+  if (!auth) return { success: false, error: "Sem permissão para editar recibo." };
+
+  const valor = Number(input.valor);
+  if (!Number.isFinite(valor) || valor <= 0) {
+    return { success: false, error: "Informe um valor válido maior que zero." };
+  }
+
+  const referente = (input.referente || "").trim();
+  if (!referente) {
+    return { success: false, error: "Informe o motivo do recebimento (referente a)." };
+  }
+
+  let parcelaNumero = input.parcela_numero ?? null;
+  let parcelaTotal = input.parcela_total ?? null;
+  if (
+    (parcelaNumero !== null || parcelaTotal !== null) &&
+    (!Number.isInteger(parcelaNumero) ||
+      !Number.isInteger(parcelaTotal) ||
+      Number(parcelaNumero) < 1 ||
+      Number(parcelaTotal) < 1 ||
+      Number(parcelaNumero) > Number(parcelaTotal))
+  ) {
+    return {
+      success: false,
+      error: "Informe uma parcela válida (atual menor ou igual ao total).",
+    };
+  }
+
+  try {
+    const existing = await prisma.paymentReceipt.findFirst({
+      where: { id: input.receiptId, company_id: auth.companyId },
+      select: {
+        id: true,
+        client_id: true,
+        project_id: true,
+        installment_id: true,
+      },
+    });
+    if (!existing) return { success: false, error: "Recibo não encontrado." };
+
+    let projectId = existing.project_id;
+    if (!existing.installment_id && input.projectId !== undefined) {
+      const nextProjectId = input.projectId || null;
+      if (nextProjectId) {
+        const project = await prisma.project.findFirst({
+          where: {
+            id: nextProjectId,
+            client_id: existing.client_id,
+            client: { company_id: auth.companyId },
+          },
+          select: { id: true },
+        });
+        if (!project) return { success: false, error: "Projeto não encontrado." };
+      }
+      projectId = nextProjectId;
+    }
+
+    const receipt = await prisma.paymentReceipt.update({
+      where: { id: existing.id },
+      data: {
+        valor,
+        parcela_numero: parcelaNumero,
+        parcela_total: parcelaTotal,
+        referente,
+        metodo_pagamento: parseMethod(input.metodo_pagamento),
+        data_recebimento: parseDateInput(input.data_recebimento),
+        cidade_emissao:
+          (input.cidade_emissao || "Farroupilha").trim() || "Farroupilha",
+        quitacao: parseQuitacao(input.quitacao),
+        project_id: projectId,
+        observacoes: input.observacoes?.trim() || null,
+      },
+    });
+
+    revalidatePath(`/clientes/${existing.client_id}`);
+    if (projectId) revalidatePath(`/projects/${projectId}`);
+    if (existing.project_id && existing.project_id !== projectId) {
+      revalidatePath(`/projects/${existing.project_id}`);
+    }
+    revalidatePath(`/recibos/${receipt.id}/print`);
+
+    return { success: true, receipt: mapReceipt(receipt) };
+  } catch (error) {
+    console.error("Erro ao atualizar recibo:", error);
+    return { success: false, error: "Não foi possível atualizar o recibo." };
+  }
+}
+
+export async function deletePaymentReceipt(
+  receiptId: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  const auth = await getReceiptWriteAuth();
+  if (!auth) return { success: false, error: "Sem permissão para excluir recibo." };
+
+  try {
+    const existing = await prisma.paymentReceipt.findFirst({
+      where: { id: receiptId, company_id: auth.companyId },
+      select: { id: true, client_id: true, project_id: true },
+    });
+    if (!existing) return { success: false, error: "Recibo não encontrado." };
+
+    await prisma.paymentReceipt.delete({ where: { id: existing.id } });
+
+    revalidatePath(`/clientes/${existing.client_id}`);
+    if (existing.project_id) revalidatePath(`/projects/${existing.project_id}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao excluir recibo:", error);
+    return { success: false, error: "Não foi possível excluir o recibo." };
   }
 }
 
@@ -535,9 +670,9 @@ export async function listClientPaymentReceipts(
   | { success: true; receipts: PaymentReceiptDTO[] }
   | { success: false; receipts: []; error: string }
 > {
-  const auth = await getWriteAccess("financeiro");
+  const auth = await getReceiptWriteAuth();
   if (!auth) {
-    return { success: false, receipts: [], error: "Não autenticado." };
+    return { success: false, receipts: [], error: "Sem permissão para listar recibos." };
   }
 
   try {

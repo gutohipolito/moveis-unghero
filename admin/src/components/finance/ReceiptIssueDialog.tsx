@@ -8,6 +8,8 @@ import { Loader2, Receipt } from "lucide-react";
 import {
   createPaymentReceipt,
   suggestPaymentReceiptReferente,
+  updatePaymentReceipt,
+  type PaymentReceiptDTO,
 } from "@/app/actions/receipts";
 import { suggestReferenteFromInstallment } from "@/lib/receiptShare";
 import {
@@ -16,6 +18,7 @@ import {
 } from "@/lib/paymentMethods";
 import { toISODateBR } from "@/lib/brazilDate";
 import { currencyToExtenso, formatCurrencyBRL } from "@/lib/currencyExtenso";
+import { formatReceiptCodigo } from "@/lib/receiptCodigo";
 
 export type ReceiptIssuePrefill = {
   installmentId?: string;
@@ -29,6 +32,7 @@ export type ReceiptIssuePrefill = {
   numero_parcela?: number | null;
   total_parcelas?: number | null;
   descricao?: string | null;
+  observacoes?: string | null;
 };
 
 type ProjectOption = { id: string; label: string };
@@ -40,7 +44,10 @@ interface ReceiptIssueDialogProps {
   clientName: string;
   projects?: ProjectOption[];
   prefill?: ReceiptIssuePrefill | null;
+  /** Quando informado, o diálogo edita o recibo existente em vez de emitir um novo. */
+  editReceipt?: PaymentReceiptDTO | null;
   onIssued?: (receiptId: string) => void;
+  onUpdated?: (receiptId: string) => void;
 }
 
 function parseMoneyInput(raw: string): number {
@@ -60,8 +67,11 @@ export default function ReceiptIssueDialog({
   clientName,
   projects = [],
   prefill,
+  editReceipt = null,
   onIssued,
+  onUpdated,
 }: ReceiptIssueDialogProps) {
+  const isEdit = Boolean(editReceipt);
   const [valorText, setValorText] = useState("");
   const [referente, setReferente] = useState("");
   const [metodo, setMetodo] = useState<PaymentMethod>("PIX");
@@ -80,6 +90,37 @@ export default function ReceiptIssueDialog({
     let cancelled = false;
 
     const load = async () => {
+      if (editReceipt) {
+        if (cancelled) return;
+        setValorText(
+          editReceipt.valor.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        );
+        setReferente(editReceipt.referente);
+        setMetodo(
+          PAYMENT_METHOD_OPTIONS.some((m) => m.value === editReceipt.metodo_pagamento)
+            ? editReceipt.metodo_pagamento
+            : "PIX"
+        );
+        setDataRecebimento(toISODateBR(editReceipt.data_recebimento));
+        setQuitacao(editReceipt.quitacao === "TOTAL" ? "TOTAL" : "PARCIAL");
+        const hasParcel =
+          Boolean(editReceipt.parcela_numero) && Boolean(editReceipt.parcela_total);
+        setParcelado(hasParcel);
+        setParcelaNumero(
+          editReceipt.parcela_numero ? String(editReceipt.parcela_numero) : ""
+        );
+        setParcelaTotal(
+          editReceipt.parcela_total ? String(editReceipt.parcela_total) : ""
+        );
+        setProjectId(editReceipt.project_id || "");
+        setObservacoes(editReceipt.observacoes || "");
+        setError(null);
+        return;
+      }
+
       const projectForSuggest = prefill?.projectId || "";
       let suggested =
         prefill?.referente ||
@@ -130,7 +171,7 @@ export default function ReceiptIssueDialog({
         prefill?.total_parcelas ? String(prefill.total_parcelas) : ""
       );
       setProjectId(prefill?.projectId || "");
-      setObservacoes("");
+      setObservacoes(prefill?.observacoes || "");
       setError(null);
     };
 
@@ -138,13 +179,17 @@ export default function ReceiptIssueDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, prefill]);
+  }, [open, prefill, editReceipt]);
 
   const valor = useMemo(() => parseMoneyInput(valorText), [valorText]);
   const valorPreview =
     Number.isFinite(valor) && valor > 0
       ? `${formatCurrencyBRL(valor)} — ${currencyToExtenso(valor)}`
       : null;
+
+  const linkedToInstallment = Boolean(
+    editReceipt?.installment_id || prefill?.installmentId
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -172,6 +217,32 @@ export default function ReceiptIssueDialog({
     }
 
     setSaving(true);
+
+    if (editReceipt) {
+      const res = await updatePaymentReceipt({
+        receiptId: editReceipt.id,
+        valor,
+        parcela_numero: parcelaAtual,
+        parcela_total: totalParcelas,
+        referente: referente.trim(),
+        metodo_pagamento: metodo,
+        data_recebimento: dataRecebimento,
+        quitacao,
+        projectId: linkedToInstallment ? undefined : projectId || null,
+        observacoes: observacoes.trim() || null,
+      });
+      setSaving(false);
+
+      if (!res.success) {
+        setError(res.error);
+        return;
+      }
+
+      onClose();
+      onUpdated?.(res.receipt.id);
+      return;
+    }
+
     const res = await createPaymentReceipt({
       clientId,
       valor,
@@ -201,18 +272,32 @@ export default function ReceiptIssueDialog({
     window.open(`/recibos/${res.receipt.id}/print`, "_blank", "noopener,noreferrer");
   }
 
+  const editCodigo = editReceipt
+    ? formatReceiptCodigo(editReceipt.numero, editReceipt.data_recebimento)
+    : null;
+
   return (
     <Dialog isOpen={open} onClose={onClose} className="max-w-lg">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div className="space-y-1">
           <h2 className="text-lg font-black text-foreground flex items-center gap-2">
             <Receipt className="h-5 w-5 text-amber-600" />
-            Emitir recibo
+            {isEdit ? "Editar recibo" : "Emitir recibo"}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Recebedor: <strong>Móveis Unghero LTDA</strong> (PJ). Pagador:{" "}
-            <strong>{clientName}</strong>. Se houver CPF/CNPJ no cadastro, entra no recibo;
-            sem documento também é possível emitir.
+            {isEdit && editCodigo ? (
+              <>
+                Recibo <strong>{editCodigo}</strong>. Recebedor:{" "}
+                <strong>Móveis Unghero LTDA</strong> (PJ). Pagador:{" "}
+                <strong>{clientName}</strong>.
+              </>
+            ) : (
+              <>
+                Recebedor: <strong>Móveis Unghero LTDA</strong> (PJ). Pagador:{" "}
+                <strong>{clientName}</strong>. Se houver CPF/CNPJ no cadastro, entra no recibo;
+                sem documento também é possível emitir.
+              </>
+            )}
           </p>
         </div>
 
@@ -342,7 +427,7 @@ export default function ReceiptIssueDialog({
               <option value="TOTAL">Total</option>
             </select>
           </div>
-          {!prefill?.installmentId && projects.length > 0 ? (
+          {!linkedToInstallment && projects.length > 0 ? (
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Projeto (opcional)
@@ -352,7 +437,7 @@ export default function ReceiptIssueDialog({
                 onChange={(e) => {
                   const nextId = e.target.value;
                   setProjectId(nextId);
-                  if (!nextId) return;
+                  if (!nextId || isEdit) return;
                   void suggestPaymentReceiptReferente({
                     projectId: nextId,
                     tipo: parcelado ? "PARCELA" : prefill?.tipo || "PARCELA",
@@ -409,7 +494,7 @@ export default function ReceiptIssueDialog({
           </Button>
           <Button type="submit" className="btn-metallic gap-1.5" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
-            Gerar recibo
+            {isEdit ? "Salvar alterações" : "Gerar recibo"}
           </Button>
         </div>
       </form>

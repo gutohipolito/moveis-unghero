@@ -14,6 +14,7 @@ import ReceiptIssueDialog, {
   type ReceiptIssuePrefill,
 } from "@/components/finance/ReceiptIssueDialog";
 import {
+  deletePaymentReceipt,
   listClientPaymentReceipts,
   type PaymentReceiptDTO,
 } from "@/app/actions/receipts";
@@ -27,8 +28,10 @@ import {
   ExternalLink,
   FileText,
   Loader2,
+  Pencil,
   Plus,
   Receipt,
+  Trash2,
 } from "lucide-react";
 import { ActionDialogHost, useActionDialog } from "@/components/ActionDialogHost";
 
@@ -55,6 +58,7 @@ export default function ClienteFinanceTab({
   const [payingId, setPayingId] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptPrefill, setReceiptPrefill] = useState<ReceiptIssuePrefill | null>(null);
+  const [editingReceipt, setEditingReceipt] = useState<PaymentReceiptDTO | null>(null);
   const [receipts, setReceipts] = useState<PaymentReceiptDTO[]>([]);
   const [loadingReceipts, setLoadingReceipts] = useState(true);
 
@@ -104,6 +108,7 @@ export default function ClienteFinanceTab({
   }
 
   function openAvulsoReceipt() {
+    setEditingReceipt(null);
     setReceiptPrefill({
       referente: "Pagamento referente a móveis sob medida",
       quitacao: "PARCIAL",
@@ -112,6 +117,7 @@ export default function ClienteFinanceTab({
   }
 
   function openInstallmentReceipt(pay: Payment) {
+    setEditingReceipt(null);
     setReceiptPrefill({
       installmentId: pay.id,
       projectId: pay.projectId,
@@ -125,6 +131,29 @@ export default function ClienteFinanceTab({
       quitacao: "PARCIAL",
     });
     setReceiptOpen(true);
+  }
+
+  function openEditReceipt(receipt: PaymentReceiptDTO) {
+    setReceiptPrefill(null);
+    setEditingReceipt(receipt);
+    setReceiptOpen(true);
+  }
+
+  function handleDeleteReceipt(receipt: PaymentReceiptDTO) {
+    const codigo = formatReceiptCodigo(receipt.numero, receipt.data_recebimento);
+    confirmAction({
+      title: "Excluir este recibo?",
+      message: `O recibo ${codigo} será removido permanentemente. Links compartilhados deixam de funcionar. Isso não altera o status de parcelas.`,
+      confirmLabel: "Sim, excluir",
+      onConfirm: async () => {
+        const res = await deletePaymentReceipt(receipt.id);
+        if (!res.success) {
+          showError("Não foi possível excluir", res.error || "Tente novamente.");
+          return;
+        }
+        await refreshReceipts();
+      },
+    });
   }
 
   const canAdd = projects.length > 0;
@@ -358,22 +387,40 @@ export default function ClienteFinanceTab({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
                     <strong className="text-sm font-black text-foreground privacy-value">
                       {receipt.valor.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       })}
                     </strong>
-                    <Link
-                      href={`/recibos/${receipt.id}/print`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 text-[10px] font-bold text-foreground hover:bg-slate-50"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Abrir
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEditReceipt(receipt)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 text-[10px] font-bold text-foreground hover:bg-slate-50"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteReceipt(receipt)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rose-200 bg-white px-2.5 text-[10px] font-bold text-rose-700 hover:bg-rose-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Excluir
+                      </button>
+                      <Link
+                        href={`/recibos/${receipt.id}/print`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 text-[10px] font-bold text-foreground hover:bg-slate-50"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Abrir
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -391,12 +438,18 @@ export default function ClienteFinanceTab({
 
       <ReceiptIssueDialog
         open={receiptOpen}
-        onClose={() => setReceiptOpen(false)}
+        onClose={() => {
+          setReceiptOpen(false);
+          setEditingReceipt(null);
+          setReceiptPrefill(null);
+        }}
         clientId={clientId}
         clientName={clientName}
         projects={projectOptions}
         prefill={receiptPrefill}
+        editReceipt={editingReceipt}
         onIssued={() => void refreshReceipts()}
+        onUpdated={() => void refreshReceipts()}
       />
 
       <ActionDialogHost dialog={dialog} />
