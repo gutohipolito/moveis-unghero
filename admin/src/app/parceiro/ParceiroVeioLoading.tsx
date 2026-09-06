@@ -14,44 +14,41 @@ export default function ParceiroVeioLoading({
       <div className="parceiro-veio-loader-atmosphere" aria-hidden>
         <span className="parceiro-veio-loader-glow is-copper" />
         <span className="parceiro-veio-loader-glow is-wood" />
-      </div>
-
-      <div className="parceiro-veio-loader-stage">
         <svg
           className="parceiro-veio-loader-vein"
-          viewBox="0 0 280 96"
+          viewBox="0 0 1200 220"
+          preserveAspectRatio="xMidYMid meet"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
         >
           <path
             className="parceiro-veio-loader-path is-soft"
-            d="M8 58 C 42 28, 68 76, 108 46 S 168 18, 198 52 S 248 78, 272 40"
-            strokeWidth="1.25"
+            d="M-20 130 C 120 60, 220 180, 380 100 S 620 40, 760 120 S 980 190, 1220 90"
+            strokeWidth="1.4"
           />
           <path
             className="parceiro-veio-loader-path is-main"
-            d="M4 50 C 48 18, 76 70, 118 42 S 176 14, 212 48 S 252 72, 276 36"
-            strokeWidth="2"
+            d="M-40 110 C 140 40, 260 170, 420 95 S 660 30, 820 115 S 1020 180, 1240 80"
+            strokeWidth="2.4"
           />
           <path
             className="parceiro-veio-loader-path is-accent"
-            d="M16 66 C 56 44, 84 82, 126 56 S 184 30, 222 60 S 256 84, 274 54"
-            strokeWidth="1.1"
+            d="M0 150 C 160 90, 280 195, 440 125 S 700 55, 860 140 S 1060 200, 1220 120"
+            strokeWidth="1.2"
           />
-          <circle className="parceiro-veio-loader-node" cx="118" cy="42" r="3.2" />
-          <circle className="parceiro-veio-loader-node is-late" cx="212" cy="48" r="2.6" />
+          <circle className="parceiro-veio-loader-node" cx="420" cy="95" r="4.5" />
+          <circle className="parceiro-veio-loader-node is-late" cx="820" cy="115" r="3.5" />
         </svg>
-
-        <p className="parceiro-veio-loader-label">
-          {label}
-          <span className="parceiro-veio-loader-dots" aria-hidden>
-            <span />
-            <span />
-            <span />
-          </span>
-        </p>
       </div>
+
+      <p className="parceiro-veio-loader-label">
+        {label}
+        <span className="parceiro-veio-loader-dots" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </span>
+      </p>
     </div>
   );
 }

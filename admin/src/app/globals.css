@@ -2383,7 +2383,8 @@ button.partner-card:hover,
   justify-content: center;
   min-height: 100dvh;
   width: 100%;
-  padding: 2rem 1.25rem;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   background: #070809;
   color: var(--partner-bone, #f2eee5);
@@ -2393,91 +2394,82 @@ button.partner-card:hover,
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background:
-    radial-gradient(ellipse 70% 50% at 50% 42%, rgba(240, 120, 60, 0.12), transparent 62%),
-    radial-gradient(ellipse 55% 40% at 30% 70%, rgba(90, 60, 36, 0.22), transparent 70%),
+    radial-gradient(ellipse 80% 55% at 50% 48%, rgba(240, 120, 60, 0.1), transparent 68%),
+    radial-gradient(ellipse 60% 45% at 28% 72%, rgba(90, 60, 36, 0.2), transparent 72%),
     linear-gradient(180deg, #0a0b0c 0%, #070809 100%);
-  backdrop-filter: blur(28px) saturate(1.05);
-  -webkit-backdrop-filter: blur(28px) saturate(1.05);
 }
 .parceiro-veio-loader-glow {
   position: absolute;
   border-radius: 999px;
-  filter: blur(48px);
+  filter: blur(56px);
   opacity: 0.55;
 }
 .parceiro-veio-loader-glow.is-copper {
-  width: min(42vw, 18rem);
-  height: min(42vw, 18rem);
+  width: min(55vw, 26rem);
+  height: min(55vw, 26rem);
   left: 50%;
-  top: 38%;
+  top: 46%;
   transform: translate(-50%, -50%);
-  background: rgba(240, 120, 60, 0.28);
+  background: rgba(240, 120, 60, 0.26);
   animation: parceiro-veio-loader-breathe 3.6s ease-in-out infinite;
 }
 .parceiro-veio-loader-glow.is-wood {
-  width: min(50vw, 22rem);
-  height: min(34vw, 14rem);
-  left: 46%;
+  width: min(70vw, 34rem);
+  height: min(42vw, 18rem);
+  left: 48%;
   top: 58%;
   transform: translate(-50%, -50%);
-  background: rgba(120, 78, 42, 0.22);
+  background: rgba(120, 78, 42, 0.2);
   animation: parceiro-veio-loader-breathe 4.4s ease-in-out infinite reverse;
 }
-.parceiro-veio-loader-stage {
+.parceiro-veio-loader-vein {
   position: relative;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.15rem;
-  width: min(100%, 22rem);
-  padding: 1.75rem 1.5rem 1.5rem;
-  border-radius: 1.25rem;
-  border: 1px solid rgba(242, 238, 229, 0.1);
-  background: rgba(12, 14, 16, 0.55);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 24px 60px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(18px) saturate(1.1);
-  -webkit-backdrop-filter: blur(18px) saturate(1.1);
-}
-.parceiro-veio-loader-vein {
-  width: min(100%, 17.5rem);
-  height: auto;
+  width: 100%;
+  max-width: none;
+  height: clamp(7rem, 22vw, 13rem);
   overflow: visible;
 }
 .parceiro-veio-loader-path {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 280;
-  stroke-dashoffset: 280;
-  animation: parceiro-veio-loader-draw 2.4s ease-in-out infinite;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: parceiro-veio-loader-draw 2.8s ease-in-out infinite;
 }
 .parceiro-veio-loader-path.is-soft {
-  stroke: rgba(242, 238, 229, 0.18);
+  stroke: rgba(242, 238, 229, 0.16);
   animation-delay: 0.12s;
 }
 .parceiro-veio-loader-path.is-main {
   stroke: #f0783c;
-  animation-duration: 2.2s;
+  animation-duration: 2.5s;
 }
 .parceiro-veio-loader-path.is-accent {
-  stroke: rgba(168, 216, 141, 0.55);
+  stroke: rgba(168, 216, 141, 0.5);
   animation-delay: 0.28s;
-  animation-duration: 2.7s;
+  animation-duration: 3.1s;
 }
 .parceiro-veio-loader-node {
   fill: #f0783c;
   opacity: 0;
-  animation: parceiro-veio-loader-node 2.2s ease-in-out infinite;
+  animation: parceiro-veio-loader-node 2.5s ease-in-out infinite;
 }
 .parceiro-veio-loader-node.is-late {
   fill: #a8d88d;
   animation-delay: 0.35s;
 }
 .parceiro-veio-loader-label {
+  position: absolute;
+  z-index: 1;
+  top: calc(50% + clamp(3.25rem, 9vw, 5.5rem));
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
   display: inline-flex;
   align-items: center;
@@ -2487,6 +2479,7 @@ button.partner-card:hover,
   font-weight: 600;
   letter-spacing: -0.01em;
   color: rgba(242, 238, 229, 0.88);
+  white-space: nowrap;
 }
 .parceiro-veio-loader-dots {
   display: inline-flex;
@@ -2504,10 +2497,10 @@ button.partner-card:hover,
 .parceiro-veio-loader-dots span:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes parceiro-veio-loader-draw {
-  0% { stroke-dashoffset: 280; opacity: 0.35; }
+  0% { stroke-dashoffset: 1400; opacity: 0.35; }
   45% { stroke-dashoffset: 0; opacity: 1; }
   70% { stroke-dashoffset: 0; opacity: 1; }
-  100% { stroke-dashoffset: -280; opacity: 0.25; }
+  100% { stroke-dashoffset: -1400; opacity: 0.25; }
 }
 @keyframes parceiro-veio-loader-node {
   0%, 20% { opacity: 0; transform: scale(0.6); }
