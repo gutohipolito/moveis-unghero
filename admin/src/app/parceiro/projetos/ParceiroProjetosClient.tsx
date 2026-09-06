@@ -11,6 +11,7 @@ import {
   formatPartnerProjectEnvironmentsLine,
   matchesPartnerProjectFilter,
   PARTNER_PROJECT_STEPS,
+  partnerProjectNextMilestone,
   partnerProjectStageLabel,
   partnerProjectStepIndex,
   partnerProjectsHref,
@@ -30,6 +31,10 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
   const isLost = project.status_geral === "PERDIDO";
   const stageLabel = partnerProjectStageLabel(project.status_geral);
   const environmentsLine = formatPartnerProjectEnvironmentsLine(project.environments);
+  const nextMilestone = partnerProjectNextMilestone({
+    statusGeral: project.status_geral,
+    dataEntregaPrevista: project.data_entrega_prevista,
+  });
 
   return (
     <Link
@@ -78,16 +83,21 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
         </div>
 
         {!isLost ? (
-          <div className="flex gap-1" aria-hidden>
-            {PARTNER_PROJECT_STEPS.map((step, idx) => (
-              <div
-                key={step.id}
-                title={step.label}
-                className={`parceiro-project-step ${
-                  idx <= current ? "parceiro-project-step-done" : ""
-                }`}
-              />
-            ))}
+          <div className="space-y-2">
+            <div className="flex gap-1" aria-hidden>
+              {PARTNER_PROJECT_STEPS.map((step, idx) => (
+                <div
+                  key={step.id}
+                  title={step.label}
+                  className={`parceiro-project-step ${
+                    idx <= current ? "parceiro-project-step-done" : ""
+                  }`}
+                />
+              ))}
+            </div>
+            {nextMilestone ? (
+              <p className="text-[11px] font-medium text-white/45">{nextMilestone}</p>
+            ) : null}
           </div>
         ) : null}
       </div>

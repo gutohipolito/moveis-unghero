@@ -24,6 +24,7 @@ import {
   formatPartnerProjectEnvironmentsLine,
   PARTNER_PROJECT_STEPS,
   partnerEnvironmentStatusLabel,
+  partnerProjectNextMilestone,
   partnerProjectStageLabel,
   partnerProjectStepIndex,
 } from "@/lib/partnerProjectLabels";
@@ -87,6 +88,10 @@ export default function ParceiroProjetoDetailView({
   const valueVisible = partnerProjectValueVisible(initial.status_geral);
   const stageLabel = partnerProjectStageLabel(initial.status_geral);
   const environmentsLine = formatPartnerProjectEnvironmentsLine(initial.environments);
+  const nextMilestone = partnerProjectNextMilestone({
+    statusGeral: initial.status_geral,
+    dataEntregaPrevista: initial.data_entrega_prevista,
+  });
 
   const tabs: { id: TabId; label: string; icon: React.ElementType; count?: number }[] = [
     { id: "resumo", label: "Resumo", icon: Layers },
@@ -247,30 +252,58 @@ export default function ParceiroProjetoDetailView({
           {isLost ? (
             <p className="text-sm font-medium text-rose-700">Projeto perdido</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-[11px] font-bold text-stone-700">
                   {stageLabel}
                 </span>
-                {initial.data_entrega_prevista ? (
-                  <span className="text-[11px] text-stone-500">
-                    Entrega {dateFmt.format(new Date(initial.data_entrega_prevista))}
+                {nextMilestone ? (
+                  <span className="text-[11px] font-medium text-stone-600 text-right">
+                    {nextMilestone}
                   </span>
                 ) : null}
               </div>
-              <div className="flex gap-1 max-w-md" aria-hidden>
-                {PARTNER_PROJECT_STEPS.map((step, idx) => (
-                  <div
-                    key={step.id}
-                    title={step.label}
-                    className={`h-1 flex-1 rounded-full ${
-                      idx <= current
-                        ? "bg-[linear-gradient(90deg,hsl(0_0%_78%),hsl(210_8%_58%))]"
-                        : "bg-stone-200"
-                    }`}
-                  />
-                ))}
-              </div>
+              <ol className="grid grid-cols-4 sm:grid-cols-8 gap-1.5" aria-label="Etapas do projeto">
+                {PARTNER_PROJECT_STEPS.map((step, idx) => {
+                  const done = idx <= current;
+                  const currentStep = idx === current;
+                  return (
+                    <li
+                      key={step.id}
+                      className={cn(
+                        "rounded-lg border px-1.5 py-1.5 text-center",
+                        currentStep
+                          ? "border-stone-400 bg-stone-100"
+                          : done
+                            ? "border-stone-200 bg-stone-50"
+                            : "border-stone-100 bg-white"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "block h-1 rounded-full mb-1.5",
+                          done
+                            ? "bg-[linear-gradient(90deg,hsl(0_0%_78%),hsl(210_8%_58%))]"
+                            : "bg-stone-200"
+                        )}
+                        aria-hidden
+                      />
+                      <span
+                        className={cn(
+                          "block text-[9px] font-bold leading-tight",
+                          currentStep
+                            ? "text-stone-900"
+                            : done
+                              ? "text-stone-600"
+                              : "text-stone-400"
+                        )}
+                      >
+                        {step.label}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           )}
 

@@ -36,6 +36,11 @@ export interface PartnerPortalProject {
   valor_previsto: number;
   status_geral: ProjectStatus;
   updatedAt: string;
+  data_entrega_prevista: string | null;
+  /** Há orçamento com PDF público disponível. */
+  hasQuotePdf: boolean;
+  /** Data do arquivo mais recente no projeto (parceiro ou equipe). */
+  latestFileAt: string | null;
   client: {
     id: string;
     nome: string;
@@ -194,6 +199,7 @@ export async function loadPartnerPortalData(
         valor_previsto: true,
         status_geral: true,
         updatedAt: true,
+        data_entrega_prevista: true,
         client: {
           select: {
             id: true,
@@ -209,6 +215,19 @@ export async function loadPartnerPortalData(
             tipo: true,
             status: true,
           },
+        },
+        quotes: {
+          orderBy: { versao: "desc" },
+          take: 5,
+          select: {
+            pdf_share_code: true,
+            pdf_share_url: true,
+          },
+        },
+        partnerFiles: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { createdAt: true },
         },
       },
     }),
@@ -241,11 +260,17 @@ export async function loadPartnerPortalData(
     hasCommissions: commissionCount > 0,
     projects: projects.map((project) => {
       const visible = partnerProjectValueVisible(project.status_geral);
+      const hasQuotePdf = project.quotes.some(
+        (q) => Boolean(q.pdf_share_code) || Boolean(q.pdf_share_url)
+      );
       return {
         id: project.id,
         valor_previsto: visible ? Number(project.valor_previsto) : 0,
         status_geral: project.status_geral,
         updatedAt: project.updatedAt.toISOString(),
+        data_entrega_prevista: project.data_entrega_prevista?.toISOString() ?? null,
+        hasQuotePdf,
+        latestFileAt: project.partnerFiles[0]?.createdAt.toISOString() ?? null,
         client: {
           id: project.client.id,
           nome: project.client.nome,

@@ -1,31 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  AlertCircle,
   ChevronRight,
+  FileText,
   FolderKanban,
   IdCard,
   Megaphone,
   Package,
+  Paperclip,
   Users,
   Wallet,
 } from "lucide-react";
-import type { PartnerPortalData, PartnerPortalProject } from "@/lib/partnerPortal";
+import type { PartnerPortalData } from "@/lib/partnerPortal";
 import {
+  buildPartnerProjectAttention,
   formatPartnerProjectEnvironmentsLine,
+  partnerProjectIsActive,
   partnerProjectStageLabel,
   partnerProjectsHref,
+  type PartnerProjectAttentionKind,
 } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell, { useParceiroShellUi } from "@/app/parceiro/ParceiroPortalShell";
 
 interface ParceiroPainelClientProps {
   partner: PartnerPortalData;
   isAdminPreview?: boolean;
-}
-
-function isActiveProject(p: PartnerPortalProject) {
-  return p.status_geral !== "FINALIZADO" && p.status_geral !== "PERDIDO";
 }
 
 function HomeTile({
@@ -90,6 +92,12 @@ function HomeStat({
   );
 }
 
+function attentionIcon(kind: PartnerProjectAttentionKind) {
+  if (kind === "quote_ready") return FileText;
+  if (kind === "new_file") return Paperclip;
+  return AlertCircle;
+}
+
 function PainelHome({
   partner,
   activeCount,
@@ -103,6 +111,11 @@ function PainelHome({
   const recent = [...partner.projects]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 3);
+
+  const attention = useMemo(
+    () => buildPartnerProjectAttention(partner.projects),
+    [partner.projects]
+  );
 
   return (
     <div className="space-y-6">
@@ -123,6 +136,40 @@ function PainelHome({
           label="No total"
         />
       </div>
+
+      {attention.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="parceiro-home-section-title text-sm font-semibold text-white tracking-tight px-0.5">
+            Para acompanhar
+          </h2>
+          <ul className="space-y-2">
+            {attention.map((item) => {
+              const Icon = attentionIcon(item.kind);
+              return (
+                <li key={`${item.kind}-${item.projectId}`}>
+                  <Link
+                    href={`/parceiro/projetos/${item.projectId}`}
+                    className="parceiro-home-recent no-underline"
+                  >
+                    <span className="parceiro-home-bullet-icon shrink-0">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-white truncate">
+                        {item.clientNome}
+                      </span>
+                      <span className="block text-[11px] text-white/45 mt-0.5 truncate">
+                        {item.label}
+                      </span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-white/35 shrink-0" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="parceiro-home-tiles">
         <HomeTile
@@ -224,7 +271,9 @@ export default function ParceiroPainelClient({
 }: ParceiroPainelClientProps) {
   const [partner, setPartner] = useState(initialPartner);
 
-  const activeCount = partner.projects.filter(isActiveProject).length;
+  const activeCount = partner.projects.filter((p) =>
+    partnerProjectIsActive(p.status_geral)
+  ).length;
   const doneCount = partner.projects.filter((p) => p.status_geral === "FINALIZADO").length;
 
   return (
