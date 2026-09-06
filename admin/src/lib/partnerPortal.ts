@@ -76,8 +76,12 @@ export interface PartnerPortalData {
    * do orçamento — o vínculo CRM/comissão permanece no back-end.
    */
   showOnQuote: boolean;
-  /** Só mostra a aba Comissões quando há ao menos um lançamento. */
+  /** Há lançamento interno de comissão (pode existir sem recibo). */
   hasCommissions: boolean;
+  /** Há recibo emitido — controla navegação e rota financeira no portal. */
+  hasIssuedReceipt: boolean;
+  /** Quantidade de recibos emitidos (sem valores). */
+  issuedReceiptCount: number;
   projects: PartnerPortalProject[];
 }
 
@@ -193,7 +197,7 @@ export async function loadPartnerPortalData(
 
   await backfillProjectPartnerFromClients(partnerId);
 
-  const [projects, commissionCount] = await Promise.all([
+  const [projects, commissionCount, issuedReceiptCount] = await Promise.all([
     prisma.project.findMany({
       where: partnerOwnedProjectsWhere(partnerId),
       orderBy: { updatedAt: "desc" },
@@ -240,6 +244,15 @@ export async function loadPartnerPortalData(
         company_id: partner.company_id,
       },
     }),
+    prisma.partnerCommissionReceipt.count({
+      where: {
+        company_id: partner.company_id,
+        commission: {
+          partner_id: partnerId,
+          company_id: partner.company_id,
+        },
+      },
+    }),
   ]);
 
   return {
@@ -261,6 +274,8 @@ export async function loadPartnerPortalData(
     portfolioUrl: partner.portfolioUrl,
     showOnQuote: partner.quote_card_mode !== "HIDDEN",
     hasCommissions: commissionCount > 0,
+    hasIssuedReceipt: issuedReceiptCount > 0,
+    issuedReceiptCount,
     projects: projects.map((project) => {
       const visible = partnerProjectValueVisible(project.status_geral);
       const sharedQuotes = project.quotes.filter(
@@ -830,7 +845,7 @@ function roundMoney(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-/** Comissões do parceiro logado — somente leitura, sem observações internas. */
+/** Comissões do parceiro logado — somente leitura, com recibo emitido. */
 export async function loadPartnerCommissions(
   partnerId: string
 ): Promise<PartnerPortalCommissionsBundle> {
@@ -846,6 +861,7 @@ export async function loadPartnerCommissions(
     where: {
       partner_id: partner.id,
       company_id: partner.company_id,
+      receipts: { some: {} },
     },
     orderBy: [{ createdAt: "desc" }],
     select: {

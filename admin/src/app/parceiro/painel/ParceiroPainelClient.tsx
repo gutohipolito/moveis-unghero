@@ -220,6 +220,21 @@ export default function ParceiroPainelClient({
               </div>
             </section>
 
+            {partner.hasIssuedReceipt ? (
+              <Link
+                href="/parceiro/comissoes"
+                className="parceiro-veio-receipt-notice"
+              >
+                <FileText className="h-4 w-4 shrink-0" aria-hidden />
+                <span>
+                  {partner.issuedReceiptCount === 1
+                    ? "1 recibo disponível"
+                    : `${partner.issuedReceiptCount} recibos disponíveis`}
+                </span>
+                <ChevronRight className="h-4 w-4 ml-auto opacity-60" aria-hidden />
+              </Link>
+            ) : null}
+
             <section className="parceiro-veio-panel" aria-label="Projetos acompanhados">
               <div className="parceiro-veio-panel-head">
                 <h2 className="parceiro-veio-panel-title">Projetos acompanhados</h2>

@@ -95,10 +95,10 @@ export default function ParceiroComissoesClient({
       <div className="space-y-5">
         <div>
           <p className="parceiro-page-kicker">Financeiro</p>
-          <h1 className="parceiro-page-title">Comissões</h1>
+          <h1 className="parceiro-page-title">Comissões e recibos</h1>
           <p className="parceiro-page-desc">
-            Acompanhe valores lançados pela Móveis Unghero. Somente leitura —
-            pagamentos e comprovantes são emitidos pela equipe.
+            Consulte recibos emitidos pela Móveis Unghero. Valores e comprovantes
+            aparecem somente após a emissão do recibo — em modo leitura.
           </p>
         </div>
 
@@ -154,11 +154,11 @@ export default function ParceiroComissoesClient({
             <div className="partner-card-accent" />
             <Wallet className="h-8 w-8 mx-auto text-slate-400" />
             <p className="text-sm font-semibold text-slate-900">
-              Nenhuma comissão neste filtro
+              Nenhum recibo neste filtro
             </p>
             <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-              Quando a equipe lançar uma comissão vinculada a um projeto seu, ela
-              aparece aqui.
+              Quando a Móveis Unghero emitir um recibo de comissão, ele aparece aqui
+              para consulta.
             </p>
           </div>
         ) : (

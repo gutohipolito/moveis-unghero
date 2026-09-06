@@ -39,7 +39,7 @@ const NAV = [
   { href: "/parceiro/clientes", label: "Clientes", icon: Users },
   { href: "/parceiro/produtos", label: "Produtos", icon: Package },
   { href: "/parceiro/marketing", label: "Indicar cliente", icon: Megaphone },
-  { href: "/parceiro/comissoes", label: "Comissões", icon: Wallet },
+  { href: "/parceiro/comissoes", label: "Comissões e recibos", icon: Wallet },
 ] as const;
 
 const SIDEBAR_STORAGE = "parceiro-sidebar-collapsed";
@@ -62,7 +62,7 @@ function getInitials(name: string) {
 
 function navItemsFor(partner: PartnerPortalData) {
   return NAV.filter(
-    (item) => item.href !== "/parceiro/comissoes" || partner.hasCommissions
+    (item) => item.href !== "/parceiro/comissoes" || partner.hasIssuedReceipt
   );
 }
 

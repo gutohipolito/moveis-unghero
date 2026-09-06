@@ -10,8 +10,8 @@ import ParceiroComissoesClient from "./ParceiroComissoesClient";
 import { PUBLIC_PAGE_COPY, publicPageMetadata } from "@/lib/publicPageMetadata";
 
 export const metadata = publicPageMetadata({
-  title: `Comissões | ${PUBLIC_PAGE_COPY.portalParceiro.title}`,
-  description: "Acompanhe suas comissões e comprovantes na Móveis Unghero.",
+  title: `Comissões e recibos | ${PUBLIC_PAGE_COPY.portalParceiro.title}`,
+  description: "Consulte recibos e comissões emitidos pela Móveis Unghero.",
 });
 
 export default async function ParceiroComissoesPage() {
@@ -37,7 +37,7 @@ export default async function ParceiroComissoesPage() {
   const bundle = await loadPartnerCommissions(partner.id);
   const isAdminPreview = await isPartnerAdminPreview();
 
-  if (!partner.hasCommissions) {
+  if (!partner.hasIssuedReceipt) {
     redirect("/parceiro/painel");
   }
 

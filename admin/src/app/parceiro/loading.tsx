@@ -1,5 +1,5 @@
-import PageLoadingState from "@/components/PageLoadingState";
+import ParceiroVeioLoading from "@/app/parceiro/ParceiroVeioLoading";
 
 export default function Loading() {
-  return <PageLoadingState />;
+  return <ParceiroVeioLoading />;
 }
