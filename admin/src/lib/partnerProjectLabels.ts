@@ -332,6 +332,133 @@ export function buildPartnerRecentUpdates(
     .slice(0, limit);
 }
 
+export type PartnerProjectHistoryKind =
+  | "stage"
+  | "quote"
+  | "file"
+  | "image"
+  | "note"
+  | "schedule";
+
+export type PartnerProjectHistoryItem = {
+  id: string;
+  kind: PartnerProjectHistoryKind;
+  label: string;
+  author: string | null;
+  occurredAt: string;
+};
+
+function isPartnerImageMime(mime: string, name?: string): boolean {
+  if (mime.startsWith("image/")) return true;
+  const lower = (name || "").toLowerCase();
+  return (
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".png") ||
+    lower.endsWith(".webp") ||
+    lower.endsWith(".heic") ||
+    lower.endsWith(".heif")
+  );
+}
+
+/** Histórico informativo de um projeto (sem eventos internos da fábrica). */
+export function buildPartnerProjectHistory(input: {
+  statusGeral: string;
+  updatedAt: string;
+  dataEntregaPrevista?: string | null;
+  quotes: Array<{
+    id: string;
+    versao: number;
+    codigo: string | null;
+    publicUrl: string | null;
+    aprovado_em: string | null;
+  }>;
+  files: Array<{
+    id: string;
+    nome: string;
+    mime_type: string;
+    partnerNome: string;
+    createdAt: string;
+  }>;
+  notes: Array<{
+    id: string;
+    partnerNome: string;
+    createdAt: string;
+  }>;
+}): PartnerProjectHistoryItem[] {
+  const items: PartnerProjectHistoryItem[] = [];
+
+  if (input.statusGeral !== "PERDIDO") {
+    items.push({
+      id: `stage-${input.statusGeral}-${input.updatedAt}`,
+      kind: "stage",
+      label: `Etapa atual: ${partnerProjectStageLabel(input.statusGeral)}`,
+      author: "Móveis Unghero",
+      occurredAt: input.updatedAt,
+    });
+  }
+
+  for (const quote of input.quotes) {
+    if (!quote.publicUrl) continue;
+    const when = quote.aprovado_em || input.updatedAt;
+    items.push({
+      id: `quote-${quote.id}`,
+      kind: "quote",
+      label:
+        quote.versao > 1
+          ? `Orçamento disponível (v${quote.versao}${quote.codigo ? ` · ${quote.codigo}` : ""})`
+          : `Orçamento disponível${quote.codigo ? ` · ${quote.codigo}` : ""}`,
+      author: "Móveis Unghero",
+      occurredAt: when,
+    });
+  }
+
+  for (const file of input.files) {
+    const image = isPartnerImageMime(file.mime_type, file.nome);
+    items.push({
+      id: `file-${file.id}`,
+      kind: image ? "image" : "file",
+      label: image
+        ? `Imagem adicionada · ${file.nome}`
+        : `Arquivo adicionado · ${file.nome}`,
+      author: file.partnerNome,
+      occurredAt: file.createdAt,
+    });
+  }
+
+  for (const note of input.notes) {
+    items.push({
+      id: `note-${note.id}`,
+      kind: "note",
+      label: "Observação registrada",
+      author: note.partnerNome,
+      occurredAt: note.createdAt,
+    });
+  }
+
+  const milestone = partnerProjectNextMilestone({
+    statusGeral: input.statusGeral,
+    dataEntregaPrevista: input.dataEntregaPrevista,
+  });
+  if (milestone && input.dataEntregaPrevista) {
+    items.push({
+      id: `schedule-${input.dataEntregaPrevista}`,
+      kind: "schedule",
+      label: milestone,
+      author: "Móveis Unghero",
+      occurredAt: input.dataEntregaPrevista,
+    });
+  }
+
+  return items
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+    .slice(0, 24);
+}
+
+export function partnerFileIsImage(mime: string, name?: string): boolean {
+  return isPartnerImageMime(mime, name);
+}
+
 export function partnerOverviewMetrics(
   projects: Array<{
     status_geral: string;
