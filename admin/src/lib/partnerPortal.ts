@@ -39,8 +39,11 @@ export interface PartnerPortalProject {
   data_entrega_prevista: string | null;
   /** Há orçamento com PDF público disponível. */
   hasQuotePdf: boolean;
+  /** Quando o PDF foi compartilhado (se conhecido). */
+  quotePdfAt: string | null;
   /** Data do arquivo mais recente no projeto (parceiro ou equipe). */
   latestFileAt: string | null;
+  filesCount: number;
   client: {
     id: string;
     nome: string;
@@ -222,12 +225,12 @@ export async function loadPartnerPortalData(
           select: {
             pdf_share_code: true,
             pdf_share_url: true,
+            pdf_shared_at: true,
           },
         },
         partnerFiles: {
           orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { createdAt: true },
+          select: { createdAt: true, mime_type: true },
         },
       },
     }),
@@ -260,9 +263,16 @@ export async function loadPartnerPortalData(
     hasCommissions: commissionCount > 0,
     projects: projects.map((project) => {
       const visible = partnerProjectValueVisible(project.status_geral);
-      const hasQuotePdf = project.quotes.some(
+      const sharedQuotes = project.quotes.filter(
         (q) => Boolean(q.pdf_share_code) || Boolean(q.pdf_share_url)
       );
+      const hasQuotePdf = sharedQuotes.length > 0;
+      const quotePdfAt =
+        sharedQuotes
+          .map((q) => q.pdf_shared_at?.toISOString() ?? null)
+          .filter(Boolean)
+          .sort()
+          .at(-1) ?? null;
       return {
         id: project.id,
         valor_previsto: visible ? Number(project.valor_previsto) : 0,
@@ -270,7 +280,9 @@ export async function loadPartnerPortalData(
         updatedAt: project.updatedAt.toISOString(),
         data_entrega_prevista: project.data_entrega_prevista?.toISOString() ?? null,
         hasQuotePdf,
+        quotePdfAt,
         latestFileAt: project.partnerFiles[0]?.createdAt.toISOString() ?? null,
+        filesCount: project.partnerFiles.length,
         client: {
           id: project.client.id,
           nome: project.client.nome,

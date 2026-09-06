@@ -227,7 +227,7 @@ export default function ParceiroProjetosClient({
             </p>
             <div className="mt-5">
               <Link href="/parceiro/marketing" className="parceiro-home-cta">
-                Convidar cliente
+                Indicar cliente
               </Link>
             </div>
           </div>

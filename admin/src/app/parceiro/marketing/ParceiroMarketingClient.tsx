@@ -66,7 +66,7 @@ export default function ParceiroMarketingClient({
       <div className="parceiro-marketing space-y-6 max-w-2xl w-full">
         <div>
           <p className="parceiro-page-kicker">Indicação</p>
-          <h1 className="parceiro-page-title">Seu link</h1>
+          <h1 className="parceiro-page-title">Indicar cliente</h1>
           <p className="parceiro-page-desc">
             Quem se cadastrar por ele aparece na sua lista de clientes.
           </p>

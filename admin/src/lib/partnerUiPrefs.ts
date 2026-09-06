@@ -25,9 +25,9 @@ export const PARTNER_ACCENT_PRESETS: Array<{
   hsl: string;
 }> = [
   { id: "silver", label: "Prata", hsl: "210 12% 68%" },
-  { id: "gold", label: "Ouro", hsl: "42 80% 48%" },
-  { id: "blue", label: "Azul", hsl: "210 70% 52%" },
-  { id: "emerald", label: "Esmeralda", hsl: "152 45% 40%" },
+  { id: "gold", label: "Cobre", hsl: "18 85% 59%" },
+  { id: "blue", label: "Azul", hsl: "214 100% 72%" },
+  { id: "emerald", label: "Celadon", hsl: "98 45% 70%" },
   { id: "rose", label: "Rosa", hsl: "350 65% 52%" },
 ];
 

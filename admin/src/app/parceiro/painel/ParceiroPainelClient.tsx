@@ -3,27 +3,28 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircle,
+  Calendar,
   ChevronRight,
+  Factory,
   FileText,
-  FolderKanban,
-  IdCard,
-  Megaphone,
-  Package,
+  Image as ImageIcon,
   Paperclip,
-  Users,
-  Wallet,
+  Plus,
 } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import {
-  buildPartnerProjectAttention,
+  buildPartnerProjectFlow,
+  buildPartnerRecentUpdates,
   formatPartnerProjectEnvironmentsLine,
-  partnerProjectIsActive,
+  formatPartnerRelativeTime,
+  partnerOverviewMetrics,
+  partnerProjectStageFamily,
   partnerProjectStageLabel,
   partnerProjectsHref,
-  type PartnerProjectAttentionKind,
+  type PartnerProjectStepId,
+  type PartnerProjectUpdateKind,
 } from "@/lib/partnerProjectLabels";
-import ParceiroPortalShell, { useParceiroShellUi } from "@/app/parceiro/ParceiroPortalShell";
+import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { cn } from "@/lib/utils";
 
 interface ParceiroPainelClientProps {
@@ -31,272 +32,18 @@ interface ParceiroPainelClientProps {
   isAdminPreview?: boolean;
 }
 
-function HomeTile({
-  href,
-  onClick,
-  icon: Icon,
-  title,
-  subtitle,
-}: {
-  href?: string;
-  onClick?: () => void;
-  icon: React.ElementType;
-  title: string;
-  subtitle: string;
-}) {
-  const content = (
-    <>
-      <span className="parceiro-home-bullet-icon">
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-white tracking-tight">
-          {title}
-        </span>
-        <span className="block text-[11px] text-white/50 mt-0.5 leading-snug">
-          {subtitle}
-        </span>
-      </span>
-      <ChevronRight className="h-4 w-4 text-white/35 shrink-0" />
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className="parceiro-home-bullet no-underline">
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <button type="button" onClick={onClick} className="parceiro-home-bullet text-left">
-      {content}
-    </button>
-  );
+function updateIcon(kind: PartnerProjectUpdateKind) {
+  if (kind === "quote") return FileText;
+  if (kind === "schedule") return Calendar;
+  if (kind === "stage") return Factory;
+  if (kind === "image") return ImageIcon;
+  return Paperclip;
 }
 
-function HomeStat({
-  href,
-  value,
-  label,
-}: {
-  href: string;
-  value: number;
-  label: string;
-}) {
-  return (
-    <Link href={href} className="parceiro-home-stat no-underline">
-      <span className="parceiro-home-stat-value">{value}</span>
-      <span className="parceiro-home-stat-label">{label}</span>
-    </Link>
-  );
-}
-
-function attentionIcon(kind: PartnerProjectAttentionKind) {
-  if (kind === "quote_ready") return FileText;
-  if (kind === "new_file") return Paperclip;
-  return AlertCircle;
-}
-
-function PainelHome({
-  partner,
-  activeCount,
-  doneCount,
-}: {
-  partner: PartnerPortalData;
-  activeCount: number;
-  doneCount: number;
-}) {
-  const shellUi = useParceiroShellUi();
-  const recent = [...partner.projects]
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    .slice(0, 3);
-
-  const attention = useMemo(
-    () => buildPartnerProjectAttention(partner.projects),
-    [partner.projects]
-  );
-
-  return (
-    <div className="space-y-6">
-      <div className="parceiro-home-stats">
-        <HomeStat
-          href={partnerProjectsHref("ATIVOS")}
-          value={activeCount}
-          label="Em andamento"
-        />
-        <HomeStat
-          href={partnerProjectsHref("FINALIZADOS")}
-          value={doneCount}
-          label="Entregues"
-        />
-        <HomeStat
-          href={partnerProjectsHref("TODOS")}
-          value={partner.projects.length}
-          label="No total"
-        />
-      </div>
-
-      <section className="parceiro-home-attention">
-        <div className="parceiro-home-attention-header">
-          <h2 className="parceiro-home-attention-title">Para acompanhar</h2>
-          {attention.length > 0 ? (
-            <span className="parceiro-home-attention-count">
-              {attention.length} agora
-            </span>
-          ) : null}
-        </div>
-
-        {attention.length > 0 ? (
-          <ul className="parceiro-home-attention-list">
-            {attention.map((item) => {
-              const Icon = attentionIcon(item.kind);
-              return (
-                <li key={`${item.kind}-${item.projectId}`}>
-                  <Link
-                    href={`/parceiro/projetos/${item.projectId}`}
-                    className={cn(
-                      "parceiro-home-attention-item",
-                      item.kind === "stalled" && "is-stalled"
-                    )}
-                  >
-                    <span className="parceiro-home-bullet-icon shrink-0">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-white truncate">
-                        {item.clientNome}
-                      </span>
-                      <span className="block text-[11px] text-white/45 mt-0.5 truncate">
-                        {item.label}
-                      </span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-white/35 shrink-0" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="parceiro-home-attention-empty">
-            <p>
-              {partner.projects.length === 0
-                ? "Nenhum projeto vinculado ainda. Convide um cliente ou acompanhe quando a Móveis Unghero vincular um trabalho a você."
-                : "Tudo em dia por aqui. Abra seus projetos ou convide um novo cliente."}
-            </p>
-            <div className="parceiro-home-attention-actions">
-              <Link href="/parceiro/projetos" className="parceiro-home-cta">
-                Ver projetos
-              </Link>
-              <Link
-                href="/parceiro/marketing"
-                className="parceiro-home-cta parceiro-home-cta--ghost"
-              >
-                Convidar cliente
-              </Link>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {recent.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between gap-3 px-0.5">
-            <h2 className="parceiro-home-section-title text-sm font-semibold text-white tracking-tight">
-              Projetos recentes
-            </h2>
-            <Link
-              href="/parceiro/projetos"
-              className="parceiro-home-section-link text-[11px] font-medium text-white/45 hover:text-white/75 no-underline"
-            >
-              Ver todos
-            </Link>
-          </div>
-          <ul className="space-y-2">
-            {recent.map((project) => {
-              const environmentsLine = formatPartnerProjectEnvironmentsLine(
-                project.environments
-              );
-              return (
-                <li key={project.id}>
-                  <Link
-                    href={`/parceiro/projetos/${project.id}`}
-                    className="parceiro-home-recent no-underline"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-white truncate">
-                        {project.client.nome}
-                      </span>
-                      <span className="block text-[11px] text-white/45 mt-0.5 truncate">
-                        {environmentsLine
-                          ? `${environmentsLine} · `
-                          : ""}
-                        {partnerProjectStageLabel(project.status_geral)}
-                      </span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-white/35 shrink-0" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
-      <section className="space-y-3">
-        <h2 className="parceiro-home-section-title text-sm font-semibold text-white/70 tracking-tight px-0.5">
-          Atalhos
-        </h2>
-        <div className="parceiro-home-tiles parceiro-home-tiles--secondary">
-          <HomeTile
-            onClick={() => shellUi?.openInfo()}
-            icon={IdCard}
-            title="Meu perfil"
-            subtitle="Dados profissionais e portfólio"
-          />
-          <HomeTile
-            href="/parceiro/projetos"
-            icon={FolderKanban}
-            title="Projetos"
-            subtitle={
-              partner.projects.length === 0
-                ? "Nenhum vinculado ainda"
-                : activeCount > 0
-                  ? `${activeCount} em andamento`
-                  : `${partner.projects.length} no total`
-            }
-          />
-          <HomeTile
-            href="/parceiro/clientes"
-            icon={Users}
-            title="Clientes"
-            subtitle="Indicações e cadastros"
-          />
-          <HomeTile
-            href="/parceiro/marketing"
-            icon={Megaphone}
-            title="Convidar cliente"
-            subtitle="Link e mensagem para WhatsApp"
-          />
-          <HomeTile
-            href="/parceiro/produtos"
-            icon={Package}
-            title="Produtos"
-            subtitle="Catálogo e referências"
-          />
-          {partner.hasCommissions ? (
-            <HomeTile
-              href="/parceiro/comissoes"
-              icon={Wallet}
-              title="Comissões"
-              subtitle="Valores e comprovantes"
-            />
-          ) : null}
-        </div>
-      </section>
-    </div>
-  );
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
 }
 
 export default function ParceiroPainelClient({
@@ -304,21 +51,314 @@ export default function ParceiroPainelClient({
   isAdminPreview = false,
 }: ParceiroPainelClientProps) {
   const [partner, setPartner] = useState(initialPartner);
+  const [flowFilter, setFlowFilter] = useState<PartnerProjectStepId | null>(null);
 
-  const activeCount = partner.projects.filter((p) =>
-    partnerProjectIsActive(p.status_geral)
-  ).length;
-  const doneCount = partner.projects.filter((p) => p.status_geral === "FINALIZADO").length;
+  const flow = useMemo(
+    () => buildPartnerProjectFlow(partner.projects),
+    [partner.projects]
+  );
+  const updates = useMemo(
+    () => buildPartnerRecentUpdates(partner.projects),
+    [partner.projects]
+  );
+  const metrics = useMemo(
+    () => partnerOverviewMetrics(partner.projects),
+    [partner.projects]
+  );
+
+  const tracked = useMemo(() => {
+    const list = [...partner.projects]
+      .filter((p) => p.status_geral !== "PERDIDO")
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const filtered = flowFilter
+      ? list.filter((p) => p.status_geral === flowFilter)
+      : list;
+    return filtered.slice(0, 5);
+  }, [partner.projects, flowFilter]);
+
+  const hasProjects = partner.projects.some((p) => p.status_geral !== "PERDIDO");
 
   return (
     <ParceiroPortalShell
       partner={partner}
       isAdminPreview={isAdminPreview}
-      showHeroPhoto
       onFotoUrlChange={(fotoUrl) => setPartner((prev) => ({ ...prev, fotoUrl }))}
       onPartnerChange={(profile) => setPartner((prev) => ({ ...prev, ...profile }))}
     >
-      <PainelHome partner={partner} activeCount={activeCount} doneCount={doneCount} />
+      <div className="parceiro-veio-home">
+        <header className="parceiro-veio-page-header">
+          <div className="min-w-0">
+            <h1 className="parceiro-veio-title">Acompanhe seus projetos.</h1>
+            <p className="parceiro-veio-subtitle">
+              Veja o andamento dos projetos vinculados a você.
+            </p>
+          </div>
+          <Link href="/parceiro/marketing" className="parceiro-veio-cta-outline">
+            <Plus className="h-4 w-4" aria-hidden />
+            Indicar cliente
+          </Link>
+        </header>
+
+        {!hasProjects ? (
+          <section className="parceiro-veio-empty">
+            <div className="parceiro-veio-empty-mark" aria-hidden />
+            <h2 className="parceiro-veio-empty-title">Nenhum projeto vinculado ainda.</h2>
+            <p className="parceiro-veio-empty-desc">
+              Quando a Móveis Unghero vincular um projeto ao seu cadastro, você poderá
+              acompanhar todas as etapas por aqui.
+            </p>
+            <Link href="/parceiro/marketing" className="parceiro-veio-cta-outline">
+              Indicar cliente
+            </Link>
+          </section>
+        ) : (
+          <>
+            <div className="parceiro-veio-top-grid">
+              <section className="parceiro-veio-panel parceiro-veio-flow" aria-label="Andamento dos projetos">
+                <div className="parceiro-veio-panel-head">
+                  <h2 className="parceiro-veio-panel-title">Andamento dos projetos</h2>
+                  {flowFilter ? (
+                    <button
+                      type="button"
+                      className="parceiro-veio-text-btn"
+                      onClick={() => setFlowFilter(null)}
+                    >
+                      Limpar filtro
+                    </button>
+                  ) : null}
+                </div>
+                <div className="parceiro-veio-flow-track" aria-hidden>
+                  <svg className="parceiro-veio-flow-line" viewBox="0 0 800 40" preserveAspectRatio="none">
+                    <path
+                      d="M0 22 C 80 8, 140 34, 220 18 S 360 6, 420 24 S 560 36, 640 14 S 740 28, 800 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                  </svg>
+                </div>
+                <ol className="parceiro-veio-flow-steps">
+                  {flow.map((step) => {
+                    const active = flowFilter === step.id;
+                    return (
+                      <li key={step.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFlowFilter((prev) => (prev === step.id ? null : step.id))
+                          }
+                          className={cn(
+                            "parceiro-veio-flow-step",
+                            `is-${step.family}`,
+                            active && "is-active",
+                            step.count === 0 && "is-empty"
+                          )}
+                          aria-pressed={active}
+                        >
+                          <span className="parceiro-veio-flow-count">
+                            {String(step.count).padStart(2, "0")}
+                          </span>
+                          <span className="parceiro-veio-flow-dot" aria-hidden />
+                          <span className="parceiro-veio-flow-label">{step.label}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+
+              <section className="parceiro-veio-panel parceiro-veio-updates" aria-label="Atualizações recentes">
+                <h2 className="parceiro-veio-panel-title">Atualizações recentes</h2>
+                {updates.length === 0 ? (
+                  <p className="parceiro-veio-muted">
+                    Nenhuma atualização recente. Você pode continuar acompanhando seus
+                    projetos abaixo.
+                  </p>
+                ) : (
+                  <ul className="parceiro-veio-updates-list">
+                    {updates.map((item) => {
+                      const Icon = updateIcon(item.kind);
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            href={`/parceiro/projetos/${item.projectId}`}
+                            className="parceiro-veio-update-item"
+                          >
+                            <span className={cn("parceiro-veio-update-icon", `is-${item.kind}`)}>
+                              <Icon className="h-4 w-4" aria-hidden />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="parceiro-veio-update-label">{item.label}</span>
+                              <span className="parceiro-veio-update-time">
+                                {formatPartnerRelativeTime(item.occurredAt)}
+                              </span>
+                            </span>
+                            <ChevronRight className="h-4 w-4 opacity-40 shrink-0" aria-hidden />
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </div>
+
+            <section className="parceiro-veio-metrics" aria-label="Resumo">
+              <Link href={partnerProjectsHref("TODOS")} className="parceiro-veio-metric">
+                <span className="parceiro-veio-metric-value is-copper">{metrics.linked}</span>
+                <span className="parceiro-veio-metric-label">projetos vinculados</span>
+              </Link>
+              <Link href={partnerProjectsHref("PRODUCAO")} className="parceiro-veio-metric">
+                <span className="parceiro-veio-metric-value is-copper">{metrics.inFactory}</span>
+                <span className="parceiro-veio-metric-label">na fábrica</span>
+              </Link>
+              <div className="parceiro-veio-metric">
+                <span className="parceiro-veio-metric-value is-celadon">
+                  {metrics.upcomingInstall}
+                </span>
+                <span className="parceiro-veio-metric-label">montagem prevista</span>
+              </div>
+            </section>
+
+            <section className="parceiro-veio-panel" aria-label="Projetos acompanhados">
+              <div className="parceiro-veio-panel-head">
+                <h2 className="parceiro-veio-panel-title">Projetos acompanhados</h2>
+                <Link href="/parceiro/projetos" className="parceiro-veio-text-btn">
+                  Ver todos os projetos
+                </Link>
+              </div>
+
+              {tracked.length === 0 ? (
+                <p className="parceiro-veio-muted">
+                  Nenhum projeto nesta etapa. Limpe o filtro para ver todos.
+                </p>
+              ) : (
+                <>
+                  <div className="parceiro-veio-table-wrap">
+                    <table className="parceiro-veio-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Projeto / Cliente</th>
+                          <th scope="col">Ambientes</th>
+                          <th scope="col">Etapa atual</th>
+                          <th scope="col">Última atualização</th>
+                          <th scope="col">Arquivos</th>
+                          <th scope="col">
+                            <span className="sr-only">Ação</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tracked.map((project) => {
+                          const family = partnerProjectStageFamily(project.status_geral);
+                          const envs =
+                            formatPartnerProjectEnvironmentsLine(project.environments) ||
+                            "—";
+                          return (
+                            <tr key={project.id}>
+                              <td>
+                                <Link
+                                  href={`/parceiro/projetos/${project.id}`}
+                                  className="parceiro-veio-project-cell"
+                                >
+                                  <span className="parceiro-veio-thumb" aria-hidden>
+                                    {initials(project.client.nome)}
+                                  </span>
+                                  <span>
+                                    <span className="parceiro-veio-project-name">
+                                      {project.client.nome}
+                                    </span>
+                                    <span className="parceiro-veio-project-meta">
+                                      {project.client.cidade || "Cidade não informada"}
+                                    </span>
+                                  </span>
+                                </Link>
+                              </td>
+                              <td>{envs}</td>
+                              <td>
+                                <span
+                                  className={cn(
+                                    "parceiro-veio-stage",
+                                    family && `is-${family}`
+                                  )}
+                                >
+                                  <span className="parceiro-veio-stage-dot" aria-hidden />
+                                  {partnerProjectStageLabel(project.status_geral)}
+                                </span>
+                              </td>
+                              <td className="parceiro-veio-mono">
+                                {formatPartnerRelativeTime(project.updatedAt)}
+                              </td>
+                              <td>
+                                {project.filesCount > 0
+                                  ? `${project.filesCount} arquivo${project.filesCount === 1 ? "" : "s"}`
+                                  : project.hasQuotePdf
+                                    ? "PDF"
+                                    : "—"}
+                              </td>
+                              <td>
+                                <Link
+                                  href={`/parceiro/projetos/${project.id}`}
+                                  className="parceiro-veio-row-action"
+                                >
+                                  Ver projeto
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <ul className="parceiro-veio-cards">
+                    {tracked.map((project) => {
+                      const family = partnerProjectStageFamily(project.status_geral);
+                      const envs =
+                        formatPartnerProjectEnvironmentsLine(project.environments) ||
+                        "—";
+                      return (
+                        <li key={project.id}>
+                          <Link
+                            href={`/parceiro/projetos/${project.id}`}
+                            className="parceiro-veio-card"
+                          >
+                            <span className="parceiro-veio-card-top">
+                              <span className="parceiro-veio-thumb" aria-hidden>
+                                {initials(project.client.nome)}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="parceiro-veio-project-name">
+                                  {project.client.nome}
+                                </span>
+                                <span className="parceiro-veio-project-meta">{envs}</span>
+                              </span>
+                            </span>
+                            <span className="parceiro-veio-card-meta">
+                              <span
+                                className={cn(
+                                  "parceiro-veio-stage",
+                                  family && `is-${family}`
+                                )}
+                              >
+                                <span className="parceiro-veio-stage-dot" aria-hidden />
+                                {partnerProjectStageLabel(project.status_geral)}
+                              </span>
+                              <span className="parceiro-veio-mono">
+                                {formatPartnerRelativeTime(project.updatedAt)}
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+            </section>
+          </>
+        )}
+      </div>
     </ParceiroPortalShell>
   );
 }

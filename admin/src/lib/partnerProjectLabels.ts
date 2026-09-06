@@ -1,15 +1,18 @@
-/** Labels e filtros compartilhados do portal do parceiro (projetos). */
+/** Labels, fluxo VEIO e atualizações do portal do parceiro. */
 
 export const PARTNER_PROJECT_STEPS = [
-  { id: "LEAD", label: "Briefing" },
-  { id: "ORCAMENTO", label: "Orçamento" },
-  { id: "NEGOCIACAO", label: "Negociação" },
-  { id: "CONFERENCIA_TECNICA", label: "Detalhe" },
-  { id: "APROVADO", label: "Aprovado" },
-  { id: "PRODUCAO", label: "Fábrica" },
-  { id: "INSTALACAO", label: "Montagem" },
-  { id: "FINALIZADO", label: "Entregue" },
+  { id: "LEAD", label: "Briefing", family: "comercial" as const },
+  { id: "ORCAMENTO", label: "Orçamento", family: "comercial" as const },
+  { id: "NEGOCIACAO", label: "Negociação", family: "comercial" as const },
+  { id: "CONFERENCIA_TECNICA", label: "Detalhe", family: "tecnica" as const },
+  { id: "APROVADO", label: "Aprovado", family: "tecnica" as const },
+  { id: "PRODUCAO", label: "Fábrica", family: "execucao" as const },
+  { id: "INSTALACAO", label: "Montagem", family: "execucao" as const },
+  { id: "FINALIZADO", label: "Entregue", family: "conclusao" as const },
 ] as const;
+
+export type PartnerProjectStepId = (typeof PARTNER_PROJECT_STEPS)[number]["id"];
+export type PartnerStageFamily = "comercial" | "tecnica" | "execucao" | "conclusao";
 
 const STAGE_LABELS: Record<string, string> = {
   LEAD: "Briefing",
@@ -38,10 +41,16 @@ export type PartnerProjectStatusFilter =
   | "TODOS"
   | "ATIVOS"
   | "FINALIZADOS"
-  | "PERDIDOS";
+  | "PERDIDOS"
+  | PartnerProjectStepId;
 
 export function partnerProjectStageLabel(status: string): string {
   return STAGE_LABELS[status] ?? status;
+}
+
+export function partnerProjectStageFamily(status: string): PartnerStageFamily | null {
+  const step = PARTNER_PROJECT_STEPS.find((s) => s.id === status);
+  return step?.family ?? null;
 }
 
 export function partnerProjectStepIndex(status: string): number {
@@ -76,6 +85,9 @@ export function parsePartnerProjectFilter(
   ) {
     return normalized;
   }
+  if (PARTNER_PROJECT_STEPS.some((s) => s.id === normalized)) {
+    return normalized as PartnerProjectStepId;
+  }
   return "ATIVOS";
 }
 
@@ -91,14 +103,17 @@ export function matchesPartnerProjectFilter(
   if (filter === "TODOS") return true;
   if (filter === "PERDIDOS") return statusGeral === "PERDIDO";
   if (filter === "FINALIZADOS") return statusGeral === "FINALIZADO";
-  return statusGeral !== "PERDIDO" && statusGeral !== "FINALIZADO";
+  if (filter === "ATIVOS") {
+    return statusGeral !== "PERDIDO" && statusGeral !== "FINALIZADO";
+  }
+  return statusGeral === filter;
 }
 
 export function partnerProjectIsActive(statusGeral: string): boolean {
   return statusGeral !== "FINALIZADO" && statusGeral !== "PERDIDO";
 }
 
-/** Próximo marco legível para o parceiro (entrega prevista, quando houver). */
+/** Próximo marco legível (entrega/montagem prevista). */
 export function partnerProjectNextMilestone(input: {
   statusGeral: string;
   dataEntregaPrevista?: string | null;
@@ -114,7 +129,8 @@ export function partnerProjectNextMilestone(input: {
     month: "short",
     year: "numeric",
   });
-  return `Próximo marco: entrega ${label}`;
+  const isInstall = input.statusGeral === "INSTALACAO" || input.statusGeral === "PRODUCAO";
+  return isInstall ? `Montagem prevista para ${label}` : `Entrega prevista para ${label}`;
 }
 
 export function daysSinceIso(iso: string, now = new Date()): number {
@@ -124,8 +140,226 @@ export function daysSinceIso(iso: string, now = new Date()): number {
   return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
 }
 
-export type PartnerProjectAttentionKind = "stalled" | "quote_ready" | "new_file";
+export function formatPartnerRelativeTime(iso: string, now = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfThat = new Date(d);
+  startOfThat.setHours(0, 0, 0, 0);
+  const dayDiff = Math.round(
+    (startOfToday.getTime() - startOfThat.getTime()) / (24 * 60 * 60 * 1000)
+  );
+  const time = d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  if (dayDiff === 0) return `Hoje, ${time}`;
+  if (dayDiff === 1) return `Ontem, ${time}`;
+  if (dayDiff > 1 && dayDiff <= 7) {
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
+export type PartnerFlowBucket = {
+  id: PartnerProjectStepId;
+  label: string;
+  family: PartnerStageFamily;
+  count: number;
+  projectIds: string[];
+};
+
+export function buildPartnerProjectFlow(
+  projects: Array<{ id: string; status_geral: string }>
+): PartnerFlowBucket[] {
+  return PARTNER_PROJECT_STEPS.map((step) => {
+    const matched = projects.filter((p) => p.status_geral === step.id);
+    return {
+      id: step.id,
+      label: step.label,
+      family: step.family,
+      count: matched.length,
+      projectIds: matched.map((p) => p.id),
+    };
+  });
+}
+
+export type PartnerProjectUpdateKind =
+  | "stage"
+  | "file"
+  | "image"
+  | "quote"
+  | "schedule";
+
+export type PartnerProjectUpdate = {
+  id: string;
+  projectId: string;
+  projectLabel: string;
+  kind: PartnerProjectUpdateKind;
+  label: string;
+  occurredAt: string;
+};
+
+type UpdateSourceProject = {
+  id: string;
+  status_geral: string;
+  updatedAt: string;
+  data_entrega_prevista?: string | null;
+  hasQuotePdf?: boolean;
+  quotePdfAt?: string | null;
+  latestFileAt?: string | null;
+  filesCount?: number;
+  client: { nome: string };
+};
+
+/** Atualizações informativas (sem cobrança de “parado”). */
+export function buildPartnerRecentUpdates(
+  projects: UpdateSourceProject[],
+  options?: { limit?: number; fileDays?: number; quoteDays?: number }
+): PartnerProjectUpdate[] {
+  const limit = options?.limit ?? 6;
+  const fileDays = options?.fileDays ?? 14;
+  const quoteDays = options?.quoteDays ?? 21;
+  const now = new Date();
+  const items: PartnerProjectUpdate[] = [];
+
+  for (const project of projects) {
+    if (project.status_geral === "PERDIDO") continue;
+    const label = project.client.nome;
+
+    if (project.latestFileAt && daysSinceIso(project.latestFileAt, now) <= fileDays) {
+      const isImageish = (project.filesCount ?? 0) > 0;
+      items.push({
+        id: `file-${project.id}-${project.latestFileAt}`,
+        projectId: project.id,
+        projectLabel: label,
+        kind: isImageish ? "image" : "file",
+        label: isImageish
+          ? `Arquivo novo disponível · ${label}`
+          : `Arquivo novo disponível · ${label}`,
+        occurredAt: project.latestFileAt,
+      });
+    }
+
+    const quoteAt = project.quotePdfAt;
+    if (
+      project.hasQuotePdf &&
+      quoteAt &&
+      daysSinceIso(quoteAt, now) <= quoteDays
+    ) {
+      items.push({
+        id: `quote-${project.id}-${quoteAt}`,
+        projectId: project.id,
+        projectLabel: label,
+        kind: "quote",
+        label: `PDF do orçamento disponível · ${label}`,
+        occurredAt: quoteAt,
+      });
+    } else if (project.hasQuotePdf && !quoteAt && daysSinceIso(project.updatedAt, now) <= 7) {
+      items.push({
+        id: `quote-${project.id}`,
+        projectId: project.id,
+        projectLabel: label,
+        kind: "quote",
+        label: `Orçamento disponível · ${label}`,
+        occurredAt: project.updatedAt,
+      });
+    }
+
+    if (project.data_entrega_prevista) {
+      const delivery = new Date(project.data_entrega_prevista);
+      if (!Number.isNaN(delivery.getTime())) {
+        const daysUntil = Math.ceil(
+          (delivery.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
+        );
+        if (daysUntil >= -2 && daysUntil <= 45) {
+          const dateLabel = delivery.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+          });
+          items.push({
+            id: `schedule-${project.id}-${project.data_entrega_prevista}`,
+            projectId: project.id,
+            projectLabel: label,
+            kind: "schedule",
+            label:
+              project.status_geral === "INSTALACAO" || project.status_geral === "PRODUCAO"
+                ? `Montagem prevista para ${dateLabel} · ${label}`
+                : `Entrega prevista para ${dateLabel} · ${label}`,
+            occurredAt: project.updatedAt,
+          });
+        }
+      }
+    }
+
+    if (
+      partnerProjectIsActive(project.status_geral) &&
+      daysSinceIso(project.updatedAt, now) <= 5 &&
+      (project.status_geral === "PRODUCAO" ||
+        project.status_geral === "INSTALACAO" ||
+        project.status_geral === "APROVADO")
+    ) {
+      items.push({
+        id: `stage-${project.id}-${project.status_geral}-${project.updatedAt}`,
+        projectId: project.id,
+        projectLabel: label,
+        kind: "stage",
+        label: `Projeto em ${partnerProjectStageLabel(project.status_geral)} · ${label}`,
+        occurredAt: project.updatedAt,
+      });
+    }
+  }
+
+  const seen = new Set<string>();
+  return items
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+    .filter((item) => {
+      const key = `${item.projectId}:${item.kind}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
+}
+
+export function partnerOverviewMetrics(
+  projects: Array<{
+    status_geral: string;
+    data_entrega_prevista?: string | null;
+  }>
+) {
+  const now = new Date();
+  const linked = projects.filter((p) => p.status_geral !== "PERDIDO").length;
+  const inFactory = projects.filter((p) => p.status_geral === "PRODUCAO").length;
+  const upcomingInstall = projects.filter((p) => {
+    if (p.status_geral === "PERDIDO" || p.status_geral === "FINALIZADO") return false;
+    if (!p.data_entrega_prevista) return false;
+    if (p.status_geral !== "PRODUCAO" && p.status_geral !== "INSTALACAO") {
+      return false;
+    }
+    const d = new Date(p.data_entrega_prevista);
+    if (Number.isNaN(d.getTime())) return false;
+    const daysUntil = Math.ceil(
+      (d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
+    );
+    return daysUntil >= -1 && daysUntil <= 45;
+  }).length;
+
+  return { linked, inFactory, upcomingInstall };
+}
+
+/** @deprecated Prefer buildPartnerRecentUpdates — mantido por compat. */
+export type PartnerProjectAttentionKind = "stalled" | "quote_ready" | "new_file";
 export type PartnerProjectAttentionItem = {
   projectId: string;
   clientNome: string;
@@ -133,7 +367,6 @@ export type PartnerProjectAttentionItem = {
   label: string;
 };
 
-/** Alertas acionáveis para o hub do painel (máx. alguns itens). */
 export function buildPartnerProjectAttention(
   projects: Array<{
     id: string;
@@ -142,60 +375,23 @@ export function buildPartnerProjectAttention(
     client: { nome: string };
     hasQuotePdf?: boolean;
     latestFileAt?: string | null;
+    data_entrega_prevista?: string | null;
+    quotePdfAt?: string | null;
+    filesCount?: number;
   }>,
-  options?: { stalledDays?: number; newFileDays?: number; limit?: number }
+  options?: { limit?: number }
 ): PartnerProjectAttentionItem[] {
-  const stalledDays = options?.stalledDays ?? 14;
-  const newFileDays = options?.newFileDays ?? 7;
-  const limit = options?.limit ?? 5;
-  const now = new Date();
-  const items: PartnerProjectAttentionItem[] = [];
-
-  for (const project of projects) {
-    if (!partnerProjectIsActive(project.status_geral)) continue;
-
-    const daysIdle = daysSinceIso(project.updatedAt, now);
-    if (daysIdle >= stalledDays) {
-      items.push({
-        projectId: project.id,
-        clientNome: project.client.nome,
-        kind: "stalled",
-        label: `Sem atualização há ${daysIdle} dia${daysIdle === 1 ? "" : "s"}`,
-      });
-    }
-
-    if (project.hasQuotePdf) {
-      items.push({
-        projectId: project.id,
-        clientNome: project.client.nome,
-        kind: "quote_ready",
-        label: "PDF do orçamento disponível",
-      });
-    }
-
-    if (project.latestFileAt) {
-      const fileAge = daysSinceIso(project.latestFileAt, now);
-      if (fileAge <= newFileDays) {
-        items.push({
-          projectId: project.id,
-          clientNome: project.client.nome,
-          kind: "new_file",
-          label:
-            fileAge === 0
-              ? "Arquivo novo hoje"
-              : `Arquivo novo há ${fileAge} dia${fileAge === 1 ? "" : "s"}`,
-        });
-      }
-    }
-  }
-
-  const priority: Record<PartnerProjectAttentionKind, number> = {
-    new_file: 0,
-    quote_ready: 1,
-    stalled: 2,
-  };
-
-  return items
-    .sort((a, b) => priority[a.kind] - priority[b.kind])
-    .slice(0, limit);
+  return buildPartnerRecentUpdates(projects, { limit: options?.limit ?? 5 }).map(
+    (u) => ({
+      projectId: u.projectId,
+      clientNome: u.projectLabel,
+      kind:
+        u.kind === "quote"
+          ? "quote_ready"
+          : u.kind === "file" || u.kind === "image"
+            ? "new_file"
+            : "quote_ready",
+      label: u.label,
+    })
+  );
 }
