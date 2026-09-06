@@ -12,24 +12,17 @@ import {
   Wallet,
 } from "lucide-react";
 import type { PartnerPortalData, PartnerPortalProject } from "@/lib/partnerPortal";
+import {
+  formatPartnerProjectEnvironmentsLine,
+  partnerProjectStageLabel,
+  partnerProjectsHref,
+} from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell, { useParceiroShellUi } from "@/app/parceiro/ParceiroPortalShell";
 
 interface ParceiroPainelClientProps {
   partner: PartnerPortalData;
   isAdminPreview?: boolean;
 }
-
-const STEP_LABEL: Record<string, string> = {
-  LEAD: "Briefing",
-  ORCAMENTO: "Orçamento",
-  NEGOCIACAO: "Negociação",
-  CONFERENCIA_TECNICA: "Detalhe",
-  APROVADO: "Aprovado",
-  PRODUCAO: "Fábrica",
-  INSTALACAO: "Montagem",
-  FINALIZADO: "Entregue",
-  PERDIDO: "Perdido",
-};
 
 function isActiveProject(p: PartnerPortalProject) {
   return p.status_geral !== "FINALIZADO" && p.status_geral !== "PERDIDO";
@@ -80,6 +73,23 @@ function HomeTile({
   );
 }
 
+function HomeStat({
+  href,
+  value,
+  label,
+}: {
+  href: string;
+  value: number;
+  label: string;
+}) {
+  return (
+    <Link href={href} className="parceiro-home-stat no-underline">
+      <span className="parceiro-home-stat-value">{value}</span>
+      <span className="parceiro-home-stat-label">{label}</span>
+    </Link>
+  );
+}
+
 function PainelHome({
   partner,
   activeCount,
@@ -97,18 +107,21 @@ function PainelHome({
   return (
     <div className="space-y-6">
       <div className="parceiro-home-stats">
-        <div className="parceiro-home-stat">
-          <span className="parceiro-home-stat-value">{activeCount}</span>
-          <span className="parceiro-home-stat-label">Em andamento</span>
-        </div>
-        <div className="parceiro-home-stat">
-          <span className="parceiro-home-stat-value">{doneCount}</span>
-          <span className="parceiro-home-stat-label">Entregues</span>
-        </div>
-        <div className="parceiro-home-stat">
-          <span className="parceiro-home-stat-value">{partner.projects.length}</span>
-          <span className="parceiro-home-stat-label">No total</span>
-        </div>
+        <HomeStat
+          href={partnerProjectsHref("ATIVOS")}
+          value={activeCount}
+          label="Em andamento"
+        />
+        <HomeStat
+          href={partnerProjectsHref("FINALIZADOS")}
+          value={doneCount}
+          label="Entregues"
+        />
+        <HomeStat
+          href={partnerProjectsHref("TODOS")}
+          value={partner.projects.length}
+          label="No total"
+        />
       </div>
 
       <div className="parceiro-home-tiles">
@@ -172,26 +185,32 @@ function PainelHome({
             </Link>
           </div>
           <ul className="space-y-2">
-            {recent.map((project) => (
-              <li key={project.id}>
-                <Link
-                  href={`/parceiro/projetos/${project.id}`}
-                  className="parceiro-home-recent no-underline"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-white truncate">
-                      {project.client.nome}
+            {recent.map((project) => {
+              const environmentsLine = formatPartnerProjectEnvironmentsLine(
+                project.environments
+              );
+              return (
+                <li key={project.id}>
+                  <Link
+                    href={`/parceiro/projetos/${project.id}`}
+                    className="parceiro-home-recent no-underline"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-white truncate">
+                        {project.client.nome}
+                      </span>
+                      <span className="block text-[11px] text-white/45 mt-0.5 truncate">
+                        {environmentsLine
+                          ? `${environmentsLine} · `
+                          : ""}
+                        {partnerProjectStageLabel(project.status_geral)}
+                      </span>
                     </span>
-                    <span className="block text-[11px] text-white/45 mt-0.5 truncate">
-                      {project.client.cidade || "Cidade não informada"}
-                      {" · "}
-                      {STEP_LABEL[project.status_geral] ?? project.status_geral}
-                    </span>
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-white/35 shrink-0" />
-                </Link>
-              </li>
-            ))}
+                    <ChevronRight className="h-4 w-4 text-white/35 shrink-0" />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

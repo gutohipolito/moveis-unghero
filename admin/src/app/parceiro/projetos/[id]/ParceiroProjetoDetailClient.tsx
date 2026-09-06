@@ -5,6 +5,10 @@ import Link from "next/link";
 import { ArrowLeft, MapPin } from "lucide-react";
 import type { PartnerPortalData, PartnerProjectDetail } from "@/lib/partnerPortal";
 import { partnerProjectValueVisible } from "@/lib/partnerPortal";
+import {
+  formatPartnerProjectEnvironmentsLine,
+  partnerProjectStageLabel,
+} from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import ParceiroProjetoDetailView from "@/app/parceiro/projetos/ParceiroProjetoDetailView";
 
@@ -24,6 +28,9 @@ export default function ParceiroProjetoDetailClient({
   project,
   isAdminPreview = false,
 }: Props) {
+  const environmentsLine = formatPartnerProjectEnvironmentsLine(project.environments);
+  const stageLabel = partnerProjectStageLabel(project.status_geral);
+
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
       <div className="space-y-6">
@@ -36,9 +43,21 @@ export default function ParceiroProjetoDetailClient({
             Projetos
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="parceiro-page-kicker">Projeto</p>
-              <h1 className="parceiro-page-title">{project.client.nome}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="parceiro-page-title">{project.client.nome}</h1>
+                <span
+                  className={`parceiro-project-stage-chip ${
+                    project.status_geral === "PERDIDO" ? "is-lost" : ""
+                  }`}
+                >
+                  {stageLabel}
+                </span>
+              </div>
+              {environmentsLine ? (
+                <p className="text-[12px] text-white/55 mt-1 truncate">{environmentsLine}</p>
+              ) : null}
               <p className="text-[12px] text-white/45 mt-1 inline-flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {project.client.cidade || "Cidade não informada"}

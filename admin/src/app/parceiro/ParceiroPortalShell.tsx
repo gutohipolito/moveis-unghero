@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
+import { Camera, Home, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/partnerUiPrefs";
 
 const NAV = [
+  { href: "/parceiro/painel", label: "Início", shortLabel: "Início", icon: Home },
   { href: "/parceiro/projetos", label: "Projetos", shortLabel: "Projetos", icon: FolderKanban },
   { href: "/parceiro/produtos", label: "Produtos", shortLabel: "Produtos", icon: Package },
   { href: "/parceiro/clientes", label: "Clientes", shortLabel: "Clientes", icon: Users },
@@ -334,7 +335,7 @@ export default function ParceiroPortalShell({
       <footer className="parceiro-portal-footer">
         <div className="parceiro-portal-footer-inner">
           <p className="parceiro-portal-footer-legal">
-            © {new Date().getFullYear()} Móveis Unghero · Portal em fase de testes
+            © {new Date().getFullYear()} Móveis Unghero
           </p>
         </div>
       </footer>

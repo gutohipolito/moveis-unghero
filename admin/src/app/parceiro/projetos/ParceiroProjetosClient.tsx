@@ -1,71 +1,64 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MapPin, Users } from "lucide-react";
 import { HighlightAnimatedIcon, LibraryIcon } from "@/components/icons";
 import type { PartnerPortalData, PartnerPortalProject } from "@/lib/partnerPortal";
 import { partnerProjectValueVisible } from "@/lib/partnerPortal";
+import {
+  formatPartnerProjectEnvironmentsLine,
+  matchesPartnerProjectFilter,
+  PARTNER_PROJECT_STEPS,
+  partnerProjectStageLabel,
+  partnerProjectStepIndex,
+  partnerProjectsHref,
+  type PartnerProjectStatusFilter,
+} from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
-import ParceiroProjetoModal from "@/app/parceiro/projetos/ParceiroProjetoModal";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { cn } from "@/lib/utils";
-
-const PROJECT_STEPS = [
-  { id: "LEAD", label: "Briefing" },
-  { id: "ORCAMENTO", label: "Orçamento" },
-  { id: "NEGOCIACAO", label: "Negociação" },
-  { id: "CONFERENCIA_TECNICA", label: "Detalhe" },
-  { id: "APROVADO", label: "Aprovado" },
-  { id: "PRODUCAO", label: "Fábrica" },
-  { id: "INSTALACAO", label: "Montagem" },
-  { id: "FINALIZADO", label: "Entregue" },
-] as const;
-
-type StatusFilter = "TODOS" | "ATIVOS" | "FINALIZADOS" | "PERDIDOS";
 
 const moneyFmt = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
 
-function stepIndex(status: string) {
-  if (status === "PERDIDO") return -1;
-  const idx = PROJECT_STEPS.findIndex((s) => s.id === status);
-  return idx >= 0 ? idx : 0;
-}
-
-function matchesFilter(project: PartnerPortalProject, filter: StatusFilter) {
-  if (filter === "TODOS") return true;
-  if (filter === "PERDIDOS") return project.status_geral === "PERDIDO";
-  if (filter === "FINALIZADOS") return project.status_geral === "FINALIZADO";
-  return project.status_geral !== "PERDIDO" && project.status_geral !== "FINALIZADO";
-}
-
-function ProjectCard({
-  project,
-  onOpen,
-}: {
-  project: PartnerPortalProject;
-  onOpen: (id: string) => void;
-}) {
-  const current = stepIndex(project.status_geral);
+function ProjectCard({ project }: { project: PartnerPortalProject }) {
+  const current = partnerProjectStepIndex(project.status_geral);
   const isLost = project.status_geral === "PERDIDO";
-  const stageLabel = PROJECT_STEPS[current]?.label ?? project.status_geral;
+  const stageLabel = partnerProjectStageLabel(project.status_geral);
+  const environmentsLine = formatPartnerProjectEnvironmentsLine(project.environments);
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(project.id)}
+    <Link
+      href={`/parceiro/projetos/${project.id}`}
       className="parceiro-project-card block w-full text-left no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(210_10%_68%/0.45)]"
     >
       <div className="parceiro-project-card-sheen" aria-hidden />
       <div className="parceiro-project-card-body">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0">
-            <h3 className="font-display font-semibold text-[1.05rem] leading-snug truncate text-[#f7f0e6]">
-              {project.client.nome}
-            </h3>
-            <p className="text-[11px] font-medium text-white/50 mt-0.5 inline-flex items-center gap-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <h3 className="font-display font-semibold text-[1.05rem] leading-snug truncate text-[#f7f0e6]">
+                {project.client.nome}
+              </h3>
+              <span
+                className={cn(
+                  "parceiro-project-stage-chip",
+                  isLost && "is-lost"
+                )}
+              >
+                {stageLabel}
+              </span>
+            </div>
+            {environmentsLine ? (
+              <p className="text-[11px] font-medium text-white/55 mt-0.5 truncate">
+                {environmentsLine}
+              </p>
+            ) : null}
+            <p className="text-[11px] font-medium text-white/45 mt-0.5 inline-flex items-center gap-1 min-w-0">
               <MapPin className="h-3 w-3 shrink-0 opacity-70" />
               <span className="truncate">{project.client.cidade || "Cidade não informada"}</span>
             </p>
@@ -84,54 +77,48 @@ function ProjectCard({
           </p>
         </div>
 
-        {isLost ? (
-          <p className="text-[11px] font-medium text-rose-300/90">Projeto perdido</p>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex gap-1" aria-label={`Etapa: ${stageLabel}`}>
-              {PROJECT_STEPS.map((step, idx) => (
-                <div
-                  key={step.id}
-                  title={step.label}
-                  className={`parceiro-project-step ${
-                    idx <= current ? "parceiro-project-step-done" : ""
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-[11px] font-medium text-white/45">{stageLabel}</p>
+        {!isLost ? (
+          <div className="flex gap-1" aria-hidden>
+            {PARTNER_PROJECT_STEPS.map((step, idx) => (
+              <div
+                key={step.id}
+                title={step.label}
+                className={`parceiro-project-step ${
+                  idx <= current ? "parceiro-project-step-done" : ""
+                }`}
+              />
+            ))}
           </div>
-        )}
-
-        {project.environments.length > 0 && (
-          <p className="text-[11px] font-medium text-white/40">
-            {project.environments.length} ambiente
-            {project.environments.length === 1 ? "" : "s"}
-            {project.environments.length <= 3
-              ? ` · ${project.environments.map((e) => e.nome).join(", ")}`
-              : ""}
-          </p>
-        )}
+        ) : null}
       </div>
-    </button>
+    </Link>
   );
 }
 
 interface ParceiroProjetosClientProps {
   partner: PartnerPortalData;
   isAdminPreview?: boolean;
+  initialFilter?: PartnerProjectStatusFilter;
 }
 
 export default function ParceiroProjetosClient({
   partner,
   isAdminPreview = false,
+  initialFilter = "ATIVOS",
 }: ParceiroProjetosClientProps) {
-  const [filter, setFilter] = useState<StatusFilter>("ATIVOS");
+  const router = useRouter();
+  const [filter, setFilter] = useState<PartnerProjectStatusFilter>(initialFilter);
   const [groupByClient, setGroupByClient] = useState(false);
-  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setFilter(initialFilter);
+  }, [initialFilter]);
 
   const filtered = useMemo(
-    () => partner.projects.filter((p) => matchesFilter(p, filter)),
+    () =>
+      partner.projects.filter((p) =>
+        matchesPartnerProjectFilter(p.status_geral, filter)
+      ),
     [partner.projects, filter]
   );
 
@@ -152,12 +139,17 @@ export default function ParceiroProjetosClient({
     );
   }, [filtered, groupByClient]);
 
-  const filters: { id: StatusFilter; label: string }[] = [
+  const filters: { id: PartnerProjectStatusFilter; label: string }[] = [
     { id: "ATIVOS", label: "Em andamento" },
     { id: "TODOS", label: "Todos" },
     { id: "FINALIZADOS", label: "Finalizados" },
     { id: "PERDIDOS", label: "Perdidos" },
   ];
+
+  function applyFilter(next: PartnerProjectStatusFilter) {
+    setFilter(next);
+    router.replace(partnerProjectsHref(next), { scroll: false });
+  }
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
@@ -192,7 +184,7 @@ export default function ParceiroProjetosClient({
               <button
                 key={f.id}
                 type="button"
-                onClick={() => setFilter(f.id)}
+                onClick={() => applyFilter(f.id)}
                 className={cn("parceiro-filter-chip", filter === f.id && "is-active")}
               >
                 {f.label}
@@ -213,21 +205,19 @@ export default function ParceiroProjetosClient({
         </div>
 
         {partner.projects.length === 0 ? (
-          <div className="partner-card p-10 text-center">
-            <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
+          <div className="parceiro-empty-state">
+            <div className="parceiro-empty-state-icon">
               <HighlightAnimatedIcon icon={LibraryIcon} size={24} playOnMount />
             </div>
-            <h2 className="font-display font-semibold text-slate-900 text-base">
-              Nenhum projeto ainda
-            </h2>
-            <p className="text-sm text-slate-600 mt-2 max-w-md mx-auto leading-relaxed">
+            <h2 className="parceiro-empty-state-title">Nenhum projeto ainda</h2>
+            <p className="parceiro-empty-state-desc">
               Quando um cliente usar seu link de indicação ou a Móveis Unghero vincular um projeto, ele
               aparece aqui.
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="partner-card p-8 text-center">
-            <p className="text-sm text-slate-600 font-medium">Nenhum projeto neste filtro.</p>
+          <div className="parceiro-empty-state parceiro-empty-state--compact">
+            <p className="parceiro-empty-state-desc">Nenhum projeto neste filtro.</p>
           </div>
         ) : groupByClient && grouped ? (
           <div className="space-y-6">
@@ -239,11 +229,7 @@ export default function ParceiroProjetosClient({
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   {group.projects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onOpen={setOpenProjectId}
-                    />
+                    <ProjectCard key={project.id} project={project} />
                   ))}
                 </div>
               </section>
@@ -252,21 +238,11 @@ export default function ParceiroProjetosClient({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {filtered.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onOpen={setOpenProjectId}
-              />
+              <ProjectCard key={project.id} project={project} />
             ))}
           </div>
         )}
       </div>
-
-      <ParceiroProjetoModal
-        projectId={openProjectId}
-        currentPartnerId={partner.id}
-        onClose={() => setOpenProjectId(null)}
-      />
     </ParceiroPortalShell>
   );
 }

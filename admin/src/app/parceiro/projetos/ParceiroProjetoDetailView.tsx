@@ -21,23 +21,19 @@ import type {
 } from "@/lib/partnerPortal";
 import { formatPartnerClientAddress, partnerProjectValueVisible } from "@/lib/partnerPortal";
 import {
+  formatPartnerProjectEnvironmentsLine,
+  PARTNER_PROJECT_STEPS,
+  partnerEnvironmentStatusLabel,
+  partnerProjectStageLabel,
+  partnerProjectStepIndex,
+} from "@/lib/partnerProjectLabels";
+import {
   addPartnerProjectNoteAction,
   deletePartnerProjectFileAction,
   deletePartnerProjectNoteAction,
 } from "@/app/actions/parceiroPortal";
 import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { cn } from "@/lib/utils";
-
-const PROJECT_STEPS = [
-  { id: "LEAD", label: "Briefing" },
-  { id: "ORCAMENTO", label: "Orçamento" },
-  { id: "NEGOCIACAO", label: "Negociação" },
-  { id: "CONFERENCIA_TECNICA", label: "Detalhe" },
-  { id: "APROVADO", label: "Aprovado" },
-  { id: "PRODUCAO", label: "Fábrica" },
-  { id: "INSTALACAO", label: "Montagem" },
-  { id: "FINALIZADO", label: "Entregue" },
-] as const;
 
 type TabId = "resumo" | "orcamentos" | "arquivos" | "notas";
 
@@ -52,11 +48,6 @@ const dateFmt = new Intl.DateTimeFormat("pt-BR", {
   year: "numeric",
 });
 
-function stepIndex(status: string) {
-  if (status === "PERDIDO") return -1;
-  const idx = PROJECT_STEPS.findIndex((s) => s.id === status);
-  return idx >= 0 ? idx : 0;
-}
 
 function formatBytes(bytes: number | null) {
   if (!bytes || bytes <= 0) return "";
@@ -90,10 +81,12 @@ export default function ParceiroProjetoDetailView({
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const current = stepIndex(initial.status_geral);
+  const current = partnerProjectStepIndex(initial.status_geral);
   const isLost = initial.status_geral === "PERDIDO";
   const address = formatPartnerClientAddress(initial.client);
   const valueVisible = partnerProjectValueVisible(initial.status_geral);
+  const stageLabel = partnerProjectStageLabel(initial.status_geral);
+  const environmentsLine = formatPartnerProjectEnvironmentsLine(initial.environments);
 
   const tabs: { id: TabId; label: string; icon: React.ElementType; count?: number }[] = [
     { id: "resumo", label: "Resumo", icon: Layers },
@@ -190,9 +183,16 @@ export default function ParceiroProjetoDetailView({
             <h3 className="text-lg font-display font-bold text-slate-900 tracking-tight truncate">
               {initial.client.nome}
             </h3>
-            <p className="text-[12px] text-slate-500 mt-1 inline-flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {initial.client.cidade || "Cidade não informada"}
+            {environmentsLine ? (
+              <p className="text-[12px] text-slate-600 mt-0.5 truncate">{environmentsLine}</p>
+            ) : null}
+            <p className="text-[12px] text-slate-500 mt-1 inline-flex items-center gap-1 flex-wrap">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {initial.client.cidade || "Cidade não informada"}
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="font-semibold text-slate-700">{stageLabel}</span>
             </p>
           </div>
           <p
@@ -248,8 +248,18 @@ export default function ParceiroProjetoDetailView({
             <p className="text-sm font-medium text-rose-700">Projeto perdido</p>
           ) : (
             <div className="space-y-2">
-              <div className="flex gap-1 max-w-md">
-                {PROJECT_STEPS.map((step, idx) => (
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-[11px] font-bold text-stone-700">
+                  {stageLabel}
+                </span>
+                {initial.data_entrega_prevista ? (
+                  <span className="text-[11px] text-stone-500">
+                    Entrega {dateFmt.format(new Date(initial.data_entrega_prevista))}
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex gap-1 max-w-md" aria-hidden>
+                {PARTNER_PROJECT_STEPS.map((step, idx) => (
                   <div
                     key={step.id}
                     title={step.label}
@@ -261,12 +271,6 @@ export default function ParceiroProjetoDetailView({
                   />
                 ))}
               </div>
-              <p className="text-sm text-stone-600">
-                {PROJECT_STEPS[current]?.label ?? initial.status_geral}
-                {initial.data_entrega_prevista
-                  ? ` · entrega ${dateFmt.format(new Date(initial.data_entrega_prevista))}`
-                  : ""}
-              </p>
             </div>
           )}
 
@@ -308,7 +312,7 @@ export default function ParceiroProjetoDetailView({
                   >
                     <span className="font-medium text-stone-900">{env.nome}</span>
                     <span className="text-xs text-stone-500">
-                      {env.status.replace(/_/g, " ").toLowerCase()}
+                      {partnerEnvironmentStatusLabel(env.status)}
                     </span>
                   </li>
                 ))}
