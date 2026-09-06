@@ -46,7 +46,7 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
-              <h3 className="font-display font-semibold text-[1.05rem] leading-snug truncate text-[#f7f0e6]">
+              <h3 className="font-display font-semibold text-[1.15rem] leading-snug truncate text-[#f7f0e6]">
                 {project.client.nome}
               </h3>
               <span
@@ -69,7 +69,7 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
             </p>
           </div>
           <p
-            className="text-sm font-display font-semibold tabular-nums shrink-0 text-[hsl(210_12%_78%)]"
+            className="text-sm font-display font-semibold tabular-nums shrink-0 text-[hsl(36_55%_72%)]"
             title={
               partnerProjectValueVisible(project.status_geral)
                 ? undefined
@@ -164,12 +164,13 @@ export default function ParceiroProjetosClient({
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
       <div className="space-y-6">
-        <div>
-          <p className="parceiro-page-kicker">Acompanhe</p>
+        <div className="parceiro-projects-intro">
+          <p className="parceiro-page-kicker">Vitrine de obras</p>
           <div className="flex items-center gap-2">
             <h1 className="parceiro-page-title">
-              {partner.projects.length} projeto
-              {partner.projects.length === 1 ? "" : "s"}
+              {partner.projects.length === 0
+                ? "Seus projetos"
+                : `${partner.projects.length} projeto${partner.projects.length === 1 ? "" : "s"}`}
             </h1>
             <InfoTooltip label="Sobre projetos">
               <TooltipBody
@@ -183,8 +184,8 @@ export default function ParceiroProjetosClient({
             </InfoTooltip>
           </div>
           <p className="parceiro-page-desc">
-            Status e arquivos dos trabalhos vinculados a você. O valor
-            comercial aparece a partir da aprovação do orçamento.
+            Acompanhe etapa, ambientes e arquivos dos trabalhos vinculados a você —
+            com a Móveis Unghero do seu lado.
           </p>
         </div>
 
@@ -219,11 +220,16 @@ export default function ParceiroProjetosClient({
             <div className="parceiro-empty-state-icon">
               <HighlightAnimatedIcon icon={LibraryIcon} size={24} playOnMount />
             </div>
-            <h2 className="parceiro-empty-state-title">Nenhum projeto ainda</h2>
+            <h2 className="parceiro-empty-state-title">Nenhuma obra na vitrine ainda</h2>
             <p className="parceiro-empty-state-desc">
               Quando um cliente usar seu link de indicação ou a Móveis Unghero vincular um projeto, ele
-              aparece aqui.
+              aparece aqui com etapa, ambientes e arquivos.
             </p>
+            <div className="mt-5">
+              <Link href="/parceiro/marketing" className="parceiro-home-cta">
+                Convidar cliente
+              </Link>
+            </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="parceiro-empty-state parceiro-empty-state--compact">

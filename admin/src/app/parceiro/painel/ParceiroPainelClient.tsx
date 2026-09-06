@@ -24,6 +24,7 @@ import {
   type PartnerProjectAttentionKind,
 } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell, { useParceiroShellUi } from "@/app/parceiro/ParceiroPortalShell";
+import { cn } from "@/lib/utils";
 
 interface ParceiroPainelClientProps {
   partner: PartnerPortalData;
@@ -137,19 +138,28 @@ function PainelHome({
         />
       </div>
 
-      {attention.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="parceiro-home-section-title text-sm font-semibold text-white tracking-tight px-0.5">
-            Para acompanhar
-          </h2>
-          <ul className="space-y-2">
+      <section className="parceiro-home-attention">
+        <div className="parceiro-home-attention-header">
+          <h2 className="parceiro-home-attention-title">Para acompanhar</h2>
+          {attention.length > 0 ? (
+            <span className="parceiro-home-attention-count">
+              {attention.length} agora
+            </span>
+          ) : null}
+        </div>
+
+        {attention.length > 0 ? (
+          <ul className="parceiro-home-attention-list">
             {attention.map((item) => {
               const Icon = attentionIcon(item.kind);
               return (
                 <li key={`${item.kind}-${item.projectId}`}>
                   <Link
                     href={`/parceiro/projetos/${item.projectId}`}
-                    className="parceiro-home-recent no-underline"
+                    className={cn(
+                      "parceiro-home-attention-item",
+                      item.kind === "stalled" && "is-stalled"
+                    )}
                   >
                     <span className="parceiro-home-bullet-icon shrink-0">
                       <Icon className="h-4 w-4" />
@@ -168,55 +178,27 @@ function PainelHome({
               );
             })}
           </ul>
-        </section>
-      ) : null}
-
-      <div className="parceiro-home-tiles">
-        <HomeTile
-          onClick={() => shellUi?.openInfo()}
-          icon={IdCard}
-          title="Meu perfil"
-          subtitle="Dados profissionais e portfólio"
-        />
-        <HomeTile
-          href="/parceiro/projetos"
-          icon={FolderKanban}
-          title="Projetos"
-          subtitle={
-            partner.projects.length === 0
-              ? "Nenhum vinculado ainda"
-              : activeCount > 0
-                ? `${activeCount} em andamento`
-                : `${partner.projects.length} no total`
-          }
-        />
-        <HomeTile
-          href="/parceiro/clientes"
-          icon={Users}
-          title="Clientes"
-          subtitle="Indicações e cadastros"
-        />
-        <HomeTile
-          href="/parceiro/marketing"
-          icon={Megaphone}
-          title="Convidar cliente"
-          subtitle="Link e mensagem para WhatsApp"
-        />
-        <HomeTile
-          href="/parceiro/produtos"
-          icon={Package}
-          title="Produtos"
-          subtitle="Catálogo e referências"
-        />
-        {partner.hasCommissions ? (
-          <HomeTile
-            href="/parceiro/comissoes"
-            icon={Wallet}
-            title="Comissões"
-            subtitle="Valores e comprovantes"
-          />
-        ) : null}
-      </div>
+        ) : (
+          <div className="parceiro-home-attention-empty">
+            <p>
+              {partner.projects.length === 0
+                ? "Nenhum projeto vinculado ainda. Convide um cliente ou acompanhe quando a Móveis Unghero vincular um trabalho a você."
+                : "Tudo em dia por aqui. Abra seus projetos ou convide um novo cliente."}
+            </p>
+            <div className="parceiro-home-attention-actions">
+              <Link href="/parceiro/projetos" className="parceiro-home-cta">
+                Ver projetos
+              </Link>
+              <Link
+                href="/parceiro/marketing"
+                className="parceiro-home-cta parceiro-home-cta--ghost"
+              >
+                Convidar cliente
+              </Link>
+            </div>
+          </div>
+        )}
+      </section>
 
       {recent.length > 0 ? (
         <section className="space-y-3">
@@ -261,6 +243,58 @@ function PainelHome({
           </ul>
         </section>
       ) : null}
+
+      <section className="space-y-3">
+        <h2 className="parceiro-home-section-title text-sm font-semibold text-white/70 tracking-tight px-0.5">
+          Atalhos
+        </h2>
+        <div className="parceiro-home-tiles parceiro-home-tiles--secondary">
+          <HomeTile
+            onClick={() => shellUi?.openInfo()}
+            icon={IdCard}
+            title="Meu perfil"
+            subtitle="Dados profissionais e portfólio"
+          />
+          <HomeTile
+            href="/parceiro/projetos"
+            icon={FolderKanban}
+            title="Projetos"
+            subtitle={
+              partner.projects.length === 0
+                ? "Nenhum vinculado ainda"
+                : activeCount > 0
+                  ? `${activeCount} em andamento`
+                  : `${partner.projects.length} no total`
+            }
+          />
+          <HomeTile
+            href="/parceiro/clientes"
+            icon={Users}
+            title="Clientes"
+            subtitle="Indicações e cadastros"
+          />
+          <HomeTile
+            href="/parceiro/marketing"
+            icon={Megaphone}
+            title="Convidar cliente"
+            subtitle="Link e mensagem para WhatsApp"
+          />
+          <HomeTile
+            href="/parceiro/produtos"
+            icon={Package}
+            title="Produtos"
+            subtitle="Catálogo e referências"
+          />
+          {partner.hasCommissions ? (
+            <HomeTile
+              href="/parceiro/comissoes"
+              icon={Wallet}
+              title="Comissões"
+              subtitle="Valores e comprovantes"
+            />
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }

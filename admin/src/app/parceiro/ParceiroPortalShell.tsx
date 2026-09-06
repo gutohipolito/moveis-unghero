@@ -6,6 +6,10 @@ import { usePathname } from "next/navigation";
 import { Camera, Home, Package, Users, Megaphone, FolderKanban, Wallet } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { getPartnerRoleLabel } from "@/lib/partnerTypes";
+import {
+  buildPartnerProjectAttention,
+  partnerProjectIsActive,
+} from "@/lib/partnerProjectLabels";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroBetaBanner from "./ParceiroBetaBanner";
@@ -173,6 +177,16 @@ export default function ParceiroPortalShell({
   const shellRef = useRef<HTMLDivElement>(null);
 
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
+  const activeProjects = partner.projects.filter((p) =>
+    partnerProjectIsActive(p.status_geral)
+  ).length;
+  const attentionCount = buildPartnerProjectAttention(partner.projects).length;
+  const heroStatus =
+    attentionCount > 0
+      ? `${attentionCount} para acompanhar`
+      : activeProjects > 0
+        ? `${activeProjects} projeto${activeProjects === 1 ? "" : "s"} em andamento`
+        : "Comece convidando um cliente";
 
   useEffect(() => {
     setPartner(initialPartner);
@@ -268,7 +282,9 @@ export default function ParceiroPortalShell({
       <main className="parceiro-portal-main">
         {showHeroPhoto && (
           <section className="parceiro-portal-hero">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 p-4 sm:p-6">
+            <div className="parceiro-portal-hero-media" aria-hidden />
+            <div className="parceiro-portal-hero-veil" aria-hidden />
+            <div className="parceiro-portal-hero-inner">
               <div className="relative group/avatar mx-auto sm:mx-0">
                 <div className="parceiro-portal-avatar-lg">
                   {partner.fotoUrl ? (
@@ -300,6 +316,7 @@ export default function ParceiroPortalShell({
                 <p className="parceiro-portal-hero-copy">
                   Seu espaço com a Móveis Unghero.
                 </p>
+                <p className="parceiro-portal-hero-status">{heroStatus}</p>
               </div>
             </div>
           </section>

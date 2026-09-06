@@ -13,8 +13,8 @@ export type PartnerUiPrefs = {
 };
 
 export const DEFAULT_PARTNER_UI_PREFS: PartnerUiPrefs = {
-  theme: "light",
-  accent: "silver",
+  theme: "dark",
+  accent: "gold",
 };
 
 /** HSL components without `hsl()` wrapper — for CSS vars. */
