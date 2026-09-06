@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache";
 export const runtime = "nodejs";
 
 const MAX_BYTES = 20 * 1024 * 1024;
-const ALLOWED = new Set([
+const ALLOWED_MIME = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
@@ -23,8 +23,23 @@ const ALLOWED = new Set([
   "image/vnd.dwg",
   "application/acad",
   "application/x-autocad",
-  "application/octet-stream",
 ]);
+
+function partnerUploadExtOk(lowerName: string) {
+  return (
+    lowerName.endsWith(".pdf") ||
+    lowerName.endsWith(".jpg") ||
+    lowerName.endsWith(".jpeg") ||
+    lowerName.endsWith(".png") ||
+    lowerName.endsWith(".webp") ||
+    lowerName.endsWith(".heic") ||
+    lowerName.endsWith(".heif") ||
+    lowerName.endsWith(".doc") ||
+    lowerName.endsWith(".docx") ||
+    lowerName.endsWith(".dwg") ||
+    lowerName.endsWith(".dxf")
+  );
+}
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -70,17 +85,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const mimeType = file.type || "application/octet-stream";
   const lowerName = file.name.toLowerCase();
-  const extOk =
-    lowerName.endsWith(".pdf") ||
-    lowerName.endsWith(".jpg") ||
-    lowerName.endsWith(".jpeg") ||
-    lowerName.endsWith(".png") ||
-    lowerName.endsWith(".webp") ||
-    lowerName.endsWith(".doc") ||
-    lowerName.endsWith(".docx") ||
-    lowerName.endsWith(".dwg") ||
-    lowerName.endsWith(".dxf");
-  if (!ALLOWED.has(mimeType) && !extOk) {
+  const extOk = partnerUploadExtOk(lowerName);
+  if (!extOk) {
+    return NextResponse.json(
+      { success: false, error: "Use PDF, imagem, Word ou DWG/DXF." },
+      { status: 400 }
+    );
+  }
+  if (
+    mimeType !== "application/octet-stream" &&
+    mimeType !== "" &&
+    !ALLOWED_MIME.has(mimeType)
+  ) {
     return NextResponse.json(
       { success: false, error: "Use PDF, imagem, Word ou DWG/DXF." },
       { status: 400 }

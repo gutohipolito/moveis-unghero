@@ -92,6 +92,9 @@ export default function ParceiroPortalShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement>(null);
+  const drawerPanelRef = useRef<HTMLDivElement>(null);
 
   const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
   const items = navItemsFor(partner);
@@ -119,6 +122,44 @@ export default function ParceiroPortalShell({
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    drawerCloseRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileNavOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !drawerPanelRef.current) return;
+      const focusable = drawerPanelRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      menuBtnRef.current?.focus();
+    };
+  }, [mobileNavOpen]);
 
   const handleUiPrefsChange = (next: PartnerUiPrefs) => {
     setUiPrefs(next);
@@ -246,6 +287,7 @@ export default function ParceiroPortalShell({
                 type="button"
                 className="parceiro-sidebar-profile"
                 onClick={() => setInfoOpen(true)}
+                aria-label={`Perfil de ${partner.nome}`}
               >
                 <span className="parceiro-sidebar-avatar">
                   {partner.fotoUrl ? (
@@ -272,10 +314,13 @@ export default function ParceiroPortalShell({
           <div className="parceiro-portal-content">
             <header className="parceiro-mobile-header">
               <button
+                ref={menuBtnRef}
                 type="button"
                 className="parceiro-mobile-menu-btn"
                 onClick={() => setMobileNavOpen(true)}
                 aria-label="Abrir menu"
+                aria-expanded={mobileNavOpen}
+                aria-controls="parceiro-mobile-drawer"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -304,17 +349,24 @@ export default function ParceiroPortalShell({
         </div>
 
         {mobileNavOpen ? (
-          <div className="parceiro-mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu">
+          <div
+            id="parceiro-mobile-drawer"
+            className="parceiro-mobile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+          >
             <button
               type="button"
               className="parceiro-mobile-drawer-backdrop"
               aria-label="Fechar menu"
               onClick={() => setMobileNavOpen(false)}
             />
-            <div className="parceiro-mobile-drawer-panel">
+            <div ref={drawerPanelRef} className="parceiro-mobile-drawer-panel">
               <div className="parceiro-mobile-drawer-head">
                 <img src="/logo.png" alt="Móveis Unghero" className="parceiro-mobile-logo" />
                 <button
+                  ref={drawerCloseRef}
                   type="button"
                   className="parceiro-mobile-menu-btn"
                   onClick={() => setMobileNavOpen(false)}

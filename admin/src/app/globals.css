@@ -1697,8 +1697,10 @@ button.partner-card:hover,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   border-radius: 0.5rem;
   border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
   background: var(--partner-surface-2, #131619);
@@ -1825,22 +1827,28 @@ button.partner-card:hover,
   position: absolute;
   inset: 0 auto 0 0;
   width: min(20rem, 88vw);
-  background: var(--partner-surface-1, #0e1012);
-  border-right: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  background: #0c0e10;
+  border-right: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  overflow: hidden;
 }
 .parceiro-mobile-drawer-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 .parceiro-mobile-drawer-nav {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  overflow-y: auto;
+  padding-bottom: 0.5rem;
+  flex: 1;
+  min-height: 0;
 }
 @media (min-width: 768px) {
   .parceiro-mobile-header,
@@ -1942,6 +1950,108 @@ button.partner-card:hover,
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  min-height: 2.75rem;
+  padding-inline: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+}
+.parceiro-veio-file-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0 0.85rem;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #111;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.parceiro-veio-upload-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.parceiro-veio-upload-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.55rem;
+  background: var(--partner-surface-3, #191d21);
+  font-size: 0.75rem;
+}
+.parceiro-veio-upload-queue-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-weight: 600;
+}
+.parceiro-veio-upload-queue-status {
+  flex-shrink: 0;
+  color: var(--partner-muted, #a9a7a2);
+}
+.parceiro-veio-upload-queue-item.is-done .parceiro-veio-upload-queue-status {
+  color: var(--partner-celadon, #a8d88d);
+}
+.parceiro-veio-upload-queue-item.is-error .parceiro-veio-upload-queue-status {
+  color: #f2a4a4;
+}
+.parceiro-veio-upload-queue-item.is-uploading .parceiro-veio-upload-queue-status {
+  color: var(--partner-copper, #f0783c);
+}
+
+/* Focus rings VEIO */
+.parceiro-portal-shell--veio :is(
+  .parceiro-sidebar-link,
+  .parceiro-sidebar-toggle,
+  .parceiro-sidebar-profile,
+  .parceiro-sidebar-brand,
+  .parceiro-mobile-menu-btn,
+  .parceiro-veio-flow-step,
+  .parceiro-veio-tab,
+  .parceiro-veio-text-btn,
+  .parceiro-veio-metric,
+  .parceiro-veio-update-item,
+  .parceiro-veio-back,
+  .parceiro-veio-upload-btn,
+  .parceiro-veio-cta-outline,
+  .parceiro-veio-receipt-notice,
+  .parceiro-veio-file-row,
+  .parceiro-veio-icon-btn,
+  .parceiro-filter-chip,
+  .parceiro-veio-detail-link
+):focus-visible {
+  outline: 2px solid var(--partner-copper, #f0783c);
+  outline-offset: 2px;
+}
+.parceiro-veio-textarea:focus-visible {
+  outline: 2px solid var(--partner-copper, #f0783c);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parceiro-portal-shell--veio .animate-spin {
+    animation: none !important;
+  }
+  .parceiro-portal-shell--veio :is(
+    .parceiro-veio-receipt-notice,
+    .parceiro-veio-file-row,
+    .parceiro-filter-chip,
+    .parceiro-veio-tab,
+    .parceiro-veio-upload-btn,
+    .parceiro-sidebar-link
+  ) {
+    transition: none !important;
+  }
+}
   padding: 0.35rem 0;
 }
 .parceiro-veio-flow { position: relative; overflow: hidden; }
@@ -1961,10 +2071,13 @@ button.partner-card:hover,
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem 0.35rem;
   position: relative;
   z-index: 1;
+}
+@media (min-width: 480px) {
+  .parceiro-veio-flow-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (min-width: 900px) {
   .parceiro-veio-flow-steps { grid-template-columns: repeat(8, minmax(0, 1fr)); }
@@ -1979,7 +2092,7 @@ button.partner-card:hover,
   background: transparent;
   color: inherit;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.35rem;
   border-radius: 0.5rem;
   min-height: 4.5rem;
 }
@@ -2005,12 +2118,16 @@ button.partner-card:hover,
 .parceiro-veio-flow-step.is-execucao .parceiro-veio-flow-dot { color: var(--partner-celadon, #a8d88d); }
 .parceiro-veio-flow-step.is-conclusao .parceiro-veio-flow-dot { color: var(--partner-violet, #9a86d8); }
 .parceiro-veio-flow-label {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--partner-muted, #a9a7a2);
   text-align: center;
 }
-.parceiro-veio-flow-step.is-empty { opacity: 0.45; }
+.parceiro-veio-flow-step.is-empty .parceiro-veio-flow-count,
+.parceiro-veio-flow-step.is-empty .parceiro-veio-flow-label,
+.parceiro-veio-flow-step.is-empty .parceiro-veio-flow-dot {
+  color: #6b7076;
+}
 .parceiro-veio-updates-list {
   list-style: none;
   margin: 0.75rem 0 0;
@@ -2445,6 +2562,8 @@ button.partner-card:hover,
   align-items: center;
   gap: 0.4rem;
   width: fit-content;
+  min-height: 2.75rem;
+  padding-inline: 0.15rem;
   color: var(--partner-muted, #a9a7a2);
   font-size: 0.75rem;
   font-weight: 600;
@@ -2561,7 +2680,7 @@ button.partner-card:hover,
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
   border: 1px solid transparent;
@@ -2877,8 +2996,8 @@ a.parceiro-veio-file-row:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  min-height: 2.25rem;
-  padding: 0 0.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.85rem;
   border-radius: 0.65rem;
   background: #fff;
   color: #111;
@@ -3577,7 +3696,7 @@ a.parceiro-veio-file-row:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   height: auto;
   padding: 0.5rem 0.95rem;
   border-radius: 999px;
@@ -3594,7 +3713,7 @@ a.parceiro-veio-file-row:hover {
 
 @media (min-width: 640px) {
   .parceiro-filter-chip {
-    min-height: 2.15rem;
+    min-height: 2.75rem;
     padding: 0 0.85rem;
     font-size: 0.6875rem;
   }

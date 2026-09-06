@@ -21,6 +21,7 @@ import {
   partnerProjectStageFamily,
   partnerProjectStageLabel,
   partnerProjectsHref,
+  PARTNER_PROJECT_STEPS,
   type PartnerProjectStepId,
   type PartnerProjectUpdateKind,
 } from "@/lib/partnerProjectLabels";
@@ -76,6 +77,13 @@ export default function ParceiroPainelClient({
     return filtered.slice(0, 5);
   }, [partner.projects, flowFilter]);
 
+  const filterAnnouncement = useMemo(() => {
+    if (!flowFilter) return "Mostrando todos os projetos acompanhados.";
+    const step = PARTNER_PROJECT_STEPS.find((s) => s.id === flowFilter);
+    const count = partner.projects.filter((p) => p.status_geral === flowFilter).length;
+    return `Filtrado: ${step?.label || flowFilter} · ${count} projeto${count === 1 ? "" : "s"}.`;
+  }, [flowFilter, partner.projects]);
+
   const hasProjects = partner.projects.some((p) => p.status_geral !== "PERDIDO");
 
   return (
@@ -113,6 +121,9 @@ export default function ParceiroPainelClient({
           </section>
         ) : (
           <>
+            <p className="sr-only" aria-live="polite">
+              {filterAnnouncement}
+            </p>
             <div className="parceiro-veio-top-grid">
               <section className="parceiro-veio-panel parceiro-veio-flow" aria-label="Andamento dos projetos">
                 <div className="parceiro-veio-panel-head">

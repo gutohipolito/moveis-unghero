@@ -139,6 +139,7 @@ export default function ParceiroComissoesClient({
               key={chip.id}
               type="button"
               onClick={() => setFilter(chip.id)}
+              aria-pressed={filter === chip.id}
               className={cn(
                 "parceiro-filter-chip",
                 filter === chip.id && "is-active"

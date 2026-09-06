@@ -63,8 +63,34 @@ function historyIcon(kind: PartnerProjectHistoryKind) {
   return Paperclip;
 }
 
+const UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
+const UPLOAD_HINT_ID = "parceiro-upload-hint";
 const UPLOAD_HINT =
-  "PDF, JPG, PNG, WEBP, DOC ou DWG · até 20 MB por arquivo. O envio não altera a etapa do projeto.";
+  "PDF, JPG, PNG, WEBP, HEIC, DOC ou DWG · até 20 MB por arquivo. Você pode selecionar vários. O envio não altera a etapa do projeto.";
+
+function partnerUploadExtOk(name: string) {
+  const lower = name.toLowerCase();
+  return (
+    lower.endsWith(".pdf") ||
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".png") ||
+    lower.endsWith(".webp") ||
+    lower.endsWith(".heic") ||
+    lower.endsWith(".heif") ||
+    lower.endsWith(".doc") ||
+    lower.endsWith(".docx") ||
+    lower.endsWith(".dwg") ||
+    lower.endsWith(".dxf")
+  );
+}
+
+type UploadQueueItem = {
+  id: string;
+  name: string;
+  status: "pending" | "uploading" | "done" | "error";
+  error?: string;
+};
 
 type Props = {
   project: PartnerProjectDetail;
@@ -89,8 +115,10 @@ export default function ParceiroProjetoDetailView({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  const tablistRef = useRef<HTMLDivElement>(null);
 
   const current = partnerProjectStepIndex(initial.status_geral);
   const isLost = initial.status_geral === "PERDIDO";
@@ -127,6 +155,148 @@ export default function ParceiroProjetoDetailView({
     window.setTimeout(() => setSuccess(null), 3200);
   }
 
+  function onTabKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const idx = tabs.findIndex((t) => t.id === tab);
+    if (idx < 0) return;
+    let next = idx;
+    if (event.key === "ArrowLeft") next = (idx - 1 + tabs.length) % tabs.length;
+    if (event.key === "ArrowRight") next = (idx + 1) % tabs.length;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = tabs.length - 1;
+    setTab(tabs[next].id);
+    requestAnimationFrame(() => {
+      tablistRef.current
+        ?.querySelector<HTMLElement>(`#parceiro-tab-${tabs[next].id}`)
+        ?.focus();
+    });
+  }
+
+  async function uploadOneFile(file: File): Promise<PartnerProjectFileDTO | null> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`/api/parceiro/projetos/${initial.id}/arquivos`, {
+      method: "POST",
+      body: formData,
+    });
+    const json = await response.json();
+    if (!json.success) {
+      throw new Error(json.error || "Falha no upload.");
+    }
+    return json.file as PartnerProjectFileDTO;
+  }
+
+  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (selected.length === 0) return;
+
+    setError(null);
+    setSuccess(null);
+    setTab("arquivos");
+
+    const queue: UploadQueueItem[] = selected.map((file, index) => ({
+      id: `${file.name}-${file.size}-${index}-${Date.now()}`,
+      name: file.name,
+      status: "pending",
+    }));
+    setUploadQueue(queue);
+    setUploading(true);
+
+    let okCount = 0;
+    let failCount = 0;
+    const failNames: string[] = [];
+
+    for (let i = 0; i < selected.length; i += 1) {
+      const file = selected[i];
+      const itemId = queue[i].id;
+
+      if (!partnerUploadExtOk(file.name)) {
+        failCount += 1;
+        failNames.push(file.name);
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? { ...item, status: "error", error: "Formato não permitido." }
+              : item
+          )
+        );
+        continue;
+      }
+      if (file.size > UPLOAD_MAX_BYTES) {
+        failCount += 1;
+        failNames.push(file.name);
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? { ...item, status: "error", error: "Arquivo excede 20 MB." }
+              : item
+          )
+        );
+        continue;
+      }
+
+      setUploadQueue((prev) =>
+        prev.map((item) =>
+          item.id === itemId ? { ...item, status: "uploading" } : item
+        )
+      );
+
+      try {
+        const created = await uploadOneFile(file);
+        if (created) {
+          okCount += 1;
+          setFiles((prev) => [created, ...prev]);
+          setUploadQueue((prev) =>
+            prev.map((item) =>
+              item.id === itemId ? { ...item, status: "done" } : item
+            )
+          );
+        }
+      } catch (err) {
+        failCount += 1;
+        failNames.push(file.name);
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  status: "error",
+                  error: err instanceof Error ? err.message : "Falha no upload.",
+                }
+              : item
+          )
+        );
+      }
+    }
+
+    setUploading(false);
+
+    if (okCount > 0 && failCount === 0) {
+      setSuccess(
+        okCount === 1
+          ? "Arquivo enviado. A equipe da Móveis Unghero já pode consultar."
+          : `${okCount} arquivos enviados. A equipe da Móveis Unghero já pode consultar.`
+      );
+      clearFeedbackSoon();
+      window.setTimeout(() => setUploadQueue([]), 1800);
+    } else if (okCount > 0 && failCount > 0) {
+      setSuccess(`${okCount} enviados com sucesso.`);
+      setError(
+        `${failCount} falharam${failNames.length ? `: ${failNames.slice(0, 3).join(", ")}` : "."}`
+      );
+      clearFeedbackSoon();
+    } else {
+      setError(
+        failNames.length === 1
+          ? `Não foi possível enviar ${failNames[0]}.`
+          : "Nenhum arquivo foi enviado. Verifique formato e tamanho."
+      );
+    }
+  }
+
   function submitNote() {
     setError(null);
     setSuccess(null);
@@ -156,36 +326,6 @@ export default function ParceiroProjetoDetailView({
       setSuccess("Observação excluída.");
       clearFeedbackSoon();
     });
-  }
-
-  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setError(null);
-    setSuccess(null);
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch(`/api/parceiro/projetos/${initial.id}/arquivos`, {
-        method: "POST",
-        body: formData,
-      });
-      const json = await response.json();
-      if (!json.success) {
-        setError(json.error || "Falha no upload.");
-        return;
-      }
-      setFiles((prev) => [json.file, ...prev]);
-      setTab("arquivos");
-      setSuccess("Arquivo enviado. A equipe da Móveis Unghero já pode consultar.");
-      clearFeedbackSoon();
-    } catch {
-      setError("Não foi possível enviar o arquivo.");
-    } finally {
-      setUploading(false);
-    }
   }
 
   function removeFile(fileId: string) {
@@ -225,13 +365,22 @@ export default function ParceiroProjetoDetailView({
         </div>
       ) : null}
 
-      <div className="parceiro-veio-tabs" role="tablist" aria-label="Seções do projeto">
+      <div
+        ref={tablistRef}
+        className="parceiro-veio-tabs"
+        role="tablist"
+        aria-label="Seções do projeto"
+        onKeyDown={onTabKeyDown}
+      >
         {tabs.map((t) => (
           <button
             key={t.id}
+            id={`parceiro-tab-${t.id}`}
             type="button"
             role="tab"
             aria-selected={tab === t.id}
+            aria-controls={`parceiro-panel-${t.id}`}
+            tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)}
             className={cn("parceiro-veio-tab", tab === t.id && "is-active")}
           >
@@ -244,7 +393,12 @@ export default function ParceiroProjetoDetailView({
       </div>
 
       {tab === "resumo" && (
-        <div className="parceiro-veio-detail-grid">
+        <div
+          id="parceiro-panel-resumo"
+          role="tabpanel"
+          aria-labelledby="parceiro-tab-resumo"
+          className="parceiro-veio-detail-grid"
+        >
           <section className="parceiro-veio-panel parceiro-veio-detail-main">
             <div className="parceiro-veio-panel-head">
               <h2 className="parceiro-veio-panel-title">Andamento</h2>
@@ -382,7 +536,12 @@ export default function ParceiroProjetoDetailView({
       )}
 
       {tab === "orcamentos" && (
-        <div className="parceiro-veio-stack">
+        <div
+          id="parceiro-panel-orcamentos"
+          role="tabpanel"
+          aria-labelledby="parceiro-tab-orcamentos"
+          className="parceiro-veio-stack"
+        >
           {initial.quotes.filter((q) => q.publicUrl).length === 0 ? (
             <div className="parceiro-veio-empty is-inline">
               <p className="parceiro-veio-empty-title">Nenhum orçamento em PDF</p>
@@ -423,20 +582,30 @@ export default function ParceiroProjetoDetailView({
       )}
 
       {tab === "arquivos" && (
-        <div className="parceiro-veio-stack">
+        <div
+          id="parceiro-panel-arquivos"
+          role="tabpanel"
+          aria-labelledby="parceiro-tab-arquivos"
+          className="parceiro-veio-stack"
+        >
           <section className="parceiro-veio-panel space-y-3">
             <h2 className="parceiro-veio-panel-title">Adicionar imagens ou arquivos</h2>
-            <p className="parceiro-veio-detail-copy">{UPLOAD_HINT}</p>
+            <p id={UPLOAD_HINT_ID} className="parceiro-veio-detail-copy">
+              {UPLOAD_HINT}
+            </p>
             <input
               ref={fileRef}
               type="file"
               className="hidden"
-              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.dwg,.dxf,application/pdf,image/*"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.doc,.docx,.dwg,.dxf,application/pdf,image/*"
               onChange={onUpload}
             />
             <button
               type="button"
               disabled={uploading}
+              aria-busy={uploading}
+              aria-describedby={UPLOAD_HINT_ID}
               onClick={() => fileRef.current?.click()}
               className="parceiro-veio-upload-btn"
             >
@@ -445,8 +614,26 @@ export default function ParceiroProjetoDetailView({
               ) : (
                 <Upload className="h-4 w-4" aria-hidden />
               )}
-              {uploading ? "Enviando…" : "Adicionar arquivo"}
+              {uploading ? "Enviando…" : "Adicionar arquivos"}
             </button>
+            {uploadQueue.length > 0 ? (
+              <ul className="parceiro-veio-upload-queue" aria-live="polite">
+                {uploadQueue.map((item) => (
+                  <li key={item.id} className={cn("parceiro-veio-upload-queue-item", `is-${item.status}`)}>
+                    <span className="parceiro-veio-upload-queue-name">{item.name}</span>
+                    <span className="parceiro-veio-upload-queue-status">
+                      {item.status === "pending"
+                        ? "Na fila"
+                        : item.status === "uploading"
+                          ? "Enviando…"
+                          : item.status === "done"
+                            ? "Enviado"
+                            : item.error || "Falhou"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
 
           {files.length === 0 ? (
@@ -468,7 +655,7 @@ export default function ParceiroProjetoDetailView({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={file.url}
-                        alt=""
+                        alt={file.nome}
                         className="parceiro-veio-file-thumb is-image"
                       />
                     ) : (
@@ -481,6 +668,7 @@ export default function ParceiroProjetoDetailView({
                         href={file.url}
                         target="_blank"
                         rel="noreferrer"
+                        title={file.nome}
                         className="parceiro-veio-file-name hover:underline"
                       >
                         {file.nome}
@@ -513,7 +701,12 @@ export default function ParceiroProjetoDetailView({
       )}
 
       {tab === "notas" && (
-        <div className="parceiro-veio-stack">
+        <div
+          id="parceiro-panel-notas"
+          role="tabpanel"
+          aria-labelledby="parceiro-tab-notas"
+          className="parceiro-veio-stack"
+        >
           <section className="parceiro-veio-panel space-y-3">
             <h2 className="parceiro-veio-panel-title">Observações</h2>
             <textarea
@@ -580,7 +773,12 @@ export default function ParceiroProjetoDetailView({
       )}
 
       {tab === "historico" && (
-        <section className="parceiro-veio-panel">
+        <section
+          id="parceiro-panel-historico"
+          role="tabpanel"
+          aria-labelledby="parceiro-tab-historico"
+          className="parceiro-veio-panel"
+        >
           {history.length === 0 ? (
             <div className="parceiro-veio-empty is-inline">
               <p className="parceiro-veio-empty-title">Sem atualizações registradas</p>
