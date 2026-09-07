@@ -684,15 +684,7 @@ button.partner-card:hover,
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: #050607;
-}
-
-.parceiro-login-veio {
-  position: absolute;
-  inset: 0;
-  background:
-    url("/images/portal-parceiro/veio-background.png") right center / cover no-repeat;
-  opacity: 0.92;
+  background: #120e0c;
 }
 
 .parceiro-login-video {
@@ -701,9 +693,8 @@ button.partner-card:hover,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.38;
-  filter: saturate(0.85) brightness(0.72);
-  /* Zoom sutil; o clip fica em .parceiro-login-bg */
+  opacity: 0.55;
+  filter: saturate(0.9) brightness(0.78);
   transform: scale(1.04);
   transform-origin: center;
 }
@@ -712,7 +703,17 @@ button.partner-card:hover,
   background:
     radial-gradient(ellipse at 30% 20%, hsl(42 40% 28% / 0.35), transparent 55%),
     url("/factory-bg.png") center / cover no-repeat;
-  opacity: 0.45;
+  opacity: 0.55;
+}
+
+.parceiro-login-veio {
+  position: absolute;
+  inset: 0;
+  background:
+    url("/images/portal-parceiro/veio-background.png") right center / cover no-repeat;
+  /* Preto some; só os veios de cobre ficam sobre o vídeo */
+  mix-blend-mode: screen;
+  opacity: 0.72;
 }
 
 .parceiro-login-overlay {
@@ -721,12 +722,12 @@ button.partner-card:hover,
   background:
     linear-gradient(
       105deg,
-      hsl(0 0% 2% / 0.72) 0%,
-      hsl(0 0% 2% / 0.45) 42%,
-      hsl(0 0% 2% / 0.2) 70%,
+      hsl(24 28% 5% / 0.78) 0%,
+      hsl(24 24% 6% / 0.52) 40%,
+      hsl(24 20% 6% / 0.22) 68%,
       transparent 100%
     ),
-    radial-gradient(ellipse at 18% 40%, hsl(24 28% 6% / 0.35), transparent 55%);
+    radial-gradient(ellipse at 50% 0%, hsl(28 55% 28% / 0.12), transparent 55%);
 }
 
 .parceiro-login-content {
@@ -5700,16 +5701,40 @@ a.parceiro-home-stat:active {
 .parceiro-login-shell .btn-metallic:focus-visible {
   background: linear-gradient(
     145deg,
-    hsl(0 0% 88%) 0%,
-    hsl(210 8% 68%) 45%,
-    hsl(210 10% 48%) 100%
+    hsl(32 58% 52%) 0%,
+    hsl(28 52% 40%) 45%,
+    hsl(24 48% 30%) 100%
   );
-  border-color: hsl(210 10% 38% / 0.4);
-  color: hsl(220 15% 12%);
+  border-color: hsl(24 45% 24% / 0.5);
+  color: hsl(36 40% 96%);
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.4),
-    0 1px 2px hsl(220 15% 10% / 0.08),
-    0 4px 14px hsl(210 10% 30% / 0.18);
+    inset 0 1px 0 hsl(40 60% 70% / 0.28),
+    0 1px 2px hsl(20 30% 8% / 0.12),
+    0 4px 14px hsl(28 45% 22% / 0.28);
+}
+
+.parceiro-login-shell .btn-metallic:hover,
+.parceiro-login-shell .btn-metallic:focus-visible {
+  background: linear-gradient(
+    145deg,
+    hsl(32 62% 56%) 0%,
+    hsl(28 54% 44%) 45%,
+    hsl(24 50% 34%) 100%
+  );
+  filter: brightness(1.04);
+  box-shadow:
+    inset 0 1px 0 hsl(40 60% 75% / 0.32),
+    0 2px 4px hsl(20 30% 8% / 0.14),
+    0 6px 18px hsl(28 45% 22% / 0.34);
+}
+
+.parceiro-login-shell .btn-metallic:active {
+  background: linear-gradient(
+    145deg,
+    hsl(28 52% 42%) 0%,
+    hsl(24 48% 28%) 100%
+  );
+  filter: none;
 }
 
 .btn-secondary-relief:active {
