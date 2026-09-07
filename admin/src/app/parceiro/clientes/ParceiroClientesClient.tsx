@@ -1,17 +1,11 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import {
-  Mail,
-  MapPin,
-  Phone,
-  Search,
-} from "lucide-react";
-import { PartyPopperIcon, UsersIcon, HighlightAnimatedIcon } from "@/components/icons";
+import Link from "next/link";
+import { ChevronRight, Mail, MapPin, Phone, Search } from "lucide-react";
 import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal";
 import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -29,8 +23,24 @@ function isNewClient(client: PartnerPortalClient, now: number) {
     ? new Date(client.partnerAttributedAt).getTime()
     : null;
   if (attributed != null && now - attributed <= NEW_CLIENT_WINDOW_MS) return true;
-  // Fallback: cadastro recente sem attributed (legado) não conta como "novo" de indicação
   return false;
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function whatsappHref(telefone: string) {
+  const phoneDigits = telefone.replace(/\D/g, "");
+  const waNumber =
+    phoneDigits.length >= 12 && phoneDigits.startsWith("55")
+      ? phoneDigits
+      : phoneDigits.length >= 10
+        ? `55${phoneDigits.slice(-11)}`
+        : null;
+  return waNumber ? `https://wa.me/${waNumber}` : null;
 }
 
 export default function ParceiroClientesClient({
@@ -65,147 +75,147 @@ export default function ParceiroClientesClient({
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
-      <div className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <p className="parceiro-page-kicker">Carteira</p>
-            <h1 className="parceiro-page-title">
-              {clients.length} cliente{clients.length === 1 ? "" : "s"}
-            </h1>
-            <p className="parceiro-page-desc">
-              Indicados por você ou com projetos vinculados.
-            </p>
+      <div className="parceiro-veio-clients">
+        <header className="parceiro-veio-clients-header">
+          <h1 className="parceiro-veio-title">Clientes</h1>
+          <p className="parceiro-veio-subtitle">
+            Indicados por você ou com projetos vinculados à Móveis Unghero.
+          </p>
+        </header>
+
+        <div className="parceiro-veio-clients-toolbar">
+          <div
+            className="parceiro-veio-finance-filters"
+            role="toolbar"
+            aria-label="Filtrar clientes"
+          >
+            <button
+              type="button"
+              onClick={() => setTab("all")}
+              aria-pressed={tab === "all"}
+              className={cn(
+                "parceiro-veio-finance-filter",
+                tab === "all" && "is-active"
+              )}
+            >
+              <span>Todos</span>
+              <span className="parceiro-veio-finance-filter-count">{clients.length}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("new")}
+              aria-pressed={tab === "new"}
+              className={cn(
+                "parceiro-veio-finance-filter",
+                tab === "new" && "is-active"
+              )}
+            >
+              <span>Novos</span>
+              <span className="parceiro-veio-finance-filter-count">
+                {newClients.length}
+              </span>
+            </button>
           </div>
-        </div>
 
-        <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar clientes">
-          <button
-            type="button"
-            onClick={() => setTab("all")}
-            className={cn(
-              "parceiro-filter-chip",
-              tab === "all" && "is-active"
-            )}
-          >
-            Todos · {clients.length}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("new")}
-            className={cn(
-              "parceiro-filter-chip",
-              tab === "new" && "is-active"
-            )}
-          >
-            Novos · {newClients.length}
-          </button>
-        </div>
-
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome, cidade, telefone..."
-            className="pl-9 h-11 bg-white/95 border-white/20"
-          />
+          <label className="parceiro-veio-clients-search">
+            <Search className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome, cidade, telefone…"
+              aria-label="Buscar clientes"
+            />
+          </label>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="partner-card p-10 text-center">
-            <div className="partner-card-accent" />
-            <div className="inline-flex p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-4">
-              {tab === "new" ? (
-                <HighlightAnimatedIcon icon={PartyPopperIcon} size={24} playOnMount />
-              ) : (
-                <HighlightAnimatedIcon icon={UsersIcon} size={24} playOnMount />
-              )}
-            </div>
-            <h2 className="font-display font-bold text-slate-900">
+          <section className="parceiro-veio-empty">
+            <div className="parceiro-veio-empty-mark" aria-hidden />
+            <h2 className="parceiro-veio-empty-title">
               {tab === "new" ? "Nenhum cadastro novo" : "Nenhum cliente vinculado"}
             </h2>
-            <p className="text-sm text-slate-600 mt-2 max-w-md mx-auto">
+            <p className="parceiro-veio-empty-desc">
               {tab === "new"
                 ? "Aqui entram clientes que se cadastraram pelo seu link nos últimos 7 dias."
                 : clients.length === 0
-                  ? "Compartilhe seu link em Marketing ou aguarde a Móveis Unghero vincular um projeto ao seu nome."
+                  ? "Compartilhe seu link em Indicar cliente ou aguarde a Móveis Unghero vincular um projeto."
                   : "Tente outro termo de busca."}
             </p>
-          </div>
+            {clients.length === 0 ? (
+              <Link href="/parceiro/marketing" className="parceiro-veio-cta">
+                Indicar cliente
+              </Link>
+            ) : null}
+          </section>
         ) : (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ul className="parceiro-veio-clients-list">
             {filtered.map((client) => {
               const address = formatPartnerClientAddress(client);
-              const phoneDigits = client.telefone.replace(/\D/g, "");
-              const waNumber =
-                phoneDigits.length >= 12 && phoneDigits.startsWith("55")
-                  ? phoneDigits
-                  : phoneDigits.length >= 10
-                    ? `55${phoneDigits.slice(-11)}`
-                    : null;
-              const waHref = waNumber ? `https://wa.me/${waNumber}` : null;
+              const waHref = whatsappHref(client.telefone);
               const isNew = isNewClient(client, now);
+              const projectsLabel =
+                client.projectsCount === 0
+                  ? "Sem projetos"
+                  : `${client.projectsCount} projeto${client.projectsCount === 1 ? "" : "s"}`;
 
               return (
-                <li key={client.id} className="partner-card">
-                  <div className="partner-card-accent" />
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="font-display font-bold text-slate-900 truncate">
-                            {client.nome}
-                          </h2>
-                          {isNew && (
-                            <span className="text-[9px] font-black uppercase tracking-wider text-zinc-700 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">
-                              Novo
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] font-semibold text-slate-500 mt-0.5">
-                          {client.projectsCount}{" "}
-                          {client.projectsCount === 1 ? "projeto" : "projetos"}
-                          {client.projectsCount === 1 ? "" : "s"} vinculada
-                          {client.projectsCount === 1 ? "" : "s"}
-                        </p>
+                <li key={client.id}>
+                  <article className="parceiro-veio-client-row">
+                    <span className="parceiro-veio-thumb" aria-hidden>
+                      {initials(client.nome)}
+                    </span>
+
+                    <div className="parceiro-veio-client-main min-w-0">
+                      <div className="parceiro-veio-client-top">
+                        <h2 className="parceiro-veio-client-name">{client.nome}</h2>
+                        {isNew ? (
+                          <span className="parceiro-veio-client-badge">Novo</span>
+                        ) : null}
                       </div>
+                      <p className="parceiro-veio-client-meta">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                        <span className="truncate">{address}</span>
+                      </p>
+                      <p className="parceiro-veio-client-projects">{projectsLabel}</p>
                     </div>
 
-                    <div className="space-y-2 text-xs text-slate-700">
-                      <p className="flex items-start gap-2">
-                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <span className="leading-relaxed">{address}</span>
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        {waHref ? (
-                          <a
-                            href={waHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-semibold text-emerald-700 hover:underline"
-                          >
-                            {client.telefone || "Telefone não informado"}
-                          </a>
-                        ) : (
-                          <span>{client.telefone || "Telefone não informado"}</span>
-                        )}
-                      </p>
-                      <p className="flex items-center gap-2 min-w-0">
-                        <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        {client.email ? (
-                          <a
-                            href={`mailto:${client.email}`}
-                            className="font-semibold text-slate-800 hover:underline truncate"
-                          >
-                            {client.email}
-                          </a>
-                        ) : (
-                          <span>E-mail não informado</span>
-                        )}
-                      </p>
+                    <div className="parceiro-veio-client-actions">
+                      {waHref ? (
+                        <a
+                          href={waHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="parceiro-veio-finance-btn is-ghost"
+                        >
+                          <Phone className="h-3.5 w-3.5" aria-hidden />
+                          WhatsApp
+                        </a>
+                      ) : client.telefone ? (
+                        <span className="parceiro-veio-client-contact">
+                          <Phone className="h-3.5 w-3.5" aria-hidden />
+                          {client.telefone}
+                        </span>
+                      ) : null}
+                      {client.email ? (
+                        <a
+                          href={`mailto:${client.email}`}
+                          className="parceiro-veio-finance-btn is-ghost"
+                        >
+                          <Mail className="h-3.5 w-3.5" aria-hidden />
+                          E-mail
+                        </a>
+                      ) : null}
+                      {client.projectsCount > 0 ? (
+                        <Link
+                          href="/parceiro/projetos"
+                          className="parceiro-veio-finance-btn is-solid"
+                        >
+                          Projetos
+                          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                        </Link>
+                      ) : null}
                     </div>
-                  </div>
+                  </article>
                 </li>
               );
             })}

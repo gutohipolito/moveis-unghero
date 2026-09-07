@@ -18,7 +18,6 @@ import {
   type PartnerProjectStatusFilter,
 } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
-import InfoTooltip, { TooltipBody } from "@/components/ui/InfoTooltip";
 import { cn } from "@/lib/utils";
 
 const moneyFmt = new Intl.NumberFormat("pt-BR", {
@@ -166,27 +165,9 @@ export default function ParceiroProjetosClient({
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
       <div className="space-y-6">
         <div className="parceiro-projects-intro">
-          <p className="parceiro-page-kicker">Vitrine de obras</p>
-          <div className="flex items-center gap-2">
-            <h1 className="parceiro-page-title">
-              {partner.projects.length === 0
-                ? "Seus projetos"
-                : `${partner.projects.length} projeto${partner.projects.length === 1 ? "" : "s"}`}
-            </h1>
-            <InfoTooltip label="Sobre projetos">
-              <TooltipBody
-                title="Projetos no portal"
-                items={[
-                  "Toque em um card para ver detalhes, PDFs, arquivos e notas",
-                  "O valor comercial só aparece depois da aprovação do orçamento",
-                  "Arquivos e notas ficam visíveis também para a equipe da Móveis Unghero",
-                ]}
-              />
-            </InfoTooltip>
-          </div>
-          <p className="parceiro-page-desc">
-            Acompanhe etapa, ambientes e arquivos dos trabalhos vinculados a você —
-            com a Móveis Unghero do seu lado.
+          <h1 className="parceiro-veio-title">Projetos</h1>
+          <p className="parceiro-veio-subtitle">
+            Acompanhe etapa, ambientes e arquivos dos trabalhos vinculados a você.
           </p>
         </div>
 

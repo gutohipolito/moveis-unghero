@@ -511,20 +511,50 @@ export default function ParceiroProjetoDetailView({
             ) : (
               <div className="parceiro-veio-timeline-wrap">
                 <div className="parceiro-veio-timeline-track">
-                  <svg
-                    className="parceiro-veio-timeline-vein"
-                    viewBox="0 0 800 48"
-                    preserveAspectRatio="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M8 24 C 60 8, 100 40, 150 24 S 250 8, 300 24 S 400 42, 450 24 S 550 6, 600 24 S 700 40, 792 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  {(() => {
+                    const stepsCount = PARTNER_PROJECT_STEPS.length;
+                    const veinProgressPct =
+                      current < 0
+                        ? 0
+                        : Math.min(100, ((current + 0.5) / stepsCount) * 100);
+                    const veinPath =
+                      "M8 24 C 60 8, 100 40, 150 24 S 250 8, 300 24 S 400 42, 450 24 S 550 6, 600 24 S 700 40, 792 24";
+                    return (
+                      <>
+                        <svg
+                          className="parceiro-veio-timeline-vein is-base"
+                          viewBox="0 0 800 48"
+                          preserveAspectRatio="none"
+                          aria-hidden
+                        >
+                          <path
+                            d={veinPath}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <svg
+                          className="parceiro-veio-timeline-vein is-progress"
+                          viewBox="0 0 800 48"
+                          preserveAspectRatio="none"
+                          aria-hidden
+                          style={{
+                            clipPath: `inset(0 ${Math.max(0, 100 - veinProgressPct)}% 0 0)`,
+                          }}
+                        >
+                          <path
+                            d={veinPath}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.25"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </>
+                    );
+                  })()}
                   <ol className="parceiro-veio-timeline" aria-label="Etapas do projeto">
                     {PARTNER_PROJECT_STEPS.map((step, idx) => {
                       const done = idx < current;
@@ -543,12 +573,12 @@ export default function ParceiroProjetoDetailView({
                           <span className="parceiro-veio-timeline-rail" aria-hidden>
                             <span className="parceiro-veio-timeline-dot" />
                           </span>
-                        <div className="parceiro-veio-timeline-body">
-                          <p className="parceiro-veio-timeline-label">{step.label}</p>
-                          {currentStep ? (
-                            <p className="parceiro-veio-timeline-hint">Etapa atual</p>
-                          ) : null}
-                        </div>
+                          <div className="parceiro-veio-timeline-body">
+                            <p className="parceiro-veio-timeline-label">{step.label}</p>
+                            {currentStep ? (
+                              <p className="parceiro-veio-timeline-hint">Etapa atual</p>
+                            ) : null}
+                          </div>
                         </li>
                       );
                     })}
