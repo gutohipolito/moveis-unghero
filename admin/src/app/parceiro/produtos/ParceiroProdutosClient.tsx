@@ -9,7 +9,6 @@ import {
   Copy,
   Download,
   ImageIcon,
-  Images,
   Package,
   Search,
   X,
