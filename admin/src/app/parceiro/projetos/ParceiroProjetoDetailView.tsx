@@ -399,7 +399,7 @@ export default function ParceiroProjetoDetailView({
           aria-labelledby="parceiro-tab-resumo"
           className="parceiro-veio-detail-grid"
         >
-          <section className="parceiro-veio-panel parceiro-veio-detail-main">
+          <section className="parceiro-veio-panel parceiro-veio-detail-progress">
             <div className="parceiro-veio-panel-head">
               <h2 className="parceiro-veio-panel-title">Andamento</h2>
               {nextMilestone ? (
@@ -411,58 +411,60 @@ export default function ParceiroProjetoDetailView({
               <p className="parceiro-veio-detail-lost">Projeto perdido</p>
             ) : (
               <div className="parceiro-veio-timeline-wrap">
-                <svg
-                  className="parceiro-veio-timeline-vein"
-                  viewBox="0 0 24 400"
-                  preserveAspectRatio="none"
-                  aria-hidden
-                >
-                  <path
-                    d="M12 8 C 18 40, 6 70, 12 100 S 18 160, 12 190 S 6 250, 12 280 S 18 340, 12 392"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <ol className="parceiro-veio-timeline" aria-label="Etapas do projeto">
-                  {PARTNER_PROJECT_STEPS.map((step, idx) => {
-                    const done = idx < current;
-                    const currentStep = idx === current;
-                    return (
-                      <li
-                        key={step.id}
-                        className={cn(
-                          "parceiro-veio-timeline-step",
-                          `is-${step.family}`,
-                          done && "is-done",
-                          currentStep && "is-current",
-                          !done && !currentStep && "is-upcoming"
-                        )}
-                      >
-                        <span className="parceiro-veio-timeline-rail" aria-hidden>
-                          <span className="parceiro-veio-timeline-dot" />
-                        </span>
-                        <div className="parceiro-veio-timeline-body">
-                          <p className="parceiro-veio-timeline-label">{step.label}</p>
-                          {currentStep ? (
-                            <p className="parceiro-veio-timeline-hint">Etapa atual</p>
-                          ) : done ? (
-                            <p className="parceiro-veio-timeline-hint">Concluída</p>
-                          ) : (
-                            <p className="parceiro-veio-timeline-hint">A seguir</p>
+                <div className="parceiro-veio-timeline-track">
+                  <svg
+                    className="parceiro-veio-timeline-vein"
+                    viewBox="0 0 800 48"
+                    preserveAspectRatio="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M8 24 C 60 8, 100 40, 150 24 S 250 8, 300 24 S 400 42, 450 24 S 550 6, 600 24 S 700 40, 792 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <ol className="parceiro-veio-timeline" aria-label="Etapas do projeto">
+                    {PARTNER_PROJECT_STEPS.map((step, idx) => {
+                      const done = idx < current;
+                      const currentStep = idx === current;
+                      return (
+                        <li
+                          key={step.id}
+                          className={cn(
+                            "parceiro-veio-timeline-step",
+                            `is-${step.family}`,
+                            done && "is-done",
+                            currentStep && "is-current",
+                            !done && !currentStep && "is-upcoming"
                           )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
+                        >
+                          <span className="parceiro-veio-timeline-rail" aria-hidden>
+                            <span className="parceiro-veio-timeline-dot" />
+                          </span>
+                          <div className="parceiro-veio-timeline-body">
+                            <p className="parceiro-veio-timeline-label">{step.label}</p>
+                            {currentStep ? (
+                              <p className="parceiro-veio-timeline-hint">Etapa atual</p>
+                            ) : done ? (
+                              <p className="parceiro-veio-timeline-hint">Concluída</p>
+                            ) : (
+                              <p className="parceiro-veio-timeline-hint">A seguir</p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
               </div>
             )}
           </section>
 
-          <aside className="parceiro-veio-detail-side">
-            <section className="parceiro-veio-panel space-y-3">
+          <div className="parceiro-veio-detail-cards">
+            <section className="parceiro-veio-panel parceiro-veio-detail-card">
               <h2 className="parceiro-veio-panel-title">Contato</h2>
               <p className="parceiro-veio-detail-copy">{address}</p>
               <div className="parceiro-veio-detail-links">
@@ -499,7 +501,7 @@ export default function ParceiroProjetoDetailView({
             </section>
 
             {initial.environments.length > 0 ? (
-              <section className="parceiro-veio-panel space-y-3">
+              <section className="parceiro-veio-panel parceiro-veio-detail-card">
                 <h2 className="parceiro-veio-panel-title">Ambientes</h2>
                 <ul className="parceiro-veio-env-list">
                   {initial.environments.map((env) => (
@@ -515,7 +517,7 @@ export default function ParceiroProjetoDetailView({
             ) : null}
 
             {history.length > 0 ? (
-              <section className="parceiro-veio-panel space-y-3">
+              <section className="parceiro-veio-panel parceiro-veio-detail-card">
                 <div className="parceiro-veio-panel-head">
                   <h2 className="parceiro-veio-panel-title">Últimas atualizações</h2>
                   <button
@@ -547,7 +549,7 @@ export default function ParceiroProjetoDetailView({
                 </ul>
               </section>
             ) : null}
-          </aside>
+          </div>
         </div>
       )}
 
