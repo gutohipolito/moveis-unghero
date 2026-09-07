@@ -21,14 +21,14 @@ import type {
   PartnerProjectFileDTO,
   PartnerProjectNoteDTO,
 } from "@/lib/partnerPortal";
-import { formatPartnerClientAddress, partnerProjectValueVisible } from "@/lib/partnerPortal";
+import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import {
   buildPartnerProjectHistory,
   formatPartnerRelativeTime,
   PARTNER_PROJECT_STEPS,
   partnerEnvironmentStatusLabel,
   partnerFileIsImage,
-  partnerProjectNextMilestone,
+  partnerProjectReadyForAssemblyLabel,
   partnerProjectStageLabel,
   partnerProjectStepIndex,
   type PartnerProjectHistoryKind,
@@ -41,11 +41,6 @@ import {
 import { cn } from "@/lib/utils";
 
 type TabId = "resumo" | "orcamentos" | "arquivos" | "notas" | "historico";
-
-const moneyFmt = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
 
 function formatBytes(bytes: number | null) {
   if (!bytes || bytes <= 0) return "";
@@ -123,12 +118,10 @@ export default function ParceiroProjetoDetailView({
   const current = partnerProjectStepIndex(initial.status_geral);
   const isLost = initial.status_geral === "PERDIDO";
   const address = formatPartnerClientAddress(initial.client);
-  const valueVisible = partnerProjectValueVisible(initial.status_geral);
   const stageLabel = partnerProjectStageLabel(initial.status_geral);
-  const nextMilestone = partnerProjectNextMilestone({
-    statusGeral: initial.status_geral,
-    dataEntregaPrevista: initial.data_entrega_prevista,
-  });
+  const readyForAssemblyLabel = isLost
+    ? null
+    : partnerProjectReadyForAssemblyLabel(initial.data_entrega_prevista);
 
   const history = useMemo(
     () =>
@@ -402,8 +395,8 @@ export default function ParceiroProjetoDetailView({
           <section className="parceiro-veio-panel parceiro-veio-detail-progress">
             <div className="parceiro-veio-panel-head">
               <h2 className="parceiro-veio-panel-title">Andamento</h2>
-              {nextMilestone ? (
-                <p className="parceiro-veio-detail-milestone">{nextMilestone}</p>
+              {readyForAssemblyLabel ? (
+                <p className="parceiro-veio-detail-milestone">{readyForAssemblyLabel}</p>
               ) : null}
             </div>
 
@@ -444,16 +437,12 @@ export default function ParceiroProjetoDetailView({
                           <span className="parceiro-veio-timeline-rail" aria-hidden>
                             <span className="parceiro-veio-timeline-dot" />
                           </span>
-                          <div className="parceiro-veio-timeline-body">
-                            <p className="parceiro-veio-timeline-label">{step.label}</p>
-                            {currentStep ? (
-                              <p className="parceiro-veio-timeline-hint">Etapa atual</p>
-                            ) : done ? (
-                              <p className="parceiro-veio-timeline-hint">Concluída</p>
-                            ) : (
-                              <p className="parceiro-veio-timeline-hint">A seguir</p>
-                            )}
-                          </div>
+                        <div className="parceiro-veio-timeline-body">
+                          <p className="parceiro-veio-timeline-label">{step.label}</p>
+                          {currentStep ? (
+                            <p className="parceiro-veio-timeline-hint">Etapa atual</p>
+                          ) : null}
+                        </div>
                         </li>
                       );
                     })}
@@ -489,15 +478,6 @@ export default function ParceiroProjetoDetailView({
                   </a>
                 ) : null}
               </div>
-              {valueVisible ? (
-                <p className="parceiro-veio-detail-value">
-                  Valor previsto · {moneyFmt.format(initial.valor_previsto)}
-                </p>
-              ) : (
-                <p className="parceiro-veio-detail-value is-muted">
-                  Valor liberado após aprovação do orçamento
-                </p>
-              )}
             </section>
 
             {initial.environments.length > 0 ? (

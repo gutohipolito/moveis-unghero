@@ -1,28 +1,28 @@
-/** Labels, fluxo VEIO e atualizações do portal do parceiro. */
+/** Labels e fluxo do portal do parceiro — espelha as colunas do Kanban do dashboard. */
 
 export const PARTNER_PROJECT_STEPS = [
-  { id: "LEAD", label: "Briefing", family: "comercial" as const },
-  { id: "ORCAMENTO", label: "Orçamento", family: "comercial" as const },
+  { id: "LEAD", label: "Prospecção", family: "comercial" as const },
+  { id: "ORCAMENTO", label: "Orçamentos", family: "comercial" as const },
   { id: "NEGOCIACAO", label: "Negociação", family: "comercial" as const },
-  { id: "CONFERENCIA_TECNICA", label: "Detalhe", family: "tecnica" as const },
-  { id: "APROVADO", label: "Aprovado", family: "tecnica" as const },
-  { id: "PRODUCAO", label: "Fábrica", family: "execucao" as const },
-  { id: "INSTALACAO", label: "Montagem", family: "execucao" as const },
-  { id: "FINALIZADO", label: "Entregue", family: "conclusao" as const },
+  { id: "APROVADO", label: "Aprovados", family: "tecnica" as const },
+  { id: "CONFERENCIA_TECNICA", label: "Conf. Técnica", family: "tecnica" as const },
+  { id: "PRODUCAO", label: "Produção", family: "execucao" as const },
+  { id: "INSTALACAO", label: "Instalação", family: "execucao" as const },
+  { id: "FINALIZADO", label: "Finalizados", family: "conclusao" as const },
 ] as const;
 
 export type PartnerProjectStepId = (typeof PARTNER_PROJECT_STEPS)[number]["id"];
 export type PartnerStageFamily = "comercial" | "tecnica" | "execucao" | "conclusao";
 
 const STAGE_LABELS: Record<string, string> = {
-  LEAD: "Briefing",
-  ORCAMENTO: "Orçamento",
+  LEAD: "Prospecção",
+  ORCAMENTO: "Orçamentos",
   NEGOCIACAO: "Negociação",
-  CONFERENCIA_TECNICA: "Detalhe",
-  APROVADO: "Aprovado",
-  PRODUCAO: "Fábrica",
-  INSTALACAO: "Montagem",
-  FINALIZADO: "Entregue",
+  APROVADO: "Aprovados",
+  CONFERENCIA_TECNICA: "Conf. Técnica",
+  PRODUCAO: "Produção",
+  INSTALACAO: "Instalação",
+  FINALIZADO: "Finalizados",
   PERDIDO: "Perdido",
 };
 
@@ -113,24 +113,33 @@ export function partnerProjectIsActive(statusGeral: string): boolean {
   return statusGeral !== "FINALIZADO" && statusGeral !== "PERDIDO";
 }
 
-/** Próximo marco legível (entrega/montagem prevista). */
-export function partnerProjectNextMilestone(input: {
-  statusGeral: string;
-  dataEntregaPrevista?: string | null;
-}): string | null {
-  if (input.statusGeral === "PERDIDO" || input.statusGeral === "FINALIZADO") {
-    return null;
-  }
-  if (!input.dataEntregaPrevista) return null;
-  const d = new Date(input.dataEntregaPrevista);
-  if (Number.isNaN(d.getTime())) return null;
+/**
+ * Data definida no chão de fábrica: móvel pronto para montagem.
+ * Sem data → "a definir".
+ */
+export function partnerProjectReadyForAssemblyLabel(
+  dataEntregaPrevista?: string | null
+): string {
+  if (!dataEntregaPrevista) return "Pronto para montagem · a definir";
+  const d = new Date(dataEntregaPrevista);
+  if (Number.isNaN(d.getTime())) return "Pronto para montagem · a definir";
   const label = d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-  const isInstall = input.statusGeral === "INSTALACAO" || input.statusGeral === "PRODUCAO";
-  return isInstall ? `Montagem prevista para ${label}` : `Entrega prevista para ${label}`;
+  return `Pronto para montagem · ${label}`;
+}
+
+/** @deprecated Prefer partnerProjectReadyForAssemblyLabel no detalhe. */
+export function partnerProjectNextMilestone(input: {
+  statusGeral: string;
+  dataEntregaPrevista?: string | null;
+}): string | null {
+  if (input.statusGeral === "PERDIDO") return null;
+  // Em listagens, só mostra quando a fábrica já definiu a data.
+  if (!input.dataEntregaPrevista) return null;
+  return partnerProjectReadyForAssemblyLabel(input.dataEntregaPrevista);
 }
 
 export function daysSinceIso(iso: string, now = new Date()): number {
@@ -292,10 +301,7 @@ export function buildPartnerRecentUpdates(
             projectId: project.id,
             projectLabel: label,
             kind: "schedule",
-            label:
-              project.status_geral === "INSTALACAO" || project.status_geral === "PRODUCAO"
-                ? `Montagem prevista para ${dateLabel} · ${label}`
-                : `Entrega prevista para ${dateLabel} · ${label}`,
+            label: `Pronto para montagem · ${dateLabel} · ${label}`,
             occurredAt: project.updatedAt,
           });
         }
@@ -436,15 +442,11 @@ export function buildPartnerProjectHistory(input: {
     });
   }
 
-  const milestone = partnerProjectNextMilestone({
-    statusGeral: input.statusGeral,
-    dataEntregaPrevista: input.dataEntregaPrevista,
-  });
-  if (milestone && input.dataEntregaPrevista) {
+  if (input.dataEntregaPrevista) {
     items.push({
       id: `schedule-${input.dataEntregaPrevista}`,
       kind: "schedule",
-      label: milestone,
+      label: partnerProjectReadyForAssemblyLabel(input.dataEntregaPrevista),
       author: "Móveis Unghero",
       occurredAt: input.dataEntregaPrevista,
     });

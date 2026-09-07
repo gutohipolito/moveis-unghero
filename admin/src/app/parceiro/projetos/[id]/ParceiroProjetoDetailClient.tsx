@@ -5,13 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, MapPin } from "lucide-react";
 import type { PartnerPortalData, PartnerProjectDetail } from "@/lib/partnerPortal";
 import { partnerProjectValueVisible } from "@/lib/partnerPortal";
-import {
-  formatPartnerProjectEnvironmentsLine,
-  formatPartnerRelativeTime,
-  partnerProjectNextMilestone,
-  partnerProjectStageFamily,
-  partnerProjectStageLabel,
-} from "@/lib/partnerProjectLabels";
+import { formatPartnerRelativeTime } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import ParceiroProjetoDetailView from "@/app/parceiro/projetos/ParceiroProjetoDetailView";
 import { cn } from "@/lib/utils";
@@ -32,13 +26,6 @@ export default function ParceiroProjetoDetailClient({
   project,
   isAdminPreview = false,
 }: Props) {
-  const environmentsLine = formatPartnerProjectEnvironmentsLine(project.environments);
-  const stageLabel = partnerProjectStageLabel(project.status_geral);
-  const stageFamily = partnerProjectStageFamily(project.status_geral);
-  const nextMilestone = partnerProjectNextMilestone({
-    statusGeral: project.status_geral,
-    dataEntregaPrevista: project.data_entrega_prevista,
-  });
   const valueVisible = partnerProjectValueVisible(project.status_geral);
 
   return (
@@ -52,31 +39,13 @@ export default function ParceiroProjetoDetailClient({
         <header className="parceiro-veio-detail-header">
           <div className="min-w-0 flex-1">
             <p className="parceiro-veio-detail-kicker">Projeto</p>
-            <div className="parceiro-veio-detail-title-row">
-              <h1 className="parceiro-veio-title">{project.client.nome}</h1>
-              <span
-                className={cn(
-                  "parceiro-veio-stage",
-                  stageFamily && `is-${stageFamily}`,
-                  project.status_geral === "PERDIDO" && "is-lost"
-                )}
-              >
-                <span className="parceiro-veio-stage-dot" aria-hidden />
-                {stageLabel}
-              </span>
-            </div>
-            {environmentsLine ? (
-              <p className="parceiro-veio-detail-envs">{environmentsLine}</p>
-            ) : null}
+            <h1 className="parceiro-veio-title">{project.client.nome}</h1>
             <p className="parceiro-veio-detail-meta">
               <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>{project.client.cidade || "Cidade não informada"}</span>
               <span aria-hidden>·</span>
               <span>Atualizado {formatPartnerRelativeTime(project.updatedAt)}</span>
             </p>
-            {nextMilestone ? (
-              <p className="parceiro-veio-detail-milestone-inline">{nextMilestone}</p>
-            ) : null}
           </div>
           <p
             className={cn(
