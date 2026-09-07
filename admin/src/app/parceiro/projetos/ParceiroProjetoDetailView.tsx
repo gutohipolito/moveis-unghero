@@ -52,6 +52,7 @@ import {
   deletePartnerProjectFileAction,
   deletePartnerProjectNoteAction,
 } from "@/app/actions/parceiroPortal";
+import ParceiroFilterPills from "@/app/parceiro/ParceiroFilterPills";
 import { cn } from "@/lib/utils";
 
 type TabId = "resumo" | "orcamentos" | "imagens" | "arquivos" | "notas" | "historico";
@@ -818,80 +819,40 @@ export default function ParceiroProjetoDetailView({
             </div>
           ) : (
             <>
-              <div
-                className="parceiro-veio-images-filters"
-                role="toolbar"
+              <ParceiroFilterPills
+                variant="finance"
                 aria-label="Filtrar imagens"
-              >
-                <button
-                  type="button"
-                  className={cn(
-                    "parceiro-veio-finance-filter",
-                    imageCategory === "ALL" && "is-active"
-                  )}
-                  aria-pressed={imageCategory === "ALL"}
-                  onClick={() => setImageCategory("ALL")}
-                >
-                  <span>Todas</span>
-                  <span className="parceiro-veio-finance-filter-count">{totalEnvImages}</span>
-                </button>
-                {PARTNER_IMAGE_CATEGORY_ORDER.filter((cat) =>
-                  imageCategoryCounts.has(cat)
-                ).map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    className={cn(
-                      "parceiro-veio-finance-filter",
-                      imageCategory === cat && "is-active"
-                    )}
-                    aria-pressed={imageCategory === cat}
-                    onClick={() => setImageCategory(cat)}
-                  >
-                    <span>{attachmentCategoryLabel(cat)}</span>
-                    <span className="parceiro-veio-finance-filter-count">
-                      {imageCategoryCounts.get(cat) ?? 0}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                value={imageCategory}
+                onChange={(id) => setImageCategory(id as ImageCategoryFilter)}
+                options={[
+                  { id: "ALL", label: "Todas", count: totalEnvImages },
+                  ...PARTNER_IMAGE_CATEGORY_ORDER.filter((cat) =>
+                    imageCategoryCounts.has(cat)
+                  ).map((cat) => ({
+                    id: cat,
+                    label: attachmentCategoryLabel(cat),
+                    count: imageCategoryCounts.get(cat) ?? 0,
+                  })),
+                ]}
+              />
 
               {initial.environments.length > 1 ? (
-                <div
-                  className="parceiro-veio-images-filters is-secondary"
-                  role="toolbar"
+                <ParceiroFilterPills
+                  variant="finance"
+                  className="is-secondary"
                   aria-label="Filtrar por ambiente"
-                >
-                  <button
-                    type="button"
-                    className={cn(
-                      "parceiro-veio-finance-filter",
-                      imageEnvId === "ALL" && "is-active"
-                    )}
-                    aria-pressed={imageEnvId === "ALL"}
-                    onClick={() => setImageEnvId("ALL")}
-                  >
-                    Todos os ambientes
-                  </button>
-                  {initial.environments.map((env) => (
-                    <button
-                      key={env.id}
-                      type="button"
-                      className={cn(
-                        "parceiro-veio-finance-filter",
-                        imageEnvId === env.id && "is-active"
-                      )}
-                      aria-pressed={imageEnvId === env.id}
-                      onClick={() => setImageEnvId(env.id)}
-                      disabled={env.imageCount === 0}
-                    >
-                      {env.nome}
-                      <span className="parceiro-veio-finance-filter-count">
-                        {env.imageCount}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                  value={imageEnvId}
+                  onChange={setImageEnvId}
+                  options={[
+                    { id: "ALL", label: "Todos os ambientes" },
+                    ...initial.environments.map((env) => ({
+                      id: env.id,
+                      label: env.nome,
+                      count: env.imageCount,
+                      disabled: env.imageCount === 0,
+                    })),
+                  ]}
+                />
               ) : null}
 
               {filteredImageRooms.length === 0 ? (

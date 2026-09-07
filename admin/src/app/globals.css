@@ -3759,7 +3759,8 @@ a.parceiro-veio-metric:hover {
   scrollbar-width: none;
 }
 .parceiro-veio-images-filters::-webkit-scrollbar { display: none; }
-.parceiro-veio-images-filters.is-secondary .parceiro-veio-finance-filter.is-active {
+.parceiro-veio-images-filters.is-secondary .parceiro-veio-finance-filter.is-active,
+.parceiro-filter-pills.is-secondary .parceiro-veio-finance-filter.is-active {
   background: var(--partner-surface-3, #191d21);
   color: var(--partner-bone, #f2eee5);
   border-color: rgba(242, 238, 229, 0.28);
@@ -4863,7 +4864,7 @@ a.parceiro-veio-file-row:hover {
   color: #f4f4f5;
 }
 
-/* Scroll horizontal de chips em mobile */
+/* Scroll horizontal de chips — só desktop; mobile usa .parceiro-filter-pills-select */
 .parceiro-chip-scroll {
   display: flex;
   flex-wrap: nowrap;
@@ -4891,6 +4892,60 @@ a.parceiro-veio-file-row:hover {
     margin-inline: 0;
     padding: 0;
   }
+}
+
+/* Filtros: select no mobile, chips no desktop */
+.parceiro-filter-pills {
+  width: 100%;
+  min-width: 0;
+}
+.parceiro-filter-pills-select-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.parceiro-filter-pills-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 2.5rem 0.55rem 0.9rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.18));
+  background: var(--partner-surface-2, #131619);
+  color: var(--partner-bone, #f2eee5);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.parceiro-filter-pills-select:focus-visible {
+  outline: 2px solid var(--partner-copper, #f0783c);
+  outline-offset: 2px;
+}
+.parceiro-filter-pills-select-icon {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--partner-muted, #a9a7a2);
+}
+.parceiro-filter-pills-chips {
+  display: none;
+}
+@media (min-width: 640px) {
+  .parceiro-filter-pills-select-wrap {
+    display: none;
+  }
+  .parceiro-filter-pills-chips {
+    display: flex;
+  }
+}
+
+.parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-filter-pills-select {
+  background: #fff;
+  border-color: hsl(32 14% 68% / 0.85);
+  color: hsl(24 14% 22%);
 }
 
 

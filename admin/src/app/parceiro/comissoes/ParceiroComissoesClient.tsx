@@ -9,6 +9,7 @@ import type {
   PartnerPortalData,
 } from "@/lib/partnerPortal";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
+import ParceiroFilterPills from "@/app/parceiro/ParceiroFilterPills";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABEL: Record<PartnerCommissionStatus, string> = {
@@ -100,38 +101,18 @@ export default function ParceiroComissoesClient({
           </div>
         </section>
 
-        <div
-          className="parceiro-veio-finance-filters"
-          role="toolbar"
+        <ParceiroFilterPills
+          variant="finance"
           aria-label="Filtrar comissões"
-        >
-          {(
-            [
-              { id: "all" as const, label: "Todas", count: commissions.length },
-              { id: "open" as const, label: "Em aberto", count: counts.open },
-              { id: "paid" as const, label: "Pagas", count: counts.paid },
-              {
-                id: "cancelled" as const,
-                label: "Canceladas",
-                count: counts.cancelled,
-              },
-            ] as const
-          ).map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => setFilter(chip.id)}
-              aria-pressed={filter === chip.id}
-              className={cn(
-                "parceiro-veio-finance-filter",
-                filter === chip.id && "is-active"
-              )}
-            >
-              <span>{chip.label}</span>
-              <span className="parceiro-veio-finance-filter-count">{chip.count}</span>
-            </button>
-          ))}
-        </div>
+          value={filter}
+          onChange={(id) => setFilter(id as FilterId)}
+          options={[
+            { id: "all", label: "Todas", count: commissions.length },
+            { id: "open", label: "Em aberto", count: counts.open },
+            { id: "paid", label: "Pagas", count: counts.paid },
+            { id: "cancelled", label: "Canceladas", count: counts.cancelled },
+          ]}
+        />
 
         {filtered.length === 0 ? (
           <section className="parceiro-veio-empty">

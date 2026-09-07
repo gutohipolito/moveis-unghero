@@ -16,6 +16,7 @@ import {
   type PartnerProjectStatusFilter,
 } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
+import ParceiroFilterPills from "@/app/parceiro/ParceiroFilterPills";
 import { cn } from "@/lib/utils";
 
 function initials(name: string) {
@@ -200,23 +201,17 @@ export default function ParceiroProjetosClient({
         ) : null}
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-          <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar projetos">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => applyFilter(f.id)}
-                className={cn("parceiro-filter-chip", filter === f.id && "is-active")}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <ParceiroFilterPills
+            aria-label="Filtrar projetos"
+            value={filter}
+            onChange={(id) => applyFilter(id as PartnerProjectStatusFilter)}
+            options={filters.map((f) => ({ id: f.id, label: f.label }))}
+          />
           <button
             type="button"
             onClick={() => setGroupByClient((v) => !v)}
             className={cn(
-              "parceiro-filter-chip inline-flex items-center gap-1.5 self-start",
+              "parceiro-filter-chip inline-flex items-center gap-1.5 self-stretch sm:self-start justify-center",
               groupByClient && "is-active"
             )}
           >

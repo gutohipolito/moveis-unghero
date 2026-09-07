@@ -7,7 +7,7 @@ import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal
 import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import { partnerProjectsHref } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
-import { cn } from "@/lib/utils";
+import ParceiroFilterPills from "@/app/parceiro/ParceiroFilterPills";
 
 const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -85,38 +85,16 @@ export default function ParceiroClientesClient({
         </header>
 
         <div className="parceiro-veio-clients-toolbar">
-          <div
-            className="parceiro-veio-finance-filters"
-            role="toolbar"
+          <ParceiroFilterPills
+            variant="finance"
             aria-label="Filtrar clientes"
-          >
-            <button
-              type="button"
-              onClick={() => setTab("all")}
-              aria-pressed={tab === "all"}
-              className={cn(
-                "parceiro-veio-finance-filter",
-                tab === "all" && "is-active"
-              )}
-            >
-              <span>Todos</span>
-              <span className="parceiro-veio-finance-filter-count">{clients.length}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("new")}
-              aria-pressed={tab === "new"}
-              className={cn(
-                "parceiro-veio-finance-filter",
-                tab === "new" && "is-active"
-              )}
-            >
-              <span>Novos</span>
-              <span className="parceiro-veio-finance-filter-count">
-                {newClients.length}
-              </span>
-            </button>
-          </div>
+            value={tab}
+            onChange={(id) => setTab(id as TabId)}
+            options={[
+              { id: "all", label: "Todos", count: clients.length },
+              { id: "new", label: "Novos", count: newClients.length },
+            ]}
+          />
 
           <label className="parceiro-veio-clients-search">
             <Search className="h-4 w-4 shrink-0 opacity-60" aria-hidden />

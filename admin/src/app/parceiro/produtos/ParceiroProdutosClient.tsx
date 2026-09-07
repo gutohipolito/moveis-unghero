@@ -22,6 +22,7 @@ import type {
 } from "@/lib/partnerPortal";
 import { acabamentosToSwatches, parseShowcaseDescricao } from "@/lib/zenAcabamentos";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
+import ParceiroFilterPills from "@/app/parceiro/ParceiroFilterPills";
 import ParceiroCatalogActionsModal from "./ParceiroCatalogActionsModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -235,28 +236,16 @@ export default function ParceiroProdutosClient({
           </p>
         </div>
 
-        <div className="parceiro-chip-scroll w-full sm:w-fit">
-          <button
-            type="button"
-            onClick={() => switchSection("produtos")}
-            className={`parceiro-filter-chip inline-flex items-center gap-1.5 ${
-              section === "produtos" ? "is-active" : ""
-            }`}
-          >
-            <Images className="h-3.5 w-3.5" />
-            Vitrine
-          </button>
-          <button
-            type="button"
-            onClick={() => switchSection("catalogos")}
-            className={`parceiro-filter-chip inline-flex items-center gap-1.5 ${
-              section === "catalogos" ? "is-active" : ""
-            }`}
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            Catálogos
-          </button>
-        </div>
+        <ParceiroFilterPills
+          aria-label="Seção de produtos"
+          className="sm:w-fit"
+          value={section}
+          onChange={(id) => switchSection(id as SectionTab)}
+          options={[
+            { id: "produtos", label: "Vitrine" },
+            { id: "catalogos", label: "Catálogos" },
+          ]}
+        />
 
         {!showingSuppliers && (
           <div className="space-y-3">
@@ -293,35 +282,18 @@ export default function ParceiroProdutosClient({
             </div>
 
             {section === "produtos" && categories.length > 0 && (
-              <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar por categoria">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterCategory("ALL");
-                    setPage(1);
-                  }}
-                  className={`parceiro-filter-chip ${
-                    filterCategory === "ALL" ? "is-active" : ""
-                  }`}
-                >
-                  Todas
-                </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      setFilterCategory(cat);
-                      setPage(1);
-                    }}
-                    className={`parceiro-filter-chip ${
-                      filterCategory === cat ? "is-active" : ""
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
+              <ParceiroFilterPills
+                aria-label="Filtrar por categoria"
+                value={filterCategory}
+                onChange={(id) => {
+                  setFilterCategory(id);
+                  setPage(1);
+                }}
+                options={[
+                  { id: "ALL", label: "Todas" },
+                  ...categories.map((cat) => ({ id: cat, label: cat })),
+                ]}
+              />
             )}
           </div>
         )}
