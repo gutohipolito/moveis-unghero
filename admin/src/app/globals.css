@@ -1975,8 +1975,8 @@ button.partner-card:hover,
 .parceiro-veio-home {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  max-width: 1440px;
+  gap: 1.25rem;
+  max-width: min(100%, 1680px);
   width: 100%;
   margin: 0 auto;
 }
@@ -2028,26 +2028,20 @@ button.partner-card:hover,
 .parceiro-veio-cta-outline:hover {
   background: color-mix(in srgb, var(--partner-copper, #f0783c) 12%, transparent);
 }
-.parceiro-veio-top-grid {
+.parceiro-veio-home-grid {
   display: grid;
-  gap: 0.85rem;
+  gap: 1rem;
+  align-items: start;
 }
-@media (min-width: 1100px) {
-  .parceiro-veio-top-grid {
-    grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 1fr);
-    gap: 0;
-    border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-    border-radius: 0.875rem;
-    overflow: hidden;
-    background: var(--partner-surface-2, #131619);
+@media (min-width: 960px) {
+  .parceiro-veio-home-grid {
+    grid-template-columns: minmax(0, 1.65fr) minmax(17rem, 0.9fr);
+    gap: 1.15rem;
   }
-  .parceiro-veio-top-grid > .parceiro-veio-panel {
-    border: none;
-    border-radius: 0;
-    background: transparent;
-  }
-  .parceiro-veio-top-grid > .parceiro-veio-flow {
-    border-right: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+}
+@media (min-width: 1280px) {
+  .parceiro-veio-home-grid {
+    grid-template-columns: minmax(0, 1.85fr) minmax(19rem, 0.85fr);
   }
 }
 .parceiro-veio-panel {
@@ -2157,6 +2151,7 @@ button.partner-card:hover,
   .parceiro-veio-text-btn,
   .parceiro-veio-metric,
   .parceiro-veio-update-item,
+  .parceiro-veio-project-row,
   .parceiro-veio-card,
   .parceiro-veio-back,
   .parceiro-veio-upload-btn,
@@ -2188,6 +2183,7 @@ button.partner-card:hover,
     .parceiro-sidebar-link,
     .parceiro-veio-card,
     .parceiro-veio-update-item,
+    .parceiro-veio-project-row,
     .parceiro-veio-metric
   ) {
     transition: none !important;
@@ -2323,26 +2319,39 @@ button.partner-card:hover,
 }
 .parceiro-veio-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
   border-radius: 0.875rem;
   overflow: hidden;
   background: var(--partner-surface-2, #131619);
   padding: 0;
 }
+@media (min-width: 560px) {
+  .parceiro-veio-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 .parceiro-veio-metric {
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.3rem;
-  min-height: 5.25rem;
-  padding: 0.95rem 1rem;
+  min-height: 4.75rem;
+  padding: 0.9rem 1rem;
   text-decoration: none;
   color: inherit;
-  border-right: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  border-bottom: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
   transition: background 0.15s ease;
 }
-.parceiro-veio-metric:last-child { border-right: none; }
+.parceiro-veio-metric:last-child { border-bottom: none; }
+@media (min-width: 560px) {
+  .parceiro-veio-metric {
+    min-height: 5.25rem;
+    border-bottom: none;
+    border-right: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  }
+  .parceiro-veio-metric:last-child { border-right: none; }
+}
 a.parceiro-veio-metric:hover {
   background: color-mix(in srgb, var(--partner-copper, #f0783c) 8%, transparent);
 }
@@ -2360,52 +2369,90 @@ a.parceiro-veio-metric:hover {
   font-size: 0.8125rem;
   color: var(--partner-muted, #a9a7a2);
 }
-.parceiro-veio-table-wrap {
-  display: none;
-  overflow-x: auto;
-  margin: 0 -1.05rem;
+.parceiro-veio-project-list {
+  list-style: none;
+  margin: 0 -1.05rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   border-top: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
 }
-@media (min-width: 900px) {
-  .parceiro-veio-table-wrap { display: block; }
-  .parceiro-veio-cards { display: none; }
-}
-.parceiro-veio-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.parceiro-veio-table th {
-  text-align: left;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--partner-muted, #a9a7a2);
-  padding: 0.75rem 1.05rem;
-  border-bottom: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-}
-.parceiro-veio-table td {
-  padding: 0.85rem 1.05rem;
-  border-bottom: 1px solid var(--partner-border, rgba(242, 238, 229, 0.1));
-  color: var(--partner-muted, #a9a7a2);
-  vertical-align: middle;
-}
-.parceiro-veio-table tbody tr:last-child td {
-  border-bottom: none;
-}
-.parceiro-veio-table tbody tr {
-  transition: background 0.15s ease;
-}
-.parceiro-veio-table tbody tr:hover {
-  background: color-mix(in srgb, var(--partner-copper, #f0783c) 7%, transparent);
-}
-.parceiro-veio-project-cell {
-  display: flex;
+.parceiro-veio-project-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "thumb main chevron"
+    "thumb side chevron";
   align-items: center;
-  gap: 0.7rem;
+  column-gap: 0.85rem;
+  row-gap: 0.35rem;
+  padding: 0.85rem 1.05rem;
+  min-height: 4.25rem;
   text-decoration: none;
   color: inherit;
+  border-bottom: 1px solid var(--partner-border, rgba(242, 238, 229, 0.1));
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.parceiro-veio-project-list > li:last-child .parceiro-veio-project-row {
+  border-bottom: none;
+}
+.parceiro-veio-project-row:hover {
+  background: color-mix(in srgb, var(--partner-copper, #f0783c) 8%, #191d21);
+  box-shadow: inset 3px 0 0 var(--partner-copper, #f0783c);
+}
+.parceiro-veio-project-row > .parceiro-veio-thumb { grid-area: thumb; align-self: start; margin-top: 0.1rem; }
+.parceiro-veio-project-row-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.parceiro-veio-project-row-side {
+  grid-area: side;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+}
+.parceiro-veio-project-row-foot {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--partner-faint, #747579);
+}
+.parceiro-veio-project-files {
+  font-size: 0.75rem;
+  color: var(--partner-muted, #a9a7a2);
+}
+.parceiro-veio-project-chevron {
+  grid-area: chevron;
+  color: var(--partner-faint, #747579);
+  opacity: 0.7;
+  align-self: center;
+}
+@media (min-width: 720px) {
+  .parceiro-veio-project-row {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "thumb main side chevron";
+    align-items: center;
+  }
+  .parceiro-veio-project-row > .parceiro-veio-thumb { align-self: center; margin-top: 0; }
+  .parceiro-veio-project-row-side {
+    flex-direction: column;
+    align-items: flex-end;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    text-align: right;
+  }
+  .parceiro-veio-project-row-foot {
+    justify-content: flex-end;
+  }
 }
 .parceiro-veio-thumb {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: 0.5rem;
   background: var(--partner-surface-3, #191d21);
   border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
@@ -2421,16 +2468,25 @@ a.parceiro-veio-metric:hover {
   display: block;
   font-weight: 700;
   color: var(--partner-bone, #f2eee5);
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .parceiro-veio-project-meta {
   display: block;
   font-size: 0.75rem;
   color: var(--partner-faint, #747579);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .parceiro-veio-stage {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--partner-bone, #f2eee5);
 }
@@ -2446,52 +2502,6 @@ a.parceiro-veio-metric:hover {
 .parceiro-veio-mono {
   font-variant-numeric: tabular-nums;
   font-size: 0.8125rem;
-}
-.parceiro-veio-row-action {
-  color: var(--partner-mineral, #72a7ff);
-  font-weight: 600;
-  text-decoration: none;
-}
-.parceiro-veio-cards {
-  list-style: none;
-  margin: 0 -1.05rem 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-top: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-}
-.parceiro-veio-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.95rem 1.05rem;
-  border-radius: 0;
-  border: none;
-  border-bottom: 1px solid var(--partner-border, rgba(242, 238, 229, 0.1));
-  background: transparent;
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-.parceiro-veio-cards > li:last-child .parceiro-veio-card {
-  border-bottom: none;
-}
-.parceiro-veio-card:hover {
-  background: color-mix(in srgb, var(--partner-copper, #f0783c) 8%, #191d21);
-  box-shadow: inset 3px 0 0 var(--partner-copper, #f0783c);
-}
-.parceiro-veio-card-top {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-.parceiro-veio-card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding-left: calc(2.25rem + 0.7rem);
 }
 .parceiro-veio-muted {
   margin: 0;
@@ -2716,7 +2726,7 @@ a.parceiro-veio-metric:hover {
 
 /* —— Detalhe do projeto (Fase 3) —— */
 .parceiro-portal-shell--veio .parceiro-portal-main {
-  max-width: 1440px;
+  max-width: min(100%, 1680px);
 }
 .parceiro-portal-shell--veio .parceiro-portal-nav-bottom { display: none !important; }
 .parceiro-portal-shell--veio .parceiro-portal-header { display: none; }
@@ -2944,6 +2954,21 @@ a.parceiro-veio-metric:hover {
   color: var(--partner-muted, #a9a7a2);
 }
 
+.parceiro-veio-timeline-wrap {
+  position: relative;
+}
+.parceiro-veio-timeline-vein {
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  bottom: 1.1rem;
+  width: 1.25rem;
+  height: calc(100% - 1.45rem);
+  color: color-mix(in srgb, var(--partner-copper, #f0783c) 45%, transparent);
+  pointer-events: none;
+  opacity: 0.7;
+  z-index: 0;
+}
 .parceiro-veio-timeline {
   list-style: none;
   margin: 0;
@@ -2951,6 +2976,8 @@ a.parceiro-veio-metric:hover {
   display: flex;
   flex-direction: column;
   gap: 0;
+  position: relative;
+  z-index: 1;
 }
 .parceiro-veio-timeline-step {
   display: grid;

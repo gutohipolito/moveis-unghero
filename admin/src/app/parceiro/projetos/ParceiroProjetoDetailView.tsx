@@ -410,38 +410,54 @@ export default function ParceiroProjetoDetailView({
             {isLost ? (
               <p className="parceiro-veio-detail-lost">Projeto perdido</p>
             ) : (
-              <ol className="parceiro-veio-timeline" aria-label="Etapas do projeto">
-                {PARTNER_PROJECT_STEPS.map((step, idx) => {
-                  const done = idx < current;
-                  const currentStep = idx === current;
-                  return (
-                    <li
-                      key={step.id}
-                      className={cn(
-                        "parceiro-veio-timeline-step",
-                        `is-${step.family}`,
-                        done && "is-done",
-                        currentStep && "is-current",
-                        !done && !currentStep && "is-upcoming"
-                      )}
-                    >
-                      <span className="parceiro-veio-timeline-rail" aria-hidden>
-                        <span className="parceiro-veio-timeline-dot" />
-                      </span>
-                      <div className="parceiro-veio-timeline-body">
-                        <p className="parceiro-veio-timeline-label">{step.label}</p>
-                        {currentStep ? (
-                          <p className="parceiro-veio-timeline-hint">Etapa atual</p>
-                        ) : done ? (
-                          <p className="parceiro-veio-timeline-hint">Concluída</p>
-                        ) : (
-                          <p className="parceiro-veio-timeline-hint">A seguir</p>
+              <div className="parceiro-veio-timeline-wrap">
+                <svg
+                  className="parceiro-veio-timeline-vein"
+                  viewBox="0 0 24 400"
+                  preserveAspectRatio="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M12 8 C 18 40, 6 70, 12 100 S 18 160, 12 190 S 6 250, 12 280 S 18 340, 12 392"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <ol className="parceiro-veio-timeline" aria-label="Etapas do projeto">
+                  {PARTNER_PROJECT_STEPS.map((step, idx) => {
+                    const done = idx < current;
+                    const currentStep = idx === current;
+                    return (
+                      <li
+                        key={step.id}
+                        className={cn(
+                          "parceiro-veio-timeline-step",
+                          `is-${step.family}`,
+                          done && "is-done",
+                          currentStep && "is-current",
+                          !done && !currentStep && "is-upcoming"
                         )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
+                      >
+                        <span className="parceiro-veio-timeline-rail" aria-hidden>
+                          <span className="parceiro-veio-timeline-dot" />
+                        </span>
+                        <div className="parceiro-veio-timeline-body">
+                          <p className="parceiro-veio-timeline-label">{step.label}</p>
+                          {currentStep ? (
+                            <p className="parceiro-veio-timeline-hint">Etapa atual</p>
+                          ) : done ? (
+                            <p className="parceiro-veio-timeline-hint">Concluída</p>
+                          ) : (
+                            <p className="parceiro-veio-timeline-hint">A seguir</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
             )}
           </section>
 
