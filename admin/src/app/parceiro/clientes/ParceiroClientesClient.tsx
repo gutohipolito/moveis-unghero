@@ -8,6 +8,7 @@ import { formatPartnerClientAddress } from "@/lib/partnerPortal";
 import { partnerProjectsHref } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import ParceiroFilterPills from "@/app/parceiro/ParceiroFilterPills";
+import WhatsAppBrandIcon from "@/components/icons/WhatsAppBrandIcon";
 
 const NEW_CLIENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -164,9 +165,9 @@ export default function ParceiroClientesClient({
                           href={waHref}
                           target="_blank"
                           rel="noreferrer"
-                          className="parceiro-veio-finance-btn is-ghost"
+                          className="parceiro-veio-finance-btn is-whatsapp"
                         >
-                          <Phone className="h-3.5 w-3.5" aria-hidden />
+                          <WhatsAppBrandIcon size={16} />
                           WhatsApp
                         </a>
                       ) : client.telefone ? (

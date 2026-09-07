@@ -890,20 +890,21 @@ button.partner-card:hover,
 .parceiro-portal-shell {
   --parceiro-accent: 18 85% 59%;
   --parceiro-brand-glow: var(--parceiro-accent);
-  --partner-bg: #090a0b;
-  --partner-surface-1: #0e1012;
-  --partner-surface-2: #131619;
-  --partner-surface-3: #191d21;
+  --partner-bg: #030405;
+  --partner-surface-1: #080a0c;
+  --partner-surface-2: #0d1013;
+  --partner-surface-3: #14181d;
   --partner-bone: #f2eee5;
   --partner-muted: #a9a7a2;
   --partner-faint: #747579;
-  --partner-border: rgba(242, 238, 229, 0.14);
+  --partner-border: rgba(242, 238, 229, 0.12);
   /* Segue a cor de destaque das configurações do parceiro */
   --partner-copper: hsl(var(--parceiro-accent));
   --partner-celadon: #a8d88d;
   --partner-mineral: #72a7ff;
   --partner-violet: #9a86d8;
   --partner-danger: #e46b6b;
+  --partner-on-accent: #120e0a;
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
@@ -928,8 +929,16 @@ button.partner-card:hover,
   z-index: 0;
   pointer-events: none;
   background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.36) 45%, rgba(0, 0, 0, 0.58) 100%),
     url("/images/portal-parceiro/veio-background.png") right top / cover no-repeat;
-  opacity: 0.42;
+  opacity: 1;
+}
+.parceiro-portal-shell.parceiro-portal-shell--veio[data-parceiro-theme="light"]::after {
+  opacity: 1;
+  mix-blend-mode: normal;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 234, 0.78) 0%, rgba(244, 241, 234, 0.62) 100%),
+    url("/images/portal-parceiro/veio-background.png") right top / cover no-repeat;
 }
 .parceiro-portal-shell--veio > *:not(.suggestion-fab) {
   position: relative;
@@ -947,10 +956,6 @@ button.partner-card:hover,
     right: 1.5rem !important;
     bottom: 2rem !important;
   }
-}
-.parceiro-portal-shell.parceiro-portal-shell--veio[data-parceiro-theme="light"]::after {
-  opacity: 0.14;
-  mix-blend-mode: multiply;
 }
 
 /* Tema claro do portal (preferência do parceiro) */
@@ -1090,10 +1095,10 @@ button.partner-card:hover,
 }
 
 .parceiro-portal-shell[data-parceiro-theme="light"] .parceiro-filter-chip.is-active {
-  background: #fff;
-  border-color: hsl(var(--parceiro-accent) / 0.65);
-  color: var(--parceiro-light-ink);
-  box-shadow: inset 0 -1px 0 hsl(var(--parceiro-accent) / 0.85);
+  background: var(--partner-copper, hsl(var(--parceiro-accent)));
+  border-color: var(--partner-copper, hsl(var(--parceiro-accent)));
+  color: var(--partner-on-accent, #120e0a);
+  box-shadow: none;
 }
 
 /* Utilitários pensados para fundo escuro → contraste no tema claro */
@@ -2606,7 +2611,7 @@ a.parceiro-veio-metric:hover {
   border-color: rgba(242, 238, 229, 0.28);
 }
 .parceiro-veio-finance-filter.is-active {
-  color: #1a120c;
+  color: var(--partner-on-accent, #120e0a);
   background: var(--partner-copper, #f0783c);
   border-color: var(--partner-copper, #f0783c);
 }
@@ -2624,7 +2629,7 @@ a.parceiro-veio-metric:hover {
   color: inherit;
 }
 .parceiro-veio-finance-filter.is-active .parceiro-veio-finance-filter-count {
-  background: color-mix(in srgb, #1a120c 16%, transparent);
+  background: color-mix(in srgb, var(--partner-on-accent, #120e0a) 16%, transparent);
 }
 .parceiro-veio-finance-list {
   list-style: none;
@@ -2755,6 +2760,18 @@ a.parceiro-veio-metric:hover {
 .parceiro-veio-finance-btn.is-ghost:hover {
   background: var(--partner-surface-3, #191d21);
   border-color: rgba(242, 238, 229, 0.28);
+}
+.parceiro-veio-finance-btn.is-whatsapp {
+  border: 1px solid #1ebe57;
+  color: #fff;
+  background: #25d366;
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    0 2px 8px hsl(142 70% 28% / 0.28);
+}
+.parceiro-veio-finance-btn.is-whatsapp:hover {
+  background: #20bd5a;
+  filter: brightness(1.03);
 }
 .parceiro-veio-finance-btn.is-solid {
   border: 1px solid hsl(36 70% 32% / 0.45);
@@ -3298,9 +3315,12 @@ a.parceiro-veio-metric:hover {
   background: var(--partner-surface-3, #191d21);
 }
 .parceiro-veio-tab.is-active {
-  color: #fff;
-  border-color: var(--partner-border, #23282e);
-  background: var(--partner-surface-3, #191d21);
+  color: var(--partner-on-accent, #120e0a);
+  border-color: var(--partner-copper, #f0783c);
+  background: var(--partner-copper, #f0783c);
+}
+.parceiro-veio-tab.is-active .parceiro-veio-tab-count {
+  opacity: 0.75;
 }
 .parceiro-veio-tab-count {
   font-variant-numeric: tabular-nums;
@@ -3761,9 +3781,9 @@ a.parceiro-veio-metric:hover {
 .parceiro-veio-images-filters::-webkit-scrollbar { display: none; }
 .parceiro-veio-images-filters.is-secondary .parceiro-veio-finance-filter.is-active,
 .parceiro-filter-pills.is-secondary .parceiro-veio-finance-filter.is-active {
-  background: var(--partner-surface-3, #191d21);
-  color: var(--partner-bone, #f2eee5);
-  border-color: rgba(242, 238, 229, 0.28);
+  color: var(--partner-on-accent, #120e0a);
+  background: var(--partner-copper, #f0783c);
+  border-color: var(--partner-copper, #f0783c);
 }
 .parceiro-veio-images-rooms {
   display: flex;
@@ -3989,17 +4009,33 @@ a.parceiro-veio-metric:hover {
 }
 .parceiro-veio-client-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0.45rem;
+  width: 100%;
+}
+.parceiro-veio-client-actions > .parceiro-veio-finance-btn,
+.parceiro-veio-client-actions > .parceiro-veio-client-contact {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
 }
 @media (min-width: 900px) {
   .parceiro-veio-client-actions {
+    width: auto;
+    max-width: 22rem;
     justify-content: flex-end;
+  }
+  .parceiro-veio-client-actions > .parceiro-veio-finance-btn,
+  .parceiro-veio-client-actions > .parceiro-veio-client-contact {
+    flex: 0 1 auto;
   }
 }
 .parceiro-veio-client-contact {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   min-height: 2.75rem;
   padding: 0.45rem 0.75rem;
@@ -4859,9 +4895,9 @@ a.parceiro-veio-file-row:hover {
 }
 
 .parceiro-filter-chip.is-active {
-  background: hsl(0 0% 100% / 0.12);
-  border-color: hsl(var(--parceiro-accent) / 0.5);
-  color: #f4f4f5;
+  background: var(--partner-copper, hsl(var(--parceiro-accent)));
+  border-color: var(--partner-copper, hsl(var(--parceiro-accent)));
+  color: var(--partner-on-accent, #120e0a);
 }
 
 /* Scroll horizontal de chips — só desktop; mobile usa .parceiro-filter-pills-select */
@@ -5483,10 +5519,10 @@ a.parceiro-home-stat:active {
 }
 
 .parceiro-info-modal .parceiro-filter-chip.is-active {
-  background: #fff;
-  border-color: hsl(var(--parceiro-accent, 210 12% 55%) / 0.65);
-  color: #1c1410;
-  box-shadow: inset 0 -1px 0 hsl(var(--parceiro-accent, 210 12% 55%) / 0.85);
+  background: var(--partner-copper, hsl(var(--parceiro-accent, 210 12% 55%)));
+  border-color: var(--partner-copper, hsl(var(--parceiro-accent, 210 12% 55%)));
+  color: var(--partner-on-accent, #120e0a);
+  box-shadow: none;
 }
 
 /* Modal de projeto: altura = conteúdo, teto pela viewport; um único scroll */
