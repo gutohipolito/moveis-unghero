@@ -34,6 +34,7 @@ function ProjectCard({ project }: { project: PartnerPortalProject }) {
   const nextMilestone = partnerProjectNextMilestone({
     statusGeral: project.status_geral,
     dataEntregaPrevista: project.data_entrega_prevista,
+    environmentReadyDates: project.environments.map((env) => env.data_entrega_acordada),
   });
 
   return (

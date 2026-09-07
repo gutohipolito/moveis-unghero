@@ -54,6 +54,8 @@ export interface PartnerPortalProject {
     nome: string;
     tipo: string;
     status: string;
+    /** Prazo do cômodo no chão de fábrica (pronto para montagem). */
+    data_entrega_acordada: string | null;
   }>;
 }
 
@@ -221,6 +223,7 @@ export async function loadPartnerPortalData(
             nome: true,
             tipo: true,
             status: true,
+            data_entrega_acordada: true,
           },
         },
         quotes: {
@@ -308,6 +311,7 @@ export async function loadPartnerPortalData(
           nome: env.nome,
           tipo: env.tipo,
           status: env.status,
+          data_entrega_acordada: env.data_entrega_acordada?.toISOString() ?? null,
         })),
       };
     }),
@@ -555,6 +559,8 @@ export interface PartnerProjectEnvironmentDTO {
   nome: string;
   tipo: string;
   status: string;
+  /** Prazo do cômodo no chão de fábrica (pronto para montagem). */
+  data_entrega_acordada: string | null;
   coverUrl: string | null;
   imageCount: number;
   images: PartnerEnvironmentImageDTO[];
@@ -671,6 +677,7 @@ export async function loadPartnerProjectDetail(
           nome: true,
           tipo: true,
           status: true,
+          data_entrega_acordada: true,
           capa_attachment_id: true,
           attachments: {
             where: { mime_type: { startsWith: "image/" } },
@@ -764,6 +771,7 @@ export async function loadPartnerProjectDetail(
         nome: env.nome,
         tipo: env.tipo,
         status: env.status,
+        data_entrega_acordada: env.data_entrega_acordada?.toISOString() ?? null,
         coverUrl: cover?.url ?? null,
         imageCount: images.length,
         images,

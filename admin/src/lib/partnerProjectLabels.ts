@@ -114,32 +114,123 @@ export function partnerProjectIsActive(statusGeral: string): boolean {
 }
 
 /**
- * Data definida no chão de fábrica: móvel pronto para montagem.
- * Sem data → "a definir".
+ * Agenda didática do parceiro:
+ * 1) Pronto para montagem = data da fábrica (cômodo ou projeto)
+ * 2) Montagem no local = só depois do alinhamento com o time (ainda sem data automática)
  */
-export function partnerProjectReadyForAssemblyLabel(
-  dataEntregaPrevista?: string | null
-): string {
-  if (!dataEntregaPrevista) return "Pronto para montagem · a definir";
-  const d = new Date(dataEntregaPrevista);
-  if (Number.isNaN(d.getTime())) return "Pronto para montagem · a definir";
-  const label = d.toLocaleDateString("pt-BR", {
+export type PartnerSchedulePhaseId = "ready" | "install";
+
+export type PartnerSchedulePhase = {
+  id: PartnerSchedulePhaseId;
+  title: string;
+  dateLabel: string;
+  hint: string;
+  state: "done" | "current" | "upcoming" | "pending";
+};
+
+function formatPartnerScheduleDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "a definir";
+  return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-  return `Pronto para montagem · ${label}`;
 }
 
-/** @deprecated Prefer partnerProjectReadyForAssemblyLabel no detalhe. */
+/** Mais próxima data de pronto para montagem (cômodos + projeto). */
+export function partnerProjectReadyDateIso(input: {
+  dataEntregaPrevista?: string | null;
+  environmentReadyDates?: Array<string | null | undefined>;
+}): string | null {
+  const candidates: string[] = [];
+  if (input.dataEntregaPrevista) candidates.push(input.dataEntregaPrevista);
+  for (const iso of input.environmentReadyDates || []) {
+    if (iso) candidates.push(iso);
+  }
+  if (candidates.length === 0) return null;
+  return candidates
+    .map((iso) => ({ iso, t: new Date(iso).getTime() }))
+    .filter((x) => !Number.isNaN(x.t))
+    .sort((a, b) => a.t - b.t)[0]?.iso ?? null;
+}
+
+export function buildPartnerSchedulePhases(input: {
+  statusGeral: string;
+  dataEntregaPrevista?: string | null;
+  environmentReadyDates?: Array<string | null | undefined>;
+}): PartnerSchedulePhase[] {
+  if (input.statusGeral === "PERDIDO") return [];
+
+  const readyIso = partnerProjectReadyDateIso(input);
+  const readyLabel = readyIso ? formatPartnerScheduleDate(readyIso) : "a definir";
+  const finalized = input.statusGeral === "FINALIZADO";
+  const inInstall = input.statusGeral === "INSTALACAO";
+  const inFactory =
+    input.statusGeral === "PRODUCAO" ||
+    input.statusGeral === "APROVADO" ||
+    input.statusGeral === "CONFERENCIA_TECNICA";
+
+  const readyState: PartnerSchedulePhase["state"] = finalized || inInstall
+    ? "done"
+    : readyIso
+      ? "current"
+      : inFactory
+        ? "pending"
+        : "upcoming";
+
+  const installState: PartnerSchedulePhase["state"] = finalized
+    ? "done"
+    : inInstall
+      ? "current"
+      : readyIso
+        ? "upcoming"
+        : "upcoming";
+
+  return [
+    {
+      id: "ready",
+      title: "Pronto para montagem",
+      dateLabel: readyLabel,
+      hint: "Data da fábrica: o móvel fica pronto para o time montar.",
+      state: readyState,
+    },
+    {
+      id: "install",
+      title: "Montagem no local",
+      dateLabel: finalized ? "Concluída" : "a definir",
+      hint: "Agendada só após alinhamento com o time de montagem.",
+      state: installState,
+    },
+  ];
+}
+
+/**
+ * Data definida no chão de fábrica: móvel pronto para montagem.
+ * Sem data → "a definir".
+ */
+export function partnerProjectReadyForAssemblyLabel(
+  dataEntregaPrevista?: string | null,
+  environmentReadyDates?: Array<string | null | undefined>
+): string {
+  const iso = partnerProjectReadyDateIso({
+    dataEntregaPrevista,
+    environmentReadyDates,
+  });
+  if (!iso) return "Pronto para montagem · a definir";
+  return `Pronto para montagem · ${formatPartnerScheduleDate(iso)}`;
+}
+
+/** Em listagens, só mostra quando a fábrica já definiu a data. */
 export function partnerProjectNextMilestone(input: {
   statusGeral: string;
   dataEntregaPrevista?: string | null;
+  environmentReadyDates?: Array<string | null | undefined>;
 }): string | null {
   if (input.statusGeral === "PERDIDO") return null;
-  // Em listagens, só mostra quando a fábrica já definiu a data.
-  if (!input.dataEntregaPrevista) return null;
-  return partnerProjectReadyForAssemblyLabel(input.dataEntregaPrevista);
+  const iso = partnerProjectReadyDateIso(input);
+  if (!iso) return null;
+  return `Pronto para montagem · ${formatPartnerScheduleDate(iso)}`;
 }
 
 export function daysSinceIso(iso: string, now = new Date()): number {
@@ -465,6 +556,7 @@ export function partnerOverviewMetrics(
   projects: Array<{
     status_geral: string;
     data_entrega_prevista?: string | null;
+    environments?: Array<{ data_entrega_acordada?: string | null }>;
   }>
 ) {
   const now = new Date();
@@ -472,11 +564,15 @@ export function partnerOverviewMetrics(
   const inFactory = projects.filter((p) => p.status_geral === "PRODUCAO").length;
   const upcomingInstall = projects.filter((p) => {
     if (p.status_geral === "PERDIDO" || p.status_geral === "FINALIZADO") return false;
-    if (!p.data_entrega_prevista) return false;
     if (p.status_geral !== "PRODUCAO" && p.status_geral !== "INSTALACAO") {
       return false;
     }
-    const d = new Date(p.data_entrega_prevista);
+    const readyIso = partnerProjectReadyDateIso({
+      dataEntregaPrevista: p.data_entrega_prevista,
+      environmentReadyDates: (p.environments || []).map((e) => e.data_entrega_acordada),
+    });
+    if (!readyIso) return false;
+    const d = new Date(readyIso);
     if (Number.isNaN(d.getTime())) return false;
     const daysUntil = Math.ceil(
       (d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)

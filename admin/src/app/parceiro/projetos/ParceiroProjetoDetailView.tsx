@@ -31,7 +31,8 @@ import {
   PARTNER_PROJECT_STEPS,
   partnerEnvironmentStatusLabel,
   partnerFileIsImage,
-  partnerProjectReadyForAssemblyLabel,
+  buildPartnerSchedulePhases,
+  partnerProjectReadyDateIso,
   partnerProjectStageLabel,
   partnerProjectStepIndex,
   type PartnerProjectHistoryKind,
@@ -144,9 +145,17 @@ export default function ParceiroProjetoDetailView({
   const isLost = initial.status_geral === "PERDIDO";
   const address = formatPartnerClientAddress(initial.client);
   const stageLabel = partnerProjectStageLabel(initial.status_geral);
-  const readyForAssemblyLabel = isLost
-    ? null
-    : partnerProjectReadyForAssemblyLabel(initial.data_entrega_prevista);
+  const schedulePhases = useMemo(
+    () =>
+      buildPartnerSchedulePhases({
+        statusGeral: initial.status_geral,
+        dataEntregaPrevista: initial.data_entrega_prevista,
+        environmentReadyDates: initial.environments.map(
+          (env) => env.data_entrega_acordada
+        ),
+      }),
+    [initial]
+  );
 
   const totalEnvImages = useMemo(
     () => initial.environments.reduce((sum, env) => sum + env.imageCount, 0),
@@ -183,7 +192,13 @@ export default function ParceiroProjetoDetailView({
       buildPartnerProjectHistory({
         statusGeral: initial.status_geral,
         updatedAt: initial.updatedAt,
-        dataEntregaPrevista: initial.data_entrega_prevista,
+        dataEntregaPrevista:
+          partnerProjectReadyDateIso({
+            dataEntregaPrevista: initial.data_entrega_prevista,
+            environmentReadyDates: initial.environments.map(
+              (env) => env.data_entrega_acordada
+            ),
+          }) ?? initial.data_entrega_prevista,
         quotes: initial.quotes,
         files,
         notes,
@@ -471,10 +486,25 @@ export default function ParceiroProjetoDetailView({
           <section className="parceiro-veio-panel parceiro-veio-detail-progress">
             <div className="parceiro-veio-panel-head">
               <h2 className="parceiro-veio-panel-title">Andamento</h2>
-              {readyForAssemblyLabel ? (
-                <p className="parceiro-veio-detail-milestone">{readyForAssemblyLabel}</p>
-              ) : null}
             </div>
+
+            {schedulePhases.length > 0 ? (
+              <ol className="parceiro-veio-schedule" aria-label="Agenda de montagem">
+                {schedulePhases.map((phase) => (
+                  <li
+                    key={phase.id}
+                    className={cn("parceiro-veio-schedule-item", `is-${phase.state}`)}
+                  >
+                    <span className="parceiro-veio-schedule-mark" aria-hidden />
+                    <div className="min-w-0">
+                      <p className="parceiro-veio-schedule-title">{phase.title}</p>
+                      <p className="parceiro-veio-schedule-date">{phase.dateLabel}</p>
+                      <p className="parceiro-veio-schedule-hint">{phase.hint}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
 
             {isLost ? (
               <p className="parceiro-veio-detail-lost">Projeto perdido</p>

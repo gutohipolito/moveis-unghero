@@ -3187,6 +3187,74 @@ a.parceiro-veio-metric:hover {
   color: var(--partner-celadon, #a8d88d);
   text-align: right;
 }
+.parceiro-veio-schedule {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0.15rem 0 0.35rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+@media (min-width: 720px) {
+  .parceiro-veio-schedule {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+}
+.parceiro-veio-schedule-item {
+  display: grid;
+  grid-template-columns: 0.7rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  background: var(--partner-surface-3, #191d21);
+}
+.parceiro-veio-schedule-mark {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: #4a5058;
+}
+.parceiro-veio-schedule-item.is-current .parceiro-veio-schedule-mark {
+  background: var(--partner-copper, #f0783c);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--partner-copper, #f0783c) 22%, transparent);
+}
+.parceiro-veio-schedule-item.is-done .parceiro-veio-schedule-mark {
+  background: var(--partner-celadon, #a8d88d);
+}
+.parceiro-veio-schedule-item.is-pending .parceiro-veio-schedule-mark {
+  background: var(--partner-mineral, #72a7ff);
+}
+.parceiro-veio-schedule-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--partner-bone, #f2eee5);
+}
+.parceiro-veio-schedule-date {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--partner-copper, #f0783c);
+}
+.parceiro-veio-schedule-item.is-done .parceiro-veio-schedule-date {
+  color: var(--partner-celadon, #a8d88d);
+}
+.parceiro-veio-schedule-item.is-upcoming .parceiro-veio-schedule-date {
+  color: var(--partner-muted, #a9a7a2);
+  font-size: 0.95rem;
+}
+.parceiro-veio-schedule-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--partner-faint, #747579);
+}
 .parceiro-veio-detail-lost {
   margin: 0;
   font-size: 0.9375rem;
