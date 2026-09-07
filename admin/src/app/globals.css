@@ -2052,8 +2052,6 @@ button.partner-card:hover,
     transition: none !important;
   }
 }
-  padding: 0.35rem 0;
-}
 .parceiro-veio-flow { position: relative; overflow: hidden; }
 .parceiro-veio-flow-track {
   position: absolute;
