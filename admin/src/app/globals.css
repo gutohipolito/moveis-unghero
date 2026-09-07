@@ -931,9 +931,22 @@ button.partner-card:hover,
     url("/images/portal-parceiro/veio-background.png") right top / cover no-repeat;
   opacity: 0.42;
 }
-.parceiro-portal-shell--veio > * {
+.parceiro-portal-shell--veio > *:not(.suggestion-fab) {
   position: relative;
   z-index: 1;
+}
+.parceiro-portal-shell--veio > .suggestion-fab {
+  position: fixed !important;
+  z-index: 45;
+  left: auto !important;
+  right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+@media (min-width: 768px) {
+  .parceiro-portal-shell--veio > .suggestion-fab {
+    right: 1.5rem !important;
+    bottom: 2rem !important;
+  }
 }
 .parceiro-portal-shell.parceiro-portal-shell--veio[data-parceiro-theme="light"]::after {
   opacity: 0.14;
@@ -1303,6 +1316,29 @@ button.partner-card:hover,
   gap: 0.55rem;
 }
 
+.parceiro-portal-banner-dismiss {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: inherit;
+  opacity: 0.75;
+  cursor: pointer;
+}
+.parceiro-portal-banner-dismiss:hover {
+  opacity: 1;
+  background: hsl(0 0% 100% / 0.12);
+}
+.parceiro-portal-banner-dismiss.is-on-admin:hover {
+  background: hsl(0 0% 100% / 0.16);
+}
+
 .parceiro-portal-beta-banner-chip {
   flex-shrink: 0;
   display: inline-flex;
@@ -1371,7 +1407,8 @@ button.partner-card:hover,
 .parceiro-portal-admin-banner-inner {
   max-width: 64rem;
   margin: 0 auto;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem max(1rem, env(safe-area-inset-right, 0px)) 0.5rem
+    max(1rem, env(safe-area-inset-left, 0px));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1379,6 +1416,13 @@ button.partner-card:hover,
   gap: 0.5rem;
   font-size: 0.6875rem;
   font-weight: 600;
+}
+
+.parceiro-portal-admin-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
 }
 
 .parceiro-portal-admin-banner-link {
@@ -1532,11 +1576,12 @@ button.partner-card:hover,
   box-shadow: inset 0 -1px 0 hsl(var(--parceiro-accent) / 0.9);
 }
 
-/* Bottom tab bar — mobile first */
+/* Bottom tab bar — mobile first (legado; VEIO esconde a barra) */
 .parceiro-portal-shell .suggestion-fab {
   z-index: 35;
-  right: 1rem;
-  bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  left: auto;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
@@ -2032,9 +2077,6 @@ button.partner-card:hover,
   .parceiro-mobile-menu-btn,
   .parceiro-mobile-drawer { display: none; }
   .parceiro-sidebar { display: flex; }
-}
-.parceiro-portal-shell--veio .suggestion-fab {
-  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .parceiro-veio-home {

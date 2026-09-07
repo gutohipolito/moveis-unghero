@@ -19,12 +19,12 @@ import type { PartnerPortalData } from "@/lib/partnerPortal";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroBetaBanner from "./ParceiroBetaBanner";
+import ParceiroAdminPreviewBanner from "./ParceiroAdminPreviewBanner";
 import ParceiroTopbarClock from "./ParceiroTopbarClock";
 import SuggestionFab from "@/components/melhorias/SuggestionFab";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
 import ParceiroAvatarModal from "./painel/ParceiroAvatarModal";
-import { exitPartnerAdminPreview } from "@/app/actions/parceiroPortal";
 import {
   applyPartnerUiPrefsToElement,
   DEFAULT_PARTNER_UI_PREFS,
@@ -215,21 +215,7 @@ export default function ParceiroPortalShell({
 
         <div className="parceiro-portal-chrome">
           <ParceiroBetaBanner />
-          {isAdminPreview && (
-            <div className="parceiro-portal-admin-banner">
-              <div className="parceiro-portal-admin-banner-inner">
-                <span>
-                  Visualização da Diretoria — portal como <strong>{partner.nome}</strong>
-                  {" "}(expira em 45 min).
-                </span>
-                <form action={exitPartnerAdminPreview}>
-                  <button type="submit" className="parceiro-portal-admin-banner-link">
-                    Voltar ao admin
-                  </button>
-                </form>
-              </div>
-            </div>
-          )}
+          {isAdminPreview ? <ParceiroAdminPreviewBanner partnerNome={partner.nome} /> : null}
         </div>
 
         <div className="parceiro-portal-layout">
@@ -351,7 +337,7 @@ export default function ParceiroPortalShell({
           </div>
         ) : null}
 
-        <SuggestionFab audience="partner" />
+        <SuggestionFab audience="partner" className="parceiro-suggestion-fab" />
 
         <ParceiroInfoModal
           open={infoOpen}
