@@ -759,7 +759,7 @@ export default function ParceiroProdutosClient({
                       <Button
                         type="button"
                         onClick={copyCommercialText}
-                        className="font-bold gap-1.5 h-10 btn-metallic border-none text-white bg-slate-950 hover:bg-slate-900"
+                        className="font-bold gap-1.5 h-10 btn-metallic border-none"
                       >
                         {copiedText ? (
                           <>

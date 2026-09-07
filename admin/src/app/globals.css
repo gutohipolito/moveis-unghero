@@ -684,6 +684,15 @@ button.partner-card:hover,
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  background: #050607;
+}
+
+.parceiro-login-veio {
+  position: absolute;
+  inset: 0;
+  background:
+    url("/images/portal-parceiro/veio-background.png") right center / cover no-repeat;
+  opacity: 0.92;
 }
 
 .parceiro-login-video {
@@ -711,12 +720,13 @@ button.partner-card:hover,
   inset: 0;
   background:
     linear-gradient(
-      160deg,
-      hsl(24 28% 6% / 0.78) 0%,
-      hsl(24 24% 8% / 0.72) 42%,
-      hsl(24 30% 5% / 0.88) 100%
+      105deg,
+      hsl(0 0% 2% / 0.72) 0%,
+      hsl(0 0% 2% / 0.45) 42%,
+      hsl(0 0% 2% / 0.2) 70%,
+      transparent 100%
     ),
-    radial-gradient(ellipse at 50% 0%, hsl(42 70% 35% / 0.12), transparent 55%);
+    radial-gradient(ellipse at 18% 40%, hsl(24 28% 6% / 0.35), transparent 55%);
 }
 
 .parceiro-login-content {
@@ -906,6 +916,27 @@ button.partner-card:hover,
 .parceiro-portal-shell::after {
   content: none;
   display: none;
+}
+
+/* Overlay de veios no shell logado (painel e demais páginas) */
+.parceiro-portal-shell.parceiro-portal-shell--veio::after {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    url("/images/portal-parceiro/veio-background.png") right top / cover no-repeat;
+  opacity: 0.42;
+}
+.parceiro-portal-shell--veio > * {
+  position: relative;
+  z-index: 1;
+}
+.parceiro-portal-shell.parceiro-portal-shell--veio[data-parceiro-theme="light"]::after {
+  opacity: 0.14;
+  mix-blend-mode: multiply;
 }
 
 /* Tema claro do portal (preferência do parceiro) */
@@ -2051,18 +2082,51 @@ button.partner-card:hover,
   gap: 0.45rem;
   min-height: 2.75rem;
   padding: 0.55rem 1.1rem;
-  border-radius: 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--partner-copper, #f0783c) 70%, #3a2a1f);
-  color: #1a120c;
+  border-radius: var(--radius-sm, 0.5rem);
+  border: 1px solid hsl(36 70% 32% / 0.45);
+  color: hsl(24 28% 12%);
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 700;
-  background: var(--partner-copper, #f0783c);
-  transition: background 0.15s ease, filter 0.15s ease;
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 58%) 0%,
+    hsl(42 96% 46%) 45%,
+    hsl(36 88% 40%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.38),
+    0 1px 2px hsl(24 14% 14% / 0.08),
+    0 4px 14px hsl(42 70% 28% / 0.2);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
 }
 .parceiro-veio-cta:hover,
 .parceiro-veio-cta-outline:hover {
-  filter: brightness(1.06);
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 62%) 0%,
+    hsl(42 96% 48%) 45%,
+    hsl(36 88% 42%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.45),
+    0 2px 4px hsl(24 14% 14% / 0.1),
+    0 6px 18px hsl(42 70% 28% / 0.26);
+  filter: brightness(1.02);
+}
+.parceiro-veio-cta:active,
+.parceiro-veio-cta-outline:active {
+  background: linear-gradient(
+    145deg,
+    hsl(42 92% 50%) 0%,
+    hsl(36 86% 38%) 100%
+  );
+  box-shadow:
+    inset 0 1px 3px hsl(24 20% 12% / 0.18),
+    0 1px 2px hsl(24 14% 14% / 0.06);
 }
 @media (max-width: 479px) {
   .parceiro-veio-cta,
@@ -2628,28 +2692,49 @@ a.parceiro-veio-metric:hover {
   gap: 0.4rem;
   min-height: 2.75rem;
   padding: 0.45rem 0.9rem;
-  border-radius: 0.65rem;
+  border-radius: var(--radius-sm, 0.5rem);
   font-size: 0.8125rem;
   font-weight: 700;
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
 }
 .parceiro-veio-finance-btn.is-ghost {
   border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.18));
   color: var(--partner-bone, #f2eee5);
   background: transparent;
+  box-shadow: none;
 }
 .parceiro-veio-finance-btn.is-ghost:hover {
   background: var(--partner-surface-3, #191d21);
   border-color: rgba(242, 238, 229, 0.28);
 }
 .parceiro-veio-finance-btn.is-solid {
-  border: 1px solid color-mix(in srgb, var(--partner-copper, #f0783c) 55%, transparent);
-  background: color-mix(in srgb, var(--partner-copper, #f0783c) 16%, var(--partner-surface-3, #191d21));
-  color: var(--partner-copper, #f0783c);
+  border: 1px solid hsl(36 70% 32% / 0.45);
+  color: hsl(24 28% 12%);
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 58%) 0%,
+    hsl(42 96% 46%) 45%,
+    hsl(36 88% 40%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.38),
+    0 1px 2px hsl(24 14% 14% / 0.08),
+    0 4px 14px hsl(42 70% 28% / 0.2);
 }
 .parceiro-veio-finance-btn.is-solid:hover {
-  background: color-mix(in srgb, var(--partner-copper, #f0783c) 24%, var(--partner-surface-3, #191d21));
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 62%) 0%,
+    hsl(42 96% 48%) 45%,
+    hsl(36 88% 42%) 100%
+  );
+  filter: brightness(1.02);
 }
 .parceiro-portal-shell--veio :is(
   .parceiro-veio-finance-filter,
@@ -4000,15 +4085,32 @@ a.parceiro-veio-file-row:hover {
   gap: 0.45rem;
   min-height: 2.75rem;
   padding: 0 1.1rem;
-  border-radius: 0.75rem;
-  border: none;
-  background: var(--partner-copper, #f0783c);
-  color: #111;
+  border-radius: var(--radius-sm, 0.5rem);
+  border: 1px solid hsl(36 70% 32% / 0.45);
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 58%) 0%,
+    hsl(42 96% 46%) 45%,
+    hsl(36 88% 40%) 100%
+  );
+  color: hsl(24 28% 12%);
   font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.38),
+    0 1px 2px hsl(24 14% 14% / 0.08),
+    0 4px 14px hsl(42 70% 28% / 0.2);
 }
-.parceiro-veio-upload-btn:hover { filter: brightness(1.05); }
+.parceiro-veio-upload-btn:hover {
+  background: linear-gradient(
+    145deg,
+    hsl(43 100% 62%) 0%,
+    hsl(42 96% 48%) 45%,
+    hsl(36 88% 42%) 100%
+  );
+  filter: brightness(1.02);
+}
 .parceiro-veio-upload-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .parceiro-veio-icon-btn {
   display: inline-flex;
