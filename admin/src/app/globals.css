@@ -2010,23 +2010,87 @@ button.partner-card:hover,
   color: var(--partner-muted, #a9a7a2);
   max-width: 36rem;
 }
+.parceiro-veio-cta,
 .parceiro-veio-cta-outline {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 2.75rem;
-  padding: 0.55rem 1rem;
-  border-radius: 0.65rem;
-  border: 1px solid var(--partner-copper, #f0783c);
-  color: var(--partner-copper, #f0783c);
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.45rem 0.85rem 0.45rem 0.5rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--partner-copper, #f0783c) 55%, #3a2a1f);
+  color: #1a120c;
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 700;
-  background: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--partner-copper, #f0783c) 92%, #fff) 0%,
+      var(--partner-copper, #f0783c) 48%,
+      color-mix(in srgb, var(--partner-copper, #f0783c) 78%, #8a3a12) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 10px 24px -12px color-mix(in srgb, var(--partner-copper, #f0783c) 65%, transparent);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
 }
+.parceiro-veio-cta:hover,
 .parceiro-veio-cta-outline:hover {
-  background: color-mix(in srgb, var(--partner-copper, #f0783c) 12%, transparent);
+  filter: brightness(1.05);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 34%, transparent) inset,
+    0 14px 28px -10px color-mix(in srgb, var(--partner-copper, #f0783c) 75%, transparent);
+}
+.parceiro-veio-cta:active,
+.parceiro-veio-cta-outline:active {
+  transform: translateY(1px);
+}
+.parceiro-veio-cta-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, #1a120c 18%, transparent);
+  color: #1a120c;
+  flex-shrink: 0;
+}
+.parceiro-veio-cta-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+  line-height: 1.15;
+}
+.parceiro-veio-cta-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.parceiro-veio-cta-hint {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  opacity: 0.72;
+}
+.parceiro-veio-cta-arrow {
+  margin-left: 0.15rem;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+@media (max-width: 479px) {
+  .parceiro-veio-cta,
+  .parceiro-veio-cta-outline {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .parceiro-veio-cta-arrow {
+    margin-left: auto;
+  }
 }
 .parceiro-veio-home-grid {
   display: grid;
@@ -2156,6 +2220,7 @@ button.partner-card:hover,
   .parceiro-veio-back,
   .parceiro-veio-upload-btn,
   .parceiro-veio-cta-outline,
+  .parceiro-veio-cta,
   .parceiro-veio-receipt-notice,
   .parceiro-veio-file-row,
   .parceiro-veio-icon-btn,
@@ -2184,7 +2249,9 @@ button.partner-card:hover,
     .parceiro-veio-card,
     .parceiro-veio-update-item,
     .parceiro-veio-project-row,
-    .parceiro-veio-metric
+    .parceiro-veio-metric,
+    .parceiro-veio-cta,
+    .parceiro-veio-cta-outline
   ) {
     transition: none !important;
   }
@@ -2319,56 +2386,171 @@ button.partner-card:hover,
 }
 .parceiro-veio-metrics {
   display: grid;
-  grid-template-columns: 1fr;
-  border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-  border-radius: 0.875rem;
-  overflow: hidden;
-  background: var(--partner-surface-2, #131619);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
   padding: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
 }
-@media (min-width: 560px) {
+@media (min-width: 900px) {
   .parceiro-veio-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.9rem;
   }
 }
 .parceiro-veio-metric {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.3rem;
-  min-height: 4.75rem;
-  padding: 0.9rem 1rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon value"
+    "icon label"
+    "desc desc";
+  column-gap: 0.7rem;
+  row-gap: 0.15rem;
+  align-items: center;
+  min-height: 6.25rem;
+  padding: 0.95rem 1rem 1rem;
   text-decoration: none;
   color: inherit;
-  border-bottom: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-  transition: background 0.15s ease;
+  border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--partner-surface-3, #191d21) 88%, #fff) 0%,
+      var(--partner-surface-2, #131619) 55%
+    );
+  box-shadow: 0 10px 28px -22px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
-.parceiro-veio-metric:last-child { border-bottom: none; }
-@media (min-width: 560px) {
-  .parceiro-veio-metric {
-    min-height: 5.25rem;
-    border-bottom: none;
-    border-right: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
-  }
-  .parceiro-veio-metric:last-child { border-right: none; }
+.parceiro-veio-metric::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--partner-copper, #f0783c);
+  opacity: 0.9;
+}
+.parceiro-veio-metric.is-factory::before { background: var(--partner-mineral, #72a7ff); }
+.parceiro-veio-metric.is-install::before { background: var(--partner-celadon, #a8d88d); }
+.parceiro-veio-metric.is-delivered::before { background: var(--partner-violet, #9a86d8); }
+.parceiro-veio-metric::after {
+  content: "";
+  position: absolute;
+  right: -1.5rem;
+  top: -1.5rem;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--partner-copper, #f0783c) 18%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.parceiro-veio-metric.is-factory::after {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--partner-mineral, #72a7ff) 16%, transparent),
+    transparent 70%
+  );
+}
+.parceiro-veio-metric.is-install::after {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--partner-celadon, #a8d88d) 16%, transparent),
+    transparent 70%
+  );
+}
+.parceiro-veio-metric.is-delivered::after {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--partner-violet, #9a86d8) 16%, transparent),
+    transparent 70%
+  );
 }
 a.parceiro-veio-metric:hover {
-  background: color-mix(in srgb, var(--partner-copper, #f0783c) 8%, transparent);
+  border-color: color-mix(in srgb, var(--partner-copper, #f0783c) 35%, rgba(242, 238, 229, 0.14));
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px -20px rgba(0, 0, 0, 0.9);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--partner-surface-3, #191d21) 70%, #fff) 0%,
+      var(--partner-surface-2, #131619) 60%
+    );
+}
+.parceiro-veio-metric.is-factory:hover {
+  border-color: color-mix(in srgb, var(--partner-mineral, #72a7ff) 35%, rgba(242, 238, 229, 0.14));
+}
+.parceiro-veio-metric.is-delivered:hover {
+  border-color: color-mix(in srgb, var(--partner-violet, #9a86d8) 35%, rgba(242, 238, 229, 0.14));
+}
+.parceiro-veio-metric-icon {
+  grid-area: icon;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--partner-copper, #f0783c) 14%, #191d21);
+  color: var(--partner-copper, #f0783c);
+  flex-shrink: 0;
+  align-self: start;
+  margin-top: 0.15rem;
+}
+.parceiro-veio-metric.is-factory .parceiro-veio-metric-icon {
+  background: color-mix(in srgb, var(--partner-mineral, #72a7ff) 14%, #191d21);
+  color: var(--partner-mineral, #72a7ff);
+}
+.parceiro-veio-metric.is-install .parceiro-veio-metric-icon {
+  background: color-mix(in srgb, var(--partner-celadon, #a8d88d) 14%, #191d21);
+  color: var(--partner-celadon, #a8d88d);
+}
+.parceiro-veio-metric.is-delivered .parceiro-veio-metric-icon {
+  background: color-mix(in srgb, var(--partner-violet, #9a86d8) 14%, #191d21);
+  color: var(--partner-violet, #9a86d8);
 }
 .parceiro-veio-metric-value {
+  grid-area: value;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.85rem, 3.4vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  color: var(--partner-bone, #f2eee5);
+}
+.parceiro-veio-metric.is-linked .parceiro-veio-metric-value { color: var(--partner-copper, #f0783c); }
+.parceiro-veio-metric.is-factory .parceiro-veio-metric-value { color: var(--partner-mineral, #72a7ff); }
+.parceiro-veio-metric.is-install .parceiro-veio-metric-value { color: var(--partner-celadon, #a8d88d); }
+.parceiro-veio-metric.is-delivered .parceiro-veio-metric-value { color: var(--partner-violet, #9a86d8); }
+.parceiro-veio-metric-label {
+  grid-area: label;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: lowercase;
+  color: var(--partner-bone, #f2eee5);
+}
+.parceiro-veio-metric-desc {
+  grid-area: desc;
+  margin-top: 0.45rem;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--partner-faint, #747579);
 }
 .parceiro-veio-metric-value.is-copper { color: var(--partner-copper, #f0783c); }
 .parceiro-veio-metric-value.is-celadon { color: var(--partner-celadon, #a8d88d); }
-.parceiro-veio-metric-label {
-  font-size: 0.8125rem;
-  color: var(--partner-muted, #a9a7a2);
-}
 .parceiro-veio-project-list {
   list-style: none;
   margin: 0 -1.05rem 0;

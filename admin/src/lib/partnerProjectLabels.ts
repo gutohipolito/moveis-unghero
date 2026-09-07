@@ -481,8 +481,9 @@ export function partnerOverviewMetrics(
     );
     return daysUntil >= -1 && daysUntil <= 45;
   }).length;
+  const delivered = projects.filter((p) => p.status_geral === "FINALIZADO").length;
 
-  return { linked, inFactory, upcomingInstall };
+  return { linked, inFactory, upcomingInstall, delivered };
 }
 
 /** @deprecated Prefer buildPartnerRecentUpdates — mantido por compat. */

@@ -3,13 +3,17 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
   Calendar,
+  CheckCircle2,
   ChevronRight,
   Factory,
   FileText,
+  FolderKanban,
   Image as ImageIcon,
   Paperclip,
   Plus,
+  Wrench,
 } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
 import {
@@ -83,9 +87,15 @@ export default function ParceiroPainelClient({
               Veja o andamento dos projetos vinculados a você.
             </p>
           </div>
-          <Link href="/parceiro/marketing" className="parceiro-veio-cta-outline">
-            <Plus className="h-4 w-4" aria-hidden />
-            Indicar cliente
+          <Link href="/parceiro/marketing" className="parceiro-veio-cta">
+            <span className="parceiro-veio-cta-icon" aria-hidden>
+              <Plus className="h-4 w-4" />
+            </span>
+            <span className="parceiro-veio-cta-copy">
+              <span className="parceiro-veio-cta-title">Indicar cliente</span>
+              <span className="parceiro-veio-cta-hint">Enviar indicação</span>
+            </span>
+            <ArrowRight className="parceiro-veio-cta-arrow h-4 w-4" aria-hidden />
           </Link>
         </header>
 
@@ -97,27 +107,61 @@ export default function ParceiroPainelClient({
               Quando a Móveis Unghero vincular um projeto ao seu cadastro, você poderá
               acompanhar todas as etapas por aqui.
             </p>
-            <Link href="/parceiro/marketing" className="parceiro-veio-cta-outline">
-              Indicar cliente
+            <Link href="/parceiro/marketing" className="parceiro-veio-cta">
+              <span className="parceiro-veio-cta-icon" aria-hidden>
+                <Plus className="h-4 w-4" />
+              </span>
+              <span className="parceiro-veio-cta-copy">
+                <span className="parceiro-veio-cta-title">Indicar cliente</span>
+                <span className="parceiro-veio-cta-hint">Enviar indicação</span>
+              </span>
+              <ArrowRight className="parceiro-veio-cta-arrow h-4 w-4" aria-hidden />
             </Link>
           </section>
         ) : (
           <>
             <section className="parceiro-veio-metrics" aria-label="Resumo">
-              <Link href={partnerProjectsHref("TODOS")} className="parceiro-veio-metric">
-                <span className="parceiro-veio-metric-value is-copper">{metrics.linked}</span>
-                <span className="parceiro-veio-metric-label">projetos vinculados</span>
-              </Link>
-              <Link href={partnerProjectsHref("PRODUCAO")} className="parceiro-veio-metric">
-                <span className="parceiro-veio-metric-value is-copper">{metrics.inFactory}</span>
-                <span className="parceiro-veio-metric-label">na fábrica</span>
-              </Link>
-              <div className="parceiro-veio-metric">
-                <span className="parceiro-veio-metric-value is-celadon">
-                  {metrics.upcomingInstall}
+              <Link
+                href={partnerProjectsHref("TODOS")}
+                className="parceiro-veio-metric is-linked"
+              >
+                <span className="parceiro-veio-metric-icon" aria-hidden>
+                  <FolderKanban className="h-4 w-4" />
                 </span>
-                <span className="parceiro-veio-metric-label">montagem prevista</span>
+                <span className="parceiro-veio-metric-value">{metrics.linked}</span>
+                <span className="parceiro-veio-metric-label">vinculados</span>
+                <span className="parceiro-veio-metric-desc">Total em acompanhamento</span>
+              </Link>
+              <Link
+                href={partnerProjectsHref("PRODUCAO")}
+                className="parceiro-veio-metric is-factory"
+              >
+                <span className="parceiro-veio-metric-icon" aria-hidden>
+                  <Factory className="h-4 w-4" />
+                </span>
+                <span className="parceiro-veio-metric-value">{metrics.inFactory}</span>
+                <span className="parceiro-veio-metric-label">na fábrica</span>
+                <span className="parceiro-veio-metric-desc">Em produção agora</span>
+              </Link>
+              <div className="parceiro-veio-metric is-install">
+                <span className="parceiro-veio-metric-icon" aria-hidden>
+                  <Wrench className="h-4 w-4" />
+                </span>
+                <span className="parceiro-veio-metric-value">{metrics.upcomingInstall}</span>
+                <span className="parceiro-veio-metric-label">montagem</span>
+                <span className="parceiro-veio-metric-desc">Prevista em breve</span>
               </div>
+              <Link
+                href={partnerProjectsHref("FINALIZADOS")}
+                className="parceiro-veio-metric is-delivered"
+              >
+                <span className="parceiro-veio-metric-icon" aria-hidden>
+                  <CheckCircle2 className="h-4 w-4" />
+                </span>
+                <span className="parceiro-veio-metric-value">{metrics.delivered}</span>
+                <span className="parceiro-veio-metric-label">entregues</span>
+                <span className="parceiro-veio-metric-desc">Projetos concluídos</span>
+              </Link>
             </section>
 
             {partner.hasIssuedReceipt ? (
