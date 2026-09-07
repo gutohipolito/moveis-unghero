@@ -92,5 +92,7 @@ export function applyPartnerUiPrefsToElement(
     }
     target.style.setProperty("--parceiro-accent", accent);
     target.style.setProperty("--parceiro-brand-glow", accent);
+    // VEIO usa --partner-copper nos destaques; mantém sincronizado com a preferência.
+    target.style.setProperty("--partner-copper", `hsl(${accent})`);
   }
 }
