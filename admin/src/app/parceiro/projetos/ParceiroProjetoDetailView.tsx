@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useMemo, useRef, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Calendar,
   Check,
   Factory,
   FileText,
   Image as ImageIcon,
+  Images,
   Loader2,
   Mail,
   MessageSquare,
@@ -15,7 +16,9 @@ import {
   Trash2,
   ExternalLink,
   Upload,
+  X,
 } from "lucide-react";
+import type { EnvironmentAttachmentCategory } from "@prisma/client";
 import type {
   PartnerProjectDetail,
   PartnerProjectFileDTO,
@@ -34,13 +37,27 @@ import {
   type PartnerProjectHistoryKind,
 } from "@/lib/partnerProjectLabels";
 import {
+  attachmentCategoryLabel,
+} from "@/lib/factoryEnvironment";
+import {
   addPartnerProjectNoteAction,
   deletePartnerProjectFileAction,
   deletePartnerProjectNoteAction,
 } from "@/app/actions/parceiroPortal";
 import { cn } from "@/lib/utils";
 
-type TabId = "resumo" | "orcamentos" | "arquivos" | "notas" | "historico";
+type TabId = "resumo" | "orcamentos" | "imagens" | "arquivos" | "notas" | "historico";
+type ImageCategoryFilter = EnvironmentAttachmentCategory | "ALL";
+
+const PARTNER_IMAGE_CATEGORY_ORDER: EnvironmentAttachmentCategory[] = [
+  "RENDER",
+  "FOTO",
+  "REFERENCIA",
+  "PROJETO_ARQUITETO",
+  "MEDICAO",
+  "CONFERENCIA",
+  "PROJETO_FABRICA",
+];
 
 function formatBytes(bytes: number | null) {
   if (!bytes || bytes <= 0) return "";
@@ -111,6 +128,14 @@ export default function ParceiroProjetoDetailView({
   const [success, setSuccess] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+  const [imageCategory, setImageCategory] = useState<ImageCategoryFilter>("ALL");
+  const [imageEnvId, setImageEnvId] = useState<string>("ALL");
+  const [lightbox, setLightbox] = useState<{
+    url: string;
+    nome: string;
+    envNome: string;
+    categoria: EnvironmentAttachmentCategory;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
   const tablistRef = useRef<HTMLDivElement>(null);
@@ -122,6 +147,36 @@ export default function ParceiroProjetoDetailView({
   const readyForAssemblyLabel = isLost
     ? null
     : partnerProjectReadyForAssemblyLabel(initial.data_entrega_prevista);
+
+  const totalEnvImages = useMemo(
+    () => initial.environments.reduce((sum, env) => sum + env.imageCount, 0),
+    [initial.environments]
+  );
+
+  const imageCategoryCounts = useMemo(() => {
+    const counts = new Map<EnvironmentAttachmentCategory, number>();
+    for (const env of initial.environments) {
+      for (const img of env.images) {
+        counts.set(img.categoria, (counts.get(img.categoria) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [initial.environments]);
+
+  const filteredImageRooms = useMemo(() => {
+    return initial.environments
+      .map((env) => {
+        const images = env.images.filter((img) => {
+          if (imageCategory !== "ALL" && img.categoria !== imageCategory) return false;
+          return true;
+        });
+        return { ...env, images };
+      })
+      .filter((env) => {
+        if (imageEnvId !== "ALL" && env.id !== imageEnvId) return false;
+        return env.images.length > 0;
+      });
+  }, [initial.environments, imageCategory, imageEnvId]);
 
   const history = useMemo(
     () =>
@@ -139,10 +194,31 @@ export default function ParceiroProjetoDetailView({
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: "resumo", label: "Resumo" },
     { id: "orcamentos", label: "Orçamentos", count: initial.quotes.filter((q) => q.publicUrl).length },
+    { id: "imagens", label: "Imagens", count: totalEnvImages },
     { id: "arquivos", label: "Arquivos", count: files.length },
     { id: "notas", label: "Notas", count: notes.length },
     { id: "historico", label: "Atualizações", count: history.length },
   ];
+
+  useEffect(() => {
+    if (!lightbox) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setLightbox(null);
+    }
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lightbox]);
+
+  function openImagesTab(envId?: string) {
+    setImageEnvId(envId || "ALL");
+    setImageCategory("ALL");
+    setTab("imagens");
+  }
 
   function clearFeedbackSoon() {
     window.setTimeout(() => setSuccess(null), 3200);
@@ -482,14 +558,49 @@ export default function ParceiroProjetoDetailView({
 
             {initial.environments.length > 0 ? (
               <section className="parceiro-veio-panel parceiro-veio-detail-card">
-                <h2 className="parceiro-veio-panel-title">Ambientes</h2>
-                <ul className="parceiro-veio-env-list">
+                <div className="parceiro-veio-panel-head">
+                  <h2 className="parceiro-veio-panel-title">Ambientes</h2>
+                  {totalEnvImages > 0 ? (
+                    <button
+                      type="button"
+                      className="parceiro-veio-text-btn"
+                      onClick={() => openImagesTab()}
+                    >
+                      Ver imagens
+                    </button>
+                  ) : null}
+                </div>
+                <ul className="parceiro-veio-env-gallery">
                   {initial.environments.map((env) => (
-                    <li key={env.id} className="parceiro-veio-env-item">
-                      <span className="parceiro-veio-env-name">{env.nome}</span>
-                      <span className="parceiro-veio-env-status">
-                        {partnerEnvironmentStatusLabel(env.status)}
-                      </span>
+                    <li key={env.id}>
+                      <button
+                        type="button"
+                        className="parceiro-veio-env-card"
+                        onClick={() =>
+                          env.imageCount > 0 ? openImagesTab(env.id) : undefined
+                        }
+                        disabled={env.imageCount === 0}
+                      >
+                        <span className="parceiro-veio-env-cover" aria-hidden>
+                          {env.coverUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={env.coverUrl} alt="" />
+                          ) : (
+                            <Images className="h-5 w-5 opacity-40" />
+                          )}
+                        </span>
+                        <span className="parceiro-veio-env-card-body">
+                          <span className="parceiro-veio-env-name">{env.nome}</span>
+                          <span className="parceiro-veio-env-status">
+                            {partnerEnvironmentStatusLabel(env.status)}
+                          </span>
+                          <span className="parceiro-veio-env-count">
+                            {env.imageCount === 0
+                              ? "Sem imagens"
+                              : `${env.imageCount} imagem${env.imageCount === 1 ? "" : "ns"}`}
+                          </span>
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -575,6 +686,151 @@ export default function ParceiroProjetoDetailView({
                   </span>
                 </a>
               ))
+          )}
+        </div>
+      )}
+
+      {tab === "imagens" && (
+        <div
+          id="parceiro-panel-imagens"
+          role="tabpanel"
+          aria-labelledby="parceiro-tab-imagens"
+          className="parceiro-veio-images-panel"
+        >
+          {totalEnvImages === 0 ? (
+            <div className="parceiro-veio-empty is-inline">
+              <Images className="h-7 w-7 opacity-50" aria-hidden />
+              <p className="parceiro-veio-empty-title">Nenhuma imagem ainda</p>
+              <p className="parceiro-veio-empty-desc">
+                Quando a equipe da Móveis Unghero anexar fotos, renders ou referências nos
+                cômodos, elas aparecem aqui por ambiente e categoria.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div
+                className="parceiro-veio-images-filters"
+                role="toolbar"
+                aria-label="Filtrar imagens"
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    "parceiro-veio-finance-filter",
+                    imageCategory === "ALL" && "is-active"
+                  )}
+                  aria-pressed={imageCategory === "ALL"}
+                  onClick={() => setImageCategory("ALL")}
+                >
+                  <span>Todas</span>
+                  <span className="parceiro-veio-finance-filter-count">{totalEnvImages}</span>
+                </button>
+                {PARTNER_IMAGE_CATEGORY_ORDER.filter((cat) =>
+                  imageCategoryCounts.has(cat)
+                ).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={cn(
+                      "parceiro-veio-finance-filter",
+                      imageCategory === cat && "is-active"
+                    )}
+                    aria-pressed={imageCategory === cat}
+                    onClick={() => setImageCategory(cat)}
+                  >
+                    <span>{attachmentCategoryLabel(cat)}</span>
+                    <span className="parceiro-veio-finance-filter-count">
+                      {imageCategoryCounts.get(cat) ?? 0}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {initial.environments.length > 1 ? (
+                <div
+                  className="parceiro-veio-images-filters is-secondary"
+                  role="toolbar"
+                  aria-label="Filtrar por ambiente"
+                >
+                  <button
+                    type="button"
+                    className={cn(
+                      "parceiro-veio-finance-filter",
+                      imageEnvId === "ALL" && "is-active"
+                    )}
+                    aria-pressed={imageEnvId === "ALL"}
+                    onClick={() => setImageEnvId("ALL")}
+                  >
+                    Todos os ambientes
+                  </button>
+                  {initial.environments.map((env) => (
+                    <button
+                      key={env.id}
+                      type="button"
+                      className={cn(
+                        "parceiro-veio-finance-filter",
+                        imageEnvId === env.id && "is-active"
+                      )}
+                      aria-pressed={imageEnvId === env.id}
+                      onClick={() => setImageEnvId(env.id)}
+                      disabled={env.imageCount === 0}
+                    >
+                      {env.nome}
+                      <span className="parceiro-veio-finance-filter-count">
+                        {env.imageCount}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {filteredImageRooms.length === 0 ? (
+                <div className="parceiro-veio-empty is-inline">
+                  <p className="parceiro-veio-empty-title">Nada neste filtro</p>
+                  <p className="parceiro-veio-empty-desc">
+                    Tente outra categoria ou ambiente.
+                  </p>
+                </div>
+              ) : (
+                <div className="parceiro-veio-images-rooms">
+                  {filteredImageRooms.map((env) => (
+                    <section key={env.id} className="parceiro-veio-panel">
+                      <div className="parceiro-veio-panel-head">
+                        <h2 className="parceiro-veio-panel-title">{env.nome}</h2>
+                        <span className="parceiro-veio-muted">
+                          {env.images.length} imagem
+                          {env.images.length === 1 ? "" : "ns"}
+                        </span>
+                      </div>
+                      <ul className="parceiro-veio-images-grid">
+                        {env.images.map((img) => (
+                          <li key={img.id}>
+                            <button
+                              type="button"
+                              className="parceiro-veio-image-tile"
+                              onClick={() =>
+                                setLightbox({
+                                  url: img.url,
+                                  nome: img.nome,
+                                  envNome: env.nome,
+                                  categoria: img.categoria,
+                                })
+                              }
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={img.url} alt={img.nome} loading="lazy" />
+                              <span className="parceiro-veio-image-tile-meta">
+                                {attachmentCategoryLabel(img.categoria)}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -808,6 +1064,38 @@ export default function ParceiroProjetoDetailView({
         </section>
       )}
 
+      {lightbox ? (
+        <div
+          className="parceiro-veio-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.nome}
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            className="parceiro-veio-lightbox-close"
+            aria-label="Fechar imagem"
+            onClick={() => setLightbox(null)}
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+          <div
+            className="parceiro-veio-lightbox-body"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={lightbox.url} alt={lightbox.nome} />
+            <p className="parceiro-veio-lightbox-caption">
+              {lightbox.envNome}
+              {" · "}
+              {attachmentCategoryLabel(lightbox.categoria)}
+              {" · "}
+              {lightbox.nome}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

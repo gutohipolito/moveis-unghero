@@ -3389,6 +3389,187 @@ a.parceiro-veio-metric:hover {
   color: var(--partner-muted, #a9a7a2);
   text-align: right;
 }
+.parceiro-veio-env-gallery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.parceiro-veio-env-card {
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 0.65rem;
+}
+.parceiro-veio-env-card:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+.parceiro-veio-env-card:not(:disabled):hover .parceiro-veio-env-cover {
+  border-color: color-mix(in srgb, var(--partner-copper, #f0783c) 40%, transparent);
+}
+.parceiro-veio-env-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.25rem;
+  height: 3.35rem;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  background: var(--partner-surface-3, #191d21);
+  color: var(--partner-muted, #a9a7a2);
+}
+.parceiro-veio-env-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.parceiro-veio-env-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  justify-content: center;
+}
+.parceiro-veio-env-count {
+  font-size: 0.6875rem;
+  color: var(--partner-faint, #747579);
+}
+.parceiro-veio-images-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.parceiro-veio-images-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.parceiro-veio-images-filters::-webkit-scrollbar { display: none; }
+.parceiro-veio-images-filters.is-secondary .parceiro-veio-finance-filter.is-active {
+  background: var(--partner-surface-3, #191d21);
+  color: var(--partner-bone, #f2eee5);
+  border-color: rgba(242, 238, 229, 0.28);
+}
+.parceiro-veio-images-rooms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.parceiro-veio-images-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+@media (min-width: 720px) {
+  .parceiro-veio-images-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .parceiro-veio-images-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.parceiro-veio-image-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 1px solid var(--partner-border, rgba(242, 238, 229, 0.14));
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: var(--partner-surface-3, #191d21);
+  cursor: pointer;
+}
+.parceiro-veio-image-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+.parceiro-veio-image-tile:hover img {
+  transform: scale(1.03);
+}
+.parceiro-veio-image-tile-meta {
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.4rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: color-mix(in srgb, #070809 72%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.parceiro-veio-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: color-mix(in srgb, #050607 88%, transparent);
+  backdrop-filter: blur(4px);
+}
+.parceiro-veio-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(242, 238, 229, 0.2);
+  border-radius: 999px;
+  background: color-mix(in srgb, #131619 80%, transparent);
+  color: #fff;
+  cursor: pointer;
+}
+.parceiro-veio-lightbox-body {
+  max-width: min(96vw, 1100px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.parceiro-veio-lightbox-body img {
+  max-width: 100%;
+  max-height: calc(90vh - 3rem);
+  object-fit: contain;
+  border-radius: 0.65rem;
+  background: #0b0d0f;
+}
+.parceiro-veio-lightbox-caption {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--partner-muted, #a9a7a2);
+}
 
 .parceiro-veio-history-list {
   list-style: none;

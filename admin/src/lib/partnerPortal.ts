@@ -541,6 +541,25 @@ export interface PartnerProjectFileDTO {
   createdAt: string;
 }
 
+export interface PartnerEnvironmentImageDTO {
+  id: string;
+  nome: string;
+  url: string;
+  mime_type: string;
+  categoria: import("@prisma/client").EnvironmentAttachmentCategory;
+  createdAt: string;
+}
+
+export interface PartnerProjectEnvironmentDTO {
+  id: string;
+  nome: string;
+  tipo: string;
+  status: string;
+  coverUrl: string | null;
+  imageCount: number;
+  images: PartnerEnvironmentImageDTO[];
+}
+
 export interface PartnerProjectQuoteItemDTO {
   id: string;
   descricao: string;
@@ -580,12 +599,7 @@ export interface PartnerProjectDetail {
     uf: string | null;
     cep: string | null;
   };
-  environments: Array<{
-    id: string;
-    nome: string;
-    tipo: string;
-    status: string;
-  }>;
+  environments: PartnerProjectEnvironmentDTO[];
   quotes: PartnerProjectQuoteDTO[];
   notes: PartnerProjectNoteDTO[];
   files: PartnerProjectFileDTO[];
@@ -652,7 +666,25 @@ export async function loadPartnerProjectDetail(
       },
       environments: {
         orderBy: { nome: "asc" },
-        select: { id: true, nome: true, tipo: true, status: true },
+        select: {
+          id: true,
+          nome: true,
+          tipo: true,
+          status: true,
+          capa_attachment_id: true,
+          attachments: {
+            where: { mime_type: { startsWith: "image/" } },
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              nome: true,
+              url: true,
+              mime_type: true,
+              categoria: true,
+              createdAt: true,
+            },
+          },
+        },
       },
       quotes: {
         orderBy: { versao: "desc" },
@@ -716,12 +748,27 @@ export async function loadPartnerProjectDetail(
     updatedAt: project.updatedAt.toISOString(),
     data_entrega_prevista: project.data_entrega_prevista?.toISOString() ?? null,
     client: project.client,
-    environments: project.environments.map((env) => ({
-      id: env.id,
-      nome: env.nome,
-      tipo: env.tipo,
-      status: env.status,
-    })),
+    environments: project.environments.map((env) => {
+      const images = env.attachments.map((att) => ({
+        id: att.id,
+        nome: att.nome,
+        url: att.url,
+        mime_type: att.mime_type,
+        categoria: att.categoria,
+        createdAt: att.createdAt.toISOString(),
+      }));
+      const cover =
+        images.find((img) => img.id === env.capa_attachment_id) ?? images[0] ?? null;
+      return {
+        id: env.id,
+        nome: env.nome,
+        tipo: env.tipo,
+        status: env.status,
+        coverUrl: cover?.url ?? null,
+        imageCount: images.length,
+        images,
+      };
+    }),
     quotes: project.quotes.map((q) => ({
       id: q.id,
       versao: q.versao,
