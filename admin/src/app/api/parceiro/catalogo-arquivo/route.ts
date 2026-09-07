@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { parsePartnerSessionToken } from "@/lib/partnerSession";
-import { applyPartnerCatalogWatermark } from "@/lib/partnerCatalogWatermark";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -80,6 +79,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const { applyPartnerCatalogWatermark } = await import(
+      "@/lib/partnerCatalogWatermark"
+    );
     const { buffer, contentType } = await applyPartnerCatalogWatermark(
       source,
       catalog.mime_type,
@@ -96,7 +98,16 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("parceiro/catalogo-arquivo watermark failed", error);
-    return new NextResponse("Falha ao processar arquivo", { status: 500 });
+    console.error("parceiro/catalogo-arquivo watermark failed; serving source", error);
+    const filename = safeFilename(catalog.arquivo_nome);
+    return new NextResponse(new Uint8Array(source), {
+      status: 200,
+      headers: {
+        "Content-Type": catalog.mime_type || "application/octet-stream",
+        "Cache-Control": "private, max-age=300",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
   }
 }

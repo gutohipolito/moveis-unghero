@@ -44,6 +44,29 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: monorepoRoot,
   serverExternalPackages: ["sharp", "pdf-lib"],
+  // Garante binários nativos do sharp no bundle serverless (Vercel linux-x64).
+  outputFileTracingIncludes: {
+    "/api/parceiro/produto-imagem": [
+      "./admin/node_modules/sharp/**/*",
+      "./admin/node_modules/@img/**/*",
+    ],
+    "/api/parceiro/catalogo-arquivo": [
+      "./admin/node_modules/sharp/**/*",
+      "./admin/node_modules/@img/**/*",
+    ],
+    "/api/partners/*/images": [
+      "./admin/node_modules/sharp/**/*",
+      "./admin/node_modules/@img/**/*",
+    ],
+    "/api/clients/*/attachments": [
+      "./admin/node_modules/sharp/**/*",
+      "./admin/node_modules/@img/**/*",
+    ],
+    "/api/quote-presets/*/*/image": [
+      "./admin/node_modules/sharp/**/*",
+      "./admin/node_modules/@img/**/*",
+    ],
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "motion/react"],
   },

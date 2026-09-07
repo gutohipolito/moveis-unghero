@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { parsePartnerSessionToken } from "@/lib/partnerSession";
-import { applyPartnerProductWatermark } from "@/lib/partnerProductWatermark";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -17,6 +16,33 @@ function resolveProductUrls(product: {
   const fromArray = (product.imagens || []).filter(Boolean);
   if (fromArray.length > 0) return fromArray;
   return product.imagem_url ? [product.imagem_url] : [];
+}
+
+function guessContentType(sourceUrl: string, headerType: string | null): string {
+  const header = (headerType || "").split(";")[0]?.trim().toLowerCase();
+  if (header?.startsWith("image/")) return header;
+  const lower = sourceUrl.toLowerCase();
+  if (lower.includes(".png")) return "image/png";
+  if (lower.includes(".webp")) return "image/webp";
+  if (lower.includes(".gif")) return "image/gif";
+  if (lower.includes(".avif")) return "image/avif";
+  return "image/jpeg";
+}
+
+function imageResponse(
+  body: Buffer | Uint8Array,
+  contentType: string,
+  cacheControl = "private, max-age=86400, stale-while-revalidate=604800"
+) {
+  return new NextResponse(new Uint8Array(body), {
+    status: 200,
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": cacheControl,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": "inline",
+    },
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -66,6 +92,7 @@ export async function GET(request: NextRequest) {
   }
 
   let source: Buffer;
+  let upstreamType: string | null = null;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -78,6 +105,7 @@ export async function GET(request: NextRequest) {
     if (!upstream.ok) {
       return new NextResponse("Falha ao obter imagem", { status: 502 });
     }
+    upstreamType = upstream.headers.get("content-type");
     const len = Number(upstream.headers.get("content-length") || 0);
     if (len > MAX_SOURCE_BYTES) {
       return new NextResponse("Imagem muito grande", { status: 413 });
@@ -92,22 +120,20 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Falha ao obter imagem", { status: 502 });
   }
 
+  const fallbackType = guessContentType(sourceUrl, upstreamType);
+
   try {
+    // Import dinâmico: se o sharp falhar ao carregar no runtime, ainda servimos a imagem.
+    const { applyPartnerProductWatermark } = await import(
+      "@/lib/partnerProductWatermark"
+    );
     const { buffer, contentType } = await applyPartnerProductWatermark(
       source,
       `${product.id}:${index}`
     );
-    return new NextResponse(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "private, max-age=86400, stale-while-revalidate=604800",
-        "X-Content-Type-Options": "nosniff",
-        "Content-Disposition": "inline",
-      },
-    });
+    return imageResponse(buffer, contentType);
   } catch (error) {
-    console.error("parceiro/produto-imagem watermark failed", error);
-    return new NextResponse("Falha ao processar imagem", { status: 500 });
+    console.error("parceiro/produto-imagem watermark failed; serving source", error);
+    return imageResponse(source, fallbackType, "private, max-age=300");
   }
 }
