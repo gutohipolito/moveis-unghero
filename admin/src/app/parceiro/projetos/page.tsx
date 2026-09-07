@@ -15,7 +15,7 @@ export const metadata = publicPageMetadata({
 export default async function ParceiroProjetosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filtro?: string }>;
+  searchParams: Promise<{ filtro?: string; cliente?: string }>;
 }) {
   const cookieStore = await cookies();
   const partnerId = parsePartnerSessionToken(cookieStore.get("parceiro-session")?.value);
@@ -38,13 +38,18 @@ export default async function ParceiroProjetosPage({
 
   const isAdminPreview = await isPartnerAdminPreview();
   const params = await searchParams;
-  const initialFilter = parsePartnerProjectFilter(params.filtro);
+  const initialClientId = params.cliente?.trim() || null;
+  // Com cliente selecionado, mostra todos os status daquele cliente por padrão.
+  const initialFilter = initialClientId
+    ? parsePartnerProjectFilter(params.filtro || "todos")
+    : parsePartnerProjectFilter(params.filtro);
 
   return (
     <ParceiroProjetosClient
       partner={partner}
       isAdminPreview={isAdminPreview}
       initialFilter={initialFilter}
+      initialClientId={initialClientId}
     />
   );
 }

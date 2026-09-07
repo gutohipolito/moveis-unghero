@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   Calendar,
   Check,
@@ -140,6 +147,10 @@ export default function ParceiroProjetoDetailView({
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
   const tablistRef = useRef<HTMLDivElement>(null);
+  const timelineTrackRef = useRef<HTMLDivElement>(null);
+  const timelineVeinRef = useRef<SVGSVGElement>(null);
+  const currentDotRef = useRef<HTMLSpanElement>(null);
+  const [veinProgressPct, setVeinProgressPct] = useState(0);
 
   const current = partnerProjectStepIndex(initial.status_geral);
   const isLost = initial.status_geral === "PERDIDO";
@@ -156,6 +167,34 @@ export default function ParceiroProjetoDetailView({
       }),
     [initial]
   );
+
+  useLayoutEffect(() => {
+    if (isLost || current < 0) {
+      setVeinProgressPct(0);
+      return;
+    }
+
+    function measureVeinProgress() {
+      const vein = timelineVeinRef.current;
+      const dot = currentDotRef.current;
+      if (!vein || !dot) return;
+      const veinRect = vein.getBoundingClientRect();
+      const dotRect = dot.getBoundingClientRect();
+      if (veinRect.width <= 0) return;
+      const centerX = dotRect.left + dotRect.width / 2;
+      // Pequeno avanço para o tip do stroke “tocar” o centro do ponto.
+      const pct = ((centerX - veinRect.left) / veinRect.width) * 100 + 0.6;
+      setVeinProgressPct(Math.min(100, Math.max(0, pct)));
+    }
+
+    measureVeinProgress();
+
+    const track = timelineTrackRef.current;
+    if (!track || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => measureVeinProgress());
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, [current, isLost]);
 
   const totalEnvImages = useMemo(
     () => initial.environments.reduce((sum, env) => sum + env.imageCount, 0),
@@ -510,18 +549,22 @@ export default function ParceiroProjetoDetailView({
               <p className="parceiro-veio-detail-lost">Projeto perdido</p>
             ) : (
               <div className="parceiro-veio-timeline-wrap">
-                <div className="parceiro-veio-timeline-track">
+                <div className="parceiro-veio-timeline-track" ref={timelineTrackRef}>
                   {(() => {
-                    const stepsCount = PARTNER_PROJECT_STEPS.length;
-                    const veinProgressPct =
+                    const fallbackPct =
                       current < 0
                         ? 0
-                        : Math.min(100, ((current + 0.5) / stepsCount) * 100);
+                        : Math.min(
+                            100,
+                            ((current + 0.5) / PARTNER_PROJECT_STEPS.length) * 100
+                          );
+                    const progressPct = veinProgressPct > 0 ? veinProgressPct : fallbackPct;
                     const veinPath =
                       "M8 24 C 60 8, 100 40, 150 24 S 250 8, 300 24 S 400 42, 450 24 S 550 6, 600 24 S 700 40, 792 24";
                     return (
                       <>
                         <svg
+                          ref={timelineVeinRef}
                           className="parceiro-veio-timeline-vein is-base"
                           viewBox="0 0 800 48"
                           preserveAspectRatio="none"
@@ -541,14 +584,14 @@ export default function ParceiroProjetoDetailView({
                           preserveAspectRatio="none"
                           aria-hidden
                           style={{
-                            clipPath: `inset(0 ${Math.max(0, 100 - veinProgressPct)}% 0 0)`,
+                            clipPath: `inset(0 ${Math.max(0, 100 - progressPct)}% 0 0)`,
                           }}
                         >
                           <path
                             d={veinPath}
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="2.25"
+                            strokeWidth="2.35"
                             strokeLinecap="round"
                           />
                         </svg>
@@ -571,7 +614,14 @@ export default function ParceiroProjetoDetailView({
                           )}
                         >
                           <span className="parceiro-veio-timeline-rail" aria-hidden>
-                            <span className="parceiro-veio-timeline-dot" />
+                            <span
+                              ref={currentStep ? currentDotRef : undefined}
+                              className="parceiro-veio-timeline-dot"
+                            >
+                              {currentStep ? (
+                                <span className="parceiro-veio-timeline-sonar" />
+                              ) : null}
+                            </span>
                           </span>
                           <div className="parceiro-veio-timeline-body">
                             <p className="parceiro-veio-timeline-label">{step.label}</p>

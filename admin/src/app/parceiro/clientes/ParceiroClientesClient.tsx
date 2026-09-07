@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, Mail, MapPin, Phone, Search } from "lucide-react";
 import type { PartnerPortalClient, PartnerPortalData } from "@/lib/partnerPortal";
 import { formatPartnerClientAddress } from "@/lib/partnerPortal";
+import { partnerProjectsHref } from "@/lib/partnerProjectLabels";
 import ParceiroPortalShell from "@/app/parceiro/ParceiroPortalShell";
 import { cn } from "@/lib/utils";
 
@@ -207,7 +208,7 @@ export default function ParceiroClientesClient({
                       ) : null}
                       {client.projectsCount > 0 ? (
                         <Link
-                          href="/parceiro/projetos"
+                          href={partnerProjectsHref("TODOS", client.id)}
                           className="parceiro-veio-finance-btn is-solid"
                         >
                           Projetos

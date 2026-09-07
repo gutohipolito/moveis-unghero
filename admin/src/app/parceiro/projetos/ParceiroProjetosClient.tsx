@@ -109,27 +109,43 @@ interface ParceiroProjetosClientProps {
   partner: PartnerPortalData;
   isAdminPreview?: boolean;
   initialFilter?: PartnerProjectStatusFilter;
+  initialClientId?: string | null;
 }
 
 export default function ParceiroProjetosClient({
   partner,
   isAdminPreview = false,
   initialFilter = "ATIVOS",
+  initialClientId = null,
 }: ParceiroProjetosClientProps) {
   const router = useRouter();
   const [filter, setFilter] = useState<PartnerProjectStatusFilter>(initialFilter);
+  const [clientId, setClientId] = useState<string | null>(initialClientId);
   const [groupByClient, setGroupByClient] = useState(false);
 
   React.useEffect(() => {
     setFilter(initialFilter);
   }, [initialFilter]);
 
+  React.useEffect(() => {
+    setClientId(initialClientId);
+  }, [initialClientId]);
+
+  const clientFilterName = useMemo(() => {
+    if (!clientId) return null;
+    return (
+      partner.projects.find((p) => p.client.id === clientId)?.client.nome ??
+      "este cliente"
+    );
+  }, [clientId, partner.projects]);
+
   const filtered = useMemo(
     () =>
-      partner.projects.filter((p) =>
-        matchesPartnerProjectFilter(p.status_geral, filter)
-      ),
-    [partner.projects, filter]
+      partner.projects.filter((p) => {
+        if (clientId && p.client.id !== clientId) return false;
+        return matchesPartnerProjectFilter(p.status_geral, filter);
+      }),
+    [partner.projects, filter, clientId]
   );
 
   const grouped = useMemo(() => {
@@ -156,9 +172,18 @@ export default function ParceiroProjetosClient({
     { id: "PERDIDOS", label: "Perdidos" },
   ];
 
+  function syncUrl(nextFilter: PartnerProjectStatusFilter, nextClientId: string | null) {
+    router.replace(partnerProjectsHref(nextFilter, nextClientId), { scroll: false });
+  }
+
   function applyFilter(next: PartnerProjectStatusFilter) {
     setFilter(next);
-    router.replace(partnerProjectsHref(next), { scroll: false });
+    syncUrl(next, clientId);
+  }
+
+  function clearClientFilter() {
+    setClientId(null);
+    syncUrl(filter, null);
   }
 
   return (
@@ -170,6 +195,24 @@ export default function ParceiroProjetosClient({
             Acompanhe etapa, ambientes e arquivos dos trabalhos vinculados a você.
           </p>
         </div>
+
+        {clientId ? (
+          <div className="parceiro-veio-client-filter-bar">
+            <p className="parceiro-veio-client-filter-label">
+              Filtrando por <strong>{clientFilterName}</strong>
+              <span className="parceiro-veio-client-filter-count">
+                · {filtered.length} projeto{filtered.length === 1 ? "" : "s"}
+              </span>
+            </p>
+            <button
+              type="button"
+              className="parceiro-veio-text-btn"
+              onClick={clearClientFilter}
+            >
+              Limpar filtro
+            </button>
+          </div>
+        ) : null}
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
           <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar projetos">

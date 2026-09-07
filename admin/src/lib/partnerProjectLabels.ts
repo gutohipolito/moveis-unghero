@@ -91,9 +91,19 @@ export function parsePartnerProjectFilter(
   return "ATIVOS";
 }
 
-export function partnerProjectsHref(filter?: PartnerProjectStatusFilter): string {
-  if (!filter || filter === "ATIVOS") return "/parceiro/projetos";
-  return `/parceiro/projetos?filtro=${filter.toLowerCase()}`;
+export function partnerProjectsHref(
+  filter?: PartnerProjectStatusFilter,
+  clientId?: string | null
+): string {
+  const params = new URLSearchParams();
+  if (filter && filter !== "ATIVOS") {
+    params.set("filtro", filter.toLowerCase());
+  }
+  if (clientId) {
+    params.set("cliente", clientId);
+  }
+  const query = params.toString();
+  return query ? `/parceiro/projetos?${query}` : "/parceiro/projetos";
 }
 
 export function matchesPartnerProjectFilter(
