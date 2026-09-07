@@ -257,20 +257,26 @@ export default function ParceiroUserMenu({
         className="parceiro-user-trigger"
         aria-expanded={menuOpen}
         aria-haspopup="true"
+        aria-label={`Menu de ${partner.nome}`}
       >
-        <div className="parceiro-user-meta text-left min-w-0">
-          <p className="text-[13px] font-bold text-white truncate max-w-[160px] leading-tight">
-            {partner.nome.split(" ")[0]}
-          </p>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-white/55 truncate max-w-[160px] mt-0.5">
-            {roleLabel}
-          </p>
-        </div>
+        <span className="parceiro-user-avatar">
+          {partner.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={partner.fotoUrl} alt="" />
+          ) : (
+            <span>{getInitials(partner.nome)}</span>
+          )}
+        </span>
+        <span className="parceiro-user-meta text-left min-w-0">
+          <span className="parceiro-user-name">{partner.nome.split(" ")[0]}</span>
+          <span className="parceiro-user-role">{roleLabel}</span>
+        </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-white/55 transition-transform shrink-0",
+            "parceiro-user-chevron h-4 w-4 transition-transform shrink-0",
             menuOpen && "rotate-180"
           )}
+          aria-hidden
         />
       </button>
 

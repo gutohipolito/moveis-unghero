@@ -16,10 +16,10 @@ import {
   X,
 } from "lucide-react";
 import type { PartnerPortalData } from "@/lib/partnerPortal";
-import { getPartnerRoleLabel } from "@/lib/partnerTypes";
 import { cn } from "@/lib/utils";
 import ParceiroUserMenu from "./ParceiroUserMenu";
 import ParceiroBetaBanner from "./ParceiroBetaBanner";
+import ParceiroTopbarClock from "./ParceiroTopbarClock";
 import SuggestionFab from "@/components/melhorias/SuggestionFab";
 import ParceiroInfoModal from "./painel/ParceiroInfoModal";
 import ParceiroSettingsModal from "./painel/ParceiroSettingsModal";
@@ -50,14 +50,6 @@ const ParceiroShellUiContext = createContext<ShellUi | null>(null);
 
 export function useParceiroShellUi() {
   return useContext(ParceiroShellUiContext);
-}
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
 }
 
 function navItemsFor(partner: PartnerPortalData) {
@@ -96,7 +88,6 @@ export default function ParceiroPortalShell({
   const drawerCloseRef = useRef<HTMLButtonElement>(null);
   const drawerPanelRef = useRef<HTMLDivElement>(null);
 
-  const roleLabel = getPartnerRoleLabel(partner.tipo, partner.nome);
   const items = navItemsFor(partner);
 
   useEffect(() => {
@@ -255,11 +246,17 @@ export default function ParceiroPortalShell({
                 className="parceiro-sidebar-brand"
                 aria-label="Ir para o início"
               >
-                <img
-                  src="/logo.png"
-                  alt="Móveis Unghero"
-                  className="parceiro-sidebar-logo"
-                />
+                {sidebarCollapsed ? (
+                  <span className="parceiro-sidebar-mu" aria-hidden>
+                    MU
+                  </span>
+                ) : (
+                  <img
+                    src="/logo.png"
+                    alt="Móveis Unghero"
+                    className="parceiro-sidebar-logo"
+                  />
+                )}
               </Link>
               <button
                 type="button"
@@ -281,52 +278,24 @@ export default function ParceiroPortalShell({
             <nav className="parceiro-sidebar-nav">
               {renderNavLinks({ collapsed: sidebarCollapsed })}
             </nav>
-
-            <div className="parceiro-sidebar-footer">
-              <button
-                type="button"
-                className="parceiro-sidebar-profile"
-                onClick={() => setInfoOpen(true)}
-                aria-label={`Perfil de ${partner.nome}`}
-              >
-                <span className="parceiro-sidebar-avatar">
-                  {partner.fotoUrl ? (
-                    <img src={partner.fotoUrl} alt="" />
-                  ) : (
-                    <span>{getInitials(partner.nome)}</span>
-                  )}
-                </span>
-                <span className="parceiro-sidebar-profile-text">
-                  <span className="parceiro-sidebar-profile-name">{partner.nome}</span>
-                  <span className="parceiro-sidebar-profile-role">{roleLabel}</span>
-                </span>
-              </button>
-              <div className="parceiro-sidebar-user-menu">
-                <ParceiroUserMenu
-                  partner={partner}
-                  onOpenProfile={() => setInfoOpen(true)}
-                  onOpenSettings={() => setSettingsOpen(true)}
-                />
-              </div>
-            </div>
           </aside>
 
           <div className="parceiro-portal-content">
-            <header className="parceiro-mobile-header">
-              <button
-                ref={menuBtnRef}
-                type="button"
-                className="parceiro-mobile-menu-btn"
-                onClick={() => setMobileNavOpen(true)}
-                aria-label="Abrir menu"
-                aria-expanded={mobileNavOpen}
-                aria-controls="parceiro-mobile-drawer"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <Link href="/parceiro/painel" className="parceiro-mobile-brand">
-                <img src="/logo.png" alt="Móveis Unghero" className="parceiro-mobile-logo" />
-              </Link>
+            <header className="parceiro-topbar">
+              <div className="parceiro-topbar-start">
+                <button
+                  ref={menuBtnRef}
+                  type="button"
+                  className="parceiro-mobile-menu-btn"
+                  onClick={() => setMobileNavOpen(true)}
+                  aria-label="Abrir menu"
+                  aria-expanded={mobileNavOpen}
+                  aria-controls="parceiro-mobile-drawer"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                <ParceiroTopbarClock />
+              </div>
               <ParceiroUserMenu
                 partner={partner}
                 onOpenProfile={() => setInfoOpen(true)}
