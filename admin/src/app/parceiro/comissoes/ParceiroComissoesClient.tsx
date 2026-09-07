@@ -2,11 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  ExternalLink,
-  FileText,
-  Wallet,
-} from "lucide-react";
+import { ExternalLink, FileText, Wallet } from "lucide-react";
 import type { PartnerCommissionStatus } from "@prisma/client";
 import type {
   PartnerPortalCommission,
@@ -33,19 +29,6 @@ function formatDate(iso: string | null) {
   const [y, m, d] = iso.split("-");
   if (!y || !m || !d) return iso;
   return `${d}/${m}/${y}`;
-}
-
-function statusClass(status: PartnerCommissionStatus) {
-  if (status === "PAGA") {
-    return "bg-emerald-100 text-emerald-800 border-emerald-200";
-  }
-  if (status === "AGENDADA") {
-    return "bg-sky-100 text-sky-800 border-sky-200";
-  }
-  if (status === "CANCELADA") {
-    return "bg-slate-100 text-slate-600 border-slate-200";
-  }
-  return "bg-amber-100 text-amber-900 border-amber-200";
 }
 
 interface ParceiroComissoesClientProps {
@@ -92,46 +75,45 @@ export default function ParceiroComissoesClient({
 
   return (
     <ParceiroPortalShell partner={partner} isAdminPreview={isAdminPreview}>
-      <div className="space-y-5">
-        <div>
-          <p className="parceiro-page-kicker">Financeiro</p>
-          <h1 className="parceiro-page-title">Comissões e recibos</h1>
-          <p className="parceiro-page-desc">
-            Consulte recibos emitidos pela Móveis Unghero. Valores e comprovantes
-            aparecem somente após a emissão do recibo — em modo leitura.
+      <div className="parceiro-veio-finance">
+        <header className="parceiro-veio-finance-header">
+          <p className="parceiro-veio-finance-kicker">Financeiro</p>
+          <h1 className="parceiro-veio-title">Comissões e recibos</h1>
+          <p className="parceiro-veio-subtitle">
+            Recibos emitidos pela Móveis Unghero. Valores e comprovantes aparecem
+            só após a emissão — em modo leitura.
           </p>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="partner-card p-4">
-            <div className="partner-card-accent" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              A receber
-            </p>
-            <p className="mt-1 text-xl font-black text-amber-800 tabular-nums">
+        <section className="parceiro-veio-finance-totals" aria-label="Totais">
+          <div className="parceiro-veio-finance-total is-open">
+            <span className="parceiro-veio-finance-total-label">A receber</span>
+            <span className="parceiro-veio-finance-total-value">
               {formatMoney(pendente)}
-            </p>
+            </span>
           </div>
-          <div className="partner-card p-4">
-            <div className="partner-card-accent" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Já pago
-            </p>
-            <p className="mt-1 text-xl font-black text-emerald-800 tabular-nums">
+          <div className="parceiro-veio-finance-total is-paid">
+            <span className="parceiro-veio-finance-total-label">Já pago</span>
+            <span className="parceiro-veio-finance-total-value">
               {formatMoney(pago)}
-            </p>
+            </span>
           </div>
-        </div>
+        </section>
 
-        <div className="parceiro-chip-scroll" role="toolbar" aria-label="Filtrar comissões">
+        <div
+          className="parceiro-veio-finance-filters"
+          role="toolbar"
+          aria-label="Filtrar comissões"
+        >
           {(
             [
-              { id: "all" as const, label: `Todas · ${commissions.length}` },
-              { id: "open" as const, label: `Em aberto · ${counts.open}` },
-              { id: "paid" as const, label: `Pagas · ${counts.paid}` },
+              { id: "all" as const, label: "Todas", count: commissions.length },
+              { id: "open" as const, label: "Em aberto", count: counts.open },
+              { id: "paid" as const, label: "Pagas", count: counts.paid },
               {
                 id: "cancelled" as const,
-                label: `Canceladas · ${counts.cancelled}`,
+                label: "Canceladas",
+                count: counts.cancelled,
               },
             ] as const
           ).map((chip) => (
@@ -141,100 +123,101 @@ export default function ParceiroComissoesClient({
               onClick={() => setFilter(chip.id)}
               aria-pressed={filter === chip.id}
               className={cn(
-                "parceiro-filter-chip",
+                "parceiro-veio-finance-filter",
                 filter === chip.id && "is-active"
               )}
             >
-              {chip.label}
+              <span>{chip.label}</span>
+              <span className="parceiro-veio-finance-filter-count">{chip.count}</span>
             </button>
           ))}
         </div>
 
         {filtered.length === 0 ? (
-          <div className="partner-card p-10 text-center space-y-3">
-            <div className="partner-card-accent" />
-            <Wallet className="h-8 w-8 mx-auto text-slate-400" />
-            <p className="text-sm font-semibold text-slate-900">
-              Nenhum recibo neste filtro
-            </p>
-            <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+          <section className="parceiro-veio-empty">
+            <Wallet className="h-7 w-7 text-[var(--partner-muted,#a9a7a2)]" aria-hidden />
+            <h2 className="parceiro-veio-empty-title">Nenhum recibo neste filtro</h2>
+            <p className="parceiro-veio-empty-desc">
               Quando a Móveis Unghero emitir um recibo de comissão, ele aparece aqui
               para consulta.
             </p>
-          </div>
+          </section>
         ) : (
-          <div className="space-y-2.5">
-            {filtered.map((c) => (
-              <article key={c.id} className="partner-card p-4 space-y-3">
-                <div className="partner-card-accent" />
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-900 truncate">
-                      {c.cliente_nome}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {c.orcamento_codigo || "Orçamento"}
-                      {c.orcamento_versao ? ` · v${c.orcamento_versao}` : ""}
-                      {" · "}
-                      {c.percentual.toLocaleString("pt-BR", {
-                        maximumFractionDigits: 2,
-                      })}
-                      % sobre {formatMoney(c.base_valor)}
-                    </p>
-                  </div>
-                  <span
+          <ul className="parceiro-veio-finance-list">
+            {filtered.map((c) => {
+              const receiptLabel =
+                c.receipt_numero != null
+                  ? `Comprovante nº ${String(c.receipt_numero).padStart(4, "0")}`
+                  : "Abrir comprovante";
+              return (
+                <li key={c.id}>
+                  <article
                     className={cn(
-                      "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0",
-                      statusClass(c.status)
+                      "parceiro-veio-finance-row",
+                      `is-${c.status.toLowerCase()}`
                     )}
                   >
-                    {STATUS_LABEL[c.status]}
-                  </span>
-                </div>
+                    <div className="parceiro-veio-finance-row-main">
+                      <div className="parceiro-veio-finance-row-top">
+                        <h2 className="parceiro-veio-finance-client">
+                          {c.cliente_nome}
+                        </h2>
+                        <span
+                          className={cn(
+                            "parceiro-veio-finance-status",
+                            `is-${c.status.toLowerCase()}`
+                          )}
+                        >
+                          {STATUS_LABEL[c.status]}
+                        </span>
+                      </div>
+                      <p className="parceiro-veio-finance-meta">
+                        {c.orcamento_codigo || "Orçamento"}
+                        {c.orcamento_versao ? ` · v${c.orcamento_versao}` : ""}
+                        {" · "}
+                        {c.percentual.toLocaleString("pt-BR", {
+                          maximumFractionDigits: 2,
+                        })}
+                        % sobre {formatMoney(c.base_valor)}
+                      </p>
+                    </div>
 
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Valor
-                    </p>
-                    <p className="text-lg font-black text-slate-900 tabular-nums">
-                      {formatMoney(c.valor_comissao)}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Previsto: {formatDate(c.data_pagamento_prevista)}
-                      {c.data_pagamento_efetiva
-                        ? ` · Pago em ${formatDate(c.data_pagamento_efetiva)}`
-                        : ""}
-                    </p>
-                  </div>
+                    <div className="parceiro-veio-finance-amount">
+                      <span className="parceiro-veio-finance-amount-value">
+                        {formatMoney(c.valor_comissao)}
+                      </span>
+                      <span className="parceiro-veio-finance-amount-date">
+                        {c.data_pagamento_efetiva
+                          ? `Pago em ${formatDate(c.data_pagamento_efetiva)}`
+                          : `Previsto ${formatDate(c.data_pagamento_prevista)}`}
+                      </span>
+                    </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      href={`/parceiro/projetos/${c.project_id}`}
-                      className="inline-flex items-center gap-1.5 min-h-10 h-10 sm:h-9 px-3.5 rounded-xl text-xs sm:text-[11px] font-bold border border-slate-300 text-slate-800 hover:bg-slate-50 transition-colors"
-                    >
-                      Ver projeto
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-                    {c.receipt_id ? (
+                    <div className="parceiro-veio-finance-actions">
                       <Link
-                        href={`/parceiro/comissoes/${c.receipt_id}/print`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 min-h-10 h-10 sm:h-9 px-3.5 rounded-xl text-xs sm:text-[11px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                        href={`/parceiro/projetos/${c.project_id}`}
+                        className="parceiro-veio-finance-btn is-ghost"
                       >
-                        <FileText className="h-3.5 w-3.5" />
-                        Comprovante
-                        {c.receipt_numero != null
-                          ? ` nº ${String(c.receipt_numero).padStart(4, "0")}`
-                          : ""}
+                        Ver projeto
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                       </Link>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                      {c.receipt_id ? (
+                        <Link
+                          href={`/parceiro/comissoes/${c.receipt_id}/print`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="parceiro-veio-finance-btn is-solid"
+                        >
+                          <FileText className="h-3.5 w-3.5" aria-hidden />
+                          {receiptLabel}
+                        </Link>
+                      ) : null}
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
     </ParceiroPortalShell>
