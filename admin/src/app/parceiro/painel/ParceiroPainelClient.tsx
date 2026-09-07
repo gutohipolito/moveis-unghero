@@ -178,8 +178,10 @@ export default function ParceiroPainelClient({
                 </ol>
               </section>
 
-              <section className="parceiro-veio-panel parceiro-veio-updates" aria-label="Atualizações recentes">
-                <h2 className="parceiro-veio-panel-title">Atualizações recentes</h2>
+              <section className="parceiro-veio-panel parceiro-veio-updates parceiro-veio-panel--stack" aria-label="Atualizações recentes">
+                <div className="parceiro-veio-panel-head">
+                  <h2 className="parceiro-veio-panel-title">Atualizações recentes</h2>
+                </div>
                 {updates.length === 0 ? (
                   <p className="parceiro-veio-muted">
                     Nenhuma atualização recente. Você pode continuar acompanhando seus
@@ -246,7 +248,7 @@ export default function ParceiroPainelClient({
               </Link>
             ) : null}
 
-            <section className="parceiro-veio-panel" aria-label="Projetos acompanhados">
+            <section className="parceiro-veio-panel parceiro-veio-panel--stack" aria-label="Projetos acompanhados">
               <div className="parceiro-veio-panel-head">
                 <h2 className="parceiro-veio-panel-title">Projetos acompanhados</h2>
                 <Link href="/parceiro/projetos" className="parceiro-veio-text-btn">
